@@ -27,6 +27,9 @@ from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
+from recidiviz.justice_counts.includes_excludes.law_enforcement import (
+    LawEnforcementFundingIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonGrievancesIncludesExcludes,
     PrisonReleasesCommunitySupervisionIncludesExcludes,
@@ -69,16 +72,14 @@ class TestMetricInterface(TestCase):
 
     def setUp(self) -> None:
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
-        self.reported_budget = self.test_schema_objects.reported_budget_metric
+        self.reported_budget = self.test_schema_objects.funding_metric
         self.reported_calls_for_service = (
             self.test_schema_objects.reported_calls_for_service_metric
         )
         self.maxDiff = None
 
     def test_init(self) -> None:
-        self.assertEqual(
-            self.reported_budget.metric_definition.display_name, "Annual Budget"
-        )
+        self.assertEqual(self.reported_budget.metric_definition.display_name, "Funding")
 
     def test_dimension_value_validation(self) -> None:
         with self.assertRaisesRegex(
@@ -128,8 +129,8 @@ class TestMetricInterface(TestCase):
 
         self.assertEqual(json["enabled"], True)
 
-    def test_budget_report_metric_json(self) -> None:
-        reported_metric = self.test_schema_objects.get_reported_budget_metric()
+    def test_funding_metric_json(self) -> None:
+        reported_metric = self.test_schema_objects.get_funding_metric()
         self.assertEqual(
             reported_metric.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -140,38 +141,29 @@ class TestMetricInterface(TestCase):
                     "key": "LAW_ENFORCEMENT",
                     "display_name": "Law Enforcement",
                 },
-                "display_name": "Annual Budget",
+                "display_name": "Funding",
                 "reporting_note": None,
-                "description": "Measures the total annual budget (in dollars) of your agency.",
+                "description": "The amount of funding for agency law enforcement activities.",
                 "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "category": "Capacity and Cost",
                 "value": 100000,
                 "unit": "USD",
-                "label": "Annual Budget",
+                "label": "Funding",
                 "enabled": True,
                 "frequency": "ANNUAL",
                 "custom_frequency": None,
                 "starting_month": None,
-                "filenames": ["annual_budget"],
+                "filenames": ["funding", "funding_by_type"],
                 "settings": [],
                 "contexts": [
-                    {
-                        "key": "PRIMARY_FUNDING_SOURCE",
-                        "display_name": "Please describe your primary funding source.",
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
-                        "value": "government",
-                        "multiple_choice_options": [],
-                    },
                     {
                         "key": "ADDITIONAL_CONTEXT",
                         "display_name": "Please provide additional context.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
-                        "value": None,
+                        "value": "additional context",
                         "multiple_choice_options": [],
                     },
                 ],
@@ -657,7 +649,7 @@ class TestMetricInterface(TestCase):
         )
 
     def test_to_json_disabled_disaggregation(self) -> None:
-        metric_definition = law_enforcement.annual_budget
+        metric_definition = law_enforcement.funding
         metric_json = {
             "key": metric_definition.key,
             "enabled": False,
@@ -672,6 +664,9 @@ class TestMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=False,
+                includes_excludes_member_to_setting={
+                    member: None for member in LawEnforcementFundingIncludesExcludes
+                },
             ),
         )
 
@@ -1201,12 +1196,13 @@ class TestMetricInterface(TestCase):
             },
         )
 
-    def test_annual_budget_json_to_agency_metric(self) -> None:
-        metric_definition = law_enforcement.annual_budget
+    def test_funding_json_to_agency_metric(self) -> None:
+        metric_definition = law_enforcement.funding
         metric_json = {
             "key": metric_definition.key,
             "enabled": False,
         }
+
         self.assertEqual(
             MetricInterface.from_json(
                 json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
@@ -1217,6 +1213,9 @@ class TestMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=False,
+                includes_excludes_member_to_setting={
+                    member: None for member in LawEnforcementFundingIncludesExcludes
+                },
             ),
         )
 
@@ -1665,35 +1664,112 @@ class TestMetricInterface(TestCase):
 
     def test_custom_reporting_frequency(self) -> None:
         metric_interface = MetricInterface(
-            key=law_enforcement.annual_budget.key,
+            key=law_enforcement.funding.key,
             is_metric_enabled=True,
             custom_reporting_frequency=CustomReportingFrequency(
                 frequency=ReportingFrequency.ANNUAL, starting_month=1
             ),
+            includes_excludes_member_to_setting={
+                member: IncludesExcludesSetting.YES
+                for member in LawEnforcementFundingIncludesExcludes
+            },
             aggregated_dimensions=[],
             contexts=[],
         )
 
         metric_interface_json = {
-            "key": law_enforcement.annual_budget.key,
+            "key": law_enforcement.funding.key,
             "enabled": True,
             "system": {"display_name": "Law Enforcement", "key": "LAW_ENFORCEMENT"},
-            "display_name": law_enforcement.annual_budget.display_name,
-            "description": law_enforcement.annual_budget.description,
+            "display_name": law_enforcement.funding.display_name,
+            "description": law_enforcement.funding.description,
             "disaggregated_by_supervision_subsystems": None,
             "definitions": [],
-            "reporting_note": law_enforcement.annual_budget.reporting_note,
-            "unit": law_enforcement.annual_budget.metric_type.unit,
-            "category": law_enforcement.annual_budget.category.human_readable_string,
-            "label": law_enforcement.annual_budget.display_name,
-            "frequency": law_enforcement.annual_budget.reporting_frequencies[0].value,
+            "reporting_note": law_enforcement.funding.reporting_note,
+            "unit": law_enforcement.funding.metric_type.unit,
+            "category": law_enforcement.funding.category.human_readable_string,
+            "label": law_enforcement.funding.display_name,
+            "frequency": law_enforcement.funding.reporting_frequencies[0].value,
             "custom_frequency": "ANNUAL",
             "starting_month": 1,
-            "filenames": ["annual_budget"],
+            "filenames": ["funding", "funding_by_type"],
             "value": None,
             "disaggregations": [],
             "contexts": [],
-            "settings": [],
+            "settings": [
+                {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "FISCAL_YEAR",
+                    "label": "Funding for single fiscal year",
+                },
+                {
+                    "default": "No",
+                    "included": "Yes",
+                    "key": "BIENNIUM_FUNDING",
+                    "label": "Biennium funding",
+                },
+                {
+                    "default": "No",
+                    "included": "Yes",
+                    "key": "MULTI_YEAR_APPROPRIATIONS",
+                    "label": "Multi-year appropriations that will not be fully "
+                    "spent this fiscal year",
+                },
+                {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "STAFF_FUNDING",
+                    "label": "Funding for agency staff",
+                },
+                {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "EQUIPMENT",
+                    "label": "Funding for the purchase of law enforcement " "equipment",
+                },
+                {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "FACILITIES",
+                    "label": "Funding for construction of law enforcement "
+                    "facilities (e.g., offices, temporary detention "
+                    "facilities, garages, etc.)",
+                },
+                {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "MAINTENANCE",
+                    "label": "Funding for the maintenance of law enforcement "
+                    "equipment and facilities",
+                },
+                {
+                    "default": "No",
+                    "included": "Yes",
+                    "key": "JAIL_OPERATIONS",
+                    "label": "Expenses for the operation of jails",
+                },
+                {
+                    "default": "No",
+                    "included": "Yes",
+                    "key": "SUPERVISION_SERVICES",
+                    "label": "Expenses for the operation of community supervision "
+                    "services",
+                },
+                {
+                    "default": "No",
+                    "included": "Yes",
+                    "key": "JUVENILE_JAIL_OPERATIONS",
+                    "label": "Expenses for the operation of juvenile jails",
+                },
+                {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "OTHER",
+                    "label": "Funding for other purposes not captured by the listed "
+                    "categories",
+                },
+            ],
             "datapoints": None,
         }
 

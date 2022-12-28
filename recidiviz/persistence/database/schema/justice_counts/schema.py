@@ -130,6 +130,7 @@ class MetricType(enum.Enum):
 
         return {
             "BUDGET": "USD",
+            "FUNDING": "USD",
             "REPORTED_CRIME": "REPORTED CRIMES",
             "TOTAL_STAFF": "PEOPLE",
             "POPULATION": "PEOPLE",

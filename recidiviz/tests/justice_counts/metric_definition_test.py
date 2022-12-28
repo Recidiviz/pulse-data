@@ -71,8 +71,8 @@ class TestMetricDefinition(TestCase):
 
     def test_law_enforcement_metrics(self) -> None:
         self.assertEqual(
-            law_enforcement.annual_budget.key,
-            "LAW_ENFORCEMENT_BUDGET",
+            law_enforcement.funding.key,
+            "LAW_ENFORCEMENT_FUNDING",
         )
         self.assertEqual(
             law_enforcement.residents.key,
@@ -80,22 +80,20 @@ class TestMetricDefinition(TestCase):
         )
 
     def test_additional_context(self) -> None:
-        self.assertEqual(len(law_enforcement.annual_budget.contexts), 2)
+        self.assertEqual(len(law_enforcement.funding.contexts), 1)
         requested_metrics = assert_type(
-            law_enforcement.annual_budget.specified_contexts, list
+            law_enforcement.funding.specified_contexts, list
         )
-        self.assertEqual(len(requested_metrics), 1)
+        # The Funding metric has no specified metrics, because specified
+        # contexts have been deprecated.
+        self.assertEqual(len(requested_metrics), 0)
         self.assertEqual(
-            law_enforcement.annual_budget.contexts[0].key,
-            requested_metrics[0].key,
-        )
-        self.assertEqual(
-            law_enforcement.annual_budget.contexts[1].key,
+            law_enforcement.funding.contexts[0].key,
             ContextKey.ADDITIONAL_CONTEXT,
         )
 
     def test_unit_from_metric_type(self) -> None:
-        self.assertEqual(law_enforcement.annual_budget.metric_type.unit, "USD")
+        self.assertEqual(law_enforcement.funding.metric_type.unit, "USD")
         self.assertEqual(law_enforcement.calls_for_service.metric_type.unit, "CALLS")
         self.assertEqual(law_enforcement.total_arrests.metric_type.unit, "ARRESTS")
         self.assertEqual(law_enforcement.police_officers.metric_type.unit, "PEOPLE")

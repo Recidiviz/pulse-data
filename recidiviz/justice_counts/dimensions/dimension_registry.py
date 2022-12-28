@@ -47,6 +47,7 @@ DIMENSIONS = [
     law_enforcement.OffenseType,
     law_enforcement.ForceType,
     law_enforcement.LawEnforcementStaffType,
+    law_enforcement.LawEnforcementFundingType,
     corrections.PopulationType,
     corrections.ReleaseType,
     corrections.ReleaseType,

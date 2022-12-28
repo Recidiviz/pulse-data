@@ -62,7 +62,7 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
                 },
             )
             self.assertEqual(
-                [row["year"] for row in filename_to_rows["annual_budget"]],
+                [row["year"] for row in filename_to_rows["funding"]],
                 [2022, 2021, 2020],
             )
             self.assertEqual(
