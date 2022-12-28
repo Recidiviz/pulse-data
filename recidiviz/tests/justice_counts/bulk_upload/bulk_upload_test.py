@@ -352,8 +352,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 metrics[2]
                 .aggregated_dimensions[0]  # type: ignore[index]
-                .dimension_to_value[SupervisionStaffType.SUPERVISION_OFFICERS],
+                .dimension_to_value[SupervisionStaffType.SUPERVISION],
                 100,
+            )
+            self.assertEqual(
+                metrics[2]  # type: ignore[index]
+                .aggregated_dimensions[0]
+                .dimension_to_value[SupervisionStaffType.MANAGEMENT_AND_OPERATIONS],
+                50,
             )
 
             annual_report_2 = reports_by_instance["2022 Annual Metrics"]

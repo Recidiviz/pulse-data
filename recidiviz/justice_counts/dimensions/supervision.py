@@ -22,10 +22,13 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class SupervisionStaffType(DimensionBase, enum.Enum):
-    SUPERVISION_OFFICERS = "Supervision Officers"
-    SUPPORT = "Support"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    SUPERVISION = "Supervision Staff"
+    MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
+    CLINICAL_OR_MEDICAL = "Clinical or Medical Staff"
+    PROGRAMMATIC = "Programmatic Staff"
+    OTHER = "Other Staff"
+    UNKNOWN = "Unknown Staff"
+    VACANT = "Vacant Positions (Any Staff Type)"
 
     @classmethod
     def dimension_identifier(cls) -> str:
