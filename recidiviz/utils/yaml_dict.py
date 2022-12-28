@@ -24,6 +24,21 @@ from urllib.parse import urlparse
 import jsonschema
 import yaml
 
+# During setup of the environment, the setup.py from the yaml project is
+# designed such that it will automatically attempt to build and install
+# LibYAML bindings. The LibYAML bindings give access to C-based parsers
+# which are considerably faster than their pure Python counterparts.
+# In the case of Docker images and CI pipelines, these bindings are available.
+# However, they may not be available in a local developer's environment.
+# Therefore, we first attempt to import the CSafeLoader, and, in case it is
+# not available, fall back to the slower, though still fully functional
+# Python SafeLoader.
+# See https://pyyaml.org/wiki/PyYAMLDocumentation.
+try:
+    from yaml import CSafeLoader as SafeLoader
+except ImportError:
+    from yaml import SafeLoader  # type: ignore
+
 # Represents a dictionary parsed from YAML, where values in the dictionary can only contain strings, numbers, or nested
 # dictionaries, but not lists.
 #
@@ -43,7 +58,7 @@ class YAMLDict:
     @classmethod
     def from_path(cls, yaml_path: str) -> "YAMLDict":
         with open(yaml_path, encoding="utf-8") as yaml_file:
-            loaded_raw_yaml = yaml.safe_load(yaml_file)
+            loaded_raw_yaml = yaml.load(yaml_file, Loader=SafeLoader)
             if not isinstance(loaded_raw_yaml, dict):
                 raise ValueError(
                     f"Expected manifest to contain a top-level dictionary, but "
