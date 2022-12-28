@@ -118,13 +118,16 @@ gevent = ">=20.5.1"
 google-cloud-logging = "<2.0.0"
 google-cloud-trace = "<2.0.0"
 wrapt = "*"
-attrs = "*"
+# TODO(#17515): Version == 22.2.0 creates mypy errors in attr_mixins.py that need to be fixed to unlock library
+attrs = "<22.2.0"
 requests = "*"
 pytz = "*"
 # TODO(#9732): Upgrade to 4.0 introduces dateparsing errors to ingest controller tests
 tzlocal = "<4.0"
 python-dateutil = "*"
-google-api-core = "*"
+# TODO(#4287): Versions >= 2.11.0 create dependency issues on pipenv lock. We should
+#   revisit upgrade when we've updated all google-cloud* libraries to >= 2.0.0.
+google-api-core = "<2.11.0"
 # If the protobuf version changes be sure to update the pinned version in dataflow_setup.py
 protobuf = "*"
 "psycopg2" = "*"
