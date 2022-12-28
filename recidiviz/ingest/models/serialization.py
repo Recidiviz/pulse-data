@@ -189,17 +189,6 @@ def convert_ingest_info_to_proto(
             )
             proto_state_person.state_alias_ids.append(proto_alias.state_alias_id)
 
-        if state_person.supervising_officer:
-            proto_supervising_officer = _populate_proto(
-                "state_agents",
-                state_person.supervising_officer,
-                "state_agent_id",
-                state_agent_map,
-            )
-            proto_state_person.supervising_officer_id = (
-                proto_supervising_officer.state_agent_id
-            )
-
         for assessment in state_person.state_assessments:
             proto_assessment = _populate_proto(
                 "state_assessments",
@@ -843,11 +832,6 @@ def convert_proto_to_ingest_info(
             state_supervision_contact_map[proto_id]
             for proto_id in proto_state_person.state_supervision_contact_ids
         ]
-
-        if proto_state_person.supervising_officer_id:
-            state_person.supervising_officer = state_agent_map[
-                proto_state_person.supervising_officer_id
-            ]
 
     def _process_external_ids(ii: ingest_info.IngestInfo) -> None:
         # Undo preprocessing on external_ids performed when converting from

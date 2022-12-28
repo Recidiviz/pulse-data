@@ -183,7 +183,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                 "S_PERIOD_ID2",
                 "S_PERIOD_ID3",
             ],
-            supervising_officer_id="AGENT_ID_SUPERVISING",
         )
         ingest_info.state_person_races.add(
             state_person_race_id="RACE_ID1",
@@ -553,12 +552,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
                         full_name='{"full_name": "FRANK OCEAN"}', state_code="US_XX"
                     ),
                 ],
-                supervising_officer=StateAgent.new_with_defaults(
-                    external_id="AGENT_ID_SUPERVISING",
-                    state_code="US_XX",
-                    agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                    full_name='{"full_name": "SUPERVISING AGENT"}',
-                ),
                 assessments=[assessment],
                 program_assignments=[program_assignment],
                 incarceration_incidents=[incident],

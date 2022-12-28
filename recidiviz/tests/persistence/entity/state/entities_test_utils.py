@@ -421,14 +421,6 @@ def generate_full_graph_state_person(
 
     person.incarceration_periods = [incarceration_period]
 
-    person_supervising_officer = entities.StateAgent.new_with_defaults(
-        state_code="US_XX",
-        external_id="SUPERVISING_OFFICER_ID",
-        full_name="SUPERVISING OFFICER",
-        agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-    )
-    person.supervising_officer = person_supervising_officer
-
     charge = entities.StateCharge.new_with_defaults(
         external_id="CHARGE1_EXTERNAL_ID",
         status=StateChargeStatus.CONVICTED,

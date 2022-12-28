@@ -63,6 +63,7 @@ input_columns:
 unused_columns:
   - SUP_LVL # Unused, for now.
   - SUPER_OVERRIDE # Unused, for now.
+  - AGENT
   - PREVIOUS_AGENT
   - RECORD_STATUS # No apparent use for these at the moment
   - ALIASFLAG # More detailed alias data in the Alias file
@@ -180,14 +181,6 @@ output:
                 - "3"
                 - "4"
                 - "6"
-    supervising_officer:
-      $conditional:
-        - $if:
-            $not_null: AGENT
-          $then:
-            StateAgent:
-              external_id: AGENT
-              agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
     supervision_periods:
       - StateSupervisionPeriod:
           case_type_entries:

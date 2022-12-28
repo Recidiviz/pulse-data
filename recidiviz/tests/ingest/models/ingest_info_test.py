@@ -94,7 +94,6 @@ class TestIngestInfo(unittest.TestCase):
             "state_supervision_violations",
             "state_supervision_contact_ids",
             "state_supervision_contacts",
-            "supervising_officer_id",
             "supervising_officer",
             "state_supervision_sentence_ids",
             "state_supervision_sentences",

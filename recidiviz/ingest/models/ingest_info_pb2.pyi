@@ -334,7 +334,6 @@ class StatePerson(google.protobuf.message.Message):
     STATE_INCARCERATION_INCIDENT_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_VIOLATION_IDS_FIELD_NUMBER: builtins.int
     STATE_SUPERVISION_CONTACT_IDS_FIELD_NUMBER: builtins.int
-    SUPERVISING_OFFICER_ID_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
     state_person_id: typing.Text = ...
     full_name: typing.Text = ...
@@ -425,7 +424,6 @@ class StatePerson(google.protobuf.message.Message):
     ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
         typing.Text
     ]: ...
-    supervising_officer_id: typing.Text = ...
     state_code: typing.Text = ...
     def __init__(
         self,
@@ -472,7 +470,6 @@ class StatePerson(google.protobuf.message.Message):
         state_supervision_contact_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
-        supervising_officer_id: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
     ) -> None: ...
     def HasField(
@@ -500,8 +497,6 @@ class StatePerson(google.protobuf.message.Message):
             b"state_code",
             "state_person_id",
             b"state_person_id",
-            "supervising_officer_id",
-            b"supervising_officer_id",
             "surname",
             b"surname",
         ],
@@ -557,8 +552,6 @@ class StatePerson(google.protobuf.message.Message):
             b"state_supervision_sentence_ids",
             "state_supervision_violation_ids",
             b"state_supervision_violation_ids",
-            "supervising_officer_id",
-            b"supervising_officer_id",
             "surname",
             b"surname",
         ],

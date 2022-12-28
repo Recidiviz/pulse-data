@@ -147,7 +147,6 @@ class StatePerson(IngestObject):
         state_incarceration_incidents=None,
         state_supervision_violations=None,
         state_supervision_contacts=None,
-        supervising_officer=None,
         state_code=None,
     ):
         self.state_person_id: Optional[str] = state_person_id
@@ -196,10 +195,9 @@ class StatePerson(IngestObject):
         self.state_supervision_contacts: List[StateSupervisionContact] = (
             state_supervision_contacts or []
         )
-        self.supervising_officer: Optional[StateAgent] = supervising_officer
 
     def __setattr__(self, name, value):
-        restricted_setattr(self, "supervising_officer", name, value)
+        restricted_setattr(self, "state_supervision_contacts", name, value)
 
     def create_state_person_race(self, **kwargs) -> "StatePersonRace":
         race = StatePersonRace(**kwargs)
@@ -271,10 +269,6 @@ class StatePerson(IngestObject):
         contact = StateSupervisionContact(**kwargs)
         self.state_supervision_contacts.append(contact)
         return contact
-
-    def create_state_agent(self, **kwargs) -> "StateAgent":
-        self.supervising_officer = StateAgent(**kwargs)
-        return self.supervising_officer
 
     def get_state_person_race_by_id(
         self, state_person_race_id
@@ -450,8 +444,6 @@ class StatePerson(IngestObject):
         self.state_supervision_contacts = [
             c.prune() for c in self.state_supervision_contacts if c
         ]
-        if not self.supervising_officer:
-            self.supervising_officer = None
         return self
 
     def sort(self):

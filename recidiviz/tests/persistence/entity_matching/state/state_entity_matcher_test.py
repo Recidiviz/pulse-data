@@ -193,62 +193,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_no_errors(matched_entities)
 
-    def test_match_overwriteAgent(self) -> None:
-        # Arrange 1 - Match
-        db_agent = generate_agent(
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-        )
-        db_external_id = generate_external_id(
-            state_code=_STATE_CODE,
-            external_id=_EXTERNAL_ID,
-            id_type=_ID_TYPE,
-        )
-        entity_external_id = self.to_entity(db_external_id)
-        db_person = generate_person(
-            full_name=_FULL_NAME,
-            external_ids=[db_external_id],
-            supervising_officer=db_agent,
-            state_code=_STATE_CODE,
-        )
-        entity_person = self.to_entity(db_person)
-
-        self._commit_to_db(db_person)
-
-        external_id = attr.evolve(entity_external_id, person_external_id_id=None)
-        agent = StateAgent.new_with_defaults(
-            external_id=_EXTERNAL_ID_2,
-            state_code=_STATE_CODE,
-            agent_type=StateAgentType.SUPERVISION_OFFICER,
-        )
-        person = attr.evolve(
-            entity_person,
-            person_id=None,
-            external_ids=[external_id],
-            supervising_officer=agent,
-        )
-
-        expected_external_id = attr.evolve(
-            external_id,
-        )
-        expected_agent = attr.evolve(agent)
-        expected_person = attr.evolve(
-            person,
-            external_ids=[expected_external_id],
-            supervising_officer=expected_agent,
-        )
-
-        # Act 1 - Match
-        session = self._session()
-        matched_entities = self._match(session, [person])
-
-        self.assertEqual(0, matched_entities.error_count)
-        self.assertEqual(1, matched_entities.total_root_entities)
-        self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
-        )
-
     def test_match_twoMatchingIngestedPersons(self) -> None:
         # Arrange
         external_id = StatePersonExternalId.new_with_defaults(
@@ -907,14 +851,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             id_type=_ID_TYPE,
         )
         entity_external_id = self.to_entity(db_external_id)
-        db_agent = generate_agent(
-            external_id=_EXTERNAL_ID,
-            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
-            state_code=_STATE_CODE,
-        )
-        entity_agent = self.to_entity(db_agent)
         db_person.external_ids = [db_external_id]
-        db_person.supervising_officer = db_agent
         db_person.supervision_sentences = [db_supervision_sentence]
         entity_person = self.to_entity(db_person)
 
@@ -924,7 +861,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             agent_type=StateAgentType.SUPERVISION_OFFICER.value,
             state_code=_STATE_CODE,
         )
-        entity_agent_dup = self.to_entity(db_agent_dup)
         db_supervision_period = generate_supervision_period(
             person=db_person_dup,
             external_id=_EXTERNAL_ID,
@@ -965,29 +901,21 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_supervision_sentence,
         )
         expected_supervision_sentence_dup = attr.evolve(entity_supervision_sentence_dup)
-        expected_agent = attr.evolve(entity_agent)
         expected_person = attr.evolve(
             entity_person,
             external_ids=[
                 entity_external_id,
                 entity_external_id_2,
             ],
-            supervising_officer=expected_agent,
             supervision_sentences=[
                 expected_supervision_sentence,
                 expected_supervision_sentence_dup,
             ],
             supervision_periods=[expected_supervision_period],
         )
-        expected_placeholder_agent = attr.evolve(
-            entity_agent_dup,
-            external_id=None,
-            agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-        )
         expected_placeholder_person = attr.evolve(
             entity_person_dup,
             full_name=None,
-            supervising_officer=expected_placeholder_agent,
             external_ids=[],
             supervision_periods=[],
             supervision_sentences=[],
