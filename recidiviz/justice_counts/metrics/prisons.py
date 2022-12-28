@@ -30,6 +30,12 @@ from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
+from recidiviz.justice_counts.includes_excludes.offense import (
+    DrugOffenseIncludesExcludes,
+    PersonOffenseIncludesExcludes,
+    PropertyOffenseIncludesExcludes,
+    PublicOrderOffenseIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.person import (
     FemaleBiologicalSexIncludesExcludes,
     MaleBiologicalSexIncludesExcludes,
@@ -38,7 +44,6 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PopulationIncludesExcludes,
     PrisonAdmissionsIncludesExcludes,
     PrisonClinicalStaffIncludesExcludes,
-    PrisonDrugOffenseIncludesExcludes,
     PrisonExpensesContractBedsIncludesExcludes,
     PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
     PrisonExpensesHealthCareIncludesExcludes,
@@ -53,10 +58,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonGrievancesLivingConditionsIncludesExcludes,
     PrisonGrievancesPersonalSafetyIncludesExcludes,
     PrisonManagementAndOperationsStaffIncludesExcludes,
-    PrisonPersonOffenseIncludesExcludes,
     PrisonProgrammaticStaffIncludesExcludes,
-    PrisonPropertyOffenseIncludesExcludes,
-    PrisonPublicOrderOffenseIncludesExcludes,
     PrisonReadmissionsIncludesExcludes,
     PrisonReadmissionsNewConvictionIncludesExcludes,
     PrisonReadmissionsParoleIncludesExcludes,
@@ -362,29 +364,27 @@ admissions = MetricDefinition(
             },
             dimension_to_includes_excludes={
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
-                    members=PrisonPersonOffenseIncludesExcludes,
-                    excluded_set={
-                        PrisonPersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
-                    },
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
                 ),
                 PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PrisonPropertyOffenseIncludesExcludes,
+                    members=PropertyOffenseIncludesExcludes,
                 ),
                 PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PrisonPublicOrderOffenseIncludesExcludes,
+                    members=PublicOrderOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
                     },
                 ),
                 PrisonsOffenseType.DRUG: IncludesExcludesSet(
-                    members=PrisonDrugOffenseIncludesExcludes,
+                    members=DrugOffenseIncludesExcludes,
                 ),
             },
         )
@@ -440,28 +440,28 @@ daily_population = MetricDefinition(
             },
             dimension_to_includes_excludes={
                 PrisonsOffenseType.PERSON: IncludesExcludesSet(
-                    members=PrisonPersonOffenseIncludesExcludes,
+                    members=PersonOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                        PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
                     },
                 ),
                 PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PrisonPropertyOffenseIncludesExcludes,
+                    members=PropertyOffenseIncludesExcludes,
                 ),
                 PrisonsOffenseType.DRUG: IncludesExcludesSet(
-                    members=PrisonDrugOffenseIncludesExcludes,
+                    members=DrugOffenseIncludesExcludes,
                 ),
                 PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PrisonPublicOrderOffenseIncludesExcludes,
+                    members=PublicOrderOffenseIncludesExcludes,
                     excluded_set={
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PrisonPublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
                     },
                 ),
             },
