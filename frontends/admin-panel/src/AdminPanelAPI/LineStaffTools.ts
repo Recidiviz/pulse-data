@@ -145,15 +145,25 @@ export const createNewUser = async (
   });
 };
 
-export const updateUser = async (
-  email: string,
-  stateCode: string,
-  externalId: string | undefined,
-  role: string,
-  district: string | undefined,
-  firstName: string | undefined,
-  lastName: string | undefined
-): Promise<Response> => {
+export const updateUser = async ({
+  email,
+  stateCode,
+  externalId,
+  role,
+  district,
+  firstName,
+  lastName,
+  blocked = false,
+}: {
+  email: string;
+  stateCode: string;
+  externalId?: string;
+  role?: string;
+  district?: string;
+  firstName?: string;
+  lastName?: string;
+  blocked?: boolean;
+}): Promise<Response> => {
   return patchAuthWithURLAndBody(`/users/${email}`, {
     stateCode,
     externalId,
@@ -161,6 +171,7 @@ export const updateUser = async (
     district,
     firstName,
     lastName,
+    blocked,
   });
 };
 
