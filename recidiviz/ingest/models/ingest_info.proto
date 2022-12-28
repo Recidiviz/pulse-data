@@ -242,7 +242,6 @@ message StateIncarcerationIncident {
     optional string location_within_facility = 6;
     optional string incident_details = 7;
 
-    optional string responding_officer_id = 8;
     repeated string state_incarceration_incident_outcome_ids = 9;
 }
 

@@ -1173,10 +1173,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessment_metadata="metadata_2",
         )
         entity_assessment_2 = self.to_entity(db_assessment_2)
-        db_agent = generate_agent(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, full_name="full_name"
-        )
-        entity_agent = self.to_entity(db_agent)
         db_agent_po = generate_agent(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID_5, full_name="full_name_po"
         )
@@ -1192,7 +1188,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             incident_details="details",
-            responding_officer=db_agent,
         )
         entity_incarceration_incident = self.to_entity(db_incarceration_incident)
         db_supervision_violation_response_decision = (
@@ -1313,7 +1308,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             assessment_id=None,
             assessment_metadata="metadata_2-updated",
         )
-        agent = attr.evolve(entity_agent, agent_id=None, full_name="full_name-updated")
         agent_po = attr.evolve(
             entity_agent_po, agent_id=None, full_name="full_name_po-updated"
         )
@@ -1326,7 +1320,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             entity_incarceration_incident,
             incarceration_incident_id=None,
             incident_details="details-updated",
-            responding_officer=agent,
         )
         incarceration_period = attr.evolve(
             entity_incarceration_period,
@@ -1407,12 +1400,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         expected_charge_2 = attr.evolve(charge_2)
         expected_assessment = attr.evolve(assessment)
         expected_assessment_2 = attr.evolve(assessment_2)
-        expected_agent = attr.evolve(agent)
         expected_agent_po = attr.evolve(agent_po)
         expected_agent_term = attr.evolve(agent_term)
         expected_incarceration_incident = attr.evolve(
             incarceration_incident,
-            responding_officer=expected_agent,
         )
         expected_incarceration_period = attr.evolve(
             incarceration_period,

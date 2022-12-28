@@ -991,7 +991,6 @@ class StateIncarcerationIncident(IngestObject):
         facility=None,
         location_within_facility=None,
         incident_details=None,
-        responding_officer=None,
         state_incarceration_incident_outcomes=None,
     ):
         self.state_incarceration_incident_id: Optional[
@@ -1004,17 +1003,12 @@ class StateIncarcerationIncident(IngestObject):
         self.location_within_facility: Optional[str] = location_within_facility
         self.incident_details: Optional[str] = incident_details
 
-        self.responding_officer: Optional[StateAgent] = responding_officer
         self.state_incarceration_incident_outcomes: List[
             StateIncarcerationIncidentOutcome
         ] = (state_incarceration_incident_outcomes or [])
 
     def __setattr__(self, name, value):
         restricted_setattr(self, "incarceration_incident_outcomes", name, value)
-
-    def create_state_agent(self, **kwargs) -> "StateAgent":
-        self.responding_officer = StateAgent(**kwargs)
-        return self.responding_officer
 
     def create_state_incarceration_incident_outcome(
         self, **kwargs
@@ -1037,8 +1031,6 @@ class StateIncarcerationIncident(IngestObject):
         )
 
     def prune(self) -> "StateIncarcerationIncident":
-        if not self.responding_officer:
-            self.responding_officer = None
         self.state_incarceration_incident_outcomes = [
             iio for iio in self.state_incarceration_incident_outcomes if iio
         ]

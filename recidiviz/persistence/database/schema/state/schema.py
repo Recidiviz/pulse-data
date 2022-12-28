@@ -1942,20 +1942,6 @@ class StateIncarcerationIncident(StateBase, _ReferencesStatePersonSharedColumns)
         Text, comment="Descriptive notes describing the incident."
     )
 
-    @declared_attr
-    def responding_officer_id(self) -> Column:
-        return Column(
-            Integer,
-            ForeignKey("state_agent.agent_id"),
-            index=True,
-            nullable=True,
-            comment=StrictStringFormatter().format(
-                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="state agent"
-            ),
-        )
-
-    responding_officer = relationship("StateAgent", uselist=False, lazy="selectin")
-
     incarceration_incident_outcomes = relationship(
         "StateIncarcerationIncidentOutcome",
         backref="incarceration_incident",

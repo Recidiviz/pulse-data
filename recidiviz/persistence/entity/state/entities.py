@@ -1023,7 +1023,7 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
     )
 
     #   - Who
-    # See |responding_officer| below
+    #  No fields
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
@@ -1033,7 +1033,6 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
-    responding_officer: Optional["StateAgent"] = attr.ib(default=None)
 
     incarceration_incident_outcomes: List[
         "StateIncarcerationIncidentOutcome"

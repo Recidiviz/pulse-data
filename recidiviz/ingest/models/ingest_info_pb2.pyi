@@ -1550,7 +1550,6 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
     FACILITY_FIELD_NUMBER: builtins.int
     LOCATION_WITHIN_FACILITY_FIELD_NUMBER: builtins.int
     INCIDENT_DETAILS_FIELD_NUMBER: builtins.int
-    RESPONDING_OFFICER_ID_FIELD_NUMBER: builtins.int
     STATE_INCARCERATION_INCIDENT_OUTCOME_IDS_FIELD_NUMBER: builtins.int
     state_incarceration_incident_id: typing.Text = ...
     incident_type: typing.Text = ...
@@ -1559,7 +1558,6 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
     facility: typing.Text = ...
     location_within_facility: typing.Text = ...
     incident_details: typing.Text = ...
-    responding_officer_id: typing.Text = ...
     @property
     def state_incarceration_incident_outcome_ids(
         self,
@@ -1576,7 +1574,6 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
         facility: typing.Optional[typing.Text] = ...,
         location_within_facility: typing.Optional[typing.Text] = ...,
         incident_details: typing.Optional[typing.Text] = ...,
-        responding_officer_id: typing.Optional[typing.Text] = ...,
         state_incarceration_incident_outcome_ids: typing.Optional[
             typing.Iterable[typing.Text]
         ] = ...,
@@ -1594,8 +1591,6 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
             b"incident_type",
             "location_within_facility",
             b"location_within_facility",
-            "responding_officer_id",
-            b"responding_officer_id",
             "state_code",
             b"state_code",
             "state_incarceration_incident_id",
@@ -1615,8 +1610,6 @@ class StateIncarcerationIncident(google.protobuf.message.Message):
             b"incident_type",
             "location_within_facility",
             b"location_within_facility",
-            "responding_officer_id",
-            b"responding_officer_id",
             "state_code",
             b"state_code",
             "state_incarceration_incident_id",

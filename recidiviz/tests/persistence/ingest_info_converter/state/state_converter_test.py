@@ -321,7 +321,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
         ingest_info.state_incarceration_incidents.add(
             state_incarceration_incident_id="INCIDENT_ID",
             incident_type="CONTRABAND",
-            responding_officer_id="AGENT_ID2",
             state_incarceration_incident_outcome_ids=["INCIDENT_OUTCOME_ID"],
         )
 
@@ -372,12 +371,6 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             state_code="US_XX",
             incident_type=StateIncarcerationIncidentType.CONTRABAND,
             incident_type_raw_text="CONTRABAND",
-            responding_officer=StateAgent.new_with_defaults(
-                external_id="AGENT_ID2",
-                state_code="US_XX",
-                agent_type=StateAgentType.PRESENT_WITHOUT_INFO,
-                full_name='{"full_name": "AGENT HERNANDEZ"}',
-            ),
             incarceration_incident_outcomes=[incident_outcome],
         )
 
