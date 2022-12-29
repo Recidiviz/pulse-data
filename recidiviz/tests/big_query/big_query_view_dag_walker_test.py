@@ -442,7 +442,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         with self.assertRaisesRegex(
             ValueError,
             r"^Detected cycle in graph reachable from \('dataset_1', 'table_1'\): "
-            r"\[\('dataset_2', 'table_2'\), \('dataset_1', 'table_1'\)\]$",
+            r"\[\('dataset_2', 'table_2'\)]$",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 

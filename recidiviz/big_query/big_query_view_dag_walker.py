@@ -19,12 +19,15 @@ and perform actions on each of them in some order."""
 import heapq
 import logging
 import time
+from collections import deque
 from concurrent import futures
 from concurrent.futures import Future
 from typing import (
     Callable,
+    Deque,
     Dict,
     Generic,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -311,30 +314,92 @@ class BigQueryViewDagWalker:
                     self.nodes_by_key[parent_key].add_child_key(key)
 
     def _check_for_cycles(self) -> None:
-        """Raises a ValueError if there are any cycles in the provided DAG."""
+        """
+        The textbook implementation of a DFS cycle check might look something like:
+
+            def cycle_check(graph):
+                def dfs(graph, vertex, visited, onpath):
+                    visited[vertex] = True
+                    onpath[vertex] = True
+                    for child in graph.childrenof(vertex):
+                        if not visited[child]:
+                            dfs(graph, child, visited, onpath)
+                        else if onpath[child]:
+                            raise ValueError
+                    onpath[vertex] = False
+
+                visited = [False] * len(graph)
+                onpath = [False] * len(graph)
+                for vertex in graph:
+                    if not visited[vertex]:
+                        dfs(graph, vertex, visited, onpath)
+
+        In our implementation, we use an explicit stack instead of implicit
+        (recursion). We are interested in the vertex post-order
+        (after the recursive calls in the text book example), because only
+        after processing all children can we remove a vertex from the current
+        path. Thus, with an explicit stack, as we process each child, we keep the parent
+        on the stack until all children have been processed, at which point
+        it is safe to remove the parent from the path.
+
+        Because we are working with string-based keys we use hashing for
+        fast indexing, instead of integer-indexed lists.
+
+        Once a vertex has been explored in a DFS fashion, there is no need
+        to process that vertex again when only looking for a cycle.
+        """
         if not self.nodes_by_key:
             return
 
         if not self.roots:
             raise ValueError("No roots detected. Input views contain a cycle.")
 
-        for node_key in self.nodes_by_key:
-            self._check_for_cycles_reachable_from_node(node_key)
+        visited = set()
+        # Mapping of nodes in the current path to the child for that node.
+        current_path_edges: Dict[DagKey, DagKey] = {}
+        for start_node in self.nodes_by_key:
+            if start_node in visited:
+                continue
 
-    def _check_for_cycles_reachable_from_node(self, start_key: DagKey) -> None:
-        """Throws if there is a cycle that can be reached from the provided start node."""
-        paths_to_explore: List[Tuple[DagKey, List[DagKey]]] = [(start_key, [])]
-        while paths_to_explore:
-            key, path = paths_to_explore.pop()
+            stack: Deque[Tuple[DagKey, Deque[DagKey]]] = deque()
 
-            for child_key in self.nodes_by_key[key].child_node_keys:
-                if child_key in path:
+            next_node = start_node
+            while True:
+                if next_node not in visited:
+                    child_keys = self.nodes_by_key[next_node].child_node_keys
+                    if child_keys:
+                        stack.append((next_node, deque(child_keys)))
+                    visited.add(next_node)
+
+                if not stack:
+                    break
+
+                # Peek at the top of the stack to get current node
+                current_node, current_node_children = stack[-1]
+
+                if not current_node_children:
+                    # We have explored all children of the node and found no
+                    # cycles - pop this node.
+                    stack.pop()
+                    current_path_edges.pop(current_node)
+                    continue
+
+                next_node = current_node_children.pop()
+                if next_node in current_path_edges:
                     raise ValueError(
                         f"Detected cycle in graph reachable from "
-                        f"{start_key.as_tuple()}: {[k.as_tuple() for k in path]}"
+                        f"{start_node.as_tuple()}: "
+                        f"{[e.as_tuple() for e in self._get_cycle_path(start_node, current_path_edges)]}"
                     )
+                current_path_edges[current_node] = next_node
 
-                paths_to_explore.append((child_key, path + [child_key]))
+    def _get_cycle_path(
+        self, start_node_key: DagKey, current_path_edges: Dict[DagKey, DagKey]
+    ) -> Iterator[DagKey]:
+        key = start_node_key
+        while key in current_path_edges:
+            key = current_path_edges[key]
+            yield key
 
     def view_for_key(self, dag_key: DagKey) -> BigQueryView:
         return self.nodes_by_key[dag_key].view
