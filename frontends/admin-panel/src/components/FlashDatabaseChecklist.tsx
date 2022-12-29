@@ -1011,7 +1011,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 Release the ingest lock for {stateCode}&#39;s primary instance.
               </p>
             }
-            actionButtonEnabled={isFlashInProgress}
+            actionButtonEnabled={isNoRerunInProgress}
             actionButtonTitle="Release Lock"
             onActionButtonClick={async () =>
               releaseBQExportLock(stateCode, DirectIngestInstance.PRIMARY)
@@ -1025,7 +1025,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 instance.
               </p>
             }
-            actionButtonEnabled={isFlashInProgress}
+            actionButtonEnabled={isNoRerunInProgress}
             actionButtonTitle="Release Lock"
             onActionButtonClick={async () =>
               releaseBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
