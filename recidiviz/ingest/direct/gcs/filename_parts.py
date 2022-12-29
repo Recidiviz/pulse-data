@@ -20,8 +20,10 @@ import re
 from typing import Optional
 
 import attr
+import pytz
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
@@ -62,7 +64,9 @@ class DirectIngestRawFilenameParts:
     """
 
     processed_state: str = attr.ib()
-    utc_upload_datetime: datetime.datetime = attr.ib()
+    utc_upload_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
     utc_upload_datetime_str: str = attr.ib()
     date_str: str = attr.ib()
     # May contain letters, numbers, and the '_' char. If it contains numbers trailing an _, it must be a RAW_DATA file type.
@@ -80,33 +84,6 @@ class DirectIngestRawFilenameParts:
         return f"{self.file_tag}{suffix_str}"
 
 
-def _filename_parts_from_raw_data_path(
-    file_path: GcsfsFilePath,
-) -> DirectIngestRawFilenameParts:
-    """Parses filename for RAW_DATA file types"""
-    match = re.match(_RAW_DATA_FILE_NAME_REGEX, file_path.file_name)
-
-    if not match:
-        raise DirectIngestError(
-            msg=f"Could not parse upload_ts, file_tag, extension "
-            f"from path [{file_path.abs_path()}]",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
-
-    full_upload_timestamp_str = match.group("timestamp")
-    utc_upload_datetime = datetime.datetime.fromisoformat(full_upload_timestamp_str)
-
-    return DirectIngestRawFilenameParts(
-        processed_state=match.group("processed_state"),
-        utc_upload_datetime=utc_upload_datetime,
-        utc_upload_datetime_str=full_upload_timestamp_str,
-        date_str=utc_upload_datetime.date().isoformat(),
-        file_tag=match.group("file_tag"),
-        extension=match.group("extension"),
-        filename_suffix=match.group("filename_suffix"),
-    )
-
-
 def filename_parts_from_path(file_path: GcsfsFilePath) -> DirectIngestRawFilenameParts:
     match = re.match(_RAW_DATA_FILE_NAME_REGEX, file_path.file_name)
 
@@ -118,7 +95,9 @@ def filename_parts_from_path(file_path: GcsfsFilePath) -> DirectIngestRawFilenam
         )
 
     full_upload_timestamp_str = match.group("timestamp")
-    utc_upload_datetime = datetime.datetime.fromisoformat(full_upload_timestamp_str)
+    utc_upload_datetime = datetime.datetime.fromisoformat(
+        full_upload_timestamp_str
+    ).replace(tzinfo=pytz.UTC)
 
     return DirectIngestRawFilenameParts(
         processed_state=match.group("processed_state"),

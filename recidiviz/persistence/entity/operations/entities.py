@@ -25,6 +25,7 @@ from typing import Dict, Optional
 
 import attr
 
+from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
@@ -82,9 +83,13 @@ class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     # Time when the file is actually discovered by our controller's handle_new_files endpoint.
     file_discovery_time: datetime.datetime = attr.ib()
     # Time when we have finished fully processing this file by uploading to BQ.
-    processed_time: Optional[datetime.datetime] = attr.ib()
+    file_processed_time: Optional[datetime.datetime] = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
 
-    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
 
     @property
     def is_code_table(self) -> bool:

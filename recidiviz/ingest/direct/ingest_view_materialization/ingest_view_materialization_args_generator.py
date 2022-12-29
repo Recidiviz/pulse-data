@@ -60,7 +60,7 @@ class _IngestViewExportState:
     ] = attr.ib()
 
     # A list with a tuple for each date that raw file dependencies were updated, along with the max
-    # datetimes_contained_upper_bound_inclusive for raw tables updated on that date. This list is sorted in ascending
+    # update_datetime for raw tables updated on that date. This list is sorted in ascending
     # order by date.
     max_update_datetime_by_date: List[
         Tuple[datetime.date, datetime.datetime]
@@ -72,8 +72,7 @@ class _IngestViewExportState:
     ) -> List[Tuple[datetime.date, datetime.datetime]]:
         date_dict: Dict[datetime.date, List[datetime.datetime]] = defaultdict(list)
         for dt in [
-            m.datetimes_contained_upper_bound_inclusive
-            for m in self.raw_table_dependency_updated_metadatas
+            m.update_datetime for m in self.raw_table_dependency_updated_metadatas
         ]:
             date_dict[dt.date()].append(dt)
         result = []
@@ -157,17 +156,27 @@ class IngestViewMaterializationArgsGenerator:
                 # is found from Date 1 that's not in Date 2), then no work is necessary
                 # when we have no lower bound date. We do not create an ingest view
                 # materialization task for it in this case.
+
+                # The _IngestViewExportState expects timezone unaware arguments (for now), so convert it to be
+                # timezone unaware.
+                # TODO(#17537): No longer strip timezone info when fields in the ingest view materialization tables
+                # are updated to store timezone-aware timestamps.
+                tz_unaware_upper_bound_datetime_inclusive = (
+                    upper_bound_datetime_inclusive.replace(tzinfo=None)
+                )
                 if (
                     not lower_bound_datetime_exclusive
                     and ingest_view.do_reverse_date_diff
                 ):
-                    lower_bound_datetime_exclusive = upper_bound_datetime_inclusive
+                    lower_bound_datetime_exclusive = (
+                        tz_unaware_upper_bound_datetime_inclusive
+                    )
                     continue
 
                 args = IngestViewMaterializationArgs(
                     ingest_view_name=ingest_view_name,
                     lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
-                    upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
+                    upper_bound_datetime_inclusive=tz_unaware_upper_bound_datetime_inclusive,
                     ingest_instance=self.metadata_manager.ingest_instance,
                 )
                 logging.info(
@@ -215,9 +224,17 @@ class IngestViewMaterializationArgsGenerator:
                 # Check to see if the file comes BEFORE the last ingest view export for this view. If it does, and it is
                 # not a code table, then this indicates that some sort of backfill is trying to process without
                 # properly invalidating legacy ingest view metadata rows.
+
+                # The IngestViewMaterializationArgs expect timezone unaware arguments (for now), so convert it to be
+                # timezone unaware.
+                # TODO(#17537): No longer strip timezone info when fields in the ingest view materialization tables
+                # are updated to expect timezone-aware timestamps.
+                tz_unaware_update_datetime = raw_file_metadata.update_datetime.replace(
+                    tzinfo=None
+                )
                 if (
                     last_registered_job
-                    and raw_file_metadata.datetimes_contained_upper_bound_inclusive
+                    and tz_unaware_update_datetime
                     < last_registered_job.upper_bound_datetime_inclusive
                 ):
                     # If it is not a code table, raise an error as we need to run a backfill. If it is a code table the
@@ -225,8 +242,8 @@ class IngestViewMaterializationArgsGenerator:
                     if not raw_file_metadata.is_code_table:
                         raise ValueError(
                             f"Found a newly discovered raw file [tag: {raw_file_metadata.file_tag}] with an upper "
-                            f"bound date [{raw_file_metadata.datetimes_contained_upper_bound_inclusive}] before the "
-                            f"last valid export upper bound date "
+                            f"bound date [{tz_unaware_update_datetime}] before "
+                            "the last valid export upper bound date "
                             f"[{last_registered_job.upper_bound_datetime_inclusive}]. Ingest view rows not "
                             f"properly invalidated before data backfill."
                         )

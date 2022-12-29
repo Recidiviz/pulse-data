@@ -30,12 +30,8 @@ interface RawDataLatestProcessedDateCellContentsProps {
 
 const RawDataLatestProcessedDateCellContents: React.FC<RawDataLatestProcessedDateCellContentsProps> =
   ({ status, storageDirectoryPath }) => {
-    const {
-      fileTag,
-      hasConfig,
-      latestProcessedTime,
-      latestProcessedDatetimeContainedUpperBoundInclusive,
-    } = status;
+    const { fileTag, hasConfig, latestProcessedTime, latestUpdateDatetime } =
+      status;
 
     if (fileTag === FILE_TAG_IGNORED_IN_SUBDIRECTORY) {
       return <div className="ingest-caution">N/A - Ignored</div>;
@@ -45,14 +41,8 @@ const RawDataLatestProcessedDateCellContents: React.FC<RawDataLatestProcessedDat
       <div className="ingest-danger">N/A - Unknown file tag</div>;
     }
 
-    if (
-      hasConfig &&
-      latestProcessedTime &&
-      latestProcessedDatetimeContainedUpperBoundInclusive
-    ) {
-      const date = new Date(
-        latestProcessedDatetimeContainedUpperBoundInclusive
-      );
+    if (hasConfig && latestProcessedTime && latestUpdateDatetime) {
+      const date = new Date(latestUpdateDatetime);
       return (
         <NewTabLink
           href={getIngestStorageBucketPath(storageDirectoryPath, fileTag, date)}

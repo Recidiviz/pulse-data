@@ -23,6 +23,7 @@ from typing import Iterator, Tuple
 import numpy as np
 import pandas as pd
 import pytest
+import pytz
 from sqlalchemy.sql import sqltypes
 
 from recidiviz.big_query.big_query_view import BigQueryView
@@ -51,7 +52,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
 )
 from recidiviz.utils import csv
 
-DEFAULT_FILE_UPDATE_DATETIME = datetime(2021, 4, 14, 0, 0, 0)
+DEFAULT_FILE_UPDATE_DATETIME = datetime(2021, 4, 14, 0, 0, 0, tzinfo=pytz.UTC)
 DEFAULT_QUERY_RUN_DATETIME = datetime(2021, 4, 15, 0, 0, 0)
 
 

@@ -254,9 +254,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertEqual(status["fileTag"], "tagBasicData")
                 self.assertIsNotNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(
-                    status["latestProcessedDatetimeContainedUpperBoundInclusive"]
-                )
+                self.assertIsNone(status["latestUpdateDatetime"])
                 break
 
     def test_get_ingest_file_processing_status_returns_processed_list(self) -> None:
@@ -290,9 +288,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertEqual(status["fileTag"], "tagBasicData")
                 self.assertIsNotNone(status["latestDiscoveryTime"])
                 self.assertIsNotNone(status["latestProcessedTime"])
-                self.assertIsNotNone(
-                    status["latestProcessedDatetimeContainedUpperBoundInclusive"]
-                )
+                self.assertIsNotNone(status["latestUpdateDatetime"])
                 break
 
     def test_get_ingest_file_processing_status_returns_list_with_files_in_bucket(
@@ -330,9 +326,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertEqual(status["fileTag"], "tagBasicData")
                 self.assertIsNotNone(status["latestDiscoveryTime"])
                 self.assertIsNotNone(status["latestProcessedTime"])
-                self.assertIsNotNone(
-                    status["latestProcessedDatetimeContainedUpperBoundInclusive"]
-                )
+                self.assertIsNotNone(status["latestUpdateDatetime"])
                 break
 
     def test_get_ingest_file_processing_status_returns_list_multiple_file_tags(
@@ -399,9 +393,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertEqual(status["fileTag"], "UNRECOGNIZED_FILE_TAG")
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(
-                    status["latestProcessedDatetimeContainedUpperBoundInclusive"]
-                )
+                self.assertIsNone(status["latestUpdateDatetime"])
 
     def test_get_ingest_file_processing_status_returns_list_with_secondary_instance(
         self,
@@ -419,9 +411,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
         self.assertIsNotNone(result[0]["fileTag"])
         self.assertIsNone(result[0]["latestDiscoveryTime"])
         self.assertIsNone(result[0]["latestProcessedTime"])
-        self.assertIsNone(
-            result[0]["latestProcessedDatetimeContainedUpperBoundInclusive"]
-        )
+        self.assertIsNone(result[0]["latestUpdateDatetime"])
 
     def test_get_ingest_file_processing_status_catches_file_in_subdir(
         self,
@@ -451,9 +441,7 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertEqual(status["fileTag"], "IGNORED_IN_SUBDIRECTORY")
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(
-                    status["latestProcessedDatetimeContainedUpperBoundInclusive"]
-                )
+                self.assertIsNone(status["latestUpdateDatetime"])
 
     def test_get_ingest_file_processing_status_catches_unnormalized_file(
         self,
@@ -483,6 +471,4 @@ class IngestOperationsStoreRawFileProcessingStatusTest(IngestOperationsStoreTest
                 self.assertEqual(status["fileTag"], "UNNORMALIZED")
                 self.assertIsNone(status["latestDiscoveryTime"])
                 self.assertIsNone(status["latestProcessedTime"])
-                self.assertIsNone(
-                    status["latestProcessedDatetimeContainedUpperBoundInclusive"]
-                )
+                self.assertIsNone(status["latestUpdateDatetime"])

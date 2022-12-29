@@ -110,17 +110,18 @@ class TestDao(TestCase):
         """Used for testing purposes. Add a new row in the direct_ingest_raw_file_metadata table using the
         parameters."""
         with SessionFactory.using_database(self.database_key) as session:
+            now = datetime.datetime.now(tz=pytz.UTC)
             session.add(
                 schema.DirectIngestRawFileMetadata(
                     region_code=region_code,
                     file_tag=file_tag,
                     file_id=file_id,
                     normalized_file_name=normalized_file_name,
-                    file_discovery_time=datetime.datetime.now(),
-                    processed_time=None,
-                    datetimes_contained_upper_bound_inclusive=datetime.datetime.now(
-                        tz=pytz.UTC
-                    ),
+                    file_discovery_time=now,
+                    file_processed_time=None,
+                    update_datetime=now,
+                    # TODO(#17300): Remove after full release of `update_datetime`
+                    datetimes_contained_upper_bound_inclusive=now,
                     raw_data_instance=DirectIngestInstance.PRIMARY.value,
                     is_invalidated=False,
                 )

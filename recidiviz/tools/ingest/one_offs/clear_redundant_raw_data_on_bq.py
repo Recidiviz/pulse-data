@@ -58,18 +58,16 @@ RAW_FILE_QUERY_TEMPLATE = (
 POSTGRES_FILE_ID_IN_BQ = """SELECT DISTINCT file_id FROM `{table}` WHERE file_id in ({min_file_id}, {max_file_id})"""
 
 
-def get_postgres_min_and_max_datetimes_contained_by_file_tag(
+def get_postgres_min_and_max_update_datetime_by_file_tag(
     session: Session,
     state_code: StateCode,
 ) -> Dict[str, Tuple[str, str]]:
     """Returns a dictionary of file tags to their associated (non-invalidated) raw file min and max
-    datetimes_contained_upper_bound_inclusive.
-
-    Note: datetimes_contained_upper_bound_inclusive in Postgres has the same value as update_datetime in the raw data
-    tables on BQ."""
+    update_datetime.
+    """
     command = (
-        "SELECT file_tag, min(datetimes_contained_upper_bound_inclusive) as min_datetimes_contained, "
-        "max(datetimes_contained_upper_bound_inclusive) as max_datetimes_contained "
+        "SELECT file_tag, min(update_datetime) as min_datetimes_contained, "
+        "max(update_datetime) as max_datetimes_contained "
         "FROM direct_ingest_raw_file_metadata "
         f"WHERE region_code = '{state_code.value}' "
         "AND is_invalidated is False "
@@ -89,8 +87,8 @@ def postgres_file_ids_present_in_bq(
     min_datetimes_contained: str,
     max_datetimes_contained: str,
 ) -> List[str]:
-    """Validate whether the file_ids associated with min and max `datetimes_contained_upper_bound_inclusive` on Postgres
-    are also present on BQ."""
+    """Validate whether the file_ids associated with min and max `update_datetime` on
+    Postgres are also present on BQ."""
     logging.info(
         "[%s] Generating Postgres query to identify file_ids from min and max dates...",
         file_tag,
@@ -100,7 +98,8 @@ def postgres_file_ids_present_in_bq(
         "FROM direct_ingest_raw_file_metadata "
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
-        f"AND datetimes_contained_upper_bound_inclusive in ('{min_datetimes_contained}', '{max_datetimes_contained}');"
+        f"AND update_datetime in ('{min_datetimes_contained}', "
+        f"'{max_datetimes_contained}');"
     )
     postgres_results = session.execute(sqlalchemy.text(command))
     logging.info("[%s] %s", file_tag, command)
@@ -152,15 +151,15 @@ def get_redundant_raw_file_ids(
     min_datetimes_contained: str,
     max_datetimes_contained: str,
 ) -> List[int]:
-    """For a given file_tag, returns a list of file_ids whose `datetimes_contained_upper_bound_inclusive` times are
-    within the bounds the associated (non-invalidated) min and max datetimes_contained_upper_bound_inclusive."""
+    """For a given file_tag, returns a list of file_ids whose `update_datetime` times are
+    within the bounds the associated (non-invalidated) min and max update_datetime."""
     command = (
         "SELECT DISTINCT file_id "
         "FROM direct_ingest_raw_file_metadata "
         f"WHERE region_code = '{state_code.value}' "
         f"AND file_tag = '{file_tag}' "
-        f"AND datetimes_contained_upper_bound_inclusive > '{min_datetimes_contained}' "
-        f"AND datetimes_contained_upper_bound_inclusive < '{max_datetimes_contained}' "
+        f"AND update_datetime > '{min_datetimes_contained}' "
+        f"AND update_datetime < '{max_datetimes_contained}' "
         "AND is_invalidated is False;"
     )
     results = session.execute(sqlalchemy.text(command))
@@ -199,15 +198,13 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
 
     with SessionFactory.for_proxy(database_key) as session:
-        file_tag_to_min_and_max_contained_datetimes: Dict[
+        file_tag_to_min_and_max_update_datetimes: Dict[
             str, Tuple[str, str]
-        ] = get_postgres_min_and_max_datetimes_contained_by_file_tag(
-            session, state_code
-        )
+        ] = get_postgres_min_and_max_update_datetime_by_file_tag(session, state_code)
         for file_tag, (
-            min_datetimes_contained,
-            max_datetimes_contained,
-        ) in file_tag_to_min_and_max_contained_datetimes.items():
+            min_update_datetime,
+            max_update_datetime,
+        ) in file_tag_to_min_and_max_update_datetimes.items():
             if file_tag not in raw_file_configs.keys():
                 logging.info(
                     "[%s][Skipping] File tag found in Postgres but not in raw YAML files.",
@@ -230,8 +227,8 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                 session,
                 state_code,
                 file_tag,
-                min_datetimes_contained,
-                max_datetimes_contained,
+                min_update_datetime,
+                max_update_datetime,
             )
 
             table_bq_path = StrictStringFormatter().format(
@@ -247,8 +244,8 @@ def main(dry_run: bool, state_code: StateCode, project_id: str) -> None:
                 file_tag=file_tag,
                 bq_client=bq_client,
                 table_bq_path=table_bq_path,
-                min_datetimes_contained=min_datetimes_contained,
-                max_datetimes_contained=max_datetimes_contained,
+                min_datetimes_contained=min_update_datetime,
+                max_datetimes_contained=max_update_datetime,
             )
 
             if not min_and_max_file_ids_in_bq:

@@ -26,6 +26,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import pandas as pd
+import pytz
 from google.api_core import retry
 from google.cloud import bigquery
 from more_itertools import one
@@ -1013,7 +1014,14 @@ def augment_raw_data_df_with_metadata_columns(
         utc_upload_datetime,
     )
     raw_data_df[FILE_ID_COL_NAME] = file_id
-    raw_data_df[UPDATE_DATETIME_COL_NAME] = utc_upload_datetime
+    # The update_datetime column in BQ is not timezone-aware, so we strip the timezone
+    # info from the timestamp here.
+    if utc_upload_datetime.tzinfo is None or utc_upload_datetime.tzinfo != pytz.UTC:
+        raise ValueError(
+            "Expected utc_upload_datetime.tzinfo value to be pytz.UTC. "
+            f"Got: {utc_upload_datetime.tzinfo}"
+        )
+    raw_data_df[UPDATE_DATETIME_COL_NAME] = utc_upload_datetime.replace(tzinfo=None)
 
     return raw_data_df
 
