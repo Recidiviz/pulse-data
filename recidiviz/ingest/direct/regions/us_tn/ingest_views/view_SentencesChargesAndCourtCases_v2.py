@@ -136,10 +136,16 @@ cleaned_Diversion_view AS (
     FROM {{Diversion}} Diversion
     LEFT JOIN {{OffenderStatute}} OffenderStatute USING (Offense)
 ),
-consecutive_ISCRelated_sentences AS (
-    SELECT *
+ISCRelated_sentence_selection AS (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY OffenderID,RelatedJurisidicationCounty,RelatedCaseYear, RelatedCaseNumber ORDER BY RelatedCountNumber ASC) AS count_rank
     FROM {{ISCRelatedSentence}}
     WHERE RelatedSentenceType = 'X'
+),
+consecutive_ISCRelated_sentences AS (
+    SELECT *
+    FROM ISCRelated_sentence_selection ISCR
+    WHERE ISCR.count_rank = 1
 ),
 cleaned_ISCSentence_view AS (
     SELECT 
