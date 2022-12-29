@@ -77,5 +77,5 @@ interface StateRolePermissionsResponse {
   canAccessLeadershipDashboard: boolean;
   canAccessCaseTriage: boolean;
   shouldSeeBetaCharts: boolean;
-  routes: string; // converted into JSON after response
+  routes: Record<string, boolean>;
 }

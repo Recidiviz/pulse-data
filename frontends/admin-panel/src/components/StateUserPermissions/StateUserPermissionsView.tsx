@@ -39,7 +39,7 @@ import {
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddUserForm } from "./AddUserForm";
 import { CreateEditUserForm } from "./EditUsersForm";
-import { updateRoutes } from "./utils";
+import { checkResponse, updateRoutes } from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -81,13 +81,6 @@ const StateUserPermissionsView = (): JSX.Element => {
     const users = await getStateUserPermissions();
     const userData = await users.json();
     setData(userData);
-  };
-
-  const checkResponse = async (response: Response) => {
-    if (!response.ok) {
-      const error = await response.text();
-      throw error;
-    }
   };
 
   const finishPromises = async (

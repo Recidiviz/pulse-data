@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Form, Select } from "antd";
-import * as React from "react";
 
 type Permission = {
   name: string;
@@ -24,8 +23,10 @@ type Permission = {
 
 export const PermissionSelect = ({
   permission,
+  disabled,
 }: {
   permission: Permission;
+  disabled: boolean;
 }): JSX.Element => {
   const permissionOptions = [
     {
@@ -51,6 +52,7 @@ export const PermissionSelect = ({
           width: 80,
         }}
         options={permissionOptions}
+        disabled={disabled}
       />
     </Form.Item>
   );

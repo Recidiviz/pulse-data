@@ -15,14 +15,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { PageHeader, Spin, Table } from "antd";
-import { getStateRoleDefaultPermissions } from "../../AdminPanelAPI/LineStaffTools";
+import { Button, message, PageHeader, Space, Spin, Table } from "antd";
+import { SortOrder } from "antd/es/table/interface";
+import { useState } from "react";
+import {
+  createStateRolePermissions,
+  getStateRoleDefaultPermissions,
+} from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
+import { CreateAddStateRoleForm } from "./AddStateRoleForm";
+import { checkResponse, updateRoutes } from "./utils";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {
-  const { loading, data } = useFetchedDataJSON<StateRolePermissionsResponse[]>(
-    getStateRoleDefaultPermissions
-  );
+  const { loading, data, setData } = useFetchedDataJSON<
+    StateRolePermissionsResponse[]
+  >(getStateRoleDefaultPermissions);
+
+  // control modal visibility
+  const [addVisible, setAddVisible] = useState(false);
 
   if (loading || !data) {
     return (
@@ -31,6 +41,12 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
       </div>
     );
   }
+
+  const updateTable = async () => {
+    const stateRolePermissions = await getStateRoleDefaultPermissions();
+    const stateRoleData = await stateRolePermissions.json();
+    setData(stateRoleData);
+  };
 
   const stateCodes = new Set<string>();
   data.forEach((row) => stateCodes.add(row.stateCode));
@@ -41,6 +57,32 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
       value: stateCode,
     });
   });
+
+  const onAdd = async ({
+    stateCode,
+    role,
+    canAccessLeadershipDashboard,
+    canAccessCaseTriage,
+    shouldSeeBetaCharts,
+    ...routes
+  }: StateRolePermissionsResponse) => {
+    try {
+      const createdRole = await createStateRolePermissions(
+        stateCode,
+        role,
+        canAccessLeadershipDashboard,
+        canAccessCaseTriage,
+        shouldSeeBetaCharts,
+        updateRoutes({}, routes)
+      );
+      await checkResponse(createdRole);
+      setAddVisible(false);
+      message.success(`${role} added for ${stateCode}!`);
+      updateTable();
+    } catch (err) {
+      message.error(`Error adding ${role} for ${stateCode}: ${err}`);
+    }
+  };
 
   const columns = [
     {
@@ -59,6 +101,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         a: StateRolePermissionsResponse,
         b: StateRolePermissionsResponse
       ) => a.stateCode.localeCompare(b.stateCode),
+      defaultSortOrder: "ascend" as SortOrder,
     },
     {
       title: "Role",
@@ -97,11 +140,28 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
   return (
     <>
       <PageHeader title="State Role Default Permissions" />
+      <Space>
+        <Button
+          onClick={() => {
+            setAddVisible(true);
+          }}
+        >
+          Add Permissions
+        </Button>
+        <CreateAddStateRoleForm
+          addVisible={addVisible}
+          addOnCreate={onAdd}
+          addOnCancel={() => {
+            setAddVisible(false);
+          }}
+        />
+      </Space>
       <br /> <br />
       <Table
         rowKey={(row) => `${row.stateCode}/${row.role}`}
         dataSource={data}
         columns={columns}
+        pagination={{ defaultPageSize: 20 }}
       />
     </>
   );

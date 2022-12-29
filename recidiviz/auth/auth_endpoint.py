@@ -557,6 +557,65 @@ def state_info(state_code: str) -> Response:
         )
 
 
+@auth_endpoint_blueprint.route("/states/<state_code>/roles/<role>", methods=["POST"])
+@requires_gae_auth
+def add_state_role(
+    state_code: str, role: str
+) -> Union[tuple[Response, int], tuple[str, int]]:
+    """Updates the default permissions for a given role in a state."""
+    if not StateCode.is_state_code(state_code.upper()):
+        return (
+            f"Unknown state_code [{state_code}] received, must be a valid state code.",
+            HTTPStatus.BAD_REQUEST,
+        )
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            request_dict = {
+                # convert request keys to snake_case to match DB columns. Don't convert nested keys
+                # because we expect 'routes' to be JSON with keys that contain uppercase letters.
+                to_snake_case(k): v
+                for k, v in assert_type(request.json, dict).items()
+            }
+            request_dict["state_code"] = state_code.upper()
+            request_dict["role"] = role.lower()
+            if routes := request_dict.get("routes"):
+                request_dict["routes"] = assert_type(routes, dict)
+            state_role = StateRolePermissions(**request_dict)
+            session.add(state_role)
+            session.commit()
+            return (
+                jsonify(
+                    {
+                        "stateCode": state_role.state_code,
+                        "role": state_role.role,
+                        "canAccessCaseTriage": state_role.can_access_case_triage,
+                        "canAccessLeadershipDashboard": state_role.can_access_leadership_dashboard,
+                        "shouldSeeBetaCharts": state_role.should_see_beta_charts,
+                        "routes": state_role.routes,
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return (
+                "A state with this role already exists in StateRolePermissions.",
+                HTTPStatus.BAD_REQUEST,
+            )
+        if isinstance(e.orig, NotNullViolation):
+            return (
+                f"{e}",
+                HTTPStatus.BAD_REQUEST,
+            )
+        raise e
+    except ProgrammingError as error:
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+
 @auth_endpoint_blueprint.route("/users/<email>", methods=["PATCH"])
 @requires_gae_auth
 def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:

@@ -122,6 +122,11 @@ class AuthEndpointTests(TestCase):
                 email="parameter@domain.org",
             )
             self.states = flask.url_for("auth_endpoint_blueprint.states")
+            self.add_state_role = lambda state_code, role: flask.url_for(
+                "auth_endpoint_blueprint.add_state_role",
+                state_code=state_code,
+                role=role,
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -1433,3 +1438,98 @@ class AuthEndpointTests(TestCase):
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
+
+    def test_states_add_state_role(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"route_A": True, "routeB": True, "C": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context():
+            self.client.post(
+                self.add_state_role("US_MO", "line_staff_role"),
+                headers=self.headers,
+                json={
+                    "canAccessLeadershipDashboard": True,
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"route_A": True, "routeB": False},
+                },
+            )
+            expected = [
+                {
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "role": "leadership_role",
+                    "stateCode": "US_MO",
+                    "shouldSeeBetaCharts": True,
+                    "routes": {"route_A": True, "routeB": True, "C": False},
+                },
+                {
+                    "canAccessCaseTriage": True,
+                    "canAccessLeadershipDashboard": True,
+                    "role": "line_staff_role",
+                    "stateCode": "US_MO",
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"route_A": True, "routeB": False},
+                },
+            ]
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_states_add_state_role_missing_routes(self) -> None:
+        with self.app.test_request_context():
+            self.client.post(
+                self.add_state_role("US_MO", "line_staff_role"),
+                headers=self.headers,
+                json={
+                    "canAccessLeadershipDashboard": True,
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                },
+            )
+            expected = [
+                {
+                    "canAccessCaseTriage": True,
+                    "canAccessLeadershipDashboard": True,
+                    "role": "line_staff_role",
+                    "stateCode": "US_MO",
+                    "shouldSeeBetaCharts": False,
+                    "routes": None,
+                },
+            ]
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_add_state_existing(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.add_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+                json={
+                    "canAccessLeadershipDashboard": True,
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"A": True, "B": False},
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)

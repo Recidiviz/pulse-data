@@ -199,3 +199,19 @@ export const deleteCustomUserPermissions = async (
 export const blockUser = async (email: string): Promise<Response> => {
   return deleteResource(`/users/${email}`);
 };
+
+export const createStateRolePermissions = async (
+  stateCode: string,
+  role: string,
+  canAccessLeadershipDashboard: boolean,
+  canAccessCaseTriage: boolean,
+  shouldSeeBetaCharts: boolean,
+  routes: Record<string, boolean> | undefined
+): Promise<Response> => {
+  return postAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
+    canAccessLeadershipDashboard,
+    canAccessCaseTriage,
+    shouldSeeBetaCharts,
+    routes,
+  });
+};
