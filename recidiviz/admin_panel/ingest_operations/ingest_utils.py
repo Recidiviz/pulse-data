@@ -200,7 +200,7 @@ def import_raw_files_to_bq_sandbox(
                     region_code=state_code.value,
                     file_tag=parts.file_tag,
                     processed_time=None,
-                    discovery_time=datetime.now(),
+                    file_discovery_time=datetime.now(),
                     normalized_file_name=file_path.file_name,
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
                     # Sandbox instance can be primary

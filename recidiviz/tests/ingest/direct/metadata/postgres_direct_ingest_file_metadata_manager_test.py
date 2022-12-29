@@ -134,7 +134,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
             region_code="US_XX",
             file_tag="file_tag",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
             normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
             processed_time=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(
@@ -164,7 +164,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
             region_code=self.raw_metadata_manager.region_code,
             file_tag="file_tag",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
             normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
             processed_time=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(
@@ -330,7 +330,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             DirectIngestRawFileMetadata.new_with_defaults(
                 region_code=self.raw_metadata_manager.region_code,
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
+                file_discovery_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
                 normalized_file_name="unprocessed_2015-01-02T03:05:05:000000_raw_file_tag.csv",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 5, 5
@@ -340,7 +340,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             DirectIngestRawFileMetadata.new_with_defaults(
                 region_code=self.raw_metadata_manager.region_code,
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
+                file_discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
                 normalized_file_name="unprocessed_2015-01-02T03:07:07:000000_raw_file_tag.csv",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2015, 1, 2, 3, 7, 7
@@ -482,7 +482,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_id=1,
             region_code="US_XX",
             file_tag="file_tag",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
             normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
             processed_time=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(
@@ -539,7 +539,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_id=1,
             region_code="US_XX",
             file_tag="file_tag",
-            discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
             normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
             processed_time=None,
             datetimes_contained_upper_bound_inclusive=datetime.datetime(

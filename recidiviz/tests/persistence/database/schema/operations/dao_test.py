@@ -116,7 +116,7 @@ class TestDao(TestCase):
                     file_tag=file_tag,
                     file_id=file_id,
                     normalized_file_name=normalized_file_name,
-                    discovery_time=datetime.datetime.now(tz=pytz.UTC),
+                    file_discovery_time=datetime.datetime.now(),
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=datetime.datetime.now(
                         tz=pytz.UTC

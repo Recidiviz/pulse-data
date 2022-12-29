@@ -51,7 +51,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime.now(),
+                file_discovery_time=datetime.datetime.now(),
                 normalized_file_name="foo.txt",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 11
@@ -74,7 +74,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2019, 10, 12),
+                file_discovery_time=datetime.datetime(2019, 10, 12),
                 normalized_file_name="foo.txt",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 11
@@ -98,7 +98,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata_1 = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2019, 10, 11),
+                file_discovery_time=datetime.datetime(2019, 10, 11),
                 normalized_file_name="foo.txt",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
@@ -109,7 +109,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata_2 = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2019, 11, 12),
+                file_discovery_time=datetime.datetime(2019, 11, 12),
                 normalized_file_name="foo.txt",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 11, 11
@@ -138,7 +138,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2019, 10, 11),
+                file_discovery_time=datetime.datetime(2019, 10, 11),
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
@@ -190,7 +190,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata_1 = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2019, 10, 11),
+                file_discovery_time=datetime.datetime(2019, 10, 11),
                 normalized_file_name="foo.txt",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
@@ -207,7 +207,7 @@ class OperationsSchemaTest(unittest.TestCase):
             raw_metadata_2 = schema.DirectIngestRawFileMetadata(
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
-                discovery_time=datetime.datetime(2019, 11, 12),
+                file_discovery_time=datetime.datetime(2019, 11, 12),
                 normalized_file_name="foo.txt",
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 11, 11
