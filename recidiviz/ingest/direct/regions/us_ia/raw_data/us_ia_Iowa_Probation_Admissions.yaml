@@ -1,16 +1,19 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Iowa_Probation_Admissions
 file_description: |-
-  This dataset provides de-identified offender admission data for those serving
-  probation in Iowa Community Based Correction Facilities during the last 10 fiscal
-  years. Dataset includes information regarding age, sex, race, and offense committed.
+  Data from data.iowa.gov providing de-identified offender admission data for those
+  serving probation in Iowa Community Based Correction Facilities during the last 10
+  fiscal years. Dataset includes information regarding age, sex, race, and offense
+  committed.
 data_classification: source
-primary_key_cols: [Record_ID]
+primary_key_cols:
+  - Record_ID
 columns:
   - name: Record_ID
     description: |-
       Unique number assigned to each record
   - name: Offender_Number
+    is_pii: True
     description: |-
       Unique number assigned to each offender
   - name: Admission_Date
