@@ -149,12 +149,8 @@ export const CreateEditUserForm = ({
             <Option value={false}>Delete custom permissions</Option>
           </Select>
         </Form.Item>
+        <CustomPermissionsPanel hidePermissions={hidePermissions} />
       </Form>
-      <CustomPermissionsPanel
-        form={form}
-        hidePermissions={hidePermissions}
-        editOnCreate={editOnCreate}
-      />
     </Modal>
   );
 };

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, FormInstance } from "antd";
+
 import PermissionSelect from "./PermissionSelect";
 import {
   GENERAL_PERMISSIONS_LABELS,
@@ -24,47 +24,56 @@ import {
 } from "./types";
 
 export const CustomPermissionsPanel = ({
-  form,
   hidePermissions,
-  editOnCreate,
 }: {
-  form: FormInstance;
   hidePermissions: boolean;
-  editOnCreate: (arg0: StateUserPermissionsResponse) => Promise<void>;
 }): JSX.Element => {
   return (
     <>
       <h3>Custom Permissions</h3>
-      <Form
-        form={form}
-        layout="horizontal"
-        onFinish={editOnCreate}
-        disabled={hidePermissions}
-      >
-        <h4>General</h4>
-        <hr />
-        {Object.entries(GENERAL_PERMISSIONS_LABELS).map(([name, label]) => {
-          return <PermissionSelect permission={{ name, label }} />;
-        })}
+      <h4>General</h4>
+      <hr />
+      {Object.entries(GENERAL_PERMISSIONS_LABELS).map(([name, label]) => {
+        return (
+          <PermissionSelect
+            permission={{ name, label }}
+            disabled={hidePermissions}
+          />
+        );
+      })}
 
-        <h4>Workflows</h4>
-        <hr />
-        {Object.entries(WORKFLOWS_PERMISSIONS_LABELS).map(([name, label]) => {
-          return <PermissionSelect permission={{ name, label }} />;
-        })}
+      <h4>Workflows</h4>
+      <hr />
+      {Object.entries(WORKFLOWS_PERMISSIONS_LABELS).map(([name, label]) => {
+        return (
+          <PermissionSelect
+            permission={{ name, label }}
+            disabled={hidePermissions}
+          />
+        );
+      })}
 
-        <h4>Vitals (Operations)</h4>
-        <hr />
-        {Object.entries(VITALS_PERMISSIONS_LABELS).map(([name, label]) => {
-          return <PermissionSelect permission={{ name, label }} />;
-        })}
+      <h4>Vitals (Operations)</h4>
+      <hr />
+      {Object.entries(VITALS_PERMISSIONS_LABELS).map(([name, label]) => {
+        return (
+          <PermissionSelect
+            permission={{ name, label }}
+            disabled={hidePermissions}
+          />
+        );
+      })}
 
-        <h4>Pathways Pages</h4>
-        <hr />
-        {Object.entries(PATHWAYS_PERMISSIONS_LABELS).map(([name, label]) => {
-          return <PermissionSelect permission={{ name, label }} />;
-        })}
-      </Form>
+      <h4>Pathways Pages</h4>
+      <hr />
+      {Object.entries(PATHWAYS_PERMISSIONS_LABELS).map(([name, label]) => {
+        return (
+          <PermissionSelect
+            permission={{ name, label }}
+            disabled={hidePermissions}
+          />
+        );
+      })}
     </>
   );
 };

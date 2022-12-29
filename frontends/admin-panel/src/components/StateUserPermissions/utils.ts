@@ -74,3 +74,10 @@ export const updateRoutes = (
   );
   return Object.keys(newRoutes).length > 0 ? newRoutes : undefined;
 };
+
+export const checkResponse = async (response: Response): Promise<void> => {
+  if (!response.ok) {
+    const error = await response.text();
+    throw error;
+  }
+};
