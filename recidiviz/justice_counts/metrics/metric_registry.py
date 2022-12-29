@@ -88,7 +88,7 @@ METRICS = [
     supervision.annual_budget,
     supervision.total_staff,
     supervision.residents,
-    supervision.individuals_under_supervision,
+    supervision.daily_population,
     supervision.new_supervision_cases,
     supervision.reconviction_while_on_supervision,
     supervision.supervision_terminations,
