@@ -166,7 +166,7 @@ class DirectIngestRawFileMetadata(OperationsBase):
             name="one_normalized_name_per_region_and_instance",
         ),
         CheckConstraint(
-            "discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
+            "file_discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
         ),
         CheckConstraint(
             "normalized_file_name IS NOT NULL", name="nonnull_raw_normalized_file_name"
@@ -184,6 +184,10 @@ class DirectIngestRawFileMetadata(OperationsBase):
     normalized_file_name = Column(String(255), index=True)
 
     # Time when the file is actually discovered by our controller's handle_new_files endpoint.
+    file_discovery_time = Column(DateTime(timezone=True))
+
+    # TODO(#17300): Unused. Remove this column once `file_discovery_time` usage is fully deployed in both staging
+    # and prod.
     discovery_time = Column(DateTime)
 
     # Time when we have finished fully processing this file by uploading to BQ.

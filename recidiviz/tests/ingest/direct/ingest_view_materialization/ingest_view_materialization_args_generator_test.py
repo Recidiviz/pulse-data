@@ -71,7 +71,7 @@ class _IngestFileMetadata:
 class _RawFileMetadata:
     file_tag: str = attr.ib()
     datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
-    discovery_time: datetime.datetime = attr.ib()
+    file_discovery_time: datetime.datetime = attr.ib()
     processed_time: datetime.datetime = attr.ib()
 
 
@@ -143,7 +143,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="my_raw_file",
-                    discovery_time=_DATE_2,
+                    file_discovery_time=_DATE_2,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_2,
@@ -190,7 +190,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="ingest_view",
-                    discovery_time=_DATE_1,
+                    file_discovery_time=_DATE_1,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_1,
@@ -230,7 +230,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag=CODE_TABLE_TAG,
-                    discovery_time=_DATE_1,
+                    file_discovery_time=_DATE_1,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_1,
@@ -261,7 +261,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="file_tag",
-                    discovery_time=_DATE_1,
+                    file_discovery_time=_DATE_1,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_1,
@@ -271,7 +271,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="file_tag",
-                    discovery_time=_DATE_2,
+                    file_discovery_time=_DATE_2,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=_DATE_2,
@@ -323,7 +323,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
                     "2021-07-25 09:02:24"
                 ),
-                discovery_time=datetime.datetime.fromisoformat(
+                file_discovery_time=datetime.datetime.fromisoformat(
                     "2021-07-25 09:29:33.690766"
                 ),
                 processed_time=datetime.datetime.fromisoformat(
@@ -337,7 +337,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
                     "2021-07-25 09:02:24"
                 ),
-                discovery_time=datetime.datetime.fromisoformat(
+                file_discovery_time=datetime.datetime.fromisoformat(
                     "2021-07-25 09:29:37.095288"
                 ),
                 processed_time=datetime.datetime.fromisoformat(
@@ -408,7 +408,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_tag=raw_file_datetimes_item.file_tag,
                     normalized_file_name=f"{raw_file_datetimes_item.file_tag}_{i}_raw",
                     datetimes_contained_upper_bound_inclusive=raw_file_datetimes_item.datetimes_contained_upper_bound_inclusive,
-                    discovery_time=raw_file_datetimes_item.discovery_time,
+                    file_discovery_time=raw_file_datetimes_item.file_discovery_time,
                     processed_time=raw_file_datetimes_item.processed_time,
                     raw_data_instance=DirectIngestInstance.PRIMARY.value,
                     is_invalidated=False,

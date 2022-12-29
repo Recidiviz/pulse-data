@@ -114,7 +114,7 @@ def get_metadata_for_raw_files_discovered_after_datetime(
     )
     if discovery_time_lower_bound_exclusive:
         query = query.filter(
-            schema.DirectIngestRawFileMetadata.discovery_time
+            schema.DirectIngestRawFileMetadata.file_discovery_time
             > discovery_time_lower_bound_exclusive
         )
 
@@ -139,7 +139,7 @@ def get_all_raw_file_metadata_rows_for_region(
             func.max(schema.DirectIngestRawFileMetadata.processed_time).label(
                 "latest_processed_time"
             ),
-            func.max(schema.DirectIngestRawFileMetadata.discovery_time).label(
+            func.max(schema.DirectIngestRawFileMetadata.file_discovery_time).label(
                 "latest_discovery_time"
             ),
             func.max(

@@ -82,7 +82,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     region_code=self.region_code,
                     file_tag=parts.file_tag,
                     normalized_file_name=path.file_name,
-                    discovery_time=datetime.datetime.now(tz=pytz.UTC),
+                    file_discovery_time=datetime.datetime.now(),
                     processed_time=None,
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
                     raw_data_instance=self.raw_data_instance.value,

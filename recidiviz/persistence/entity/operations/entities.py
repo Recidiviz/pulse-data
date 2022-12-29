@@ -80,7 +80,7 @@ class DirectIngestRawFileMetadata(Entity, BuildableAttr, DefaultableAttr):
     # Unprocessed normalized file name for this file, set at time of file discovery.
     normalized_file_name: str = attr.ib()
     # Time when the file is actually discovered by our controller's handle_new_files endpoint.
-    discovery_time: datetime.datetime = attr.ib()
+    file_discovery_time: datetime.datetime = attr.ib()
     # Time when we have finished fully processing this file by uploading to BQ.
     processed_time: Optional[datetime.datetime] = attr.ib()
 
