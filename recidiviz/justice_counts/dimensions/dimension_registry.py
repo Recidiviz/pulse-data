@@ -76,7 +76,7 @@ DIMENSIONS = [
     courts.SentenceType,
     supervision.NewOffenseType,
     supervision.SupervisionCaseType,
-    supervision.SupervisionIndividualType,
+    supervision.SupervisionDailyPopulationType,
     supervision.SupervisionStaffType,
     supervision.SupervisionTerminationType,
     supervision.SupervisionViolationType,

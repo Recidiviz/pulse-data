@@ -249,3 +249,50 @@ class SupervisionVacantStaffIncludesExcludes(Enum):
     VACANT_PROGRAMMATIC = "Vacant programmatic staff positions"
     VACANT_UNKNOWN = "Vacant staff positions of unknown type"
     FILLED = "Filled positions"
+
+
+# Daily Population
+
+
+class PeopleOnActiveSupervisionIncludesExcludes(Enum):
+    OFFICE_VISITS = "People whose supervision includes office visits"
+    HOME_WORK_VISITS = "People whose supervision includes home or work visits"
+    DRUG_ALCOHOL_TESTING = "People whose supervision includes drug or alcohol testing"
+    PROGRAMMING_OR_TREATMENT = (
+        "People whose supervision includes participation in programming or treatment"
+    )
+    COMMUNITY_SERVICE = "People whose supervision includes community service"
+    ELECTRONIC_MONITORING = "People whose supervision includes electronic monitoring in addition to regular contact with agency staff"
+    TELEPHONE_MAIL_CONTACTS = (
+        "People whose supervision includes only telephone or mail contacts"
+    )
+
+
+class PeopleOnAdministrativeSupervisionIncludesExcludes(Enum):
+    TELEPHONE_MAIL_CONTACTS = (
+        "People whose supervision includes only telephone or mail contacts"
+    )
+    LEGAL_FINANCIAL_OBLIGATIONS = "People whose supervision is limited to monitoring payments of legal financial obligations"
+    RESTITUTION = (
+        "People whose supervision is limited to monitoring payments of restitution"
+    )
+    ELECTRONIC_MONITORING = (
+        "People whose supervision includes only electronic monitoring"
+    )
+
+
+class PeopleAbscondedSupervisionIncludesExcludes(Enum):
+    FAILED_TO_REPORT = "People who failed to report upon release from incarceration"
+    STOPPED_REPORTING = (
+        "People who stopped reporting after a period of successful supervision"
+    )
+    MOVED = "People who have moved from their approved residence and whose whereabouts are unknown"
+    UNSUCCESSFUL_LOCATE = "People for whom the agency’s efforts to locate via letters, home visits, or family or work calls were unsuccessful"
+
+
+class PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes(Enum):
+    HELD_JAIL = "People held in jail"
+    HELD_PRISON = "People held in prison"
+    HELD_FACILITY = "People held in a residential treatment or programming facility"
+    HELD_CONFINEMENT = "People held in a confinement facility under the jurisdiction of the supervision agency (e.g., violation center or halfway back facility, etc.)"
+    REVOKED_TO_PRISON_JAIL = "People who are revoked to prison or jail who are no longer on supervision under the jurisdiction of the agency"

@@ -18,18 +18,27 @@
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionCaseType,
-    SupervisionIndividualType,
+    SupervisionDailyPopulationType,
     SupervisionStaffType,
     SupervisionTerminationType,
     SupervisionViolationType,
 )
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.supervision import (
+    PeopleAbscondedSupervisionIncludesExcludes,
+    PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes,
+    PeopleOnActiveSupervisionIncludesExcludes,
+    PeopleOnAdministrativeSupervisionIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
@@ -202,22 +211,67 @@ new_supervision_cases = MetricDefinition(
     ],
 )
 
-individuals_under_supervision = MetricDefinition(
+daily_population = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
-    display_name="Individuals under Supervision",
-    description="Measures the number individuals currently under the supervision of your agency.",
+    display_name="Daily Population",
+    description="A single day count of the number of people who are supervised under the jurisdiction of the agency (the definition of people on supervision configured in Section 6 will be applied to this section).",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionIndividualType,
-            required=False,
-            display_name="Supervision Type",
+            dimension=SupervisionDailyPopulationType,
+            required=True,
+            dimension_to_includes_excludes={
+                SupervisionDailyPopulationType.ACTIVE: IncludesExcludesSet(
+                    members=PeopleOnActiveSupervisionIncludesExcludes,
+                    excluded_set={
+                        PeopleOnActiveSupervisionIncludesExcludes.TELEPHONE_MAIL_CONTACTS
+                    },
+                ),
+                SupervisionDailyPopulationType.ADMINISTRATIVE: IncludesExcludesSet(
+                    members=PeopleOnAdministrativeSupervisionIncludesExcludes,
+                ),
+                SupervisionDailyPopulationType.ABSCONDED: IncludesExcludesSet(
+                    members=PeopleAbscondedSupervisionIncludesExcludes,
+                ),
+                SupervisionDailyPopulationType.HOLD_OR_SANCTION: IncludesExcludesSet(
+                    members=PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes,
+                    excluded_set={
+                        PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes.REVOKED_TO_PRISON_JAIL,
+                    },
+                ),
+            },
+            dimension_to_description={
+                SupervisionDailyPopulationType.ACTIVE: "The number of people who are supervised by the agency on active status.",
+                SupervisionDailyPopulationType.ADMINISTRATIVE: "The number of people who are supervised by the agency on administrative status.",
+                SupervisionDailyPopulationType.ABSCONDED: "The number of people who are supervised by the agency on absconsion status.",
+                SupervisionDailyPopulationType.HOLD_OR_SANCTION: "The number of people supervised by the agency who are temporarily incarcerated or confined but are still considered to be on the supervision caseload.",
+                SupervisionDailyPopulationType.OTHER: "The number of people who are supervised by the agency in the community and have another supervision status that is not active, administrative, absconder, or incarcerated on a hold or sanction.",
+                SupervisionDailyPopulationType.UNKNOWN: "The number of people who are supervised by the agency in the community and have an unknown supervision status.",
+            },
         ),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=True,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of people who are supervised under the jurisdiction of the agency whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of people who are supervised under the jurisdiction of the agency whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of people who are supervised under the jurisdiction of the agency whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
     ],
 )
 

@@ -55,15 +55,17 @@ class SupervisionCaseType(DimensionBase, enum.Enum):
         return "metric/supervision/case/type"
 
 
-class SupervisionIndividualType(DimensionBase, enum.Enum):
-    ACTIVE = "Active"
-    PASSIVE = "Passive"
-    ABSCONDER_STATUS = "Absconder Status"
-    UNKNOWN = "Unknown"
+class SupervisionDailyPopulationType(DimensionBase, enum.Enum):
+    ACTIVE = "People on Active Supervision"
+    ADMINISTRATIVE = "People on Administrative Supervision"
+    ABSCONDED = "People who have Absconded from Supervision"
+    HOLD_OR_SANCTION = "People Incarcerated on a Hold or Sanction"
+    OTHER = "Other Status"
+    UNKNOWN = "Unknown Status"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/supervision/individual/type"
+        return "metric/supervision/daily_population/type"
 
 
 class SupervisionTerminationType(DimensionBase, enum.Enum):

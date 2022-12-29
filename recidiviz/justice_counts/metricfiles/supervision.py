@@ -16,14 +16,11 @@
 # =============================================================================
 """Metricfile objects used for supervision metrics."""
 
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionCaseType,
-    SupervisionIndividualType,
+    SupervisionDailyPopulationType,
     SupervisionStaffType,
     SupervisionTerminationType,
     SupervisionViolationType,
@@ -68,23 +65,23 @@ SUPERVISION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="population",
-        definition=supervision.individuals_under_supervision,
+        definition=supervision.daily_population,
     ),
     MetricFile(
         canonical_filename="population_by_type",
-        definition=supervision.individuals_under_supervision,
-        disaggregation=SupervisionIndividualType,
+        definition=supervision.daily_population,
+        disaggregation=SupervisionDailyPopulationType,
         disaggregation_column_name="supervision_type",
     ),
     MetricFile(
-        canonical_filename="population_by_gender",
-        definition=supervision.individuals_under_supervision,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        canonical_filename="population_by_biological_sex",
+        definition=supervision.daily_population,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="population_by_race",
-        definition=supervision.individuals_under_supervision,
+        definition=supervision.daily_population,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
     ),
