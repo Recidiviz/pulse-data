@@ -131,12 +131,12 @@ def get_all_raw_file_metadata_rows_for_region(
         session.query(
             schema.DirectIngestRawFileMetadata.file_tag.label("file_tag"),
             func.count(1)
-            .filter(schema.DirectIngestRawFileMetadata.processed_time.isnot(None))
+            .filter(schema.DirectIngestRawFileMetadata.file_processed_time.isnot(None))
             .label("num_processed_files"),
             func.count(1)
-            .filter(schema.DirectIngestRawFileMetadata.processed_time.is_(None))
+            .filter(schema.DirectIngestRawFileMetadata.file_processed_time.is_(None))
             .label("num_unprocessed_files"),
-            func.max(schema.DirectIngestRawFileMetadata.processed_time).label(
+            func.max(schema.DirectIngestRawFileMetadata.file_processed_time).label(
                 "latest_processed_time"
             ),
             func.max(schema.DirectIngestRawFileMetadata.file_discovery_time).label(
@@ -146,13 +146,15 @@ def get_all_raw_file_metadata_rows_for_region(
                 case(
                     [
                         (
-                            schema.DirectIngestRawFileMetadata.processed_time.is_(None),
+                            schema.DirectIngestRawFileMetadata.file_processed_time.is_(
+                                None
+                            ),
                             None,
                         )
                     ],
-                    else_=schema.DirectIngestRawFileMetadata.datetimes_contained_upper_bound_inclusive,
+                    else_=schema.DirectIngestRawFileMetadata.update_datetime,
                 )
-            ).label("latest_processed_datetimes_contained_upper_bound_inclusive"),
+            ).label("latest_update_datetime"),
         )
         .filter_by(
             region_code=region_code.upper(),
@@ -169,13 +171,9 @@ def get_all_raw_file_metadata_rows_for_region(
             num_unprocessed_files=result.num_unprocessed_files,
             latest_processed_time=result.latest_processed_time,
             latest_discovery_time=result.latest_discovery_time,
-            latest_processed_datetimes_contained_upper_bound_inclusive=result.latest_processed_datetimes_contained_upper_bound_inclusive
-            if not isinstance(
-                result.latest_processed_datetimes_contained_upper_bound_inclusive, str
-            )
-            else datetime.datetime.fromisoformat(
-                result.latest_processed_datetimes_contained_upper_bound_inclusive
-            ),
+            latest_update_datetime=result.latest_update_datetime
+            if not isinstance(result.latest_update_datetime, str)
+            else datetime.datetime.fromisoformat(result.latest_update_datetime),
         )
         for result in results
     ]

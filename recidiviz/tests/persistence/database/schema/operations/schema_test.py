@@ -18,7 +18,10 @@
 import datetime
 import sqlite3
 import unittest
+from typing import Optional
 
+import pytest
+import pytz
 from more_itertools import one
 from sqlalchemy.exc import IntegrityError
 
@@ -31,18 +34,32 @@ from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
+@pytest.mark.uses_db
 class OperationsSchemaTest(unittest.TestCase):
     """Tests for the schema defined in operations/schema.py."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        fakes.use_in_memory_sqlite_database(self.database_key)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_raw_file_metadata(self) -> None:
         with SessionFactory.using_database(
@@ -53,6 +70,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime.now(),
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 10, 11, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 11
                 ),
@@ -76,10 +95,12 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 10, 12),
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 10, 11, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 11
                 ),
-                processed_time=datetime.datetime.now(),
+                file_processed_time=datetime.datetime.now(tz=pytz.UTC),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -100,6 +121,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 10, 11),
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
@@ -111,6 +134,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 11, 12),
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 11, 11, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 11, 11
                 ),
@@ -139,6 +164,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 10, 11),
+                update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
@@ -166,6 +193,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 region_code="us_xx_yyyy",
                 file_tag="file_tag",
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
@@ -192,6 +221,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 10, 11),
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 10, 10
                 ),
@@ -209,6 +240,8 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 11, 12),
                 normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 11, 11, tzinfo=pytz.UTC),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime(
                     2019, 11, 11
                 ),
@@ -294,7 +327,9 @@ class OperationsSchemaTest(unittest.TestCase):
             session.add(metadata)
 
             with self.assertRaisesRegex(
-                IntegrityError, "CHECK constraint failed: datetime_bounds_ordering"
+                IntegrityError,
+                r'.* new row for relation "direct_ingest_view_materialization_metadata" violates check '
+                r'constraint "datetime_bounds_ordering".*',
             ):
                 session.commit()
 
@@ -316,7 +351,9 @@ class OperationsSchemaTest(unittest.TestCase):
             session.add(metadata)
 
             with self.assertRaisesRegex(
-                IntegrityError, "CHECK constraint failed: job_times_ordering"
+                IntegrityError,
+                r'.* new row for relation "direct_ingest_view_materialization_metadata" violates check '
+                r'constraint "job_times_ordering".*',
             ):
                 session.commit()
 
@@ -374,7 +411,7 @@ class OperationsSchemaTest(unittest.TestCase):
             session.commit()
 
     def test_direct_ingest_instance_status_uniqueness_constraint(self) -> None:
-        shared_datetime = datetime.datetime.now()
+        shared_datetime = datetime.datetime.now(tz=pytz.UTC)
         with SessionFactory.using_database(self.database_key) as session:
             metadata = schema.DirectIngestInstanceStatus(
                 region_code=StateCode.US_XX.value,
@@ -400,7 +437,7 @@ class OperationsSchemaTest(unittest.TestCase):
                 session.commit()
 
     def test_direct_ingest_instance_status_timestamp_ordering(self) -> None:
-        shared_datetime = datetime.datetime.now()
+        shared_datetime = datetime.datetime.now(tz=pytz.UTC)
         with SessionFactory.using_database(self.database_key) as session:
             metadata = schema.DirectIngestInstanceStatus(
                 region_code=StateCode.US_XX.value,

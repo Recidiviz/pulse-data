@@ -277,7 +277,11 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
             self._add_batch(
                 batch=ResultsBatchInfo(
                     ingest_view_name=ingest_view_name,
-                    upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
+                    # We strip tzinfo here to mimic the fact that the BQ `update_datetime` column used to hydrate
+                    # `ResultsBatchInfo` does not have timezone info.
+                    upper_bound_datetime_inclusive=upper_bound_datetime_inclusive.replace(
+                        tzinfo=None
+                    ),
                     batch_number=batch_number,
                 ),
                 data_file=output_path,

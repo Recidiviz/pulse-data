@@ -20,10 +20,13 @@ import unittest
 from typing import List, Optional
 
 import attr
+import pytest
+import pytz
 import sqlalchemy
 from freezegun import freeze_time
 from mock import Mock, patch
 
+from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
@@ -47,15 +50,20 @@ from recidiviz.persistence.entity.operations.entities import (
 from recidiviz.tests.ingest.direct.fakes.fake_single_ingest_view_collector import (
     FakeSingleIngestViewCollector,
 )
-from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.fake_region import fake_region
+from recidiviz.tools.postgres import local_postgres_helpers
 
 _ID = 1
 _DATE_1 = datetime.datetime(year=2019, month=7, day=20)
+_DATE_1_UTC = datetime.datetime(year=2019, month=7, day=20, tzinfo=pytz.UTC)
 _DATE_2 = datetime.datetime(year=2020, month=7, day=20)
+_DATE_2_UTC = datetime.datetime(year=2020, month=7, day=20, tzinfo=pytz.UTC)
 _DATE_3 = datetime.datetime(year=2021, month=7, day=20)
+_DATE_3_UTC = datetime.datetime(year=2021, month=7, day=20, tzinfo=pytz.UTC)
 _DATE_4 = datetime.datetime(year=2022, month=4, day=14)
+_DATE_4_UTC = datetime.datetime(year=2022, month=4, day=14, tzinfo=pytz.UTC)
 _DATE_5 = datetime.datetime(year=2022, month=4, day=15)
+_DATE_5_UTC = datetime.datetime(year=2022, month=4, day=15, tzinfo=pytz.UTC)
 
 
 @attr.s
@@ -70,15 +78,31 @@ class _IngestFileMetadata:
 @attr.s
 class _RawFileMetadata:
     file_tag: str = attr.ib()
+    update_datetime: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    # TODO(#17300): Remove after full release of `update_datetime`
     datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
-    file_discovery_time: datetime.datetime = attr.ib()
-    processed_time: datetime.datetime = attr.ib()
+    file_discovery_time: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
+    file_processed_time: datetime.datetime = attr.ib(
+        validator=attr_validators.is_utc_timezone_aware_datetime
+    )
 
 
 # TODO(#7843): Debug and write test for edge case crash while uploading many raw data
 #  files while queues are unpaused.
+@pytest.mark.uses_db
 class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
     """Tests for IngestViewMaterializationArgsGenerator."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
@@ -87,13 +111,20 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         self.mock_project_id_fn.return_value = self.mock_project_id
 
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+
         self.ingest_database_name = "ingest_database_name"
         self.ingest_instance = DirectIngestInstance.PRIMARY
-        fakes.use_in_memory_sqlite_database(self.database_key)
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def create_args_generator(
         self,
@@ -143,10 +174,10 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="my_raw_file",
-                    file_discovery_time=_DATE_2,
+                    file_discovery_time=_DATE_2_UTC,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    processed_time=None,
-                    datetimes_contained_upper_bound_inclusive=_DATE_2,
+                    file_processed_time=None,
+                    update_datetime=_DATE_2_UTC,
                     raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ]
@@ -190,10 +221,10 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="ingest_view",
-                    file_discovery_time=_DATE_1,
+                    file_discovery_time=_DATE_1_UTC,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    processed_time=None,
-                    datetimes_contained_upper_bound_inclusive=_DATE_1,
+                    file_processed_time=None,
+                    update_datetime=_DATE_1_UTC,
                     raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ]
@@ -230,10 +261,10 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag=CODE_TABLE_TAG,
-                    file_discovery_time=_DATE_1,
+                    file_discovery_time=_DATE_1_UTC,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    processed_time=None,
-                    datetimes_contained_upper_bound_inclusive=_DATE_1,
+                    file_processed_time=None,
+                    update_datetime=_DATE_1_UTC,
                     raw_data_instance=DirectIngestInstance.PRIMARY,
                 )
             ]
@@ -261,20 +292,20 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="file_tag",
-                    file_discovery_time=_DATE_1,
+                    file_discovery_time=_DATE_1_UTC,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    processed_time=None,
-                    datetimes_contained_upper_bound_inclusive=_DATE_1,
+                    file_processed_time=None,
+                    update_datetime=_DATE_1_UTC,
                     raw_data_instance=DirectIngestInstance.PRIMARY,
                 ),
                 DirectIngestRawFileMetadata(
                     file_id=2,
                     region_code=region.region_code,
                     file_tag="file_tag",
-                    file_discovery_time=_DATE_2,
+                    file_discovery_time=_DATE_2_UTC,
                     normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    processed_time=None,
-                    datetimes_contained_upper_bound_inclusive=_DATE_2,
+                    file_processed_time=None,
+                    update_datetime=_DATE_2_UTC,
                     raw_data_instance=DirectIngestInstance.PRIMARY,
                 ),
             ]
@@ -320,28 +351,36 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
             # This raw file was discovered at the same time, but uploaded 10 min earlier
             _RawFileMetadata(
                 file_tag=file_tag_1,
+                update_datetime=datetime.datetime(
+                    2021, 7, 25, 9, 2, 24, tzinfo=pytz.UTC
+                ),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
                     "2021-07-25 09:02:24"
                 ),
-                file_discovery_time=datetime.datetime.fromisoformat(
-                    "2021-07-25 09:29:33.690766"
+                file_discovery_time=datetime.datetime(
+                    2021, 7, 25, 9, 29, 33, tzinfo=pytz.UTC
                 ),
-                processed_time=datetime.datetime.fromisoformat(
-                    "2021-07-25 09:31:17.856534"
+                file_processed_time=datetime.datetime(
+                    2021, 7, 25, 9, 31, 17, tzinfo=pytz.UTC
                 ),
             ),
             # This raw file took 10 extra minutes to upload and is also a dependency of
             # movement_facility_location_offstat_incarceration_periods
             _RawFileMetadata(
                 file_tag=file_tag_2,
+                update_datetime=datetime.datetime(
+                    2021, 7, 25, 9, 2, 24, tzinfo=pytz.UTC
+                ),
+                # TODO(#17300): Remove after full release of `update_datetime`
                 datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
                     "2021-07-25 09:02:24"
                 ),
-                file_discovery_time=datetime.datetime.fromisoformat(
-                    "2021-07-25 09:29:37.095288"
+                file_discovery_time=datetime.datetime(
+                    2021, 7, 25, 9, 29, 37, tzinfo=pytz.UTC
                 ),
-                processed_time=datetime.datetime.fromisoformat(
-                    "2021-07-25 09:41:15.265905"
+                file_processed_time=datetime.datetime(
+                    2021, 7, 25, 9, 41, 15, tzinfo=pytz.UTC
                 ),
             ),
         ]
@@ -366,7 +405,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
 
         with self.assertRaisesRegex(
             sqlalchemy.exc.IntegrityError,
-            "CHECK constraint failed: datetime_bounds_ordering",
+            r"\(psycopg2.errors.CheckViolation\) new row for relation.*",
         ):
             self.run_get_args_test(
                 ingest_view_name=ingest_view_name,
@@ -407,9 +446,13 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     region_code=region.region_code.upper(),
                     file_tag=raw_file_datetimes_item.file_tag,
                     normalized_file_name=f"{raw_file_datetimes_item.file_tag}_{i}_raw",
-                    datetimes_contained_upper_bound_inclusive=raw_file_datetimes_item.datetimes_contained_upper_bound_inclusive,
+                    update_datetime=raw_file_datetimes_item.update_datetime,
+                    # TODO(#17300): Remove after full release of `update_datetime`
+                    datetimes_contained_upper_bound_inclusive=raw_file_datetimes_item.update_datetime,
                     file_discovery_time=raw_file_datetimes_item.file_discovery_time,
-                    processed_time=raw_file_datetimes_item.processed_time,
+                    file_processed_time=raw_file_datetimes_item.file_processed_time.replace(
+                        tzinfo=pytz.UTC
+                    ),
                     raw_data_instance=DirectIngestInstance.PRIMARY.value,
                     is_invalidated=False,
                 )

@@ -44,7 +44,6 @@ class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
         minute=4,
         second=5,
         microsecond=6789,
-        tzinfo=datetime.timezone.utc,
     )
 
     _DAY_1_TIME_2 = datetime.datetime(
@@ -55,7 +54,6 @@ class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
         minute=4,
         second=5,
         microsecond=7789,
-        tzinfo=datetime.timezone.utc,
     )
 
     _DAY_1_TIME_3 = datetime.datetime(
@@ -66,7 +64,6 @@ class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
         minute=4,
         second=5,
         microsecond=678,
-        tzinfo=datetime.timezone.utc,
     )
 
     _DAY_2_TIME_1 = datetime.datetime(
@@ -77,7 +74,6 @@ class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
         minute=4,
         second=5,
         microsecond=6789,
-        tzinfo=datetime.timezone.utc,
     )
 
     _DAY_2_TIME_2 = datetime.datetime(
@@ -88,7 +84,6 @@ class ExtractAndMergeJobPrioritizerTest(unittest.TestCase):
         minute=5,
         second=6,
         microsecond=7890,
-        tzinfo=datetime.timezone.utc,
     )
 
     _DAY_1 = _DAY_1_TIME_1.date()

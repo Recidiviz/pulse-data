@@ -966,7 +966,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             file_metadata = None
 
         if not self.fs.exists(data_import_args.raw_data_file_path):
-            if file_metadata is not None and file_metadata.processed_time is None:
+            if file_metadata is not None and file_metadata.file_processed_time is None:
                 raise ValueError(
                     f"Attempting to run raw data import for raw data path "
                     f"[{data_import_args.raw_data_file_path}] which does not exist "
@@ -989,7 +989,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
                 f"No metadata row for file [{data_import_args.raw_data_file_path}]."
             )
 
-        if file_metadata.processed_time:
+        if file_metadata.file_processed_time:
             logging.warning(
                 "File [%s] is already marked as processed. Skipping file processing.",
                 data_import_args.raw_data_file_path.file_name,

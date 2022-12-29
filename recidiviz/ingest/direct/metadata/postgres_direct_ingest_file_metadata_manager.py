@@ -82,8 +82,10 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     region_code=self.region_code,
                     file_tag=parts.file_tag,
                     normalized_file_name=path.file_name,
-                    file_discovery_time=datetime.datetime.now(),
-                    processed_time=None,
+                    file_discovery_time=datetime.datetime.now(tz=pytz.UTC),
+                    file_processed_time=None,
+                    update_datetime=parts.utc_upload_datetime,
+                    # TODO(#17300): Remove after full release of `update_datetime`
                     datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
                     raw_data_instance=self.raw_data_instance.value,
                     is_invalidated=False,
@@ -108,7 +110,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             # then it is assumed to be not processed, as it is seen as not existing.
             return False
 
-        return metadata.processed_time is not None
+        return metadata.file_processed_time is not None
 
     def mark_raw_file_as_processed(self, path: GcsfsFilePath) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -116,7 +118,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                 session, self.region_code, path, self.raw_data_instance
             )
 
-            metadata.processed_time = datetime.datetime.now(tz=pytz.UTC)
+            metadata.file_processed_time = datetime.datetime.now(tz=pytz.UTC)
 
     def get_metadata_for_raw_files_discovered_after_datetime(
         self,
@@ -191,7 +193,7 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     raw_data_instance=self.raw_data_instance.value,
                 )
                 .filter(
-                    schema.DirectIngestRawFileMetadata.processed_time.is_(None),
+                    schema.DirectIngestRawFileMetadata.file_processed_time.is_(None),
                 )
             )
             results = query.all()

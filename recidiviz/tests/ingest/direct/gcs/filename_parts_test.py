@@ -18,6 +18,8 @@
 import datetime
 from unittest import TestCase
 
+import pytz
+
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.types.errors import DirectIngestError
@@ -46,7 +48,7 @@ class TestFilenamePartsFromPath(TestCase):
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(
             parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-08-07T22:09:18:770655"),
+            datetime.datetime(2019, 8, 7, 22, 9, 18, 770655, tzinfo=pytz.UTC),
         )
         self.assertEqual(parts.date_str, "2019-08-07")
 
@@ -66,7 +68,7 @@ class TestFilenamePartsFromPath(TestCase):
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(
             parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2019-09-07T00:09:18:770655"),
+            datetime.datetime(2019, 9, 7, 0, 9, 18, 770655, tzinfo=pytz.UTC),
         )
         self.assertEqual(parts.date_str, "2019-09-07")
 
@@ -85,7 +87,7 @@ class TestFilenamePartsFromPath(TestCase):
         self.assertEqual(parts.filename_suffix, None)
         self.assertEqual(
             parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2021-09-21T00:00:00:000000"),
+            datetime.datetime(2021, 9, 21, tzinfo=pytz.UTC),
         )
         self.assertEqual(parts.date_str, "2021-09-21")
 
@@ -104,6 +106,6 @@ class TestFilenamePartsFromPath(TestCase):
         self.assertEqual(parts.filename_suffix, "1")
         self.assertEqual(
             parts.utc_upload_datetime,
-            datetime.datetime.fromisoformat("2022-03-24T06:02:28:607028"),
+            datetime.datetime(2022, 3, 24, 6, 2, 28, 607028, tzinfo=pytz.UTC),
         )
         self.assertEqual(parts.date_str, "2022-03-24")

@@ -104,6 +104,7 @@ class ExtractAndMergeJobPrioritizerImpl(ExtractAndMergeJobPrioritizer):
             ingest_time=datetime.now(tz=pytz.UTC),
             ingest_instance=self.ingest_view_contents.ingest_instance,
             ingest_view_name=highest_pri_batch.ingest_view_name,
+            # TODO(#17421) Allow `upper_bound_datetime_inclusive` to also be timezone aware
             upper_bound_datetime_inclusive=highest_pri_batch.upper_bound_datetime_inclusive,
             batch_number=highest_pri_batch.batch_number,
         )

@@ -24,9 +24,10 @@ class MyClass:
 """
 
 import datetime
-from typing import Any, Callable, Type
+from typing import Any, Callable, Optional, Type
 
 import attr
+import pytz
 
 
 def is_opt(cls_type: Type) -> Callable:
@@ -39,6 +40,18 @@ def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> 
         raise ValueError(f"Expected value type str, found {type(value)}.")
     if not value:
         raise ValueError("String value should not be empty.")
+
+
+def is_utc_timezone_aware_datetime(
+    _instance: Any, _attribute: attr.Attribute, value: Optional[datetime.datetime]
+) -> None:
+    if value:
+        if value.tzinfo is None:
+            raise ValueError("Expected timezone value to not be empty")
+        if value.tzinfo not in (pytz.UTC, datetime.timezone.utc):
+            raise ValueError(
+                f"Expected timezone value to be UTC, found: {value.tzinfo}"
+            )
 
 
 # String field validators

@@ -17,8 +17,9 @@
 """Tests for classes in postgres_direct_ingest_file_metadata_manager.py."""
 import datetime
 import unittest
-from typing import Type
+from typing import Optional, Type
 
+import pytest
 import pytz
 import sqlalchemy
 from freezegun import freeze_time
@@ -46,7 +47,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity, entity_graph_eq
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 def _fake_eq(e1: Entity, e2: Entity) -> bool:
@@ -72,12 +73,20 @@ def _make_processed_raw_data_path(path_str: str) -> GcsfsFilePath:
     return DirectIngestGCSFileSystem._to_processed_file_path(path)
 
 
+@pytest.mark.uses_db
 class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
     """Tests for PostgresDirectIngestRawFileMetadataManager."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        fakes.use_in_memory_sqlite_database(self.database_key)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code="us_xx",
@@ -105,7 +114,13 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.entity_eq_patcher.stop()
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_register_processed_path_crashes(self) -> None:
         raw_processed_path = _make_processed_raw_data_path("bucket/file_tag.csv")
@@ -134,12 +149,10 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
             region_code="US_XX",
             file_tag="file_tag",
-            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 3, 3, 3
-            ),
+            file_processed_time=None,
+            update_datetime=datetime.datetime(2015, 1, 2, 3, 3, 3, 3, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
@@ -164,12 +177,10 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         expected_metadata = DirectIngestRawFileMetadata.new_with_defaults(
             region_code=self.raw_metadata_manager.region_code,
             file_tag="file_tag",
-            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 3, 3, 3
-            ),
+            file_processed_time=None,
+            update_datetime=datetime.datetime(2015, 1, 2, 3, 3, 3, 3, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
@@ -284,7 +295,8 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         metadata = self.raw_metadata_manager.get_raw_file_metadata(raw_unprocessed_path)
 
         self.assertEqual(
-            datetime.datetime(2015, 1, 2, 3, 5, 6, 7), metadata.processed_time
+            datetime.datetime(2015, 1, 2, 3, 5, 6, 7, tzinfo=pytz.UTC),
+            metadata.file_processed_time,
         )
 
     def test_get_metadata_for_raw_files_discovered_after_datetime_empty(self) -> None:
@@ -330,21 +342,21 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             DirectIngestRawFileMetadata.new_with_defaults(
                 region_code=self.raw_metadata_manager.region_code,
                 file_tag="file_tag",
-                file_discovery_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
-                normalized_file_name="unprocessed_2015-01-02T03:05:05:000000_raw_file_tag.csv",
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2015, 1, 2, 3, 5, 5
+                file_discovery_time=datetime.datetime(
+                    2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC
                 ),
+                normalized_file_name="unprocessed_2015-01-02T03:05:05:000000_raw_file_tag.csv",
+                update_datetime=datetime.datetime(2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC),
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             ),
             DirectIngestRawFileMetadata.new_with_defaults(
                 region_code=self.raw_metadata_manager.region_code,
                 file_tag="file_tag",
-                file_discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
-                normalized_file_name="unprocessed_2015-01-02T03:07:07:000000_raw_file_tag.csv",
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2015, 1, 2, 3, 7, 7
+                file_discovery_time=datetime.datetime(
+                    2015, 1, 2, 3, 7, 7, tzinfo=pytz.UTC
                 ),
+                normalized_file_name="unprocessed_2015-01-02T03:07:07:000000_raw_file_tag.csv",
+                update_datetime=datetime.datetime(2015, 1, 2, 3, 7, 7, tzinfo=pytz.UTC),
                 raw_data_instance=DirectIngestInstance.PRIMARY,
             ),
         ]
@@ -375,7 +387,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     def test_get_metadata_for_all_raw_files_in_region(self) -> None:
-        with freeze_time("2015-01-02T03:05:05"):
+        with freeze_time(datetime.datetime(2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC)):
             raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
                 "bucket/file_tag.csv",
                 dt=datetime.datetime.now(tz=pytz.UTC),
@@ -385,7 +397,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             )
             self.raw_metadata_manager.mark_raw_file_as_processed(raw_unprocessed_path_1)
 
-        with freeze_time("2015-01-02T03:06:06"):
+        with freeze_time(datetime.datetime(2015, 1, 2, 3, 6, 6, tzinfo=pytz.UTC)):
             raw_unprocessed_path_2 = _make_unprocessed_raw_data_path(
                 "bucket/other_tag.csv",
                 dt=datetime.datetime.now(tz=pytz.UTC),
@@ -394,7 +406,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 raw_unprocessed_path_2
             )
 
-        with freeze_time("2015-01-02T03:07:07"):
+        with freeze_time(datetime.datetime(2015, 1, 2, 3, 7, 7, tzinfo=pytz.UTC)):
             raw_unprocessed_path_3 = _make_unprocessed_raw_data_path(
                 "bucket/file_tag.csv",
                 dt=datetime.datetime.now(tz=pytz.UTC),
@@ -408,10 +420,14 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 file_tag="file_tag",
                 num_unprocessed_files=1,
                 num_processed_files=1,
-                latest_processed_time=datetime.datetime(2015, 1, 2, 3, 5, 5),
-                latest_discovery_time=datetime.datetime(2015, 1, 2, 3, 7, 7),
-                latest_processed_datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2015, 1, 2, 3, 5, 5
+                latest_processed_time=datetime.datetime(
+                    2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC
+                ),
+                latest_discovery_time=datetime.datetime(
+                    2015, 1, 2, 3, 7, 7, tzinfo=pytz.UTC
+                ),
+                latest_update_datetime=datetime.datetime(
+                    2015, 1, 2, 3, 5, 5, tzinfo=pytz.UTC
                 ),
             ),
             DirectIngestRawFileMetadataSummary(
@@ -419,8 +435,10 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
                 num_unprocessed_files=1,
                 num_processed_files=0,
                 latest_processed_time=None,
-                latest_discovery_time=datetime.datetime(2015, 1, 2, 3, 6, 6),
-                latest_processed_datetimes_contained_upper_bound_inclusive=None,
+                latest_discovery_time=datetime.datetime(
+                    2015, 1, 2, 3, 6, 6, tzinfo=pytz.UTC
+                ),
+                latest_update_datetime=None,
             ),
         ]
 
@@ -468,7 +486,7 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         with self.assertRaises(DirectIngestInstanceError):
             self.raw_metadata_manager_secondary.get_unprocessed_raw_files()
 
-    @freeze_time("2015-01-02T03:04:06")
+    @freeze_time(datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC))
     def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:
         raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
@@ -482,12 +500,10 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_id=1,
             region_code="US_XX",
             file_tag="file_tag",
-            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 4, 6
-            ),
+            file_processed_time=None,
+            update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.PRIMARY,
         )
 
@@ -539,12 +555,10 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
             file_id=1,
             region_code="US_XX",
             file_tag="file_tag",
-            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6),
+            file_discovery_time=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             normalized_file_name="unprocessed_2015-01-02T03:04:06:000000_raw_file_tag.csv",
-            processed_time=None,
-            datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                2015, 1, 2, 3, 4, 6
-            ),
+            file_processed_time=None,
+            update_datetime=datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC),
             raw_data_instance=DirectIngestInstance.SECONDARY,
         )
 
