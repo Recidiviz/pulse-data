@@ -1,17 +1,19 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Offenders_Released_from_Iowa_Prisons
 file_description: |-
-  This dataset provides information on offenders released from Iowa prisons during the
-  past 10 fiscal years. It includes the fiscal year when an offender was released from
-  prison, their age groups, sex, race - ethnicity, closure type, convicting offense with
-  description and the number of months served.
+  Data from data.iowa.gov providing information on offenders released from Iowa prisons
+  during the past 10 fiscal years. It includes the fiscal year when an offender was
+  released from prison, their age groups, sex, race - ethnicity, closure type,
+  convicting offense with description and the number of months served.
 data_classification: source
-primary_key_cols: [Record_ID]
+primary_key_cols:
+  - Record_ID
 columns:
   - name: Record_ID
     description: |-
       Unique ID for the record
   - name: Offender_Number
+    is_pii: True
     description: |-
       Unique ID for the offender
   - name: Release_Date

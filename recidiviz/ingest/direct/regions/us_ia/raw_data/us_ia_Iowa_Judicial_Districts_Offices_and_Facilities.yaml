@@ -1,12 +1,14 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Iowa_Judicial_Districts_Offices_and_Facilities
 file_description: |-
-  This dataset provides the offices and facilities of Judicial Districts in Iowa who
-  deliver community-based correction services. Community-based corrections provides
-  correctional supervision and services in a community setting as an alternative to jail
-  or prison.
+  Data from data.iowa.gov providing the offices and facilities of Judicial Districts in
+  Iowa who deliver community-based correction services. Community-based corrections
+  provides correctional supervision and services in a community setting as an
+  alternative to jail or prison.
 data_classification: source
-primary_key_cols: [Judicial_District, Building_Name]
+primary_key_cols:
+  - Judicial_District
+  - Building_Name
 columns:
   - name: Judicial_District
     description: |-

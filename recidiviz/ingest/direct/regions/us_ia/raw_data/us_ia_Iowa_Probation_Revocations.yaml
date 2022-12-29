@@ -1,16 +1,19 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Iowa_Probation_Revocations
 file_description: |-
-  This dataset contains de-identified information on offenders who violated probation
-  and are being sent to prison (i.e., a probation revocation) for the last 10 Fiscal
-  Years. It provides information on sex, race & ethnicity, and age of those offenders.
+  Data from data.iowa.gov containing de-identified information on offenders who violated
+  probation and are being sent to prison (i.e., a probation revocation) for the last 10
+  Fiscal Years. It provides information on sex, race & ethnicity, and age of those
+  offenders.
 data_classification: source
-primary_key_cols: [Record_ID]
+primary_key_cols:
+  - Record_ID
 columns:
   - name: Record_ID
     description: |-
       Unique number assigned to each record
   - name: Offender_Number
+    is_pii: True
     description: |-
       Unique number assigned to each offender
   - name: Revocation_Date

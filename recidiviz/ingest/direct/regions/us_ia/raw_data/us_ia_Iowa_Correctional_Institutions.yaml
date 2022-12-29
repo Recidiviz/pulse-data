@@ -1,10 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Iowa_Correctional_Institutions
 file_description: |-
-  This dataset contains location information for the adult correctional facilities and
-  penitentiaries in Iowa.
+  Data from data.iowa.gov containing location information for the adult correctional
+  facilities and penitentiaries in Iowa.
 data_classification: source
-primary_key_cols: [Abbreviation]
+primary_key_cols:
+  - Abbreviation
 columns:
   - name: Abbreviation
     description: |-

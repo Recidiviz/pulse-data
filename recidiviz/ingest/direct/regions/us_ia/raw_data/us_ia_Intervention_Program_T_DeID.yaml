@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Intervention_Program_T_DeID
+file_description: |-
+  Table from Iowa DOC with intervention program information
+data_classification: source
+primary_key_cols:
+  - OffenderInterventionProgramId
+columns:
+  - name: IGOV_De_Identified
+    is_pii: True
+    description: |-
+      Anonymized person-ID that maps to the ID from Iowa's public data tables
+  - name: OffenderInterventionProgramId
+    is_pii: True
+    description: |-
+      ID that uniquely identifies the intervention program span
+  - name: InterventionProgramLocationId
+    description: |-
+      Code associated with each program location
+  - name: InterventionProgramId
+    description: |-
+      Code associated with the InterventionProgram
+  - name: InterventionProgram
+    description: |-
+      Type of intervention program
+  - name: InterventionProgramRequired
+    description: |-
+      "RQ" or "RC" if the program is required, null otherwise
+  - name: ReferringWorkUnitRegionId
+    description: |-
+      Region ID of the source of the referral
+  - name: ReferringWorkUnitId
+    description: |-
+      Unit ID of the source of the referral
+  - name: ReferringStaffId
+    is_pii: True
+    description: |-
+      Staff ID who submitted the referral
+  - name: EligibilityDt
+    is_datetime: True
+    description: |-
+      Start date of intervention eligibility
+  - name: OrientationDt
+    is_datetime: True
+    description: |-
+      Date of the intervention orientation, if applicable
+  - name: InterventionProgramStartDt
+    description: |-
+      Start date of the intervention program
+  - name: InterventionProgramEndDt
+    description: |-
+      End date of the intervention program
+  - name: InterventionClosureTypeId
+    description: |-
+      Code associated with the InterventionClosureType
+  - name: InterventionClosureType
+    description: |-
+      End reason for the program intervention

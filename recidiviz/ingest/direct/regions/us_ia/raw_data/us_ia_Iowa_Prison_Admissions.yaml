@@ -1,17 +1,19 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Iowa_Prison_Admissions
 file_description: |-
-  This dataset provides de-identified individual admission data for offenders admitted
-  to Iowa Penitentiaries and Correctional Facilities during the past 10 Fiscal Years.
-  Dataset includes information regarding age, gender, race, years served, and offense
-  committed.
+  Data from data.iowa.gov providing de-identified individual admission data for
+  offenders admitted to Iowa Penitentiaries and Correctional Facilities during the past
+  10 Fiscal Years. Dataset includes information regarding age, gender, race, years
+  served, and offense committed.
 data_classification: source
-primary_key_cols: [Record_ID]
+primary_key_cols:
+  - Record_ID
 columns:
   - name: Record_ID
     description: |-
       Unique number assigned to each record
   - name: Offender_Number
+    is_pii: True
     description: |-
       Unique number assigned to each offender
   - name: Admission_Date

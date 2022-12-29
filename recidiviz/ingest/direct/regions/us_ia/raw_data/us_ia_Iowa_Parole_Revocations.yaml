@@ -1,17 +1,19 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Iowa_Parole_Revocations
 file_description: |-
-  This dataset provides de-identified individual data for offenders who violated
-  parole/special sentence conditions and were sent to prison (i.e. parole revocation)
-  for the past 10 fiscal years. It provides information on sex, race & ethnicity, and
-  age of those offenders.
+  Data from data.iowa.gov providing de-identified individual data for offenders who
+  violated parole/special sentence conditions and were sent to prison (i.e. parole
+  revocation) for the past 10 fiscal years. It provides information on sex, race &
+  ethnicity, and age of those offenders.
 data_classification: source
-primary_key_cols: [Record_ID]
+primary_key_cols:
+  - Record_ID
 columns:
   - name: Record_ID
     description: |-
       Unique number assigned to each record
   - name: Offender_Number
+    is_pii: True
     description: |-
       Unique number assigned to each offender
   - name: Record_Date
