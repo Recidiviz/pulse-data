@@ -20,6 +20,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
     LawEnforcementFundingType,
+    LawEnforcementStaffType,
     OffenseType,
 )
 from recidiviz.justice_counts.dimensions.person import (
@@ -41,8 +42,14 @@ LAW_ENFORCEMENT_METRIC_FILES = [
         disaggregation_column_name="funding_type",
     ),
     MetricFile(
-        canonical_filename="police_officers",
-        definition=law_enforcement.police_officers,
+        canonical_filename="staff",
+        definition=law_enforcement.staff,
+    ),
+    MetricFile(
+        canonical_filename="staff_by_type",
+        definition=law_enforcement.staff,
+        disaggregation=LawEnforcementStaffType,
+        disaggregation_column_name="staff_type",
     ),
     MetricFile(
         canonical_filename="calls_for_service",

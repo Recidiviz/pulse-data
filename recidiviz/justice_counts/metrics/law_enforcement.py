@@ -21,6 +21,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
     LawEnforcementFundingType,
+    LawEnforcementStaffType,
     OffenseType,
 )
 from recidiviz.justice_counts.dimensions.person import (
@@ -29,10 +30,16 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     LawEnforcementAssetForfeitureIncludesExcludes,
+    LawEnforcementCivilianStaffIncludesExcludes,
     LawEnforcementCountyOrMunicipalAppropriation,
     LawEnforcementFundingIncludesExcludes,
     LawEnforcementGrantsIncludesExcludes,
+    LawEnforcementMentalHealthStaffIncludesExcludes,
+    LawEnforcementPoliceOfficersIncludesExcludes,
+    LawEnforcementStaffIncludesExcludes,
     LawEnforcementStateAppropriationIncludesExcludes,
+    LawEnforcementVacantStaffIncludesExcludes,
+    LawEnforcementVictimAdvocateStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -164,7 +171,7 @@ calls_for_service = MetricDefinition(
     aggregated_dimensions=[AggregatedDimension(dimension=CallType, required=True)],
 )
 
-police_officers = MetricDefinition(
+staff = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
@@ -176,11 +183,64 @@ police_officers = MetricDefinition(
             required=False,
         )
     ],
-    display_name="Police Officers per Capita",
-    description="Measures the number of sworn officers employed by your agency.",
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementStaffIncludesExcludes,
+        excluded_set={
+            LawEnforcementStaffIncludesExcludes.INTERN,
+            LawEnforcementStaffIncludesExcludes.VOLUNTEER,
+            LawEnforcementStaffIncludesExcludes.NOT_FUNDED,
+        },
+    ),
+    display_name="Staff",
+    description="The number of full-time equivalent positions budgeted for and paid by the agency for law enforcement activities.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=LawEnforcementStaffType,
+            required=False,
+            dimension_to_includes_excludes={
+                LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: IncludesExcludesSet(
+                    members=LawEnforcementPoliceOfficersIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementPoliceOfficersIncludesExcludes.CRISIS_INTERVENTION,
+                        LawEnforcementPoliceOfficersIncludesExcludes.VACANT,
+                        LawEnforcementPoliceOfficersIncludesExcludes.VICTIM_ADVOCATE,
+                    },
+                ),
+                LawEnforcementStaffType.CIVILIAN_STAFF: IncludesExcludesSet(
+                    members=LawEnforcementCivilianStaffIncludesExcludes,
+                ),
+                LawEnforcementStaffType.MENTAL_HEALTH: IncludesExcludesSet(
+                    members=LawEnforcementMentalHealthStaffIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementMentalHealthStaffIncludesExcludes.PART_TIME,
+                    },
+                ),
+                LawEnforcementStaffType.VICTIM_ADVOCATES: IncludesExcludesSet(
+                    members=LawEnforcementVictimAdvocateStaffIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementVictimAdvocateStaffIncludesExcludes.PART_TIME,
+                    },
+                ),
+                LawEnforcementStaffType.VACANT: IncludesExcludesSet(
+                    members=LawEnforcementVacantStaffIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementVacantStaffIncludesExcludes.FILLED,
+                    },
+                ),
+            },
+            dimension_to_description={
+                LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: "The number of full-time equivalent positions that perform law enforcement activities and ordinarily carry a firearm and a badge.",
+                LawEnforcementStaffType.CIVILIAN_STAFF: "The number of full-time equivalent positions that work as civilian or non-sworn employees.",
+                LawEnforcementStaffType.MENTAL_HEALTH: "The number of full-time equivalent positions that are members of a Crisis Intervention Team or provide mental health services in collaboration with law enforcement.",
+                LawEnforcementStaffType.VICTIM_ADVOCATES: "The number of full-time equivalent positions that provide victim support services.",
+                LawEnforcementStaffType.OTHER: " The number of full-time equivalent positions budgeted to the law enforcement agency that are not sworn/uniformed police officers, civilian staff, mental health/Crisis Intervention Team staff, or victim advocate staff.",
+                LawEnforcementStaffType.UNKNOWN: "The number of full-time equivalent positions budgeted to the law enforcement agency that are of an unknown type.",
+                LawEnforcementStaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
+            },
+        )
+    ],
 )
 
 reported_crime = MetricDefinition(

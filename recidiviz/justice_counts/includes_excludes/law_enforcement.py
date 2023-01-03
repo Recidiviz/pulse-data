@@ -65,3 +65,72 @@ class LawEnforcementGrantsIncludesExcludes(enum.Enum):
     STATE = "State grants"
     FEDERAL = "Federal grants"
     PRIVATE = "Private or foundation grants"
+
+
+# Staff
+class LawEnforcementStaffIncludesExcludes(enum.Enum):
+    FILLED_POSITIONS = "Filled positions funded within the agency's budget"
+    BUDGETED = "Staff positions budgeted but currently vacant"
+    FULL_TIME = "Full-time positions funded within the agency's budget"
+    PART_TIME = "Part-time positions funded within the agency's budget"
+    CONTRACTED = "Contracted positions funded within the agency's budget"
+    TEMPORARY = "Temporary positions funded within the agency's budget"
+    VOLUNTEER = "Volunteer positions"
+    INTERN = "Intern positions"
+    NOT_FUNDED = "Positions not funded within the agency’s budget"
+
+
+class LawEnforcementPoliceOfficersIncludesExcludes(enum.Enum):
+    UNIFORMED = "Uniformed police officers (all ranks)"
+    DETECTIVES = "Detectives"
+    SPECIALIZED_UNITS = "Police officers assigned to specialized units"
+    SPECIAL_JURISDICTION = "Special jurisdiction police officers"
+    SHERIFFS = "Sheriffs and deputy sheriffs"
+    STATE = "State police officers"
+    MENTAL_HEALTH = "Sworn/uniformed positions trained in mental health first aid or crisis intervention who do not perform these roles full time"
+    VACANT = "Sworn/uniformed staff positions budgeted but currently vacant"
+    CRISIS_INTERVENTION = (
+        "Sworn/uniformed Crisis Intervention Team staff who perform this role full time"
+    )
+    VICTIM_ADVOCATE = (
+        "Sworn/uniformed victim advocate staff who perform this role full time"
+    )
+
+
+class LawEnforcementCivilianStaffIncludesExcludes(enum.Enum):
+    INVESTIGATORS = "Civilian investigators"
+    ANALYSTS = "Civilian crime, intelligence, and research analysts"
+    CRIME_PREVENTION = "Civilian crime prevention staff"
+    COMMUNITY_OUTREACH = "Civilian community outreach staff"
+    DISPATCHERS = "Dispatchers and call-takers"
+    TRAFFIC = "Civilian parking and traffic enforcement"
+    PUBLIC_INFORMATION = "Public information officers"
+    RECORDS_MANAGEMENT = "Records management staff"
+    ADMIN = "Clerical and administrative staff"
+    IT = "Information technology staff"
+    FORENSIC = "Forensic and crime lab technicians"
+    EQUIPMENT_MANAGEMENT = "Equipment and fleet management staff"
+
+
+class LawEnforcementMentalHealthStaffIncludesExcludes(enum.Enum):
+    SWORN = "Sworn/uniformed Crisis Intervention Team staff"
+    NON_SWORN = "Non-sworn/civilian Crisis Intervention Team staff"
+    PRACTITIONERS = (
+        "Mental health practitioners who collaborate with law enforcement officers"
+    )
+    PART_TIME = "Staff trained in mental health first aid or crisis intervention who do not perform these roles full time"
+
+
+class LawEnforcementVictimAdvocateStaffIncludesExcludes(enum.Enum):
+    SWORN = "Sworn/uniformed victim advocacy staff"
+    NON_SWORN = "Non-sworn/civilian victim advocacy staff"
+    COLLABORATORS = "Victim advocates who collaborate with law enforcement officers to provide support services to victims of crime"
+    PART_TIME = "Staff trained in victim advocacy support who do not perform these roles full time"
+
+
+class LawEnforcementVacantStaffIncludesExcludes(enum.Enum):
+    SWORN = "Vacant sworn/uniformed police officer positions"
+    CIVILIAN = "Vacant civilian staff positions"
+    MENTAL_HEALTH = "Vacant mental health/Crisis Intervention Team staff positions"
+    VICTIM_ADVOCATE = "Vacant victim advocate staff positions"
+    FILLED = "Filled positions"
