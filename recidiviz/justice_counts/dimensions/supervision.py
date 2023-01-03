@@ -21,6 +21,19 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
+class SupervisionFundingType(DimensionBase, enum.Enum):
+    STATE_APPROPRIATION = "State Appropriation"
+    COUNTY_MUNICIPAL_APPROPRIATION = "County or Municipal Appropriation"
+    GRANTS = "Grants"
+    FINES_FEES = "Fines and Fees"
+    OTHER = "Other Funding"
+    UNKNOWN = "Unknown Funding"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/supervision/funding/type"
+
+
 class SupervisionStaffType(DimensionBase, enum.Enum):
     SUPERVISION = "Supervision Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"

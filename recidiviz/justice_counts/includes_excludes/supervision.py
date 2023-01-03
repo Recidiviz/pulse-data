@@ -197,6 +197,66 @@ class SupervisionOtherCommunityDefinitionIncludesExcludes(Enum):
     COURT_PROGRAM = "People on other community supervision in a pre-adjudication specialty or problem-solving court program (e.g., drug court, etc.)"
 
 
+# Funding
+class SupervisionFundingIncludesExcludes(Enum):
+    SINGLE_FISCAL_YEAR = "Funding for single fiscal year"
+    BIENNIUM = "Biennium funding"
+    MULTI_YEAR_APPROPRIATIONS = (
+        "Multi-year appropriations that will not be fully spent this fiscal year"
+    )
+    COMMUNITY_SUPERVISION_OFFICE = (
+        "Funding for community supervision office facility operations and maintenance"
+    )
+    COMMUNITY_SUPERVISION_CONFINEMENT = "Funding for community supervision confinement facility operations and maintenance (e.g., violation centers, halfway back facilities, etc.)"
+    CONSTRUCTION_RENTAL = (
+        "Funding for construction or rental of new community supervision facilities"
+    )
+    TREATMENT_PROGRAMMING = (
+        "Funding for agency-run or contracted treatment and programming"
+    )
+    SUPERVISION_STAFF = "Funding for community supervision staff"
+    SUPPORT_STAFF = "Funding for central administrative and support staff"
+    PRIVATE_SERVICES = "Funding for the operation of private community supervision services contracted by the agency"
+    INTERSTATE_COMPACT = "Funding for supervision services contracted to other jurisdictions through interstate compact"
+    STIPENDS_JAIL = "Funding for stipends or reimbursements for people on supervision detained in jail facilities (locally or out of state)"
+    STIPENDS_PRISON = "Funding for stipends or reimbursements for people on supervision detained in prison facilities (locally or out of state)"
+    JAIL_MAINTENANCE = "Funding for jail facility operations and maintenance"
+    PRISON_MAINTENANCE = "Funding for prison facility operations and maintenance"
+    JUVENILE_SUPERVISION = "Funding for juvenile supervision"
+
+
+class SupervisionStateAppropriationIncludesExcludes(Enum):
+    FINALIZED = "Finalized state appropriations"
+    PROPOSED = "Proposed state appropriations"
+    PRELIMINARY = "Preliminary state appropriations"
+    GRANTS_NOT_BUDGET = "Grants from state sources that are not budget appropriations approved by the legislature/governor"
+
+
+class SupervisionCountyMunicipalAppropriationIncludesExcludes(Enum):
+    FINALIZED = "Finalized county or municipal appropriations"
+    PROPOSED = "Proposed county or municipal appropriations"
+    PRELIMINARY = "Preliminary county or municipal appropriations"
+
+
+class SupervisionGrantsIncludesExcludes(Enum):
+    LOCAL = "Local grants"
+    STATE = "State grants"
+    FEDERAL = "Federal grants"
+    PRIVATE = "Private or foundation grants"
+
+
+class SupervisionFinesFeesIncludesExcludes(Enum):
+    SUPERVISION_FEED = "Supervision fees"
+    ELECTRONIC_MONITORING = (
+        "Fees charged to people on supervision for electronic monitoring"
+    )
+    PROGRAMMING = "Fees charged to people on supervision for programming"
+    TREATMENT = "Fees charged to people on supervision for treatment"
+    TESTING = "Fees charged to people on supervision for drug or alcohol testing"
+    RESTITUTION = "Restitution"
+    LEGAL_OBLIGATIONS = "Legal financial obligations"
+
+
 # Staff
 class SupervisionStaffIncludesExcludes(Enum):
     FILLED = "Filled positions"
@@ -205,6 +265,7 @@ class SupervisionStaffIncludesExcludes(Enum):
     PART_TIME = "Part-time positions"
     CONTRACTED = "Contracted positions"
     TEMPORARY = "Temporary positions"
+    OTHER = "Other staff positions not captured by the listed categories"
     VOLUNTEER = "Volunteer positions"
     INTERN = "Intern positions"
 
