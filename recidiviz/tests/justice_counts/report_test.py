@@ -1031,7 +1031,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             metrics[0].key, law_enforcement.civilian_complaints_sustained.key
         )
         self.assertEqual(metrics[1].key, law_enforcement.funding.key)
-        self.assertEqual(metrics[2].key, law_enforcement.police_officers.key)
+        self.assertEqual(metrics[2].key, law_enforcement.staff.key)
         self.assertEqual(
             metrics[3].key, law_enforcement.officer_use_of_force_incidents.key
         )

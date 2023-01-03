@@ -1893,7 +1893,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "LAW_ENFORCEMENT_REPORTED_CRIME": {
                     "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"]
                 },
-                "LAW_ENFORCEMENT_TOTAL_STAFF": {},
+                "LAW_ENFORCEMENT_TOTAL_STAFF": {
+                    "Law Enforcement Staff Type": [
+                        "Sworn/Uniformed Police Officers",
+                        "Civilian Staff",
+                        "Mental Health/Crisis Intervention Team Staff",
+                        "Victim Advocates",
+                        "Other Staff",
+                        "Unknown Staff",
+                        "Vacant Positions (Any Staff Type)",
+                    ]
+                },
                 "LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS": {
                     "Force Type": [
                         "Physical",

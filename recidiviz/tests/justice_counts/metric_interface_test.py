@@ -599,7 +599,7 @@ class TestMetricInterface(TestCase):
         )
 
     def test_police_officer_metric_json_to_report_metric(self) -> None:
-        metric_definition = law_enforcement.police_officers
+        metric_definition = law_enforcement.staff
         response_json = {
             "key": metric_definition.key,
             "value": 100,

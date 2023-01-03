@@ -389,9 +389,13 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 key=lambda x: x.key,
             )
             self.assertEqual(len(metrics), 4)
+            # Civilian Complaints Sustained metric
             self.assertEqual(metrics[0].value, 200)
+            # Funding metric
             self.assertEqual(metrics[1].value, 500)
+            # Staff metric
             self.assertEqual(metrics[2].value, 90)
+            # Use of Force metric
             self.assertEqual(metrics[3].value, 200)
             self.assertEqual(len(metrics[3].aggregated_dimensions), 1)
             self.assertEqual(
@@ -414,7 +418,9 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 key=lambda x: x.key,
             )
             self.assertEqual(len(metrics), 3)
+            # Arrests
             self.assertEqual(metrics[0].value, 200)
+            # Calls for Service
             self.assertEqual(metrics[1].value, 800)
             self.assertEqual(len(metrics[1].aggregated_dimensions), 1)
             self.assertIsNotNone(metrics[1].aggregated_dimensions[0].dimension_to_value)
@@ -428,6 +434,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     CallType.NON_EMERGENCY: 700,
                 },
             )
+            # Reported Crime
             self.assertEqual(metrics[2].value, 800)
             self.assertEqual(len(metrics[2].aggregated_dimensions), 1)
             self.assertIsNotNone(metrics[2].aggregated_dimensions[0].dimension_to_value)
@@ -526,7 +533,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(len(metric_key_to_errors), 2)
-            self.maxDiff = None
             arrest_errors = metric_key_to_errors[law_enforcement.total_arrests.key]
             self.assertEqual(len(arrest_errors), 1)
             arrest_error = arrest_errors[0]

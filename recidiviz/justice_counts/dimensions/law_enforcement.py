@@ -69,9 +69,13 @@ class ForceType(DimensionBase, enum.Enum):
 
 
 class LawEnforcementStaffType(DimensionBase, enum.Enum):
-    LAW_ENFORCEMENT_OFFICERS = "Law Enforcement Officers"
+    LAW_ENFORCEMENT_OFFICERS = "Sworn/Uniformed Police Officers"
     CIVILIAN_STAFF = "Civilian Staff"
-    UNKNOWN = "Unknown"
+    MENTAL_HEALTH = "Mental Health/Crisis Intervention Team Staff"
+    VICTIM_ADVOCATES = "Victim Advocates"
+    OTHER = "Other Staff"
+    UNKNOWN = "Unknown Staff"
+    VACANT = "Vacant Positions (Any Staff Type)"
 
     @classmethod
     def dimension_identifier(cls) -> str:

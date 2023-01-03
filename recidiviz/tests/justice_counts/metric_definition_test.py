@@ -96,7 +96,7 @@ class TestMetricDefinition(TestCase):
         self.assertEqual(law_enforcement.funding.metric_type.unit, "USD")
         self.assertEqual(law_enforcement.calls_for_service.metric_type.unit, "CALLS")
         self.assertEqual(law_enforcement.total_arrests.metric_type.unit, "ARRESTS")
-        self.assertEqual(law_enforcement.police_officers.metric_type.unit, "PEOPLE")
+        self.assertEqual(law_enforcement.staff.metric_type.unit, "PEOPLE")
         self.assertEqual(
             law_enforcement.civilian_complaints_sustained.metric_type.unit,
             "COMPLAINTS SUSTAINED",
