@@ -18,7 +18,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
@@ -199,7 +198,6 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             sen.offense_type,
             sen.ncic_code,
             sen.statute,
-            COALESCE(offense_type_ref.offense_type_short,'UNCATEGORIZED') AS offense_type_short,
             sen.uccs_code_uniform,
             sen.uccs_description_uniform,
             sen.uccs_category_uniform,
@@ -231,9 +229,6 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             -- Join to all incarceration/supervision sessions and then pick the closest one to the date imposed
             AND (ses.compartment_level_1 LIKE 'INCARCERATION%' OR ses.compartment_level_1 LIKE 'SUPERVISION%')
             AND sen.date_imposed < COALESCE(DATE_SUB(ses.end_date_exclusive, INTERVAL 1 DAY), CURRENT_DATE('US/Eastern'))
-        LEFT JOIN `{project_id}.{analyst_dataset}.offense_type_mapping_materialized` offense_type_ref
-            ON sen.state_code = offense_type_ref.state_code
-            AND COALESCE(sen.offense_type, sen.description) = offense_type_ref.offense_type
         QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, person_id, external_id, charge_id, sentence_type
             ORDER BY ABS(sentence_to_session_offset_days) ASC, ses.session_id ASC) = 1
     
@@ -267,7 +262,6 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SENTENCES_PREPROCESSED_VIEW_NAME,
     view_query_template=SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
-    analyst_dataset=ANALYST_VIEWS_DATASET,
     state_base_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     special_states="', '".join(SENTENCES_PREPROCESSED_SPECIAL_STATES),

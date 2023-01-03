@@ -49,7 +49,8 @@ _QUERY_TEMPLATE = f"""
     FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
     --exclude very old sentences that have improper parsing of date_imposed from 19XX to 20XX
     WHERE date_imposed <= CURRENT_DATE('US/Pacific')
-        AND offense_type_short = "ALCOHOL_DRUG"
+        AND (ncic_category_uniform IN ('Liquor', 'Dangerous Drugs')
+        OR ncic_description_uniform IN ('Driving Under Influence Drugs', 'Driving Under Influence Liquor', 'Drugs - Adulterated'))
     GROUP BY state_code, person_id
     ),
     test_spans AS (

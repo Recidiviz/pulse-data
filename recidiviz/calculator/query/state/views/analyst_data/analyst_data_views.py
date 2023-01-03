@@ -24,9 +24,6 @@ from recidiviz.calculator.query.state.views.analyst_data.agent_supervisor_prepro
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.analyst_data.offense_type_mapping import (
-    OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
     OFFICER_EVENTS_VIEW_BUILDER,
 )
@@ -187,7 +184,6 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_lo
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
     [
         EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
-        OFFENSE_TYPE_MAPPING_VIEW_BUILDER,
         OFFICER_EVENTS_VIEW_BUILDER,
         PERSON_EVENTS_VIEW_BUILDER,
         PERSON_SPANS_VIEW_BUILDER,
