@@ -21,6 +21,7 @@ from typing import Any, DefaultDict, Dict, List
 from unittest import TestCase
 
 from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsReleaseType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
 from recidiviz.justice_counts.dimensions.person import (
@@ -1875,5 +1876,34 @@ class TestMetricInterface(TestCase):
                 + [parole_terminations, post_release_terminations]
                 if m.key != supervision.supervision_terminations.key
                 and m.disabled is False
+            },
+        )
+
+        report_metrics = DatapointsForMetric.get_metric_definitions_for_report(
+            report_frequency=ReportingFrequency.MONTHLY.value,
+            starting_month=1,
+            systems={
+                schema.System.SUPERVISION,
+                schema.System.PRISONS,
+                schema.System.PAROLE,
+                schema.System.POST_RELEASE,
+            },
+            metric_key_to_datapoints={
+                supervision.supervision_terminations.key: DatapointsForMetric(
+                    disaggregated_by_supervision_subsystems=True
+                )
+            },
+        )
+
+        self.assertEqual(
+            {m.key for m in report_metrics},
+            {
+                m.key
+                for m in METRICS_BY_SYSTEM[schema.System.PRISONS.value]
+                + supervision_metrics
+                + [parole_terminations, post_release_terminations]
+                if m.key != supervision.supervision_terminations.key
+                and m.disabled is False
+                and m.reporting_frequency == ReportingFrequency.MONTHLY
             },
         )
