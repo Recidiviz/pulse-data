@@ -116,6 +116,9 @@ from recidiviz.ingest.direct.types.errors import (
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
+from recidiviz.persistence.database.schema.operations.dao import (
+    stale_secondary_raw_data,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment, trace
@@ -452,13 +455,17 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         # If there aren't any more tasks to schedule for the region, update to the appropriate next
         # status, based on the ingest instance.
-        if self.ingest_instance == DirectIngestInstance.SECONDARY:
+        if self.ingest_instance == DirectIngestInstance.PRIMARY:
             self.ingest_instance_status_manager.change_status_to(
-                DirectIngestStatus.READY_TO_FLASH
+                DirectIngestStatus.UP_TO_DATE
+            )
+        elif stale_secondary_raw_data(self.region_code()):
+            self.ingest_instance_status_manager.change_status_to(
+                DirectIngestStatus.STALE_RAW_DATA
             )
         else:
             self.ingest_instance_status_manager.change_status_to(
-                DirectIngestStatus.UP_TO_DATE
+                DirectIngestStatus.READY_TO_FLASH
             )
 
     def _schedule_raw_data_import_tasks(self) -> bool:

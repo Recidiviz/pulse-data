@@ -18,6 +18,7 @@
 transitions, please refer to http://go/ingest-instance-status-flow.
 """
 import abc
+import datetime
 from typing import Dict, List, Optional
 
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -221,6 +222,10 @@ class DirectIngestInstanceStatusManager:
     @abc.abstractmethod
     def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""
+
+    @abc.abstractmethod
+    def get_current_ingest_rerun_start_timestamp(self) -> Optional[datetime.datetime]:
+        """Gets the timestamp of the current rerun's start status."""
 
     @abc.abstractmethod
     def get_current_status_info(self) -> DirectIngestInstanceStatus:
