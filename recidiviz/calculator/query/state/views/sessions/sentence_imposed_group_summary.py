@@ -109,7 +109,6 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
         */
         ANY_VALUE(IF(is_longest_in_imposed_group, sentence_id, NULL)) AS most_severe_sentence_id,
         ANY_VALUE(IF(is_first_sentence, sentence_id, NULL)) AS parent_sentence_id,
-        ANY_VALUE(IF(is_longest_in_imposed_group, offense_type_short, NULL)) AS most_severe_offense_type_short,
         ANY_VALUE(IF(is_longest_in_imposed_group, description, NULL)) AS most_severe_description,
         ANY_VALUE(IF(is_longest_in_imposed_group, ncic_code, NULL)) AS most_severe_ncic_code,
         ANY_VALUE(IF(is_longest_in_imposed_group, statute, NULL)) AS statute,
@@ -159,7 +158,6 @@ SENTENCE_IMPOSED_GROUP_SUMMARY_QUERY_TEMPLATE = """
                 offense_type,
                 ncic_code,
                 statute,
-                offense_type_short,
                 uccs_code_uniform,
                 uccs_description_uniform,
                 uccs_category_uniform,
