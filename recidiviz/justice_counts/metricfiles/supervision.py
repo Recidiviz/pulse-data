@@ -21,6 +21,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionCaseType,
     SupervisionDailyPopulationType,
+    SupervisionExpenseType,
     SupervisionFundingType,
     SupervisionStaffType,
     SupervisionTerminationType,
@@ -39,6 +40,16 @@ SUPERVISION_METRIC_FILES = [
         definition=supervision.funding,
         disaggregation=SupervisionFundingType,
         disaggregation_column_name="funding_type",
+    ),
+    MetricFile(
+        canonical_filename="expenses",
+        definition=supervision.expenses,
+    ),
+    MetricFile(
+        canonical_filename="expenses_by_type",
+        definition=supervision.expenses,
+        disaggregation=SupervisionExpenseType,
+        disaggregation_column_name="expenses_type",
     ),
     MetricFile(
         canonical_filename="total_staff",
@@ -73,12 +84,6 @@ SUPERVISION_METRIC_FILES = [
     MetricFile(
         canonical_filename="population",
         definition=supervision.daily_population,
-    ),
-    MetricFile(
-        canonical_filename="population_by_type",
-        definition=supervision.daily_population,
-        disaggregation=SupervisionDailyPopulationType,
-        disaggregation_column_name="supervision_type",
     ),
     MetricFile(
         canonical_filename="population_by_type",

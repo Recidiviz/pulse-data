@@ -257,6 +257,54 @@ class SupervisionFinesFeesIncludesExcludes(Enum):
     LEGAL_OBLIGATIONS = "Legal financial obligations"
 
 
+# Expenses
+class SupervisionExpensesIncludesExcludes(Enum):
+    COMMUNITY_SUPERVISION = (
+        "Expenses for community supervision facility operations and staff"
+    )
+    CONSTRUCTION_MAINTENANCE = (
+        "Expenses for construction and maintenance of new supervision facilities"
+    )
+    TREATMENT_PROGRAMMING = "Expenses for agency-run or contracted treatment and programming at supervision facilities"
+    MEDICAL_CARE = (
+        "Expenses for agency-run or contracted medical care for people on supervision"
+    )
+    INTERSTATE_COMPACT = "Expenses for supervision services contracted to other jurisdictions through interstate compact"
+    PRIVATE_SERVICES = (
+        "Expenses for the operation of private community supervision services"
+    )
+    STIPENDS_REIMBURSEMENTS = "Funding for stipends or reimbursements for people on supervision detained in jail facilities (locally or out of state)"
+    JAILS = "Expenses for jails (general operations)"
+    PRISONS = "Expenses for prisons (general operations)"
+    JUVENILE_SUPERVISION = "Expenses for juvenile supervision"
+
+
+class SupervisionPersonnelExpensesIncludesExcludes(Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT = "Retirement contributions"
+    INDIVIDUALS_CONTRACTED = (
+        "Costs for individuals contracted to work for the supervision agency"
+    )
+    COMPANIES_CONTRACTED = "Costs for companies or service providers contracted to support work with supervision agencies"
+
+
+class SupervisionTrainingExpensesIncludesExcludes(Enum):
+    ANNUAL = "Annual training"
+    CONTINUING = "Continuing education"
+    ACADEMY = "Training academy"
+    SPECIALIZED = "Specialized training"
+    EXTERNAL = "External training or professional development opportunities (conferences, classes, etc.)"
+
+
+class SupervisionFacilitiesEquipmentExpensesIncludesExcludes(Enum):
+    OPERATIONS = "Supervision facility operations"
+    MAINTENANCE = "Supervision facility maintenance"
+    RENOVATION = "Supervision facility renovation"
+    CONSTRUCTION = "Supervision facility construction"
+    EQUIPMENT = "Equipment (e.g., computers, communication, and information technology infrastructure)"
+
+
 # Staff
 class SupervisionStaffIncludesExcludes(Enum):
     FILLED = "Filled positions"
