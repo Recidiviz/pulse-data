@@ -35,10 +35,18 @@ def upgrade() -> None:
 
     op.add_column(
         "direct_ingest_raw_file_metadata",
-        sa.Column("update_datetime", sa.DateTime(timezone=True), nullable=False),
+        sa.Column(
+            "update_datetime",
+            sa.DateTime(timezone=True),
+            nullable=True,
+        ),
     )
     with op.get_context().autocommit_block():
         op.execute(UPPER_BOUND_UPGRADE_QUERY)
+
+    op.alter_column(
+        "direct_ingest_raw_file_metadata", "update_datetime", nullable=False
+    )
     # ### end Alembic commands ###
 
 
