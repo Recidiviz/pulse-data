@@ -128,7 +128,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
                     row_id, document_fields = self.transform_row(line)
                 except Exception as e:
                     logging.error(
-                        "Transform row failed on [%d] due to: %d", line, str(e)
+                        "Transform row failed on [%s] due to: %s", line, str(e)
                     )
                     continue
 
