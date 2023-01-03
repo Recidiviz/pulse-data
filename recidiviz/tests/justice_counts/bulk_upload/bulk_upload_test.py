@@ -345,18 +345,20 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(metrics[0].key, "SUPERVISION_BUDGET")
             self.assertEqual(metrics[0].value, 400)
-            self.assertEqual(metrics[1].key, "SUPERVISION_RECONVICTIONS")
-            self.assertEqual(metrics[1].value, None)
-            self.assertEqual(metrics[2].key, "SUPERVISION_TOTAL_STAFF")
-            self.assertEqual(metrics[2].value, 150)
+            self.assertEqual(metrics[1].key, "SUPERVISION_EXPENSES")
+            self.assertEqual(metrics[1].value, 300)
+            self.assertEqual(metrics[2].key, "SUPERVISION_RECONVICTIONS")
+            self.assertEqual(metrics[2].value, None)
+            self.assertEqual(metrics[3].key, "SUPERVISION_TOTAL_STAFF")
+            self.assertEqual(metrics[3].value, 150)
             self.assertEqual(
-                metrics[2]
+                metrics[3]
                 .aggregated_dimensions[0]  # type: ignore[index]
                 .dimension_to_value[SupervisionStaffType.SUPERVISION],
                 100,
             )
             self.assertEqual(
-                metrics[2]  # type: ignore[index]
+                metrics[3]  # type: ignore[index]
                 .aggregated_dimensions[0]
                 .dimension_to_value[SupervisionStaffType.MANAGEMENT_AND_OPERATIONS],
                 50,
@@ -371,10 +373,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(metrics[0].key, "SUPERVISION_BUDGET")
             self.assertEqual(metrics[0].value, 1000)
-            self.assertEqual(metrics[1].key, "SUPERVISION_RECONVICTIONS")
-            self.assertEqual(metrics[1].value, None)
-            self.assertEqual(metrics[2].key, "SUPERVISION_TOTAL_STAFF")
+            self.assertEqual(metrics[1].key, "SUPERVISION_EXPENSES")
+            self.assertEqual(metrics[1].value, 900)
+            self.assertEqual(metrics[2].key, "SUPERVISION_RECONVICTIONS")
             self.assertEqual(metrics[2].value, None)
+            self.assertEqual(metrics[3].key, "SUPERVISION_TOTAL_STAFF")
+            self.assertEqual(metrics[3].value, None)
 
     def _test_law_enforcement(
         self, reports_by_instance: Dict[str, schema.Report]

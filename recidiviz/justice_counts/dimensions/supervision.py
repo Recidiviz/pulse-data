@@ -34,6 +34,18 @@ class SupervisionFundingType(DimensionBase, enum.Enum):
         return "metric/supervision/funding/type"
 
 
+class SupervisionExpenseType(DimensionBase, enum.Enum):
+    PERSONNEL = "Personnel"
+    TRAINING = "Training"
+    FACILITIES_EQUIPMENT = "Facilities and Equipment"
+    OTHER = "Other Expenses"
+    UNKNOWN = "Unknown Expenses"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/supervision/expense/type"
+
+
 class SupervisionStaffType(DimensionBase, enum.Enum):
     SUPERVISION = "Supervision Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"

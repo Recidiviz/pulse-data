@@ -86,6 +86,7 @@ METRICS = [
     prosecution.cases_declined,
     prosecution.violations,
     supervision.funding,
+    supervision.expenses,
     supervision.total_staff,
     supervision.residents,
     supervision.daily_population,

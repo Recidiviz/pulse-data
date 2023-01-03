@@ -25,6 +25,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionCaseType,
     SupervisionDailyPopulationType,
+    SupervisionExpenseType,
     SupervisionFundingType,
     SupervisionStaffType,
     SupervisionTerminationType,
@@ -41,14 +42,18 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     PeopleOnAdministrativeSupervisionIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionCountyMunicipalAppropriationIncludesExcludes,
+    SupervisionExpensesIncludesExcludes,
+    SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
     SupervisionFinesFeesIncludesExcludes,
     SupervisionFundingIncludesExcludes,
     SupervisionGrantsIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
+    SupervisionPersonnelExpensesIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
     SupervisionStateAppropriationIncludesExcludes,
+    SupervisionTrainingExpensesIncludesExcludes,
     SupervisionVacantStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -140,6 +145,52 @@ funding = MetricDefinition(
                 SupervisionFundingType.UNKNOWN: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for which the source is not known.",
             },
         )
+    ],
+)
+
+expenses = MetricDefinition(
+    system=System.SUPERVISION,
+    metric_type=MetricType.EXPENSES,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Expenses",
+    description="The amount spent by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionExpensesIncludesExcludes,
+        excluded_set={
+            SupervisionExpensesIncludesExcludes.STIPENDS_REIMBURSEMENTS,
+            SupervisionExpensesIncludesExcludes.JAILS,
+            SupervisionExpensesIncludesExcludes.PRISONS,
+            SupervisionExpensesIncludesExcludes.JUVENILE_SUPERVISION,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=SupervisionExpenseType,
+            required=True,
+            dimension_to_includes_excludes={
+                SupervisionExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=SupervisionPersonnelExpensesIncludesExcludes,
+                    excluded_set={
+                        SupervisionPersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED,
+                    },
+                ),
+                SupervisionExpenseType.TRAINING: IncludesExcludesSet(
+                    members=SupervisionTrainingExpensesIncludesExcludes,
+                ),
+                SupervisionExpenseType.FACILITIES_EQUIPMENT: IncludesExcludesSet(
+                    members=SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                SupervisionExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionExpenseType.FACILITIES_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionExpenseType.OTHER: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not personnel, training, or facilities and equipment expenses.",
+                SupervisionExpenseType.UNKNOWN: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for a purpose that is not known.",
+            },
+        ),
     ],
 )
 
