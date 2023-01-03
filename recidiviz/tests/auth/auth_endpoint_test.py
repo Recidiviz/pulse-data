@@ -595,6 +595,7 @@ class AuthEndpointTests(TestCase):
             can_access_case_triage=False,
             should_see_beta_charts=True,
             routes={"A": False, "B": True},
+            feature_variants={"C": False},
         )
         default_2 = generate_fake_default_permissions(
             state="US_ND",
@@ -602,6 +603,7 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=False,
             can_access_case_triage=True,
             should_see_beta_charts=True,
+            feature_variants={"C": False},
         )
         default_3 = generate_fake_default_permissions(
             state="US_ID",
@@ -613,6 +615,7 @@ class AuthEndpointTests(TestCase):
         new_permissions = generate_fake_permissions_overrides(
             email="test@domain.org",
             routes={"overridden route": True},
+            feature_variants={"overridden variant": True},
         )
         add_entity_to_database_session(
             self.database_key,
@@ -643,6 +646,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_ND",
                     "shouldSeeBetaCharts": True,
                     "routes": {"overridden route": True},
+                    "featureVariants": {"overridden variant": True},
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -659,6 +663,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_ID",
                     "shouldSeeBetaCharts": True,
                     "routes": None,
+                    "featureVariants": None,
                 },
             ]
         response = self.client.get(
@@ -702,6 +707,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": True,
                     "routes": None,
+                    "featureVariants": None,
                 },
             ]
         response = self.client.get(
@@ -730,6 +736,7 @@ class AuthEndpointTests(TestCase):
         new_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
             routes={"A": True, "C": False},
+            feature_variants={"C": True},
         )
         add_entity_to_database_session(
             self.database_key, [user_1, applicable_override, default_1, new_permissions]
@@ -751,6 +758,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_ME",
                     "shouldSeeBetaCharts": False,
                     "routes": {"A": True, "C": False},
+                    "featureVariants": {"C": True},
                 },
             ]
         response = self.client.get(
@@ -796,6 +804,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_CO",
                     "shouldSeeBetaCharts": False,
                     "routes": None,
+                    "featureVariants": None,
                 },
             ]
         response = self.client.get(
@@ -819,6 +828,7 @@ class AuthEndpointTests(TestCase):
             can_access_case_triage=False,
             should_see_beta_charts=True,
             routes={"A": "B", "B": "C"},
+            feature_variants={"D": "E"},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
         self.client.post(
@@ -850,6 +860,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": True,
                     "routes": {"A": "B", "B": "C"},
+                    "featureVariants": {"D": "E"},
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -866,6 +877,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_CO",
                     "shouldSeeBetaCharts": False,
                     "routes": None,
+                    "featureVariants": None,
                 },
             ]
         response = self.client.get(
@@ -1004,6 +1016,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_CO",
                     "shouldSeeBetaCharts": False,
                     "routes": None,
+                    "featureVariants": None,
                 }
             ]
             response = self.client.get(
@@ -1049,6 +1062,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_TN",
                     "shouldSeeBetaCharts": False,
                     "routes": None,
+                    "featureVariants": None,
                 }
             ]
             response = self.client.get(
@@ -1081,6 +1095,9 @@ class AuthEndpointTests(TestCase):
                         "system_prisonToSupervision": "A",
                         "community_practices": "4",
                     },
+                    "featureVariants": {
+                        "variant1": "true",
+                    },
                 },
             )
             self.assertEqual(HTTPStatus.OK, update_routes.status_code)
@@ -1111,6 +1128,9 @@ class AuthEndpointTests(TestCase):
                         "system_prisonToSupervision": "A",
                         "community_practices": "4",
                     },
+                    "featureVariants": {
+                        "variant1": "true",
+                    },
                 },
             ]
             response = self.client.get(
@@ -1132,6 +1152,7 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=True,
             should_see_beta_charts=True,
             routes={"A": "B"},
+            feature_variants={"C": "D"},
         )
         add_entity_to_database_session(self.database_key, [added_user, default_tn])
         with self.app.test_request_context():
@@ -1166,6 +1187,7 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "routes": {"A": "B"},
+                    "featureVariants": {"C": "D"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_TN",
                 },
@@ -1188,6 +1210,7 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=False,
             should_see_beta_charts=False,
             routes={"A": "B"},
+            feature_variants={"C": "D"},
         )
         add_entity_to_database_session(
             self.database_key, [added_user, override_permissions]
@@ -1207,6 +1230,7 @@ class AuthEndpointTests(TestCase):
                 "canAccessLeadershipDashboard": True,
                 "emailAddress": "user@domain.org",
                 "routes": {"A": "B"},
+                "featureVariants": {"C": "D"},
                 "shouldSeeBetaCharts": False,
             }
             self.assertEqual(expected, json.loads(response.data))
@@ -1225,11 +1249,13 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=False,
             should_see_beta_charts=True,
             routes={"A": "B", "C": "D"},
+            feature_variants={"E": "F"},
         )
         roster_user_override_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
             can_access_case_triage=False,
             routes={"A": "B"},
+            feature_variants={"C": "D"},
         )
         add_entity_to_database_session(
             self.database_key, [roster_user, default, roster_user_override_permissions]
@@ -1254,6 +1280,7 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "routes": {"A": "B", "C": "D"},
+                    "featureVariants": {"E": "F"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_MO",
                 },
@@ -1277,6 +1304,7 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=True,
             should_see_beta_charts=True,
             routes={"A": "B", "C": "D"},
+            feature_variants={"E": "F", "G": "H"},
         )
         add_entity_to_database_session(self.database_key, [user, default])
         with self.app.test_request_context():
@@ -1287,6 +1315,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "shouldSeeBetaCharts": False,
                     "routes": {"A": "B"},
+                    "featureVariants": {"E": "F"},
                 },
             )
             delete_roster_user = self.client.delete(
@@ -1308,6 +1337,7 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "routes": {"A": "B", "C": "D"},
+                    "featureVariants": {"E": "F", "G": "H"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_CO",
                 },
@@ -1363,6 +1393,7 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "routes": None,
+                    "featureVariants": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_ID",
                 },
@@ -1402,6 +1433,7 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "line_staff_user",
                     "routes": None,
+                    "featureVariants": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_TN",
                 },
@@ -1423,6 +1455,7 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=True,
             can_access_case_triage=False,
             routes={"A": "B", "B": "C"},
+            feature_variants={"D": "E"},
         )
         add_entity_to_database_session(self.database_key, [default])
         with self.app.test_request_context():
@@ -1435,6 +1468,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessLeadershipDashboard": True,
                     "shouldSeeBetaCharts": None,
                     "routes": {"A": "B", "B": "C"},
+                    "featureVariants": {"D": "E"},
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -1468,6 +1502,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": True,
                     "routes": {"route_A": True, "routeB": True, "C": False},
+                    "featureVariants": None,
                 },
                 {
                     "canAccessCaseTriage": True,
@@ -1476,6 +1511,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": False,
                     "routes": {"route_A": True, "routeB": False},
+                    "featureVariants": None,
                 },
             ]
             response = self.client.get(
@@ -1503,6 +1539,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": False,
                     "routes": None,
+                    "featureVariants": None,
                 },
             ]
             response = self.client.get(

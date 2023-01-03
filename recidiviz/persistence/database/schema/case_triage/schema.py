@@ -584,6 +584,7 @@ class StateRolePermissions(CaseTriageBase):
     can_access_case_triage = Column(Boolean, nullable=True)
     should_see_beta_charts = Column(Boolean, nullable=True)
     routes = Column(JSONB, nullable=True)
+    feature_variants = Column(JSONB, nullable=True)
 
 
 class PermissionsOverride(CaseTriageBase):
@@ -595,3 +596,4 @@ class PermissionsOverride(CaseTriageBase):
     can_access_case_triage = Column(Boolean, nullable=True)
     should_see_beta_charts = Column(Boolean, nullable=True)
     routes = Column(JSONB, nullable=True)
+    feature_variants = Column(JSONB, nullable=True)

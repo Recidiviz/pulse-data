@@ -34,9 +34,10 @@ export const CreateEditUserForm = ({
   onRevokeAccess: () => Promise<void>;
   selectedEmails: React.Key[];
 }): JSX.Element => {
+  const { Option } = Select;
+
   const [form] = Form.useForm();
   const draggableModal = DraggableModal();
-  const { Option } = Select;
 
   // control useCustomPermissions
   const [hidePermissions, setHidePermissions] = useState(true);
@@ -88,11 +89,13 @@ export const CreateEditUserForm = ({
       }
       onCancel={handleCancel}
       footer={[
-        <Button onClick={handleCancel}>Cancel</Button>,
-        <Button type="primary" danger onClick={handleRevokeAccess}>
+        <Button onClick={handleCancel} key="cancel">
+          Cancel
+        </Button>,
+        <Button type="primary" danger onClick={handleRevokeAccess} key="revoke">
           Revoke access
         </Button>,
-        <Button type="primary" onClick={handleEdit}>
+        <Button type="primary" onClick={handleEdit} key="edit">
           Edit
         </Button>,
       ]}
@@ -139,12 +142,13 @@ export const CreateEditUserForm = ({
         <Form.Item name="lastName" label="Last Name" labelCol={{ span: 5 }}>
           <Input />
         </Form.Item>
+        <hr />
         <Form.Item
           name="useCustomPermissions"
           label="Use custom permissions"
           labelAlign="left"
         >
-          <Select defaultValue={null} onChange={showPermissions} allowClear>
+          <Select onChange={showPermissions} allowClear>
             <Option value>Add custom permissions</Option>
             <Option value={false}>Delete custom permissions</Option>
           </Select>

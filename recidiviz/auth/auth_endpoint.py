@@ -387,6 +387,10 @@ def users() -> Union[str, Response]:
                     PermissionsOverride.routes,
                     StateRolePermissions.routes,
                 ).label("routes"),
+                func.coalesce(
+                    PermissionsOverride.feature_variants,
+                    StateRolePermissions.feature_variants,
+                ).label("feature_variants"),
             )
             .select_from(Roster)
             .join(
@@ -432,6 +436,7 @@ def users() -> Union[str, Response]:
                     "canAccessCaseTriage": user.can_access_case_triage,
                     "shouldSeeBetaCharts": user.should_see_beta_charts,
                     "routes": user.routes,
+                    "featureVariants": user.feature_variants,
                     "blocked": user.blocked,
                 }
                 for user in user_info
@@ -512,6 +517,7 @@ def states() -> Response:
                     "canAccessCaseTriage": res.can_access_case_triage,
                     "shouldSeeBetaCharts": res.should_see_beta_charts,
                     "routes": res.routes,
+                    "featureVariants": res.feature_variants,
                 }
                 for res in state_permissions
             ]
@@ -548,6 +554,7 @@ def state_info(state_code: str) -> Response:
                                 "can_access_case_triage": per.can_access_case_triage,
                                 "should_see_beta_charts": per.should_see_beta_charts,
                                 "routes": per.routes,
+                                "feature_variants": per.feature_variants,
                             },
                         }
                         for per in role_permissions
@@ -691,11 +698,14 @@ def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str
             request_json = assert_type(request.json, dict)
             user_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
             user_dict["user_email"] = email
-            routes_json = request_json.get(
-                "routes"
-            )  # user_dict's value for "routes" shouldn't be in snake case
+            # user_dict's value for "routes" and "feature_variants" shouldn't be in snake case
+            routes_json = request_json.get("routes")
             if routes_json is not None:
                 user_dict["routes"] = assert_type(routes_json, dict)
+            feature_variants_json = request_json.get("featureVariants")
+            if feature_variants_json is not None:
+                user_dict["feature_variants"] = assert_type(feature_variants_json, dict)
+
             if (
                 session.query(PermissionsOverride)
                 .filter(PermissionsOverride.user_email == email)
@@ -713,6 +723,7 @@ def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str
                             "canAccessCaseTriage": new_permissions.can_access_case_triage,
                             "shouldSeeBetaCharts": new_permissions.should_see_beta_charts,
                             "routes": new_permissions.routes,
+                            "featureVariants": new_permissions.feature_variants,
                         }
                     ),
                     HTTPStatus.OK,
@@ -735,6 +746,7 @@ def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str
                         "canAccessCaseTriage": updated_permissions.can_access_case_triage,
                         "shouldSeeBetaCharts": updated_permissions.should_see_beta_charts,
                         "routes": updated_permissions.routes,
+                        "featureVariants": updated_permissions.feature_variants,
                     }
                 ),
                 HTTPStatus.OK,
