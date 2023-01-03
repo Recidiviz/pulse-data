@@ -16,7 +16,6 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Supervision."""
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -26,6 +25,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionCaseType,
     SupervisionDailyPopulationType,
+    SupervisionFundingType,
     SupervisionStaffType,
     SupervisionTerminationType,
     SupervisionViolationType,
@@ -40,20 +40,23 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     PeopleOnActiveSupervisionIncludesExcludes,
     PeopleOnAdministrativeSupervisionIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
+    SupervisionCountyMunicipalAppropriationIncludesExcludes,
+    SupervisionFinesFeesIncludesExcludes,
+    SupervisionFundingIncludesExcludes,
+    SupervisionGrantsIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
+    SupervisionStateAppropriationIncludesExcludes,
     SupervisionVacantStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
-    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -77,28 +80,66 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.BUDGET,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) allocated to your agency's supervision functions.",
+    display_name="Funding",
+    description="The amount of funding for the provision of community supervision and operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.SUPERVISION_IN_ANOTHER_AGENCY_BUDGET,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Is community supervision included in another agency's budget?",
-            required=True,
-            multiple_choice_options=YesNoContext,
-        ),
-        Context(
-            key=ContextKey.SUPERVISION_STRUCTURE,
-            value_type=ValueType.TEXT,
-            label="Please specify supervision structure type (unified, etc.).",
-            required=True,
-        ),
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionFundingIncludesExcludes,
+        excluded_set={
+            SupervisionFundingIncludesExcludes.BIENNIUM,
+            SupervisionFundingIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
+            SupervisionFundingIncludesExcludes.STIPENDS_JAIL,
+            SupervisionFundingIncludesExcludes.STIPENDS_PRISON,
+            SupervisionFundingIncludesExcludes.JAIL_MAINTENANCE,
+            SupervisionFundingIncludesExcludes.PRISON_MAINTENANCE,
+            SupervisionFundingIncludesExcludes.JUVENILE_SUPERVISION,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=SupervisionFundingType,
+            required=False,
+            dimension_to_includes_excludes={
+                SupervisionFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                    members=SupervisionStateAppropriationIncludesExcludes,
+                    excluded_set={
+                        SupervisionStateAppropriationIncludesExcludes.PROPOSED,
+                        SupervisionStateAppropriationIncludesExcludes.PRELIMINARY,
+                        SupervisionStateAppropriationIncludesExcludes.GRANTS_NOT_BUDGET,
+                    },
+                ),
+                SupervisionFundingType.COUNTY_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
+                    members=SupervisionCountyMunicipalAppropriationIncludesExcludes,
+                    excluded_set={
+                        SupervisionCountyMunicipalAppropriationIncludesExcludes.PROPOSED,
+                        SupervisionCountyMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                    },
+                ),
+                SupervisionFundingType.GRANTS: IncludesExcludesSet(
+                    members=SupervisionGrantsIncludesExcludes,
+                ),
+                SupervisionFundingType.FINES_FEES: IncludesExcludesSet(
+                    members=SupervisionFinesFeesIncludesExcludes,
+                    excluded_set={
+                        SupervisionFinesFeesIncludesExcludes.RESTITUTION,
+                        SupervisionFinesFeesIncludesExcludes.LEGAL_OBLIGATIONS,
+                    },
+                ),
+            },
+            dimension_to_description={
+                SupervisionFundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionFundingType.COUNTY_MUNICIPAL_APPROPRIATION: "The amount of funding appropriated by counties or cities for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionFundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionFundingType.FINES_FEES: "The amount of funding the agency collected from people on supervision that is used to support the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionFundingType.OTHER: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that is not appropriations from the state, appropriations from the county or municipality, funding from grants, or funding from fines or fees.",
+                SupervisionFundingType.UNKNOWN: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for which the source is not known.",
+            },
+        )
     ],
 )
 

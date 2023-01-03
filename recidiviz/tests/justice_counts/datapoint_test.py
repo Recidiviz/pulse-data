@@ -427,7 +427,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             user = self.test_schema_objects.test_user_A
             session.add_all([user, agency])
             agency_metric = MetricInterface(
-                key=supervision.annual_budget.key,
+                key=supervision.funding.key,
                 disaggregated_by_supervision_subsystems=True,
             )
             DatapointInterface.add_or_update_agency_datapoints(
@@ -445,7 +445,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 )
 
             agency_metric = MetricInterface(
-                key=supervision.annual_budget.key,
+                key=supervision.funding.key,
                 disaggregated_by_supervision_subsystems=False,
             )
             DatapointInterface.add_or_update_agency_datapoints(
@@ -537,11 +537,11 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 # field will default to None
                 self.assertEqual(metric.disaggregated_by_supervision_subsystems, None)
 
-            # Add agency datapoint that makes the supervision annual_budget metric be
+            # Add agency datapoint that makes the supervision funding metric be
             # disaggregated by subsystem
             session.add(
                 Datapoint(
-                    metric_definition_key=supervision.annual_budget.key,
+                    metric_definition_key=supervision.funding.key,
                     source=supervision_agency,
                     context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
                     dimension_identifier_to_member=None,
@@ -556,10 +556,10 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 )
             )
             for metric in supervision_agency_metrics:
-                # All metrics except for annual_budget should have a
+                # All metrics except for funding should have a
                 # disaggregated_by_supervision_subsystems field as False,
                 # budget should be True.
-                if metric.key != supervision.annual_budget.key:
+                if metric.key != supervision.funding.key:
                     self.assertEqual(
                         metric.disaggregated_by_supervision_subsystems, False
                     )
