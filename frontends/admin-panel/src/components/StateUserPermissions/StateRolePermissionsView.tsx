@@ -24,7 +24,7 @@ import {
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
-import { ROUTES_PERMISSIONS_LABELS } from "./types";
+import { ROUTES_PERMISSIONS_LABELS } from "../constants";
 import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {

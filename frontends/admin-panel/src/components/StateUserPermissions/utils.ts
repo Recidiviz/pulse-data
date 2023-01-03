@@ -16,7 +16,7 @@
 // =============================================================================
 import { useRef, useState } from "react";
 import type { DraggableData, DraggableEvent } from "react-draggable";
-import { Routes } from "./types";
+import { Routes } from "../constants";
 
 interface DraggableConstants {
   disabled: boolean;

@@ -1,0 +1,3 @@
+district,email_address,external_id,role,first_name,last_name
+,line_staff@domain.org,3706,line_staff_user,"line_staff","user"
+,leadership@domain.org,3975,leadership_role,"leadership","user"

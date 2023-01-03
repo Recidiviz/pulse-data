@@ -17,6 +17,7 @@
 
 """Tests for auth/auth_endpoint.py."""
 import json
+import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional
 from unittest import TestCase, mock
@@ -25,6 +26,7 @@ from unittest.mock import MagicMock, patch
 import flask
 import pytest
 from flask import Flask
+from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -42,6 +44,13 @@ from recidiviz.tests.auth.helpers import (
     generate_fake_user_restrictions,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
+
+_FIXTURE_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "./fixtures/",
+    )
+)
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -104,6 +113,11 @@ class AuthEndpointTests(TestCase):
             self.add_user = flask.url_for(
                 "auth_endpoint_blueprint.add_user",
                 email="parameter@domain.org",
+            )
+            self.upload_roster = lambda state_code, role=None: flask.url_for(
+                "auth_endpoint_blueprint.upload_roster",
+                state_code=state_code,
+                role=role,
             )
             self.update_user = flask.url_for(
                 "auth_endpoint_blueprint.update_user",
@@ -979,6 +993,267 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(
                 HTTPStatus.UNPROCESSABLE_ENTITY, repeat_roster_user.status_code
             )
+
+    def test_upload_roster(self) -> None:
+        with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
+            file = FileStorage(fixture)
+            data = dict(file=file)
+
+            with self.app.test_request_context():
+                self.client.put(
+                    self.upload_roster("us_xx"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "3975",
+                        "firstName": "leadership",
+                        "lastName": "user",
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                    },
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "line_staff@domain.org",
+                        "externalId": "3706",
+                        "firstName": "line_staff",
+                        "lastName": "user",
+                        "role": "line_staff_user",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                    },
+                ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_with_incorrect_role(self) -> None:
+        with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
+            file = FileStorage(fixture)
+            data = dict(file=file)
+
+            with self.app.test_request_context():
+                response = self.client.put(
+                    self.upload_roster("us_xx", "leadership_role"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+                error_message = "User line_staff@domain.org has role 'line_staff_user' in the roster but the specified role is 'leadership_role'"
+                self.assertEqual(error_message, response.data.decode("UTF-8"))
+
+    def test_upload_roster_with_missing_email_address(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",
+            district="",
+        )
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_email.csv"), "rb"
+        ) as fixture:
+            file = FileStorage(fixture)
+            data = dict(file=file)
+
+            with self.app.test_request_context():
+                response = self.client.put(
+                    self.upload_roster("us_xx", "leadership_role"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+                error_message = "Roster contains a row that is missing an email address or external_id (required)"
+                self.assertEqual(error_message, response.data.decode("UTF-8"))
+
+                # Existing rows should not have been deleted
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "0000",
+                        "firstName": None,
+                        "lastName": None,
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                    },
+                ]
+                response = self.client.get(
+                    self.users,
+                    headers=self.headers,
+                )
+                self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_with_missing_external_id(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",
+            district="",
+        )
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_external_id.csv"), "rb"
+        ) as fixture:
+            file = FileStorage(fixture)
+            data = dict(file=file)
+
+            with self.app.test_request_context():
+                response = self.client.put(
+                    self.upload_roster("us_xx", "leadership_role"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+                error_message = "Roster contains a row that is missing an email address or external_id (required)"
+                self.assertEqual(error_message, response.data.decode("UTF-8"))
+
+                # Existing rows should not have been deleted
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "0000",
+                        "firstName": None,
+                        "lastName": None,
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                    },
+                ]
+                response = self.client.get(
+                    self.users,
+                    headers=self.headers,
+                )
+                self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_with_role_overwrite(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should change with the new upload
+            district="",
+        )
+        # This user will be deleted because they do not appear in the uploaded data
+        roster_leadership_user = generate_fake_rosters(
+            email="removed@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0001",  # This should change with the new upload
+            district="",
+        )
+        # This user will not change
+        roster_line_staff_user = generate_fake_rosters(
+            email="line_staff@domain.org",
+            region_code="US_XX",
+            role="line_staff_user",
+            district="",
+        )
+        add_entity_to_database_session(
+            self.database_key, [roster_leadership_user, roster_line_staff_user]
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
+        ) as fixture:
+            file = FileStorage(fixture)
+            data = dict(file=file)
+
+            with self.app.test_request_context():
+                self.client.put(
+                    self.upload_roster("us_xx", "leadership_role"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "3975",
+                        "firstName": "leadership",
+                        "lastName": "user",
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                    },
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "line_staff@domain.org",
+                        "externalId": None,
+                        "firstName": None,
+                        "lastName": None,
+                        "role": "line_staff_user",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                    },
+                ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
 
     def test_update_user_in_roster(self) -> None:
         user = generate_fake_rosters(

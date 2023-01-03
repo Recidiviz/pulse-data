@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import PermissionSelect from "./PermissionSelect";
 import {
   FEATURE_VARIANTS_LABELS,
   GENERAL_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
   WORKFLOWS_PERMISSIONS_LABELS,
-} from "./types";
+} from "../constants";
+import PermissionSelect from "./PermissionSelect";
 
 export const CustomPermissionsPanel = ({
   hidePermissions,

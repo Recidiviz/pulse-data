@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+/* eslint-disable camelcase */
 
 export const formLayout = {
   labelCol: { span: 4 },
@@ -22,3 +23,55 @@ export const formLayout = {
 export const formTailLayout = {
   wrapperCol: { offset: 4, span: 20 },
 };
+
+export type Routes = {
+  operations?: boolean;
+  workflows?: boolean;
+  system_libertyToPrison?: boolean;
+  system_prison?: boolean;
+  system_prisonToSupervision?: boolean;
+  system_supervision?: boolean;
+  system_supervisionToPrison?: boolean;
+  system_supervisionToLiberty?: boolean;
+};
+
+export const FEATURE_VARIANTS_LABELS = {
+  usTnExpiration: "US_TN Expiration",
+  CompliantReportingAlmostEligible: "Compliant Reporting Almost Eligible",
+  usTnSupervisionLevelDowngrade: "US_TN Supervision Level Downgrade",
+};
+
+export const WORKFLOWS_PERMISSIONS_LABELS = {
+  workflows: "Workflows",
+};
+
+export const VITALS_PERMISSIONS_LABELS = {
+  operations: "Vitals",
+};
+
+export const PATHWAYS_PERMISSIONS_LABELS = {
+  system_libertyToPrison: "Liberty to Prison",
+  system_prison: "Prison",
+  system_prisonToSupervision: "Prison to Supervision",
+  system_supervision: "Supervision",
+  system_supervisionToPrison: "Supervision to Prison",
+  system_supervisionToLiberty: "Supervision to Liberty",
+};
+
+export const ROUTES_PERMISSIONS_LABELS = {
+  ...WORKFLOWS_PERMISSIONS_LABELS,
+  ...VITALS_PERMISSIONS_LABELS,
+  ...PATHWAYS_PERMISSIONS_LABELS,
+};
+
+export const GENERAL_PERMISSIONS_LABELS = {
+  canAccessLeadershipDashboard: "Can access Leadership Dashboard",
+  canAccessCaseTriage: "Can access Case Triage",
+  shouldSeeBetaCharts: "Should see beta charts",
+};
+
+export const USER_ROLES = [
+  "leadership_role",
+  "line_staff_user",
+  "level_1_access_role",
+];

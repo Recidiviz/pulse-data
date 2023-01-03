@@ -14,5 +14,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { PageHeader } from "antd";
+import { useState } from "react";
+import UploadRoster from "./UploadRoster";
 
-export { default } from "./UploadLineStaffRostersView";
+const UploadLineStaffRostersView = (): JSX.Element => {
+  const [stateCode, setStateCode] = useState<string | undefined>();
+
+  return (
+    <>
+      <PageHeader title="Upload Line Staff Roster" />
+      <UploadRoster
+        action={`/admin/api/line_staff_tools/${stateCode}/upload_roster`}
+        method="POST"
+        columns={[
+          "email_address",
+          "job_title",
+          "district",
+          "external_id",
+          "employee_name",
+        ]}
+        setStateCode={setStateCode}
+        stateCode={stateCode}
+      />
+    </>
+  );
+};
+
+export default UploadLineStaffRostersView;

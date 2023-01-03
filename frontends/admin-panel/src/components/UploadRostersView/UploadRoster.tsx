@@ -15,13 +15,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { UploadOutlined } from "@ant-design/icons";
-import { Alert, Button, message, PageHeader, Space, Upload } from "antd";
+import { Alert, Button, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
 import { fetchRosterStateCodes } from "../../AdminPanelAPI";
+import { USER_ROLES } from "../constants";
 import StateSelector from "../Utilities/StateSelector";
 
-const UploadRostersView = (): JSX.Element => {
-  const [stateCode, setStateCode] = useState<string | undefined>();
+type UploadRosterProps = {
+  action: string;
+  method: "PUT" | "POST";
+  columns: string[];
+  setStateCode: (stateCode: string) => void;
+  stateCode?: string;
+  setRole?: (role: string) => void;
+  enableRoleSelector?: boolean;
+};
+
+const UploadRoster = ({
+  action,
+  method,
+  columns,
+  setStateCode,
+  stateCode,
+  setRole,
+  enableRoleSelector = false,
+}: UploadRosterProps): JSX.Element => {
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | void>();
 
@@ -29,12 +47,25 @@ const UploadRostersView = (): JSX.Element => {
 
   return (
     <>
-      <PageHeader title="Upload Line Staff Roster" />
       <Space direction="vertical">
         <StateSelector
           fetchStateList={fetchRosterStateCodes}
           onChange={(stateInfo) => setStateCode(stateInfo.code)}
         />
+        {enableRoleSelector && (
+          <Select
+            defaultValue={null}
+            placeholder="Select a role"
+            allowClear
+            style={{
+              width: 200,
+            }}
+            options={USER_ROLES.map((roleName) => {
+              return { value: roleName, name: roleName };
+            })}
+            onChange={setRole}
+          />
+        )}
 
         <Alert
           message="Instructions"
@@ -49,21 +80,13 @@ const UploadRostersView = (): JSX.Element => {
                 The inputted CSV must have a header row with exactly these five
                 columns (in any order):
                 <ul>
-                  <li>
-                    <code>employee_name</code>
-                  </li>
-                  <li>
-                    <code>email_address</code>
-                  </li>
-                  <li>
-                    <code>job_title</code>
-                  </li>
-                  <li>
-                    <code>district</code>
-                  </li>
-                  <li>
-                    <code>external_id</code>
-                  </li>
+                  {columns.map((column) => {
+                    return (
+                      <li key={column}>
+                        <code>{column}</code>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </Space>
@@ -74,7 +97,8 @@ const UploadRostersView = (): JSX.Element => {
         />
         <Upload
           accept=".csv"
-          action={`/admin/api/line_staff_tools/${stateCode}/upload_roster`}
+          action={action}
+          method={method}
           maxCount={1}
           disabled={disabled}
           onChange={(info) => {
@@ -117,4 +141,4 @@ const UploadRostersView = (): JSX.Element => {
   );
 };
 
-export default UploadRostersView;
+export default UploadRoster;

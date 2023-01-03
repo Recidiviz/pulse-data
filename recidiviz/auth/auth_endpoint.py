@@ -17,6 +17,7 @@
 
 """Endpoints related to auth operations.
 """
+import csv
 import logging
 import os
 from http import HTTPStatus
@@ -28,7 +29,7 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import func
+from sqlalchemy import delete, func
 from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
 
@@ -496,6 +497,79 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
             )
         raise e
     except ProgrammingError as error:
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+
+@auth_endpoint_blueprint.route("/users", methods=["PUT"])
+@requires_gae_auth
+def upload_roster() -> Tuple[str, HTTPStatus]:
+    """Adds records to the "roster" table and returns the number of records added.
+    It assumes that the caller has manually formatted the CSV appropriately.
+    Returns an error message if there was an error creating the records.
+    """
+    role = get_only_str_param_value("role", request.args)
+    state_code = get_only_str_param_value("state_code", request.args)
+
+    try:
+        if state_code is None:
+            raise ValueError("Request is missing the state_code param")
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
+        ) as session:
+            dict_reader = csv.DictReader(
+                request.files["file"].read().decode("utf-8-sig").splitlines()
+            )
+            rows = list(dict_reader)
+
+            delete_statement = (
+                delete(Roster).filter_by(state_code=f"{state_code.upper()}")
+                if role is None
+                else delete(Roster).filter_by(
+                    state_code=f"{state_code.upper()}", role=f"{role.lower()}"
+                )
+            )
+            session.execute(delete_statement)
+
+            for row in rows:
+                if not row["email_address"] or not row["external_id"]:
+                    raise ValueError(
+                        "Roster contains a row that is missing an email address or external_id (required)"
+                    )
+                if role is None or row["role"] == role:
+                    row["state_code"] = state_code.upper()
+                    # Enforce casing for columns where we have a preference.
+                    row["email_address"] = row["email_address"].lower()
+                    row["external_id"] = row["external_id"].upper()
+                    row["role"] = row["role"].lower()
+                    roster = Roster(**row)
+                    session.add(roster)
+                else:
+                    raise ValueError(
+                        f"User {row['email_address']} has role '{row['role']}' in the roster but the specified role is '{role}'"
+                    )
+
+            session.commit()
+
+            return (
+                f"{len(rows)} users added to the roster",
+                HTTPStatus.OK,
+            )
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return (
+                "Duplicate users exist in the roster.",
+                HTTPStatus.UNPROCESSABLE_ENTITY,
+            )
+        if isinstance(e.orig, NotNullViolation):
+            return (
+                f"{e}",
+                HTTPStatus.BAD_REQUEST,
+            )
+        raise e
+    except (ProgrammingError, ValueError) as error:
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,

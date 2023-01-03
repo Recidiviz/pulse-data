@@ -44,8 +44,8 @@ import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
+import UploadLineStaffRostersView from "./UploadRostersView";
 import UploadRawFilesView from "./UploadRawFilesView";
-import UploadRostersView from "./UploadRostersView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 
 type MenuItem = Required<MenuProps>["items"][number];
@@ -239,7 +239,7 @@ const App = (): JSX.Element => {
           />
           <Route
             path={LineStaffTools.UPLOAD_ROSTERS_ROUTE}
-            component={UploadRostersView}
+            component={UploadLineStaffRostersView}
           />
           <Route
             path={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}
