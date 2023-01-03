@@ -29,6 +29,9 @@ from recidiviz.aggregated_metrics.assignment_span_aggregated_metrics import (
 from recidiviz.aggregated_metrics.metrics_assignment_sessions import (
     generate_metric_assignment_sessions_view_builder,
 )
+from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
+    generate_misc_aggregated_metrics_view_builder,
+)
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
@@ -332,6 +335,14 @@ def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder
                     ],
                 )
             )
+            # Add miscellaneous metric view builders if they exist for a given
+            # population and aggregation level
+            misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
+                aggregation_level=level,
+                population=population,
+            )
+            if misc_metrics_view_builder:
+                view_builders.append(misc_metrics_view_builder)
 
             # Build joined view of all metrics
             view_builders.append(

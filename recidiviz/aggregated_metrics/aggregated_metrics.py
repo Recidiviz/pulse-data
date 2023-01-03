@@ -16,6 +16,9 @@
 # =============================================================================
 """Joins together all aggregated metric views for the specified population and aggregation level"""
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
+    generate_misc_aggregated_metrics_view_builder,
+)
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
     MetricAggregationLevel,
 )
@@ -37,29 +40,46 @@ def generate_aggregated_metrics_view_builder(
     view_description = f"""
     All metrics for the {population_name} population disaggregated by {level_name}.
     """
+
     query_template = f"""
-    SELECT * 
-    FROM 
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_span_aggregated_metrics`
-    LEFT JOIN 
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_event_aggregated_metrics`
+    SELECT *
+    FROM
+        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_span_aggregated_metrics` period_span
+    LEFT JOIN
+        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_event_aggregated_metrics` period_event
     USING (
-        {aggregation_level.get_index_columns_query_string()}, 
+        {aggregation_level.get_index_columns_query_string()},
         start_date, end_date, period
     )
-    LEFT JOIN 
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_span_aggregated_metrics`
+    LEFT JOIN
+        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_span_aggregated_metrics` assignment_span
     USING (
-        {aggregation_level.get_index_columns_query_string()}, 
+        {aggregation_level.get_index_columns_query_string()},
         start_date, end_date, period
     )
-    LEFT JOIN 
-        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_event_aggregated_metrics`
+    LEFT JOIN
+        `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_event_aggregated_metrics` assignment_event
     USING (
-        {aggregation_level.get_index_columns_query_string()}, 
+        {aggregation_level.get_index_columns_query_string()},
         start_date, end_date, period
-    )    
+    )
 """
+
+    misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
+        aggregation_level=aggregation_level,
+        population=population,
+    )
+    if misc_metrics_view_builder:
+        # Join to miscellaneous metrics view if view exists for population and aggregation level
+        query_template += f"""
+        LEFT JOIN
+            `{{project_id}}.{{aggregated_metrics_dataset}}.{misc_metrics_view_builder.view_id}` misc
+        USING (
+            {aggregation_level.get_index_columns_query_string()},
+            start_date, end_date, period
+        )
+    """
+
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
         view_id=view_id,
