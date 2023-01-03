@@ -40,6 +40,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes,
     PeopleOnActiveSupervisionIncludesExcludes,
     PeopleOnAdministrativeSupervisionIncludesExcludes,
+    SupervisionAbscondingViolationsIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionCountyMunicipalAppropriationIncludesExcludes,
     SupervisionExpensesIncludesExcludes,
@@ -48,13 +49,16 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionFundingIncludesExcludes,
     SupervisionGrantsIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
+    SupervisionNewOffenseViolationsIncludesExcludes,
     SupervisionPersonnelExpensesIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
     SupervisionStateAppropriationIncludesExcludes,
+    SupervisionTechnicalViolationsIncludesExcludes,
     SupervisionTrainingExpensesIncludesExcludes,
     SupervisionVacantStaffIncludesExcludes,
+    SupervisionViolationsIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -263,12 +267,12 @@ total_staff = MetricDefinition(
     ),
 )
 
-supervision_violations = MetricDefinition(
+violations = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.SUPERVISION_VIOLATIONS,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
-    display_name="Supervision Violations",
-    description="Measures the number of individuals with at least one violation during the reporting period.",
+    display_name="Violations",
+    description="The number of incidents in which conditions of supervision were violated. Incidents may include multiple violations that are reported by the agency at the same time, commonly called violation reports.",
     reporting_note="Report the most serious violation type incurred during the reporting period.",
     definitions=[
         Definition(
@@ -278,8 +282,38 @@ supervision_violations = MetricDefinition(
     ],
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionViolationsIncludesExcludes,
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SupervisionViolationType, required=True)
+        AggregatedDimension(
+            dimension=SupervisionViolationType,
+            required=True,
+            dimension_to_includes_excludes={
+                SupervisionViolationType.TECHNICAL: IncludesExcludesSet(
+                    members=SupervisionTechnicalViolationsIncludesExcludes,
+                    excluded_set={
+                        SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
+                        SupervisionTechnicalViolationsIncludesExcludes.ARREST,
+                        SupervisionTechnicalViolationsIncludesExcludes.CONVICTION,
+                        SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
+                    },
+                ),
+                SupervisionViolationType.ABSCONDING: IncludesExcludesSet(
+                    members=SupervisionAbscondingViolationsIncludesExcludes,
+                ),
+                SupervisionViolationType.NEW_OFFENSE: IncludesExcludesSet(
+                    members=SupervisionNewOffenseViolationsIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                SupervisionViolationType.TECHNICAL: "The number of people who violated conditions of supervision in which the most serious violation was defined as “technical” within the supervision agency.",
+                SupervisionViolationType.ABSCONDING: "The number of people who violated conditions of supervision in which the most serious violation was defined as “absconding” within the supervision agency.",
+                SupervisionViolationType.NEW_OFFENSE: "The number of people who violated conditions of supervision in which the most serious violation was defined as “new offense” within the supervision agency.",
+                SupervisionViolationType.OTHER: "The number of people who violated conditions of supervision in which the most serious violation was not covered in technical violations, absconding, or new offenses.",
+                SupervisionViolationType.UNKNOWN: "The number of people who violated an unknown condition of supervision.",
+            },
+        )
     ],
 )
 
@@ -299,7 +333,10 @@ new_supervision_cases = MetricDefinition(
     reporting_note="Record only individuals entering for a new supervision term, not for an extension or reinstatement of a prior case.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SupervisionCaseType, required=False)
+        AggregatedDimension(
+            dimension=SupervisionCaseType,
+            required=False,
+        )
     ],
 )
 

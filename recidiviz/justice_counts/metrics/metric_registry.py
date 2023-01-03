@@ -93,7 +93,7 @@ METRICS = [
     supervision.new_supervision_cases,
     supervision.reconviction_while_on_supervision,
     supervision.supervision_terminations,
-    supervision.supervision_violations,
+    supervision.violations,
 ]
 
 METRICS_BY_SYSTEM = {}

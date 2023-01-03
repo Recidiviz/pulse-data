@@ -405,3 +405,43 @@ class PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes(Enum):
     HELD_FACILITY = "People held in a residential treatment or programming facility"
     HELD_CONFINEMENT = "People held in a confinement facility under the jurisdiction of the supervision agency (e.g., violation center or halfway back facility, etc.)"
     REVOKED_TO_PRISON_JAIL = "People who are revoked to prison or jail who are no longer on supervision under the jurisdiction of the agency"
+
+
+# Violations
+class SupervisionViolationsIncludesExcludes(Enum):
+    AGENCY_SANCTION = "Violation incidents resulting in the application of a supervision agency sanction (increased reporting, curfew, etc.)"
+    COURT_SANCTION = "Violation incidents resulting in a court sanction (remand to custody, court-ordered treatment, etc.)"
+    REVOCATION = "Violation incidents resulting in revocation of supervision"
+
+
+class SupervisionTechnicalViolationsIncludesExcludes(Enum):
+    CRIMINAL_ASSOCIATION = "Criminal association violation"
+    EMPLOYMENT = "Employment violation"
+    FINANCIAL_OBLIGATIONS = (
+        "Financial obligations violation (e.g., legal, restitution, child support)"
+    )
+    FIREARM = "Firearm violation"
+    REPORTING = "Reporting violation"
+    FAILURE_TO_APPEAR = "Failure to appear violation"
+    RESIDENCY_OR_HOUSING = "Residency or housing violation"
+    RESTRAINING = "Restraining or protective order violation"
+    SPECIAL_CONDITIONS = "Special conditions violation"
+    SUBSTANCE_USE = "Substance use violation"
+    DIRECTIVES = "Supervision directives violation"
+    FEES = "Supervision fees violation"
+    TRAVEL = "Travel violation"
+    WEAPONS = "Weapons violation (non-firearm)"
+    CRIMINAL_OFFENSE = "Admission of criminal offense (no arrest)"
+    ARREST = "Arrest for new criminal charge"
+    CONVICTION = "Conviction for new criminal charge"
+    ABSCONDING = "Absconding violation"
+
+
+class SupervisionAbscondingViolationsIncludesExcludes(Enum):
+    ABSCONDING = "Absconding violation"
+
+
+class SupervisionNewOffenseViolationsIncludesExcludes(Enum):
+    DISCLOSURE = "Disclosure of criminal offense (no arrest)"
+    ARREST = "Arrest for new criminal charge"
+    CONVICTION = "Conviction for new criminal charge"

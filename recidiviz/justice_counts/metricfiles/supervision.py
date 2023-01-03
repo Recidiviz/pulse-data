@@ -63,11 +63,11 @@ SUPERVISION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="violations",
-        definition=supervision.supervision_violations,
+        definition=supervision.violations,
     ),
     MetricFile(
         canonical_filename="violations_by_type",
-        definition=supervision.supervision_violations,
+        definition=supervision.violations,
         disaggregation=SupervisionViolationType,
         disaggregation_column_name="violation_type",
     ),
