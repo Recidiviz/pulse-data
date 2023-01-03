@@ -107,3 +107,12 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
     def get_current_status_info(self) -> DirectIngestInstanceStatus:
         """Get current status and associated information."""
         return self.statuses[-1]
+
+    def get_current_ingest_rerun_start_timestamp(self) -> Optional[datetime.datetime]:
+        for status in reversed(self.statuses):
+            if status.status in [
+                DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+            ]:
+                return status.status_timestamp
+        return None

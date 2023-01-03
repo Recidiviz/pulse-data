@@ -18,17 +18,36 @@
 """Tests for operations/dao.py."""
 
 import datetime
+from datetime import timedelta
 from typing import Optional
 from unittest import TestCase
+from unittest.mock import patch
 
 import pytest
 import pytz
+from freezegun import freeze_time
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.operations.direct_ingest_instance_status import (
+    DirectIngestStatus,
+)
+from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
+    to_normalized_unprocessed_raw_file_path,
+)
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
+    PostgresDirectIngestRawFileMetadataManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import dao, schema
+from recidiviz.persistence.database.schema.operations.dao import (
+    stale_secondary_raw_data,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
+    FakeDirectIngestInstanceStatusManager,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -126,3 +145,185 @@ class TestDao(TestCase):
                     is_invalidated=False,
                 )
             )
+
+    def test_stale_secondary_raw_data_no_primary_file_after_frozen_discovery_date(
+        self,
+    ) -> None:
+        discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
+        with freeze_time(discovery_date):
+            with patch(
+                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
+            ) as instance_status_manager_cls:
+                instance_status_manager_cls.return_value = (
+                    FakeDirectIngestInstanceStatusManager(
+                        region_code="us_xx",
+                        ingest_instance=DirectIngestInstance.PRIMARY,
+                        initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
+                    )
+                )
+
+                normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                    original_file_path="bucket/file_tag.csv", dt=discovery_date
+                )
+                raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                    normalized_path_str
+                )
+
+                raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                    region_code="us_xx",
+                    raw_data_instance=DirectIngestInstance.PRIMARY,
+                )
+
+                # Mark the file as discovered in PRIMARY on frozen `discovery_date`
+                raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+                # Assert that secondary raw data is not stale, because no file in PRIMARY is found after
+                # `discovery_date`
+                self.assertFalse(stale_secondary_raw_data("us_xx"))
+
+    def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both(
+        self,
+    ) -> None:
+        discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, tzinfo=pytz.UTC)
+        rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
+
+        with freeze_time(discovery_date):
+            # Discover the same file_tag in both PRIMARY and SECONDARY at the `discovery_date`
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
+
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+            secondary_normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="secondary_bucket/file_tag.csv", dt=discovery_date
+            )
+            secondary_raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                secondary_normalized_path_str
+            )
+
+            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.SECONDARY,
+            )
+            secondary_raw_metadata_manager.mark_raw_file_as_discovered(
+                secondary_raw_unprocessed_path_1
+            )
+
+        with freeze_time(rerun_start_before_discovery_date):
+            # Start a secondary raw data import rerun BEFORE the discovery_date
+            fake_manager = FakeDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                initial_statuses=[
+                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
+                ],
+            )
+            with patch(
+                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
+                return_value=fake_manager,
+            ):
+                # Assert that raw data is not considered stale because the same file_tag is present and non-invalidated
+                # in both instances, and the rerun in secondary started BEFORE the files were discovered in both
+                # PRIMARY and SECONDARY
+                self.assertFalse(stale_secondary_raw_data("us_xx"))
+
+    def test_stale_secondary_raw_data_standard_secondary_rerun(
+        self,
+    ) -> None:
+        discovery_date = datetime.datetime(2022, 7, 1, 1, 2, 3, 0)
+        rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
+
+        with freeze_time(discovery_date):
+            # Discover a file_tag in PRIMARY
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
+
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+        with freeze_time(rerun_start_before_discovery_date):
+            # Start a secondary standard BEFORE the discovery_date
+            fake_manager = FakeDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                initial_statuses=[DirectIngestStatus.STANDARD_RERUN_STARTED],
+            )
+            with patch(
+                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
+                return_value=fake_manager,
+            ):
+                # Assert that raw data is not considered stale because there isn't a secondary raw data import in
+                # progress in SECONDARY
+                self.assertFalse(stale_secondary_raw_data("us_xx"))
+
+    def test_stale_secondary_raw_data_rerun_start_before_discovery_present_in_both_invalidated_in_secondary(
+        self,
+    ) -> None:
+        discovery_date = datetime.datetime(2022, 7, 1, tzinfo=pytz.UTC)
+        rerun_start_before_discovery_date = discovery_date - timedelta(hours=1)
+
+        with freeze_time(discovery_date):
+            # Discover the same file_tag in both PRIMARY and SECONDARY at the same time
+            normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="bucket/file_tag.csv", dt=discovery_date
+            )
+            raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                normalized_path_str
+            )
+
+            raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.PRIMARY,
+            )
+            raw_metadata_manager.mark_raw_file_as_discovered(raw_unprocessed_path_1)
+
+            secondary_normalized_path_str = to_normalized_unprocessed_raw_file_path(
+                original_file_path="secondary_bucket/file_tag.csv", dt=discovery_date
+            )
+            secondary_raw_unprocessed_path_1 = GcsfsFilePath.from_absolute_path(
+                secondary_normalized_path_str
+            )
+
+            secondary_raw_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_xx",
+                raw_data_instance=DirectIngestInstance.SECONDARY,
+            )
+            secondary_raw_metadata_manager.mark_raw_file_as_discovered(
+                secondary_raw_unprocessed_path_1
+            )
+
+            # Mark secondary raw file tag as invalidated
+            secondary_raw_metadata_manager.mark_file_as_invalidated(
+                secondary_raw_unprocessed_path_1
+            )
+
+        with freeze_time(rerun_start_before_discovery_date):
+            fake_manager = FakeDirectIngestInstanceStatusManager(
+                region_code="us_xx",
+                ingest_instance=DirectIngestInstance.SECONDARY,
+                initial_statuses=[
+                    DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
+                ],
+            )
+            with patch(
+                "recidiviz.persistence.database.schema.operations.dao.PostgresDirectIngestInstanceStatusManager",
+                return_value=fake_manager,
+            ):
+                # Assert that raw data is considered stale because the same file_tag is present in both, but is
+                # invalidated in SECONDARY
+                self.assertTrue(stale_secondary_raw_data("us_xx"))

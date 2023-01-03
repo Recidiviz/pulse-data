@@ -16,8 +16,10 @@
 # =============================================================================
 """Data Access Object (DAO) with logic for accessing operations DB information from a SQL Database."""
 import datetime
+import logging
 from typing import List, Optional
 
+import sqlalchemy
 from more_itertools import one
 from sqlalchemy import case, func
 
@@ -25,13 +27,20 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataSummary,
 )
+from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
+    PostgresDirectIngestInstanceStatusManager,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
-
 
 # TODO(#14198): move operations/dao.py functionality into DirectIngestRawFileMetadataManager and migrate tests
 # to postgres_direct_ingest_file_metadata_manager_test.
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+
+
 def get_raw_file_metadata_row_for_path(
     session: Session,
     region_code: str,
@@ -177,3 +186,61 @@ def get_all_raw_file_metadata_rows_for_region(
         )
         for result in results
     ]
+
+
+def stale_secondary_raw_data(region_code: str) -> bool:
+    """Returns whether there is stale raw data in secondary, as defined by there being non-invalidated instances of
+    a given normalized_file_name that exists in PRIMARY after the timestamp of the start of a secondary rerun that
+    does not exist in SECONDARY."""
+    region_code_upper = region_code.upper()
+    secondary_status_manager = PostgresDirectIngestInstanceStatusManager(
+        region_code=region_code,
+        ingest_instance=DirectIngestInstance.SECONDARY,
+    )
+    secondary_rerun_start_timestamp = (
+        secondary_status_manager.get_current_ingest_rerun_start_timestamp()
+    )
+    # It is not possible to have stale SECONDARY raw data if there isn't a SECONDARY raw data import rerun in progress
+    # or if a start of a rerun was not found in SECONDARY
+    if (
+        secondary_status_manager.get_raw_data_source_instance()
+        != DirectIngestInstance.SECONDARY
+        or not secondary_rerun_start_timestamp
+    ):
+        return False
+
+    database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+    with SessionFactory.using_database(database_key) as session:
+        query = f"""
+        WITH primary_raw_data AS (
+            SELECT * 
+            FROM direct_ingest_raw_file_metadata 
+            WHERE raw_data_instance = 'PRIMARY' 
+            AND region_code = '{region_code_upper}'
+            AND is_invalidated IS False
+        ), 
+        secondary_raw_data AS (
+            SELECT * 
+            FROM direct_ingest_raw_file_metadata 
+            WHERE raw_data_instance = 'SECONDARY' 
+            AND region_code = '{region_code_upper}'
+            AND is_invalidated IS False
+        ) 
+        SELECT COUNT(*)
+        FROM primary_raw_data
+        LEFT OUTER JOIN secondary_raw_data 
+        ON primary_raw_data.normalized_file_name=secondary_raw_data.normalized_file_name  
+        WHERE secondary_raw_data.normalized_file_name IS NULL 
+        AND primary_raw_data.file_discovery_time > '{secondary_rerun_start_timestamp}';
+        """
+        results = session.execute(sqlalchemy.text(query))
+        count = one(results)[0]
+        is_stale = count > 0
+        if is_stale:
+            logging.info(
+                "[%s] Found non-invalidated raw files in PRIMARY that were discovered after=[%s], indicating stale "
+                "raw data in SECONDARY.",
+                region_code,
+                secondary_rerun_start_timestamp,
+            )
+        return is_stale

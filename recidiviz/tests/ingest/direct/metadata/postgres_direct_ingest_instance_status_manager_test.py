@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements tests for the PostgresDirectIngestInstanceStatusManager."""
 import datetime
+from datetime import timedelta
 from typing import List, Optional
 from unittest.case import TestCase
 
@@ -54,6 +55,17 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
 
     # Lists all valid ingest status enum values.
     all_status_enum_values = list(DirectIngestStatus)
+
+    @staticmethod
+    def _add_instance_statuses_in_hour_increments(
+        start_timestamp: datetime.datetime,
+        status_manager: PostgresDirectIngestInstanceStatusManager,
+        statuses: List[DirectIngestStatus],
+    ) -> None:
+        for i, status in enumerate(statuses):
+            with freeze_time(start_timestamp + timedelta(hours=i)):
+                # Each status gets added with increasing timestamps
+                status_manager.add_instance_status(status)
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -169,7 +181,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
     def test_get_raw_data_source_instance_secondary_rerun_with_raw_data_import_raw_data_source_instance(
         self,
     ) -> None:
-        """Assert that the raw data source for secondary rerun is set to PRIMARY when a
+        """Assert that the raw data source for secondary rerun is set to SECONDARY when a
         RERUN_WITH_RAW_DATA_IMPORT_STARTED is kicked off in SECONDARY."""
 
         # Set initial status for SECONDARY US_XX instance to RERUN_WITH_RAW_DATA_IMPORT_STARTED.
@@ -646,3 +658,79 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             )
         status = one(us_yy_primary_manager.get_all_statuses())
         self.assertEqual(status_date, status.status_timestamp)
+
+    def test_get_current_ingest_rerun_start_timestamp_no_rerun_in_progress(
+        self,
+    ) -> None:
+        """Confirm that there is no rerun start timestamp when no rerun is in progress."""
+        start_timestamp = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, pytz.UTC)
+        statuses = [DirectIngestStatus.NO_RERUN_IN_PROGRESS]
+        # Create a new us_yy manager that does not have any pre-seeded data.
+        us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_YY.value, DirectIngestInstance.SECONDARY
+        )
+        self._add_instance_statuses_in_hour_increments(
+            start_timestamp, us_yy_secondary_manager, statuses
+        )
+
+        self.assertIsNone(
+            us_yy_secondary_manager.get_current_ingest_rerun_start_timestamp()
+        )
+
+    def test_get_current_ingest_rerun_start_timestamp_many_secondary_starts_and_stops(
+        self,
+    ) -> None:
+        """Confirm that there the correct timestamp is chosen when there are multiple ingest starts and stops in
+        SECONDARY."""
+        start_timestamp = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, pytz.UTC)
+        statuses = [
+            DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
+            DirectIngestStatus.FLASH_CANCELED,
+            DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+            # Start a second rerun after cancelling a flash -- this is 6 statuses after start timestamp
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+            DirectIngestStatus.READY_TO_FLASH,
+        ]
+        us_yy_secondary_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_YY.value, DirectIngestInstance.SECONDARY
+        )
+        self._add_instance_statuses_in_hour_increments(
+            start_timestamp, us_yy_secondary_manager, statuses
+        )
+
+        self.assertEqual(
+            start_timestamp + timedelta(hours=6),
+            us_yy_secondary_manager.get_current_ingest_rerun_start_timestamp(),
+        )
+
+    def test_get_current_ingest_rerun_start_timestamp_many_primary_up_to_date(
+        self,
+    ) -> None:
+        """Confirm that the start timestamp is that of the very first status in PRIMARY when up to date."""
+        start_timestamp = datetime.datetime(2022, 7, 1, 1, 2, 3, 0, pytz.UTC)
+        statuses = [
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+            DirectIngestStatus.FLASH_IN_PROGRESS,
+            DirectIngestStatus.FLASH_COMPLETED,
+            DirectIngestStatus.UP_TO_DATE,
+        ]
+        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_YY.value, DirectIngestInstance.PRIMARY
+        )
+        self._add_instance_statuses_in_hour_increments(
+            start_timestamp, us_yy_primary_manager, statuses
+        )
+
+        self.assertEqual(
+            start_timestamp,
+            us_yy_primary_manager.get_current_ingest_rerun_start_timestamp(),
+        )
