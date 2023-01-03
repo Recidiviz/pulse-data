@@ -56,9 +56,19 @@ export const getAuthResource = async (url: string): Promise<Response> => {
   });
 };
 
+export type User = {
+  email: string;
+  stateCode: string;
+  externalId?: string;
+  role: string;
+  district?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
 export const postAuthWithURLAndBody = async (
   url: string,
-  body: Record<string, unknown> = {}
+  body: Record<string, unknown> | User[]
 ): Promise<Response> => {
   return fetch(`/auth${url}`, {
     method: "POST",

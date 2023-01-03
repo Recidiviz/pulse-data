@@ -39,7 +39,12 @@ import {
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddUserForm } from "./AddUserForm";
 import { CreateEditUserForm } from "./EditUsersForm";
-import { FEATURE_VARIANTS_LABELS, ROUTES_PERMISSIONS_LABELS } from "./types";
+import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
+import {
+  FEATURE_VARIANTS_LABELS,
+  ROUTES_PERMISSIONS_LABELS,
+  USER_ROLES,
+} from "../constants";
 import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
@@ -49,6 +54,7 @@ const StateUserPermissionsView = (): JSX.Element => {
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+  const [uploadRosterVisible, setUploadRosterVisible] = useState(false);
 
   // control row selection
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -292,7 +298,6 @@ const StateUserPermissionsView = (): JSX.Element => {
     }
     return text;
   };
-
   const columns = [
     {
       title: "Email",
@@ -370,6 +375,26 @@ const StateUserPermissionsView = (): JSX.Element => {
       title: "Last Name",
       dataIndex: "lastName",
       width: 200,
+      render: (text: string, record: StateUserPermissionsResponse) => {
+        return formatText(text, record);
+      },
+    },
+    {
+      title: "Role",
+      dataIndex: "role",
+      width: 150,
+      filters: USER_ROLES.map((roleName) => {
+        return { text: roleName, value: roleName };
+      }),
+      onFilter: (
+        value: string | number | boolean,
+        record: StateUserPermissionsResponse
+      ) =>
+        record.role.indexOf(value as keyof StateUserPermissionsResponse) === 0,
+      sorter: (
+        a: StateUserPermissionsResponse,
+        b: StateUserPermissionsResponse
+      ) => a.role.localeCompare(b.role),
       render: (text: string, record: StateUserPermissionsResponse) => {
         return formatText(text, record);
       },
@@ -497,6 +522,13 @@ const StateUserPermissionsView = (): JSX.Element => {
         >
           Edit User(s)
         </Button>
+        <Button
+          onClick={() => {
+            setUploadRosterVisible(true);
+          }}
+        >
+          Upload Roster
+        </Button>
         <CreateEditUserForm
           editVisible={editVisible}
           editOnCreate={onEdit}
@@ -505,6 +537,13 @@ const StateUserPermissionsView = (): JSX.Element => {
           }}
           onRevokeAccess={onRevokeAccess}
           selectedEmails={selectedRowKeys}
+        />
+        <UploadStateUserRosterModal
+          visible={uploadRosterVisible}
+          onCancel={() => {
+            updateTable();
+            setUploadRosterVisible(false);
+          }}
         />
       </Space>
       <br /> <br />
