@@ -61,9 +61,11 @@ class SupervisionStaffType(DimensionBase, enum.Enum):
 
 
 class SupervisionViolationType(DimensionBase, enum.Enum):
-    TECHNICAL = "Technical"
-    NEW_OFFENSE = "New Offense"
-    UNKNOWN = "Unknown"
+    TECHNICAL = "Technical Violations"
+    ABSCONDING = "Absconding Violations"
+    NEW_OFFENSE = "New Offense Violations"
+    OTHER = "Other Violations"
+    UNKNOWN = "Unknown Violations"
 
     @classmethod
     def dimension_identifier(cls) -> str:
