@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-
 import PermissionSelect from "./PermissionSelect";
 import {
+  FEATURE_VARIANTS_LABELS,
   GENERAL_PERMISSIONS_LABELS,
   PATHWAYS_PERMISSIONS_LABELS,
   VITALS_PERMISSIONS_LABELS,
@@ -31,45 +31,56 @@ export const CustomPermissionsPanel = ({
   return (
     <>
       <h3>Custom Permissions</h3>
-      <h4>General</h4>
-      <hr />
+      <h4>General:</h4>
       {Object.entries(GENERAL_PERMISSIONS_LABELS).map(([name, label]) => {
         return (
           <PermissionSelect
             permission={{ name, label }}
+            key={name}
             disabled={hidePermissions}
           />
         );
       })}
 
-      <h4>Workflows</h4>
-      <hr />
+      <h4>Workflows:</h4>
       {Object.entries(WORKFLOWS_PERMISSIONS_LABELS).map(([name, label]) => {
         return (
           <PermissionSelect
             permission={{ name, label }}
+            key={name}
             disabled={hidePermissions}
           />
         );
       })}
 
-      <h4>Vitals (Operations)</h4>
-      <hr />
+      <h4>Vitals (Operations):</h4>
       {Object.entries(VITALS_PERMISSIONS_LABELS).map(([name, label]) => {
         return (
           <PermissionSelect
             permission={{ name, label }}
+            key={name}
             disabled={hidePermissions}
           />
         );
       })}
 
-      <h4>Pathways Pages</h4>
-      <hr />
+      <h4>Pathways Pages:</h4>
       {Object.entries(PATHWAYS_PERMISSIONS_LABELS).map(([name, label]) => {
         return (
           <PermissionSelect
             permission={{ name, label }}
+            key={name}
+            disabled={hidePermissions}
+          />
+        );
+      })}
+
+      <h4>Feature Variants:</h4>
+      {Object.entries(FEATURE_VARIANTS_LABELS).map(([name, label]) => {
+        return (
+          <PermissionSelect
+            permission={{ name, label }}
+            key={name}
             disabled={hidePermissions}
           />
         );

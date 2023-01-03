@@ -46,7 +46,6 @@ export const PermissionSelect = ({
       labelCol={{ span: 15 }}
     >
       <Select
-        defaultValue={null}
         allowClear
         style={{
           width: 80,

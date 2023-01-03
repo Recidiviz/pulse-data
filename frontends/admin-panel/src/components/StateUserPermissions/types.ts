@@ -27,6 +27,12 @@ export type Routes = {
   system_supervisionToLiberty?: boolean;
 };
 
+export const FEATURE_VARIANTS_LABELS = {
+  usTnExpiration: "US_TN Expiration",
+  CompliantReportingAlmostEligible: "Compliant Reporting Almost Eligible",
+  usTnSupervisionLevelDowngrade: "US_TN Supervision Level Downgrade",
+};
+
 export const WORKFLOWS_PERMISSIONS_LABELS = {
   workflows: "Workflows",
 };

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { SearchOutlined } from "@ant-design/icons";
 import {
   Button,
   Input,
@@ -25,7 +26,6 @@ import {
   Typography,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
-import { SearchOutlined } from "@ant-design/icons";
 import * as React from "react";
 import { useState } from "react";
 import {
@@ -39,7 +39,8 @@ import {
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddUserForm } from "./AddUserForm";
 import { CreateEditUserForm } from "./EditUsersForm";
-import { checkResponse, updateRoutes } from "./utils";
+import { FEATURE_VARIANTS_LABELS, ROUTES_PERMISSIONS_LABELS } from "./types";
+import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -186,14 +187,25 @@ const StateUserPermissionsView = (): JSX.Element => {
 
         // update user's custom permissions
         const existingRoutes = selectedRows[index].routes;
-        const newRoutes = updateRoutes(existingRoutes, rest);
+        const newRoutes = updatePermissionsObject(
+          existingRoutes,
+          rest,
+          ROUTES_PERMISSIONS_LABELS
+        );
+        const existingFeatureVariants = selectedRows[index].featureVariants;
+        const newFeatureVariants = updatePermissionsObject(
+          existingFeatureVariants,
+          rest,
+          FEATURE_VARIANTS_LABELS
+        );
         if (useCustomPermissions) {
           const updatedPermissions = await updateUserPermissions(
             email,
             canAccessLeadershipDashboard,
             canAccessCaseTriage,
             shouldSeeBetaCharts,
-            newRoutes
+            newRoutes,
+            newFeatureVariants
           );
           await checkResponse(updatedPermissions);
         }
@@ -300,6 +312,7 @@ const StateUserPermissionsView = (): JSX.Element => {
       title: "State",
       dataIndex: "stateCode",
       key: "stateCode",
+      width: 100,
       filters: [
         {
           text: "CO",
@@ -348,6 +361,7 @@ const StateUserPermissionsView = (): JSX.Element => {
     {
       title: "First Name",
       dataIndex: "firstName",
+      width: 200,
       render: (text: string, record: StateUserPermissionsResponse) => {
         return formatText(text, record);
       },
@@ -355,35 +369,9 @@ const StateUserPermissionsView = (): JSX.Element => {
     {
       title: "Last Name",
       dataIndex: "lastName",
+      width: 200,
       render: (text: string, record: StateUserPermissionsResponse) => {
         return formatText(text, record);
-      },
-    },
-    {
-      title: "Can Access Leadership Dashboard",
-      dataIndex: "canAccessLeadershipDashboard",
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
-        }
-      },
-    },
-    {
-      title: "Can Access Case Triage",
-      dataIndex: "canAccessCaseTriage",
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
-        }
-      },
-    },
-    {
-      title: "Should See Beta Charts",
-      dataIndex: "shouldSeeBetaCharts",
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
-        }
       },
     },
     {
@@ -399,6 +387,52 @@ const StateUserPermissionsView = (): JSX.Element => {
             JSON.stringify(text, null, "\t").slice(2, -2),
             record
           );
+        }
+      },
+    },
+    {
+      title: "Feature variants",
+      dataIndex: "featureVariants",
+      width: 350,
+      render: (
+        text: Record<string, unknown>,
+        record: StateUserPermissionsResponse
+      ) => {
+        if (text) {
+          return formatText(
+            JSON.stringify(text, null, "\t").slice(2, -2),
+            record
+          );
+        }
+      },
+    },
+    {
+      title: "Can Access Leadership Dashboard",
+      dataIndex: "canAccessLeadershipDashboard",
+      width: 150,
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
+        }
+      },
+    },
+    {
+      title: "Can Access Case Triage",
+      dataIndex: "canAccessCaseTriage",
+      width: 150,
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
+        }
+      },
+    },
+    {
+      title: "Should See Beta Charts",
+      dataIndex: "shouldSeeBetaCharts",
+      width: 150,
+      render: (text: boolean, record: StateUserPermissionsResponse) => {
+        if (text != null) {
+          return formatText(text.toString(), record);
         }
       },
     },
@@ -479,7 +513,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         rowSelection={rowSelection}
         dataSource={data}
         columns={columns}
-        scroll={{ x: 1700, y: 700 }}
+        scroll={{ x: 2000 }}
       />
     </>
   );

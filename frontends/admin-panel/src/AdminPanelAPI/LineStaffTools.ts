@@ -177,16 +177,18 @@ export const updateUser = async ({
 
 export const updateUserPermissions = async (
   email: string,
-  canAccessLeadershipDashboard: boolean | undefined,
-  canAccessCaseTriage: boolean | undefined,
-  shouldSeeBetaCharts: boolean | undefined,
-  routes: Record<string, boolean> | undefined
+  canAccessLeadershipDashboard?: boolean,
+  canAccessCaseTriage?: boolean,
+  shouldSeeBetaCharts?: boolean,
+  routes?: Record<string, boolean>,
+  featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
   return putAuthWithURLAndBody(`/users/${email}/permissions`, {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
     routes,
+    featureVariants,
   });
 };
 

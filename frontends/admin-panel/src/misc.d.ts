@@ -68,6 +68,7 @@ interface StateUserPermissionsResponse {
   role: string;
   district: string;
   useCustomPermissions: boolean;
+  featureVariants: Record<string, boolean>;
 }
 
 // State Role Permissions

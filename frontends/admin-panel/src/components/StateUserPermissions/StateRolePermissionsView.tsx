@@ -24,7 +24,8 @@ import {
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
-import { checkResponse, updateRoutes } from "./utils";
+import { ROUTES_PERMISSIONS_LABELS } from "./types";
+import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -73,7 +74,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         canAccessLeadershipDashboard,
         canAccessCaseTriage,
         shouldSeeBetaCharts,
-        updateRoutes({}, routes)
+        updatePermissionsObject({}, routes, ROUTES_PERMISSIONS_LABELS)
       );
       await checkResponse(createdRole);
       setAddVisible(false);
