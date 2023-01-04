@@ -217,3 +217,19 @@ export const createStateRolePermissions = async (
     routes,
   });
 };
+
+export const updateStateRolePermissions = async (
+  stateCode: string,
+  role: string,
+  canAccessLeadershipDashboard: boolean,
+  canAccessCaseTriage: boolean,
+  shouldSeeBetaCharts: boolean,
+  routes: Record<string, boolean> | undefined
+): Promise<Response> => {
+  return patchAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
+    canAccessLeadershipDashboard,
+    canAccessCaseTriage,
+    shouldSeeBetaCharts,
+    routes,
+  });
+};

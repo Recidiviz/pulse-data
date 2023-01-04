@@ -141,6 +141,11 @@ class AuthEndpointTests(TestCase):
                 state_code=state_code,
                 role=role,
             )
+            self.update_state_role = lambda state_code, role: flask.url_for(
+                "auth_endpoint_blueprint.update_state_role",
+                state_code=state_code,
+                role=role,
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -1842,6 +1847,108 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "shouldSeeBetaCharts": False,
                     "routes": {"A": True, "B": False},
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_states_update_state(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context():
+            response = self.client.patch(
+                self.add_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+                json={
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"C": True, "B": False},
+                    "featureVariants": {"D": "E"},
+                },
+            )
+
+            expected = {
+                "stateCode": "US_MO",
+                "role": "leadership_role",
+                "canAccessCaseTriage": True,
+                "canAccessLeadershipDashboard": True,
+                "shouldSeeBetaCharts": False,
+                "routes": {"A": True, "B": False, "C": True},
+                "featureVariants": {"D": "E"},
+            }
+
+            self.assertEqual(expected, json.loads(response.data))
+
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual([expected], json.loads(response.data))
+
+    def test_states_update_state_code(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context():
+            response = self.client.patch(
+                self.add_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+                json={
+                    "stateCode": "US_TN",
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"C": True, "B": False},
+                },
+            )
+
+            expected = {
+                "stateCode": "US_TN",
+                "role": "leadership_role",
+                "canAccessCaseTriage": True,
+                "canAccessLeadershipDashboard": True,
+                "shouldSeeBetaCharts": False,
+                "routes": {"A": True, "B": False, "C": True},
+                "featureVariants": None,
+            }
+
+            self.assertEqual(expected, json.loads(response.data))
+
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual([expected], json.loads(response.data))
+
+    def test_states_update_state_no_entry(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context():
+            response = self.client.patch(
+                self.add_state_role("US_MO", "line_staff_role"),
+                headers=self.headers,
+                json={
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"C": True, "B": False},
                 },
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
