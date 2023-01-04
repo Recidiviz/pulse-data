@@ -511,6 +511,11 @@ module "state_resident_populations_table" {
     "mode": "NULLABLE"
   },
   {
+    "name": "ethnicity",
+    "type": "STRING",
+    "mode": "NULLABLE"
+  },
+  {
     "name": "gender",
     "type": "STRING",
     "mode": "NULLABLE"
