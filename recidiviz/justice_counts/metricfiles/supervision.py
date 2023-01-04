@@ -116,4 +116,8 @@ SUPERVISION_METRIC_FILES = [
         canonical_filename="reconvictions",
         definition=supervision.reconvictions,
     ),
+    MetricFile(
+        canonical_filename="caseload",
+        definition=supervision.caseload,
+    ),
 ]

@@ -40,6 +40,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     PeopleOnActiveSupervisionIncludesExcludes,
     PeopleOnAdministrativeSupervisionIncludesExcludes,
     SupervisionAbscondingViolationsIncludesExcludes,
+    SupervisionCaseloadIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionCountyMunicipalAppropriationIncludesExcludes,
     SupervisionDischargesIncludesExcludes,
@@ -468,6 +469,22 @@ reconvictions = MetricDefinition(
         members=SupervisionReconvictionsIncludesExcludes,
         excluded_set={
             SupervisionReconvictionsIncludesExcludes.NEW_INFRACTION,
+        },
+    ),
+)
+
+caseload = MetricDefinition(
+    system=System.SUPERVISION,
+    metric_type=MetricType.CASELOADS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Caseload",
+    description="The ratio of the number of people with open supervision cases under the jurisdiction of the supervision agency to the number of staff carrying a supervision caseload.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionCaseloadIncludesExcludes,
+        excluded_set={
+            SupervisionCaseloadIncludesExcludes.STAFF_ON_LEAVE,
         },
     ),
 )
