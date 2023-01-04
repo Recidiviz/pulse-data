@@ -23,15 +23,15 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
-    BaseStateMatchingDelegate,
-)
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     nonnull_fields_entity_match,
 )
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+    StateSpecificEntityMatchingDelegate,
+)
 
 
-class UsNdMatchingDelegate(BaseStateMatchingDelegate):
+class UsNdMatchingDelegate(StateSpecificEntityMatchingDelegate):
     """Class that contains matching logic specific to US_ND."""
 
     def __init__(self, ingest_metadata: IngestMetadata):

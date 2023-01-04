@@ -56,8 +56,8 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonRace,
     StateProgramAssignment,
 )
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
-    BaseStateMatchingDelegate,
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+    StateSpecificEntityMatchingDelegate,
 )
 from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -184,8 +184,8 @@ INGEST_METADATA_STATE_2_UPDATE = IngestMetadata(
 
 def mock_build_matching_delegate(
     *, region_code: str, ingest_metadata: IngestMetadata
-) -> BaseStateMatchingDelegate:
-    return BaseStateMatchingDelegate(region_code, ingest_metadata)
+) -> StateSpecificEntityMatchingDelegate:
+    return StateSpecificEntityMatchingDelegate(region_code, ingest_metadata)
 
 
 # TODO(#17471): Write test for persisting StateStaff
@@ -478,7 +478,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
         self.matching_delegate_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
-            "state_matching_delegate_factory.StateMatchingDelegateFactory.build",
+            "state_specific_entity_matching_delegate_factory.StateSpecificEntityMatchingDelegateFactory.build",
             mock_build_matching_delegate,
         )
         self.mock_matching_delegate = self.matching_delegate_patcher.start()
@@ -671,7 +671,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
         self.matching_delegate_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
-            "state_matching_delegate_factory.StateMatchingDelegateFactory.build",
+            "state_specific_entity_matching_delegate_factory.StateSpecificEntityMatchingDelegateFactory.build",
             mock_build_matching_delegate,
         )
         self.mock_matching_delegate = self.matching_delegate_patcher.start()

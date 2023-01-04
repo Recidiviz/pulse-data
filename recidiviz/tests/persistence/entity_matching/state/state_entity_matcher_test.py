@@ -45,7 +45,6 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
-    StateAgent,
     StateAssessment,
     StateCharge,
     StateIncarcerationIncident,
@@ -64,12 +63,12 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.entity_matching.state import state_entity_matcher
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
-    BaseStateMatchingDelegate,
-)
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES,
     StateEntityMatcher,
+)
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+    StateSpecificEntityMatchingDelegate,
 )
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
@@ -134,15 +133,15 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         super().setUp()
         self.matching_delegate_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
-            "state_matching_delegate_factory.StateMatchingDelegateFactory."
+            "state_specific_entity_matching_delegate_factory.StateSpecificEntityMatchingDelegateFactory."
             "build",
             new=self._get_base_delegate,
         )
         self.matching_delegate_patcher.start()
         self.addCleanup(self.matching_delegate_patcher.stop)
 
-    def _get_base_delegate(self, **_kwargs: Any) -> BaseStateMatchingDelegate:
-        return BaseStateMatchingDelegate(
+    def _get_base_delegate(self, **_kwargs: Any) -> StateSpecificEntityMatchingDelegate:
+        return StateSpecificEntityMatchingDelegate(
             _STATE_CODE, TestStateEntityMatching.default_metadata
         )
 

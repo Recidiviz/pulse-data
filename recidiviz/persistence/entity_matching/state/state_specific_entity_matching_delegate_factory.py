@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains factory class for creating StateMatchingDelegate objects"""
+"""Contains factory class for creating StateSpecificEntityMatchingDelegate objects"""
 
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
-    BaseStateMatchingDelegate,
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+    StateSpecificEntityMatchingDelegate,
 )
 from recidiviz.persistence.entity_matching.state.us_co.us_co_matching_delegate import (
     UsCoMatchingDelegate,
@@ -55,11 +55,11 @@ from recidiviz.persistence.entity_matching.state.us_tn.us_tn_matching_delegate i
 )
 
 
-class StateMatchingDelegateFactory:
+class StateSpecificEntityMatchingDelegateFactory:
     @staticmethod
     def build(
         *, region_code: str, ingest_metadata: IngestMetadata
-    ) -> BaseStateMatchingDelegate:
+    ) -> StateSpecificEntityMatchingDelegate:
         if region_code.upper() == "US_ID":
             return UsIdMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_IX":

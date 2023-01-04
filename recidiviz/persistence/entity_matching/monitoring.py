@@ -15,16 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 
-"""Contains logic to match database entities with ingested entities."""
-
-from abc import abstractmethod
-from typing import List
+"""Contains logic for sending monitoring stats about entity matching."""
 
 from opencensus.stats import aggregation, measure, view
 
-from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
-from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.utils import monitoring
 
 m_matching_errors = measure.MeasureInt(
@@ -42,23 +36,6 @@ matching_errors_by_entity_view = view.View(
 )
 
 monitoring.register_views([matching_errors_by_entity_view])
-
-
-class BaseEntityMatcher:
-    """Base class for all entity matchers."""
-
-    @abstractmethod
-    def run_match(
-        self,
-        session: Session,
-        region_code: str,
-        ingested_root_entities: List[RootEntityT],
-    ) -> MatchedEntities:
-        """
-        Attempts to match all root entities from |ingested_root_entities| with
-        corresponding entities in our database for the given |region|. Returns an
-        MatchedEntities object that contains the results of matching.
-        """
 
 
 def increment_error(entity_name: str) -> None:
