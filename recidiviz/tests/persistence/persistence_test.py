@@ -235,7 +235,7 @@ class MultipleStateTestMixin:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_people(session)
+            result = state_dao.read_all_people(session)
 
         assert len(result) == 3
         names = {person.full_name for person in result}
@@ -288,7 +288,7 @@ class MultipleStateTestMixin:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_people(session)
+            result = state_dao.read_all_people(session)
 
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
@@ -339,7 +339,7 @@ class MultipleStateTestMixin:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_people(session)
+            result = state_dao.read_all_people(session)
 
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
@@ -380,7 +380,7 @@ class MultipleStateTestMixin:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_people(session)
+            result = state_dao.read_all_people(session)
 
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
@@ -424,7 +424,7 @@ class MultipleStateTestMixin:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_people(session)
+            result = state_dao.read_all_people(session)
 
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
