@@ -235,14 +235,6 @@ def upload_raw_state_files_to_ingest_bucket_with_date(
             dry_run=controller.dry_run,
         )
 
-    prompt_for_confirmation(
-        f"This will upload raw files to the [{controller.region}] ingest bucket "
-        f"[{controller.destination_ingest_bucket.uri()}] with datetime "
-        f"[{date}].",
-        controller.project_id,
-        dry_run=controller.dry_run,
-    )
-
     if override_bucket:
         prompt_for_confirmation(
             f"Are you sure you want to upload to non-standard bucket "
