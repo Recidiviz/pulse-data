@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import attr
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
 
@@ -32,8 +33,8 @@ class OpportunityExportConfig:
     export_collection_name: str = attr.ib()
 
 
-CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
-    "US_ID": [
+CONFIG_BY_STATE: Dict[StateCode, List[OpportunityExportConfig]] = {
+    StateCode.US_ID: [
         OpportunityExportConfig(
             source_filename="us_id_complete_discharge_early_from_supervision_request_record.json",
             export_collection_name="US_ID-earnedDischargeReferrals",
@@ -47,19 +48,19 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
             export_collection_name="US_ID-pastFTRDReferrals",
         ),
     ],
-    "US_ND": [
+    StateCode.US_ND: [
         OpportunityExportConfig(
             source_filename="us_nd_complete_discharge_early_from_supervision_record.json",
             export_collection_name="earlyTerminationReferrals",
         ),
     ],
-    "US_TN": [
+    StateCode.US_TN: [
         OpportunityExportConfig(
             source_filename="us_tn_supervision_level_downgrade_record.json",
             export_collection_name="US_TN-supervisionLevelDowngrade",
         ),
     ],
-    "US_ME": [
+    StateCode.US_ME: [
         OpportunityExportConfig(
             source_filename="us_me_complete_transfer_to_sccp_form_record.json",
             export_collection_name="US_ME-SCCPReferrals",
@@ -67,9 +68,28 @@ CONFIG_BY_STATE: Dict[str, List[OpportunityExportConfig]] = {
     ],
 }
 
+CRITERIA_TO_DEPREFIX: List[str] = [
+    "SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
+]
+
 
 class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     """Generic delegate for loading Workflows' opportunity records into Firestore."""
+
+    def __init__(self, state_code: StateCode):
+        super().__init__(state_code)
+
+        self.criteria_to_deprefix = {
+            f"{state_code.value.upper()}_{criterion}": criterion
+            for criterion in CRITERIA_TO_DEPREFIX
+        }
+
+        if state_code == StateCode.US_ID:
+            # After exporting, US_IX files will be in a US_ID bucket, but their
+            # criteria may still be prefixed with US_IX_
+            self.criteria_to_deprefix.update(
+                {f"US_IX_{criterion}": criterion for criterion in CRITERIA_TO_DEPREFIX}
+            )
 
     @property
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
@@ -79,9 +99,10 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             for config in config_list
         }
 
-    def get_supported_files(self, state_code: str) -> List[str]:
+    def get_supported_files(self) -> List[str]:
         return [
-            config.source_filename for config in CONFIG_BY_STATE.get(state_code, [])
+            config.source_filename
+            for config in CONFIG_BY_STATE.get(self.state_code, [])
         ]
 
     @property
@@ -89,11 +110,17 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         """Name of the key this delegate will insert into each document to record when it was loaded."""
         return "__loadedAt"
 
-    def filepath_url(self, state_code: str, filename: str) -> str:
-        return f"gs://{self.get_filepath(state_code, filename).abs_path()}"
+    def filepath_url(self, filename: str) -> str:
+        return f"gs://{self.get_filepath(filename).abs_path()}"
 
-    @staticmethod
-    def build_document(row: dict[str, Any]) -> dict:
+    def preprocess_criterion_name(self, criterion: str) -> str:
+        # checks against a list of criterion to remove state prefixes.
+        # converts to lower case since the snake_case to camelCase conversion
+        # below is relatively naive and does not support CONSTANT_CASE,
+        # which is what we expect these names to be
+        return self.criteria_to_deprefix.get(criterion, criterion).lower()
+
+    def build_document(self, row: dict[str, Any]) -> dict:
         """Transform the raw record from Big Query into a nested form for Firestore."""
         new_document: dict[str, Any] = {
             "formInformation": {},
@@ -117,9 +144,9 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
             # transform reasons array to mapping
             elif key == "reasons":
                 new_document["criteria"] = {
-                    # conversion below is relatively naive and does not support CONSTANT_CASE,
-                    # which is what we expect these names to be
-                    reason["criteria_name"].lower(): reason["reason"]
+                    self.preprocess_criterion_name(reason["criteria_name"]): reason[
+                        "reason"
+                    ]
                     for reason in value
                 }
             elif key == "case_notes":

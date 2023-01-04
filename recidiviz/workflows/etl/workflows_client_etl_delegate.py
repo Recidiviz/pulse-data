@@ -31,7 +31,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
 
     COLLECTION_BY_FILENAME = {"client_record.json": "clients"}
 
-    def get_supported_files(self, state_code: str) -> List[str]:
+    def get_supported_files(self) -> List[str]:
         return ["client_record.json"]
 
     def transform_row(self, row: str) -> Tuple[str, dict]:

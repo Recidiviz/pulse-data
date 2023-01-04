@@ -27,7 +27,7 @@ class WorkflowsResidentETLDelegate(WorkflowsFirestoreETLDelegate):
 
     COLLECTION_BY_FILENAME = {"resident_record.json": "residents"}
 
-    def get_supported_files(self, state_code: str) -> List[str]:
+    def get_supported_files(self) -> List[str]:
         return ["resident_record.json"]
 
     def transform_row(self, row: str) -> Tuple[str, dict]:

@@ -20,6 +20,7 @@ import logging
 from typing import Any, Optional, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import parse_int, snake_to_camel
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,7 +32,7 @@ from recidiviz.workflows.etl.workflows_etl_delegate import (
 class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegate):
     """Delegate class to ETL the compliant_reporting_referral_record.json file into Firestore."""
 
-    STATE_CODE = "US_TN"
+    SUPPORTED_STATE_CODE = StateCode.US_TN
     EXPORT_FILENAME = "compliant_reporting_referral_record.json"
     _COLLECTION_NAME_BASE = "compliantReportingReferrals"
 
@@ -130,6 +131,6 @@ class CompliantReportingReferralRecordETLDelegate(WorkflowsSingleStateETLDelegat
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        CompliantReportingReferralRecordETLDelegate().run_etl(
-            "US_TN", "compliant_reporting_referral_record.json"
+        CompliantReportingReferralRecordETLDelegate(StateCode.US_TN).run_etl(
+            "compliant_reporting_referral_record.json"
         )
