@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
     FakeFileStream,
 )
@@ -38,20 +39,23 @@ class WorkflowsStaffETLDelegateTest(TestCase):
 
     def test_supports_filename(self) -> None:
         """Test that the staff file is supported for any state"""
-        delegate = WorkflowsStaffETLDelegate()
+        delegate = WorkflowsStaffETLDelegate(StateCode.US_ND)
+        self.assertTrue(delegate.supports_file("staff_record.json"))
 
-        self.assertTrue(delegate.supports_file("US_ND", "staff_record.json"))
-        self.assertTrue(delegate.supports_file("US_TN", "staff_record.json"))
-        self.assertTrue(
-            delegate.supports_file("LITERALLY_ANYTHING", "staff_record.json")
-        )
-        self.assertFalse(delegate.supports_file("US_ND", "not_staff_record.json"))
+        delegate = WorkflowsStaffETLDelegate(StateCode.US_TN)
+        self.assertTrue(delegate.supports_file("staff_record.json"))
+
+        delegate = WorkflowsStaffETLDelegate(StateCode.US_WW)
+        self.assertTrue(delegate.supports_file("staff_record.json"))
+
+        delegate = WorkflowsStaffETLDelegate(StateCode.US_ND)
+        self.assertFalse(delegate.supports_file("not_staff_record.json"))
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsStaffETLDelegate()
+        delegate = WorkflowsStaffETLDelegate(StateCode.US_XX)
 
         path_to_fixture = os.path.join(
             os.path.dirname(os.path.realpath(__file__)), "fixtures", "staff_record.json"
@@ -168,8 +172,8 @@ class WorkflowsStaffETLDelegateTest(TestCase):
                     WorkflowsStaffETLDelegate, "transform_row"
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
-                    delegate = WorkflowsStaffETLDelegate()
-                    delegate.run_etl("US_TN", "staff_record.json")
+                    delegate = WorkflowsStaffETLDelegate(StateCode.US_TN)
+                    delegate.run_etl("staff_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

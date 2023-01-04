@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, patch
 
 from freezegun import freeze_time
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.tests.workflows.etl.workflows_firestore_etl_delegate_test import (
     FakeFileStream,
 )
@@ -38,21 +39,22 @@ class WorkflowsClientETLDelegateTest(TestCase):
 
     def test_supports_filename(self) -> None:
         """Test that the client file is supported for any state"""
-        delegate = WorkflowsClientETLDelegate()
+        delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
+        self.assertTrue(delegate.supports_file("client_record.json"))
 
-        self.assertTrue(delegate.supports_file("US_ND", "client_record.json"))
-        self.assertTrue(delegate.supports_file("US_TN", "client_record.json"))
-        self.assertTrue(
-            delegate.supports_file("LITERALLY_ANYTHING", "client_record.json")
-        )
-        self.assertFalse(delegate.supports_file("US_ND", "not_client_record.json"))
+        delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+        self.assertTrue(delegate.supports_file("client_record.json"))
+
+        delegate = WorkflowsClientETLDelegate(StateCode.US_WW)
+        self.assertTrue(delegate.supports_file("client_record.json"))
+
+        delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
+        self.assertFalse(delegate.supports_file("not_client_record.json"))
 
     def test_transform_row(self) -> None:
         """
         Test that the transform_row method correctly parses the json
         """
-        delegate = WorkflowsClientETLDelegate()
-
         path_to_fixture = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             "fixtures",
@@ -60,6 +62,8 @@ class WorkflowsClientETLDelegateTest(TestCase):
         )
         with open(path_to_fixture, "r", encoding="utf-8") as fp:
             fixture = fp.readline()
+
+            delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
 
             doc_id, row = delegate.transform_row(fixture)
             # US_TN first row has board conditions
@@ -171,6 +175,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
             )
 
             # US_ND row
+            delegate = WorkflowsClientETLDelegate(StateCode.US_ND)
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "203")
@@ -199,6 +204,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
             )
 
             # US_ID row
+            delegate = WorkflowsClientETLDelegate(StateCode.US_ID)
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "204")
@@ -261,8 +267,8 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     WorkflowsClientETLDelegate, "transform_row"
                 ) as mock_transform:
                     mock_transform.return_value = (123, {"personExternalId": 123})
-                    delegate = WorkflowsClientETLDelegate()
-                    delegate.run_etl("US_TN", "client_record.json")
+                    delegate = WorkflowsClientETLDelegate(StateCode.US_TN)
+                    delegate.run_etl("client_record.json")
                     mock_collection.document.assert_called_once_with(document_id)
                     mock_batch_set.set.assert_called_once_with(
                         mock_document_ref,

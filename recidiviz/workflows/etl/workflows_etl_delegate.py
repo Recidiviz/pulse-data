@@ -26,6 +26,7 @@ from google.api_core.exceptions import AlreadyExists
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.metrics.export.export_config import WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI
 from recidiviz.utils import metadata
@@ -38,35 +39,38 @@ MAX_FIRESTORE_RECORDS_PER_BATCH = 499
 class WorkflowsETLDelegate(abc.ABC):
     """Abstract class containing the ETL logic for transforming and exporting Workflows records."""
 
+    def __init__(self, state_code: StateCode):
+        self.state_code = state_code
+
     @abc.abstractmethod
-    def get_supported_files(self, state_code: str) -> List[str]:
+    def get_supported_files(self) -> List[str]:
         """Provides list of source files supported for the given state."""
 
     @abc.abstractmethod
-    def run_etl(self, state_code: str, filename: str) -> None:
+    def run_etl(self, filename: str) -> None:
         """Runs the ETL logic for the provided filename and state_code."""
 
-    def supports_file(self, state_code: str, filename: str) -> bool:
+    def supports_file(self, filename: str) -> bool:
         """Checks if the given filename is supported by this delegate."""
-        return filename in self.get_supported_files(state_code)
+        return filename in self.get_supported_files()
 
-    def get_filepath(self, state_code: str, filename: str) -> GcsfsFilePath:
+    def get_filepath(self, filename: str) -> GcsfsFilePath:
         return GcsfsFilePath.from_absolute_path(
             os.path.join(
                 StrictStringFormatter().format(
                     WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI,
                     project_id=metadata.project_id(),
                 ),
-                state_code,
+                self.state_code.value.upper(),
                 filename,
             )
         )
 
-    def get_file_stream(self, state_code: str, filename: str) -> Iterator[TextIO]:
+    def get_file_stream(self, filename: str) -> Iterator[TextIO]:
         """Returns a stream of the contents of the file this delegate is watching for."""
         client = GcsfsFactory.build()
 
-        filepath = self.get_filepath(state_code, filename)
+        filepath = self.get_filepath(filename)
 
         if not client.is_file(filepath.abs_path()):
             raise FileNotFoundError(
@@ -102,15 +106,15 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         """Name of the key this delegate will insert into each document to record when it was loaded."""
         return "__loadedAt"
 
-    def filepath_url(self, state_code: str, filename: str) -> str:
-        return f"gs://{self.get_filepath(state_code, filename).abs_path()}"
+    def filepath_url(self, filename: str) -> str:
+        return f"gs://{self.get_filepath(filename).abs_path()}"
 
-    def run_etl(self, state_code: str, filename: str) -> None:
+    def run_etl(self, filename: str) -> None:
         collection_name = self.COLLECTION_BY_FILENAME[filename]
 
         logging.info(
             'Starting export of %s to the Firestore collection "%s".',
-            self.filepath_url(state_code, filename),
+            self.filepath_url(filename),
             collection_name,
         )
         firestore_client = FirestoreClientImpl()
@@ -122,7 +126,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
         etl_timestamp = datetime.now(timezone.utc)
 
         # step 1: Load new documents
-        for file_stream in self.get_file_stream(state_code, filename):
+        for file_stream in self.get_file_stream(filename):
             while line := file_stream.readline():
                 try:
                     row_id, document_fields = self.transform_row(line)
@@ -134,7 +138,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
                 if row_id is None or document_fields is None:
                     continue
-                document_id = f"{state_code.lower()}_{row_id}"
+                document_id = f"{self.state_code.value.lower()}_{row_id}"
                 new_document = {
                     **document_fields,
                     self.timestamp_key: etl_timestamp,
@@ -183,7 +187,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
         # step 3: Delete any pre-existing documents that we didn't just overwrite
         firestore_client.delete_old_documents(
-            collection_name, state_code, self.timestamp_key, etl_timestamp
+            collection_name, self.state_code.value, self.timestamp_key, etl_timestamp
         )
 
 
@@ -192,7 +196,7 @@ class WorkflowsSingleStateETLDelegate(WorkflowsFirestoreETLDelegate):
 
     @property
     @abc.abstractmethod
-    def STATE_CODE(self) -> str:
+    def SUPPORTED_STATE_CODE(self) -> StateCode:
         """State code of the data this delegate watches for."""
 
     @property
@@ -205,8 +209,12 @@ class WorkflowsSingleStateETLDelegate(WorkflowsFirestoreETLDelegate):
     def _COLLECTION_NAME_BASE(self) -> str:
         """Name of the Firestore collection to use."""
 
-    def get_supported_files(self, state_code: str) -> List[str]:
-        return [self.EXPORT_FILENAME] if state_code == self.STATE_CODE else []
+    def get_supported_files(self) -> List[str]:
+        return (
+            [self.EXPORT_FILENAME]
+            if self.state_code == self.SUPPORTED_STATE_CODE
+            else []
+        )
 
     @property
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:

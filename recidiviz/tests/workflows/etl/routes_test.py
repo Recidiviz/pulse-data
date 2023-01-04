@@ -154,8 +154,8 @@ class TestWorkflowsETLRoutes(unittest.TestCase):
                 headers=self.headers,
                 json={"state_code": state_code, "filename": filename},
             )
-            mock_delegate.supports_file.assert_called_with(state_code, filename)
-            mock_delegate.run_etl.assert_called_with(state_code, filename)
+            mock_delegate.supports_file.assert_called_with(filename)
+            mock_delegate.run_etl.assert_called_with(filename)
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
 

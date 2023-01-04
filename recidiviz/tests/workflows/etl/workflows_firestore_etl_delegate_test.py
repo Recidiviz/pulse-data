@@ -24,6 +24,7 @@ import mock.mock
 from freezegun import freeze_time
 from google.api_core.exceptions import AlreadyExists
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.workflows_etl_delegate import (
     MAX_FIRESTORE_RECORDS_PER_BATCH,
@@ -35,7 +36,7 @@ class TestETLDelegate(WorkflowsFirestoreETLDelegate):
 
     COLLECTION_BY_FILENAME = {"test_export.json": "testOpportunity"}
 
-    def get_supported_files(self, state_code: str) -> List[str]:
+    def get_supported_files(self) -> List[str]:
         return ["test_export.json"]
 
     def transform_row(self, row: str) -> Tuple[str, dict]:
@@ -107,8 +108,8 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         mock_batch_writer.return_value = FakeBatchWriter(verify_batch_size=True)
         mock_get_file_stream.return_value = [FakeFileStream(3000)]
         with local_project_id_override("test-project"):
-            delegate = TestETLDelegate()
-            delegate.run_etl("US_XX", "test_export.json")
+            delegate = TestETLDelegate(StateCode.US_XX)
+            delegate.run_etl("test_export.json")
 
         mock_get_collection.assert_called_once_with("testOpportunity")
 
@@ -127,9 +128,9 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         mock_batch_writer.return_value = FakeBatchWriter(verify_timestamp=mock_now)
         mock_get_file_stream.return_value = [FakeFileStream(2)]
         with local_project_id_override("test-project"):
-            delegate = TestETLDelegate()
+            delegate = TestETLDelegate(StateCode.US_XX)
             with freeze_time(mock_now):
-                delegate.run_etl("US_XX", "test_export.json")
+                delegate.run_etl("test_export.json")
 
     def test_run_etl_delete_outdated(
         self,
@@ -144,9 +145,9 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         mock_now = datetime(2022, 5, 1, tzinfo=timezone.utc)
 
         with local_project_id_override("test-project"):
-            delegate = TestETLDelegate()
+            delegate = TestETLDelegate(StateCode.US_XX)
             with freeze_time(mock_now):
-                delegate.run_etl("US_XX", "test_export.json")
+                delegate.run_etl("test_export.json")
 
         mock_delete_old_documents.assert_called_once_with(
             "testOpportunity", "US_XX", "__loadedAt", mock_now
@@ -167,7 +168,7 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         mock_get_file_stream.return_value = [FakeFileStream(2)]
 
         with local_project_id_override("test-project"):
-            delegate = TestETLDelegate()
+            delegate = TestETLDelegate(StateCode.US_XX)
             with freeze_time(mock_now):
                 with mock.patch.object(
                     TestETLDelegate, "transform_row"
@@ -177,7 +178,7 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
                             (123, {"personExternalId": 123}),
                             Exception,
                         ]
-                        delegate.run_etl("US_XX", "test_export.json")
+                        delegate.run_etl("test_export.json")
                         mock_logger.assert_called_once()
                         assert mock_transform.call_count == 2
 
@@ -199,8 +200,8 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         """Tests that the ETL Delegate calls create_index if one does not exist yet."""
         with local_project_id_override("test-project"):
             mock_index_exists_for_collection.return_value = False
-            delegate = TestETLDelegate()
-            delegate.run_etl("US_XX", "test_export.json")
+            delegate = TestETLDelegate(StateCode.US_XX)
+            delegate.run_etl("test_export.json")
             mock_create_index.assert_called_once_with(
                 "testOpportunity",
                 {
@@ -231,8 +232,8 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
         """Tests that the ETL Delegate does not call create_index if one already exists."""
         with local_project_id_override("test-project"):
             mock_index_exists_for_collection.return_value = True
-            delegate = TestETLDelegate()
-            delegate.run_etl("US_XX", "test_export.json")
+            delegate = TestETLDelegate(StateCode.US_XX)
+            delegate.run_etl("test_export.json")
             mock_create_index.assert_not_called()
 
     @patch(
@@ -255,6 +256,6 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
             mock_index_exists_for_collection.return_value = False
             mock_create_index.side_effect = AlreadyExists("Index already exists.")
             with self.assertLogs(level="INFO") as log:
-                delegate = TestETLDelegate()
-                delegate.run_etl("US_XX", "test_export.json")
+                delegate = TestETLDelegate(StateCode.US_XX)
+                delegate.run_etl("test_export.json")
                 self.assertTrue("Index already exists." in str(log.output))

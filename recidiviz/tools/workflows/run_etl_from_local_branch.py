@@ -25,6 +25,7 @@ To run the ETL for a specific file and state, run:
 import argparse
 import logging
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.routes import get_workflows_delegates
@@ -36,10 +37,10 @@ def main(
 ) -> None:
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(GCP_PROJECT_STAGING):
-        for delegate in get_workflows_delegates():
+        for delegate in get_workflows_delegates(StateCode(state_code)):
             try:
-                if delegate.supports_file(state_code, filename):
-                    delegate.run_etl(state_code, filename)
+                if delegate.supports_file(filename):
+                    delegate.run_etl(filename)
             except ValueError:
                 logging.info(
                     "Error running Firestore ETL for file %s for state_code %s",

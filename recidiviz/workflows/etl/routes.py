@@ -22,6 +22,7 @@ from typing import List, Tuple
 
 from flask import Blueprint, request
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
     SingleCloudTaskQueueManager,
@@ -50,13 +51,13 @@ from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
 
-def get_workflows_delegates() -> List[WorkflowsETLDelegate]:
+def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]:
     return [
-        CompliantReportingReferralRecordETLDelegate(),
-        WorkflowsOpportunityETLDelegate(),
-        WorkflowsStaffETLDelegate(),
-        WorkflowsClientETLDelegate(),
-        WorkflowsResidentETLDelegate(),
+        CompliantReportingReferralRecordETLDelegate(state_code),
+        WorkflowsOpportunityETLDelegate(state_code),
+        WorkflowsStaffETLDelegate(state_code),
+        WorkflowsClientETLDelegate(state_code),
+        WorkflowsResidentETLDelegate(state_code),
     ]
 
 
@@ -114,10 +115,10 @@ def get_workflows_etl_blueprint() -> Blueprint:
                 HTTPStatus.BAD_REQUEST,
             )
 
-        for delegate in get_workflows_delegates():
+        for delegate in get_workflows_delegates(StateCode(state_code)):
             try:
-                if delegate.supports_file(state_code, filename):
-                    delegate.run_etl(state_code, filename)
+                if delegate.supports_file(filename):
+                    delegate.run_etl(filename)
             except ValueError as e:
                 logging.error(str(e))
                 logging.info(

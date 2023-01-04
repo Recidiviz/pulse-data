@@ -19,6 +19,7 @@ import json
 from copy import deepcopy
 from unittest import TestCase
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
     CONFIG_BY_STATE,
     WorkflowsOpportunityETLDelegate,
@@ -116,50 +117,99 @@ EXPECTED_DOCUMENT = {
     "randomFieldWithMetadata": False,
 }
 
+TEST_DATA_WITH_PREFIX_TO_STRIP = {
+    "external_id": "456",
+    "reasons": [
+        {
+            "criteria_name": "US_XX_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
+            "reason": {"some_value": "some_data"},
+        },
+    ],
+}
+
+TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP = {
+    "external_id": "456",
+    "reasons": [
+        {
+            "criteria_name": "US_IX_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
+            "reason": {"some_value": "some_data"},
+        },
+    ],
+}
+
+EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
+    "externalId": "456",
+    "criteria": {
+        "supervisionLevelHigherThanAssessmentLevel": {"someValue": "some_data"}
+    },
+    "eligibleCriteria": {
+        "supervisionLevelHigherThanAssessmentLevel": {"someValue": "some_data"}
+    },
+    "formInformation": {},
+    "ineligibleCriteria": {},
+    "metadata": {},
+    "caseNotes": {},
+}
+
 
 class TestWorkflowsETLDelegate(TestCase):
     """Tests for the Workflows ETL delegate."""
 
     def test_supports_file(self) -> None:
         """Test that expected state codes and files are supported"""
-        delegate = WorkflowsOpportunityETLDelegate()
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
         self.assertTrue(
             delegate.supports_file(
-                "US_ID",
                 "us_id_complete_discharge_early_from_supervision_request_record.json",
             )
         )
 
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         self.assertTrue(
             delegate.supports_file(
-                "US_ND", "us_nd_complete_discharge_early_from_supervision_record.json"
+                "us_nd_complete_discharge_early_from_supervision_record.json"
             )
         )
 
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_TN)
         self.assertFalse(
             delegate.supports_file(
-                "US_TN", "us_nd_complete_discharge_early_from_supervision_record.json"
+                "us_nd_complete_discharge_early_from_supervision_record.json"
             )
         )
 
     def test_transform_row(self) -> None:
         """Test that transform_row returns a tuple with id and document."""
-        delegate = WorkflowsOpportunityETLDelegate()
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         result = delegate.transform_row(json.dumps(TEST_DATA))
         self.assertEqual(("123", EXPECTED_DOCUMENT), result)
 
     def test_build_document(self) -> None:
         """Test that the build_document method renames the keys correctly."""
-        delegate = WorkflowsOpportunityETLDelegate()
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         new_document = delegate.build_document(TEST_DATA)
         self.assertEqual(
             EXPECTED_DOCUMENT,
             new_document,
         )
 
+    def test_transform_row_with_prefixed_state_keys(self) -> None:
+        """Test that transform_row replaces state prefixes on specified criteria."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_XX)
+        result = delegate.transform_row(json.dumps(TEST_DATA_WITH_PREFIX_TO_STRIP))
+        self.assertEqual(("456", EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED), result)
+
+    def test_transform_row_with_ix_prefixed_state_keys(self) -> None:
+        """Test that transform_row replaces state prefixes on specified criteria."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP)
+        )
+        self.assertEqual(("456", EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED), result)
+
     def test_transform_with_empty_ineligible_criteria_field(self) -> None:
         """Tests that the delegate correctly processes the document when `ineligible_criteria` is set to `[]`."""
-        delegate = WorkflowsOpportunityETLDelegate()
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         data = deepcopy(TEST_DATA)
         data["ineligible_criteria"] = []
         expected = deepcopy(EXPECTED_DOCUMENT)
@@ -173,7 +223,7 @@ class TestWorkflowsETLDelegate(TestCase):
 
     def test_transform_without_ineligible_criteria_field(self) -> None:
         """Tests that the delegate can process a document without the `ineligible_criteria` field."""
-        delegate = WorkflowsOpportunityETLDelegate()
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ND)
         data = deepcopy(TEST_DATA)
         del data["ineligible_criteria"]
         expected = deepcopy(EXPECTED_DOCUMENT)

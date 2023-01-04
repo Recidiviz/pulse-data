@@ -19,6 +19,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Iterator, TextIO
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.workflows.etl.regions.us_tn.compliant_reporting_referral_record_etl_delegate import (
@@ -46,10 +47,10 @@ def load_demo_fixture(
         def fixture_filepath(self, filename: str) -> Path:
             return Path(__file__).parent / "demo_fixtures" / filename
 
-        def filepath_url(self, _state_code: str, filename: str) -> str:
+        def filepath_url(self, filename: str) -> str:
             return self.fixture_filepath(filename).as_uri()
 
-        def get_file_stream(self, _state_code: str, filename: str) -> Iterator[TextIO]:
+        def get_file_stream(self, filename: str) -> Iterator[TextIO]:
             """Returns a stream of the contents of the file this delegate is watching for."""
             # bypassing self.get_filepath since it assumes a GCS file
             with open(self.fixture_filepath(filename), "r", encoding="utf8") as f:
@@ -60,8 +61,8 @@ def load_demo_fixture(
             originalMapping = super().COLLECTION_BY_FILENAME
             return {k: f"DEMO_{v}" for k, v in originalMapping.items()}
 
-    delegate = DemoDelegate()
-    delegate.run_etl(state_code, filename)
+    delegate = DemoDelegate(StateCode(state_code))
+    delegate.run_etl(filename)
 
 
 def load_all_demo_data() -> None:
