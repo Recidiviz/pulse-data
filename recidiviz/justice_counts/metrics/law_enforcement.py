@@ -26,6 +26,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     OffenseType,
 )
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -229,14 +230,7 @@ staff = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_AREA,
-            value_type=ValueType.NUMBER,
-            label="Please provide the land size (area) of the jurisdiction in square miles.",
-            required=False,
-        )
-    ],
+    specified_contexts=[],
     includes_excludes=IncludesExcludesSet(
         members=LawEnforcementStaffIncludesExcludes,
         excluded_set={
@@ -293,7 +287,20 @@ staff = MetricDefinition(
                 LawEnforcementStaffType.UNKNOWN: "The number of full-time equivalent positions budgeted to the law enforcement agency that are of an unknown type.",
                 LawEnforcementStaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
             },
-        )
+        ),
+        AggregatedDimension(
+            dimension=RaceAndEthnicity,
+            required=False,
+        ),
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=False,
+            dimension_to_description={
+                BiologicalSex.MALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people in filled staff positions whose biological sex is unknown.",
+            },
+        ),
     ],
 )
 

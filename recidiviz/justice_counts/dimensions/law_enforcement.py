@@ -83,8 +83,8 @@ class ForceType(DimensionBase, enum.Enum):
 class LawEnforcementStaffType(DimensionBase, enum.Enum):
     LAW_ENFORCEMENT_OFFICERS = "Sworn/Uniformed Police Officers"
     CIVILIAN_STAFF = "Civilian Staff"
-    MENTAL_HEALTH = "Mental Health/Crisis Intervention Team Staff"
-    VICTIM_ADVOCATES = "Victim Advocates"
+    MENTAL_HEALTH = "Mental Health and Crisis Intervention Team Staff"
+    VICTIM_ADVOCATES = "Victim Advocate Staff"
     OTHER = "Other Staff"
     UNKNOWN = "Unknown Staff"
     VACANT = "Vacant Positions (Any Staff Type)"
