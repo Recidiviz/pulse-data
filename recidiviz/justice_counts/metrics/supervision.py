@@ -22,7 +22,6 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.supervision import (
-    NewOffenseType,
     SupervisionDailyPopulationType,
     SupervisionDischargeType,
     SupervisionExpenseType,
@@ -55,6 +54,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionNewOffenseViolationsIncludesExcludes,
     SupervisionPersonnelExpensesIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
+    SupervisionReconvictionsIncludesExcludes,
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
     SupervisionStateAppropriationIncludesExcludes,
@@ -456,15 +456,18 @@ discharges = MetricDefinition(
     ],
 )
 
-reconviction_while_on_supervision = MetricDefinition(
+reconvictions = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.RECONVICTIONS,
     category=MetricCategory.PUBLIC_SAFETY,
-    display_name="Reconviction while on Supervision",
-    description="Measures the number of individuals convicted of a new offense while under supervision in the previous calendar year.",
+    display_name="Reconvictions",
+    description="The number of people convicted of a new crime while serving a term of supervision.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=NewOffenseType, required=False)
-    ],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionReconvictionsIncludesExcludes,
+        excluded_set={
+            SupervisionReconvictionsIncludesExcludes.NEW_INFRACTION,
+        },
+    ),
 )
