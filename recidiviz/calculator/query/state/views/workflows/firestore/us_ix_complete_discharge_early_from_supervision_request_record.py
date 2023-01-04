@@ -239,7 +239,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     ),
     client_notes AS (
         SELECT 
-            pei.external_id AS form_information_client_idoc_id,
+            pei.external_id AS external_id,
             tes.state_code,
             tes.start_date AS eligible_start_date,
             ses.start_date AS supervision_start_date,
