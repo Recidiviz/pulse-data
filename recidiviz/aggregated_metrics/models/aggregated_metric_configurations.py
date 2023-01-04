@@ -23,6 +23,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
 )
+from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
+    TaskCompletionEventBigQueryViewCollector,
+)
 
 ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     name="absconsions_bench_warrants",
@@ -728,6 +731,18 @@ SUPERVISION_STARTS = EventCountMetric(
     event_types=["SUPERVISION_START"],
     event_attribute_filters={},
 )
+
+# get unique completion task types
+TASK_COMPLETED_METRICS = [
+    EventCountMetric(
+        name=f"task_completions_{b.task_type_name.lower()}",
+        display_name=f"Task Completions: {b.task_title}",
+        description=f"Number of task completions of type: {b.task_title.lower()}",
+        event_types=["TASK_COMPLETED"],
+        event_attribute_filters={"task_type": [b.task_type_name]},
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+]
 
 TREATMENT_REFERRALS = EventCountMetric(
     name="treatment_referrals",

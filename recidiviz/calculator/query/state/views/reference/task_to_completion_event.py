@@ -17,8 +17,8 @@
 """Mapping between task name and completion event type"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
-from recidiviz.calculator.query.state.views.analyst_data.person_events import (
-    TASK_VIEW_BUILDERS,
+from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
+    SingleTaskEligibilityBigQueryViewCollector,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,6 +29,7 @@ TASK_TO_COMPLETION_EVENT_DESCRIPTION = (
     """Mapping between task name and completion event type"""
 )
 
+TASK_VIEW_BUILDERS = SingleTaskEligibilityBigQueryViewCollector()
 
 TASK_TO_COMPLETION_EVENT_QUERY_TEMPLATE = "UNION ALL".join(
     [

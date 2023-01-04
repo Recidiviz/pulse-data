@@ -26,9 +26,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.task_eligibility.single_task_eligibility_spans_view_collector import (
-    SingleTaskEligibilityBigQueryViewCollector,
-)
 from recidiviz.task_eligibility.task_eligiblity_spans import TASK_ELIGIBILITY_DATASET_ID
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -65,8 +62,6 @@ grouping by person-event-event_date when events should only be tracked once per
 person-event-event_date. In situations where events can occur multiple times per 
 person-day, the GROUP BY clause should include all attribute name columns as well.
 """
-
-TASK_VIEW_BUILDERS = SingleTaskEligibilityBigQueryViewCollector()
 
 PERSON_EVENTS_QUERY_TEMPLATE = """
 
