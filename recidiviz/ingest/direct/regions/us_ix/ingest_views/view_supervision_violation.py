@@ -32,7 +32,9 @@ violated_conditions AS (
     v.ReportSubmissionDate AS ReportSubmissionDatetime,
     vrs.ViolationReportStatusDesc,
     ct.ConditionTypeDesc, 
-    vsc.ViolationNotes
+    vsc.ViolationNotes,
+    LOWER(vsc.ViolationNotes) LIKE '%felony%' AS FelonyFlag,
+    LOWER(vsc.ViolationNotes) LIKE '%misdemeanor%' AS MisdemeanorFlag
   FROM 
     {scl_Violation} v
     left join {scl_ViolatedSupervisionCondition} vsc USING (ViolationId) -- There are times a violation exists, but no condition is listed as violated
@@ -42,7 +44,7 @@ violated_conditions AS (
     left join {scl_ViolationType} vt USING (ViolationTypeId)
 ),
 state_violation AS ( 
-# Should choose min between ReportSubmissionDate and ArrestDate for state_violation_date. Rarely, ArrestDate is second, but it does happen.
+-- Should choose min between ReportSubmissionDate and ArrestDate for state_violation_date. Rarely, ArrestDate is second, but it does happen.
   SELECT 
     OffenderId,
     ViolationId,
@@ -51,7 +53,9 @@ state_violation AS (
     ArrestDatetime,
     ReportSubmissionDatetime,
     ViolationReportStatusDesc,
-    CAST(TO_JSON_STRING(ARRAY_AGG(STRUCT<condition_type_desc string, violation_notes string>(ConditionTypeDesc, ViolationNotes))) AS STRING) AS ViolatedConditions
+    CAST(TO_JSON_STRING(ARRAY_AGG(STRUCT<condition_type_desc string, violation_notes string>(ConditionTypeDesc, ViolationNotes))) AS STRING) AS ViolatedConditions,
+    LOGICAL_OR(FelonyFlag) AS FelonyFlag,
+    LOGICAL_OR(MisdemeanorFlag) AS MisdemeanorFlag
   FROM violated_conditions
   GROUP BY OffenderId, ViolationId, ViolationTypeDesc, ViolationReportStatusDesc, ArrestDatetime, ReportSubmissionDatetime
 )
@@ -60,7 +64,9 @@ SELECT
   ViolationId,
   ViolationTypeDesc,
   EstimatedViolationDate,
-  ViolatedConditions
+  ViolatedConditions,
+  FelonyFlag,
+  MisdemeanorFlag
 FROM state_violation
 """
 
