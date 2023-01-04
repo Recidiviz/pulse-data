@@ -19,10 +19,10 @@
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
-    SupervisionCaseType,
     SupervisionDailyPopulationType,
     SupervisionExpenseType,
     SupervisionFundingType,
+    SupervisionNewCaseType,
     SupervisionStaffType,
     SupervisionTerminationType,
     SupervisionViolationType,
@@ -73,13 +73,13 @@ SUPERVISION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="new_cases",
-        definition=supervision.new_supervision_cases,
+        definition=supervision.new_cases,
     ),
     MetricFile(
         canonical_filename="new_cases_by_type",
-        definition=supervision.new_supervision_cases,
-        disaggregation=SupervisionCaseType,
-        disaggregation_column_name="supervision_type",
+        definition=supervision.new_cases,
+        disaggregation=SupervisionNewCaseType,
+        disaggregation_column_name="case_type",
     ),
     MetricFile(
         canonical_filename="population",

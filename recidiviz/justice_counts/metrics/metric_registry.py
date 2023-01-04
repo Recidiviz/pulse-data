@@ -91,7 +91,7 @@ METRICS = [
     supervision.total_staff,
     supervision.residents,
     supervision.daily_population,
-    supervision.new_supervision_cases,
+    supervision.new_cases,
     supervision.reconviction_while_on_supervision,
     supervision.supervision_terminations,
     supervision.violations,
