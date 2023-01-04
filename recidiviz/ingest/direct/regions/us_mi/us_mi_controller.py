@@ -22,7 +22,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils import environment
 
 
 class UsMiController(BaseDirectIngestController):
@@ -40,28 +39,13 @@ class UsMiController(BaseDirectIngestController):
         processed for data we received on a particular date.
         """
 
-        # staging or secondary
-        if (
-            not environment.in_gcp_production()
-            or self.ingest_instance == DirectIngestInstance.SECONDARY
-        ):
-            return [
-                "person_external_ids",
-                "state_persons_v2",
-                "incarceration_periods_v2",
-                "supervision_periods_v2",
-                "sentences_v2",
-                "state_charge_v2",
-                "assessments_v2",
-                "state_drug_screen",
-            ]
-
-        # prod primary
         return [
-            "state_persons",
-            "incarceration_periods",
-            "supervision_periods",
-            "sentences",
-            "state_charge",
-            "assessments",
+            "person_external_ids",
+            "state_persons_v2",
+            "incarceration_periods_v2",
+            "supervision_periods_v2",
+            "sentences_v2",
+            "state_charge_v2",
+            "assessments_v2",
+            "state_drug_screen",
         ]
