@@ -136,16 +136,28 @@ cleaned_Diversion_view AS (
     FROM {{Diversion}} Diversion
     LEFT JOIN {{OffenderStatute}} OffenderStatute USING (Offense)
 ),
-ISCRelated_sentence_selection AS (
+# TODO(#17454) - Note: Both this CTE and the following were created as temporary selection fixes for some strange behavior we note in the ISCRelatedSentence table. 
+# In these cases, there were a small number of ISC cases that were consecutive to/related to multiple count numbers of the same case number in the ISCRelatedSentence table. 
+# For now, we apply a row number selection and keep the lowest count number for a given related sentence. 
+ISCRelated_sentence_count_selection AS (
     SELECT *,
         ROW_NUMBER() OVER (PARTITION BY OffenderID,RelatedJurisidicationCounty,RelatedCaseYear, RelatedCaseNumber ORDER BY RelatedCountNumber ASC) AS count_rank
     FROM {{ISCRelatedSentence}}
     WHERE RelatedSentenceType = 'X'
 ),
+# TODO(#17454) - Similar to the above note, there were 2 instances of ISC sentences that were related to multiple distinct sentences in the ISCRelatedSentence table
+# Unlike the above, there is not a clear lowest count or most recent sentence that we should select. So for now, we pick the sentence with the oldest case year 
+# and lowest count number. However, we anticipate that we will change this behavior once we get feedback from TN about how to handle these situations properly. 
+ISCRelated_sentence_selection AS (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY OffenderID, Jurisdication, CaseYear, CaseNumber,CountNumber ORDER BY RelatedCaseYear,RelatedCountNumber ASC) as sentence_rank
+    FROM ISCRelated_sentence_count_selection
+    WHERE count_rank = 1
+),
 consecutive_ISCRelated_sentences AS (
     SELECT *
-    FROM ISCRelated_sentence_selection ISCR
-    WHERE ISCR.count_rank = 1
+    FROM ISCRelated_sentence_selection
+    WHERE  sentence_rank = 1
 ),
 cleaned_ISCSentence_view AS (
     SELECT 
