@@ -8,6 +8,8 @@ input_columns:
   - EstimatedViolationDate
   - ViolatedConditions
   - ViolationTypeDesc
+  - FelonyFlag
+  - MisdemeanorFlag
 unused_columns:
   - ViolatedConditions # TODO(#17014): Revisit adding in Violated conditions
 output:
@@ -24,7 +26,7 @@ output:
                 - OffenderId
                 - ViolationId
           violation_date: EstimatedViolationDate # [ARS] Also consider Arrest Date?
-          supervision_violation_types:
+          supervision_violation_types: # Defaults to most granular violation type
             - StateSupervisionViolationTypeEntry:
                 violation_type:
                   $enum_mapping:
@@ -42,6 +44,22 @@ output:
                         - Non-Technical
                         - Technical/Non-Technical
                         - Pending / In Progress
+            - $conditional:
+                - $if:
+                    $equal:
+                      - FelonyFlag
+                      - $literal("True")
+                  $then:
+                    StateSupervisionViolationTypeEntry:
+                      violation_type: $literal_enum(StateSupervisionViolationType.FELONY)
+            - $conditional:
+                - $if:
+                    $equal:
+                      - MisdemeanorFlag
+                      - $literal("True")
+                  $then:
+                    StateSupervisionViolationTypeEntry:
+                      violation_type: $literal_enum(StateSupervisionViolationType.MISDEMEANOR)
 #          supervision_violated_conditions: # TODO(#17014): Revisit adding in Violated conditions
 #            - $foreach:
 #                $iterable:
