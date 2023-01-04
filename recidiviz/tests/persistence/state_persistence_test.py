@@ -46,15 +46,13 @@ from recidiviz.persistence.entity_matching.templates.us_xx.us_xx_matching_delega
     UsXxMatchingDelegate,
 )
 from recidiviz.persistence.errors import EntityMatchingError
-from recidiviz.persistence.ingest_info_converter.base_converter import (
-    EntityDeserializationResult,
-)
 from recidiviz.persistence.persistence import (
     DATABASE_INVARIANT_THRESHOLD,
     ENTITY_MATCHING_THRESHOLD,
     ENUM_THRESHOLD,
     OVERALL_THRESHOLD,
 )
+from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 from recidiviz.tools.postgres import local_postgres_helpers
 
 EXTERNAL_ID = "EXTERNAL_ID"
@@ -301,7 +299,7 @@ class TestStatePersistence(TestCase):
         # Act
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
-                people=parsed_entities,
+                root_entities=parsed_entities,
                 enum_parsing_errors=0,
                 general_parsing_errors=0,
                 protected_class_errors=0,
@@ -435,7 +433,7 @@ class TestStatePersistence(TestCase):
         # Act
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
-                people=parsed_entities,
+                root_entities=parsed_entities,
                 enum_parsing_errors=0,
                 general_parsing_errors=0,
                 protected_class_errors=0,

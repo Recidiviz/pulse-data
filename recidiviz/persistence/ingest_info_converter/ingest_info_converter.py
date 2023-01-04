@@ -22,12 +22,10 @@ TODO(#8905): Delete this file once all states have been migrated to v2 ingest
 
 from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
-from recidiviz.persistence.ingest_info_converter.base_converter import (
-    EntityDeserializationResult,
-)
 from recidiviz.persistence.ingest_info_converter.state.state_converter import (
     StateConverter,
 )
+from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 from recidiviz.utils import trace
 
 
