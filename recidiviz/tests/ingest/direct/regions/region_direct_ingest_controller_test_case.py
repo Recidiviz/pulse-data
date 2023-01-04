@@ -440,7 +440,7 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         with SessionFactory.using_database(
             self.main_database_key, autocommit=False
         ) as session:
-            found_people_from_db = dao.read_people(session)
+            found_people_from_db = dao.read_all_people(session)
             found_people = cast(
                 List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db)
             )

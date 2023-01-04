@@ -90,7 +90,7 @@ class BaseStateEntityMatcherTest(TestCase):
         match_session.close()
 
         session = self._session()
-        result_db_people = dao.read_people(session)
+        result_db_people = dao.read_all_people(session)
         if expected_unmatched_db_people:
             expected_people.extend(expected_unmatched_db_people)
         self._assert_people_match(expected_people, result_db_people)

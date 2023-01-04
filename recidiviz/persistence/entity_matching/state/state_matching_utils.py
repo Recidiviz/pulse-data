@@ -551,8 +551,8 @@ def read_potential_match_db_persons(
         "external ids",
         len(root_external_ids),
     )
-    persons_by_root_entity = dao.read_people_by_cls_external_ids(
-        session, region_code, schema.StatePerson, root_external_ids
+    persons_by_root_entity = dao.read_people_by_external_ids(
+        session, region_code, root_external_ids
     )
 
     deduped_people = []

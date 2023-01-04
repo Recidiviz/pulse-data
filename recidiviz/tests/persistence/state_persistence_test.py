@@ -312,7 +312,7 @@ class TestStatePersistence(TestCase):
             self.database_key, autocommit=False
         ) as session:
             # Assert
-            persons = dao.read_people(session)
+            persons = dao.read_all_people(session)
 
             self.assertEqual(
                 [expected_person, expected_person_2],
@@ -446,7 +446,7 @@ class TestStatePersistence(TestCase):
             self.database_key, autocommit=False
         ) as session:
             # Assert
-            persons = dao.read_people(session)
+            persons = dao.read_all_people(session)
 
             self.maxDiff = None
             self.assertEqual(

@@ -24,7 +24,6 @@ from unittest import TestCase
 import pytest
 
 from recidiviz.common.constants.state import external_id_types
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -64,54 +63,6 @@ class TestDao(TestCase):
             cls.temp_db_dir
         )
 
-    def test_readPeople_byFullName(self) -> None:
-        # Arrange
-        person = schema.StatePerson(
-            person_id=8, full_name=_FULL_NAME, state_code=_STATE_CODE
-        )
-        person_different_name = schema.StatePerson(
-            person_id=9, full_name="diff_name", state_code=_STATE_CODE
-        )
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(person)
-            session.add(person_different_name)
-            session.commit()
-
-            # Act
-            people = dao.read_people(session, full_name=_FULL_NAME, birthdate=None)
-
-            # Assert
-            expected_people = [person]
-            self.assertCountEqual(people, expected_people)
-
-    def test_readPeople_byBirthdate(self) -> None:
-        # Arrange
-        person = schema.StatePerson(
-            person_id=8, birthdate=_BIRTHDATE, state_code=_STATE_CODE
-        )
-        person_different_birthdate = schema.StatePerson(
-            state_code=_STATE_CODE,
-            person_id=9,
-            birthdate=datetime.date(year=2002, month=1, day=2),
-        )
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(person)
-            session.add(person_different_birthdate)
-            session.commit()
-
-            # Act
-            people = dao.read_people(session, full_name=None, birthdate=_BIRTHDATE)
-
-            # Assert
-            expected_people = [person]
-            self.assertCountEqual(people, expected_people)
-
     def test_readPeople(self) -> None:
         # Arrange
         person = schema.StatePerson(
@@ -137,7 +88,7 @@ class TestDao(TestCase):
             session.commit()
 
             # Act
-            people = dao.read_people(session, full_name=None, birthdate=None)
+            people = dao.read_all_people(session)
 
             # Assert
             expected_people = [
@@ -145,33 +96,6 @@ class TestDao(TestCase):
                 person_different_name,
                 person_different_birthdate,
             ]
-
-            self.assertCountEqual(people, expected_people)
-
-    def test_readPlaceholderPeople(self) -> None:
-        placeholder_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        person = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        person_external_id = schema.StatePersonExternalId(
-            person_external_id_id=1,
-            external_id=_EXTERNAL_ID,
-            id_type=external_id_types.US_ND_SID,
-            state_code=_STATE_CODE,
-            person=person,
-        )
-        person.external_ids = [person_external_id]
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(placeholder_person)
-            session.add(person)
-            session.commit()
-
-            # Act
-            people = dao.read_placeholder_persons(session, _STATE_CODE)
-
-            # Assert
-            expected_people = [placeholder_person]
 
             self.assertCountEqual(people, expected_people)
 
@@ -198,8 +122,8 @@ class TestDao(TestCase):
             session.commit()
 
             # Act
-            people = dao.read_people_by_cls_external_ids(
-                session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID]
+            people = dao.read_people_by_external_ids(
+                session, _STATE_CODE, [_EXTERNAL_ID]
             )
 
             # Assert
@@ -233,46 +157,8 @@ class TestDao(TestCase):
             session.commit()
 
             # Act
-            people = dao.read_people_by_cls_external_ids(
-                session, _STATE_CODE, schema.StatePerson, [_EXTERNAL_ID]
-            )
-
-            # Assert
-            expected_people = [person]
-
-            self.assertCountEqual(people, expected_people)
-
-    def test_readPeopleByRootExternalIds_IncarcerationSentenceExternalId(self) -> None:
-        # Arrange
-        person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=1,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person,
-        )
-        incarceration_sentence_2 = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=2,
-            external_id=_EXTERNAL_ID2,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person,
-        )
-        person.incarceration_sentences = [
-            incarceration_sentence,
-            incarceration_sentence_2,
-        ]
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(person)
-            session.commit()
-
-            # Act
-            people = dao.read_people_by_cls_external_ids(
-                session, _STATE_CODE, schema.StateIncarcerationSentence, [_EXTERNAL_ID]
+            people = dao.read_people_by_external_ids(
+                session, _STATE_CODE, [_EXTERNAL_ID]
             )
 
             # Assert
@@ -302,21 +188,9 @@ class TestDao(TestCase):
             session.add(person_match_external_id)
             session.commit()
 
-            ingested_person = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE
-            )
-            ingested_person.external_ids = [
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE,
-                    person=ingested_person,
-                )
-            ]
-
             # Act
             people = dao.read_people_by_external_ids(
-                session, _REGION, [ingested_person]
+                session, _STATE_CODE, [_EXTERNAL_ID]
             )
 
             # Assert
@@ -350,26 +224,9 @@ class TestDao(TestCase):
             session.add(person)
             session.commit()
 
-            ingested_person = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE
-            )
-
-            ingested_person.external_ids = [
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE,
-                ),
-                entities.StatePersonExternalId.new_with_defaults(
-                    external_id=_EXTERNAL_ID2,
-                    id_type=external_id_types.US_ND_SID,
-                    state_code=_STATE_CODE,
-                ),
-            ]
-
             # Act
             people = dao.read_people_by_external_ids(
-                session, _REGION, [ingested_person]
+                session, _STATE_CODE, [_EXTERNAL_ID, _EXTERNAL_ID2]
             )
 
             # Assert
@@ -425,7 +282,7 @@ class TestDao(TestCase):
 
             # Act
             people = dao.read_people_by_external_ids(
-                session, _REGION, [ingested_person]
+                session, _STATE_CODE, [_EXTERNAL_ID, _EXTERNAL_ID2]
             )
 
             # Assert
@@ -462,42 +319,9 @@ class TestDao(TestCase):
             session.add(person2)
             session.commit()
 
-            ingested_person1 = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE,
-                external_ids=[
-                    entities.StatePersonExternalId.new_with_defaults(
-                        external_id=_EXTERNAL_ID,
-                        id_type=external_id_types.US_ND_SID,
-                        state_code=_STATE_CODE,
-                    )
-                ],
-            )
-
-            ingested_person2 = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE,
-                external_ids=[
-                    entities.StatePersonExternalId.new_with_defaults(
-                        external_id=_EXTERNAL_ID2,
-                        id_type=external_id_types.US_ND_SID,
-                        state_code=_STATE_CODE,
-                    )
-                ],
-            )
-
-            ingested_person3 = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE,
-                external_ids=[
-                    entities.StatePersonExternalId.new_with_defaults(
-                        external_id="NONEXISTENT_ID",
-                        id_type=external_id_types.US_ND_SID,
-                        state_code=_STATE_CODE,
-                    )
-                ],
-            )
-
             # Act
             people = dao.read_people_by_external_ids(
-                session, _REGION, [ingested_person1, ingested_person2, ingested_person3]
+                session, _STATE_CODE, [_EXTERNAL_ID, _EXTERNAL_ID2, "NONEXISTENT_ID"]
             )
 
             # Assert
@@ -532,88 +356,12 @@ class TestDao(TestCase):
             session.add(person)
             session.commit()
 
-            ingested_person1 = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE,
-                external_ids=[
-                    entities.StatePersonExternalId.new_with_defaults(
-                        external_id=_EXTERNAL_ID,
-                        id_type=external_id_types.US_ND_SID,
-                        state_code=_STATE_CODE,
-                    )
-                ],
-            )
-
-            ingested_person2 = entities.StatePerson.new_with_defaults(
-                state_code=_STATE_CODE,
-                external_ids=[
-                    entities.StatePersonExternalId.new_with_defaults(
-                        external_id=_EXTERNAL_ID2,
-                        id_type=external_id_types.US_ND_SID,
-                        state_code=_STATE_CODE,
-                    )
-                ],
-            )
-
             # Act
             people = dao.read_people_by_external_ids(
-                session, _REGION, [ingested_person1, ingested_person2]
+                session, _STATE_CODE, [_EXTERNAL_ID, _EXTERNAL_ID2]
             )
 
             # Assert
             expected_people = [person]
 
             self.assertCountEqual(people, expected_people)
-
-    def test_readObjsWithExternalIdMatch(self) -> None:
-        person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
-        incarceration_sentence_1 = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=1,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_1,
-        )
-        person_1.incarceration_sentences = [incarceration_sentence_1]
-
-        person_2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
-        incarceration_sentence_1_dup = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=2,
-            external_id=_EXTERNAL_ID,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_2,
-        )
-        incarceration_sentence_2 = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=3,
-            external_id=_EXTERNAL_ID2,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_2,
-        )
-        placeholder_incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=4,
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
-            state_code=_STATE_CODE,
-            person=person_2,
-        )
-
-        person_2.incarceration_sentences = [
-            incarceration_sentence_1_dup,
-            incarceration_sentence_2,
-            placeholder_incarceration_sentence,
-        ]
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as session:
-            session.add(person_1)
-            session.add(person_2)
-            session.flush()
-
-            # Act
-            external_ids = dao.read_external_ids_of_cls_with_external_id_match(
-                session, _STATE_CODE, schema.StateIncarcerationSentence
-            )
-
-            # Assert
-            self.assertEqual(external_ids, [_EXTERNAL_ID])
