@@ -39,23 +39,16 @@ from recidiviz.persistence.entity.entity_utils import (
     get_all_db_objs_from_trees,
     is_placeholder,
     is_standalone_entity,
-    log_entity_count,
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity_matching import entity_matching_utils
-from recidiviz.persistence.entity_matching.base_entity_matcher import (
-    BaseEntityMatcher,
-    increment_error,
-)
 from recidiviz.persistence.entity_matching.entity_matching_types import (
     EntityTree,
     IndividualMatchResult,
     MatchedEntities,
     MatchResults,
 )
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
-    BaseStateMatchingDelegate,
-)
+from recidiviz.persistence.entity_matching.monitoring import increment_error
 from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
     StateIngestedTreeMerger,
 )
@@ -72,6 +65,9 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     merge_flat_fields,
     read_potential_match_db_persons,
     remove_child_from_entity,
+)
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+    StateSpecificEntityMatchingDelegate,
 )
 from recidiviz.persistence.errors import (
     EntityMatchingError,
@@ -108,32 +104,27 @@ class _EntityWithParentInfo:
 
 # TODO(#2504): Rename `ingested` and `db` entities to something more generic that
 # still accurately describes that one is being merged onto the other.
-class StateEntityMatcher(BaseEntityMatcher):
+class StateEntityMatcher:
     """Class that handles entity matching for all state data."""
 
-    def __init__(self, state_matching_delegate: BaseStateMatchingDelegate):
+    def __init__(
+        self, state_specific_logic_delegate: StateSpecificEntityMatchingDelegate
+    ):
         self.all_ingested_db_objs: Set[DatabaseEntity] = set()
-        self.ingest_obj_id_to_person_id: Dict[int, int] = defaultdict()
-        self.person_id_to_ingest_objs: Dict[int, Set[DatabaseEntity]] = defaultdict(set)
 
-        # Cache of DB objects of type schema.StatePerson (above) keyed by
-        # their external ids.
-        self.db_person_cache: Dict[str, List[EntityTree]] = defaultdict(list)
+        # Cache of root entity DB objects (e.g. objs of type schema.StatePerson)
+        # keyed by their external ids.
+        self.db_root_entities_by_external_id: Dict[str, List[EntityTree]] = defaultdict(
+            list
+        )
 
         # Set of class types in the ingested objects that are not placeholders
         self.non_placeholder_ingest_types: Set[Type[DatabaseEntity]] = set()
 
-        # Set this to True if you want to run with consistency checking
-        self.do_ingest_obj_consistency_check = False
-
-        # Set this to True if you want counts on all entities read from the
-        # DB to be logged.
-        self.log_entity_counts = False
-
         self.entities_to_convert_to_placeholder_or_expunge: List[DatabaseEntity] = []
 
         # Delegate object with all state specific logic
-        self.state_matching_delegate = state_matching_delegate
+        self.state_specific_logic_delegate = state_specific_logic_delegate
 
         self.session: Optional[Session] = None
 
@@ -162,7 +153,7 @@ class StateEntityMatcher(BaseEntityMatcher):
             external_ids = get_person_external_ids(db_person)
             tree = EntityTree(entity=db_person, ancestor_chain=[])
             for external_id in external_ids:
-                self.db_person_cache[external_id].append(tree)
+                self.db_root_entities_by_external_id[external_id].append(tree)
 
     def _is_placeholder(self, entity: DatabaseEntity) -> bool:
         """Entity matching-specific wrapper around is_placeholder() that checks that
@@ -242,66 +233,6 @@ class StateEntityMatcher(BaseEntityMatcher):
                     non_placeholder_ingest_types.add(type(obj))
         return non_placeholder_ingest_types
 
-    def set_ingest_objs_for_persons(
-        self, ingested_db_persons: List[schema.StatePerson]
-    ) -> None:
-        if self.do_ingest_obj_consistency_check:
-            logging.info(
-                "[Entity matching] Setting ingest object mappings for [%s] "
-                "persons trees",
-                len(ingested_db_persons),
-            )
-            for person in ingested_db_persons:
-                person_ingest_objs = get_all_db_objs_from_tree(person, self.field_index)
-                for obj in person_ingest_objs:
-                    self.ingest_obj_id_to_person_id[id(obj)] = id(person)
-                    self.person_id_to_ingest_objs[id(person)].add(obj)
-                    self.all_ingested_db_objs.add(obj)
-            logging.info(
-                "[Entity matching] Done setting ingest object mappings for [%s]"
-                " persons trees",
-                len(ingested_db_persons),
-            )
-
-    def check_no_ingest_objs(self, db_objs: List[DatabaseEntity]) -> None:
-        if self.do_ingest_obj_consistency_check:
-            ingest_objs = self.get_ingest_objs_from_list(db_objs)
-            if ingest_objs:
-                logging.warning(
-                    "Found [%s] unexpected object from ingested entity tree",
-                    len(ingest_objs),
-                )
-
-                objs_by_person_id = self.generate_ingest_objs_by_person_id(ingest_objs)
-                for person_id, found_objs in objs_by_person_id.items():
-                    self.log_found_ingest_obj_info_for_person(person_id, found_objs)
-
-                raise ValueError(
-                    f"Found unexpected ingest object. First unexpected object: "
-                    f"{self.describe_db_entity(next(iter(ingest_objs)))}"
-                )
-
-    def generate_ingest_objs_by_person_id(
-        self, found_objs: Set[DatabaseEntity]
-    ) -> Dict[int, Set[DatabaseEntity]]:
-        person_id_to_ingest_objs: Dict[int, Set[DatabaseEntity]] = defaultdict(set)
-        for obj in found_objs:
-            person_id = self.ingest_obj_id_to_person_id[id(obj)]
-            person_id_to_ingest_objs[person_id].add(obj)
-        return person_id_to_ingest_objs
-
-    def log_found_ingest_obj_info_for_person(
-        self, person_id: int, found_objs: Set[DatabaseEntity]
-    ) -> None:
-        logging.warning("For person [%s]:", str(person_id))
-        logging.warning("  Found:")
-        for found_obj in found_objs:
-            logging.warning("    %s", self.describe_db_entity(found_obj))
-
-        logging.warning("  All:")
-        for obj in self.person_id_to_ingest_objs[person_id]:
-            logging.warning("    %s", self.describe_db_entity(obj))
-
     def get_ingest_objs_from_list(
         self, db_objs: List[DatabaseEntity]
     ) -> Set[DatabaseEntity]:
@@ -349,7 +280,6 @@ class StateEntityMatcher(BaseEntityMatcher):
         self.non_placeholder_ingest_types = self.get_non_placeholder_ingest_types(
             ingested_db_persons
         )
-        self.set_ingest_objs_for_persons(ingested_db_persons)
 
         logging.info(
             "[Entity matching] Starting reading and converting persons "
@@ -361,17 +291,13 @@ class StateEntityMatcher(BaseEntityMatcher):
         db_persons = read_potential_match_db_persons(
             session=session,
             ingested_persons=ingested_db_persons,
-            region_code=self.state_matching_delegate.get_region_code(),
+            region_code=self.state_specific_logic_delegate.get_region_code(),
         )
-
-        if self.log_entity_counts:
-            logging.info("Entity counts for all people read from the DB:")
-            log_entity_count(db_persons, self.field_index)
 
         logging.info(
             "Read [%d] persons from DB in region [%s]",
             len(db_persons),
-            self.state_matching_delegate.get_region_code(),
+            self.state_specific_logic_delegate.get_region_code(),
         )
 
         self.set_db_person_cache(db_persons)
@@ -541,7 +467,6 @@ class StateEntityMatcher(BaseEntityMatcher):
     ) -> None:
         for person in updated_persons:
             children = get_all_db_objs_from_tree(person, self.field_index)
-            self.check_no_ingest_objs(list(children))
             for child in children:
                 if child is not person and not is_standalone_entity(child):
                     child.set_field("person", person)
@@ -711,9 +636,6 @@ class StateEntityMatcher(BaseEntityMatcher):
                     ingested_placeholder_tree.entity.get_entity_name(),
                 )
 
-            for merged_child_tree in child_match_result.merged_entity_trees:
-                self.check_no_ingest_objs([merged_child_tree.entity])
-
             # Ensure the merged children are on the correct entity
             for merged_child_tree in child_match_result.merged_entity_trees:
                 merged_parent_tree = merged_child_tree.generate_parent_tree()
@@ -754,8 +676,6 @@ class StateEntityMatcher(BaseEntityMatcher):
             error_count += match_results.error_count
             for child_match_result in match_results.individual_match_results:
                 resolve_child_placeholder_match_result()
-
-            self.check_no_ingest_objs(placeholder_children)
 
             db_placeholder_tree.entity.set_field_from_list(
                 child_field_name, placeholder_children
@@ -896,7 +816,6 @@ class StateEntityMatcher(BaseEntityMatcher):
 
             # Update the ingested entity copy with the updated child(ren).
             updated_children = [mc.entity for mc in updated_child_trees]
-            self.check_no_ingest_objs(updated_children)
             if isinstance(ingested_child_field, list):
                 new_db_entity.set_field(child_field_name, updated_children)
             else:
@@ -988,7 +907,6 @@ class StateEntityMatcher(BaseEntityMatcher):
             updated_children = [c.entity for c in updated_child_trees]
             if isinstance(ingested_child_field, list):
                 updated_children.extend(match_results.unmatched_db_entities)
-                self.check_no_ingest_objs(updated_children)
                 db_entity.set_field(child_field_name, updated_children)
             else:
                 if match_results.unmatched_db_entities and not is_standalone_entity(
@@ -1001,7 +919,6 @@ class StateEntityMatcher(BaseEntityMatcher):
                         f"{match_results.unmatched_db_entities}",
                         ingested_entity.get_entity_name(),
                     )
-                self.check_no_ingest_objs(updated_children)
                 db_entity.set_field(child_field_name, one(updated_children))
 
         merged_entity = merge_flat_fields(
@@ -1106,7 +1023,7 @@ class StateEntityMatcher(BaseEntityMatcher):
         cached_match_ids: Set[int] = set()
 
         for external_id in external_ids:
-            cached_trees = self.db_person_cache[external_id]
+            cached_trees = self.db_root_entities_by_external_id[external_id]
             for cached_tree in cached_trees:
                 if cached_tree.entity.get_id() not in cached_match_ids:
                     cached_match_ids.add(cached_tree.entity.get_id())
@@ -1138,7 +1055,7 @@ class StateEntityMatcher(BaseEntityMatcher):
             )
 
         if not exact_match:
-            exact_match = self.state_matching_delegate.get_non_external_id_match(
+            exact_match = self.state_specific_logic_delegate.get_non_external_id_match(
                 ingested_entity_tree, db_entity_trees
             )
 

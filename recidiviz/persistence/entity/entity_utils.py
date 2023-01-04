@@ -18,7 +18,6 @@
 import importlib
 import inspect
 import json
-import logging
 from collections import defaultdict
 from enum import Enum, auto
 from functools import lru_cache
@@ -877,19 +876,6 @@ def is_standalone_entity(entity: DatabaseEntity) -> bool:
     can exist separate from a StatePerson tree.
     """
     return is_standalone_class(entity.__class__)
-
-
-def log_entity_count(
-    db_persons: List[state_schema.StatePerson], field_index: CoreEntityFieldIndex
-):
-    """Counts and logs the total number of entities of each class included in
-    the |db_persons| trees.
-    """
-    entities_by_type = get_entities_by_type(db_persons, field_index)
-    debug_msg = "Entity counter\n"
-    for cls, entities_of_cls in entities_by_type.items():
-        debug_msg += f"{str(cls.__name__)}: {str(len(entities_of_cls))}\n"
-    logging.info(debug_msg)
 
 
 def person_has_id(

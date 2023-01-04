@@ -22,7 +22,7 @@ from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 
 
-class BaseStateMatchingDelegate:
+class StateSpecificEntityMatchingDelegate:
     """Base class to handle state specific matching logic."""
 
     def __init__(

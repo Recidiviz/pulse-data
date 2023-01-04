@@ -24,8 +24,8 @@ from recidiviz.persistence.entity_matching.entity_matching_types import MatchedE
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     StateEntityMatcher,
 )
-from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory import (
-    StateMatchingDelegateFactory,
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate_factory import (
+    StateSpecificEntityMatchingDelegateFactory,
 )
 from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.utils import trace
@@ -46,7 +46,7 @@ def _get_matcher(
     region_code: str,
     ingest_metadata: IngestMetadata,
 ) -> StateEntityMatcher:
-    state_matching_delegate = StateMatchingDelegateFactory.build(
+    state_matching_delegate = StateSpecificEntityMatchingDelegateFactory.build(
         region_code=region_code,
         ingest_metadata=ingest_metadata,
     )

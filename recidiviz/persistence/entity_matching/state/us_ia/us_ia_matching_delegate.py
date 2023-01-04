@@ -17,12 +17,12 @@
 """Contains logic for US_IA specific entity matching overrides."""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
-from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
-    BaseStateMatchingDelegate,
+from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+    StateSpecificEntityMatchingDelegate,
 )
 
 
-class UsIaMatchingDelegate(BaseStateMatchingDelegate):
+class UsIaMatchingDelegate(StateSpecificEntityMatchingDelegate):
     """Class that contains matching logic specific to US_IA."""
 
     def __init__(self, ingest_metadata: IngestMetadata):
