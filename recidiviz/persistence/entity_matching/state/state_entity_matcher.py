@@ -21,7 +21,7 @@ ingested entities.
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple, Type
+from typing import Dict, List, Optional, Set, Tuple, Type, cast
 
 from more_itertools import one
 
@@ -79,6 +79,8 @@ from recidiviz.persistence.errors import (
 )
 
 # How many person trees to search to fill the non_placeholder_ingest_types set.
+from recidiviz.persistence.persistence_utils import RootEntityT
+
 MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 20
 
 
@@ -322,14 +324,18 @@ class StateEntityMatcher(BaseEntityMatcher):
         self,
         session: Session,
         _: str,  # region_code, instead taken from state_matching_delegate
-        ingested_people: List[entities.StatePerson],
+        ingested_root_entities: List[RootEntityT],
     ) -> MatchedEntities:
         """Attempts to match all persons from |ingested_persons| with
         corresponding persons in our database. Returns a MatchedEntities object
         that contains the results of matching.
         """
 
-        ingested_people = self.tree_merger.merge(ingested_people)
+        # TODO(#17471): Remove this check/cast and allow StateStaff as well
+        check_all_objs_have_type(ingested_root_entities, entities.StatePerson)
+        ingested_root_people = cast(List[entities.StatePerson], ingested_root_entities)
+
+        ingested_people = self.tree_merger.merge(ingested_root_people)
 
         self.set_session(session)
         logging.info(

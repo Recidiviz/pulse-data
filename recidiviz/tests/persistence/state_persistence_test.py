@@ -305,7 +305,7 @@ class TestStatePersistence(TestCase):
                 protected_class_errors=0,
             ),
             ingest_metadata=TestStatePersistence.default_metadata,
-            total_people=len(parsed_entities),
+            total_root_entities=len(parsed_entities),
         )
 
         with SessionFactory.using_database(
@@ -439,7 +439,7 @@ class TestStatePersistence(TestCase):
                 protected_class_errors=0,
             ),
             ingest_metadata=TestStatePersistence.default_metadata,
-            total_people=len(parsed_entities),
+            total_root_entities=len(parsed_entities),
         )
 
         with SessionFactory.using_database(

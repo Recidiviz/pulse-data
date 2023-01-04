@@ -16,12 +16,10 @@
 # =============================================================================
 """Contains logic to match database entities with ingested entities."""
 
-from typing import List, Optional
+from typing import List
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity_matching.base_entity_matcher import BaseEntityMatcher
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     StateEntityMatcher,
@@ -29,39 +27,27 @@ from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
 from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory import (
     StateMatchingDelegateFactory,
 )
+from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.utils import trace
-
-_EMPTY_MATCH_OUTPUT = MatchedEntities(people=[], error_count=0, total_root_entities=0)
 
 
 @trace.span
 def match(
     session: Session,
     region: str,
-    ingested_people: List[state_entities.StatePerson],
+    ingested_root_entities: List[RootEntityT],
     ingest_metadata: IngestMetadata,
 ) -> MatchedEntities:
-    matcher = _get_matcher(ingested_people, region, ingest_metadata)
-    if not matcher:
-        return _EMPTY_MATCH_OUTPUT
-
-    return matcher.run_match(session, region, ingested_people)
+    matcher = _get_matcher(region, ingest_metadata)
+    return matcher.run_match(session, region, ingested_root_entities)
 
 
 def _get_matcher(
-    ingested_people: List[state_entities.StatePerson],
     region_code: str,
     ingest_metadata: IngestMetadata,
-) -> Optional[BaseEntityMatcher]:
-    sample = next(iter(ingested_people), None)
-    if not sample:
-        return None
-
-    if isinstance(sample, state_entities.StatePerson):
-        state_matching_delegate = StateMatchingDelegateFactory.build(
-            region_code=region_code,
-            ingest_metadata=ingest_metadata,
-        )
-        return StateEntityMatcher(state_matching_delegate)
-
-    raise ValueError(f"Invalid person type of [{sample.__class__.__name__}]")
+) -> StateEntityMatcher:
+    state_matching_delegate = StateMatchingDelegateFactory.build(
+        region_code=region_code,
+        ingest_metadata=ingest_metadata,
+    )
+    return StateEntityMatcher(state_matching_delegate)
