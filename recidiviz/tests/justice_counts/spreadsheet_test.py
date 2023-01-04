@@ -86,7 +86,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 ),
             )
             filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
-            self.assertEqual(len(json_response["metrics"]), 7)
+            self.assertEqual(len(json_response["metrics"]), 8)
             for metric in json_response["metrics"]:
                 if metric["key"] == law_enforcement.total_arrests.key:
                     self.assertEqual(
@@ -189,7 +189,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     metric_key_to_disaggregation_status={},
                 ),
             )
-            self.assertEqual(len(json_response["metrics"]), 7)
+            self.assertEqual(len(json_response["metrics"]), 8)
             for metric in json_response["metrics"]:
                 if metric["key"] == law_enforcement.funding.key:
                     self.assertEqual(
@@ -350,7 +350,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     metric_key_to_disaggregation_status={},
                 ),
             )
-            self.assertEqual(len(json_response["metrics"]), 7)
+            self.assertEqual(len(json_response["metrics"]), 8)
             for metric in json_response["metrics"]:
                 if metric["key"] == law_enforcement.funding.key:
                     self.assertEqual(metric["metric_errors"], [])
@@ -396,7 +396,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     metric_key_to_disaggregation_status={},
                 ),
             )
-            self.assertEqual(len(json_response["metrics"]), 7)
+            self.assertEqual(len(json_response["metrics"]), 8)
             for metric in json_response["metrics"]:
                 if metric["key"] == law_enforcement.funding.key:
                     # One error for having monthly data for an annual metric, one
@@ -478,7 +478,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     metric_key_to_disaggregation_status={},
                 ),
             )
-            self.assertEqual(len(json_response["metrics"]), 7)
+            self.assertEqual(len(json_response["metrics"]), 8)
             for metric in json_response["metrics"]:
                 if metric["key"] == law_enforcement.funding.key:
                     # Error for no month column in breakdown sheet, since now

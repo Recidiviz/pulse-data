@@ -1477,7 +1477,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
-            self.assertEqual(len(response_dict["metrics"]), 7)
+            self.assertEqual(len(response_dict["metrics"]), 8)
             self.assertEqual(len(response_dict["non_metric_errors"]), 0)
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
@@ -1884,6 +1884,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         "Grants",
                         "Other Funding",
                         "Unknown Funding",
+                    ]
+                },
+                "LAW_ENFORCEMENT_EXPENSES": {
+                    "Law Enforcement Expense Type": [
+                        "Personnel",
+                        "Training",
+                        "Facilities and Equipment",
+                        "Other Expenses",
+                        "Unknown Expenses",
                     ]
                 },
                 "LAW_ENFORCEMENT_CALLS_FOR_SERVICE": {
