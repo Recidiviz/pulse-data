@@ -20,6 +20,7 @@ from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
+    LawEnforcementExpenseType,
     LawEnforcementFundingType,
     LawEnforcementStaffType,
     OffenseType,
@@ -32,12 +33,16 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     LawEnforcementAssetForfeitureIncludesExcludes,
     LawEnforcementCivilianStaffIncludesExcludes,
     LawEnforcementCountyOrMunicipalAppropriation,
+    LawEnforcementExpensesIncludesExcludes,
+    LawEnforcementFacilitiesIncludesExcludes,
     LawEnforcementFundingIncludesExcludes,
     LawEnforcementGrantsIncludesExcludes,
     LawEnforcementMentalHealthStaffIncludesExcludes,
+    LawEnforcementPersonnelIncludesExcludes,
     LawEnforcementPoliceOfficersIncludesExcludes,
     LawEnforcementStaffIncludesExcludes,
     LawEnforcementStateAppropriationIncludesExcludes,
+    LawEnforcementTrainingIncludesExcludes,
     LawEnforcementVacantStaffIncludesExcludes,
     LawEnforcementVictimAdvocateStaffIncludesExcludes,
 )
@@ -137,6 +142,55 @@ funding = MetricDefinition(
     ],
 )
 
+expenses = MetricDefinition(
+    system=System.LAW_ENFORCEMENT,
+    metric_type=MetricType.EXPENSES,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Expenses",
+    description="The amount spent by the agency for law enforcement activities.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementExpensesIncludesExcludes,
+        excluded_set={
+            LawEnforcementExpensesIncludesExcludes.BIENNIUM_FUNDING,
+            LawEnforcementExpensesIncludesExcludes.MULTI_YEAR_EXPENSES,
+            LawEnforcementExpensesIncludesExcludes.JAILS,
+            LawEnforcementExpensesIncludesExcludes.SUPERVISION,
+        },
+    ),
+    specified_contexts=[],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=LawEnforcementExpenseType,
+            dimension_to_includes_excludes={
+                LawEnforcementExpenseType.TRAINING: IncludesExcludesSet(
+                    members=LawEnforcementTrainingIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementTrainingIncludesExcludes.FREE,
+                    },
+                ),
+                LawEnforcementExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=LawEnforcementPersonnelIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementPersonnelIncludesExcludes.COMPANY_CONTRACTS,
+                    },
+                ),
+                LawEnforcementExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                    members=LawEnforcementFacilitiesIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                LawEnforcementExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in law enforcement activities.",
+                LawEnforcementExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in law enforcement activities.",
+                LawEnforcementExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used in law enforcement activities.",
+                LawEnforcementExpenseType.OTHER: "The amount spent by the agency on other costs relating to law enforcement activities that are not personnel, training, or facilities and equipment expenses.",
+                LawEnforcementExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to law enforcement activities for a purpose that is not known.",
+            },
+            required=False,
+        )
+    ],
+)
 
 calls_for_service = MetricDefinition(
     system=System.LAW_ENFORCEMENT,

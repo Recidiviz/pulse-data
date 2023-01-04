@@ -392,18 +392,20 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ),
                 key=lambda x: x.key,
             )
-            self.assertEqual(len(metrics), 4)
+            self.assertEqual(len(metrics), 5)
             # Civilian Complaints Sustained metric
             self.assertEqual(metrics[0].value, 200)
-            # Funding metric
+            # Expenses metric
             self.assertEqual(metrics[1].value, 500)
-            # Staff metric
-            self.assertEqual(metrics[2].value, 90)
-            # Use of Force metric
-            self.assertEqual(metrics[3].value, 200)
-            self.assertEqual(len(metrics[3].aggregated_dimensions), 1)
+            # Funding metric
+            self.assertEqual(metrics[2].value, 500)
+            # Total Staff metric
+            self.assertEqual(metrics[3].value, 90)
+            # Use of force  metric
+            self.assertEqual(metrics[4].value, 200)
+            self.assertEqual(len(metrics[4].aggregated_dimensions), 1)
             self.assertEqual(
-                metrics[3]  # type: ignore[index]
+                metrics[4]  # type: ignore[index]
                 .aggregated_dimensions[0]
                 .dimension_to_value,
                 {
@@ -609,11 +611,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 user_account=user_account,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             )
-            # There should be 6 missing metric warnings, one for each enabled
+            # There should be 7 missing metric warnings, one for each enabled
             # metric that is NOT Calls For Service. Since Calls For Service
             # is turned off, there should not be a Missing Metric or Missing
             # Breakdown error.
-            self.assertEqual(len(metric_key_to_errors), 6)
+            self.assertEqual(len(metric_key_to_errors), 7)
             for metric_key, errors in metric_key_to_errors.items():
                 self.assertNotEqual(metric_key, law_enforcement.calls_for_service.key)
                 self.assertEqual(len(errors), 1)

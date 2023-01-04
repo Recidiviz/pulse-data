@@ -18,6 +18,59 @@
 
 import enum
 
+
+# Expenses
+class LawEnforcementExpensesIncludesExcludes(enum.Enum):
+    FISCAL_YEAR = "Expenses for single fiscal year"
+    BIENNIUM_FUNDING = "Biennium expenses"
+    MULTI_YEAR_EXPENSES = (
+        "Multi-year expenses that will not be fully spent this fiscal year"
+    )
+    STAFF_FUNDING = "Expenses for agency staff"
+    EQUIPMENT = "Expenses for the purchase of law enforcement equipment"
+    CONSTRUCTION = "Expenses for construction of law enforcement facilities (e.g., offices, temporary detention facilities, garages, etc.)"
+    MAINTENANCE = (
+        "Expenses for the maintenance of law enforcement equipment and facilities"
+    )
+    OTHER = "Expenses for other purposes not captured by the listed categories"
+    JAILS = "Expenses for the operation of jails"
+    SUPERVISION = "Expenses for the operation of community supervision services"
+
+
+class LawEnforcementPersonnelIncludesExcludes(enum.Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT = "Retirement contributions"
+    INDIVIDUAL_CONTRACTORS = (
+        "Costs of individuals contracted to work for the law enforcement agency"
+    )
+    COMPANY_CONTRACTS = (
+        "Costs of companies contracted to work for the law enforcement agency"
+    )
+
+
+class LawEnforcementTrainingIncludesExcludes(enum.Enum):
+    ANNUAL = "Annual training"
+    ACADEMY = "Training academy"
+    SPECIALIZED = "Specialized training"
+    CONTINUING_EDUCATION = "Continuing education"
+    EXTERNAL = "External training or professional development opportunities (conferences, classes, etc.)"
+    FREE = "Courses or programs offered at no cost to individuals or the department"
+
+
+class LawEnforcementFacilitiesIncludesExcludes(enum.Enum):
+    OPERATIONS = "Law enforcement facility operations"
+    MAINTENANCE = "Law enforcement facility maintenance"
+    RENOVATION = "Law enforcement facility renovation"
+    CONSTRUCTION = "Law enforcement facility construction"
+    VEHICLES = "Vehicles"
+    UNIFORMS = "Uniforms"
+    EQUIPMENT = (
+        "Equipment (e.g., offices, temporary detention facilities, garages, etc.)"
+    )
+    WEAPONS = "Weapons"
+
+
 # Funding
 
 

@@ -19,6 +19,7 @@
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ForceType,
+    LawEnforcementExpenseType,
     LawEnforcementFundingType,
     LawEnforcementStaffType,
     OffenseType,
@@ -31,6 +32,16 @@ from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import law_enforcement
 
 LAW_ENFORCEMENT_METRIC_FILES = [
+    MetricFile(
+        canonical_filename="expenses",
+        definition=law_enforcement.expenses,
+    ),
+    MetricFile(
+        canonical_filename="expenses_by_type",
+        definition=law_enforcement.expenses,
+        disaggregation=LawEnforcementExpenseType,
+        disaggregation_column_name="expense_type",
+    ),
     MetricFile(
         canonical_filename="funding",
         definition=law_enforcement.funding,
