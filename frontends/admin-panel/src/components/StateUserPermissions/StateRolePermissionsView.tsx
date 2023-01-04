@@ -16,15 +16,16 @@
 // =============================================================================
 
 import { Button, message, PageHeader, Space, Spin, Table } from "antd";
-import { SortOrder } from "antd/es/table/interface";
 import { useState } from "react";
 import {
   createStateRolePermissions,
   getStateRoleDefaultPermissions,
+  updateStateRolePermissions,
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import { ROUTES_PERMISSIONS_LABELS } from "../constants";
+import { CreateEditStateRoleForm } from "./EditStateRoleForm";
 import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {
@@ -34,7 +35,24 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
 
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
 
+  // control row selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [selectedRows, setSelectedRows] = useState<
+    StateRolePermissionsResponse[]
+  >([]);
+  const onSelectChange = (
+    newSelectedRowKeys: React.Key[],
+    newSelectedRows: StateRolePermissionsResponse[]
+  ) => {
+    setSelectedRowKeys(newSelectedRowKeys);
+    setSelectedRows(newSelectedRows);
+  };
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+  };
   if (loading || !data) {
     return (
       <div className="center">
@@ -58,6 +76,25 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
       value: stateCode,
     });
   });
+
+  const finishPromises = async (promises: Promise<unknown>[], verb: string) => {
+    if (promises.length !== 0) {
+      Promise.all(promises)
+        .then(() => {
+          setEditVisible(false);
+          message.success(
+            `${verb} ${selectedRowKeys.join(", ")} successfully!`
+          );
+          setSelectedRowKeys([]); // clear selected rows once all changes are successful
+        })
+        .catch((error) => {
+          message.error(`${error}`);
+        })
+        .finally(() => {
+          updateTable();
+        });
+    }
+  };
 
   const onAdd = async ({
     stateCode,
@@ -85,6 +122,32 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     }
   };
 
+  const onEdit = async ({
+    stateCode,
+    role,
+    canAccessLeadershipDashboard,
+    canAccessCaseTriage,
+    shouldSeeBetaCharts,
+    ...routes
+  }: StateRolePermissionsResponse) => {
+    const results: Promise<unknown>[] = [];
+    selectedRows.forEach((row: StateRolePermissionsResponse) => {
+      const editRow = async () => {
+        const response = await updateStateRolePermissions(
+          row.stateCode,
+          row.role,
+          canAccessLeadershipDashboard,
+          canAccessCaseTriage,
+          shouldSeeBetaCharts,
+          updatePermissionsObject({}, routes, ROUTES_PERMISSIONS_LABELS)
+        );
+        await checkResponse(response);
+      };
+      results.push(editRow());
+    });
+    finishPromises(results, `Updated`);
+  };
+
   const columns = [
     {
       title: "State",
@@ -102,7 +165,6 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         a: StateRolePermissionsResponse,
         b: StateRolePermissionsResponse
       ) => a.stateCode.localeCompare(b.stateCode),
-      defaultSortOrder: "ascend" as SortOrder,
     },
     {
       title: "Role",
@@ -156,10 +218,26 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
             setAddVisible(false);
           }}
         />
+        <Button
+          onClick={() => {
+            setEditVisible(true);
+          }}
+        >
+          Update Permissions
+        </Button>
+        <CreateEditStateRoleForm
+          editVisible={editVisible}
+          editOnCreate={onEdit}
+          editOnCancel={() => {
+            setEditVisible(false);
+          }}
+          selectedRows={selectedRows}
+        />
       </Space>
       <br /> <br />
       <Table
         rowKey={(row) => `${row.stateCode}/${row.role}`}
+        rowSelection={rowSelection}
         dataSource={data}
         columns={columns}
         pagination={{ defaultPageSize: 20 }}

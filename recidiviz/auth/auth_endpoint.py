@@ -581,7 +581,11 @@ def upload_roster() -> Tuple[str, HTTPStatus]:
 def states() -> Response:
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     with SessionFactory.using_database(database_key, autocommit=False) as session:
-        state_permissions = session.query(StateRolePermissions).all()
+        state_permissions = (
+            session.query(StateRolePermissions)
+            .order_by(StateRolePermissions.state_code, StateRolePermissions.role)
+            .all()
+        )
         return jsonify(
             [
                 {
@@ -674,6 +678,7 @@ def add_state_role(
                         "canAccessLeadershipDashboard": state_role.can_access_leadership_dashboard,
                         "shouldSeeBetaCharts": state_role.should_see_beta_charts,
                         "routes": state_role.routes,
+                        "featureVariants": state_role.feature_variants,
                     }
                 ),
                 HTTPStatus.OK,
@@ -684,6 +689,90 @@ def add_state_role(
                 "A state with this role already exists in StateRolePermissions.",
                 HTTPStatus.BAD_REQUEST,
             )
+        if isinstance(e.orig, NotNullViolation):
+            return (
+                f"{e}",
+                HTTPStatus.BAD_REQUEST,
+            )
+        raise e
+    except ProgrammingError as error:
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+
+@auth_endpoint_blueprint.route("/states/<state_code>/roles/<role>", methods=["PATCH"])
+@requires_gae_auth
+def update_state_role(
+    state_code: str, role: str
+) -> Union[tuple[Response, int], tuple[str, int]]:
+    """Updates the default permissions for a given role in a state."""
+    if not StateCode.is_state_code(state_code.upper()):
+        return (
+            f"Unknown state_code [{state_code}] received, must be a valid state code.",
+            HTTPStatus.BAD_REQUEST,
+        )
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            # Read existing entry
+            state_role = (
+                session.query(StateRolePermissions)
+                .filter(
+                    StateRolePermissions.state_code == state_code.upper(),
+                    StateRolePermissions.role == role.lower(),
+                )
+                .first()
+            )
+            if not state_role:
+                return (
+                    f"State {state_code.upper()} with role {role.lower()} does not exist in StateRolePermissions.",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+            # Transform request dict to match expected structure/casing
+            request_dict = {
+                # convert request keys to snake_case to match DB columns. Don't convert nested keys
+                # because we expect 'routes' to be JSON with keys that contain uppercase letters.
+                to_snake_case(k): v
+                for k, v in assert_type(request.json, dict).items()
+            }
+            if rsc := request_dict.get("state_code"):
+                request_dict["state_code"] = rsc.upper()
+            if rr := request_dict.get("role"):
+                request_dict["role"] = rr.lower()
+
+            # Perform update
+            for k, v in request_dict.items():
+                if k == "routes":
+                    continue
+                setattr(state_role, k, v)
+
+            if routes := request_dict.get("routes"):
+                # Note: JSONB does not detect in-place changes when used with the ORM.
+                # (https://docs.sqlalchemy.org/en/13/dialects/postgresql.html#sqlalchemy.dialects.postgresql.JSONB)
+                # The sqlalchemy.ext.mutable extension supposedly makes it so it does, but it didn't
+                # for me, so instead we just assign it to a new dict, which does the trick.
+                state_role.routes = {**state_role.routes, **routes}
+
+            session.commit()
+
+            return (
+                jsonify(
+                    {
+                        "stateCode": state_role.state_code,
+                        "role": state_role.role,
+                        "canAccessCaseTriage": state_role.can_access_case_triage,
+                        "canAccessLeadershipDashboard": state_role.can_access_leadership_dashboard,
+                        "shouldSeeBetaCharts": state_role.should_see_beta_charts,
+                        "routes": state_role.routes,
+                        "featureVariants": state_role.feature_variants,
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+    except IntegrityError as e:
         if isinstance(e.orig, NotNullViolation):
             return (
                 f"{e}",
