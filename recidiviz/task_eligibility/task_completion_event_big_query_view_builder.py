@@ -61,3 +61,5 @@ class TaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
             **query_format_kwargs,
         )
         self.completion_event_type = completion_event_type
+        self.task_type_name = completion_event_type.name
+        self.task_title = self.task_type_name.replace("_", " ").title()

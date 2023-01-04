@@ -108,6 +108,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     SUPERVISION_LEVEL_DOWNGRADES_TO_LIMITED,
     SUPERVISION_LEVEL_UPGRADES,
     SUPERVISION_STARTS,
+    TASK_COMPLETED_METRICS,
     TREATMENT_REFERRALS,
     VIOLATION_RESPONSES,
     VIOLATION_RESPONSES_ABSCONDED,
@@ -231,6 +232,9 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         EMPLOYED_STATUS_STARTS,
         ## Program Referrals
         TREATMENT_REFERRALS,
+    ]  # Task completion metrics
+    + TASK_COMPLETED_METRICS
+    + [
         ## Workflows
         LATE_OPPORTUNITY_SUPERVISION_LEVEL_DOWNGRADE_7_DAYS,
         LATE_OPPORTUNITY_SUPERVISION_LEVEL_DOWNGRADE_30_DAYS,
