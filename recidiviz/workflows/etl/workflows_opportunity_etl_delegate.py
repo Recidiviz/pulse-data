@@ -36,15 +36,15 @@ class OpportunityExportConfig:
 CONFIG_BY_STATE: Dict[StateCode, List[OpportunityExportConfig]] = {
     StateCode.US_ID: [
         OpportunityExportConfig(
-            source_filename="us_id_complete_discharge_early_from_supervision_request_record.json",
+            source_filename="us_ix_complete_discharge_early_from_supervision_request_record.json",
             export_collection_name="US_ID-earnedDischargeReferrals",
         ),
         OpportunityExportConfig(
-            source_filename="us_id_complete_transfer_to_limited_supervision_form_record.json",
+            source_filename="us_ix_complete_transfer_to_limited_supervision_form_record.json",
             export_collection_name="US_ID-LSUReferrals",
         ),
         OpportunityExportConfig(
-            source_filename="us_id_complete_full_term_discharge_from_supervision_request_record.json",
+            source_filename="us_ix_complete_full_term_discharge_from_supervision_request_record.json",
             export_collection_name="US_ID-pastFTRDReferrals",
         ),
     ],
