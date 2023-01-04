@@ -455,3 +455,33 @@ class SupervisionNewCasesIncludesExcludes(Enum):
     SPECIALIZED = "People with new specialized cases (e.g., for sex offenses, domestic violence, serious mental illness)"
     PRETRIAL_INVESTIGATION = "People with new cases in pretrial investigation"
     TRANSFERRED = "People with cases transferred between supervision districts or supervision officers in the same jurisdiction"
+
+
+# Discharges
+class SupervisionDischargesIncludesExcludes(Enum):
+    SUCCESSFUL = "Successful completions of supervision"
+    UNSUCCESSFUL = "Unsuccessful discharge from supervision"
+    NEUTRAL = "Neutral discharge from supervision"
+    TRANSFERRED = "People transferred between supervision districts or supervision officers in the same jurisdiction"
+
+
+class SupervisionSuccessfulCompletionIncludesExcludes(Enum):
+    COMPLETED_REQUIREMENTS = (
+        "People who completed all requirements of supervision and were released"
+    )
+    EARLY_RELEASE = (
+        "People who were granted early release from supervision for earned or good time"
+    )
+    END_OF_TERM = "People who arrive at the end of their supervision term in good standing and without revocation"
+
+
+class SupervisionNeutralDischargeIncludesExcludes(Enum):
+    OUTSTANDING_VIOLATIONS = "People who completed their full term of their supervision sentence, but have outstanding supervision violations pending resolution"
+    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconscion"
+    DIED = "People who died during their term of supervision"
+
+
+class SupervisionUnsuccessfulDischargeIncludesExcludes(Enum):
+    INCARCERATION = "People whose supervision term was terminated due to failure to meet the requirements of supervision, resulting in incarceration (e.g., pretrial release revocation probation revocation, etc.)"
+    REVOKED = "People who were revoked from one kind of supervision to another (e.g., people revoked to regular probation from a supervision term that, when completed, would result in no criminal record)"
+    TERMINATED = "People who were determined to not be a match for supervision and terminated from the agency’s jurisdiction"

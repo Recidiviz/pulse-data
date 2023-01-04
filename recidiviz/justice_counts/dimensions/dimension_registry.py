@@ -79,7 +79,7 @@ DIMENSIONS = [
     supervision.SupervisionNewCaseType,
     supervision.SupervisionDailyPopulationType,
     supervision.SupervisionStaffType,
-    supervision.SupervisionTerminationType,
+    supervision.SupervisionDischargeType,
     supervision.SupervisionViolationType,
     supervision.SupervisionFundingType,
     supervision.SupervisionExpenseType,
