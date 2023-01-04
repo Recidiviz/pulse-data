@@ -34,9 +34,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
 from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 from recidiviz.persistence import persistence
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.ingest_info_converter.base_converter import (
-    EntityDeserializationResult,
-)
+from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 
 
 class IngestViewProcessor:
@@ -87,16 +85,22 @@ class IngestViewProcessorImpl(IngestViewProcessor):
         )
 
         if all(isinstance(e, state_entities.StatePerson) for e in parsed_entities):
-            return persistence.write_entities(
-                conversion_result=EntityDeserializationResult(
-                    people=cast(List[state_entities.StatePerson], parsed_entities),
-                    # We set these to zero because we now just crash if there are any
-                    # parsing errors. If we get to this point, there were no errors.
-                    enum_parsing_errors=0,
-                    general_parsing_errors=0,
-                    protected_class_errors=0,
-                ),
-                ingest_metadata=ingest_metadata,
-                total_people=len(parsed_entities),
+            root_entities = cast(List[state_entities.StatePerson], parsed_entities)
+        # TODO(#17471): Add support here for root entities of type `StateStaff`
+        else:
+            raise ValueError(
+                f"Found unexpected top-level root entity types: "
+                f"[{set(type(e) for e in parsed_entities)}]"
             )
-        raise ValueError("Found non-person top-level entities parsing file")
+        return persistence.write_entities(
+            conversion_result=EntityDeserializationResult(
+                root_entities=root_entities,
+                # We set these to zero because we now just crash if there are any
+                # parsing errors. If we get to this point, there were no errors.
+                enum_parsing_errors=0,
+                general_parsing_errors=0,
+                protected_class_errors=0,
+            ),
+            ingest_metadata=ingest_metadata,
+            total_people=len(parsed_entities),
+        )

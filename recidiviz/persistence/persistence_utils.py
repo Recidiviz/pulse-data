@@ -17,7 +17,11 @@
 
 """Utils for the persistence layer."""
 import os
+from typing import Generic, List, TypeVar
 
+import attr
+
+from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.utils import environment
 from recidiviz.utils.params import str_to_bool
 
@@ -29,3 +33,15 @@ def should_persist() -> bool:
     return environment.in_gcp() or str_to_bool(
         (os.environ.get("PERSIST_LOCALLY", "false"))
     )
+
+
+# TODO(#17471): Update to allow for either state_entities.StatePerson or state_entities.StateStaff
+RootEntityT = TypeVar("RootEntityT", bound=state_entities.StatePerson)
+
+
+@attr.s(frozen=True)
+class EntityDeserializationResult(Generic[RootEntityT]):
+    enum_parsing_errors: int = attr.ib()
+    general_parsing_errors: int = attr.ib()
+    protected_class_errors: int = attr.ib()
+    root_entities: List[RootEntityT] = attr.ib(factory=list)

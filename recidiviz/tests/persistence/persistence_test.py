@@ -59,9 +59,7 @@ from recidiviz.persistence.entity.state.entities import (
 from recidiviz.persistence.entity_matching.state.base_state_matching_delegate import (
     BaseStateMatchingDelegate,
 )
-from recidiviz.persistence.ingest_info_converter.base_converter import (
-    EntityDeserializationResult,
-)
+from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 from recidiviz.tools.postgres import local_postgres_helpers
 
 DATE = date(year=2019, day=1, month=2)
@@ -190,6 +188,7 @@ def mock_build_matching_delegate(
     return BaseStateMatchingDelegate(region_code, ingest_metadata)
 
 
+# TODO(#17471): Write test for persisting StateStaff
 class MultipleStateTestMixin:
     """Defines the test cases for running multiple state transactions simultaneously.
 
@@ -209,7 +208,7 @@ class MultipleStateTestMixin:
     ) -> None:
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
-                people=entities,
+                root_entities=entities,
                 enum_parsing_errors=0,
                 general_parsing_errors=0,
                 protected_class_errors=0,
@@ -524,7 +523,7 @@ def _run_transactions_overlapping(
     ):
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
-                people=state_1_entities,
+                root_entities=state_1_entities,
                 enum_parsing_errors=0,
                 general_parsing_errors=0,
                 protected_class_errors=0,
@@ -539,7 +538,7 @@ def _run_transactions_overlapping(
     def transaction2(other_precommit_event, committed_event):
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
-                people=state_2_entities,
+                root_entities=state_2_entities,
                 enum_parsing_errors=0,
                 general_parsing_errors=0,
                 protected_class_errors=0,
@@ -731,7 +730,7 @@ def _run_transactions_interleaved(
         def transaction1() -> None:
             persistence.write_entities(
                 conversion_result=EntityDeserializationResult(
-                    people=state_1_entities,
+                    root_entities=state_1_entities,
                     enum_parsing_errors=0,
                     general_parsing_errors=0,
                     protected_class_errors=0,
@@ -746,7 +745,7 @@ def _run_transactions_interleaved(
             time.sleep(DELAY)
             persistence.write_entities(
                 conversion_result=EntityDeserializationResult(
-                    people=state_2_entities,
+                    root_entities=state_2_entities,
                     enum_parsing_errors=0,
                     general_parsing_errors=0,
                     protected_class_errors=0,

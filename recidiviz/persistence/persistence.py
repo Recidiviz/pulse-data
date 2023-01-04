@@ -34,11 +34,11 @@ from recidiviz.persistence.database_invariant_validator import (
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.ingest_info_converter.base_converter import (
-    EntityDeserializationResult,
-)
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
-from recidiviz.persistence.persistence_utils import should_persist
+from recidiviz.persistence.persistence_utils import (
+    EntityDeserializationResult,
+    should_persist,
+)
 from recidiviz.utils import metadata, monitoring, trace
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
@@ -364,7 +364,7 @@ def write_entities(
     }
     with monitoring.measurements(mtags) as measurements:
         people, data_validation_errors = entity_validator.validate(
-            conversion_result.people
+            conversion_result.root_entities
         )
         logging.info(
             "Converted [%s] people with [%s] enum_parsing_errors, [%s]"

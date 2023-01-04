@@ -22,8 +22,6 @@ import logging
 from abc import abstractmethod
 from typing import List
 
-import attr
-
 from recidiviz.common.constants.entity_enum import EnumParsingError
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
@@ -33,18 +31,11 @@ from recidiviz.common.constants.state.state_person import (
 from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 
 # TODO(#8905): Remove the State enums once all states have been migrated to v2 ingest
 #  mappings.
 PROTECTED_CLASSES = (StateRace, StateEthnicity, StateGender)
-
-
-@attr.s(frozen=True)
-class EntityDeserializationResult:
-    enum_parsing_errors: int = attr.ib()
-    general_parsing_errors: int = attr.ib()
-    protected_class_errors: int = attr.ib()
-    people: List[state_entities.StatePerson] = attr.ib(factory=list)
 
 
 class BaseConverter:
@@ -77,7 +68,7 @@ class BaseConverter:
                 raise e
 
         return EntityDeserializationResult(
-            people=people,
+            root_entities=people,
             enum_parsing_errors=enum_parsing_errors,
             general_parsing_errors=general_parsing_errors,
             protected_class_errors=protected_class_errors,

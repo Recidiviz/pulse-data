@@ -76,9 +76,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationTypeEntry,
 )
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.ingest_info_converter.ingest_info_converter import (
-    EntityDeserializationResult,
-)
+from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 from recidiviz.tests.persistence.database.database_test_utils import (
     FakeLegacyStateIngestMetadata,
 )
@@ -117,7 +115,7 @@ class TestIngestInfoStateConverter(unittest.TestCase):
             raise ValueError(
                 f"Had [{conversion_result.protected_class_errors}] protected class errors"
             )
-        return conversion_result.people
+        return conversion_result.root_entities
 
     def testConvert_FullIngestInfo(self) -> None:
         # Arrange
