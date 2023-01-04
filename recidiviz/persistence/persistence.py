@@ -32,7 +32,6 @@ from recidiviz.persistence.database_invariant_validator import (
     database_invariant_validator,
 )
 from recidiviz.persistence.entity_matching import entity_matching
-from recidiviz.persistence.entity_validator import entity_validator
 from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import (
@@ -42,8 +41,8 @@ from recidiviz.persistence.persistence_utils import (
 from recidiviz.utils import metadata, monitoring, trace
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
-m_people = measure.MeasureInt(
-    "persistence/num_people", "The number of people persisted", "1"
+m_root_entities = measure.MeasureInt(
+    "persistence/num_people", "The number of root entities persisted", "1"
 )
 m_aborts = measure.MeasureInt(
     "persistence/num_aborts", "The number of aborted writes", "1"
@@ -54,11 +53,11 @@ m_retries = measure.MeasureInt(
     "The number of transaction retries due to serialization failures",
     "1",
 )
-people_persisted_view = view.View(
+root_entities_persisted_view = view.View(
     "recidiviz/persistence/num_people",
-    "The sum of people persisted",
+    "The sum of root entities persisted",
     [monitoring.TagKey.REGION, monitoring.TagKey.PERSISTED],
-    m_people,
+    m_root_entities,
     aggregation.SumAggregation(),
 )
 aborted_writes_view = view.View(
@@ -84,7 +83,7 @@ retried_transactions_view = view.View(
 )
 monitoring.register_views(
     [
-        people_persisted_view,
+        root_entities_persisted_view,
         aborted_writes_view,
         errors_persisted_view,
         retried_transactions_view,
@@ -122,7 +121,6 @@ def _should_abort(
     conversion_result: EntityDeserializationResult,
     region_code: str,
     entity_matching_errors: int = 0,
-    data_validation_errors: int = 0,
     database_invariant_errors: int = 0,
 ) -> bool:
     """
@@ -149,7 +147,6 @@ def _should_abort(
     overall_error_ratio = _calculate_overall_error_ratio(
         conversion_result,
         entity_matching_errors,
-        data_validation_errors,
         total_root_entities,
     )
 
@@ -193,7 +190,6 @@ def _should_abort(
 def _calculate_overall_error_ratio(
     conversion_result: EntityDeserializationResult,
     entity_matching_errors: int,
-    data_validation_errors: int,
     total_root_entities: int,
 ) -> float:
     """Calculates the error ratio, given the total number of errors and root entities."""
@@ -201,7 +197,6 @@ def _calculate_overall_error_ratio(
         conversion_result.enum_parsing_errors
         + conversion_result.general_parsing_errors
         + entity_matching_errors
-        + data_validation_errors
     ) / total_root_entities
 
 
@@ -326,12 +321,12 @@ def write_ingest_info(
             ingest_info, ingest_metadata
         )
     )
-    total_people = len(ingest_info.state_people)
+    total_root_entities = len(ingest_info.state_people)
 
     return write_entities(
         conversion_result,
         ingest_metadata,
-        total_people,
+        total_root_entities,
         run_txn_fn,
     )
 
@@ -340,7 +335,7 @@ def write_ingest_info(
 def write_entities(
     conversion_result: EntityDeserializationResult,
     ingest_metadata: IngestMetadata,
-    total_people: int,
+    total_root_entities: int,
     run_txn_fn: Callable[
         [Session, MeasurementMap, Callable[[Session], bool], Optional[int]], bool
     ] = retry_transaction,
@@ -363,52 +358,49 @@ def write_entities(
         monitoring.TagKey.PERSISTED: False,
     }
     with monitoring.measurements(mtags) as measurements:
-        people, data_validation_errors = entity_validator.validate(
-            conversion_result.root_entities
-        )
         logging.info(
-            "Converted [%s] people with [%s] enum_parsing_errors, [%s]"
-            " general_parsing_errors, [%s] protected_class_errors and "
-            "[%s] data_validation_errors",
-            len(people),
+            "Converted [%s] root_entities with [%s] enum_parsing_errors, [%s]"
+            " general_parsing_errors, and [%s] protected_class_errors",
+            total_root_entities,
             conversion_result.enum_parsing_errors,
             conversion_result.general_parsing_errors,
             conversion_result.protected_class_errors,
-            data_validation_errors,
         )
-        measurements.measure_int_put(m_people, len(people))
+        measurements.measure_int_put(m_root_entities, total_root_entities)
 
         if _should_abort(
-            total_root_entities=total_people,
+            total_root_entities=total_root_entities,
             conversion_result=conversion_result,
             region_code=ingest_metadata.region,
-            data_validation_errors=data_validation_errors,
         ):
             #  TODO(#1665): remove once dangling PERSIST session investigation
             #   is complete.
-            logging.info("_should_abort_ was true after converting people")
+            logging.info("_should_abort_ was true after converting root entities")
             return False
 
         if not should_persist():
             return True
 
         @trace.span
-        def match_and_write_people(session: Session) -> bool:
+        def match_and_write_root_entities(session: Session) -> bool:
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
-                session, ingest_metadata.region, people, ingest_metadata
+                session,
+                ingest_metadata.region,
+                conversion_result.root_entities,
+                ingest_metadata,
             )
-            output_people = entity_matching_output.people
+            output_root_entities = entity_matching_output.people
             total_root_entities = entity_matching_output.total_root_entities
             logging.info(
                 "Completed entity matching with [%s] errors",
                 entity_matching_output.error_count,
             )
             logging.info(
-                "Completed entity matching and have [%s] total people "
+                "Completed entity matching and have [%s] total root entities "
                 "to commit to DB",
-                len(output_people),
+                len(output_root_entities),
             )
             if _should_abort(
                 total_root_entities=total_root_entities,
@@ -425,7 +417,7 @@ def write_entities(
                 database_invariant_validator.validate_invariants(
                     session,
                     ingest_metadata.region,
-                    output_people,
+                    output_root_entities,
                 )
             )
 
@@ -460,7 +452,9 @@ def write_entities(
             with SessionFactory.using_database(
                 ingest_metadata.database_key, autocommit=False
             ) as session:
-                if not run_txn_fn(session, measurements, match_and_write_people, 5):
+                if not run_txn_fn(
+                    session, measurements, match_and_write_root_entities, 5
+                ):
                     return False
             mtags[monitoring.TagKey.PERSISTED] = True
         except Exception as e:

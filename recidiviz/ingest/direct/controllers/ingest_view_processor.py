@@ -102,5 +102,5 @@ class IngestViewProcessorImpl(IngestViewProcessor):
                 protected_class_errors=0,
             ),
             ingest_metadata=ingest_metadata,
-            total_people=len(parsed_entities),
+            total_root_entities=len(parsed_entities),
         )

@@ -214,7 +214,7 @@ class MultipleStateTestMixin:
                 protected_class_errors=0,
             ),
             ingest_metadata=metadata,
-            total_people=len(entities),
+            total_root_entities=len(entities),
         )
 
     def test_insertRootEntities_succeeds(self):
@@ -529,7 +529,7 @@ def _run_transactions_overlapping(
                 protected_class_errors=0,
             ),
             ingest_metadata=INGEST_METADATA_STATE_1_UPDATE,
-            total_people=len(state_1_entities),
+            total_root_entities=len(state_1_entities),
             run_txn_fn=_get_run_transaction_block_commit_fn(
                 precommit_event, other_committed_event
             ),
@@ -544,7 +544,7 @@ def _run_transactions_overlapping(
                 protected_class_errors=0,
             ),
             ingest_metadata=INGEST_METADATA_STATE_2_UPDATE,
-            total_people=len(state_2_entities),
+            total_root_entities=len(state_2_entities),
             run_txn_fn=_get_run_transaction_after_other_fn(
                 other_precommit_event, committed_event
             ),
@@ -736,7 +736,7 @@ def _run_transactions_interleaved(
                     protected_class_errors=0,
                 ),
                 ingest_metadata=INGEST_METADATA_STATE_1_UPDATE,
-                total_people=len(state_1_entities),
+                total_root_entities=len(state_1_entities),
                 run_txn_fn=_get_run_transaction_fn(1),
             )
 
@@ -751,7 +751,7 @@ def _run_transactions_interleaved(
                     protected_class_errors=0,
                 ),
                 ingest_metadata=INGEST_METADATA_STATE_2_UPDATE,
-                total_people=len(state_1_entities),
+                total_root_entities=len(state_1_entities),
                 run_txn_fn=_get_run_transaction_fn(2),
             )
 

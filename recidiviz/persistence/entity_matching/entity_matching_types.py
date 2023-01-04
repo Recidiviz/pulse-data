@@ -39,6 +39,7 @@ class MatchedEntities(BuildableAttr):
         matching.
     """
 
+    # TODO(#17471): Rename to root_entities, change to List[RootEntityT]
     people: List[state_schema.StatePerson] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
     database_cleanup_error_count: int = attr.ib(default=0)
