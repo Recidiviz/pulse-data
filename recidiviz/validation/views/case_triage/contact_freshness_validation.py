@@ -20,10 +20,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     STATE_BASE_DATASET,
 )
-from recidiviz.case_triage.views.dataset_config import (
-    CASE_TRIAGE_DATASET,
-    CASE_TRIAGE_FEDERATED_DATASET,
-)
+from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
@@ -105,16 +102,6 @@ CONTACT_FRESHNESS_VALIDATION_VIEW_BUILDER = FreshnessValidation(
             description="Checks that the Case Triage ETL was successfully updated",
             dataset=CASE_TRIAGE_DATASET,
             table="etl_clients_materialized",
-            date_column_clause="most_recent_face_to_face_date",
-            allowed_days_stale=MAX_DAYS_STALE,
-            filter_clause="state_code = 'US_ID'",
-        ),
-        FreshnessValidationAssertion(
-            region_code="US_ID",
-            assertion_name="CASE_TRIAGE_ETL_CONTAINS_FRESH_DATA_AFTER_EXPORT",
-            description="Checks that the Case Triage ETL was successfully updated after the Cloud SQL export to BigQuery",
-            dataset=CASE_TRIAGE_FEDERATED_DATASET,
-            table="etl_clients",
             date_column_clause="most_recent_face_to_face_date",
             allowed_days_stale=MAX_DAYS_STALE,
             filter_clause="state_code = 'US_ID'",
