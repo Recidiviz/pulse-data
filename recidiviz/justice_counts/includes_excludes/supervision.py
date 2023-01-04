@@ -485,3 +485,10 @@ class SupervisionUnsuccessfulDischargeIncludesExcludes(Enum):
     INCARCERATION = "People whose supervision term was terminated due to failure to meet the requirements of supervision, resulting in incarceration (e.g., pretrial release revocation probation revocation, etc.)"
     REVOKED = "People who were revoked from one kind of supervision to another (e.g., people revoked to regular probation from a supervision term that, when completed, would result in no criminal record)"
     TERMINATED = "People who were determined to not be a match for supervision and terminated from the agency’s jurisdiction"
+
+
+# Reconvictions
+class SupervisionReconvictionsIncludesExcludes(Enum):
+    NEW_FELONY = "People with a new felony conviction"
+    NEW_MISDEMEANOR = "People with a new misdemeanor conviction"
+    NEW_INFRACTION = "People with a new infraction conviction"
