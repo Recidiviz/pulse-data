@@ -33,6 +33,8 @@ CDC_AGE_GROUP_COL = "Five-Year Age Groups"
 CDC_AGE_GROUP_CODE_COL = "Five-Year Age Groups Code"
 CDC_RACE_COL = "Race"
 CDC_RACE_CODE_COL = "Race Code"
+CDC_ETHNICITY_COL = "Ethnicity"
+CDC_ETHNICITY_CODE_COL = "Ethnicity Code"
 CDC_GENDER_COL = "Gender"
 CDC_GENDER_CODE_COL = "Gender Code"
 CDC_POPULATION_COL = "Population"
@@ -40,6 +42,7 @@ CDC_POPULATION_COL = "Population"
 STATE_COL = "state"
 AGE_GROUP_COL = "age_group"
 RACE_COL = "race"
+ETHNICITY_COL = "ethnicity"
 GENDER_COL = "gender"
 POPULATION_COL = "population"
 
@@ -48,7 +51,7 @@ def fetch_population_csv(year: str) -> io.StringIO:
     """Request the population CSV from the CDC website."""
     response = requests.post(
         "https://wonder.cdc.gov/controller/datarequest/D184",
-        timeout=60,
+        timeout=600,
         data=[
             ("saved_id", ""),
             ("dataset_code", "D184"),
@@ -65,7 +68,7 @@ def fetch_population_csv(year: str) -> io.StringIO:
             ("B_2", "D184.V8"),
             ("B_3", "D184.V4"),
             ("B_4", "D184.V5"),
-            ("B_5", "*None*"),
+            ("B_5", "D184.V6"),
             ("O_title", ""),
             ("O_location", "D184.V2"),
             ("V_D184.V2", "*All*"),
@@ -108,6 +111,8 @@ def transform_population_df(csv_contents: io.TextIOWrapper) -> pd.DataFrame:
             CDC_AGE_GROUP_CODE_COL: str,
             CDC_RACE_COL: str,
             CDC_RACE_CODE_COL: str,
+            CDC_ETHNICITY_COL: str,
+            CDC_ETHNICITY_CODE_COL: str,
             CDC_GENDER_COL: str,
             CDC_GENDER_CODE_COL: str,
             CDC_POPULATION_COL: str,
@@ -123,6 +128,7 @@ def transform_population_df(csv_contents: io.TextIOWrapper) -> pd.DataFrame:
             CDC_STATES_COL,
             CDC_AGE_GROUP_COL,
             CDC_RACE_COL,
+            CDC_ETHNICITY_COL,
             CDC_GENDER_COL,
             CDC_POPULATION_COL,
         ]
@@ -133,6 +139,7 @@ def transform_population_df(csv_contents: io.TextIOWrapper) -> pd.DataFrame:
             CDC_STATES_COL: STATE_COL,
             CDC_AGE_GROUP_COL: AGE_GROUP_COL,
             CDC_RACE_COL: RACE_COL,
+            CDC_ETHNICITY_COL: ETHNICITY_COL,
             CDC_GENDER_COL: GENDER_COL,
             CDC_POPULATION_COL: POPULATION_COL,
         },
