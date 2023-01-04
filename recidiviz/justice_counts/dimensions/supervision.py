@@ -72,14 +72,17 @@ class SupervisionViolationType(DimensionBase, enum.Enum):
         return "metric/violation/supervision/type"
 
 
-class SupervisionCaseType(DimensionBase, enum.Enum):
-    ACTIVE = "Active"
-    PASSIVE = "Passive"
-    UNKNOWN = "Unknown"
+class SupervisionNewCaseType(DimensionBase, enum.Enum):
+    PERSON = "New Cases for Person Charges/Offenses"
+    PROPERTY = "New Cases for Property Charges/Offenses"
+    DRUG = "New Cases for Drug Charges/Offenses"
+    PUBLIC_ORDER = "New Cases for Public Order Charges/Offenses"
+    OTHER = "New Cases for Other Charges/Offenses"
+    UNKNOWN = "New Cases for Unknown Charges/Offenses"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/supervision/case/type"
+        return "metric/supervision/new_case/type"
 
 
 class SupervisionDailyPopulationType(DimensionBase, enum.Enum):

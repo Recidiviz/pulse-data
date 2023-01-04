@@ -23,10 +23,10 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
-    SupervisionCaseType,
     SupervisionDailyPopulationType,
     SupervisionExpenseType,
     SupervisionFundingType,
+    SupervisionNewCaseType,
     SupervisionStaffType,
     SupervisionTerminationType,
     SupervisionViolationType,
@@ -49,6 +49,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionFundingIncludesExcludes,
     SupervisionGrantsIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
+    SupervisionNewCasesIncludesExcludes,
     SupervisionNewOffenseViolationsIncludesExcludes,
     SupervisionPersonnelExpensesIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
@@ -317,25 +318,32 @@ violations = MetricDefinition(
     ],
 )
 
-new_supervision_cases = MetricDefinition(
+new_cases = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.SUPERVISION_STARTS,
     category=MetricCategory.POPULATIONS,
-    display_name="New Supervision Cases",
-    description="Measures the number of new cases referred to your agency for supervision.",
-    definitions=[
-        Definition(
-            term="Active supervision",
-            definition="A case in which the individual under supervision is required to  regularly report to a supervision officer or court in person or phone.",
-        )
-    ],
+    display_name="New Cases",
+    description="The number of people with new community supervision cases referred to the agency as the result of a legal decision made by the courts or another authority, such as a parole board.",
     measurement_type=MeasurementType.DELTA,
-    reporting_note="Record only individuals entering for a new supervision term, not for an extension or reinstatement of a prior case.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionNewCasesIncludesExcludes,
+        excluded_set={
+            SupervisionNewCasesIncludesExcludes.TRANSFERRED,
+        },
+    ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionCaseType,
+            dimension=SupervisionNewCaseType,
             required=False,
+            dimension_to_description={
+                SupervisionNewCaseType.PERSON: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a crime against a person.",
+                SupervisionNewCaseType.PROPERTY: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a property offense.",
+                SupervisionNewCaseType.DRUG: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a drug offense.",
+                SupervisionNewCaseType.PUBLIC_ORDER: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a public order offense.",
+                SupervisionNewCaseType.OTHER: "The number of people with new community supervision cases referred to the agency in which the most serious originating charge/offense was another type of crime that was not a person, property, drug, or public order charge/offense.",
+                SupervisionNewCaseType.UNKNOWN: "The number of people with arrests, citations, or summons made by the agency in which the most serious charge/offense is not known.",
+            },
         )
     ],
 )

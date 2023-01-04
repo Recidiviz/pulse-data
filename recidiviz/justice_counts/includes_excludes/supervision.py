@@ -445,3 +445,13 @@ class SupervisionNewOffenseViolationsIncludesExcludes(Enum):
     DISCLOSURE = "Disclosure of criminal offense (no arrest)"
     ARREST = "Arrest for new criminal charge"
     CONVICTION = "Conviction for new criminal charge"
+
+
+# New Cases
+class SupervisionNewCasesIncludesExcludes(Enum):
+    ACTIVE = "People with new active supervision cases"
+    ADMINISTRATIVE = "People with new administrative supervision cases"
+    NON_REPORTING = "People with new non-reporting cases (e.g., no fees, no reporting, no travel restrictions)"
+    SPECIALIZED = "People with new specialized cases (e.g., for sex offenses, domestic violence, serious mental illness)"
+    PRETRIAL_INVESTIGATION = "People with new cases in pretrial investigation"
+    TRANSFERRED = "People with cases transferred between supervision districts or supervision officers in the same jurisdiction"
