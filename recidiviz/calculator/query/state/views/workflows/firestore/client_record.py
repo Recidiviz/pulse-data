@@ -85,6 +85,21 @@ ELIGIBILITY_QUERY_CONFIGS = [
         "us_id_complete_full_term_discharge_from_supervision_request_record_materialized",
     ),
     EligibilityQueryConfig(
+        "US_IX",
+        "LSU",
+        "us_ix_complete_transfer_to_limited_supervision_form_record_materialized",
+    ),
+    EligibilityQueryConfig(
+        "US_IX",
+        "earnedDischarge",
+        "us_ix_complete_discharge_early_from_supervision_request_record_materialized",
+    ),
+    EligibilityQueryConfig(
+        "US_IX",
+        "pastFTRD",
+        "us_ix_complete_full_term_discharge_from_supervision_request_record_materialized",
+    ),
+    EligibilityQueryConfig(
         "US_ND",
         "earlyTermination",
         "us_nd_complete_discharge_early_from_supervision_record_materialized",
