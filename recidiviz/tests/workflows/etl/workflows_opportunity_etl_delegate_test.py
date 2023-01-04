@@ -160,7 +160,7 @@ class TestWorkflowsETLDelegate(TestCase):
         delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
         self.assertTrue(
             delegate.supports_file(
-                "us_id_complete_discharge_early_from_supervision_request_record.json",
+                "us_ix_complete_discharge_early_from_supervision_request_record.json"
             )
         )
 

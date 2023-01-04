@@ -69,7 +69,7 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
 from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode, _FakeStateCode
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
 from recidiviz.metrics import export as export_module
 from recidiviz.utils import environment
@@ -335,9 +335,6 @@ class ProductConfigs:
         return cls(products=products)
 
 
-EXPORT_OVERRIDE_STATE_CODES = {"US_ID": "US_IX"}
-
-
 @attr.s(frozen=True)
 class ExportViewCollectionConfig:
     """Stores information necessary for exporting metric data from a list of views in a dataset to a Google Cloud
@@ -453,7 +450,7 @@ VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadat
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 
 
-EXPORT_ATLAS_TO_ID = {_FakeStateCode.US_IX.value: _FakeStateCode.US_ID.value}
+EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
 
 _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # PO Report views
@@ -461,6 +458,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
         output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
         export_name="PO_MONTHLY",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Overdue Discharge Report views
     ExportViewCollectionConfig(
@@ -469,6 +467,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="OVERDUE_DISCHARGE",
         # This view has no entries for US_ID in staging (as of 2022-11-03)
         allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # COVID Dashboard views
     ExportViewCollectionConfig(
@@ -522,12 +521,14 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         # Not all views have data for every state, so it is okay if some of the files
         # are empty.
         allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Vitals
     ExportViewCollectionConfig(
         view_builders_to_export=VITALS_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="VITALS",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # User Restrictions
     ExportViewCollectionConfig(
@@ -564,6 +565,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_AND_PROJECTIONS",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Pathways Prison Module
     ExportViewCollectionConfig(
@@ -599,6 +601,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         },
         # TODO(#15981): Remove this
         allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Pathways prison event level. This is a separate export type because our export
     # infrastructure assumes an export type can only belong to one product.
