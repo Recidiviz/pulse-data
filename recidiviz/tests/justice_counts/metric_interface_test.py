@@ -1851,18 +1851,16 @@ class TestMetricInterface(TestCase):
                 schema.System.POST_RELEASE,
                 schema.System.PRISONS,
             },
-            metric_key_to_disaggregation_status={
-                supervision.supervision_terminations.key: True
-            },
+            metric_key_to_disaggregation_status={supervision.discharges.key: True},
         )
         parole_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
-            supervision.supervision_terminations.key.replace(
+            supervision.discharges.key.replace(
                 "SUPERVISION", schema.System.PAROLE.value, 1
             )
         ]
 
         post_release_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
-            supervision.supervision_terminations.key.replace(
+            supervision.discharges.key.replace(
                 "SUPERVISION", schema.System.POST_RELEASE.value, 1
             )
         ]
@@ -1874,8 +1872,7 @@ class TestMetricInterface(TestCase):
                 for m in METRICS_BY_SYSTEM[schema.System.PRISONS.value]
                 + supervision_metrics
                 + [parole_terminations, post_release_terminations]
-                if m.key != supervision.supervision_terminations.key
-                and m.disabled is False
+                if m.key != supervision.discharges.key and m.disabled is False
             },
         )
 
@@ -1889,7 +1886,7 @@ class TestMetricInterface(TestCase):
                 schema.System.POST_RELEASE,
             },
             metric_key_to_datapoints={
-                supervision.supervision_terminations.key: DatapointsForMetric(
+                supervision.discharges.key: DatapointsForMetric(
                     disaggregated_by_supervision_subsystems=True
                 )
             },
@@ -1902,7 +1899,7 @@ class TestMetricInterface(TestCase):
                 for m in METRICS_BY_SYSTEM[schema.System.PRISONS.value]
                 + supervision_metrics
                 + [parole_terminations, post_release_terminations]
-                if m.key != supervision.supervision_terminations.key
+                if m.key != supervision.discharges.key
                 and m.disabled is False
                 and m.reporting_frequency == ReportingFrequency.MONTHLY
             },

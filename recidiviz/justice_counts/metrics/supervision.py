@@ -24,11 +24,11 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.supervision import (
     NewOffenseType,
     SupervisionDailyPopulationType,
+    SupervisionDischargeType,
     SupervisionExpenseType,
     SupervisionFundingType,
     SupervisionNewCaseType,
     SupervisionStaffType,
-    SupervisionTerminationType,
     SupervisionViolationType,
 )
 from recidiviz.justice_counts.includes_excludes.person import (
@@ -43,12 +43,14 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionAbscondingViolationsIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionCountyMunicipalAppropriationIncludesExcludes,
+    SupervisionDischargesIncludesExcludes,
     SupervisionExpensesIncludesExcludes,
     SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
     SupervisionFinesFeesIncludesExcludes,
     SupervisionFundingIncludesExcludes,
     SupervisionGrantsIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
+    SupervisionNeutralDischargeIncludesExcludes,
     SupervisionNewCasesIncludesExcludes,
     SupervisionNewOffenseViolationsIncludesExcludes,
     SupervisionPersonnelExpensesIncludesExcludes,
@@ -56,8 +58,10 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
     SupervisionStateAppropriationIncludesExcludes,
+    SupervisionSuccessfulCompletionIncludesExcludes,
     SupervisionTechnicalViolationsIncludesExcludes,
     SupervisionTrainingExpensesIncludesExcludes,
+    SupervisionUnsuccessfulDischargeIncludesExcludes,
     SupervisionVacantStaffIncludesExcludes,
     SupervisionViolationsIncludesExcludes,
 )
@@ -412,16 +416,43 @@ daily_population = MetricDefinition(
     ],
 )
 
-supervision_terminations = MetricDefinition(
+discharges = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.SUPERVISION_TERMINATIONS,
     category=MetricCategory.POPULATIONS,
-    display_name="Supervision Terminations",
-    description="Measures the number of individuals exiting from supervision.",
+    display_name="Discharges",
+    description="The number of people who had a supervision term that ended. In some instances, this may mean being released from the jurisdiction of the supervision agency. In others, it may mean transitioning from one term of supervision to another or that a supervision term ended due to revocation to incarceration.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionDischargesIncludesExcludes,
+        excluded_set={
+            SupervisionDischargesIncludesExcludes.TRANSFERRED,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SupervisionTerminationType, required=True)
+        AggregatedDimension(
+            dimension=SupervisionDischargeType,
+            required=True,
+            dimension_to_includes_excludes={
+                SupervisionDischargeType.SUCCESSFUL: IncludesExcludesSet(
+                    members=SupervisionSuccessfulCompletionIncludesExcludes,
+                ),
+                SupervisionDischargeType.NEUTRAL: IncludesExcludesSet(
+                    members=SupervisionNeutralDischargeIncludesExcludes,
+                ),
+                SupervisionDischargeType.UNSUCCESSFUL: IncludesExcludesSet(
+                    members=SupervisionUnsuccessfulDischargeIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                SupervisionDischargeType.SUCCESSFUL: "The number of people who had a term of supervision end due to successful completion of required terms or timeframe.",
+                SupervisionDischargeType.NEUTRAL: "The number of people who had a term of supervision end without a clear successful completion or failure event such as revocation.",
+                SupervisionDischargeType.UNSUCCESSFUL: "The number of people who had a term of supervision end due to unsatisfactory compliance.",
+                SupervisionDischargeType.OTHER: "The number of people who had a term of supervision end for reasons that are not considered successful completions, neutral discharges, or unsuccessful discharges.",
+                SupervisionDischargeType.UNKNOWN: "The number of people who had a supervision term end for unknown reasons.",
+            },
+        )
     ],
 )
 

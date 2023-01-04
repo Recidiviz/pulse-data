@@ -98,15 +98,16 @@ class SupervisionDailyPopulationType(DimensionBase, enum.Enum):
         return "metric/supervision/daily_population/type"
 
 
-class SupervisionTerminationType(DimensionBase, enum.Enum):
-    SUCCESSFUL = "Successful"
-    UNSUCCESSFUL_OR_REVOKED = "Unsuccessful or Revoked"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+class SupervisionDischargeType(DimensionBase, enum.Enum):
+    SUCCESSFUL = "Successful Completion"
+    NEUTRAL = "Neutral Discharge"
+    UNSUCCESSFUL = "Unsuccessful Discharge"
+    OTHER = "Other Discharge"
+    UNKNOWN = "Unknown Discharge"
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/supervision/termination/type"
+        return "metric/supervision/discharge/type"
 
 
 class NewOffenseType(DimensionBase, enum.Enum):
