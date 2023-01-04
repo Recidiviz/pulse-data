@@ -538,7 +538,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 metric_key_to_agency_datapoints={},
             )
 
-            self.assertEqual(len(metric_key_to_errors), 2)
+            self.assertEqual(len(metric_key_to_errors), 3)
             arrest_errors = metric_key_to_errors[law_enforcement.total_arrests.key]
             self.assertEqual(len(arrest_errors), 1)
             arrest_error = arrest_errors[0]
@@ -562,6 +562,30 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 "No data for the Use of Force Incidents metric was provided. "
                 in use_of_force_error.description,
             )
+            staff_errors = metric_key_to_errors[law_enforcement.staff.key]
+            self.assertEqual(len(staff_errors), 2)
+            for error in staff_errors:
+                if error.sheet_name == "staff_by_race":
+                    self.assertEqual(error.title, "Missing Breakdown Sheet")
+                    self.assertEqual(error.message_type, BulkUploadMessageType.WARNING)
+                    self.assertTrue(
+                        "No data for the Race / Ethnicity breakdown was provided. Please provide data in a sheet named staff_by_race"
+                        in error.description,
+                    )
+                elif error.sheet_name == "staff_by_biological_sex":
+                    self.assertEqual(error.title, "Missing Breakdown Sheet")
+                    self.assertEqual(
+                        error.message_type,
+                        BulkUploadMessageType.WARNING,
+                    )
+                    self.assertTrue(
+                        "No data for the Biological Sex breakdown was provided. Please provide data in a sheet named staff_by_biological_sex"
+                        in error.description,
+                    )
+                else:
+                    raise ValueError(
+                        "There should only be errors for the staff_by_race and staff_by_biological_sex sheets."
+                    )
 
     def test_missing_metrics_disabled_metrics(
         self,

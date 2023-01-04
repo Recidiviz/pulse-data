@@ -25,6 +25,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     OffenseType,
 )
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -61,6 +62,18 @@ LAW_ENFORCEMENT_METRIC_FILES = [
         definition=law_enforcement.staff,
         disaggregation=LawEnforcementStaffType,
         disaggregation_column_name="staff_type",
+    ),
+    MetricFile(
+        canonical_filename="staff_by_race",
+        definition=law_enforcement.staff,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        canonical_filename="staff_by_biological_sex",
+        definition=law_enforcement.staff,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="calls_for_service",
