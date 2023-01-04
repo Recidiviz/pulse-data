@@ -89,8 +89,8 @@ AVG_DAILY_POPULATION_EMPLOYED = DailyAvgSpanCountMetric(
     name="avg_population_employed",
     display_name="Average Population With Employment",
     description="Average daily count of clients with some form of employment or alternate occupation/status",
-    span_types=["EMPLOYMENT_PERIOD"],
-    span_attribute_filters={},
+    span_types=["EMPLOYMENT_STATUS_SESSION"],
+    span_attribute_filters={"is_employed": ["true"]},
 )
 
 AVG_DAILY_POPULATION_FEMALE = DailyAvgSpanCountMetric(
