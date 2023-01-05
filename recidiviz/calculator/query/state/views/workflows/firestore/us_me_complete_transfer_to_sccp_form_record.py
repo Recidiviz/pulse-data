@@ -19,7 +19,10 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -33,6 +36,7 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     one_criteria_away_from_eligibility,
     x_time_away_from_eligibility,
 )
+from recidiviz.task_eligibility.utils.raw_table_import import cis_204_notes_cte
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -41,6 +45,34 @@ US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_NAME = "us_me_complete_transfer_to_sccp_form_
 US_ME_TRANSFER_TO_SCCP_RECORD_DESCRIPTION = """
     Query for relevant information to fill out the transfer to SCCP forms in ME
     """
+
+_SCCP_NOTE_TX_REGEX = "|".join(
+    ["SCCP", "COMMUNITY CONFINEMENT", "HOME CONFINEMENT", "SCC"]
+)
+
+_PROGRAM_ENROLLMENT_NOTE_TX_REGEX = "|".join(
+    [
+        "COMPLET[A-Z]*",
+        "CERTIFICAT[A-Z]",
+        "PARTICIPATED",
+        "ATTENDED",
+        "EDUC[A-Z]*",
+        "CAT ",
+        "CRIMINAL ADDICTIVE THINKING",
+        "ANGER MANAGEMENT",
+        "NEW FREEDOM",
+        "T4C",
+        "THINKING FOR A CHANGE",
+        "SAFE",
+        "STOPPING ABUSE FOR EVERYONE",
+        "CBI-IPV",
+        "SUD ",
+        "HISET",
+        "PROBLEM SEXUAL BEHAVIOR",
+    ]
+)
+
+
 US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_incarceration_pop_cte AS (
@@ -60,71 +92,134 @@ WITH current_incarceration_pop_cte AS (
 ),
 
 case_notes_cte AS (
-  -- Program enrollment notes
-  SELECT 
-      mp.CIS_100_CLIENT_ID AS external_id,
-      "Program Enrollment" AS criteria,
-      CONCAT(pr.NAME_TX,' - ', st.E_STAT_TYPE_DESC) AS note_title,
-      ps.Comments_Tx AS note_body,
-      SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS event_date,
-  FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
-  LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
-    ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
-  LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
-    ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
-  LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
-    ON mp.CIS_9900_STAT_TYPE_CD = st.STAT_TYPE_CD
-  WHERE pr.NAME_TX IS NOT NULL
+-- Get together all case_notes
 
-  UNION ALL
+    -- Program enrollment data as notes
+    SELECT 
+        mp.CIS_100_CLIENT_ID AS external_id,
+        "Program Enrollment" AS criteria,
+        CONCAT(st.E_STAT_TYPE_DESC ,' - ', pr.NAME_TX) AS note_title,
+        ps.Comments_Tx AS note_body,
+        -- TODO(#17587) remove LEFT once the YAML file is updated
+        DATE(SAFE_CAST(mp.MODIFIED_ON_DATE AS DATETIME)) AS event_date,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
+        ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
+        ON mp.CIS_9900_STAT_TYPE_CD = st.STAT_TYPE_CD
+    -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text 
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
+        ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
+        AND mp.CIS_9900_STAT_TYPE_CD = ps.Cis_9900_Stat_Type_Cd
+    WHERE pr.NAME_TX IS NOT NULL
+
+    UNION ALL
   
-  -- SCCP-related notes
-  SELECT 
-    n.Cis_100_Client_Id AS external_id,
-    "SCCP notes" AS criteria,
-    n.Short_Note_Tx AS note_title,
-    n.Note_Tx AS note_body,
-    SAFE_CAST(LEFT(n.Note_Date, 10) AS DATE) AS event_date,
-  FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_204_GEN_NOTE_latest` n
-  # While fuzzy matching is set up
-  WHERE REGEXP_CONTAINS(n.Short_Note_Tx, r'SCCP|sccp|COMMUNITY CONFINEMENT|community confinement|home confinement|HOME CONFINEMENT') 
-        OR REGEXP_CONTAINS(n.Note_Tx, r'SCCP|sccp|COMMUNITY CONFINEMENT|community confinement|home confinement|HOME CONFINEMENT') 
+    -- SCCP-related notes
+    {cis_204_notes_cte("Notes: SCCP")}
+    # While fuzzy matching is set up
+    WHERE 
+        REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_SCCP_NOTE_TX_REGEX}') 
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_SCCP_NOTE_TX_REGEX}')
+    GROUP BY 1,2,3,4,5   
+
+    UNION ALL
+
+    -- Program-related notes
+    {cis_204_notes_cte("Notes: Program Enrollment")}
+    WHERE ncd.Note_Type_Cd = '2'
+        AND cncd.Contact_Mode_Cd = '20'
+        AND (n.Short_Note_Tx IS NOT NULL OR n.Note_Tx IS NOT NULL)
+        AND (REGEXP_CONTAINS(UPPER(n.Short_Note_Tx), r'{_PROGRAM_ENROLLMENT_NOTE_TX_REGEX}')
+        OR REGEXP_CONTAINS(UPPER(n.Note_Tx), r'{_PROGRAM_ENROLLMENT_NOTE_TX_REGEX}'))
+    GROUP BY 1,2,3,4,5    
+
+    UNION ALL 
+
+    -- SCCP Application Investigations
+    SELECT 
+        Cis_100_Client_Id AS external_id,
+        "SCCP Application Investiation" AS criteria,
+        IF(Complete_Date IS NULL,
+            'Resolution not available yet',
+            CONCAT("Resolution date: ", 
+                    DATE(SAFE_CAST(Complete_Date AS DATETIME))))
+        AS note_title,
+        Notes_Tx AS note_body,
+        -- TODO(#17587) remove LEFT once the YAML file is updated
+        DATE(SAFE_CAST(Request_Date AS DATETIME)) AS event_date,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_130_INVESTIGATION_latest` i
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_1301_INVESTIGATION_latest` ic
+        ON i.Cis_1301_Type_Cd = ic.Investigation_Cd
+    -- Keep only SCCP related investigations
+    WHERE Investigation_Cd = '11' 
+        AND Cis_100_Client_Id IS NOT NULL 
+
+    UNION ALL 
+
+    -- Case Plan Goals
+    SELECT  
+        Cis_200_Cis_100_Client_Id AS external_id,
+        "Case Plan Goals" AS criteria,
+        CONCAT(Domain_Goal_Desc,' - ', Goal_Status_Desc) AS note_title,
+        IF(E_Goal_Type_Desc = 'Other',
+            CONCAT(E_Goal_Type_Desc, " - " ,Other),
+            E_Goal_Type_Desc)
+        AS note_body,
+        DATE(SAFE.PARSE_DATETIME("%m/%d/%Y %I:%M:%S %p", Open_Date)) AS event_date,
+    FROM (SELECT 
+                *
+            -- TODO(#17535) Change references to normalized_state_dataset once necessary tables ingested 
+            FROM `{{project_id}}.{{static_reference_tables_dataset}}.CIS_201_GOALS` gl
+            INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2012_GOAL_STATUS` gs
+                ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
+            INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2010_GOAL_TYPE` gt
+                ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
+            INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE` dg
+                ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
+            WHERE gs.Goal_Status_Cd IN ('1','2')) 
 ), 
 
 {json_to_array_cte('current_incarceration_pop_cte')}, 
 
 eligible_and_almost_eligible AS (
 
--- ELIGIBLE
-SELECT * EXCEPT(is_eligible)
-FROM current_incarceration_pop_cte
-WHERE is_eligible
+    -- ELIGIBLE
+    SELECT * EXCEPT(is_eligible)
+    FROM current_incarceration_pop_cte
+    WHERE is_eligible
 
-UNION ALL 
+    UNION ALL 
 
--- ALMOST ELIGIBLE (<6mo remaining before 30/24mo)
-{x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-    criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE')}
+    -- ALMOST ELIGIBLE (<6mo remaining before 30/24mo)
+    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
+        criteria_name= 'US_ME_X_MONTHS_REMAINING_ON_SENTENCE')}
 
-UNION ALL
+    UNION ALL
 
--- ALMOST ELIGIBLE (<6mo remaining before 1/2 or 2/3 of sentence served)
-{x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-    criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE')}
+    -- ALMOST ELIGIBLE (<6mo remaining before 1/2 or 2/3 of sentence served)
+    {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
+        criteria_name= 'US_ME_SERVED_X_PORTION_OF_SENTENCE')}
 
-UNION ALL
+    UNION ALL
 
--- ALMOST ELIGIBLE (one discipline away)
-{one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS')}
+    -- ALMOST ELIGIBLE (one discipline away)
+    {one_criteria_away_from_eligibility('US_ME_NO_CLASS_A_OR_B_VIOLATION_FOR_90_DAYS')}
 ),
 
 array_case_notes_cte AS (
   SELECT 
-      eae.external_id,
+      external_id,
       -- Group all notes into an array within a JSON
       TO_JSON(ARRAY_AGG( STRUCT(note_title, note_body, event_date, criteria))) AS case_notes,
-  FROM eligible_and_almost_eligible eae
-  LEFT JOIN case_notes_cte cn
+  FROM eligible_and_almost_eligible
+  -- left join after removing repeated notes
+  LEFT JOIN (SELECT 
+                  *
+             FROM case_notes_cte
+             QUALIFY ROW_NUMBER() OVER(PARTITION BY external_id, note_title, note_body 
+                                     ORDER BY IF(criteria = "SCCP notes", 0, 1), 
+                                            criteria DESC) = 1) 
     USING(external_id)
   WHERE criteria IS NOT NULL
   GROUP BY 1
@@ -147,6 +242,7 @@ US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE,
     description=US_ME_TRANSFER_TO_SCCP_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
     ),

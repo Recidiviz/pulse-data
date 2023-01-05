@@ -57,7 +57,7 @@ def one_criteria_away_from_eligibility(criteria_name: str) -> str:
     * EXCEPT(array_reasons, is_eligible),
 FROM json_to_array_cte
 WHERE 
--- keep if only ineligible criteria is criteria_name
+    -- keep if only ineligible criteria is criteria_name
     '{criteria_name}' IN UNNEST(ineligible_criteria) 
     AND ARRAY_LENGTH(ineligible_criteria) = 1
     """
