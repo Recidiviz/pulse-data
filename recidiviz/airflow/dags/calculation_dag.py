@@ -388,10 +388,7 @@ def create_calculation_dag() -> None:
 
     state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
     operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
-    # TODO(#15930): Remove dry_run when testing of function complete.
-    case_triage_bq_refresh_completion = create_bq_refresh_nodes(
-        "CASE_TRIAGE", dry_run=True
-    )
+    case_triage_bq_refresh_completion = create_bq_refresh_nodes("CASE_TRIAGE")
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
