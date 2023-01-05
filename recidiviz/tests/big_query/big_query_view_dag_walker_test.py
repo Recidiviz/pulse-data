@@ -334,6 +334,70 @@ The following views have less restrictive projects_to_deploy than their parents:
         max_depth_node = walker.node_for_view(max_depth_view)
         self.assertEqual(set(), max_depth_node.child_keys)
 
+    def test_dag_processing_can_be_reversed(self) -> None:
+        #  We would like to be able to traverse our DAG both top
+        #  down and bottom up. In the case of the diamond:
+        #
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #   \   /
+        #     6
+        #
+        # The expectation is that node '3' is processed after
+        # both nodes '1' and '2' and before nodes '4' and '5'.
+        # However, when reversed:
+        #
+        #     6
+        #   /   \
+        #  4     5
+        #   \   /
+        #     3
+        #   /   \
+        #  1     2
+        #
+        # The expectation is node '3' will be processed after
+        # both nodes '4' and '5' but before '1' and '2'.
+
+        walker = BigQueryViewDagWalker(
+            TestBigQueryViewDagWalker.diamond_shaped_dag_views_list
+        )
+        (
+            view_1,
+            view_2,
+            view_3,
+            view_4,
+            view_5,
+            view_6,
+        ) = TestBigQueryViewDagWalker.diamond_shaped_dag_views_list
+
+        def processing_ordered_string(
+            _: BigQueryView, parent_results: Dict[BigQueryView, str]
+        ) -> List[str]:
+            return sorted([f"{p.dataset_id}.{p.table_id}" for p in parent_results])
+
+        results = walker.process_dag(processing_ordered_string)
+        assert results.view_results == {
+            view_1: [],
+            view_2: [],
+            view_3: ["dataset_1.table_1", "dataset_2.table_2"],
+            view_4: ["dataset_3.table_3"],
+            view_5: ["dataset_3.table_3"],
+            view_6: ["dataset_4.table_4", "dataset_5.table_5"],
+        }
+
+        results = walker.process_dag(processing_ordered_string, reverse=True)
+        assert results.view_results == {
+            view_6: [],
+            view_5: ["dataset_6.table_6"],
+            view_4: ["dataset_6.table_6"],
+            view_3: ["dataset_4.table_4", "dataset_5.table_5"],
+            view_2: ["dataset_3.table_3"],
+            view_1: ["dataset_3.table_3"],
+        }
+
     def test_dag_exception_handling(self) -> None:
         """Test that exceptions during processing propagate properly."""
 
