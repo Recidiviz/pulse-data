@@ -10,31 +10,109 @@ primary_key_cols:
   - SENTENCE_NUMBER
 columns:
   - name: NEXT_NUMBER
+    description: |-
+      Number of next offense.
   - name: CHARGE_NEXT_NUMBER
+    description: |-
+      Number of next charge.
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
   - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating order of custody.
   - name: ADMISSION_NUMBER
+    description: |-
+      Number indicating order of admission.
   - name: OFFENSE_NUMBER
+    description: |-
+      Number of offense.
   - name: SENTENCE_NUMBER
+    description: |-
+      Number indicating order of sentences.
   - name: LAST_UPDATED_WHEN
+    description: |-
+      Date when last updated.
   - name: SENTENCE_TYPE
+    description: |-
+      Type of sentence.
+    known_values:
+      - value: C
+        description: Conditional Discharge
+      - value: D
+        description: Diversion
+      - value: I
+        description: AIC (adult in custody) Sentence
+      - value: J
+        description: AIC (adult in custody) Jail Sentence
+      - value: L
+        description: Local Control
+      - value: O
+        description: Post Prison Supervision Sentence
+      - value: P
+        description: Probation Sentence
+      - value: X
+        description: SGL Dangerous Offender Minimum
+      - value: S
+        description: Sanction Served in Institution
   - name: TENT_PARO_DISC_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SENTENCE_BEGIN_DATE
+    description: |-
+      Date sentence began.
   - name: TOLLING_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: COMPACT_BEGIN_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SENTENCE_LENGTH_YEARS
+    description: |-
+      Sentence length in years.
   - name: SENTENCE_LENGTH_MONTHS
+    description: |-
+      Sentence length in months.
   - name: SENTENCE_LENGTH_DAYS
+    description: |-
+      Sentence length in days.
   - name: LIFE_OR_DEATH
+    description: |-
+      Indicates whether it is a death sentence.
+    known_values:
+      - value: L
+        description: Life Sentence
+      - value: D
+        description: Death Sentence
+      - value: N
+        description: No Parole Sentence
   - name: CONSEC_TO
+    description: |-
+      Indicates consecutive sentence.
   - name: MERGE_SENTENCE
+    description: |-
+      Indicated merged sentence.
   - name: TIME_SERVED
+    description: |-
+      Amount of time served.
   - name: TS_ELIGIBLE_ET
+    description: |-
+      Time served eligible earned time.
   - name: ET_RETRACTED_TS
+    description: |-
+      Earnted time retracted time served.
   - name: INOPERATIVE_DAYS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: GOOD_TIME_WITHHELD
+    description: |-
+      Amount of good time witheld.
   - name: GOODTIME_DAYS_RESTORED
+    description: |-
+      Amount of good time restored.
   - name: EXTRA_GOODTIME
+    description: |-
+      Extra good time rewarded.
   - name: MINIMUM_161
   - name: GUNMIN_161610_DATE
   - name: MINIMUM_144
@@ -44,29 +122,68 @@ columns:
   - name: MURMIN_163115_DATE
   - name: FLAG_137635
   - name: DANG_OFFENDER
+    description: |-
+      Indicates if dangerous offense.
   - name: DANG_OFFENDER_SENT
+    description: |-
+      Indicates dangerous offense sentence.
   - name: PRESUMPTIVE_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PARO_REVO_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PV_REMAINING_SENTENCE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PROJECTED_EXPIRAT_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: STATUTORY_GOOD_TIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: APPLY_EARNED_TIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: EARNED_TIME_DAYS
+    description: |-
+      Earned time days.
   - name: APPLY_PARTIAL_ET
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: M40_EARNED_TIME
   - name: APPLICATION_ID
+    description: |-
+      Code for look up table.
   - name: TABLE_ID
+    description: |-
+      Code for look up table.
   - name: M40_STATUS
   - name: SG_EARNED_TIME_DATE
   - name: SG_20_DATE
   - name: PROJECTED_COMPLETION_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MAXIMUM_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MINIMUM_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MANUAL_SENTCALC_USERID
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_pii: True
   - name: MANUAL_SENTCALC_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PAROLE_RELEASE_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: M11_SENTENCE
   - name: PAROLE_DENIED
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: BOARDER_COMPACT_FLAG
   - name: MERIT_GT_DATE
   - name: TERMINATION_CODE
@@ -79,5 +196,7 @@ columns:
   - name: PPS_BEGIN_DATE
   - name: SENT_ADD_LOCA
   - name: FUTURE_HEARING_PENDING
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SECOND_LOOK_GROUP
   - name: PB_DEFERAL_DAYS
