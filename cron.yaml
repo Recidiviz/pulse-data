@@ -1,4 +1,5 @@
 cron:
+  # TODO(#15930): Clean up after migration of CASE TRIAGE refresh to Airflow
   - description: Start Cloud SQL to BigQuery export tasks for case triage tables
     url: /cloud_sql_to_bq/create_refresh_bq_schema_task/case_triage
     schedule: every day 11:00
