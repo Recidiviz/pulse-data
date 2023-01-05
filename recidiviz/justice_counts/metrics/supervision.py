@@ -27,6 +27,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
     SupervisionExpenseType,
     SupervisionFundingType,
     SupervisionNewCaseType,
+    SupervisionRevocationType,
     SupervisionStaffType,
     SupervisionViolationType,
 )
@@ -56,6 +57,7 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionPersonnelExpensesIncludesExcludes,
     SupervisionProgrammaticStaffIncludesExcludes,
     SupervisionReconvictionsIncludesExcludes,
+    SupervisionRevocationsIncludesExcludes,
     SupervisionStaffDimIncludesExcludes,
     SupervisionStaffIncludesExcludes,
     SupervisionStateAppropriationIncludesExcludes,
@@ -487,4 +489,33 @@ caseload = MetricDefinition(
             SupervisionCaseloadIncludesExcludes.STAFF_ON_LEAVE,
         },
     ),
+)
+
+revocations = MetricDefinition(
+    system=System.SUPERVISION,
+    metric_type=MetricType.REVOCATIONS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Revocations",
+    description="The number of people who had a term of supervision revoked.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionRevocationsIncludesExcludes,
+        excluded_set={
+            SupervisionRevocationsIncludesExcludes.TERMINATION,
+            SupervisionRevocationsIncludesExcludes.SHORT_TERM_INCARCERATION,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=SupervisionRevocationType,
+            required=True,
+            dimension_to_description={
+                SupervisionRevocationType.TECHNICAL: "The number of people revoked from supervision whose most serious violation was defined as technical.",
+                SupervisionRevocationType.NEW_OFFENSE: "The number of people revoked from supervision whose most serious violation was defined as a new offense.",
+                SupervisionRevocationType.OTHER: "The number of people revoked from supervision who were revoked for a violation that was neither technical nor a new offense.",
+                SupervisionRevocationType.UNKNOWN: "The number of people revoked from supervision for an unknown reason.",
+            },
+        ),
+    ],
 )
