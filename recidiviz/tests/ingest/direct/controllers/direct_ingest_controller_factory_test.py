@@ -32,6 +32,9 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
 from recidiviz.ingest.direct.controllers.direct_ingest_controller_factory import (
     DirectIngestControllerFactory,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    secondary_raw_data_import_enabled_in_state,
+)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
@@ -118,22 +121,25 @@ class TestDirectIngestControllerFactory(unittest.TestCase):
                     )
                 )
 
-                # TODO(#12794): Update test once raw data source can be SECONDARY.
-                with self.assertRaisesRegex(
-                    ValueError, "Invalid raw data source instance"
+                # TODO(#12794): Update test once raw data source can be SECONDARY everywhere.
+                if not secondary_raw_data_import_enabled_in_state(
+                    StateCode(region_code.upper())
                 ):
-                    controller = DirectIngestControllerFactory.build(
-                        region_code=region_code,
-                        ingest_instance=DirectIngestInstance.SECONDARY,
-                        allow_unlaunched=False,
-                    )
+                    with self.assertRaisesRegex(
+                        ValueError, "Invalid raw data source instance"
+                    ):
+                        controller = DirectIngestControllerFactory.build(
+                            region_code=region_code,
+                            ingest_instance=DirectIngestInstance.SECONDARY,
+                            allow_unlaunched=False,
+                        )
 
-                    # Should still succeed for all controllers in the test environment
-                    self.assertIsNotNone(controller)
-                    self.assertIsInstance(controller, BaseDirectIngestController)
-                    self.assertEqual(
-                        DirectIngestInstance.SECONDARY, controller.ingest_instance
-                    )
+                        # Should still succeed for all controllers in the test environment
+                        self.assertIsNotNone(controller)
+                        self.assertIsInstance(controller, BaseDirectIngestController)
+                        self.assertEqual(
+                            DirectIngestInstance.SECONDARY, controller.ingest_instance
+                        )
 
     def test_build_gcsfs_ingest_controller_all_regions_do_not_allow_launched(
         self,

@@ -1043,4 +1043,4 @@ def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileCon
 def secondary_raw_data_import_enabled_in_state(
     state_code: StateCode,  # pylint: disable=unused-argument
 ) -> bool:
-    return False
+    return state_code == StateCode.US_OZ
