@@ -621,7 +621,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 7)
+            # 1 aggregate datapoint, 4 breakdown datapoints, and 1 context datapoint
+            self.assertEqual(len(total_datapoints), 6)
 
             # There should be three datapoints with non-null values: one containing aggregate value,
             # and other with the context value
@@ -642,10 +643,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     CallType.NON_EMERGENCY
                 ],
             )
-            self.assertEqual(
-                datapoints_with_value[2].get_value(),
-                assert_type(incomplete_report.contexts, list)[0].value,
-            )
+            self.assertEqual(datapoints_with_value[2].get_value(), "additional context")
 
     def test_add_calls_for_service_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -658,9 +656,9 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 7)
-            # We should have five datapoints with non-null values:
-            # one aggregate value, three breakdowns, and one context.
+            self.assertEqual(len(total_datapoints), 6)
+            # We should have four datapoints with non-null values:
+            # one aggregate value and three breakdowns.
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
@@ -690,7 +688,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 datapoints_with_value[4].get_value(),
-                assert_type(report_metric.contexts, list)[0].value,
+                "additional context",
             )
 
     def test_add_population_metric(self) -> None:
@@ -825,7 +823,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
 
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 7)
+            # One aggregate datapoint, 4 breakdowns, one context
+            self.assertEqual(len(total_datapoints), 6)
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
@@ -912,34 +911,24 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 user_account=self.test_schema_objects.test_user_A,
             )
             total_datapoints = session.query(schema.Datapoint).all()
-            self.assertEqual(len(total_datapoints), 7)
-
-            # Add a new context
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
-                    agencies_available_for_response="agency0"
-                ),
-                user_account=self.test_schema_objects.test_user_A,
-            )
+            self.assertEqual(len(total_datapoints), 6)
             datapoints_with_value = (
                 session.query(schema.Datapoint)
                 .filter(schema.Datapoint.value.is_not(None))
                 .all()
             )
-            self.assertEqual(len(datapoints_with_value), 6)
+            self.assertEqual(len(datapoints_with_value), 5)
 
-            # There should be two contexts associated with the metric
+            # There should be one context associated with the metric
             contexts = [d for d in datapoints_with_value if d.context_key is not None]
-            self.assertEqual(len(contexts), 2)
+            self.assertEqual(len(contexts), 1)
 
             # Update a context
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,
                 report_metric=self.test_schema_objects.get_reported_calls_for_service_metric(
-                    agencies_available_for_response="agency0, agency1"
+                    nullify_contexts_and_disaggregations=True
                 ),
                 user_account=self.test_schema_objects.test_user_A,
             )
@@ -949,10 +938,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                 .all()
             )
             contexts = [d for d in queried_datapoints if d.context_key is not None]
-            self.assertEqual(len(contexts), 2)
-            self.assertEqual(
-                {c.get_value() for c in contexts}, {"All calls", "agency0, agency1"}
-            )
+            self.assertEqual(len(contexts), 0)
 
     def test_get_metrics_for_empty_report(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -1239,31 +1225,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(datapoints_with_value[1].get_value(), 20.0)
             self.assertEqual(datapoints_with_value[2].get_value(), 60.0)
             self.assertEqual(datapoints_with_value[3].get_value(), 20.0)
-            self.assertEqual(datapoints_with_value[4].get_value(), "All calls")
-
-            # If user doesn't include contexts at all, this doesn't delete anything.
-            # To delete them, you'd have to specifically include them with values
-            # of None or empty string.
-            report_metric = (
-                JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
-                    include_contexts=False
-                )
-            )
-
-            ReportInterface.add_or_update_metric(
-                session=session,
-                report=self.test_schema_objects.test_report_monthly,
-                report_metric=report_metric,
-                user_account=self.test_schema_objects.test_user_A,
-            )
-
-            datapoints_with_value = (
-                session.query(schema.Datapoint)
-                .filter(schema.Datapoint.value.is_not(None))
-                .order_by(schema.Datapoint.id)
-                .all()
-            )
-            self.assertEqual(len(datapoints_with_value), 5)
+            self.assertEqual(datapoints_with_value[4].get_value(), "additional context")
 
             # If user explicitly sets metric value as None, but doesn't include disaggregations or contexts,
             # the metric value will be changed, but disaggregations and contexts will be left alone. You have
@@ -1271,8 +1233,6 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             report_metric = (
                 JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
                     value=None,
-                    include_disaggregations=False,
-                    include_contexts=False,
                 )
             )
 
@@ -1290,13 +1250,15 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             # 4 and not 5 because the aggregate metric value did change to None
             self.assertEqual(len(datapoints_with_value), 4)
 
-            # Here's how we actually delete everything
+            # If user doesn't include contexts at all, this doesn't delete anything.
+            # To delete them, you'd have to specifically include them with values
+            # of None or empty string. This will delete everything because the contexts and
+            # disaggregations will be nullified and the value is already None.
             report_metric = (
                 JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric(
                     value=None, nullify_contexts_and_disaggregations=True
                 )
             )
-
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=self.test_schema_objects.test_report_monthly,

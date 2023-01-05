@@ -48,7 +48,6 @@ from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
-from recidiviz.justice_counts.metrics.metric_definition import CallsRespondedOptions
 from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricContextData,
@@ -724,11 +723,9 @@ class JusticeCountsSchemaTestObjects:
 
     @staticmethod
     def get_reported_calls_for_service_metric(
-        agencies_available_for_response: Optional[str] = None,
         value: Optional[int] = 100,
         emergency_value: Optional[int] = 20,
         unknown_value: Optional[int] = 20,
-        include_contexts: Optional[bool] = True,
         include_disaggregations: Optional[bool] = True,
         nullify_contexts_and_disaggregations: Optional[bool] = False,
     ) -> MetricInterface:
@@ -738,24 +735,12 @@ class JusticeCountsSchemaTestObjects:
             is_metric_enabled=True,
             contexts=[
                 MetricContextData(
-                    key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
-                    value=CallsRespondedOptions.ALL_CALLS.value
-                    if not nullify_contexts_and_disaggregations
-                    else None,
-                ),
-                MetricContextData(
-                    key=ContextKey.AGENCIES_AVAILABLE_FOR_RESPONSE,
-                    value=agencies_available_for_response
-                    if not nullify_contexts_and_disaggregations
-                    else None,
-                ),
-                MetricContextData(
                     key=ContextKey.ADDITIONAL_CONTEXT,
-                    value=None,
+                    value=None
+                    if nullify_contexts_and_disaggregations
+                    else "additional context",
                 ),
-            ]
-            if include_contexts is True
-            else [],
+            ],
             aggregated_dimensions=[
                 MetricAggregatedDimensionData(
                     dimension_to_value={
@@ -765,6 +750,7 @@ class JusticeCountsSchemaTestObjects:
                         CallType.NON_EMERGENCY: 60
                         if not nullify_contexts_and_disaggregations
                         else None,
+                        CallType.OTHER: None,
                         CallType.UNKNOWN: unknown_value
                         if not nullify_contexts_and_disaggregations
                         else None,
@@ -773,6 +759,10 @@ class JusticeCountsSchemaTestObjects:
                         CallType.EMERGENCY: True,
                         CallType.NON_EMERGENCY: True,
                         CallType.UNKNOWN: True,
+                        CallType.OTHER: True,
+                    },
+                    dimension_to_includes_excludes_member_to_setting={
+                        dimension: {} for dimension in CallType
                     },
                 )
             ]

@@ -187,3 +187,43 @@ class LawEnforcementVacantStaffIncludesExcludes(enum.Enum):
     MENTAL_HEALTH = "Vacant mental health/Crisis Intervention Team staff positions"
     VICTIM_ADVOCATE = "Vacant victim advocate staff positions"
     FILLED = "Filled positions"
+
+
+# Calls for Service
+class CallsForServiceIncludesExcludes(enum.Enum):
+    SERVICE_911 = "Calls for service received by the agency’s dispatch service via 911"
+    SERVICE_311 = "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number"
+    MUTUAL_AID = "Mutual aid calls for support received by the agency"
+    OFFICER_INITIATED = (
+        "Officer-initiated calls for service (e.g., traffic stops, foot patrol)"
+    )
+    OTHER_JURISDICTION = "Calls for service received by another jurisdiction and routed to the agency for response"
+    AUTOMATED = "Automated calls for service (e.g., security system)"
+    FIRE_SERVICE = "Calls for fire service"
+    EMS = "Calls for EMS service"
+    NON_POLICE_SERVICE = "Calls for other non-police service"
+
+
+class CallsForServiceEmergencyCallsIncludesExcludes(enum.Enum):
+    PRIORITY = "Calls that require urgent or priority response"
+    CODE_2_RESPONSE = "Calls that require code 2 or higher response"
+    IMMINENT_THREATS = "Calls that relate to incidents with imminent threats to life or danger of serious injury"
+    ONGOING_OFFENSES = "Calls that relate to ongoing offenses that involve violence"
+    SERIOUS_OFFENSE = "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area"
+    OFFICER_IN_TROUBLE = "Calls for “officer in trouble” or request for emergency assistance from an officer"
+    TRAFFIC = "Calls that relate to incidents that represent significant hazards to the flow of traffic"
+    IN_PROGRESS_INCIDENT = (
+        "Calls that relate to in-progress incidents that could be classified as crimes"
+    )
+
+
+class CallsForServiceNonEmergencyCallsIncludesExcludes(enum.Enum):
+    ROUTINE_RESPONSE = "Calls that require routine response"
+    CODE_1_RESPONSE = "Calls that require code 1 response"
+    PATROL_REQUEST = "Calls for patrol requests"
+    ROUTINE_TRANSPORTATION = "Calls for routine transportation"
+    NON_EMERGENCY_SERVICE = "Calls for non-emergency service"
+    CIVILIAN_COMMUNITY_SERVICE = (
+        "Calls routed to civilian community service officers for response"
+    )
+    STOLEN_PROPERTY = "Calls to take a report of stolen property"

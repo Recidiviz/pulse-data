@@ -22,9 +22,10 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class CallType(DimensionBase, enum.Enum):
-    EMERGENCY = "Emergency"
-    NON_EMERGENCY = "Non-emergency"
-    UNKNOWN = "Unknown"
+    EMERGENCY = "Emergency Calls"
+    NON_EMERGENCY = "Non-emergency Calls"
+    OTHER = "Other Calls"
+    UNKNOWN = "Unknown Calls"
 
     @classmethod
     def dimension_identifier(cls) -> str:

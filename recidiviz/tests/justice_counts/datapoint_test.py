@@ -99,7 +99,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), len(CallType) + 1)
+            self.assertEqual(len(datapoints), len(CallType))
             # top level metric
             self.assertEqual(datapoints[0].enabled, True)
             # dimensions

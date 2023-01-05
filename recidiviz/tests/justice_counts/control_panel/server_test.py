@@ -51,10 +51,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonStaffIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
-from recidiviz.justice_counts.metrics.metric_definition import (
-    CallsRespondedOptions,
-    IncludesExcludesSetting,
-)
+from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -984,12 +981,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                     ],
                                 }
                             ],
-                            "contexts": [
-                                {
-                                    "key": ContextKey.ALL_CALLS_OR_CALLS_RESPONDED.value,
-                                    "value": CallsRespondedOptions.ALL_CALLS.value,
-                                },
-                            ],
                         },
                         {
                             "key": law_enforcement.funding.key,
@@ -997,7 +988,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             "contexts": [
                                 {
                                     "key": ContextKey.ADDITIONAL_CONTEXT.value,
-                                    "value": "test context",
+                                    "value": "additional context",
                                 },
                             ],
                         },
@@ -1009,15 +1000,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(report.status, ReportStatus.PUBLISHED)
             datapoints = report.datapoints
             self.assertEqual(len(datapoints), 7)
+            # Aggregate Value
             self.assertEqual(datapoints[0].get_value(), 110)
-            # Empty CallType dimension values
+            # Emergency Calls
             self.assertEqual(datapoints[1].get_value(), value)
+            # Non Emergency Calls
             self.assertEqual(datapoints[2].get_value(), 10)
+            # Other Calls
             self.assertEqual(datapoints[3].get_value(), None)
-            self.assertEqual(
-                datapoints[4].get_value(), CallsRespondedOptions.ALL_CALLS.value
-            )
+            # Unknown Calls
+            self.assertEqual(datapoints[4].get_value(), None)
+            # Funding
             self.assertEqual(datapoints[5].get_value(), 2000000)
+            # Additional Context
+            self.assertEqual(datapoints[6].get_value(), "additional context")
 
     def test_update_report_version_conflict(self) -> None:
         report = self.test_schema_objects.test_report_monthly
@@ -1896,7 +1892,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ]
                 },
                 "LAW_ENFORCEMENT_CALLS_FOR_SERVICE": {
-                    "Call Type": ["Emergency", "Non-emergency", "Unknown"]
+                    "Call Type": [
+                        "Emergency Calls",
+                        "Non-emergency Calls",
+                        "Other Calls",
+                        "Unknown Calls",
+                    ]
                 },
                 "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED": {},
                 "LAW_ENFORCEMENT_REPORTED_CRIME": {
