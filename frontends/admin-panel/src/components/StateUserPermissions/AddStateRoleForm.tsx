@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Modal, Alert, Select } from "antd";
-import Draggable from "react-draggable";
+import { Form, Input, Alert, Select } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
-import { DraggableModal } from "./utils";
+import { DraggableModal } from "../Utilities/DraggableModal";
 
 const ROLES = ["leadership_role", "line_staff_user", "level_1_access_role"];
 
@@ -31,37 +30,15 @@ export const CreateAddStateRoleForm = ({
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
-  const draggableModal = DraggableModal();
 
   const roleOptions = ROLES.map((role) => (
     <Select.Option key={role}>{role}</Select.Option>
   ));
 
   return (
-    <Modal
+    <DraggableModal
       visible={addVisible}
-      title={
-        <div
-          style={{
-            width: "100%",
-            cursor: "move",
-          }}
-          onMouseOver={() => {
-            if (draggableModal.disabled) {
-              draggableModal.setDisabled(false);
-            }
-          }}
-          onMouseOut={() => {
-            draggableModal.setDisabled(true);
-          }}
-          onFocus={() => undefined}
-          onBlur={() => undefined}
-        >
-          Add default permissions for a state/role
-        </div>
-      }
-      okText="Add"
-      cancelText="Cancel"
+      title="Add default permissions for a state/role"
       onCancel={addOnCancel}
       onOk={() => {
         form.validateFields().then((values) => {
@@ -69,15 +46,6 @@ export const CreateAddStateRoleForm = ({
           addOnCreate(values);
         });
       }}
-      modalRender={(modal) => (
-        <Draggable
-          disabled={draggableModal.disabled}
-          bounds={draggableModal.bounds}
-          onStart={(event, uiData) => draggableModal.onStart(event, uiData)}
-        >
-          <div ref={draggableModal.dragRef}>{modal}</div>
-        </Draggable>
-      )}
     >
       <Alert
         message="Caution!"
@@ -119,6 +87,6 @@ export const CreateAddStateRoleForm = ({
         </Form.Item>
         <CustomPermissionsPanel hidePermissions={false} />
       </Form>
-    </Modal>
+    </DraggableModal>
   );
 };

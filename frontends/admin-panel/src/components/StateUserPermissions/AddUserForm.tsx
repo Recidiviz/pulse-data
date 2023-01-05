@@ -14,10 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Modal, Alert } from "antd";
-import * as React from "react";
-import Draggable from "react-draggable";
-import { DraggableModal } from "./utils";
+import { Form, Input, Alert } from "antd";
+import { DraggableModal } from "../Utilities/DraggableModal";
 
 export const CreateAddUserForm = ({
   addVisible,
@@ -29,33 +27,11 @@ export const CreateAddUserForm = ({
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
-  const draggableModal = DraggableModal();
 
   return (
-    <Modal
+    <DraggableModal
       visible={addVisible}
-      title={
-        <div
-          style={{
-            width: "100%",
-            cursor: "move",
-          }}
-          onMouseOver={() => {
-            if (draggableModal.disabled) {
-              draggableModal.setDisabled(false);
-            }
-          }}
-          onMouseOut={() => {
-            draggableModal.setDisabled(true);
-          }}
-          onFocus={() => undefined}
-          onBlur={() => undefined}
-        >
-          Add a New User
-        </div>
-      }
-      okText="Add"
-      cancelText="Cancel"
+      title="Add a New User"
       onCancel={addOnCancel}
       onOk={() => {
         form.validateFields().then((values) => {
@@ -63,15 +39,6 @@ export const CreateAddUserForm = ({
           addOnCreate(values);
         });
       }}
-      modalRender={(modal) => (
-        <Draggable
-          disabled={draggableModal.disabled}
-          bounds={draggableModal.bounds}
-          onStart={(event, uiData) => draggableModal.onStart(event, uiData)}
-        >
-          <div ref={draggableModal.dragRef}>{modal}</div>
-        </Draggable>
-      )}
     >
       <Alert
         message="Caution!"
@@ -136,6 +103,6 @@ export const CreateAddUserForm = ({
           <Input />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraggableModal>
   );
 };

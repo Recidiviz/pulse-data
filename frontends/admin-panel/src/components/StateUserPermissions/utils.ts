@@ -14,42 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { useRef, useState } from "react";
-import type { DraggableData, DraggableEvent } from "react-draggable";
 import { Routes } from "../constants";
-
-interface DraggableConstants {
-  disabled: boolean;
-  setDisabled: (arg0: boolean) => void;
-  bounds: Record<string, number>;
-  dragRef: React.LegacyRef<HTMLDivElement> | undefined;
-  onStart: (_event: DraggableEvent, uiData: DraggableData) => void;
-}
-
-export function DraggableModal(): DraggableConstants {
-  const [disabled, setDisabled] = useState(false);
-  const [bounds, setBounds] = useState({
-    left: 0,
-    top: 0,
-    bottom: 0,
-    right: 0,
-  });
-  const dragRef = useRef<HTMLInputElement>(null);
-  const onStart = (_event: DraggableEvent, uiData: DraggableData) => {
-    const { clientWidth, clientHeight } = window.document.documentElement;
-    const targetRect = dragRef.current?.getBoundingClientRect();
-    if (!targetRect) {
-      return;
-    }
-    setBounds({
-      left: -targetRect.left + uiData.x,
-      right: clientWidth - (targetRect.right - uiData.x),
-      top: -targetRect.top + uiData.y,
-      bottom: clientHeight - (targetRect.bottom - uiData.y),
-    });
-  };
-  return { disabled, setDisabled, bounds, dragRef, onStart };
-}
 
 export const updatePermissionsObject = (
   existingRoutes: Routes,
