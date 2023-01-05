@@ -35,7 +35,6 @@ from cloud_function_utils import (  # type: ignore[import]
     trigger_dag,
 )
 from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
-    PIPELINE_RUN_TYPE_HISTORICAL_VALUE,
     PIPELINE_RUN_TYPE_REQUEST_ARG,
 )
 
