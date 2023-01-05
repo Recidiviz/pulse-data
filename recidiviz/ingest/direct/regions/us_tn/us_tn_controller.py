@@ -48,7 +48,8 @@ class UsTnController(BaseDirectIngestController):
 
         tags.extend(
             ["SentencesChargesAndCourtCases_v2"]
-            if self.ingest_instance == DirectIngestInstance.SECONDARY
+            if not environment.in_gcp_production()
+            or self.ingest_instance == DirectIngestInstance.SECONDARY
             else ["SentencesChargesAndCourtCases"]
         )
 
