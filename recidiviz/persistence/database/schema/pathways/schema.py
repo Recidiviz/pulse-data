@@ -104,6 +104,8 @@ class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
 
     __tablename__ = "liberty_to_prison_transitions"
 
+    # State code for the transition
+    state_code = Column(String, nullable=False)
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
@@ -124,8 +126,6 @@ class LibertyToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     judicial_district = Column(String, nullable=False)
     # Total number of months the person was previously incarcerated
     prior_length_of_incarceration = Column(String, nullable=False)
-    # State code for the transition
-    state_code = Column(String, nullable=False)
 
 
 class PrisonPopulationOverTime(PathwaysBase):
@@ -285,6 +285,8 @@ class PrisonToSupervisionTransitions(PathwaysBase, TransitionsOverTimeMixin):
 
     __tablename__ = "prison_to_supervision_transitions"
 
+    # State code for the transition
+    state_code = Column(String, nullable=False)
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
@@ -309,8 +311,6 @@ class PrisonToSupervisionTransitions(PathwaysBase, TransitionsOverTimeMixin):
     time_period = Column(String, nullable=True)
     # External ID of the person
     state_id = Column(String, nullable=True)
-    # State code for the transition
-    state_code = Column(String, nullable=False)
 
 
 class SupervisionPopulationOverTime(PathwaysBase):
@@ -431,6 +431,8 @@ class SupervisionToLibertyTransitions(PathwaysBase, TransitionsOverTimeMixin):
 
     __tablename__ = "supervision_to_liberty_transitions"
 
+    # State code for the transition
+    state_code = Column(String, nullable=False)
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
@@ -461,8 +463,6 @@ class SupervisionToLibertyTransitions(PathwaysBase, TransitionsOverTimeMixin):
     time_period = Column(String, nullable=True)
     # Binned length of supervision in months
     length_of_stay = Column(String, nullable=True)
-    # State code for the transition
-    state_code = Column(String, nullable=False)
 
 
 class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
@@ -472,6 +472,8 @@ class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
 
     __tablename__ = "supervision_to_prison_transitions"
 
+    # State code for the transition
+    state_code = Column(String, nullable=False)
     # Date that the transition occurred
     transition_date = Column(Date, primary_key=True, nullable=False)
     # Denormalized transition year
@@ -502,5 +504,3 @@ class SupervisionToPrisonTransitions(PathwaysBase, TransitionsOverTimeMixin):
     time_period = Column(String, nullable=True)
     # Binned length of supervision in months
     length_of_stay = Column(String, nullable=True)
-    # State code for the transition
-    state_code = Column(String, nullable=False)

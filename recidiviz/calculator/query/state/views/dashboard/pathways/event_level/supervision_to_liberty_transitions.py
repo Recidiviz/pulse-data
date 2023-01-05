@@ -138,6 +138,8 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewB
             ]
         ),
         columns=[
+            # state_code needs to appear first here to support remapping state code values during the ATLAS migration
+            "state_code",
             "transition_date",
             "year",
             "month",
@@ -153,7 +155,6 @@ SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewB
             "supervision_start_date",
             "time_period",
             "length_of_stay",
-            "state_code",
         ],
         dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
         view_id=SUPERVISION_TO_LIBERTY_TRANSITIONS_VIEW_NAME,

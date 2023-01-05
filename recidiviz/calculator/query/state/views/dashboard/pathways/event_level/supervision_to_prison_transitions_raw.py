@@ -119,6 +119,7 @@ SUPERVISION_TO_PRISON_TRANSITIONS_RAW_QUERY_TEMPLATE = """
 
 SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
+        # state_code needs to appear first here to support remapping state code values during the ATLAS migration
         "state_code",
         "person_id",
         "transition_date",

@@ -125,7 +125,7 @@ class TestLoadFixtures(TestCase):
         fake_gcs.upload_from_string(
             path=fake_csv_path,
             # Columns here are in the order they're exported in the BQ views
-            contents="2022-01-01,2022,1,months_0_6,1,20-25,MALE,WHITE,D1,months_0_3,US_XX",
+            contents="US_XX,2022-01-01,2022,1,months_0_6,1,20-25,MALE,WHITE,D1,months_0_3",
             content_type="text/csv",
         )
         fake_gcs.update_metadata(fake_csv_path, {"last_updated": "2022-08-01"})

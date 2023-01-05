@@ -48,6 +48,7 @@ SUPERVISION_POPULATION_OVER_TIME_VIEW_BUILDER = WithMetadataQueryBigQueryViewBui
     metadata_query=get_pathways_supervision_last_updated_date(),
     delegate=SelectedColumnsBigQueryViewBuilder(
         columns=[
+            # state_code needs to appear first here to support remapping state code values during the ATLAS migration
             "state_code",
             "date_in_population",
             "time_period",

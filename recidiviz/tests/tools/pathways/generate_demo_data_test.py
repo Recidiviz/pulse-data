@@ -179,6 +179,7 @@ class TestGenerateDemoData(TestCase):
     ) -> None:
         expected_rows = [
             {
+                "state_code": "US_XX",
                 "transition_date": "2020-01-01",
                 "year": "2020",
                 "month": "1",
@@ -189,9 +190,9 @@ class TestGenerateDemoData(TestCase):
                 "race": "WHITE",
                 "judicial_district": "JUDICIAL_DISTRICT_1",
                 "prior_length_of_incarceration": "6",
-                "state_code": "US_XX",
             },
             {
+                "state_code": "US_XX",
                 "transition_date": "2021-02-02",
                 "year": "2021",
                 "month": "2",
@@ -202,7 +203,6 @@ class TestGenerateDemoData(TestCase):
                 "race": "BLACK",
                 "judicial_district": "JUDICIAL_DISTRICT_2",
                 "prior_length_of_incarceration": "12",
-                "state_code": "US_XX",
             },
         ]
         mock_generate_demo_data.return_value = expected_rows
@@ -225,6 +225,7 @@ class TestGenerateDemoData(TestCase):
             csv.DictReader(
                 io.StringIO(file_contents),
                 fieldnames=[
+                    "state_code",
                     "transition_date",
                     "year",
                     "month",
@@ -235,7 +236,6 @@ class TestGenerateDemoData(TestCase):
                     "race",
                     "judicial_district",
                     "prior_length_of_incarceration",
-                    "state_code",
                 ],
             )
         )

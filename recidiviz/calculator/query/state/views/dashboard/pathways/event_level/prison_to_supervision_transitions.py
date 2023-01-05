@@ -148,6 +148,8 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
             ]
         ),
         columns=[
+            # state_code needs to appear first here to support remapping state code values during the ATLAS migration
+            "state_code",
             "transition_date",
             "year",
             "month",
@@ -160,7 +162,6 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
             "full_name",
             "time_period",
             "state_id",
-            "state_code",
         ],
     ),
 )

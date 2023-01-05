@@ -135,6 +135,8 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilde
             ]
         ),
         columns=[
+            # state_code needs to appear first here to support remapping state code values during the ATLAS migration
+            "state_code",
             "transition_date",
             "year",
             "month",
@@ -145,7 +147,6 @@ LIBERTY_TO_PRISON_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuilde
             "race",
             "judicial_district",
             "prior_length_of_incarceration",
-            "state_code",
         ],
     ),
 )

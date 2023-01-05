@@ -99,6 +99,7 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
 
 SUPERVISION_POPULATION_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
+        # state_code needs to appear first here to support remapping state code values during the ATLAS migration
         "state_code",
         "person_id",
         "start_date",
