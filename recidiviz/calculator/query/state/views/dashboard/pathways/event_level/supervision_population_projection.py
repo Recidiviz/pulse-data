@@ -54,6 +54,7 @@ SUPERVISION_POPULATION_PROJECTION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
         view_query_template=SUPERVISION_POPULATION_PROJECTION_QUERY_TEMPLATE,
         description=SUPERVISION_POPULATION_PROJECTION_DESCRIPTION,
         columns=[
+            # state_code needs to appear first here to support remapping state code values during the ATLAS migration
             "state_code",
             "year",
             "month",

@@ -98,6 +98,7 @@ PRISON_POPULATION_BY_DIMENSION_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
     metadata_query=state_specific_query_strings.get_pathways_incarceration_last_updated_date(),
     delegate=SelectedColumnsBigQueryViewBuilder(
         columns=[
+            # state_code needs to appear first here to support remapping state code values during the ATLAS migration
             "state_code",
             "person_id",
             "age_group",
