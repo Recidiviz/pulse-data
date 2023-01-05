@@ -56,6 +56,11 @@ def _valid_admission_reasons_for_commitments_from_supervision() -> str:
         if is_commitment_from_supervision(
             admission_reason, allow_ingest_only_enum_values=True
         )
+        # In https://go/pull/17434 we updated the IncarcerationCommitmentFromSupervisionMetric
+        # to start outputting metrics for TEMPORARY_CUSTODY, but did not yet add this
+        # admission reason to the is_commitment_from_supervision function because there
+        # were broader normalization implications to work out.
+        or admission_reason == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
     ]
 
     return ", ".join(valid_admission_reason_values)
