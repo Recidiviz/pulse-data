@@ -112,8 +112,8 @@ register_error_handlers(app)
 
 
 limiter = Limiter(
-    app,
     key_func=get_remote_address,
+    app=app,
     default_limits=["15 per second"],
     storage_uri=get_rate_limit_storage_uri(),
     storage_options=get_redis_connection_options(),

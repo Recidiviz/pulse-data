@@ -98,8 +98,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
     register_error_handlers(app)
 
     Limiter(
-        app,
         key_func=get_remote_address,
+        app=app,
         default_limits=["15 per second"],
         # TODO(#13437) Add Redis storage backend for rate limiting
     )
