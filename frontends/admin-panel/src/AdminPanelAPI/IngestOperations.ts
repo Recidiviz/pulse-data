@@ -340,13 +340,13 @@ export const changeIngestInstanceStatus = async (
   );
 };
 
-// Move raw data to backup dataset
-export const moveRawDataToBackup = async (
+// Copy raw data to backup dataset
+export const copyRawDataToBackup = async (
   stateCode: string,
   ingestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/move_raw_data_to_backup",
+    "/api/ingest_operations/flash_primary_db/copy_raw_data_to_backup",
     {
       stateCode,
       ingestInstance,
@@ -354,14 +354,14 @@ export const moveRawDataToBackup = async (
   );
 };
 
-// Move raw data between instances
-export const moveRawDataBetweenInstances = async (
+// Copy raw data between instances
+export const copyRawDataBetweenInstances = async (
   stateCode: string,
   srcIngestInstance: DirectIngestInstance,
   destIngestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/move_raw_data_between_instances",
+    "/api/ingest_operations/flash_primary_db/copy_raw_data_between_instances",
     {
       stateCode,
       srcIngestInstance,
@@ -370,27 +370,13 @@ export const moveRawDataBetweenInstances = async (
   );
 };
 
-// Delete contents in raw data dataset
-export const deleteContentsInRawDataDataset = async (
+// Delete contents of raw data tables
+export const deleteContentsOfRawDataTables = async (
   stateCode: string,
   ingestInstance: DirectIngestInstance
 ): Promise<Response> => {
   return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/delete_contents_in_raw_data_dataset",
-    {
-      stateCode,
-      ingestInstance,
-    }
-  );
-};
-
-// Delete contents in latest view data dataset
-export const deleteContentsInLatestViewDataset = async (
-  stateCode: string,
-  ingestInstance: DirectIngestInstance
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/flash_primary_db/delete_contents_in_latest_view_dataset",
+    "/api/ingest_operations/flash_primary_db/delete_contents_of_raw_data_tables",
     {
       stateCode,
       ingestInstance,

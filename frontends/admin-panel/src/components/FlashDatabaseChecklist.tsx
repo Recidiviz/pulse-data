@@ -40,9 +40,18 @@ import {
   transferIngestViewMetadataToNewInstance,
   updateIngestQueuesState,
 } from "../AdminPanelAPI";
-import { deleteContentsInSecondaryIngestViewDataset } from "../AdminPanelAPI/IngestOperations";
+import {
+  deleteContentsOfRawDataTables,
+  deleteContentsInSecondaryIngestViewDataset,
+  markInstanceRawDataInvalidated,
+  copyRawDataBetweenInstances,
+  copyRawDataToBackup,
+  transferRawDataMetadataToNewInstance,
+  getIngestRawFileProcessingStatus,
+} from "../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
+  IngestRawFileProcessingStatus,
   QueueState,
   StateCodeInfo,
 } from "./IngestOperationsView/constants";
@@ -95,13 +104,19 @@ const FlashChecklistStepSection = {
   you MUST add it in the relative order to other sections. */
   PAUSE_OPERATIONS: 1,
   START_FLASH: 2,
-  PRIMARY_INGEST_VIEW_DEPRECATION: 3,
-  FLASH_INGEST_VIEW_TO_PRIMARY: 4,
-  SECONDARY_INGEST_VIEW_CLEANUP: 5,
-  FINALIZE_FLASH: 6,
-  RESUME_OPERATIONS: 7,
-  TRIGGER_PIPELINES: 8,
-  DONE: 9,
+  /* Only present when rerun raw data source instance is SECONDARY */
+  PRIMARY_RAW_DATA_DEPRECATION: 3,
+  PRIMARY_INGEST_VIEW_DEPRECATION: 4,
+  /* Only present when rerun raw data source instance is SECONDARY */
+  FLASH_RAW_DATA_TO_PRIMARY: 5,
+  FLASH_INGEST_VIEW_TO_PRIMARY: 6,
+  /* Only present when rerun raw data source instance is SECONDARY */
+  SECONDARY_RAW_DATA_CLEANUP: 7,
+  SECONDARY_INGEST_VIEW_CLEANUP: 8,
+  FINALIZE_FLASH: 9,
+  RESUME_OPERATIONS: 10,
+  TRIGGER_PIPELINES: 11,
+  DONE: 12,
 };
 
 const CancelFlashChecklistStepSection = {
@@ -111,10 +126,12 @@ const CancelFlashChecklistStepSection = {
   you MUST add it in the relative order to other sections. */
   PAUSE_OPERATIONS: 1,
   START_CANCELLATION: 2,
-  SECONDARY_INGEST_VIEW_CLEANUP: 3,
-  FINALIZE_CANCELLATION: 4,
-  RESUME_OPERATIONS: 5,
-  DONE: 6,
+  /* Only present when rerun raw data source instance is SECONDARY */
+  SECONDARY_RAW_DATA_CLEANUP: 3,
+  SECONDARY_INGEST_VIEW_CLEANUP: 4,
+  FINALIZE_CANCELLATION: 5,
+  RESUME_OPERATIONS: 6,
+  DONE: 7,
 };
 
 interface ChecklistSectionHeaderProps {
@@ -191,11 +208,24 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const [proceedWithFlash, setProceedWithFlash] =
     React.useState<boolean | null>(null);
   const [
+    primaryIngestRawFileProcessingStatus,
+    setPrimaryIngestRawFileProcessingStatus,
+  ] = React.useState<IngestRawFileProcessingStatus[] | null>(null);
+  const [
+    secondaryIngestRawFileProcessingStatus,
+    setSecondaryIngestRawFileProcessingStatus,
+  ] = React.useState<IngestRawFileProcessingStatus[] | null>(null);
+  const [
     currentSecondaryRawDataSourceInstance,
     setSecondaryRawDataSourceInstance,
   ] = React.useState<DirectIngestInstance | null>(null);
   const [modalVisible, setModalVisible] = React.useState(true);
+
   const history = useHistory();
+  // Uses useRef so abort controller not re-initialized every render cycle.
+  const abortControllerRef =
+    React.useRef<AbortController | undefined>(undefined);
+  const [dataLoading, setDataLoading] = React.useState<boolean>(true);
 
   const isFlashInProgress =
     currentPrimaryIngestInstanceStatus === "FLASH_IN_PROGRESS" &&
@@ -210,13 +240,26 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     currentSecondaryIngestInstanceStatus === "FLASH_COMPLETED";
   const isNoRerunInProgress =
     currentSecondaryIngestInstanceStatus === "NO_RERUN_IN_PROGRESS";
+  const isSecondaryRawDataImport =
+    currentSecondaryRawDataSourceInstance === DirectIngestInstance.SECONDARY;
 
   const incrementCurrentStep = async () => setCurrentStep(currentStep + 1);
 
-  const getData = React.useCallback(async () => {
+  // Promise.allSettled() return both a status and a (potential) return
+  // value. Because the return values vary depending on whether the status
+  // indicates a success, this function only returns the associated value if
+  // the associated status is "fulfilled", otherwise it returns null.
+  function getValueIfResolved<Result extends PromiseSettledResult<any>>(
+    result: Result
+  ): Result extends { status: "fulfilled"; value: infer Value } ? Value : null {
+    const settledResult: PromiseSettledResult<any> = result;
+    return settledResult.status === "fulfilled" ? settledResult.value : null;
+  }
+
+  const getStatusData = React.useCallback(async () => {
     if (stateInfo) {
-      const [primaryStatus, secondaryStatus, secondaryRawDataSourceInstance] =
-        await Promise.all([
+      try {
+        const statusResults = await Promise.allSettled([
           fetchCurrentIngestInstanceStatus(
             stateInfo.code,
             DirectIngestInstance.PRIMARY
@@ -225,14 +268,59 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             stateInfo.code,
             DirectIngestInstance.SECONDARY
           ),
+        ]);
+        setPrimaryIngestInstanceStatus(getValueIfResolved(statusResults[0]));
+        setSecondaryIngestInstanceStatus(getValueIfResolved(statusResults[1]));
+      } catch (err) {
+        message.error(`An error occured: ${err}`);
+      }
+    }
+  }, [stateInfo]);
+
+  const getData = React.useCallback(async () => {
+    if (stateInfo) {
+      setDataLoading(true);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = undefined;
+      }
+
+      // Ingest instance status information is fetched upon
+      // inital page load after a state is set, and each
+      // after each step is completed.
+      getStatusData();
+
+      // Raw data source instance and ingest bucket processing statuses,
+      // are only fetched upon initial page load after a state is set.
+      try {
+        abortControllerRef.current = new AbortController();
+        const results = await Promise.allSettled([
           fetchCurrentRawDataSourceInstance(
             stateInfo.code,
             DirectIngestInstance.SECONDARY
           ),
+          getIngestRawFileProcessingStatus(
+            stateInfo.code,
+            DirectIngestInstance.PRIMARY,
+            abortControllerRef.current
+          ),
+          getIngestRawFileProcessingStatus(
+            stateInfo.code,
+            DirectIngestInstance.SECONDARY,
+            abortControllerRef.current
+          ),
         ]);
-      setPrimaryIngestInstanceStatus(primaryStatus);
-      setSecondaryIngestInstanceStatus(secondaryStatus);
-      setSecondaryRawDataSourceInstance(secondaryRawDataSourceInstance);
+        setSecondaryRawDataSourceInstance(getValueIfResolved(results[0]));
+        setPrimaryIngestRawFileProcessingStatus(
+          await getValueIfResolved(results[1])?.json()
+        );
+        setSecondaryIngestRawFileProcessingStatus(
+          await getValueIfResolved(results[2])?.json()
+        );
+      } catch (err) {
+        message.error(`An error occured: ${err}`);
+      }
+      setDataLoading(false);
     }
   }, [stateInfo]);
 
@@ -257,6 +345,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     setStateInfo(info);
     setProceedWithFlash(null);
     setSecondaryRawDataSourceInstance(null);
+    setPrimaryIngestRawFileProcessingStatus(null);
+    setSecondaryIngestRawFileProcessingStatus(null);
   };
 
   const moveToNextChecklistSection = async (newSection: number) => {
@@ -305,7 +395,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               setLoading(true);
               const succeeded = await runAndCheckStatus(onActionButtonClick);
               if (succeeded) {
-                await getData();
+                await getStatusData();
                 await incrementCurrentStep();
                 if (nextSection !== undefined) {
                   await moveToNextChecklistSection(nextSection);
@@ -328,7 +418,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           disabled={false}
           onClick={async () => {
             setLoading(true);
-            await getData();
+            await getStatusData();
             await incrementCurrentStep();
             setLoading(false);
             if (nextSection !== undefined) {
@@ -457,10 +547,118 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
             nextSection={
-              CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+              isSecondaryRawDataImport
+                ? CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                : CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
             }
           />
         </ChecklistSection>
+        {isSecondaryRawDataImport ? (
+          <ChecklistSection
+            currentStep={currentStep}
+            currentStepSection={currentStepSection}
+            stepSection={
+              CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+            }
+            headerContents={
+              <p>
+                Clean Up Raw Data and Associated Metadata in{" "}
+                <code>SECONDARY</code>
+              </p>
+            }
+          >
+            <StyledStep
+              title="Clean up SECONDARY raw data on BQ"
+              description={
+                <p>
+                  Delete the contents of the tables in{" "}
+                  <code>{stateCode.toLowerCase()}_raw_data_secondary</code>{" "}
+                  (without deleting the tables themselves)
+                </p>
+              }
+              actionButtonEnabled={isFlashCancellationInProgress}
+              actionButtonTitle="Clean up SECONDARY raw data"
+              onActionButtonClick={async () =>
+                deleteContentsOfRawDataTables(
+                  stateCode,
+                  DirectIngestInstance.SECONDARY
+                )
+              }
+            />
+            <StyledStep
+              title="Clear Out SECONDARY Ingest GCS Bucket"
+              description={
+                <p>
+                  Move any remaining unprocessed raw files in{" "}
+                  <code>
+                    {projectId}-direct-ingest-state-
+                    {stateCode.toLowerCase().replaceAll("_", "-")}-secondary
+                  </code>{" "}
+                  to deprecated.
+                  <CodeBlock
+                    // TODO(#17068): Update to python script, once it exists.
+                    enabled={
+                      currentStepSection ===
+                      CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                    }
+                  >
+                    gsutil -m mv &#39;gs://{projectId}
+                    -direct-ingest-state-
+                    {stateCode.toLowerCase().replaceAll("_", "-")}
+                    -secondary/*_raw_*&#39; gs://
+                    {projectId}
+                    -direct-ingest-state-storage-secondary/
+                    {stateCode.toLowerCase()}/deprecated/deprecated_on_
+                    {new Date().toLocaleDateString().replaceAll("/", "_")}
+                  </CodeBlock>
+                </p>
+              }
+            />
+            <StyledStep
+              title="Move SECONDARY storage raw files to deprecated"
+              description={
+                <p>
+                  Use the command below within the <code>pipenv shell</code> to
+                  move SECONDARY storage raw files to deprecated (confirm output
+                  with <code>--dry-run True</code> before proceeding)
+                  <CodeBlock
+                    enabled={
+                      currentStepSection ===
+                      FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                    }
+                  >
+                    python -m
+                    recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
+                    \ --project-id {projectId} \ --region{" "}
+                    {stateCode.toLowerCase()} \ --ingest-instance SECONDARY \
+                    --dry-run True
+                  </CodeBlock>
+                </p>
+              }
+              nextSection={
+                CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+              }
+            />
+            <StyledStep
+              title="Deprecate SECONDARY raw data rows in operations DB"
+              description={
+                <p>
+                  Mark all <code>SECONDARY</code> instance rows in the{" "}
+                  <code>direct_ingest_raw_file_metadata</code> operations
+                  database table as invalidated.
+                </p>
+              }
+              actionButtonEnabled={isFlashCancellationInProgress}
+              actionButtonTitle="Invalidate secondary rows"
+              onActionButtonClick={async () =>
+                markInstanceRawDataInvalidated(
+                  stateCode,
+                  DirectIngestInstance.SECONDARY
+                )
+              }
+            />
+          </ChecklistSection>
+        ) : null}
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -469,7 +667,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           }
           headerContents={
             <p>
-              Clean up Ingest View Data and Associated Metadata in{" "}
+              Clean Up Ingest View Data and Associated Metadata in{" "}
               <code>SECONDARY</code>
             </p>
           }
@@ -633,6 +831,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   }: StateFlashingChecklistProps): JSX.Element => {
     const secondaryIngestViewResultsDataset = `${stateCode.toLowerCase()}_ingest_view_results_secondary`;
     const primaryIngestViewResultsDataset = `${stateCode.toLowerCase()}_ingest_view_results_primary`;
+    const secondaryRawDataDataset = `${stateCode.toLowerCase()}_raw_data_secondary`;
+    const primaryRawDataDataset = `${stateCode.toLowerCase()}_raw_data`;
     const operationsPageURL = `https://go/${
       isProduction ? "prod" : "dev"
     }-state-data-operations`;
@@ -719,10 +919,85 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               setStatusInPrimaryAndSecondaryTo(stateCode, "FLASH_IN_PROGRESS")
             }
             nextSection={
-              FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+              isSecondaryRawDataImport
+                ? FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
+                : FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
             }
           />
         </ChecklistSection>
+        {isSecondaryRawDataImport ? (
+          <ChecklistSection
+            currentStep={currentStep}
+            currentStepSection={currentStepSection}
+            stepSection={FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION}
+            headerContents={
+              <p>
+                Deprecate Raw Data and Associated Metadata in{" "}
+                <code>PRIMARY</code>
+              </p>
+            }
+          >
+            <StyledStep
+              title="Backup PRIMARY raw data"
+              description={
+                <>
+                  <p>
+                    Move all primary instance raw data to a backup dataset in
+                    BQ.
+                  </p>
+                </>
+              }
+              actionButtonEnabled={isFlashInProgress}
+              actionButtonTitle="Move PRIMARY Raw Data to Backup"
+              onActionButtonClick={async () =>
+                copyRawDataToBackup(stateCode, DirectIngestInstance.PRIMARY)
+              }
+            />
+            <StyledStep
+              title="Move PRIMARY storage raw files to deprecated"
+              description={
+                <p>
+                  Use the command below within the <code>pipenv shell</code> to
+                  move PRIMARY storage raw files to deprecated (confirm output
+                  with <code>--dry-run True</code> before proceeding)
+                  <CodeBlock
+                    enabled={
+                      currentStepSection ===
+                      FlashChecklistStepSection.PRIMARY_RAW_DATA_DEPRECATION
+                    }
+                  >
+                    python -m
+                    recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
+                    \ --project-id {projectId} \ --region{" "}
+                    {stateCode.toLowerCase()} \ --ingest-instance PRIMARY \
+                    --dry-run True
+                  </CodeBlock>
+                </p>
+              }
+            />
+            <StyledStep
+              title="Deprecate PRIMARY raw data rows in operations DB"
+              description={
+                <p>
+                  Mark all <code>PRIMARY</code> instance rows in the{" "}
+                  <code>direct_ingest_raw_file_metadata</code> operations
+                  database table as invalidated.
+                </p>
+              }
+              actionButtonEnabled={isFlashInProgress}
+              actionButtonTitle="Deprecate primary rows"
+              onActionButtonClick={async () =>
+                markInstanceRawDataInvalidated(
+                  stateCode,
+                  DirectIngestInstance.PRIMARY
+                )
+              }
+              nextSection={
+                FlashChecklistStepSection.PRIMARY_INGEST_VIEW_DEPRECATION
+              }
+            />
+          </ChecklistSection>
+        ) : null}
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -799,9 +1074,89 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 DirectIngestInstance.PRIMARY
               )
             }
-            nextSection={FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY}
+            nextSection={
+              isSecondaryRawDataImport
+                ? FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
+                : FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
+            }
           />
         </ChecklistSection>
+        {isSecondaryRawDataImport ? (
+          <ChecklistSection
+            currentStep={currentStep}
+            currentStepSection={currentStepSection}
+            stepSection={FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY}
+            headerContents={
+              <p>
+                Flash Raw Data to <code>PRIMARY</code>
+              </p>
+            }
+          >
+            <StyledStep
+              title="Move raw data metadata from SECONDARY instance to PRIMARY"
+              description={
+                <p>
+                  Update all rows in the{" "}
+                  <code>direct_ingest_raw_file_metadata</code> operations
+                  database that had instance <code>SECONDARY</code> with updated
+                  instance <code>PRIMARY</code>.
+                </p>
+              }
+              actionButtonEnabled={isFlashInProgress}
+              actionButtonTitle="Move Secondary Raw Data Metadata"
+              onActionButtonClick={async () =>
+                transferRawDataMetadataToNewInstance(
+                  stateCode,
+                  DirectIngestInstance.SECONDARY,
+                  DirectIngestInstance.PRIMARY
+                )
+              }
+            />
+            <StyledStep
+              title="Copy SECONDARY raw data to PRIMARY on BQ"
+              description={
+                <p>
+                  Copy all raw data from BQ dataset{" "}
+                  <code>{secondaryRawDataDataset}</code> to BQ dataset{" "}
+                  <code>{primaryRawDataDataset}</code>
+                </p>
+              }
+              actionButtonEnabled={isFlashInProgress}
+              actionButtonTitle="Copy Secondary Raw Data"
+              onActionButtonClick={async () =>
+                copyRawDataBetweenInstances(
+                  stateCode,
+                  DirectIngestInstance.SECONDARY,
+                  DirectIngestInstance.PRIMARY
+                )
+              }
+            />
+            <StyledStep
+              title="Move SECONDARY storage raw data to PRIMARY"
+              description={
+                <div>
+                  <p>Run the following command from the terminal: </p>
+                  <CodeBlock
+                    enabled={
+                      currentStepSection ===
+                      FlashChecklistStepSection.FLASH_RAW_DATA_TO_PRIMARY
+                    }
+                  >
+                    gsutil -m mv &#39;gs://{projectId}
+                    -direct-ingest-state-storage-secondary/
+                    {stateCode.toLowerCase()}/raw/* gs://
+                    {projectId}
+                    -direct-ingest-state-storage/
+                    {stateCode.toLowerCase()}/raw/
+                  </CodeBlock>
+                </div>
+              }
+              nextSection={
+                FlashChecklistStepSection.FLASH_INGEST_VIEW_TO_PRIMARY
+              }
+            />
+          </ChecklistSection>
+        ) : null}
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -886,7 +1241,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               </p>
             }
             actionButtonEnabled={isFlashInProgress}
-            actionButtonTitle="Move Secondary Metadata"
+            actionButtonTitle="Move Secondary Ingest View Metadata"
             onActionButtonClick={async () =>
               transferIngestViewMetadataToNewInstance(
                 stateCode,
@@ -914,10 +1269,47 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               )
             }
             nextSection={
-              FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+              isSecondaryRawDataImport
+                ? FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                : FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
             }
           />
         </ChecklistSection>
+        {isSecondaryRawDataImport ? (
+          <ChecklistSection
+            currentStep={currentStep}
+            currentStepSection={currentStepSection}
+            stepSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
+            headerContents={
+              <p>
+                Clean Up Raw Data and Associated Metadata in{" "}
+                <code>SECONDARY</code>
+              </p>
+            }
+          >
+            <StyledStep
+              title="Clean up SECONDARY raw data on BQ"
+              description={
+                <p>
+                  Delete the contents of the tables in{" "}
+                  <code>{stateCode.toLowerCase()}_raw_data_secondary</code>{" "}
+                  (without deleting the tables themselves)
+                </p>
+              }
+              actionButtonEnabled={isFlashInProgress}
+              actionButtonTitle="Clean up SECONDARY raw data"
+              onActionButtonClick={async () =>
+                deleteContentsOfRawDataTables(
+                  stateCode,
+                  DirectIngestInstance.SECONDARY
+                )
+              }
+              nextSection={
+                FlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+              }
+            />
+          </ChecklistSection>
+        ) : null}
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -1100,6 +1492,21 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     );
   };
 
+  const unprocessedFilesInPrimaryIngestBucket =
+    primaryIngestRawFileProcessingStatus !== null
+      ? primaryIngestRawFileProcessingStatus.filter(
+          (info) => info.numberFilesInBucket !== 0
+        )
+      : [];
+  const unprocessedFilesInSecondaryIngestBucket =
+    secondaryIngestRawFileProcessingStatus !== null
+      ? secondaryIngestRawFileProcessingStatus.filter(
+          (info) => info.numberFilesInBucket !== 0
+        )
+      : [];
+  const emptyIngestBuckets =
+    unprocessedFilesInPrimaryIngestBucket.length === 0 &&
+    unprocessedFilesInSecondaryIngestBucket.length === 0;
   let activeComponent;
   if (stateInfo === null) {
     activeComponent = (
@@ -1110,8 +1517,49 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         showIcon
       />
     );
-  } else if (currentPrimaryIngestInstanceStatus === undefined) {
+  } else if (dataLoading || currentPrimaryIngestInstanceStatus === undefined) {
     activeComponent = <Spin />;
+  } else if (
+    currentSecondaryRawDataSourceInstance === DirectIngestInstance.SECONDARY &&
+    !emptyIngestBuckets
+  ) {
+    const formattedStateCode = stateInfo.code
+      .toLowerCase()
+      .replaceAll("_", "-");
+    const primaryBucketURL = `https://console.cloud.google.com/storage/browser/${projectId}-direct-ingest-state-${formattedStateCode}`;
+    const secondaryBucketURL = `https://console.cloud.google.com/storage/browser/${projectId}-direct-ingest-state-${formattedStateCode}-secondary`;
+    activeComponent = (
+      <div>
+        Cannot proceed with flash of SECONDARY raw data to PRIMARY, because the
+        PRIMARY and/or SECONDARY ingest buckets are not empty. Below are the
+        file tags present in the ingest buckets.
+        <br />
+        <h3>
+          PRIMARY INGEST BUCKET: (<a href={primaryBucketURL}>link</a>)
+        </h3>
+        {unprocessedFilesInPrimaryIngestBucket.length === 0 ? (
+          <p>EMPTY</p>
+        ) : (
+          <ul>
+            {unprocessedFilesInPrimaryIngestBucket.map((o) => (
+              <li>{o.fileTag}</li>
+            ))}
+          </ul>
+        )}
+        <h3>
+          SECONDARY INGEST BUCKET (<a href={secondaryBucketURL}>link</a>)
+        </h3>
+        {unprocessedFilesInSecondaryIngestBucket.length === 0 ? (
+          <p>EMPTY</p>
+        ) : (
+          <ul>
+            {unprocessedFilesInSecondaryIngestBucket.map((o) => (
+              <li>{o.fileTag}</li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
   } else if (
     !isReadyToFlash &&
     !isFlashInProgress &&
@@ -1181,13 +1629,14 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     );
   } else if (proceedWithFlash || isFlashInProgress) {
     activeComponent = (
-      /* If decision has been made to cancel a flash from SECONDARY to PRIMARY */
+      /* This covers when a decision has been made to
+      proceed with a flash from SECONDARY to PRIMARY */
+
       <StateProceedWithFlashChecklist stateCode={stateInfo.code} />
     );
   } else if (!proceedWithFlash || isFlashCancellationInProgress) {
     activeComponent = (
-      /* This covers when a decision has been made to
-      proceed with a flash from SECONDARY to PRIMARY */
+      /* If decision has been made to cancel a flash from SECONDARY to PRIMARY */
       <StateCancelFlashChecklist stateCode={stateInfo.code} />
     );
   }
