@@ -168,12 +168,14 @@ class ProcessDagResult(Generic[ViewResultT]):
 class BigQueryViewDagNode:
     """A single node in a BigQuery view DAG, i.e. a single view with relationships to other views."""
 
-    def __init__(self, view: BigQueryView, is_root: bool = False):
+    def __init__(self, view: BigQueryView, is_root: bool = False, is_leaf: bool = True):
         self.view = view
         # Note: Must use add_child_key() to populate this member variable before using.
         self.child_node_keys: Set[DagKey] = set()
+        self.parent_node_keys: Set[DagKey] = set()
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
         self.is_root = is_root
+        self.is_leaf = is_leaf
         # Note: Must call populate_node_family_for_node() on a node before using this member variable.
         self._node_family: Optional[BigQueryViewDagNodeFamily] = None
 
@@ -214,6 +216,9 @@ class BigQueryViewDagNode:
 
     def add_child_key(self, dag_key: DagKey) -> None:
         self.child_node_keys.add(dag_key)
+
+    def add_parent_key(self, dag_key: DagKey) -> None:
+        self.parent_node_keys.add(dag_key)
 
     def set_materialized_addresss(
         self, materialized_addresss: Dict[BigQueryAddress, DagKey]
@@ -267,6 +272,7 @@ class BigQueryViewDagWalker:
 
         self._prepare_dag()
         self.roots = [node for node in self.nodes_by_key.values() if node.is_root]
+        self.leaves = [node for node in self.nodes_by_key.values() if node.is_leaf]
         self._check_for_cycles()
 
     def _get_materialized_addresss_map(self) -> Dict[BigQueryAddress, DagKey]:
@@ -310,8 +316,11 @@ class BigQueryViewDagWalker:
             node.is_root = True
             for parent_key in node.parent_keys:
                 if parent_key in self.nodes_by_key:
+                    parent_node = self.nodes_by_key[parent_key]
+                    parent_node.is_leaf = False
+                    parent_node.add_child_key(key)
                     node.is_root = False
-                    self.nodes_by_key[parent_key].add_child_key(key)
+                    node.add_parent_key(parent_key)
 
     def _check_for_cycles(self) -> None:
         """
@@ -411,14 +420,16 @@ class BigQueryViewDagWalker:
         self,
         view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
         perf_config: ProcessDagPerfConfig = DEFAULT_PROCESS_DAG_PERF_CONFIG,
+        reverse: bool = False,
     ) -> ProcessDagResult[ViewResultT]:
         """This method provides a level-by-level "breadth-first" traversal of a DAG and
         executes |view_process_fn| on every node in level order.
 
         Will throw if a node execution time exceeds |max_node_process_time_sec|.
         """
+
+        queue = set(self.leaves) if reverse else set(self.roots)
         processed: Set[DagKey] = set()
-        queue: Set[BigQueryViewDagNode] = set(self.roots)
         view_results: Dict[BigQueryView, ViewResultT] = {}
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
         dag_processing_start = time.perf_counter()
@@ -439,7 +450,7 @@ class BigQueryViewDagWalker:
                     node.view,
                     {},
                 ): (node, {}, time.perf_counter())
-                for node in self.roots
+                for node in queue
             }
             processing = {node.dag_key for node, _, _ in future_to_context.values()}
             while processing:
@@ -501,48 +512,59 @@ class BigQueryViewDagWalker:
                     view_processing_stats[node.view] = view_stats
                     processing.remove(node.dag_key)
                     processed.add(node.dag_key)
-
-                    for child_key in node.child_node_keys:
-                        child_node = self.nodes_by_key[child_key]
-                        if child_node in processed or child_node in queue:
+                    adjacent_keys = (
+                        node.parent_node_keys if reverse else node.child_node_keys
+                    )
+                    for adjacent_key in adjacent_keys:
+                        adjacent_node = self.nodes_by_key[adjacent_key]
+                        if adjacent_node in processed or adjacent_node in queue:
                             raise ValueError(
-                                f"Unexpected situation where child node has already been processed: {child_key}"
+                                f"Unexpected situation where adjacent node has already been processed: {adjacent_key}"
                             )
-                        if child_node in processing:
+                        if adjacent_node in processing:
                             continue
 
-                        parents_all_processed = True
-                        parent_results = {}
-                        for parent_key in child_node.parent_keys:
+                        previous_level_all_processed = True
+                        previous_level_results = {}
+                        previous_level_keys = (
+                            adjacent_node.child_keys
+                            if reverse
+                            else adjacent_node.parent_keys
+                        )
+                        for previous_level_key in previous_level_keys:
                             if (
-                                parent_key in self.nodes_by_key
-                                and parent_key not in processed
+                                previous_level_key in self.nodes_by_key
+                                and previous_level_key not in processed
                             ):
-                                parents_all_processed = False
+                                previous_level_all_processed = False
                                 break
-                            if parent_key in self.nodes_by_key:
-                                parent_view = self.nodes_by_key[parent_key].view
-                                parent_results[parent_view] = view_results[parent_view]
-                        if parents_all_processed:
-                            if not parent_results:
+                            if previous_level_key in self.nodes_by_key:
+                                previous_level_view = self.nodes_by_key[
+                                    previous_level_key
+                                ].view
+                                previous_level_results[
+                                    previous_level_view
+                                ] = view_results[previous_level_view]
+                        if previous_level_all_processed:
+                            if not previous_level_results:
                                 raise ValueError(
-                                    f"Expected child node [{child_node.view.address}] "
-                                    f"to have parents."
+                                    f"Expected adjacent node [{adjacent_node.view.address}] "
+                                    f"to have previously processed ancesters."
                                 )
                             entered_queue_time = time.perf_counter()
                             future = executor.submit(
                                 trace.time_and_trace(
                                     structured_logging.with_context(view_process_fn)
                                 ),
-                                child_node.view,
-                                parent_results,
+                                adjacent_node.view,
+                                previous_level_results,
                             )
                             future_to_context[future] = (
-                                child_node,
-                                parent_results,
+                                adjacent_node,
+                                previous_level_results,
                                 entered_queue_time,
                             )
-                            processing.add(child_node.dag_key)
+                            processing.add(adjacent_node.dag_key)
         return ProcessDagResult(
             view_results=view_results,
             view_processing_stats=view_processing_stats,
