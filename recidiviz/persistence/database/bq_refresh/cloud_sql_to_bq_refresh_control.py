@@ -54,7 +54,7 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
-
+# TODO(#15930): This function will be deleted once the all dependencies on this endpoint are moved to the DAG
 @cloud_sql_to_bq_blueprint.route(
     "/create_refresh_bq_schema_task/<schema_arg>", methods=["GET", "POST"]
 )

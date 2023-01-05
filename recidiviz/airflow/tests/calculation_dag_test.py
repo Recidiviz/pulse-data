@@ -373,6 +373,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
             {
                 get_post_refresh_short_circuit_task_id("STATE"),
                 get_post_refresh_short_circuit_task_id("OPERATIONS"),
+                get_post_refresh_short_circuit_task_id("CASE_TRIAGE"),
             },
             wait_task.upstream_task_ids,
         )

@@ -388,6 +388,10 @@ def create_calculation_dag() -> None:
 
     state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
     operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
+    # TODO(#15930): Remove dry_run when testing of function complete.
+    case_triage_bq_refresh_completion = create_bq_refresh_nodes(
+        "CASE_TRIAGE", dry_run=True
+    )
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
@@ -428,7 +432,11 @@ def create_calculation_dag() -> None:
     do_not_update_all_views = EmptyOperator(task_id="do_not_update_all_views")
 
     (
-        [state_bq_refresh_completion, operations_bq_refresh_completion]
+        [
+            state_bq_refresh_completion,
+            operations_bq_refresh_completion,
+            case_triage_bq_refresh_completion,
+        ]
         >> update_all_views_branch
         >> [trigger_update_all_views, do_not_update_all_views]
     )
@@ -485,7 +493,7 @@ def create_calculation_dag() -> None:
             # Normalization pipelines should run after the BQ refresh is complete, but
             # complete before normalized_state dataset is refreshed.
             (
-                [state_bq_refresh_completion, operations_bq_refresh_completion]
+                state_bq_refresh_completion
                 >> normalization_calculation_pipeline
                 >> update_normalized_state
             )
