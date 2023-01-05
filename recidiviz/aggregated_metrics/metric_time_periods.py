@@ -56,19 +56,19 @@ UNION ALL
 SELECT DISTINCT
     "QUARTER" AS period,
     DATE_TRUNC(date, QUARTER) AS population_start_date,
-    DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 QUARTER) AS population_end_date,
+    DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 QUARTER) AS population_end_date,
 FROM
     date_array 
 
 UNION ALL
 
--- we repeat the year period monthly to allow greater flexibility downstream
+-- we repeat the year period quarterly to allow greater flexibility downstream
 SELECT DISTINCT
     "YEAR" AS period,
     DATE_TRUNC(date, QUARTER) AS population_start_date,
-    DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 YEAR) AS population_end_date,
+    DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 YEAR) AS population_end_date,
 FROM
-    date_array 
+    date_array
 """
 
 METRIC_TIME_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
