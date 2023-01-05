@@ -14,11 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Modal, PageHeader } from "antd";
 import { useState } from "react";
-import Draggable from "react-draggable";
 import UploadRoster from "../UploadRostersView/UploadRoster";
-import { DraggableModal } from "./utils";
+import { DraggableModal } from "../Utilities/DraggableModal";
 
 export const UploadStateUserRosterModal = ({
   visible,
@@ -29,7 +27,6 @@ export const UploadStateUserRosterModal = ({
 }): JSX.Element => {
   const [stateCode, setStateCode] = useState<string | undefined>();
   const [role, setRole] = useState<string | undefined>();
-  const draggableModal = DraggableModal();
 
   const handleCancel = () => {
     onCancel();
@@ -38,27 +35,14 @@ export const UploadStateUserRosterModal = ({
   const roleParam = role ? `&role=${role}` : "";
 
   return (
-    <Modal
+    <DraggableModal
       visible={visible}
-      modalRender={(modal) => (
-        <Draggable
-          disabled={draggableModal.disabled}
-          bounds={draggableModal.bounds}
-          onStart={(event, uiData) => draggableModal.onStart(event, uiData)}
-        >
-          <div ref={draggableModal.dragRef}>{modal}</div>
-        </Draggable>
-      )}
-      bodyStyle={{
-        overflowY: "scroll",
-        maxHeight: "calc(100vh - 200px)",
-      }}
+      title="Upload user roster"
       width={700}
       onCancel={handleCancel}
       onOk={handleCancel}
       footer={null}
     >
-      <PageHeader title="Upload user roster" />
       <UploadRoster
         action={`/auth/users?state_code=${stateCode}${roleParam}`}
         method="PUT"
@@ -75,6 +59,6 @@ export const UploadStateUserRosterModal = ({
         setRole={setRole}
         enableRoleSelector
       />
-    </Modal>
+    </DraggableModal>
   );
 };

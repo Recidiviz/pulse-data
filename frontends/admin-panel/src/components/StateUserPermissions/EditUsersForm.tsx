@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Button, Form, Input, Modal, Select } from "antd";
+import { Alert, Button, Form, Input, Select } from "antd";
 import * as React from "react";
 import { useState } from "react";
-import Draggable from "react-draggable";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
-import { DraggableModal } from "./utils";
+import { DraggableModal } from "../Utilities/DraggableModal";
 
 export const CreateEditUserForm = ({
   editVisible,
@@ -37,7 +36,6 @@ export const CreateEditUserForm = ({
   const { Option } = Select;
 
   const [form] = Form.useForm();
-  const draggableModal = DraggableModal();
 
   // control useCustomPermissions
   const [hidePermissions, setHidePermissions] = useState(true);
@@ -65,28 +63,9 @@ export const CreateEditUserForm = ({
   };
 
   return (
-    <Modal
+    <DraggableModal
       visible={editVisible}
-      title={
-        <div
-          style={{
-            width: "100%",
-            cursor: "move",
-          }}
-          onMouseOver={() => {
-            if (draggableModal.disabled) {
-              draggableModal.setDisabled(false);
-            }
-          }}
-          onMouseOut={() => {
-            draggableModal.setDisabled(true);
-          }}
-          onFocus={() => undefined}
-          onBlur={() => undefined}
-        >
-          Edit Selected User(s)
-        </div>
-      }
+      title="Edit Selected User(s)"
       onCancel={handleCancel}
       footer={[
         <Button onClick={handleCancel} key="cancel">
@@ -99,16 +78,6 @@ export const CreateEditUserForm = ({
           Edit
         </Button>,
       ]}
-      modalRender={(modal) => (
-        <Draggable
-          disabled={draggableModal.disabled}
-          bounds={draggableModal.bounds}
-          onStart={(event, uiData) => draggableModal.onStart(event, uiData)}
-        >
-          <div ref={draggableModal.dragRef}>{modal}</div>
-        </Draggable>
-      )}
-      bodyStyle={{ overflowY: "scroll", maxHeight: "calc(100vh - 200px)" }}
     >
       <Alert
         message="Caution!"
@@ -155,6 +124,6 @@ export const CreateEditUserForm = ({
         </Form.Item>
         <CustomPermissionsPanel hidePermissions={hidePermissions} />
       </Form>
-    </Modal>
+    </DraggableModal>
   );
 };
