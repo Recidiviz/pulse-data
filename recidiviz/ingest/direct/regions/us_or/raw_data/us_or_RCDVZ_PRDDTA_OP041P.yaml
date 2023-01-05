@@ -8,12 +8,32 @@ primary_key_cols:
   - SUBFILE_KEY
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
   - name: SUBFILE_KEY
+    description: |-
+      Key for row, used with record key for primary key.
   - name: UPDATE_JOB_NAME
   - name: UPDATE_USERID
+    description: |-
+      User who updated information.
+    is_pii: True
   - name: GOOD_TIME_WITHHELD
+    description: |-
+      Amount of good time witheld.
   - name: REASON
+    description: |-
+      Reason good time was witheld.
   - name: NOTES
+    description: |-
+      Notes on charge.
+    is_pii: True
   - name: WARRANT_DATE
+    description: |-
+      Date of warrant.
   - name: RETURN_TO_CUSTODY_DATE
+    description: |-
+      Date returned to custody.
   - name: LAST_UPDATED_WHEN
+    description: |-
+      Date when row was last updated.

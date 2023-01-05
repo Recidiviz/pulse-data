@@ -9,31 +9,78 @@ primary_key_cols:
   - OFFENSE_NUMBER
 columns:
   - name: NEXT_NUMBER
+    description: |-
+      Number of next offense.
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
   - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating order of custody.
   - name: ADMISSION_NUMBER
+    description: |-
+      Number indicating order of admission.
   - name: OFFENSE_NUMBER
+    description: |-
+      Number of offense.
   - name: LAST_UPDATED_WHEN
+    description: |-
+      Date when information was last updated.
   - name: ARREST_DATE
+    description: |-
+      Date of arrest.
   - name: COUNTY
+    description: |-
+      County where offense or case occured.
   - name: COURT_CASE_NUMBER
+    description: |-
+      Number of the court case.
   - name: COURT_CASE_COUNT
+    description: |-
+      Count of court cases.
   - name: CRIME_COMMITTED_DATE
+    description: |-
+      Date the crime was committed.
   - name: DISTRICT_ATTORNEY
+    description: |-
+      The district attorney in the case.
+    is_pii: True
   - name: DEFENSE_COUNSEL
+    description: |-
+      Defense counsel in the case.
+    is_pii: True
   - name: JUDGE
+    description: |-
+      Judge in the case.
+    is_pii: True
   - name: CONVICTED_DATE
+    description: |-
+      Date of the conviction.
   - name: DA_CASE_NUMBER
+    description: |-
+      DA case number.
   - name: ORS_NUMBER
+    desription: |-
+      Oregon Statute Number.
   - name: ORS_PARAGRAPH
   - name: INCHOATE
   - name: INCHOATE_ORS_NUMBER
   - name: INCHOATE_ORS_PARAGRAPH
   - name: FELONY_IS_MISDEMEANOR
+    description: |-
+      Indicated if crime is a misdemeanor or not.
   - name: CRIME_ABBREVIATION
+    description: |-
+      Abbreviation of crime.
   - name: CRIME_CLASS
+    description: |-
+      Class of the crime.
   - name: CRIME_CATEGORY
+    description: |-
+      Category of the crime.
   - name: OFF_SEVERITY
+    description: |-
+      Severity of the crime.
   - name: OOS_FED_CRIME_IND
   - name: MATRIX_RANGE_FROM
   - name: MATRIX_RANGE_TO
@@ -42,3 +89,5 @@ columns:
   - name: BOARD_OVRRIDE
   - name: PSI_PSR_NO
   - name: SENT_GUIDELINES_APP
+    description: |-
+      TODO(#17148): Fill in with answer from OR
