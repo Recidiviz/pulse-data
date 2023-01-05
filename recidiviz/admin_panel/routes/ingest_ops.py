@@ -68,12 +68,11 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
-    delete_contents_in_latest_view_dataset,
-    delete_contents_in_raw_data_dataset,
+    copy_raw_data_between_instances,
+    copy_raw_data_to_backup,
+    delete_contents_of_raw_data_tables,
     move_ingest_view_results_between_instances,
     move_ingest_view_results_to_backup,
-    move_raw_data_between_instances,
-    move_raw_data_to_backup,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -812,11 +811,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         return "", HTTPStatus.OK
 
     @bp.route(
-        "/api/ingest_operations/flash_primary_db/move_raw_data_to_backup",
+        "/api/ingest_operations/flash_primary_db/copy_raw_data_to_backup",
         methods=["POST"],
     )
     @requires_gae_auth
-    def _move_raw_data_to_backup() -> Tuple[str, HTTPStatus]:
+    def _copy_raw_data_to_backup() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
             state_code = StateCode(request_json["stateCode"])
@@ -827,7 +826,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            move_raw_data_to_backup(state_code, ingest_instance, BigQueryClientImpl())
+            copy_raw_data_to_backup(state_code, ingest_instance, BigQueryClientImpl())
 
             return (
                 "",
@@ -839,11 +838,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
     @bp.route(
-        "/api/ingest_operations/flash_primary_db/move_raw_data_between_instances",
+        "/api/ingest_operations/flash_primary_db/copy_raw_data_between_instances",
         methods=["POST"],
     )
     @requires_gae_auth
-    def _move_raw_data_between_instances() -> Tuple[str, HTTPStatus]:
+    def _copy_raw_data_between_instances() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
             state_code = StateCode(request_json["stateCode"])
@@ -857,7 +856,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            move_raw_data_between_instances(
+            copy_raw_data_between_instances(
                 state_code=state_code,
                 ingest_instance_source=ingest_instance_source,
                 ingest_instance_destination=ingest_instance_destination,
@@ -874,11 +873,11 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
 
     @bp.route(
-        "/api/ingest_operations/flash_primary_db/delete_contents_in_raw_data_dataset",
+        "/api/ingest_operations/flash_primary_db/delete_contents_of_raw_data_tables",
         methods=["POST"],
     )
     @requires_gae_auth
-    def _delete_contents_in_raw_data_dataset() -> Tuple[str, HTTPStatus]:
+    def _delete_contents_of_raw_data_tables() -> Tuple[str, HTTPStatus]:
         try:
             request_json = assert_type(request.json, dict)
             state_code = StateCode(request_json["stateCode"])
@@ -889,37 +888,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             return "Invalid input data", HTTPStatus.BAD_REQUEST
 
         try:
-            delete_contents_in_raw_data_dataset(
-                state_code=state_code,
-                ingest_instance=ingest_instance,
-                big_query_client=BigQueryClientImpl(),
-            )
-            return (
-                "",
-                HTTPStatus.OK,
-            )
-
-        except ValueError as error:
-            logging.exception(error)
-            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
-
-    @bp.route(
-        "/api/ingest_operations/flash_primary_db/delete_contents_in_latest_view_dataset",
-        methods=["POST"],
-    )
-    @requires_gae_auth
-    def _delete_contents_in_latest_view_dataset() -> Tuple[str, HTTPStatus]:
-        try:
-            request_json = assert_type(request.json, dict)
-            state_code = StateCode(request_json["stateCode"])
-            ingest_instance = DirectIngestInstance(
-                request_json["ingestInstance"].upper()
-            )
-        except ValueError:
-            return "Invalid input data", HTTPStatus.BAD_REQUEST
-
-        try:
-            delete_contents_in_latest_view_dataset(
+            delete_contents_of_raw_data_tables(
                 state_code=state_code,
                 ingest_instance=ingest_instance,
                 big_query_client=BigQueryClientImpl(),
