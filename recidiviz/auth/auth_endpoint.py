@@ -34,6 +34,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
 
 from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
+from recidiviz.auth.helpers import generate_user_hash
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
@@ -392,6 +393,10 @@ def users() -> Union[str, Response]:
                     PermissionsOverride.feature_variants,
                     StateRolePermissions.feature_variants,
                 ).label("feature_variants"),
+                func.coalesce(
+                    UserOverride.user_hash,
+                    Roster.user_hash,
+                ).label("user_hash"),
             )
             .select_from(Roster)
             .join(
@@ -439,6 +444,7 @@ def users() -> Union[str, Response]:
                     "routes": user.routes,
                     "featureVariants": user.feature_variants,
                     "blocked": user.blocked,
+                    "userHash": user.user_hash,
                 }
                 for user in user_info
             ]
@@ -458,7 +464,17 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
             user_dict = convert_nested_dictionary_keys(
                 assert_type(request.json, dict), to_snake_case
             )
-            user_dict["email_address"] = email
+            if user_dict["state_code"] is None:
+                raise ValueError("Request is missing the state_code param")
+            # Enforce casing for columns where we have a preference.
+            user_dict["email_address"] = email.lower()
+            user_dict["state_code"] = user_dict["state_code"].upper()
+            user_dict["external_id"] = (
+                user_dict["external_id"].upper()
+                if user_dict.get("external_id") is not None
+                else None
+            )
+            user_dict["user_hash"] = generate_user_hash(user_dict["email_address"])
             if (
                 session.query(Roster).filter(Roster.email_address == email).first()
                 is not None
@@ -480,6 +496,7 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                         "district": user.district,
                         "firstName": user.first_name,
                         "lastName": user.last_name,
+                        "userHash": user.user_hash,
                     }
                 ),
                 HTTPStatus.OK,
@@ -496,7 +513,7 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                 HTTPStatus.BAD_REQUEST,
             )
         raise e
-    except ProgrammingError as error:
+    except (ProgrammingError, ValueError) as error:
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,
@@ -534,9 +551,9 @@ def upload_roster() -> Tuple[str, HTTPStatus]:
             session.execute(delete_statement)
 
             for row in rows:
-                if not row["email_address"] or not row["external_id"]:
+                if not row["email_address"]:
                     raise ValueError(
-                        "Roster contains a row that is missing an email address or external_id (required)"
+                        "Roster contains a row that is missing an email address (required)"
                     )
                 if role is None or row["role"] == role:
                     row["state_code"] = state_code.upper()
@@ -544,6 +561,7 @@ def upload_roster() -> Tuple[str, HTTPStatus]:
                     row["email_address"] = row["email_address"].lower()
                     row["external_id"] = row["external_id"].upper()
                     row["role"] = row["role"].lower()
+                    row["user_hash"] = generate_user_hash(row["email_address"])
                     roster = Roster(**row)
                     session.add(roster)
                 else:
@@ -803,6 +821,9 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                 .first()
                 is None
             ):
+                user_dict["user_hash"] = generate_user_hash(
+                    user_dict["email_address"].lower()
+                )
                 user = UserOverride(**user_dict)
                 session.add(user)
                 session.commit()
@@ -816,6 +837,7 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                             "district": user.district,
                             "firstName": user.first_name,
                             "lastName": user.last_name,
+                            "userHash": user.user_hash,
                         }
                     ),
                     HTTPStatus.OK,
@@ -840,6 +862,7 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                         "district": updated_user.district,
                         "firstName": updated_user.first_name,
                         "lastName": updated_user.last_name,
+                        "userHash": updated_user.user_hash,
                     }
                 ),
                 HTTPStatus.OK,
@@ -947,6 +970,7 @@ def delete_user_permissions(email: str) -> tuple[str, int]:
 @auth_endpoint_blueprint.route("/users/<email>", methods=["DELETE"])
 @requires_gae_auth
 def delete_user(email: str) -> tuple[str, int]:
+    """Blocks a user by setting blocked=true in the corresponding Roster object."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
         with SessionFactory.using_database(database_key) as session:
@@ -965,6 +989,7 @@ def delete_user(email: str) -> tuple[str, int]:
                     state_code=roster_user.state_code,
                     email_address=email,
                     blocked=True,
+                    user_hash=roster_user.user_hash,
                 )
                 session.add(user_override)
                 session.commit()

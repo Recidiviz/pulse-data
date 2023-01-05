@@ -558,6 +558,7 @@ class Roster(CaseTriageBase):
     district = Column(String(255), nullable=True)
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
+    user_hash = Column(String(255), nullable=False)
 
 
 class UserOverride(CaseTriageBase):
@@ -572,6 +573,7 @@ class UserOverride(CaseTriageBase):
     first_name = Column(String(255), nullable=True)
     last_name = Column(String(255), nullable=True)
     blocked = Column(Boolean, nullable=True, default=False)
+    user_hash = Column(String(255), nullable=False)
 
 
 class StateRolePermissions(CaseTriageBase):
