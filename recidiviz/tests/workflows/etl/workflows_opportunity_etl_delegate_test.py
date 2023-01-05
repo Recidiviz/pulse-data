@@ -151,6 +151,29 @@ EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED = {
     "caseNotes": {},
 }
 
+# Test data specific to IX for the ATLAS migration
+TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP = {
+    "external_id": "456",
+    "reasons": [
+        {
+            "criteria_name": "US_IX_LSIR_LEVEL_LOW_MODERATE_FOR_X_DAYS",
+            "reason": {"some_value": "some_data"},
+        },
+    ],
+}
+
+EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
+    "externalId": "456",
+    "criteria": {"usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}},
+    "eligibleCriteria": {
+        "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}
+    },
+    "formInformation": {},
+    "ineligibleCriteria": {},
+    "metadata": {},
+    "caseNotes": {},
+}
+
 
 class TestWorkflowsETLDelegate(TestCase):
     """Tests for the Workflows ETL delegate."""
@@ -206,6 +229,14 @@ class TestWorkflowsETLDelegate(TestCase):
             json.dumps(TEST_DATA_FOR_IX_WITH_PREFIX_TO_STRIP)
         )
         self.assertEqual(("456", EXPECTED_DOCUMENT_WITH_PREFIX_STRIPPED), result)
+
+    def test_transform_row_with_ix_non_prefixed_state_keys(self) -> None:
+        """Test that transform_row replaces IX with ID for the ATLAS migration."""
+        delegate = WorkflowsOpportunityETLDelegate(StateCode.US_ID)
+        result = delegate.transform_row(
+            json.dumps(TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP)
+        )
+        self.assertEqual(("456", EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED), result)
 
     def test_transform_with_empty_ineligible_criteria_field(self) -> None:
         """Tests that the delegate correctly processes the document when `ineligible_criteria` is set to `[]`."""

@@ -114,6 +114,10 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
         return f"gs://{self.get_filepath(filename).abs_path()}"
 
     def preprocess_criterion_name(self, criterion: str) -> str:
+        # Rename US_IX criteria to US_ID so we don't have to make frontend changes
+        if self.state_code == StateCode.US_ID and criterion.upper().startswith("US_IX"):
+            criterion = criterion.replace("US_IX", "US_ID", 1)
+
         # checks against a list of criterion to remove state prefixes.
         # converts to lower case since the snake_case to camelCase conversion
         # below is relatively naive and does not support CONSTANT_CASE,
