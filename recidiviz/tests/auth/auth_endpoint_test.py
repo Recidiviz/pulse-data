@@ -51,6 +51,11 @@ _FIXTURE_PATH = os.path.abspath(
         "./fixtures/",
     )
 )
+_PARAMETER_USER_HASH = "\\x666c662b7475785a46754d4f54675a663861495a69446a2f6134437734744977526c3757637056644341303d"
+_ADD_USER_HASH = "\\x3044315769656b55445542686a566e71794e626277474a5032786c6c304353397666736e5072786e6d53453d"
+_LEADERSHIP_USER_HASH = "\\x714b544361566d576d6a71624a583053636b45303832514a4b7636734534572f624b7a6648515a4a4e596b3d"
+_LINE_STAFF_USER_HASH = "\\x6f757141636f336f2f65635973634675302f4d45556a645572756545724e4c32504372596d7373347638773d"
+_USER_HASH = "\\x6a382b704339726333353358577434783166672b334b6d395451747235584d5a4d543846726c3337482f6f3d"
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -584,7 +589,7 @@ class AuthEndpointTests(TestCase):
 
     def test_users_some_overrides(self) -> None:
         user_1 = generate_fake_rosters(
-            email="test@domain.org",
+            email="leadership@domain.org",
             region_code="US_ND",
             role="leadership_role",
             district="D1",
@@ -592,7 +597,7 @@ class AuthEndpointTests(TestCase):
             last_name="User",
         )
         user_2 = generate_fake_rosters(
-            email="secondtest@domain.org",
+            email="line_staff@domain.org",
             region_code="US_ID",
             external_id="abc",
             role="line_staff",
@@ -601,7 +606,7 @@ class AuthEndpointTests(TestCase):
             last_name="Doe",
         )
         user_1_override = generate_fake_user_overrides(
-            email="test@domain.org",
+            email="leadership@domain.org",
             region_code="US_ND",
             external_id="user_1_override.external_id",
             role="user_1_override.role",
@@ -632,7 +637,7 @@ class AuthEndpointTests(TestCase):
             should_see_beta_charts=True,
         )
         new_permissions = generate_fake_permissions_overrides(
-            email="test@domain.org",
+            email="leadership@domain.org",
             routes={"overridden route": True},
             feature_variants={"overridden variant": True},
         )
@@ -657,7 +662,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": False,
                     "district": "D1",
-                    "emailAddress": "test@domain.org",
+                    "emailAddress": "leadership@domain.org",
                     "externalId": "user_1_override.external_id",
                     "firstName": "Fake",
                     "lastName": "User",
@@ -666,6 +671,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": True,
                     "routes": {"overridden route": True},
                     "featureVariants": {"overridden variant": True},
+                    "userHash": _LEADERSHIP_USER_HASH,
                 },
                 {
                     "allowedSupervisionLocationIds": "",
@@ -674,7 +680,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": False,
                     "district": "D3",
-                    "emailAddress": "secondtest@domain.org",
+                    "emailAddress": "line_staff@domain.org",
                     "externalId": "abc",
                     "firstName": "John",
                     "lastName": "Doe",
@@ -683,6 +689,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": True,
                     "routes": None,
                     "featureVariants": None,
+                    "userHash": _LINE_STAFF_USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -693,7 +700,7 @@ class AuthEndpointTests(TestCase):
 
     def test_users_with_empty_overrides(self) -> None:
         user_1 = generate_fake_rosters(
-            email="test_user@domain.org",
+            email="leadership@domain.org",
             region_code="US_MO",
             external_id="12345",
             role="leadership_role",
@@ -718,7 +725,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": True,
                     "district": "4, 10A",
-                    "emailAddress": "test_user@domain.org",
+                    "emailAddress": "leadership@domain.org",
                     "externalId": "12345",
                     "firstName": "Test A.",
                     "lastName": "User",
@@ -727,6 +734,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": True,
                     "routes": None,
                     "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -737,12 +745,12 @@ class AuthEndpointTests(TestCase):
 
     def test_users_with_null_values(self) -> None:
         user_1 = generate_fake_rosters(
-            email="user@domain.org",
+            email="leadership@domain.org",
             region_code="US_ME",
             role="leadership_role",
         )
         applicable_override = generate_fake_user_overrides(
-            email="user@domain.org",
+            email="leadership@domain.org",
             region_code="US_ME",
             external_id="A1B2",
             blocked=True,
@@ -753,7 +761,7 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=True,
         )
         new_permissions = generate_fake_permissions_overrides(
-            email="user@domain.org",
+            email="leadership@domain.org",
             routes={"A": True, "C": False},
             feature_variants={"C": True},
         )
@@ -769,7 +777,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": True,
                     "district": None,
-                    "emailAddress": "user@domain.org",
+                    "emailAddress": "leadership@domain.org",
                     "externalId": "A1B2",
                     "firstName": None,
                     "lastName": None,
@@ -778,6 +786,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": False,
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"C": True},
+                    "userHash": _LEADERSHIP_USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -797,7 +806,7 @@ class AuthEndpointTests(TestCase):
 
     def test_users_no_permissions(self) -> None:
         user_1 = generate_fake_rosters(
-            email="test_user@domain.org",
+            email="leadership@domain.org",
             region_code="US_CO",
             external_id="12345",
             role="leadership_role",
@@ -815,7 +824,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": False,
                     "canAccessLeadershipDashboard": False,
                     "district": "District 4",
-                    "emailAddress": "test_user@domain.org",
+                    "emailAddress": "leadership@domain.org",
                     "externalId": "12345",
                     "firstName": "Test A.",
                     "lastName": "User",
@@ -824,6 +833,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -864,23 +874,6 @@ class AuthEndpointTests(TestCase):
         )
         with self.app.test_request_context():
             expected = [
-                {  # handles MO's specific logic
-                    "allowedSupervisionLocationIds": "1, 2",
-                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                    "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": True,
-                    "district": "1, 2",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": None,
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_MO",
-                    "shouldSeeBetaCharts": True,
-                    "routes": {"A": "B", "B": "C"},
-                    "featureVariants": {"D": "E"},
-                },
                 {
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
@@ -897,6 +890,25 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
+                    "userHash": _ADD_USER_HASH,
+                },
+                {  # handles MO's specific logic
+                    "allowedSupervisionLocationIds": "1, 2",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "blocked": False,
+                    "canAccessCaseTriage": False,
+                    "canAccessLeadershipDashboard": True,
+                    "district": "1, 2",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_MO",
+                    "shouldSeeBetaCharts": True,
+                    "routes": {"A": "B", "B": "C"},
+                    "featureVariants": {"D": "E"},
+                    "userHash": _PARAMETER_USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -955,6 +967,7 @@ class AuthEndpointTests(TestCase):
                 "lastName": "User",
                 "role": "leadership_role",
                 "stateCode": "US_ID",
+                "userHash": _PARAMETER_USER_HASH,
             }
             self.assertEqual(expected, json.loads(user_override_user.data))
             repeat_user_override_user = self.client.post(
@@ -1029,6 +1042,7 @@ class AuthEndpointTests(TestCase):
                         "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
+                        "userHash": _LEADERSHIP_USER_HASH,
                     },
                     {
                         "allowedSupervisionLocationIds": "",
@@ -1046,6 +1060,7 @@ class AuthEndpointTests(TestCase):
                         "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
+                        "userHash": _LINE_STAFF_USER_HASH,
                     },
                 ]
             response = self.client.get(
@@ -1095,7 +1110,9 @@ class AuthEndpointTests(TestCase):
                     content_type="multipart/form-data",
                 )
                 self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-                error_message = "Roster contains a row that is missing an email address or external_id (required)"
+                error_message = (
+                    "Roster contains a row that is missing an email address (required)"
+                )
                 self.assertEqual(error_message, response.data.decode("UTF-8"))
 
                 # Existing rows should not have been deleted
@@ -1116,59 +1133,7 @@ class AuthEndpointTests(TestCase):
                         "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
-                    },
-                ]
-                response = self.client.get(
-                    self.users,
-                    headers=self.headers,
-                )
-                self.assertEqual(expected, json.loads(response.data))
-
-    def test_upload_roster_with_missing_external_id(self) -> None:
-        roster_leadership_user = generate_fake_rosters(
-            email="leadership@domain.org",
-            region_code="US_XX",
-            role="leadership_role",
-            external_id="0000",
-            district="",
-        )
-        add_entity_to_database_session(self.database_key, [roster_leadership_user])
-        with open(
-            os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_external_id.csv"), "rb"
-        ) as fixture:
-            file = FileStorage(fixture)
-            data = dict(file=file)
-
-            with self.app.test_request_context():
-                response = self.client.put(
-                    self.upload_roster("us_xx", "leadership_role"),
-                    headers=self.headers,
-                    data=data,
-                    follow_redirects=True,
-                    content_type="multipart/form-data",
-                )
-                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-                error_message = "Roster contains a row that is missing an email address or external_id (required)"
-                self.assertEqual(error_message, response.data.decode("UTF-8"))
-
-                # Existing rows should not have been deleted
-                expected = [
-                    {
-                        "allowedSupervisionLocationIds": "",
-                        "allowedSupervisionLocationLevel": "",
-                        "blocked": False,
-                        "canAccessCaseTriage": False,
-                        "canAccessLeadershipDashboard": False,
-                        "district": "",
-                        "emailAddress": "leadership@domain.org",
-                        "externalId": "0000",
-                        "firstName": None,
-                        "lastName": None,
-                        "role": "leadership_role",
-                        "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
-                        "routes": None,
-                        "featureVariants": None,
+                        "userHash": _LEADERSHIP_USER_HASH,
                     },
                 ]
                 response = self.client.get(
@@ -1235,6 +1200,7 @@ class AuthEndpointTests(TestCase):
                         "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
+                        "userHash": _LEADERSHIP_USER_HASH,
                     },
                     {
                         "allowedSupervisionLocationIds": "",
@@ -1252,6 +1218,7 @@ class AuthEndpointTests(TestCase):
                         "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
+                        "userHash": _LINE_STAFF_USER_HASH,
                     },
                 ]
             response = self.client.get(
@@ -1297,6 +1264,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
+                    "userHash": _PARAMETER_USER_HASH,
                 }
             ]
             response = self.client.get(
@@ -1343,6 +1311,7 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
+                    "userHash": _PARAMETER_USER_HASH,
                 }
             ]
             response = self.client.get(
@@ -1411,6 +1380,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {
                         "variant1": "true",
                     },
+                    "userHash": _USER_HASH,
                 },
             ]
             response = self.client.get(
@@ -1470,6 +1440,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {"C": "D"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_TN",
+                    "userHash": _USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -1563,6 +1534,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {"E": "F"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_MO",
+                    "userHash": _USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -1620,6 +1592,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {"E": "F", "G": "H"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_CO",
+                    "userHash": _USER_HASH,
                 },
             ]
         response = self.client.get(
@@ -1676,6 +1649,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_ID",
+                    "userHash": _PARAMETER_USER_HASH,
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))
@@ -1716,6 +1690,7 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_TN",
+                    "userHash": _PARAMETER_USER_HASH,
                 },
             ]
             self.assertEqual(expected_response, json.loads(response.data))

@@ -20,6 +20,7 @@ from typing import List, Optional
 
 from sqlalchemy import sql
 
+from recidiviz.auth.helpers import generate_user_hash
 from recidiviz.persistence.database.schema.case_triage.schema import (
     CaseTriageBase,
     DashboardUserRestrictions,
@@ -82,6 +83,7 @@ def generate_fake_rosters(
         district=district,
         first_name=first_name,
         last_name=last_name,
+        user_hash=generate_user_hash(email.lower()),
     )
 
 
@@ -124,6 +126,7 @@ def generate_fake_user_overrides(
         first_name=first_name,
         last_name=last_name,
         blocked=blocked,
+        user_hash=generate_user_hash(email.lower()),
     )
 
 
