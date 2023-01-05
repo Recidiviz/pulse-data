@@ -36,3 +36,7 @@ columns:
     description: |-
       Update date for this row
 ignore_quotes: True
+# Parse this the same way as pre-Atlas ID data
+encoding: ISO-8859-1
+separator: "|"
+custom_line_terminator: "\n"

@@ -39,3 +39,8 @@ columns:
   - name: vld_flg
     description: |-
       Whether or not this question choice is currently valid
+# Parse this the same way as pre-Atlas ID data
+encoding: ISO-8859-1
+separator: "|"
+custom_line_terminator: "\n"
+ignore_quotes: False
