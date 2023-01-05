@@ -75,24 +75,20 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
       abortControllerRef.current.abort();
       abortControllerRef.current = undefined;
     }
-    if (instance === DirectIngestInstance.PRIMARY) {
+    try {
       abortControllerRef.current = new AbortController();
-      try {
-        const primaryResponse = await getIngestRawFileProcessingStatus(
-          stateCode,
-          instance,
-          abortControllerRef.current
-        );
-        setIngestRawFileProcessingStatus(await primaryResponse.json());
-      } catch (err) {
-        if (!isAbortException(err)) {
-          throw err;
-        }
+      const response = await getIngestRawFileProcessingStatus(
+        stateCode,
+        instance,
+        abortControllerRef.current
+      );
+      setIngestRawFileProcessingStatus(await response.json());
+    } catch (err) {
+      if (!isAbortException(err)) {
+        throw err;
       }
-    } else {
-      // TODO(#12387): Update this to also pull from endpoint if the current secondary rerun is using raw data in secondary.
-      setIngestRawFileProcessingStatus([]);
     }
+
     setIngestRawFileProcessingStatusLoading(false);
   }, [instance, stateCode]);
 

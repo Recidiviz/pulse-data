@@ -32,8 +32,9 @@ const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
   instance,
   ingestRawFileProcessingStatus: ingestFileProcessingStatus,
 }) => {
-  // TODO(#12387): Update this to change if the current secondary rerun is using raw data in secondary.
-  const isSecondaryUsingPrimary = instance === DirectIngestInstance.SECONDARY;
+  // TODO(#12387): Update this once secondary reruns are available for all states.
+  const isSecondaryUsingPrimary =
+    instance === DirectIngestInstance.SECONDARY && stateCode !== "US_OZ";
 
   return (
     <div>
