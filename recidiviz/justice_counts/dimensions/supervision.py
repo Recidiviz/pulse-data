@@ -120,3 +120,14 @@ class NewOffenseType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/supervision/offense/type"
+
+
+class SupervisionRevocationType(DimensionBase, enum.Enum):
+    TECHNICAL = "For Technical Violations"
+    NEW_OFFENSE = "For New Offense Violations"
+    OTHER = "Other Revocations"
+    UNKNOWN = "Unknown Revocations"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/supervision/revocation/type"

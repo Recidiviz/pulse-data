@@ -96,6 +96,7 @@ METRICS = [
     supervision.discharges,
     supervision.violations,
     supervision.caseload,
+    supervision.revocations,
 ]
 
 METRICS_BY_SYSTEM = {}

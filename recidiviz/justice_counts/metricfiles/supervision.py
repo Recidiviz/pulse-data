@@ -23,6 +23,7 @@ from recidiviz.justice_counts.dimensions.supervision import (
     SupervisionExpenseType,
     SupervisionFundingType,
     SupervisionNewCaseType,
+    SupervisionRevocationType,
     SupervisionStaffType,
     SupervisionViolationType,
 )
@@ -119,5 +120,15 @@ SUPERVISION_METRIC_FILES = [
     MetricFile(
         canonical_filename="caseload",
         definition=supervision.caseload,
+    ),
+    MetricFile(
+        canonical_filename="revocations",
+        definition=supervision.revocations,
+    ),
+    MetricFile(
+        canonical_filename="revocations_by_type",
+        definition=supervision.revocations,
+        disaggregation=SupervisionRevocationType,
+        disaggregation_column_name="revocations_type",
     ),
 ]

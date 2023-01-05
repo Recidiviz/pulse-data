@@ -83,6 +83,7 @@ DIMENSIONS = [
     supervision.SupervisionViolationType,
     supervision.SupervisionFundingType,
     supervision.SupervisionExpenseType,
+    supervision.SupervisionRevocationType,
 ]
 
 

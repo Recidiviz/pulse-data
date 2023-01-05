@@ -508,3 +508,14 @@ class SupervisionCaseloadIncludesExcludes(Enum):
         "Non-supervision administrative staff temporarily carrying a caseload"
     )
     STAFF_ON_LEAVE = "Staff on leave whose caseload is being covered by a colleague"
+
+
+# Revocations
+class SupervisionRevocationsIncludesExcludes(Enum):
+    PRISON = "Revocation to prison"
+    JAIL = "Revocation to jail"
+    INPATIENT_TREATMENT = "Revocation to inpatient treatment in the community"
+    FACILITY = "Revocation to treatment in a prison or jail facility"
+    NEW_SUPERVISION = "Revocation to a new supervision term"
+    TERMINATION = "Revocation to supervision termination"
+    SHORT_TERM_INCARCERATION = "Short-term incarceration with a return to the same term of supervision (e.g., “dips,” “dunks,” etc.)"
