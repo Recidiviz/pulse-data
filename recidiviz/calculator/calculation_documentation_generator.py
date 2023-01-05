@@ -38,6 +38,7 @@ from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNodeFamily,
     BigQueryViewDagWalker,
     DagKey,
+    ProcessDagPerfConfig,
 )
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.calculator.dataflow_config import (
@@ -262,7 +263,14 @@ class CalculationDocumentationGenerator:
                 | LATEST_VIEW_DATASETS,
             )
 
-        self.dag_walker.process_dag(_preprocess_views)
+        self.dag_walker.process_dag(
+            _preprocess_views,
+            perf_config=ProcessDagPerfConfig(
+                # TODO(#17183): Remove custom config once runtime improvements are implemented.
+                node_max_processing_time_seconds=240,
+                node_allowed_process_time_overrides={},
+            ),
+        )
         self.all_views_to_document = self._get_all_views_to_document()
 
     def _get_all_export_config_view_builder_addresses(self) -> Set[BigQueryAddress]:
