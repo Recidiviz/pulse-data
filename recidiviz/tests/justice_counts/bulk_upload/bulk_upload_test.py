@@ -436,6 +436,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 .dimension_to_value,
                 {
                     CallType.UNKNOWN: None,
+                    CallType.OTHER: None,
                     CallType.EMERGENCY: 700,
                     CallType.NON_EMERGENCY: 700,
                 },

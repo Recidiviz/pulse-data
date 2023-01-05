@@ -53,10 +53,11 @@ class TestAggregatedDimension(TestCase):
             )
 
         # Does not have an OTHER member
-        if (
-            law_enforcement.calls_for_service.aggregated_dimensions is not None
-        ):  # pylint: disable=unsubscriptable-object
-            agg_dim = law_enforcement.calls_for_service.aggregated_dimensions[0]
+        if law_enforcement.calls_for_service.aggregated_dimensions is not None:
+            # pylint: disable=unsubscriptable-object
+            agg_dim = law_enforcement.staff.aggregated_dimensions[
+                1
+            ]  # type: ignore[index]
             self.assertIsNone(
                 agg_dim.dimension_to_contexts,
             )

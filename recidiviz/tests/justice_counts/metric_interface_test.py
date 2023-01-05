@@ -29,6 +29,9 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.includes_excludes.law_enforcement import (
+    CallsForServiceEmergencyCallsIncludesExcludes,
+    CallsForServiceIncludesExcludes,
+    CallsForServiceNonEmergencyCallsIncludesExcludes,
     LawEnforcementFundingIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.prisons import (
@@ -45,7 +48,6 @@ from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    CallsRespondedOptions,
     IncludesExcludesSetting,
     MetricDefinition,
 )
@@ -208,33 +210,12 @@ class TestMetricInterface(TestCase):
                 "settings": [],
                 "contexts": [
                     {
-                        "key": "ALL_CALLS_OR_CALLS_RESPONDED",
-                        "display_name": "Does the total value include all calls or just those responded to?",
-                        "reporting_note": None,
-                        "required": True,
-                        "type": "MULTIPLE_CHOICE",
-                        "value": CallsRespondedOptions.ALL_CALLS.value,
-                        "multiple_choice_options": [
-                            CallsRespondedOptions.ALL_CALLS.value,
-                            CallsRespondedOptions.CALLS_RESPONDED.value,
-                        ],
-                    },
-                    {
-                        "key": "AGENCIES_AVAILABLE_FOR_RESPONSE",
-                        "display_name": "Please list the names of all agencies available for response.",
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
-                        "value": None,
-                        "multiple_choice_options": [],
-                    },
-                    {
                         "key": "ADDITIONAL_CONTEXT",
                         "display_name": "Please provide additional context.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
-                        "value": None,
+                        "value": "additional context",
                         "multiple_choice_options": [],
                     },
                 ],
@@ -249,30 +230,41 @@ class TestMetricInterface(TestCase):
                         "dimensions": [
                             {
                                 "datapoints": None,
-                                "key": "Emergency",
-                                "label": "Emergency",
+                                "key": "Emergency Calls",
+                                "label": "Emergency Calls",
                                 "value": 20,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of calls for police assistance received by the agency that require immediate response.",
                                 "contexts": [],
                             },
                             {
                                 "datapoints": None,
-                                "key": "Non-emergency",
-                                "label": "Non-emergency",
+                                "key": "Non-emergency Calls",
+                                "label": "Non-emergency Calls",
                                 "value": 60,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
                                 "contexts": [],
                             },
                             {
                                 "datapoints": None,
-                                "key": "Unknown",
-                                "label": "Unknown",
+                                "key": "Unknown Calls",
+                                "label": "Unknown Calls",
                                 "value": 20,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                                 "contexts": [],
+                            },
+                            {
+                                "datapoints": None,
+                                "key": "Other Calls",
+                                "label": "Other Calls",
+                                "value": None,
+                                "enabled": True,
+                                "description": "The number of calls for police assistance received by the agency that are not emergency or non-emergency calls.",
+                                "contexts": [
+                                    {"key": "ADDITIONAL_CONTEXT", "value": None}
+                                ],
                             },
                         ],
                     }
@@ -672,7 +664,6 @@ class TestMetricInterface(TestCase):
         )
 
     def test_to_json_disabled_metric(self) -> None:
-        metric_definition = law_enforcement.calls_for_service
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
             is_metric_enabled=False
         )
@@ -681,80 +672,215 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
-                "key": metric_definition.key,
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
+                "display_name": "Calls for Service",
+                "description": "The number of calls for police assistance received by the agency.",
+                "datapoints": None,
+                "disaggregated_by_supervision_subsystems": None,
+                "reporting_note": None,
+                "value": None,
+                "settings": [
+                    {
+                        "key": "SERVICE_911",
+                        "label": "Calls for service received by the agency’s dispatch service via 911",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "SERVICE_311",
+                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "MUTUAL_AID",
+                        "label": "Mutual aid calls for support received by the agency",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OFFICER_INITIATED",
+                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OTHER_JURISDICTION",
+                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "AUTOMATED",
+                        "label": "Automated calls for service (e.g., security system)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "FIRE_SERVICE",
+                        "label": "Calls for fire service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "EMS",
+                        "label": "Calls for EMS service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "NON_POLICE_SERVICE",
+                        "label": "Calls for other non-police service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                ],
+                "unit": "CALLS",
+                "category": "Operations and Dynamics",
+                "label": "Calls for Service",
                 "enabled": False,
-                "category": metric_definition.category.human_readable_string,
                 "frequency": "MONTHLY",
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
+                "definitions": [],
                 "contexts": [],
-                "settings": [],
-                "datapoints": None,
-                "definitions": [
-                    {
-                        "definition": "One case that represents a request for police "
-                        "service generated by the community and "
-                        "received through an emergency or "
-                        "non-emergency method (911, 311, 988, online "
-                        "report). Count all calls for service, "
-                        "regardless of whether an underlying incident "
-                        "report was filed.",
-                        "term": "Calls for service",
-                    }
-                ],
-                "disaggregated_by_supervision_subsystems": None,
-                "display_name": metric_definition.display_name,
-                "description": metric_definition.description,
-                "label": "Calls for Service",
-                "reporting_note": metric_definition.reporting_note,
-                "system": {
-                    "key": "LAW_ENFORCEMENT",
-                    "display_name": "Law Enforcement",
-                },
-                "unit": "CALLS",
-                "value": None,
                 "disaggregations": [
                     {
-                        "key": CallType.dimension_identifier(),
-                        "enabled": False,
-                        "required": True,
+                        "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
+                        "required": True,
                         "should_sum_to_total": False,
                         "display_name": "Call Types",
                         "dimensions": [
                             {
-                                "datapoints": None,
+                                "key": "Emergency Calls",
+                                "label": "Emergency Calls",
                                 "enabled": False,
-                                "label": CallType.EMERGENCY.value,
-                                "key": CallType.EMERGENCY.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "PRIORITY",
+                                        "label": "Calls that require urgent or priority response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_2_RESPONSE",
+                                        "label": "Calls that require code 2 or higher response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IMMINENT_THREATS",
+                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ONGOING_OFFENSES",
+                                        "label": "Calls that relate to ongoing offenses that involve violence",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "SERIOUS_OFFENSE",
+                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "OFFICER_IN_TROUBLE",
+                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "TRAFFIC",
+                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IN_PROGRESS_INCIDENT",
+                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that require immediate response.",
                             },
                             {
-                                "datapoints": None,
+                                "key": "Non-emergency Calls",
+                                "label": "Non-emergency Calls",
                                 "enabled": False,
-                                "label": CallType.NON_EMERGENCY.value,
-                                "key": CallType.NON_EMERGENCY.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "ROUTINE_RESPONSE",
+                                        "label": "Calls that require routine response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_1_RESPONSE",
+                                        "label": "Calls that require code 1 response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "PATROL_REQUEST",
+                                        "label": "Calls for patrol requests",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ROUTINE_TRANSPORTATION",
+                                        "label": "Calls for routine transportation",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "NON_EMERGENCY_SERVICE",
+                                        "label": "Calls for non-emergency service",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
+                                        "label": "Calls routed to civilian community service officers for response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "STOLEN_PROPERTY",
+                                        "label": "Calls to take a report of stolen property",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
                             },
                             {
-                                "datapoints": None,
+                                "key": "Unknown Calls",
+                                "label": "Unknown Calls",
                                 "enabled": False,
-                                "label": CallType.UNKNOWN.value,
-                                "key": CallType.UNKNOWN.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [],
+                                "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
                         ],
+                        "enabled": False,
                     }
                 ],
             },
         )
 
     def test_to_json_disabled_dimensions(self) -> None:
-        metric_definition = law_enforcement.calls_for_service
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
             is_metric_enabled=True, include_disaggregation=True
         )
@@ -763,80 +889,215 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
-                "key": metric_definition.key,
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
+                "display_name": "Calls for Service",
+                "description": "The number of calls for police assistance received by the agency.",
+                "datapoints": None,
+                "disaggregated_by_supervision_subsystems": None,
+                "reporting_note": None,
+                "value": None,
+                "settings": [
+                    {
+                        "key": "SERVICE_911",
+                        "label": "Calls for service received by the agency’s dispatch service via 911",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "SERVICE_311",
+                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "MUTUAL_AID",
+                        "label": "Mutual aid calls for support received by the agency",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OFFICER_INITIATED",
+                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OTHER_JURISDICTION",
+                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "AUTOMATED",
+                        "label": "Automated calls for service (e.g., security system)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "FIRE_SERVICE",
+                        "label": "Calls for fire service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "EMS",
+                        "label": "Calls for EMS service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "NON_POLICE_SERVICE",
+                        "label": "Calls for other non-police service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                ],
+                "unit": "CALLS",
+                "category": "Operations and Dynamics",
+                "label": "Calls for Service",
                 "enabled": True,
-                "category": metric_definition.category.human_readable_string,
                 "frequency": "MONTHLY",
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
+                "definitions": [],
                 "contexts": [],
-                "settings": [],
-                "datapoints": None,
-                "definitions": [
-                    {
-                        "definition": "One case that represents a request for police "
-                        "service generated by the community and "
-                        "received through an emergency or "
-                        "non-emergency method (911, 311, 988, online "
-                        "report). Count all calls for service, "
-                        "regardless of whether an underlying incident "
-                        "report was filed.",
-                        "term": "Calls for service",
-                    }
-                ],
-                "disaggregated_by_supervision_subsystems": None,
-                "display_name": metric_definition.display_name,
-                "description": metric_definition.description,
-                "label": "Calls for Service",
-                "reporting_note": metric_definition.reporting_note,
-                "system": {
-                    "key": "LAW_ENFORCEMENT",
-                    "display_name": "Law Enforcement",
-                },
-                "unit": "CALLS",
-                "value": None,
                 "disaggregations": [
                     {
-                        "key": CallType.dimension_identifier(),
-                        "enabled": False,
-                        "required": True,
+                        "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
+                        "required": True,
                         "should_sum_to_total": False,
                         "display_name": "Call Types",
                         "dimensions": [
                             {
-                                "datapoints": None,
+                                "key": "Emergency Calls",
+                                "label": "Emergency Calls",
                                 "enabled": False,
-                                "label": CallType.EMERGENCY.value,
-                                "key": CallType.EMERGENCY.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "PRIORITY",
+                                        "label": "Calls that require urgent or priority response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_2_RESPONSE",
+                                        "label": "Calls that require code 2 or higher response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IMMINENT_THREATS",
+                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ONGOING_OFFENSES",
+                                        "label": "Calls that relate to ongoing offenses that involve violence",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "SERIOUS_OFFENSE",
+                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "OFFICER_IN_TROUBLE",
+                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "TRAFFIC",
+                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IN_PROGRESS_INCIDENT",
+                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that require immediate response.",
                             },
                             {
-                                "datapoints": None,
+                                "key": "Non-emergency Calls",
+                                "label": "Non-emergency Calls",
                                 "enabled": False,
-                                "label": CallType.NON_EMERGENCY.value,
-                                "key": CallType.NON_EMERGENCY.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "ROUTINE_RESPONSE",
+                                        "label": "Calls that require routine response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_1_RESPONSE",
+                                        "label": "Calls that require code 1 response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "PATROL_REQUEST",
+                                        "label": "Calls for patrol requests",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ROUTINE_TRANSPORTATION",
+                                        "label": "Calls for routine transportation",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "NON_EMERGENCY_SERVICE",
+                                        "label": "Calls for non-emergency service",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
+                                        "label": "Calls routed to civilian community service officers for response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "STOLEN_PROPERTY",
+                                        "label": "Calls to take a report of stolen property",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
                             },
                             {
-                                "datapoints": None,
+                                "key": "Unknown Calls",
+                                "label": "Unknown Calls",
                                 "enabled": False,
-                                "label": CallType.UNKNOWN.value,
-                                "key": CallType.UNKNOWN.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [],
+                                "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
                         ],
+                        "enabled": False,
                     }
                 ],
             },
         )
 
     def test_to_json_prefilled_contexts(self) -> None:
-        metric_definition = law_enforcement.calls_for_service
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
             is_metric_enabled=True, include_disaggregation=True, include_contexts=True
         )
@@ -845,14 +1106,79 @@ class TestMetricInterface(TestCase):
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
             ),
             {
-                "key": metric_definition.key,
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
+                "display_name": "Calls for Service",
+                "description": "The number of calls for police assistance received by the agency.",
+                "datapoints": None,
+                "disaggregated_by_supervision_subsystems": None,
+                "reporting_note": None,
+                "value": None,
+                "settings": [
+                    {
+                        "key": "SERVICE_911",
+                        "label": "Calls for service received by the agency’s dispatch service via 911",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "SERVICE_311",
+                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "MUTUAL_AID",
+                        "label": "Mutual aid calls for support received by the agency",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OFFICER_INITIATED",
+                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OTHER_JURISDICTION",
+                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "AUTOMATED",
+                        "label": "Automated calls for service (e.g., security system)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "FIRE_SERVICE",
+                        "label": "Calls for fire service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "EMS",
+                        "label": "Calls for EMS service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "NON_POLICE_SERVICE",
+                        "label": "Calls for other non-police service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                ],
+                "unit": "CALLS",
+                "category": "Operations and Dynamics",
+                "label": "Calls for Service",
                 "enabled": True,
-                "category": metric_definition.category.human_readable_string,
                 "frequency": "MONTHLY",
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
-                "settings": [],
+                "definitions": [],
                 "contexts": [
                     {
                         "display_name": "Please provide additional context.",
@@ -864,64 +1190,135 @@ class TestMetricInterface(TestCase):
                         "value": "this additional context provides contexts",
                     }
                 ],
-                "definitions": [
-                    {
-                        "definition": "One case that represents a request for police "
-                        "service generated by the community and "
-                        "received through an emergency or "
-                        "non-emergency method (911, 311, 988, online "
-                        "report). Count all calls for service, "
-                        "regardless of whether an underlying incident "
-                        "report was filed.",
-                        "term": "Calls for service",
-                    }
-                ],
-                "disaggregated_by_supervision_subsystems": None,
-                "display_name": metric_definition.display_name,
-                "description": metric_definition.description,
-                "label": "Calls for Service",
-                "reporting_note": metric_definition.reporting_note,
-                "system": {
-                    "key": "LAW_ENFORCEMENT",
-                    "display_name": "Law Enforcement",
-                },
-                "unit": "CALLS",
-                "value": None,
-                "datapoints": None,
                 "disaggregations": [
                     {
-                        "key": CallType.dimension_identifier(),
-                        "enabled": False,
-                        "required": True,
+                        "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
+                        "required": True,
                         "should_sum_to_total": False,
                         "display_name": "Call Types",
                         "dimensions": [
                             {
-                                "datapoints": None,
+                                "key": "Emergency Calls",
+                                "label": "Emergency Calls",
                                 "enabled": False,
-                                "label": CallType.EMERGENCY.value,
-                                "key": CallType.EMERGENCY.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "PRIORITY",
+                                        "label": "Calls that require urgent or priority response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_2_RESPONSE",
+                                        "label": "Calls that require code 2 or higher response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IMMINENT_THREATS",
+                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ONGOING_OFFENSES",
+                                        "label": "Calls that relate to ongoing offenses that involve violence",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "SERIOUS_OFFENSE",
+                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "OFFICER_IN_TROUBLE",
+                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "TRAFFIC",
+                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IN_PROGRESS_INCIDENT",
+                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that require immediate response.",
                             },
                             {
-                                "datapoints": None,
+                                "key": "Non-emergency Calls",
+                                "label": "Non-emergency Calls",
                                 "enabled": False,
-                                "label": CallType.NON_EMERGENCY.value,
-                                "key": CallType.NON_EMERGENCY.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "ROUTINE_RESPONSE",
+                                        "label": "Calls that require routine response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_1_RESPONSE",
+                                        "label": "Calls that require code 1 response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "PATROL_REQUEST",
+                                        "label": "Calls for patrol requests",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ROUTINE_TRANSPORTATION",
+                                        "label": "Calls for routine transportation",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "NON_EMERGENCY_SERVICE",
+                                        "label": "Calls for non-emergency service",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
+                                        "label": "Calls routed to civilian community service officers for response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "STOLEN_PROPERTY",
+                                        "label": "Calls to take a report of stolen property",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
                             },
                             {
-                                "datapoints": None,
+                                "key": "Unknown Calls",
+                                "label": "Unknown Calls",
                                 "enabled": False,
-                                "label": CallType.UNKNOWN.value,
-                                "key": CallType.UNKNOWN.value,
-                                "description": None,
+                                "datapoints": None,
                                 "contexts": [],
+                                "settings": [],
+                                "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
                         ],
+                        "enabled": False,
                     }
                 ],
             },
@@ -947,20 +1344,68 @@ class TestMetricInterface(TestCase):
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
-                "settings": [],
-                "datapoints": None,
-                "definitions": [
+                "settings": [
                     {
-                        "definition": "One case that represents a request for police "
-                        "service generated by the community and "
-                        "received through an emergency or "
-                        "non-emergency method (911, 311, 988, online "
-                        "report). Count all calls for service, "
-                        "regardless of whether an underlying incident "
-                        "report was filed.",
-                        "term": "Calls for service",
-                    }
+                        "default": "Yes",
+                        "included": "Yes",
+                        "key": "SERVICE_911",
+                        "label": "Calls for service received by the agency’s dispatch "
+                        "service via 911",
+                    },
+                    {
+                        "default": "Yes",
+                        "included": "Yes",
+                        "key": "SERVICE_311",
+                        "label": "Calls for service received by the agency’s dispatch "
+                        "service via 311 or equivalent non-emergency number",
+                    },
+                    {
+                        "default": "Yes",
+                        "included": "Yes",
+                        "key": "MUTUAL_AID",
+                        "label": "Mutual aid calls for support received by the agency",
+                    },
+                    {
+                        "default": "Yes",
+                        "included": "Yes",
+                        "key": "OFFICER_INITIATED",
+                        "label": "Officer-initiated calls for service (e.g., traffic "
+                        "stops, foot patrol)",
+                    },
+                    {
+                        "default": "Yes",
+                        "included": "Yes",
+                        "key": "OTHER_JURISDICTION",
+                        "label": "Calls for service received by another jurisdiction "
+                        "and routed to the agency for response",
+                    },
+                    {
+                        "default": "Yes",
+                        "included": "Yes",
+                        "key": "AUTOMATED",
+                        "label": "Automated calls for service (e.g., security system)",
+                    },
+                    {
+                        "default": "No",
+                        "included": "No",
+                        "key": "FIRE_SERVICE",
+                        "label": "Calls for fire service",
+                    },
+                    {
+                        "default": "No",
+                        "included": "No",
+                        "key": "EMS",
+                        "label": "Calls for EMS service",
+                    },
+                    {
+                        "default": "No",
+                        "included": "No",
+                        "key": "NON_POLICE_SERVICE",
+                        "label": "Calls for other non-police service",
+                    },
                 ],
+                "datapoints": None,
+                "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
@@ -986,24 +1431,119 @@ class TestMetricInterface(TestCase):
                                 "enabled": True,
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
-                                "description": None,
+                                "description": "The number of calls for police assistance received by the agency that require immediate response.",
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "PRIORITY",
+                                        "label": "Calls that require urgent or priority response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_2_RESPONSE",
+                                        "label": "Calls that require code 2 or higher response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IMMINENT_THREATS",
+                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ONGOING_OFFENSES",
+                                        "label": "Calls that relate to ongoing offenses that involve violence",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "SERIOUS_OFFENSE",
+                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "OFFICER_IN_TROUBLE",
+                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "TRAFFIC",
+                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IN_PROGRESS_INCIDENT",
+                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
-                                "description": None,
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "ROUTINE_RESPONSE",
+                                        "label": "Calls that require routine response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_1_RESPONSE",
+                                        "label": "Calls that require code 1 response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "PATROL_REQUEST",
+                                        "label": "Calls for patrol requests",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ROUTINE_TRANSPORTATION",
+                                        "label": "Calls for routine transportation",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "NON_EMERGENCY_SERVICE",
+                                        "label": "Calls for non-emergency service",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
+                                        "label": "Calls routed to civilian community service officers for response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "STOLEN_PROPERTY",
+                                        "label": "Calls to take a report of stolen property",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
                             },
                             {
                                 "datapoints": None,
                                 "enabled": False,
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
-                                "description": None,
                                 "contexts": [],
+                                "settings": [],
+                                "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
                         ],
                     }
@@ -1012,7 +1552,6 @@ class TestMetricInterface(TestCase):
         )
 
     def test_to_json_with_datapoints(self) -> None:
-        metric_definition = law_enforcement.calls_for_service
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
             is_metric_enabled=False
         )
@@ -1113,85 +1652,291 @@ class TestMetricInterface(TestCase):
                 dimension_id_to_dimension_member_to_datapoints_json=dimension_id_to_dimension_member_to_datapoints_json,
             ),
             {
-                "key": metric_definition.key,
+                "key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                "system": {"key": "LAW_ENFORCEMENT", "display_name": "Law Enforcement"},
+                "display_name": "Calls for Service",
+                "description": "The number of calls for police assistance received by the agency.",
+                "datapoints": [
+                    {
+                        "dimension_display_name": None,
+                        "disaggregation_display_name": None,
+                        "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                        "frequency": "MONTHLY",
+                        "id": 14887,
+                        "is_published": True,
+                        "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                        "metric_display_name": "Calls for Service",
+                        "old_value": None,
+                        "report_id": 314,
+                        "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                        "value": 10,
+                    },
+                    {
+                        "dimension_display_name": None,
+                        "disaggregation_display_name": None,
+                        "end_date": "Thu, 01 Dec 2022 00:00:00 GMT",
+                        "frequency": "MONTHLY",
+                        "id": 14922,
+                        "is_published": True,
+                        "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                        "metric_display_name": "Calls for Service",
+                        "old_value": None,
+                        "report_id": 315,
+                        "start_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                        "value": 11,
+                    },
+                ],
+                "disaggregated_by_supervision_subsystems": None,
+                "reporting_note": None,
+                "value": None,
+                "settings": [
+                    {
+                        "key": "SERVICE_911",
+                        "label": "Calls for service received by the agency’s dispatch service via 911",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "SERVICE_311",
+                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "MUTUAL_AID",
+                        "label": "Mutual aid calls for support received by the agency",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OFFICER_INITIATED",
+                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "OTHER_JURISDICTION",
+                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "AUTOMATED",
+                        "label": "Automated calls for service (e.g., security system)",
+                        "included": "Yes",
+                        "default": "Yes",
+                    },
+                    {
+                        "key": "FIRE_SERVICE",
+                        "label": "Calls for fire service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "EMS",
+                        "label": "Calls for EMS service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                    {
+                        "key": "NON_POLICE_SERVICE",
+                        "label": "Calls for other non-police service",
+                        "included": "No",
+                        "default": "No",
+                    },
+                ],
+                "unit": "CALLS",
+                "category": "Operations and Dynamics",
+                "label": "Calls for Service",
                 "enabled": False,
-                "category": metric_definition.category.human_readable_string,
                 "frequency": "MONTHLY",
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
+                "definitions": [],
                 "contexts": [],
-                "settings": [],
-                "datapoints": aggregate_datapoints_json,
-                "definitions": [
-                    {
-                        "definition": "One case that represents a request for police "
-                        "service generated by the community and "
-                        "received through an emergency or "
-                        "non-emergency method (911, 311, 988, online "
-                        "report). Count all calls for service, "
-                        "regardless of whether an underlying incident "
-                        "report was filed.",
-                        "term": "Calls for service",
-                    }
-                ],
-                "disaggregated_by_supervision_subsystems": None,
-                "display_name": metric_definition.display_name,
-                "description": metric_definition.description,
-                "label": "Calls for Service",
-                "reporting_note": metric_definition.reporting_note,
-                "system": {
-                    "key": "LAW_ENFORCEMENT",
-                    "display_name": "Law Enforcement",
-                },
-                "unit": "CALLS",
-                "value": None,
                 "disaggregations": [
                     {
-                        "key": CallType.dimension_identifier(),
-                        "enabled": False,
-                        "required": True,
+                        "key": "metric/law_enforcement/calls_for_service/type",
                         "helper_text": None,
+                        "required": True,
                         "should_sum_to_total": False,
                         "display_name": "Call Types",
                         "dimensions": [
                             {
-                                "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
-                                    CallType.dimension_identifier()
-                                ][
-                                    CallType.EMERGENCY.name
-                                ],
+                                "key": "Emergency Calls",
+                                "label": "Emergency Calls",
                                 "enabled": False,
-                                "label": CallType.EMERGENCY.value,
-                                "key": CallType.EMERGENCY.value,
-                                "description": None,
+                                "datapoints": [
+                                    {
+                                        "dimension_display_name": "Emergency",
+                                        "disaggregation_display_name": "Call " "Type",
+                                        "end_date": "Tue, 01 Nov "
+                                        "2022 "
+                                        "00:00:00 "
+                                        "GMT",
+                                        "frequency": "MONTHLY",
+                                        "id": 14891,
+                                        "is_published": True,
+                                        "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                                        "metric_display_name": "Calls "
+                                        "for "
+                                        "Service",
+                                        "old_value": None,
+                                        "report_id": 314,
+                                        "start_date": "Sat, 01 "
+                                        "Oct 2022 "
+                                        "00:00:00 "
+                                        "GMT",
+                                        "value": 51890,
+                                    }
+                                ],
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "PRIORITY",
+                                        "label": "Calls that require urgent or priority response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_2_RESPONSE",
+                                        "label": "Calls that require code 2 or higher response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IMMINENT_THREATS",
+                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ONGOING_OFFENSES",
+                                        "label": "Calls that relate to ongoing offenses that involve violence",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "SERIOUS_OFFENSE",
+                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "OFFICER_IN_TROUBLE",
+                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "TRAFFIC",
+                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "IN_PROGRESS_INCIDENT",
+                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that require immediate response.",
                             },
                             {
-                                "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
-                                    CallType.dimension_identifier()
-                                ][
-                                    CallType.NON_EMERGENCY.name
-                                ],
+                                "key": "Non-emergency Calls",
+                                "label": "Non-emergency Calls",
                                 "enabled": False,
-                                "label": CallType.NON_EMERGENCY.value,
-                                "key": CallType.NON_EMERGENCY.value,
-                                "description": None,
+                                "datapoints": [
+                                    {
+                                        "dimension_display_name": "Non-emergency",
+                                        "disaggregation_display_name": "Call Type",
+                                        "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                                        "frequency": "MONTHLY",
+                                        "id": 14892,
+                                        "is_published": True,
+                                        "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                                        "metric_display_name": "Calls for Service",
+                                        "old_value": None,
+                                        "report_id": 314,
+                                        "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                                        "value": 66995,
+                                    }
+                                ],
                                 "contexts": [],
+                                "settings": [
+                                    {
+                                        "key": "ROUTINE_RESPONSE",
+                                        "label": "Calls that require routine response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CODE_1_RESPONSE",
+                                        "label": "Calls that require code 1 response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "PATROL_REQUEST",
+                                        "label": "Calls for patrol requests",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "ROUTINE_TRANSPORTATION",
+                                        "label": "Calls for routine transportation",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "NON_EMERGENCY_SERVICE",
+                                        "label": "Calls for non-emergency service",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
+                                        "label": "Calls routed to civilian community service officers for response",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                    {
+                                        "key": "STOLEN_PROPERTY",
+                                        "label": "Calls to take a report of stolen property",
+                                        "included": "Yes",
+                                        "default": "Yes",
+                                    },
+                                ],
+                                "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
                             },
                             {
-                                "datapoints": dimension_id_to_dimension_member_to_datapoints_json[
-                                    CallType.dimension_identifier()
-                                ][
-                                    CallType.UNKNOWN.name
-                                ],
+                                "key": "Unknown Calls",
+                                "label": "Unknown Calls",
                                 "enabled": False,
-                                "label": CallType.UNKNOWN.value,
-                                "key": CallType.UNKNOWN.value,
-                                "description": None,
+                                "datapoints": [
+                                    {
+                                        "dimension_display_name": "Unknown",
+                                        "disaggregation_display_name": "Call Type",
+                                        "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
+                                        "frequency": "MONTHLY",
+                                        "id": 14893,
+                                        "is_published": True,
+                                        "metric_definition_key": "LAW_ENFORCEMENT_CALLS_FOR_SERVICE",
+                                        "metric_display_name": "Calls for Service",
+                                        "old_value": None,
+                                        "report_id": 314,
+                                        "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
+                                        "value": 24062,
+                                    }
+                                ],
                                 "contexts": [],
+                                "settings": [],
+                                "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
                         ],
+                        "enabled": False,
                     }
                 ],
             },
@@ -1234,6 +1979,7 @@ class TestMetricInterface(TestCase):
                 }
             ],
         }
+
         self.assertEqual(
             MetricInterface.from_json(
                 json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
@@ -1242,12 +1988,28 @@ class TestMetricInterface(TestCase):
                 key=metric_definition.key,
                 contexts=[],
                 value=None,
+                includes_excludes_member_to_setting={
+                    member: None for member in CallsForServiceIncludesExcludes
+                },
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_enabled_status={
-                            CallType.UNKNOWN: False,
                             CallType.EMERGENCY: False,
                             CallType.NON_EMERGENCY: None,
+                            CallType.OTHER: None,
+                            CallType.UNKNOWN: False,
+                        },
+                        dimension_to_includes_excludes_member_to_setting={
+                            CallType.EMERGENCY: {
+                                member: None
+                                for member in CallsForServiceEmergencyCallsIncludesExcludes
+                            },
+                            CallType.NON_EMERGENCY: {
+                                member: None
+                                for member in CallsForServiceNonEmergencyCallsIncludesExcludes
+                            },
+                            CallType.OTHER: {},
+                            CallType.UNKNOWN: {},
                         },
                         dimension_to_value=None,
                     )
@@ -1302,36 +2064,6 @@ class TestMetricInterface(TestCase):
                     )
                 ],
             ),
-        )
-
-    def test_boolean_reported_complaint(self) -> None:
-        context_definition = law_enforcement.calls_for_service.contexts[0]
-        response_json = {
-            "key": context_definition.key.value,
-            "value": CallsRespondedOptions.ALL_CALLS.value,
-            "multiple_choice_options": [
-                CallsRespondedOptions.ALL_CALLS.value,
-                CallsRespondedOptions.CALLS_RESPONDED.value,
-            ],
-        }
-
-        self.assertEqual(
-            MetricContextData.from_json(json=response_json),
-            MetricContextData(
-                key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED,
-                value=CallsRespondedOptions.ALL_CALLS.value,
-            ),
-        )
-
-        cleared_input: Dict[str, Any] = {
-            "key": context_definition.key.value,
-            "value": None,
-            "multiple_choice_options": ["Yes", "No"],
-        }
-
-        self.assertEqual(
-            MetricContextData.from_json(json=cleared_input),
-            MetricContextData(key=ContextKey.ALL_CALLS_OR_CALLS_RESPONDED, value=None),
         )
 
     def test_disaggregation_includes_excludes_and_contents(self) -> None:
