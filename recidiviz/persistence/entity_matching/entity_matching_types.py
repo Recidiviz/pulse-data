@@ -15,21 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains types used throughout entity matching."""
-from typing import List
+from typing import Generic, List
 
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.persistence_utils import SchemaRootEntityT
 
 
 @attr.s(frozen=True, kw_only=True)
-class MatchedEntities(BuildableAttr):
+class MatchedEntities(Generic[SchemaRootEntityT], BuildableAttr):
     """
     Object that contains output for entity matching
-    - people: List of all successfully matched and unmatched people.
-        This list does NOT include any people for which Entity Matching raised
+    - root_entities: List of all successfully matched and unmatched root entities.
+        This list does NOT include any entities for which Entity Matching raised
         an Exception.
     - orphaned entities: All entities that were orphaned during matching.
         These will need to be added to the session separately from the
@@ -39,15 +39,14 @@ class MatchedEntities(BuildableAttr):
         matching.
     """
 
-    # TODO(#17471): Rename to root_entities, change to List[RootEntityT]
-    people: List[state_schema.StatePerson] = attr.ib(factory=list)
+    root_entities: List[SchemaRootEntityT] = attr.ib(factory=list)
     error_count: int = attr.ib(default=0)
     database_cleanup_error_count: int = attr.ib(default=0)
     total_root_entities: int = attr.ib(default=0)
 
     def __add__(self, other: "MatchedEntities") -> "MatchedEntities":
         return MatchedEntities(
-            people=self.people + other.people,
+            root_entities=self.root_entities + other.root_entities,
             error_count=self.error_count + other.error_count,
             database_cleanup_error_count=self.database_cleanup_error_count
             + other.database_cleanup_error_count,

@@ -391,7 +391,7 @@ def write_entities(
                 conversion_result.root_entities,
                 ingest_metadata,
             )
-            output_root_entities = entity_matching_output.people
+            output_root_entities = entity_matching_output.root_entities
             total_root_entities = entity_matching_output.total_root_entities
             logging.info(
                 "Completed entity matching with [%s] errors",

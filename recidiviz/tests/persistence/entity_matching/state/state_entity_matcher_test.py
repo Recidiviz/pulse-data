@@ -185,7 +185,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         self.assert_people_match_pre_and_post_commit(
             [expected_person_2],
-            matched_entities.people,
+            matched_entities.root_entities,
             session,
             expected_unmatched_db_people=[expected_db_person],
         )
@@ -233,7 +233,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -292,7 +292,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -350,7 +350,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -397,7 +397,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
 
     def test_match_noPlaceholders_success(self) -> None:
@@ -486,7 +486,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(2, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person, expected_person_another], matched_entities.people, session
+            [expected_person, expected_person_another],
+            matched_entities.root_entities,
+            session,
         )
 
     def test_match_ErrorMergingIngestedEntities(self) -> None:
@@ -603,7 +605,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assertEqual(2, matched_entities.total_root_entities)
         self.assert_no_errors(matched_entities)
@@ -679,7 +681,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         # TODO(#3194): Uncomment once resolved
-        # self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.people, session)
+        # self.assert_people_match_pre_and_post_commit([expected_person], matched_entities.root_entities, session)
         # self.assertEqual(1, matched_entities.total_root_entities)
         # self.assertEqual(0, matched_entities.error_count)
         # self.assertEqual(0, matched_entities.database_cleanup_error_count)
@@ -734,7 +736,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
 
     def test_matchPersons_matchesTwoDbPeople_mergeDbPeopleMoveChildren(self) -> None:
@@ -820,7 +822,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person],
-            matched_entities.people,
+            matched_entities.root_entities,
             session,
         )
 
@@ -914,7 +916,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
             [expected_person],
-            matched_entities.people,
+            matched_entities.root_entities,
             session,
         )
 
@@ -949,7 +951,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1014,7 +1016,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1119,7 +1121,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1448,7 +1450,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assertEqual(1, matched_entities.total_root_entities)
 
@@ -1492,7 +1494,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assertEqual(1, matched_entities.total_root_entities)
 
@@ -1581,7 +1583,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1653,7 +1655,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1742,7 +1744,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            expected_people, matched_entities.people, session
+            expected_people, matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1822,7 +1824,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1903,7 +1905,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session, debug=True
+            [expected_person], matched_entities.root_entities, session, debug=True
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -1972,7 +1974,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -2016,7 +2018,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         matched_entities = self._match(session, ingested_people=[person])
 
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -2077,13 +2079,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         matched_entities = self._match(session, [person])
 
         # Assert 1 - Match
-        found_person = matched_entities.people[0]
+        found_person = matched_entities.root_entities[0]
         found_charge = found_person.incarceration_sentences[0].charges[0]
         found_charge_2 = found_person.incarceration_sentences[1].charges[0]
         found_charge_3 = found_person.incarceration_sentences[2].charges[0]
         self.assertEqual(id(found_charge), id(found_charge_2), id(found_charge_3))
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
 
     def test_mergeMultiParentEntities_mergeCharges_errorInMerge_keepsOne(self) -> None:
@@ -2131,7 +2133,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
 
     def get_mismatched_tree_shape_input_and_expected(
@@ -2215,7 +2217,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert 1 - Match
         found_person = one(
             p
-            for p in matched_entities.people
+            for p in matched_entities.root_entities
             if p.external_ids[0].external_id == _EXTERNAL_ID
         )
         found_charge = found_person.incarceration_sentences[0].charges[0]
@@ -2224,7 +2226,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(id(found_charge), id(found_charge_2), id(found_charge_3))
         self.assert_people_match_pre_and_post_commit(
             expected_people,
-            matched_entities.people,
+            matched_entities.root_entities,
             session,
         )
 
@@ -2305,7 +2307,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert 1 - Match
         self.assert_people_match_pre_and_post_commit(
             [expected_person],
-            matched_entities.people,
+            matched_entities.root_entities,
             session,
         )
 
@@ -2374,7 +2376,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
         # Assert
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
@@ -2523,7 +2525,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         # Assert 1 - Match
         self.assert_no_errors(matched_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person], matched_entities.people, session
+            [expected_person], matched_entities.root_entities, session
         )
         self.assertEqual(1, matched_entities.total_root_entities)
 
