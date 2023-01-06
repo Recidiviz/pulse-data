@@ -181,7 +181,9 @@ class BigQueryViewDagNode:
 
         self._view_builder: Optional[BigQueryViewBuilder] = None
         self._ancestors_sub_dag: Optional[BigQueryViewDagWalker] = None
+        self._ancestors_tree_num_edges: Optional[int] = None
         self._descendants_sub_dag: Optional[BigQueryViewDagWalker] = None
+        self._descendants_tree_num_edges: Optional[int] = None
 
     @property
     def node_family(self) -> "BigQueryViewDagNodeFamily":
@@ -271,6 +273,76 @@ class BigQueryViewDagNode:
                 "Must set descendants_sub_dag via set_descendants_sub_dag()."
             )
         return self._descendants_sub_dag
+
+    def set_ancestors_tree_num_edges(self, num_edges: int) -> None:
+        # pylint: disable=anomalous-backslash-in-string
+        """Returns the number of edges in the tree with this node at the root and all
+          *root* ancestor nodes in the ancestors_sub_dag as leaves. Consider the following
+          ancestors DAG for node F:
+               A
+              /\
+            B   C
+           / \ /
+          D   E
+           \ /
+            F
+
+        The expanded tree representation of that graph is this tree, which has 8 edges:
+         A  A       A
+          \  \     /
+           B  B   C
+           \   \ /
+            D   E
+             \ /
+              F
+
+        This result can be used to interpret the number of lines in a printed DFS
+        representation of the ancestors sub_dag.
+        """
+        self._ancestors_tree_num_edges = num_edges
+
+    @property
+    def ancestors_tree_num_edges(self) -> int:
+        if self._ancestors_tree_num_edges is None:
+            raise ValueError(
+                "Must set descendants_sub_dag via set_ancestors_tree_num_edges()."
+            )
+        return self._ancestors_tree_num_edges
+
+    def set_descendants_tree_num_edges(self, num_edges: int) -> None:
+        # pylint: disable=anomalous-backslash-in-string
+        """Returns the number of edges in the tree with this node at the root and all
+          *leaf* descendant nodes in the ancestors_sub_dag as leaves. Consider the
+          following descendants DAG for node A:
+               A
+              /\
+            B   C
+           / \ /
+          D   E
+           \ /
+            F
+
+        The expanded tree representation of that graph is this tree, which has 8 edges:
+                   A
+                  /\
+                B   C
+               / \   \
+              D   E   E
+            /      \   \
+           F        F   F
+
+        This result can be used to interpret the number of lines in a printed DFS
+        representation of the ancestors sub_dag.
+        """
+        self._descendants_tree_num_edges = num_edges
+
+    @property
+    def descendants_tree_num_edges(self) -> int:
+        if self._descendants_tree_num_edges is None:
+            raise ValueError(
+                "Must set descendants_sub_dag via set_descendants_tree_num_edges()."
+            )
+        return self._descendants_tree_num_edges
 
 
 @attr.s
@@ -859,7 +931,14 @@ class BigQueryViewDagWalker:
                 *[n.ancestors_sub_dag for n in parent_nodes],
             )
 
-            self.node_for_view(view=v).set_ancestors_sub_dag(ancestors_sub_dag)
+            node = self.node_for_view(view=v)
+            node.set_ancestors_sub_dag(ancestors_sub_dag)
+
+            # Include source tables in parent count in addition to parent views
+            ancestors_tree_num_edges = len(node.parent_keys) + sum(
+                p.ancestors_tree_num_edges for p in parent_nodes
+            )
+            node.set_ancestors_tree_num_edges(ancestors_tree_num_edges)
 
         self.process_dag(populate_node_ancestors_sub_dag)
 
@@ -884,7 +963,13 @@ class BigQueryViewDagWalker:
                 *[n.descendants_sub_dag for n in child_nodes],
             )
 
-            self.node_for_view(view=v).set_descendants_sub_dag(descendants_sub_dag)
+            node = self.node_for_view(view=v)
+            node.set_descendants_sub_dag(descendants_sub_dag)
+
+            descendants_tree_num_edges = len(child_results) + sum(
+                c.descendants_tree_num_edges for c in child_nodes
+            )
+            node.set_descendants_tree_num_edges(descendants_tree_num_edges)
 
         # Process the DAG in the leaves -> roots direction so we process children
         # first.
