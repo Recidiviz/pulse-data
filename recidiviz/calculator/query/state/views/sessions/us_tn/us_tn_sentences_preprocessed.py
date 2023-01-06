@@ -35,7 +35,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     WITH raw_data_cte AS
     (
     SELECT 
-        CONCAT(js.OffenderID, '-', js.ConvictionCounty,'-', js.CaseYear, '-', js.CaseNumber, '-', js.CountNumber) AS external_id,
+        CONCAT(js.OffenderID, '-', js.ConvictionCounty,'-', js.CaseYear, '-', js.CaseNumber, '-', js.CountNumber, '-', 'SENTENCE') AS external_id,
         jo_id.JudicialDistrict AS judicial_district,
         s.SentenceStatus AS status_raw_text,
         NULLIF(CAST(js.MinimumSentenceYears AS INT64)*365 + CAST(js.MinimumSentenceMonths AS INT64)*30 + CAST(js.MinimumSentenceDays AS INT64),0) AS min_sentence_length_days_calculated,
@@ -102,7 +102,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND sis.state_code = 'US_TN'
         /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
         and the new sentencing information can be validated, this can be removed */
-        AND COALESCE(SPLIT(sis.external_id, "-")[SAFE_OFFSET(5)],'') NOT IN ('ISC', 'DIVERSION')
+        AND sis.external_id NOT LIKE '%ISC%'
+        AND sis.external_id NOT LIKE '%DIVERSION%'
            
     UNION ALL
      
@@ -144,7 +145,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND sss.state_code = 'US_TN'
         /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
         and the new sentencing information can be validated, this can be removed */
-        AND COALESCE(SPLIT(sss.external_id, "-")[SAFE_OFFSET(5)],'') NOT IN ('ISC', 'DIVERSION')
+        AND sss.external_id NOT LIKE '%ISC%'
+        AND sss.external_id NOT LIKE '%DIVERSION%'
     )
     ,
     dedup_external_id_fields AS
