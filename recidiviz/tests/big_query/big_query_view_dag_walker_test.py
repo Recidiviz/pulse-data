@@ -1332,6 +1332,40 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         self.assertCountEqual([], unioned_dag.views)
 
+    def test_union_dags_no_dags(self) -> None:
+        """Unioning together a list of DAGs with no DAGs in it returns an empty DAG."""
+        dags: List[BigQueryViewDagWalker] = []
+        unioned_dag = BigQueryViewDagWalker.union_dags(*dags)
+
+        self.assertCountEqual([], unioned_dag.views)
+
+    def test_union_dags_more_than_two_dags(self) -> None:
+        dag_1 = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+        dag_1.populate_node_view_builders(X_SHAPED_DAG_VIEW_BUILDERS_LIST)
+
+        # This DAG is a superset of the X-shaped DAG
+        dag_2 = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        dag_2.populate_node_view_builders(DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST)
+
+        dag_3_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="another_dataset",
+                view_id="another_table",
+                description="another_table description",
+                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            ),
+        ]
+
+        dag_3_views = [b.build() for b in dag_3_builders]
+        dag_3 = BigQueryViewDagWalker([b.build() for b in dag_3_builders])
+        dag_3.populate_node_view_builders(dag_3_builders)
+
+        unioned_dag = BigQueryViewDagWalker.union_dags(dag_1, dag_2, dag_3)
+
+        self.assertCountEqual(
+            self.diamond_shaped_dag_views_list + dag_3_views, unioned_dag.views
+        )
+
     def test_union_dags_same_view_different_object(self) -> None:
         view_builder_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
