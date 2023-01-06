@@ -512,12 +512,13 @@ def incarceration_period_purpose_mapper(
         #  for how to represent community centers
         return StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN
 
-    start_parole_status_code, sentence_type = raw_text.split("-")
+    start_parole_status_code, start_movement_code, sentence_type = raw_text.split("-")
 
     # TODO(#10502): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
     #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
     #  Program? Is this just an error?
     is_parole_violation_pending = start_parole_status_code == "PVP"
+    is_shock_incarceration = start_movement_code == "APV"
 
     if is_parole_violation_pending:
         return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
@@ -528,6 +529,9 @@ def incarceration_period_purpose_mapper(
     )
     if is_treatment_program:
         return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+
+    if is_shock_incarceration:
+        return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
 
     return StateSpecializedPurposeForIncarceration.GENERAL
 

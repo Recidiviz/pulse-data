@@ -70,10 +70,11 @@ output:
           specialized_purpose_for_incarceration:
             $enum_mapping:
               $raw_text:
-                $concat:
-                  $values:
-                    - sentence_type
-                    - start_movement_code
-                  $include_nulls: True
+                $custom:
+                  $function: us_pa_custom_parsers.get_pfi_raw_text
+                  $args:
+                    start_parole_status_code_raw: start_parole_status_code
+                    start_movement_code_raw: start_movement_code
+                    sentence_type_raw: sentence_type
               $custom_parser: us_pa_custom_enum_parsers.incarceration_period_purpose_mapper
           custodial_authority: $literal_enum(StateCustodialAuthority.STATE_PRISON)

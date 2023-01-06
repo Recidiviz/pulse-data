@@ -76,6 +76,18 @@ _VIOLATION_CONDITIONS_BY_CODE: Dict[str, str] = invert_str_to_str_mappings(
 )
 
 
+def get_pfi_raw_text(
+    start_parole_status_code_raw: str,
+    start_movement_code_raw: str,
+    sentence_type_raw: str,
+) -> str:
+    if sentence_type_raw == "'":
+        sentence_type = None
+    else:
+        sentence_type = sentence_type_raw
+    return f"{start_parole_status_code_raw}-{start_movement_code_raw}-{sentence_type}"
+
+
 def violated_condition_from_violation_code(violation_code: str) -> str:
     """Returns one of the canonical PBPP violation conditions, of which there are 7
     (numbered 1-7), based on the given violation type.
