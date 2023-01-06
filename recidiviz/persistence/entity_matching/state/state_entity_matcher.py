@@ -57,7 +57,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     db_id_or_object_id,
     generate_child_entity_trees,
     get_multiparent_classes,
-    get_person_external_ids,
+    get_root_entity_external_ids,
     is_match,
     is_multiple_id_entity,
     merge_flat_fields,
@@ -153,13 +153,15 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             )
         return self.session
 
-    def set_db_person_cache(self, db_persons: List[schema.StatePerson]) -> None:
-        if not db_persons:
+    def set_db_root_entity_cache(
+        self, db_root_entities: List[SchemaRootEntityT]
+    ) -> None:
+        if not db_root_entities:
             return
 
-        for db_person in db_persons:
-            external_ids = get_person_external_ids(db_person)
-            tree = EntityTree(entity=db_person, ancestor_chain=[])
+        for db_root_entity in db_root_entities:
+            external_ids = get_root_entity_external_ids(db_root_entity)
+            tree = EntityTree(entity=db_root_entity, ancestor_chain=[])
             for external_id in external_ids:
                 self.db_root_entities_by_external_id[external_id].append(tree)
 
@@ -218,25 +220,27 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         return indices_to_search[0:num_trees_to_search]
 
     def get_non_placeholder_ingest_types(
-        self, ingested_db_persons: List[schema.StatePerson]
+        self, ingested_db_root_entities: List[SchemaRootEntityT]
     ) -> Set[Type[DatabaseEntity]]:
-        """Returns set of class types in the ingested persons that are not
+        """Returns set of class types in the ingested root entities that are not
         placeholders.
 
         NOTE: This assumes that ingested trees are largely similar and all
-        non-placeholder types will show up in a selected set of 20 person trees. If the
-        first 20 do not surface all types, we will log an error later in the
+        non-placeholder types will show up in a selected set of 20 root entity trees. If
+         the first 20 do not surface all types, we will log an error later in the
         _is_placeholder() helper and entity matching might not work correctly.
         """
         non_placeholder_ingest_types: Set[Type[DatabaseEntity]] = set()
 
         indices_to_search = self.get_non_placeholder_ingest_types_indices_to_search(
-            num_total_trees=len(ingested_db_persons)
+            num_total_trees=len(ingested_db_root_entities)
         )
 
         for i in indices_to_search:
-            ingested_person = ingested_db_persons[i]
-            for obj in get_all_db_objs_from_tree(ingested_person, self.field_index):
+            ingested_root_entity = ingested_db_root_entities[i]
+            for obj in get_all_db_objs_from_tree(
+                ingested_root_entity, self.field_index
+            ):
                 if not is_placeholder(obj, self.field_index):
                     non_placeholder_ingest_types.add(type(obj))
         return non_placeholder_ingest_types
@@ -264,8 +268,8 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         session: Session,
         ingested_root_entities: List[RootEntityT],
     ) -> MatchedEntities:
-        """Attempts to match all persons from |ingested_persons| with
-        corresponding persons in our database. Returns a MatchedEntities object
+        """Attempts to match all root entities from |ingested_root_entities| with
+        corresponding root entities in our database. Returns a MatchedEntities object
         that contains the results of matching.
         """
 
@@ -287,7 +291,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         )
 
         logging.info(
-            "[Entity matching] Starting reading and converting persons "
+            "[Entity matching] Starting reading and converting root entities "
             "at time [%s].",
             datetime.datetime.now().isoformat(),
         )
@@ -306,7 +310,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             self.state_specific_logic_delegate.get_region_code(),
         )
 
-        self.set_db_person_cache(db_root_entities)
+        self.set_db_root_entity_cache(db_root_entities)
 
         logging.info(
             "[Entity matching] Completed DB read at time [%s].",
@@ -1016,8 +1020,8 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
 
         raise MatchedMultipleIngestedEntitiesError(db_entity_match, ingested_matches)
 
-    def get_cached_matches(self, db_person: schema.StatePerson) -> List[EntityTree]:
-        external_ids = get_person_external_ids(db_person)
+    def get_cached_matches(self, db_root_entity: SchemaRootEntityT) -> List[EntityTree]:
+        external_ids = get_root_entity_external_ids(db_root_entity)
         cached_matches = []
         cached_match_ids: Set[int] = set()
 

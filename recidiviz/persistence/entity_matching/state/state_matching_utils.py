@@ -18,7 +18,6 @@
 from enum import Enum
 from typing import List, Optional, Sequence, Set, Type, cast
 
-from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import get_state_database_entities
@@ -33,6 +32,7 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.persistence.persistence_utils import SchemaRootEntityT
 
 
 def is_match(
@@ -399,29 +399,25 @@ def merge_flat_fields(
     return old_entity
 
 
-def get_all_person_external_ids(
-    persons: List[schema.StatePerson],
+def get_all_root_entity_external_ids(
+    root_entities: List[SchemaRootEntityT],
 ) -> Set[str]:
-    """Returns the external ids of all entities of type |cls| found in the
-    provided |persons| trees.
-    """
-    check_all_objs_have_type(persons, schema.StatePerson)
-
+    """Returns the external ids all the provided |root_entities|, regardless of id_type."""
     ids: Set[str] = set()
-    for person in persons:
-        external_ids = get_person_external_ids(person)
+    for root_entity in root_entities:
+        external_ids = get_root_entity_external_ids(root_entity)
         ids.update(external_ids)
     return ids
 
 
-def get_person_external_ids(db_person: schema.StatePerson) -> List[str]:
+def get_root_entity_external_ids(db_root_entity: SchemaRootEntityT) -> List[str]:
     external_ids = []
-    if not db_person.external_ids:
+    if not db_root_entity.external_ids:
         raise EntityMatchingError(
-            f"Expected external_ids to be non-empty for [{db_person}]",
-            db_person.get_class_id_name(),
+            f"Expected external_ids to be non-empty for [{db_root_entity}]",
+            db_root_entity.get_class_id_name(),
         )
-    for external_id in db_person.external_ids:
+    for external_id in db_root_entity.external_ids:
         external_ids.append(external_id.external_id)
 
     return external_ids

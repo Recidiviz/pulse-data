@@ -33,7 +33,7 @@ from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_del
     RootEntityEntityMatchingDelegate,
 )
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
-    get_all_person_external_ids,
+    get_all_root_entity_external_ids,
 )
 
 
@@ -70,7 +70,7 @@ class RootStatePersonEntityMatchingDelegate(
         """Reads and returns all persons from the DB that are needed for entity matching,
         given the |ingested_root_entities|.
         """
-        root_external_ids = get_all_person_external_ids(ingested_root_entities)
+        root_external_ids = get_all_root_entity_external_ids(ingested_root_entities)
         logging.info(
             "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
             "external ids",
