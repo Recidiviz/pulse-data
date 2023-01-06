@@ -16,17 +16,15 @@
 # =============================================================================
 """Utils for Justice Counts Control Panel"""
 import logging
-from functools import wraps
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
-from flask import g, request, session
+from flask import g, session
 from flask_sqlalchemy_session import current_session
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
-from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
     TokenClaims,
@@ -68,83 +66,22 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
     )
 
 
-def raise_if_user_is_unauthorized(route: Callable) -> Callable:
-    """Use this decorator to wrap API routes for which the user making the request
+def raise_if_user_is_unauthorized(agency_id: int) -> None:
+    """Use this helper in API routes for which the user making the request
     must have access to the agency indicated in the `agency_id` parameter (or the
     agency connected to the report indicated by the `report_id` parameter), or else
     the request should fail. A user has access to an agency if that agency's name
     is in the user's app_metadata block (which is editable in the Auth0 UI.
     """
-
-    @wraps(route)
-    def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Callable:
-        if "user_context" not in g or g.user_context.user_account is None:
-            raise JusticeCountsServerError(
-                code="justice_counts_agency_permission",
-                description="No UserContext found on session.",
-            )
-
-        user_id = g.user_context.user_account.id
-
-        request_dict: Dict[str, Any] = {}
-        if request.method == "GET":
-            request_dict = request.values
-        elif request.method == "POST":
-            request_dict = request.json or {}
-        elif request.method == "PUT":
-            request_dict = request.json or {}
-        elif request.method == "PATCH":
-            request_dict = request.json or {}
-        else:
-            raise ValueError(f"Unsupported request method: {request.method}")
-
-        agency_id = request_dict.get("agency_id")
-
-        # If no agency is found, check if there is a `report_id` route parameter
-        if not agency_id and "report_id" in kwargs:
-            report_id: int = kwargs["report_id"]  # type: ignore[assignment]
-            report = ReportInterface.get_report_by_id(
-                session=current_session, report_id=report_id, include_datapoints=False
-            )
-            agency_id = report.source_id
-
-        # List of agency ids in user's app_metadata will have been copied over
-        # to the `g.user_context` object on successful authorization
-        agency_ids = get_agency_ids_from_session()
-        if agency_id is not None and int(agency_id) not in agency_ids:
-            raise JusticeCountsServerError(
-                code="justice_counts_agency_permission",
-                description=(
-                    f"User {user_id} does not have permission to access "
-                    f"reports from agency {agency_id}."
-                ),
-            )
-
-        return route(*args, **kwargs)
-
-    return decorated
-
-
-def get_user_account_id(request_dict: Dict[str, Any]) -> int:
-    """If we are not in development, we do not allow passing in `user_id` to a request.
-    Doing so would allow users to pretend to be other users. Instead, we infer the `user_id`
-    from the Authorization header and store it on the global user context in our authorization
-    callback. If we are in development, we do allow passing in `user_id` for testing purposes.
-    """
-    if "user_context" in g and g.user_context.user_account is not None:
-        return g.user_context.user_account.id
-
-    if not in_development():
-        raise ValueError(
-            "Either no UserContext was found on the session, "
-            "or no UserAccount was stored on the UserContext."
+    agency_ids = get_agency_ids_from_session()
+    if agency_id is not None and int(agency_id) not in agency_ids:
+        raise JusticeCountsServerError(
+            code="justice_counts_agency_permission",
+            description=(
+                f"User does not have permission to access "
+                f"reports from agency {agency_id}."
+            ),
         )
-
-    user_id = request_dict.get("user_id")
-    if user_id is None:
-        raise ValueError("Missing required parameter user_id.")
-
-    return user_id
 
 
 def get_auth0_user_id(request_dict: Dict[str, Any]) -> str:

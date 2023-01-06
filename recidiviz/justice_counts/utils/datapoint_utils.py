@@ -16,7 +16,6 @@
 # =============================================================================
 """Utilities for working with the Datapoint model."""
 
-import logging
 from typing import List, Optional, Tuple
 
 from recidiviz.justice_counts.dimensions.base import DimensionBase
@@ -60,7 +59,6 @@ def get_dimension(datapoint: schema.Datapoint) -> Tuple[Optional[DimensionBase],
             dimension_id
         ]  # example: dimension_class = GenderRestricted
     except KeyError:
-        logging.warning("Dimension identifier %s not found.", dimension_id)
         return None, False
 
     dimension_enum_member = None
@@ -69,11 +67,6 @@ def get_dimension(datapoint: schema.Datapoint) -> Tuple[Optional[DimensionBase],
             # example: dimension_enum_member = GenderRestricted.MALE
             dimension_enum_member = dimension_class[dimension_member]  # type: ignore[misc]
         except KeyError:
-            logging.warning(
-                "Dimension member %s not found in class %s",
-                dimension_member,
-                dimension_class,
-            )
             return None, False
 
     return dimension_enum_member, True
