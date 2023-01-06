@@ -233,3 +233,10 @@ export const updateStateRolePermissions = async (
     routes,
   });
 };
+
+export const deleteStateRole = async (
+  stateCode: string,
+  role: string
+): Promise<Response> => {
+  return deleteResource(`/states/${stateCode}/roles/${role}`);
+};

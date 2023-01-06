@@ -151,6 +151,11 @@ class AuthEndpointTests(TestCase):
                 state_code=state_code,
                 role=role,
             )
+            self.delete_state_role = lambda state_code, role: flask.url_for(
+                "auth_endpoint_blueprint.delete_state_role",
+                state_code=state_code,
+                role=role,
+            )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
@@ -1926,4 +1931,156 @@ class AuthEndpointTests(TestCase):
                     "routes": {"C": True, "B": False},
                 },
             )
+            self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_states_delete_role_no_entry(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.delete(
+                self.delete_state_role("US_MO", "line_staff_role"),
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+
+    def test_states_delete_role_with_active_roster_user(self) -> None:
+        state_role = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        user = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_MO",
+            role="leadership_role",
+        )
+        add_entity_to_database_session(self.database_key, [state_role, user])
+        with self.app.test_request_context():
+            response = self.client.delete(
+                self.delete_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+            )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_states_delete_role_with_active_override_user(self) -> None:
+        state_role = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        user = generate_fake_user_overrides(
+            email="parameter@domain.org",
+            region_code="US_MO",
+            role="leadership_role",
+        )
+        add_entity_to_database_session(self.database_key, [state_role, user])
+        with self.app.test_request_context():
+            response = self.client.delete(
+                self.delete_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_states_delete_role_with_blocked_user(self) -> None:
+        state_role_delete = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": True, "B": True, "C": False},
+        )
+        state_role_keep = generate_fake_default_permissions(
+            state="US_MO",
+            role="line_staff_role",
+            can_access_leadership_dashboard=False,
+            can_access_case_triage=True,
+            should_see_beta_charts=False,
+            routes={"A": True, "B": False, "C": False},
+            feature_variants={"D": True},
+        )
+        user_delete = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_MO",
+            role="leadership_role",
+        )
+        user_keep = generate_fake_rosters(
+            email="line_staff@domain.org",
+            region_code="US_MO",
+            role="line_staff_role",
+        )
+        override_user_delete = generate_fake_user_overrides(
+            email="parameter@domain.org",
+            region_code="US_MO",
+            blocked=True,
+        )
+        override_only_delete = generate_fake_user_overrides(
+            email="user@domain.org",
+            region_code="US_MO",
+            role="leadership_role",
+            blocked=True,
+        )
+        override_keep = generate_fake_user_overrides(
+            email="line_staff_2@domain.org", region_code="US_MO", role="line_staff_role"
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                state_role_delete,
+                state_role_keep,
+                user_delete,
+                user_keep,
+                override_user_delete,
+                override_only_delete,
+                override_keep,
+            ],
+        )
+        with self.app.test_request_context():
+            response = self.client.delete(
+                self.delete_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            # Check that the leadership_role role no longer exists
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            expected_response = [
+                {
+                    "stateCode": "US_MO",
+                    "role": "line_staff_role",
+                    "canAccessCaseTriage": True,
+                    "canAccessLeadershipDashboard": False,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"A": True, "B": False, "C": False},
+                    "featureVariants": {"D": True},
+                },
+            ]
+            self.assertEqual(expected_response, json.loads(response.data))
+
+            # Check that the users with that role no longer exist
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            expected_users = [
+                {
+                    "emailAddress": "line_staff@domain.org",
+                    "role": "line_staff_role",
+                },
+                {
+                    "emailAddress": "line_staff_2@domain.org",
+                    "role": "line_staff_role",
+                },
+            ]
+            actual_users = [
+                {"emailAddress": user["emailAddress"], "role": user["role"]}
+                for user in json.loads(response.data)
+            ]
+            self.assertEqual(expected_users, actual_users)

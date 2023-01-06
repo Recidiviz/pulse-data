@@ -19,6 +19,7 @@ import { Button, message, PageHeader, Space, Spin, Table } from "antd";
 import { useState } from "react";
 import {
   createStateRolePermissions,
+  deleteStateRole,
   getStateRoleDefaultPermissions,
   updateStateRolePermissions,
 } from "../../AdminPanelAPI/LineStaffTools";
@@ -148,6 +149,18 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     finishPromises(results, `Updated`);
   };
 
+  const onDelete = async () => {
+    const results: Promise<unknown>[] = [];
+    selectedRows.forEach((row) => {
+      const deleteRow = async () => {
+        const response = await deleteStateRole(row.stateCode, row.role);
+        await checkResponse(response);
+      };
+      results.push(deleteRow());
+    });
+    finishPromises(results, `Removed`);
+  };
+
   const columns = [
     {
       title: "State",
@@ -231,6 +244,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
           editOnCancel={() => {
             setEditVisible(false);
           }}
+          editOnDelete={onDelete}
           selectedRows={selectedRows}
         />
       </Space>

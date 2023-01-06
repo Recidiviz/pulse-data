@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Alert } from "antd";
+import { Form, Alert, Button } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
@@ -22,11 +22,13 @@ export const CreateEditStateRoleForm = ({
   editVisible,
   editOnCreate,
   editOnCancel,
+  editOnDelete,
   selectedRows,
 }: {
   editVisible: boolean;
   editOnCreate: (arg0: StateRolePermissionsResponse) => Promise<void>;
   editOnCancel: () => void;
+  editOnDelete: () => Promise<void>;
   selectedRows: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const [form] = Form.useForm();
@@ -35,18 +37,37 @@ export const CreateEditStateRoleForm = ({
     (value) => `${value.stateCode}: ${value.role}`
   );
 
+  const handleCancel = () => {
+    form.resetFields();
+    editOnCancel();
+  };
+  const handleEdit = () => {
+    form.validateFields().then((values) => {
+      form.resetFields();
+      editOnCreate(values);
+    });
+  };
+  const handleDelete = () => {
+    form.resetFields();
+    editOnDelete();
+  };
+
   return (
     <DraggableModal
       visible={editVisible}
       title="Update default permissions for a state/role"
-      okText="Update"
-      onCancel={editOnCancel}
-      onOk={() => {
-        form.validateFields().then((values) => {
-          form.resetFields();
-          editOnCreate(values);
-        });
-      }}
+      onCancel={handleCancel}
+      footer={[
+        <Button onClick={handleCancel} key="cancel">
+          Cancel
+        </Button>,
+        <Button type="primary" danger onClick={handleDelete} key="delete">
+          Remove role
+        </Button>,
+        <Button type="primary" onClick={handleEdit} key="edit">
+          Update
+        </Button>,
+      ]}
     >
       <Alert
         message="Caution!"
