@@ -41,33 +41,6 @@ mmddyy_format_lower_bound_update_date = 0
 # YYYY-MM-DD e.g. January 1, 2016 --> 2016-01-01; November 2, 1982 --> 1982-11-02;
 iso_format_lower_bound_update_date = 0
 
-FOCTEST_ORAS_ASSESSMENTS_WEEKLY = """
-    SELECT 
-        E04,
-        E05,
-        E06,
-        FOCLIST,
-        E01,
-        E03,
-        '"' CONCAT REPLACE(E08, '"', '""') CONCAT '"' AS E08,
-        '"' CONCAT REPLACE(E09, '"', '""') CONCAT '"' AS E09,
-        '"' CONCAT REPLACE(E10, '"', '""') CONCAT '"' AS E10,
-        E11,
-        E12,
-        E13,
-        E14,
-        E15,
-        E16,
-        E17,
-        E18,
-        E19,
-        E20,
-        E21,
-        E22,
-        E23
-    FROM
-        FOCTEST.ORAS_ASSESSMENTS_WEEKLY;
-    """
 
 ORAS_WEEKLY_SUMMARY_UPDATE = f"""
     SELECT 
@@ -183,7 +156,7 @@ LBAKRDTA_TAK001 = f"""
         EK$DEP,
         EK$SIB,
         EK$REL,
-        EK$COF,
+        '"' CONCAT REPLACE(EK$COF, '"', '""') CONCAT '"' AS EK$COF,
         '"' CONCAT REPLACE(EK$SCO, '"', '""') CONCAT '"' AS EK$SCO,
         EK$XDM,
         EK$XDO,
@@ -1234,7 +1207,6 @@ MO_CASEPLAN_TECHNIQUES_DB2 = """
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
-        ("FOCTEST_ORAS_ASSESSMENTS_WEEKLY", FOCTEST_ORAS_ASSESSMENTS_WEEKLY),
         ("ORAS_WEEKLY_SUMMARY_UPDATE", ORAS_WEEKLY_SUMMARY_UPDATE),
         ("LANTERN_DA_RA_LIST", LANTERN_DA_RA_LIST),
         ("LBAKRCOD_TAK146", LBAKRCOD_TAK146),
