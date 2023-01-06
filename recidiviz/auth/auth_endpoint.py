@@ -741,13 +741,8 @@ def update_state_role(
                     StateRolePermissions.state_code == state_code.upper(),
                     StateRolePermissions.role == role.lower(),
                 )
-                .first()
+                .one()
             )
-            if not state_role:
-                return (
-                    f"State {state_code.upper()} with role {role.lower()} does not exist in StateRolePermissions.",
-                    HTTPStatus.BAD_REQUEST,
-                )
 
             # Transform request dict to match expected structure/casing
             request_dict = {
@@ -790,6 +785,11 @@ def update_state_role(
                 ),
                 HTTPStatus.OK,
             )
+    except sqlalchemy.orm.exc.NoResultFound:
+        return (
+            f"State {state_code.upper()} with role {role.lower()} does not exist in StateRolePermissions.",
+            HTTPStatus.NOT_FOUND,
+        )
     except IntegrityError as e:
         if isinstance(e.orig, NotNullViolation):
             return (
@@ -801,6 +801,82 @@ def update_state_role(
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,
+        )
+
+
+@auth_endpoint_blueprint.route("/states/<state_code>/roles/<role>", methods=["DELETE"])
+@requires_gae_auth
+def delete_state_role(
+    state_code: str, role: str
+) -> Union[tuple[Response, int], tuple[str, int]]:
+    """Removes a role in a given state. Fails if there are still active users with that role in that
+    state. If there are no active users, removes any blocked users with that role in that state."""
+    if not StateCode.is_state_code(state_code.upper()):
+        return (
+            f"Unknown state_code [{state_code}] received, must be a valid state code.",
+            HTTPStatus.BAD_REQUEST,
+        )
+    database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
+    try:
+        with SessionFactory.using_database(database_key) as session:
+            # Read existing entry
+            state_role = (
+                session.query(StateRolePermissions)
+                .filter(
+                    StateRolePermissions.state_code == state_code.upper(),
+                    StateRolePermissions.role == role.lower(),
+                )
+                .one()
+            )
+
+            # Check if any users have access in that state/role
+            state_role_users = (
+                session.query(UserOverride, Roster)
+                .select_from(Roster)
+                .join(
+                    UserOverride,
+                    UserOverride.email_address == Roster.email_address,
+                    full=True,
+                )
+                .where(
+                    func.coalesce(UserOverride.state_code, Roster.state_code)
+                    == state_code,
+                    func.coalesce(UserOverride.role, Roster.role) == role,
+                )
+                .all()
+            )
+            users_with_access = [
+                (override_user or roster_user)
+                for (override_user, roster_user) in state_role_users
+                if not (override_user and override_user.blocked)
+            ]
+            if len(users_with_access) > 0:
+                return (
+                    f"Cannot remove {role} from {state_code}. {len(users_with_access)} user(s) with access must have their access revoked first.",
+                    HTTPStatus.BAD_REQUEST,
+                )
+
+            # Delete remaining users
+            for (override_user, roster_user) in state_role_users:
+                if override_user:
+                    session.delete(override_user)
+                if roster_user:
+                    session.delete(roster_user)
+
+            # Delete role
+            session.delete(state_role)
+
+            session.commit()
+
+            return (
+                jsonify({}),
+                HTTPStatus.OK,
+            )
+
+    except sqlalchemy.orm.exc.NoResultFound:
+        return (
+            f"State {state_code.upper()} with role {role.lower()} does not exist in StateRolePermissions.",
+            HTTPStatus.NOT_FOUND,
         )
 
 
