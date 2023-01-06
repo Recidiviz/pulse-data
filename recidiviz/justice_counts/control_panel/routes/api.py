@@ -39,7 +39,6 @@ from recidiviz.justice_counts.control_panel.constants import ControlPanelPermiss
 from recidiviz.justice_counts.control_panel.utils import (
     get_agency_ids_from_session,
     get_auth0_user_id,
-    get_user_account_id,
     raise_if_user_is_unauthorized,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
@@ -79,7 +78,6 @@ def get_api_blueprint(
 
     @api_blueprint.route("/agencies/<agency_id>", methods=["PATCH"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
     def update_agency(agency_id: int) -> Response:
         """
         Currently, the supported updates are:
@@ -88,6 +86,8 @@ def get_api_blueprint(
         """
         try:
             request_json = assert_type(request.json, dict)
+            raise_if_user_is_unauthorized(agency_id=agency_id)
+
             systems = request_json.get("systems")
             if systems is not None:
                 AgencyInterface.update_agency_systems(
@@ -115,13 +115,14 @@ def get_api_blueprint(
 
     @api_blueprint.route("/agencies/<agency_id>", methods=["GET"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
     def get_agency_settings(agency_id: int) -> Response:
         """
         This endpoint gets the settings for a Agency record.
         """
 
         try:
+            raise_if_user_is_unauthorized(agency_id=agency_id)
+
             agency_settings = AgencySettingInterface.get_agency_settings(
                 session=current_session,
                 agency_id=agency_id,
@@ -222,11 +223,12 @@ def get_api_blueprint(
                 agencies = AgencyInterface.get_agencies_by_id(
                     session=current_session, agency_ids=agency_ids
                 )
+            agency_json = [agency.to_json() for agency in agencies or []]
             current_session.commit()
             return jsonify(
                 {
                     "id": user_account.id,
-                    "agencies": [agency.to_json() for agency in agencies or []],
+                    "agencies": agency_json,
                     "permissions": permissions or [],
                 }
             )
@@ -237,20 +239,14 @@ def get_api_blueprint(
 
     @api_blueprint.route("/agencies/<agency_id>/reports", methods=["GET"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
-    def get_reports_by_agency_id(agency_id: str) -> Response:
+    def get_reports_by_agency_id(agency_id: int) -> Response:
         """Gets a list of reports for the specified agency id.
         Used for rendering the Reports Overview page.
         """
         try:
-            agency_ids = get_agency_ids_from_session()
-            if int(agency_id) not in agency_ids:
-                raise JusticeCountsServerError(
-                    code="justice_counts_agency_permission",
-                    description="User does not belong to the agency they are attempting to get agencies for.",
-                )
+            raise_if_user_is_unauthorized(agency_id=agency_id)
             reports = ReportInterface.get_reports_by_agency_id(
-                session=current_session, agency_id=int(agency_id)
+                session=current_session, agency_id=agency_id
             )
             editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
                 session=current_session, reports=reports
@@ -272,7 +268,6 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports/<report_id>", methods=["GET"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
     def get_report_by_id(report_id: Optional[str] = None) -> Response:
         """Get the details for a specified report. Used for rendering
         the Data Entry page.
@@ -282,13 +277,19 @@ def get_api_blueprint(
             report = ReportInterface.get_report_by_id(
                 session=current_session, report_id=report_id_int
             )
+            raise_if_user_is_unauthorized(agency_id=report.source_id)
+
             report_metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=current_session
+            )
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=[report]
             )
 
             report_definition_json = ReportInterface.to_json_response(
                 session=current_session,
                 report=report,
+                editor_ids_to_names=editor_ids_to_names,
             )
             metrics_json = [
                 report_metric.to_json(
@@ -304,7 +305,6 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports/<report_id>", methods=["PATCH"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
     def update_report(report_id: Optional[str] = None) -> Response:
         """Update a report's metadata and/or the metrics on the report.
         Used by the Data Entry page.
@@ -313,24 +313,25 @@ def get_api_blueprint(
             report_id_int = int(assert_type(report_id, str))
             request_dict = assert_type(request.json, dict)
             time_loaded_by_client = request_dict["time_loaded"]
-            user_account_id = get_user_account_id(request_dict=request_dict)
-            user_account = UserAccountInterface.get_user_by_id(
-                session=current_session, user_account_id=user_account_id
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_dict),
             )
             report = ReportInterface.get_report_by_id(
                 session=current_session,
                 report_id=report_id_int,
             )
+            raise_if_user_is_unauthorized(agency_id=report.source_id)
 
             _check_for_conflicts(
                 report=report,
-                user_account_id=user_account_id,
+                user_account_id=user_account.id,
                 time_loaded_by_client=time_loaded_by_client,
             )
 
             ReportInterface.update_report_metadata(
                 report=report,
-                editor_id=user_account_id,
+                editor_id=user_account.id,
                 status=request_dict["status"],
             )
 
@@ -377,7 +378,10 @@ def get_api_blueprint(
             month = assert_type(request_json.get("month"), int)
             year = assert_type(request_json.get("year"), int)
             frequency = assert_type(request_json.get("frequency"), str)
-            user_id = get_user_account_id(request_dict=request_json)
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
             permissions = g.user_context.permissions
             if (
                 not permissions
@@ -386,7 +390,7 @@ def get_api_blueprint(
                 raise JusticeCountsServerError(
                     code="justice_counts_create_report_permission",
                     description=(
-                        f"User {user_id} does not have permission to "
+                        f"User {user_account.id} does not have permission to "
                         "create reports for agency {agency_id}."
                     ),
                 )
@@ -395,7 +399,7 @@ def get_api_blueprint(
                 report = ReportInterface.create_report(
                     session=current_session,
                     agency_id=agency_id,
-                    user_account_id=user_id,
+                    user_account_id=user_account.id,
                     month=month,
                     year=year,
                     frequency=frequency,
@@ -425,7 +429,6 @@ def get_api_blueprint(
         try:
             request_json = assert_type(request.json, dict)
             report_ids = request_json.get("report_ids")
-            user_id = get_user_account_id(request_dict=request_json)
             permissions = g.user_context.permissions
             if (
                 not permissions
@@ -433,9 +436,7 @@ def get_api_blueprint(
             ):
                 raise JusticeCountsServerError(
                     code="justice_counts_delete_report_permission",
-                    description=(
-                        f"User {user_id} does not have permission to delete reports."
-                    ),
+                    description=("User does not have permission to delete reports."),
                 )
 
             if report_ids is None or len(report_ids) == 0:
@@ -456,13 +457,14 @@ def get_api_blueprint(
 
     @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["GET"])
     @auth_decorator
-    def get_agency_metric_settings(agency_id: str) -> Response:
+    def get_agency_metric_settings(agency_id: int) -> Response:
         """Get the contexts and configuration for each of an agency's metrics.
         Used by the Metric Configuration page in Settings.
         """
         try:
+            raise_if_user_is_unauthorized(agency_id=agency_id)
             agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=int(agency_id)
+                session=current_session, agency_id=agency_id
             )
             metrics = DatapointInterface.get_metric_settings_by_agency(
                 session=current_session, agency=agency
@@ -478,24 +480,25 @@ def get_api_blueprint(
 
     @api_blueprint.route("/agencies/<agency_id>/metrics", methods=["PUT"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
-    def update_metric_settings(agency_id: str) -> Response:
+    def update_metric_settings(agency_id: int) -> Response:
         """Update the contexts and configuration for an agency's metrics.
         Used by the Metric Configuration page in Settings.
         """
         try:
             request_json = assert_type(request.json, dict)
+            raise_if_user_is_unauthorized(agency_id=agency_id)
+
             agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=int(agency_id)
+                session=current_session, agency_id=agency_id
             )
             for metric_json in request_json.get("metrics", []):
                 agency_metric = MetricInterface.from_json(
                     json=metric_json,
                     entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
                 )
-                user_account_id = get_user_account_id(request_dict=request_json)
-                user_account = UserAccountInterface.get_user_by_id(
-                    session=current_session, user_account_id=user_account_id
+                user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                    current_session,
+                    auth0_user_id=get_auth0_user_id(request_dict=request_json),
                 )
                 DatapointInterface.add_or_update_agency_datapoints(
                     session=current_session,
@@ -513,7 +516,7 @@ def get_api_blueprint(
 
     @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
-    def get_spreadsheets(agency_id: str) -> Response:
+    def get_spreadsheets(agency_id: int) -> Response:
         """Get a list of spreadsheets uploaded by an agency.
         Used for rendering the Uploaded Files page.
         """
@@ -525,7 +528,7 @@ def get_api_blueprint(
             )
         try:
             spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
-                agency_id=int(agency_id), session=current_session
+                agency_id=agency_id, session=current_session
             )
             return jsonify(
                 [
@@ -718,7 +721,7 @@ def get_api_blueprint(
 
     ### Dashboards ###
 
-    def get_agency_datapoints(agency_id: str) -> Response:
+    def get_agency_datapoints(agency_id: int) -> Response:
         permissions = g.user_context.permissions if "user_context" in g else []
         if agency_id is None:
             # If no agency_id is specified, pick one of the agencies
@@ -735,7 +738,7 @@ def get_api_blueprint(
 
         reports = ReportInterface.get_reports_by_agency_id(
             session=current_session,
-            agency_id=int(agency_id),
+            agency_id=agency_id,
             # we are only fetching reports here to get the list of report
             # ids in an agency, so no need to fetch datapoints here
             include_datapoints=False,
@@ -764,7 +767,7 @@ def get_api_blueprint(
         ]
 
         agency = AgencyInterface.get_agency_by_id(
-            session=current_session, agency_id=int(agency_id)
+            session=current_session, agency_id=agency_id
         )
         metric_key_to_disaggregation_status = {}
 
@@ -821,22 +824,22 @@ def get_api_blueprint(
 
     @api_blueprint.route("agencies/<agency_id>/datapoints", methods=["GET"])
     @auth_decorator
-    @raise_if_user_is_unauthorized
-    def get_datapoints_by_agency_id(agency_id: str) -> Response:
+    def get_datapoints_by_agency_id(agency_id: int) -> Response:
         try:
+            raise_if_user_is_unauthorized(agency_id=agency_id)
             return get_agency_datapoints(agency_id=agency_id)
         except Exception as e:
             raise _get_error(error=e) from e
 
     @api_blueprint.route("/agencies/<agency_id>/published_data", methods=["GET"])
-    def get_agency_published_data(agency_id: str) -> Response:
+    def get_agency_published_data(agency_id: int) -> Response:
         try:
             agency = AgencyInterface.get_agency_by_id(
-                session=current_session, agency_id=int(agency_id)
+                session=current_session, agency_id=agency_id
             )
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session,
-                agency_id=int(agency_id),
+                agency_id=agency_id,
                 # we are only fetching reports here to get the list of report
                 # ids in an agency, so no need to fetch datapoints here
                 include_datapoints=False,

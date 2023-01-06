@@ -17,14 +17,9 @@
 """Class to sotre information about the currently logged in user of the Justice Counts Control Panel."""
 
 
-from typing import List, Optional
+from typing import List
 
 import attr
-import sqlalchemy
-from flask_sqlalchemy_session import current_session
-
-from recidiviz.justice_counts.user_account import UserAccountInterface
-from recidiviz.persistence.database.schema.justice_counts import schema
 
 
 @attr.define
@@ -32,15 +27,5 @@ class UserContext:
     """Stores information about the currently logged in user."""
 
     auth0_user_id: str
-    user_account: Optional[schema.UserAccount] = attr.field()
     agency_ids: List[int] = attr.field(factory=list)
     permissions: List[str] = attr.field(factory=list)
-
-    @user_account.default
-    def _user_account_factory(self) -> Optional[schema.UserAccount]:
-        try:
-            return UserAccountInterface.get_user_by_auth0_user_id(
-                current_session, auth0_user_id=self.auth0_user_id
-            )
-        except sqlalchemy.orm.exc.NoResultFound:
-            return None

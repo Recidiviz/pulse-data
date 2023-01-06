@@ -148,10 +148,10 @@ def create_app(config: Optional[Config] = None) -> Flask:
         return "", HTTPStatus.OK
 
     @app.route("/feed/<agency_id>", methods=["GET"])
-    def get_feed_for_agency_id(agency_id: str) -> Response:
+    def get_feed_for_agency_id(agency_id: int) -> Response:
         """Returns a feed for an agency, formatted according to the Technical Specification."""
         system_to_filename_to_rows = FeedInterface.get_feed_for_agency_id(
-            current_session, agency_id=int(agency_id)
+            current_session, agency_id=agency_id
         )
 
         if not system_to_filename_to_rows:
