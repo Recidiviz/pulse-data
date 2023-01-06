@@ -318,11 +318,11 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
 
         # In order to maintain the invariant that all objects are properly
         # added to the Session when we return from entity_matching we
-        # add new persons to the session here. Adding a person to the session
-        # that is already in-session (i.e. not new) has no effect.
+        # add new root entities to the session here. Adding a root entities to the
+        # session that is already in-session (i.e. not new) has no effect.
         # pylint:disable=not-an-iterable
-        for match_person in matched_entities_builder.people:
-            session.add(match_person)
+        for match_root_entity in matched_entities_builder.root_entities:
+            session.add(match_root_entity)
 
         logging.info("[Entity matching] Session flush")
         session.flush()
@@ -362,13 +362,13 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                 ingested_persons=ingested_persons, db_persons=db_persons
             )
             logging.info(
-                "[Entity matching] Matching persons returned [%s] matched persons",
-                len(matched_entities_builder.people),
+                "[Entity matching] Matching root entities returned [%s] matched entities",
+                len(matched_entities_builder.root_entities),
             )
 
             logging.info("[Entity matching] Matching post-processing")
             self._perform_match_postprocessing(
-                matched_entities_builder.people, db_persons
+                matched_entities_builder.root_entities, db_persons
             )
         return matched_entities_builder
 
@@ -458,7 +458,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         self._populate_person_backedges(updated_persons)
 
         matched_entities_builder = MatchedEntities.builder()
-        matched_entities_builder.people = updated_persons
+        matched_entities_builder.root_entities = updated_persons
         matched_entities_builder.error_count = persons_match_results.error_count
         matched_entities_builder.total_root_entities = total_root_entities
         return matched_entities_builder
