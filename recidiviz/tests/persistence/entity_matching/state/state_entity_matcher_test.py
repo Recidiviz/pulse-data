@@ -773,7 +773,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
         db_person_2.incarceration_sentences = [db_incarceration_sentence]
         entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
-        entity_person_2 = self.to_entity(db_person_2)
 
         self._commit_to_db(db_person, db_person_2)
 
@@ -811,12 +810,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             aliases=[expected_alias],
             incarceration_sentences=[entity_incarceration_sentence],
         )
-        expected_placeholder_person = attr.evolve(
-            entity_person_2,
-            full_name=None,
-            incarceration_sentences=[],
-            external_ids=[],
-        )
 
         # Act 1 - Match
         session = self._session()
@@ -826,7 +819,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person, expected_placeholder_person],
+            [expected_person],
             matched_entities.people,
             session,
         )
@@ -883,7 +876,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person_dup.supervision_sentences = [db_supervision_sentence_dup]
         db_person_dup.supervising_officer = db_agent_dup
         db_person_dup.supervision_periods = [db_supervision_period]
-        entity_person_dup = self.to_entity(db_person_dup)
 
         external_id = attr.evolve(entity_external_id, person_external_id_id=None)
         external_id_2 = attr.evolve(entity_external_id_2, person_external_id_id=None)
@@ -912,13 +904,6 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             ],
             supervision_periods=[expected_supervision_period],
         )
-        expected_placeholder_person = attr.evolve(
-            entity_person_dup,
-            full_name=None,
-            external_ids=[],
-            supervision_periods=[],
-            supervision_sentences=[],
-        )
 
         # Act 1 - Match
         session = self._session()
@@ -928,7 +913,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
         self.assert_people_match_pre_and_post_commit(
-            [expected_person, expected_placeholder_person],
+            [expected_person],
             matched_entities.people,
             session,
         )

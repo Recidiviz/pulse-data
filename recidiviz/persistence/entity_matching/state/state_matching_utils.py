@@ -20,9 +20,6 @@ from enum import Enum
 from typing import List, Optional, Sequence, Set, Type, cast
 
 from recidiviz.common.common_utils import check_all_objs_have_type
-from recidiviz.common.constants.state import enum_canonical_strings
-from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_utils import get_state_database_entities
@@ -295,29 +292,6 @@ def add_child_to_entity(
             )
         child_field = child_to_add
         entity.set_field(child_field_name, child_field)
-
-
-# TODO(#2244): Create general approach for required fields/default values
-def convert_to_placeholder(
-    entity: DatabaseEntity, field_index: CoreEntityFieldIndex
-) -> None:
-    for field_name in field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.FLAT_FIELD
-    ):
-        if field_name == entity.get_class_id_name():
-            continue
-        if field_name == "state_code":
-            continue
-        if field_name == "status":
-            entity.set_field(field_name, enum_canonical_strings.present_without_info)
-            continue
-        if field_name == "incarceration_type":
-            entity.set_field(field_name, StateIncarcerationType.STATE_PRISON.value)
-            continue
-        if field_name == "agent_type":
-            entity.set_field(field_name, StateAgentType.PRESENT_WITHOUT_INFO.value)
-            continue
-        entity.clear_field(field_name)
 
 
 def can_atomically_merge_entity(
