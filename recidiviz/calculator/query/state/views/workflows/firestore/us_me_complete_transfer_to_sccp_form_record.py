@@ -139,7 +139,7 @@ case_notes_cte AS (
     -- SCCP Application Investigations
     SELECT 
         Cis_100_Client_Id AS external_id,
-        "SCCP Application Investiation" AS criteria,
+        "SCCP Application Investigation" AS criteria,
         IF(Complete_Date IS NULL,
             'Resolution not available yet',
             CONCAT("Resolution date: ", 
