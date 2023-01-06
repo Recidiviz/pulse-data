@@ -55,7 +55,6 @@ from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger impo
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     EntityFieldType,
     add_child_to_entity,
-    convert_to_placeholder,
     db_id_or_object_id,
     generate_child_entity_trees,
     get_multiparent_classes,
@@ -121,7 +120,9 @@ class StateEntityMatcher:
         # Set of class types in the ingested objects that are not placeholders
         self.non_placeholder_ingest_types: Set[Type[DatabaseEntity]] = set()
 
-        self.entities_to_convert_to_placeholder_or_expunge: List[DatabaseEntity] = []
+        # A list of entities that we want to either expunge from the session or delete
+        # before we commit the session.
+        self.entities_to_delete_or_expunge: List[DatabaseEntity] = []
 
         # Delegate object with all state specific logic
         self.state_specific_logic_delegate = state_specific_logic_delegate
@@ -441,19 +442,6 @@ class StateEntityMatcher:
                 if merged_person_tree.entity not in updated_persons:
                     updated_persons.append(merged_person_tree.entity)
 
-        # The only database persons that are unmatched that we potentially want
-        # to update are placeholder persons. These may have had children removed
-        # as a part of the matching process and therefore would need updating.
-        for db_person in persons_match_results.unmatched_db_entities:
-            if not isinstance(db_person, schema.StatePerson):
-                raise EntityMatchingError(
-                    f"Expected db_person [{db_person}] to have type schema.StatePerson.",
-                    "state_person",
-                )
-
-            if self._is_placeholder(db_person):
-                updated_persons.append(db_person)
-
         self._populate_person_backedges(updated_persons)
 
         matched_entities_builder = MatchedEntities.builder()
@@ -528,24 +516,23 @@ class StateEntityMatcher:
             if db_id not in matched_entities_by_db_id:
                 unmatched_db_entities.append(db_entity)
 
-        for entity in self.entities_to_convert_to_placeholder_or_expunge:
-            self._convert_to_placeholder_or_expunge(entity)
-        self.entities_to_convert_to_placeholder_or_expunge.clear()
+        for entity in self.entities_to_delete_or_expunge:
+            self._delete_or_expunge_entity(entity)
+        self.entities_to_delete_or_expunge.clear()
 
         return MatchResults(
             individual_match_results, unmatched_db_entities, error_count
         )
 
-    def _convert_to_placeholder_or_expunge(self, entity: DatabaseEntity) -> None:
+    def _delete_or_expunge_entity(self, entity: DatabaseEntity) -> None:
+        """If the provided entity is committed to the DB already, then deletes it from
+        the session so it will be deleted at commit time. Otherwise, expunges it from
+        the session so it is not committed.
         """
-        Depending on whether or not the provided |entity| has already been
-        committed to the db, this function either converts the |entity| into a
-        placeholder object or removes it from the session altogether.
-        """
+        session = self.get_session()
         if entity.get_id():
-            convert_to_placeholder(entity, self.field_index)
+            session.delete(entity)
         else:
-            session = self.get_session()
             if entity in session:
                 session.expunge(entity)
 
@@ -931,14 +918,13 @@ class StateEntityMatcher:
             entity=merged_entity, ancestor_chain=db_match_tree.ancestor_chain
         )
 
-        # Clear flat fields off of the ingested entity after entity matching
-        # is complete. This ensures that if this `ingested_entity` has
-        # multiple parents, each time we reach this entity, we'll correctly
-        # match it to the correct `db_entity`. It is possible that the ingested and db
-        # entities are the same object (when `match_trees` is called on entities within
-        # the same person tree in post processing). In this case, do not clear flat fields.
+        # We have merged the source (ingested) entity onto the destination (DB) entity,
+        # making the destination entity the source of truth. If source and destination
+        # are not the same object, we want to either a) delete the source
+        # entity out of the database if it has already been committed, or b) expunge it
+        # from the session so it does not get committed.
         if id(ingested_entity) != id(db_entity):
-            self.entities_to_convert_to_placeholder_or_expunge.append(ingested_entity)
+            self.entities_to_delete_or_expunge.append(ingested_entity)
 
         return IndividualMatchResult(
             merged_entity_trees=[merged_entity_tree], error_count=error_count
@@ -1093,12 +1079,13 @@ class StateEntityMatcher:
         # Merge all duplicate persons into the one db match
         match_tree = db_matches[0]
         for duplicate_match_tree in db_matches[1:]:
-            self._match_matched_tree(
+            result = self._match_matched_tree(
                 ingested_entity_tree=duplicate_match_tree,
                 db_match_tree=match_tree,
                 matched_entities_by_db_ids={},
                 root_entity_cls=ingested_entity_tree.entity.__class__,
             )
+            match_tree = one(result.merged_entity_trees)
         return match_tree
 
     def merge_multiparent_entities(self, persons: List[schema.StatePerson]) -> None:
