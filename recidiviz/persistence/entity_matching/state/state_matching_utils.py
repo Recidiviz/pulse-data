@@ -15,15 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
-import logging
 from enum import Enum
 from typing import List, Optional, Sequence, Set, Type, cast
 
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import dao, schema
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import get_state_database_entities
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.base_entity import EnumEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -509,31 +507,3 @@ def db_id_or_object_id(entity: DatabaseEntity) -> int:
     otherwise provides the object id.
     """
     return entity.get_id() if entity.get_id() else id(entity)
-
-
-def read_potential_match_db_persons(
-    session: Session,
-    region_code: str,
-    ingested_persons: List[schema.StatePerson],
-) -> List[schema.StatePerson]:
-    """Reads and returns all persons from the DB that are needed for entity matching,
-    given the |ingested_persons|.
-    """
-    root_external_ids = get_all_person_external_ids(ingested_persons)
-    logging.info(
-        "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
-        "external ids",
-        len(root_external_ids),
-    )
-    persons_by_root_entity = dao.read_people_by_external_ids(
-        session, region_code, root_external_ids
-    )
-
-    deduped_people = []
-    seen_person_ids: Set[int] = set()
-    for person in persons_by_root_entity:
-        if person.person_id not in seen_person_ids:
-            deduped_people.append(person)
-            seen_person_ids.add(person.person_id)
-
-    return deduped_people

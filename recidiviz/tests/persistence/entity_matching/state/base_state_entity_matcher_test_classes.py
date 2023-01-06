@@ -98,7 +98,7 @@ class BaseStateEntityMatcherTest(TestCase):
 
     def _assert_people_match(self, expected_people, matched_people, debug=False):
         converted_matched = converter.convert_schema_objects_to_entity(matched_people)
-        db_expected_with_backedges = converter.convert_entity_people_to_schema_people(
+        db_expected_with_backedges = converter.convert_entities_to_schema(
             expected_people
         )
         expected_with_backedges = converter.convert_schema_objects_to_entity(
@@ -182,7 +182,7 @@ class BaseStateMatchingUtilsTest(TestCase):
         debug: bool = False,
     ):
         converted_matched = converter.convert_schema_objects_to_entity(matched_people)
-        db_expected_with_backedges = converter.convert_entity_people_to_schema_people(
+        db_expected_with_backedges = converter.convert_entities_to_schema(
             expected_people
         )
         expected_with_backedges = converter.convert_schema_objects_to_entity(
