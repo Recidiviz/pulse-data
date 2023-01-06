@@ -21,6 +21,9 @@ from typing import List
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
+from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_delegate_factory import (
+    RootEntityEntityMatchingDelegateFactory,
+)
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     StateEntityMatcher,
 )
@@ -39,7 +42,7 @@ def match(
     ingest_metadata: IngestMetadata,
 ) -> MatchedEntities:
     matcher = _get_matcher(region, ingest_metadata)
-    return matcher.run_match(session, region, ingested_root_entities)
+    return matcher.run_match(session, ingested_root_entities)
 
 
 def _get_matcher(
@@ -50,4 +53,5 @@ def _get_matcher(
         region_code=region_code,
         ingest_metadata=ingest_metadata,
     )
-    return StateEntityMatcher(state_matching_delegate)
+    root_entity_delegate = RootEntityEntityMatchingDelegateFactory.build()
+    return StateEntityMatcher(state_matching_delegate, root_entity_delegate)

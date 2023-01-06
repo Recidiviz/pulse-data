@@ -21,6 +21,7 @@ from typing import Generic, List, TypeVar
 
 import attr
 
+from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.utils import environment
 from recidiviz.utils.params import str_to_bool
@@ -35,8 +36,14 @@ def should_persist() -> bool:
     )
 
 
+# A generic type to define any pure python root entity defined in entities.py.
 # TODO(#17471): Update to allow for either state_entities.StatePerson or state_entities.StateStaff
 RootEntityT = TypeVar("RootEntityT", bound=state_entities.StatePerson)
+
+
+# A generic type to define any SQLAlchemy database entity defined in schema.py.
+# TODO(#17471): Update to allow for either stte_schema.StatePerson or stte_schema.StateStaff
+SchemaRootEntityT = TypeVar("SchemaRootEntityT", bound=state_schema.StatePerson)
 
 
 @attr.s(frozen=True)

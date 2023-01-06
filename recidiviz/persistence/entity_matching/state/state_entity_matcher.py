@@ -21,7 +21,7 @@ ingested entities.
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple, Type, cast
+from typing import Dict, Generic, List, Optional, Set, Tuple, Type, cast
 
 from more_itertools import one
 
@@ -29,9 +29,6 @@ from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import check_not_dirty
-from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
-    convert_entity_people_to_schema_people,
-)
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -40,7 +37,6 @@ from recidiviz.persistence.entity.entity_utils import (
     is_placeholder,
     is_standalone_entity,
 )
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import (
     EntityTree,
@@ -49,6 +45,9 @@ from recidiviz.persistence.entity_matching.entity_matching_types import (
     MatchResults,
 )
 from recidiviz.persistence.entity_matching.monitoring import increment_error
+from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_delegate import (
+    RootEntityEntityMatchingDelegate,
+)
 from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
     StateIngestedTreeMerger,
 )
@@ -62,7 +61,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     is_match,
     is_multiple_id_entity,
     merge_flat_fields,
-    read_potential_match_db_persons,
     remove_child_from_entity,
 )
 from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
@@ -74,7 +72,7 @@ from recidiviz.persistence.errors import (
 )
 
 # How many person trees to search to fill the non_placeholder_ingest_types set.
-from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
 
 MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 20
 
@@ -103,11 +101,15 @@ class _EntityWithParentInfo:
 
 # TODO(#2504): Rename `ingested` and `db` entities to something more generic that
 # still accurately describes that one is being merged onto the other.
-class StateEntityMatcher:
+class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
     """Class that handles entity matching for all state data."""
 
     def __init__(
-        self, state_specific_logic_delegate: StateSpecificEntityMatchingDelegate
+        self,
+        state_specific_logic_delegate: StateSpecificEntityMatchingDelegate,
+        root_entity_delegate: RootEntityEntityMatchingDelegate[
+            RootEntityT, SchemaRootEntityT
+        ],
     ):
         self.all_ingested_db_objs: Set[DatabaseEntity] = set()
 
@@ -126,6 +128,11 @@ class StateEntityMatcher:
 
         # Delegate object with all state specific logic
         self.state_specific_logic_delegate = state_specific_logic_delegate
+
+        # Delegate object with helpers for managing root entities of different types
+        self.root_entity_delegate: RootEntityEntityMatchingDelegate[
+            RootEntityT, SchemaRootEntityT
+        ] = root_entity_delegate
 
         self.session: Optional[Session] = None
 
@@ -255,7 +262,6 @@ class StateEntityMatcher:
     def run_match(
         self,
         session: Session,
-        _: str,  # region_code, instead taken from state_matching_delegate
         ingested_root_entities: List[RootEntityT],
     ) -> MatchedEntities:
         """Attempts to match all persons from |ingested_persons| with
@@ -263,11 +269,7 @@ class StateEntityMatcher:
         that contains the results of matching.
         """
 
-        # TODO(#17471): Remove this check/cast and allow StateStaff as well
-        check_all_objs_have_type(ingested_root_entities, entities.StatePerson)
-        ingested_root_people = cast(List[entities.StatePerson], ingested_root_entities)
-
-        ingested_people = self.tree_merger.merge(ingested_root_people)
+        ingested_root_entities = self.tree_merger.merge(ingested_root_entities)
 
         self.set_session(session)
         logging.info(
@@ -275,11 +277,13 @@ class StateEntityMatcher:
             "at time [%s].",
             datetime.datetime.now().isoformat(),
         )
-        ingested_db_persons = convert_entity_people_to_schema_people(
-            ingested_people, populate_back_edges=False
+        ingested_db_root_entities = (
+            self.root_entity_delegate.convert_root_entities_to_schema_root_entities(
+                ingested_root_entities, populate_back_edges=False
+            )
         )
         self.non_placeholder_ingest_types = self.get_non_placeholder_ingest_types(
-            ingested_db_persons
+            ingested_db_root_entities
         )
 
         logging.info(
@@ -288,26 +292,29 @@ class StateEntityMatcher:
             datetime.datetime.now().isoformat(),
         )
 
-        check_all_objs_have_type(ingested_db_persons, schema.StatePerson)
-        db_persons = read_potential_match_db_persons(
-            session=session,
-            ingested_persons=ingested_db_persons,
-            region_code=self.state_specific_logic_delegate.get_region_code(),
+        db_root_entities = (
+            self.root_entity_delegate.read_potential_match_db_root_entities(
+                session=session,
+                ingested_root_entities=ingested_db_root_entities,
+                region_code=self.state_specific_logic_delegate.get_region_code(),
+            )
         )
 
         logging.info(
-            "Read [%d] persons from DB in region [%s]",
-            len(db_persons),
+            "Read [%d] root entities from DB in region [%s]",
+            len(db_root_entities),
             self.state_specific_logic_delegate.get_region_code(),
         )
 
-        self.set_db_person_cache(db_persons)
+        self.set_db_person_cache(db_root_entities)
 
         logging.info(
             "[Entity matching] Completed DB read at time [%s].",
             datetime.datetime.now().isoformat(),
         )
-        matched_entities_builder = self._run_match(ingested_db_persons, db_persons)
+        matched_entities_builder = self._run_match(
+            ingested_db_root_entities, db_root_entities
+        )
 
         # In order to maintain the invariant that all objects are properly
         # added to the Session when we return from entity_matching we
@@ -328,13 +335,19 @@ class StateEntityMatcher:
 
     def _run_match(
         self,
-        ingested_persons: List[schema.StatePerson],
-        db_persons: List[schema.StatePerson],
+        ingested_root_entities: List[SchemaRootEntityT],
+        db_root_entities: List[SchemaRootEntityT],
     ) -> MatchedEntities.Builder:
-        """Attempts to match |ingested_persons| with persons in |db_persons|.
-        Assumes no backedges are present in either |ingested_persons| or
-        |db_persons|.
+        """Attempts to match |ingested_root_entities| with root entities in
+        |db_root_entities|.Assumes no backedges are present in either
+        |ingested_root_entities| or |db_root_entities|.
         """
+        # TODO(#17471): Remove these checks/casts and allow StateStaff as well
+        check_all_objs_have_type(ingested_root_entities, schema.StatePerson)
+        ingested_persons = cast(List[schema.StatePerson], ingested_root_entities)
+        check_all_objs_have_type(db_root_entities, schema.StatePerson)
+        db_persons = cast(List[schema.StatePerson], db_root_entities)
+
         # Prevent automatic flushing of any entities associated with this
         # session until we have explicitly finished matching. This ensures
         # errors aren't thrown due to unexpected flushing of incomplete entity
