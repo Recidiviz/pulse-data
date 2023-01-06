@@ -647,6 +647,170 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         self.assertEqual(expected_parent_nodes, parentage_set)
 
+    def test_populate_ancestors_sub_dag(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        all_views_dag_walker.populate_node_view_builders(
+            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        )
+        all_views_dag_walker.populate_ancestor_sub_dags()
+
+        all_sub_dag_views = {
+            key.view_address: sorted(v.address for v in node.ancestors_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_key.items()
+        }
+
+        # Expected ancestor DAG views by view given this diamond structure:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #   \   /
+        #     6
+        expected_results = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): [
+                # All ancestor DAGs include the target view
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+            ],
+            BigQueryAddress(dataset_id="dataset_2", table_id="table_2"): [
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2")
+            ],
+            BigQueryAddress(dataset_id="dataset_3", table_id="table_3"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2"),
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+            ],
+            BigQueryAddress(dataset_id="dataset_4", table_id="table_4"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2"),
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+                BigQueryAddress(dataset_id="dataset_4", table_id="table_4"),
+            ],
+            BigQueryAddress(dataset_id="dataset_5", table_id="table_5"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2"),
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+                BigQueryAddress(dataset_id="dataset_5", table_id="table_5"),
+            ],
+            BigQueryAddress(dataset_id="dataset_6", table_id="table_6"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2"),
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+                BigQueryAddress(dataset_id="dataset_4", table_id="table_4"),
+                BigQueryAddress(dataset_id="dataset_5", table_id="table_5"),
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6"),
+            ],
+        }
+        self.assertEqual(expected_results, all_sub_dag_views)
+
+    def test_populate_descendants_sub_dag(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        all_views_dag_walker.populate_node_view_builders(
+            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        )
+        all_views_dag_walker.populate_descendant_sub_dags()
+
+        all_sub_dag_views = {
+            key.view_address: sorted(v.address for v in node.descendants_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_key.items()
+        }
+
+        # Expected descendant DAG views by view given this diamond structure:
+        #  1     2
+        #   \   /
+        #     3
+        #   /   \
+        #  4     5
+        #   \   /
+        #     6
+        expected_results = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1"),
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+                BigQueryAddress(dataset_id="dataset_4", table_id="table_4"),
+                BigQueryAddress(dataset_id="dataset_5", table_id="table_5"),
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6"),
+            ],
+            BigQueryAddress(dataset_id="dataset_2", table_id="table_2"): [
+                BigQueryAddress(dataset_id="dataset_2", table_id="table_2"),
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+                BigQueryAddress(dataset_id="dataset_4", table_id="table_4"),
+                BigQueryAddress(dataset_id="dataset_5", table_id="table_5"),
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6"),
+            ],
+            BigQueryAddress(dataset_id="dataset_3", table_id="table_3"): [
+                BigQueryAddress(dataset_id="dataset_3", table_id="table_3"),
+                BigQueryAddress(dataset_id="dataset_4", table_id="table_4"),
+                BigQueryAddress(dataset_id="dataset_5", table_id="table_5"),
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6"),
+            ],
+            BigQueryAddress(dataset_id="dataset_4", table_id="table_4"): [
+                BigQueryAddress(dataset_id="dataset_4", table_id="table_4"),
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6"),
+            ],
+            BigQueryAddress(dataset_id="dataset_5", table_id="table_5"): [
+                BigQueryAddress(dataset_id="dataset_5", table_id="table_5"),
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6"),
+            ],
+            BigQueryAddress(dataset_id="dataset_6", table_id="table_6"): [
+                # All descendant DAGs include the target view
+                BigQueryAddress(dataset_id="dataset_6", table_id="table_6")
+            ],
+        }
+
+        self.assertEqual(expected_results, all_sub_dag_views)
+
+    def test_populate_sub_dag_empty(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker([])
+        all_views_dag_walker.populate_node_view_builders([])
+        # Should not crash
+        all_views_dag_walker.populate_descendant_sub_dags()
+        all_views_dag_walker.populate_ancestor_sub_dags()
+
+    def test_populate_descendant_sub_dag_one_view(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(
+            self.diamond_shaped_dag_views_list[0:1]
+        )
+        all_views_dag_walker.populate_node_view_builders(
+            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        )
+
+        all_views_dag_walker.populate_descendant_sub_dags()
+
+        all_sub_dag_views = {
+            key.view_address: sorted(v.address for v in node.descendants_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_key.items()
+        }
+
+        expected_results = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+            ]
+        }
+        self.assertEqual(expected_results, all_sub_dag_views)
+
+    def test_populate_ancestor_sub_dag_one_view(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(
+            self.diamond_shaped_dag_views_list[0:1]
+        )
+        all_views_dag_walker.populate_node_view_builders(
+            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        )
+
+        all_views_dag_walker.populate_ancestor_sub_dags()
+
+        all_sub_dag_views = {
+            key.view_address: sorted(v.address for v in node.ancestors_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_key.items()
+        }
+
+        expected_results = {
+            BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): [
+                BigQueryAddress(dataset_id="dataset_1", table_id="table_1")
+            ]
+        }
+        self.assertEqual(expected_results, all_sub_dag_views)
+
     def test_get_sub_dag_root_node(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
         all_views_dag_walker.populate_node_view_builders(

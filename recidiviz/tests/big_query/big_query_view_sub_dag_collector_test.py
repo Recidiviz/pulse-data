@@ -30,7 +30,7 @@ from recidiviz.tests.big_query.big_query_view_dag_walker_test import (
 class BigQueryViewSubDagCollectorTest(unittest.TestCase):
     """Tests for BigQueryViewSubDagCollector"""
 
-    def test_single_view_subdag(self) -> None:
+    def test_single_view_sub_dag(self) -> None:
         collector = BigQueryViewSubDagCollector(
             view_builders_in_full_dag=DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
             view_addresses_in_sub_dag={
@@ -47,7 +47,7 @@ class BigQueryViewSubDagCollectorTest(unittest.TestCase):
             collector.collect_view_builders(),
         )
 
-    def test_single_dataset_in_subdag(self) -> None:
+    def test_single_dataset_in_sub_dag(self) -> None:
         collector = BigQueryViewSubDagCollector(
             view_builders_in_full_dag=DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST,
             view_addresses_in_sub_dag=None,

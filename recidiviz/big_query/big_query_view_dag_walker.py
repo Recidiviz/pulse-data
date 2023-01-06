@@ -180,6 +180,8 @@ class BigQueryViewDagNode:
         self._node_family: Optional[BigQueryViewDagNodeFamily] = None
 
         self._view_builder: Optional[BigQueryViewBuilder] = None
+        self._ancestors_sub_dag: Optional[BigQueryViewDagWalker] = None
+        self._descendants_sub_dag: Optional[BigQueryViewDagWalker] = None
 
     @property
     def node_family(self) -> "BigQueryViewDagNodeFamily":
@@ -241,6 +243,34 @@ class BigQueryViewDagNode:
 
     def set_view_builder(self, view_builder: BigQueryViewBuilder) -> None:
         self._view_builder = view_builder
+
+    def set_ancestors_sub_dag(self, ancestor_sub_dag: "BigQueryViewDagWalker") -> None:
+        self._ancestors_sub_dag = ancestor_sub_dag
+
+    @property
+    def ancestors_sub_dag(self) -> "BigQueryViewDagWalker":
+        """A DAG that includes this node and all nodes that are an ancestor of this
+        node.
+        """
+        if not self._ancestors_sub_dag:
+            raise ValueError("Must set ancestors_sub_dag via set_ancestors_sub_dag().")
+        return self._ancestors_sub_dag
+
+    def set_descendants_sub_dag(
+        self, descendants_sub_dag: "BigQueryViewDagWalker"
+    ) -> None:
+        self._descendants_sub_dag = descendants_sub_dag
+
+    @property
+    def descendants_sub_dag(self) -> "BigQueryViewDagWalker":
+        """A DAG that includes this node and all nodes that are a descendant of this
+        node.
+        """
+        if not self._descendants_sub_dag:
+            raise ValueError(
+                "Must set descendants_sub_dag via set_descendants_sub_dag()."
+            )
+        return self._descendants_sub_dag
 
 
 @attr.s
@@ -807,3 +837,55 @@ class BigQueryViewDagWalker:
         called after populate_node_view_builders() is called on this BigQueryDagWalker.
         """
         return [node.view_builder for node in self.nodes_by_key.values()]
+
+    def populate_ancestor_sub_dags(self) -> None:
+        """Builds and caches ancestor sub-DAGs on all nodes in this DAG."""
+
+        def populate_node_ancestors_sub_dag(
+            v: BigQueryView, parent_results: Dict[BigQueryView, None]
+        ) -> None:
+            """For a given view, calculates the ancestors sub-DAG by unioning together
+            the parent ancestor sub-DAGs."""
+            this_view_dag = BigQueryViewDagWalker([v])
+            this_view_dag.populate_node_view_builders(
+                [self.node_for_view(v).view_builder]
+            )
+
+            parent_nodes = [
+                self.node_for_view(parent_view) for parent_view in parent_results
+            ]
+            ancestors_sub_dag = self.union_dags(
+                this_view_dag,
+                *[n.ancestors_sub_dag for n in parent_nodes],
+            )
+
+            self.node_for_view(view=v).set_ancestors_sub_dag(ancestors_sub_dag)
+
+        self.process_dag(populate_node_ancestors_sub_dag)
+
+    def populate_descendant_sub_dags(self) -> None:
+        """Builds and caches descendant sub-DAGs on all nodes in this DAG."""
+
+        def populate_node_descendants_sub_dag(
+            v: BigQueryView, child_results: Dict[BigQueryView, None]
+        ) -> None:
+            """For a given view, calculates the descendants sub-DAG by unioning together
+            the child descendant sub-DAGs."""
+            this_view_dag = BigQueryViewDagWalker([v])
+            this_view_dag.populate_node_view_builders(
+                [self.node_for_view(v).view_builder]
+            )
+
+            child_nodes = [
+                self.node_for_view(child_view) for child_view in child_results
+            ]
+            descendants_sub_dag = self.union_dags(
+                this_view_dag,
+                *[n.descendants_sub_dag for n in child_nodes],
+            )
+
+            self.node_for_view(view=v).set_descendants_sub_dag(descendants_sub_dag)
+
+        # Process the DAG in the leaves -> roots direction so we process children
+        # first.
+        self.process_dag(populate_node_descendants_sub_dag, reverse=True)
