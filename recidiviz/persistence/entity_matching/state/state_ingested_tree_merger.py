@@ -30,6 +30,7 @@ from recidiviz.persistence.entity.entity_utils import (
 )
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.errors import EntityMatchingError
+from recidiviz.persistence.persistence_utils import RootEntityT
 
 
 class StateIngestedTreeMerger:
@@ -40,51 +41,51 @@ class StateIngestedTreeMerger:
     def __init__(self, field_index: CoreEntityFieldIndex) -> None:
         self.field_index = field_index
 
-    def merge(
-        self, ingested_persons: List[entities.StatePerson]
-    ) -> List[entities.StatePerson]:
-        """Merges all ingested StatePeople trees that can be connected via external_id.
+    def merge(self, ingested_root_entities: List[RootEntityT]) -> List[RootEntityT]:
+        """Merges all ingested root entity trees that can be connected via external_id.
 
-        Returns the list of unique StatePeople after this merging.
+        Returns the list of unique root entities after this merging.
         """
 
-        buckets = self.bucket_ingested_persons(ingested_persons)
+        buckets = self.bucket_ingested_root_entities(ingested_root_entities)
 
-        unique_persons: List[entities.StatePerson] = []
+        unique_root_entities: List[RootEntityT] = []
 
-        # Merge each bucket into one person
-        for people_to_merge in buckets:
-            unique_person, _ = self._merge_matched_tree_group(people_to_merge)
-            if unique_person:
-                unique_persons.append(unique_person)
+        # Merge each bucket into one entity
+        for root_entities_to_merge in buckets:
+            unique_root_entity, _ = self._merge_matched_tree_group(
+                root_entities_to_merge
+            )
+            if unique_root_entity:
+                unique_root_entities.append(unique_root_entity)
 
-        return unique_persons
+        return unique_root_entities
 
     @classmethod
-    def bucket_ingested_persons(
+    def bucket_ingested_root_entities(
         cls,
-        ingested_persons: List[entities.StatePerson],
-    ) -> List[List[entities.StatePerson]]:
-        """Buckets the list of ingested persons into groups that all should be merged
-        into the same person, based on their external ids. Each inner list in the
-        returned list should be merged into one person.
+        ingested_root_entities: List[RootEntityT],
+    ) -> List[List[RootEntityT]]:
+        """Buckets the list of ingested root entities into groups that all should be
+        merged into the same root entity, based on their external ids. Each inner list
+        in the returned list should be merged into one root entity.
         """
 
-        result_buckets: List[List[entities.StatePerson]] = []
+        result_buckets: List[List[RootEntityT]] = []
 
-        # First bucket all the people that should be merged
-        bucketed_persons_dict: Dict[str, List[entities.StatePerson]] = defaultdict(list)
+        # First bucket all the root entities that should be merged
+        bucketed_root_entities_dict: Dict[str, List[RootEntityT]] = defaultdict(list)
         external_id_key_to_primary: Dict[str, str] = {}
-        for person in ingested_persons:
-            external_id_keys = cls._person_external_id_keys(person)
+        for root_entity in ingested_root_entities:
+            external_id_keys = cls._root_entity_external_id_keys(root_entity)
             if len(external_id_keys) == 0:
                 raise ValueError(
-                    "Ingested StatePerson objects must have one or more assigned external ids."
+                    "Ingested root entity objects must have one or more assigned external ids."
                 )
 
-            # Find all the people who should be related to this person based on their
-            # external_ids and merge them into one bucket.
-            merged_bucket = [person]
+            # Find all the other root entities who should be related to this root entity
+            # based on their external_ids and merge them into one bucket.
+            merged_bucket = [root_entity]
             primary_buckets_to_merge = set()
             for external_id_key in external_id_keys:
                 if external_id_key in external_id_key_to_primary:
@@ -92,21 +93,25 @@ class StateIngestedTreeMerger:
                     primary_buckets_to_merge.add(primary_id_for_id)
 
             for external_id_key in primary_buckets_to_merge:
-                if external_id_key in bucketed_persons_dict:
-                    merged_bucket.extend(bucketed_persons_dict.pop(external_id_key))
+                if external_id_key in bucketed_root_entities_dict:
+                    merged_bucket.extend(
+                        bucketed_root_entities_dict.pop(external_id_key)
+                    )
 
             # Deterministically pick one of the ids to be the new primary id for this
             # merged bucket.
             all_primary_id_candidates = primary_buckets_to_merge.union(external_id_keys)
             primary_id = min(all_primary_id_candidates)
 
-            for bucket_person in merged_bucket:
-                for external_id_key in cls._person_external_id_keys(bucket_person):
+            for bucket_root_entity in merged_bucket:
+                for external_id_key in cls._root_entity_external_id_keys(
+                    bucket_root_entity
+                ):
                     external_id_key_to_primary[external_id_key] = primary_id
 
-            bucketed_persons_dict[primary_id] = merged_bucket
+            bucketed_root_entities_dict[primary_id] = merged_bucket
 
-        for bucket in bucketed_persons_dict.values():
+        for bucket in bucketed_root_entities_dict.values():
             result_buckets.append(bucket)
 
         return result_buckets
@@ -268,14 +273,20 @@ class StateIngestedTreeMerger:
         return children_by_field
 
     @staticmethod
-    def _person_external_id_keys(person: entities.StatePerson) -> Set[str]:
-        """Generates a set of unique string keys for a person's StatePersonExternalIds."""
-        return {f"{e.external_id}|{e.id_type}" for e in person.external_ids}
+    def _root_entity_external_id_keys(root_entity: RootEntityT) -> Set[str]:
+        """Generates a set of unique string keys for a root entity's external id objects."""
+        return {
+            f"{type(e)}#{e.external_id}|{e.id_type}" for e in root_entity.external_ids
+        }
 
     def _get_non_placeholder_ingested_entity_key(self, entity: Entity) -> str:
         """Returns a string key that can be used to bucket this non-placeholder entity."""
         external_id = entity.get_external_id()
-        if not external_id or isinstance(entity, entities.StatePersonExternalId):
+        if not external_id or isinstance(
+            # TODO(#17471): Update to include entities.StateStaffExternalId
+            entity,
+            entities.StatePersonExternalId,
+        ):
             return get_flat_fields_json_str(entity, self.field_index)
 
         return external_id

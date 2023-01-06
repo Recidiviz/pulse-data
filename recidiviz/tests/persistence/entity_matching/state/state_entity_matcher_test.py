@@ -1923,7 +1923,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         session = self._session()
         with self.assertRaisesRegex(
             ValueError,
-            "Ingested StatePerson objects must have one or more assigned external ids.",
+            "Ingested root entity objects must have one or more assigned external ids.",
         ):
             _ = self._match(session, ingested_people=[placeholder_person])
 

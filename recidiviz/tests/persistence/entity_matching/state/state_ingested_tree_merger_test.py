@@ -89,6 +89,7 @@ def make_incarceration_incident_outcome(
     )
 
 
+# TODO(#17471): Add analogous tests for `StateStaff` once it exists
 class TestStateIngestedTreeMerger(unittest.TestCase):
     """Tests for the StateIngestedTreeMerger class."""
 
@@ -424,8 +425,8 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         self.assertCountEqual(expected_people, merge_result)
 
 
-class TestBucketIngestedPersons(unittest.TestCase):
-    """Tests for bucket_ingested_persons() in StateIngestedTreeMerger."""
+class TestBucketIngestedRootEntities(unittest.TestCase):
+    """Tests for bucket_ingested_root_entities() in StateIngestedTreeMerger."""
 
     def test_bucket_single_ingested_person(self) -> None:
         ingested_persons = [
@@ -435,7 +436,9 @@ class TestBucketIngestedPersons(unittest.TestCase):
                 ],
             )
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            ingested_persons
+        )
         self.assertCountEqual(buckets, [ingested_persons])
 
     def test_bucket_two_people_different_id_types(self) -> None:
@@ -451,7 +454,9 @@ class TestBucketIngestedPersons(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            ingested_persons
+        )
         self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
 
     def test_bucket_two_people_different_ids(self) -> None:
@@ -467,7 +472,9 @@ class TestBucketIngestedPersons(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            ingested_persons
+        )
         self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
 
     def test_bucket_two_people_single_matching_id(self) -> None:
@@ -483,7 +490,9 @@ class TestBucketIngestedPersons(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            ingested_persons
+        )
         self.assertCountEqual(one(buckets), ingested_persons)
 
     def test_bucket_three_people_joined_by_one(self) -> None:
@@ -507,7 +516,7 @@ class TestBucketIngestedPersons(unittest.TestCase):
         ]
 
         for ingested_persons_permutation in permutations(ingested_persons):
-            buckets = StateIngestedTreeMerger.bucket_ingested_persons(
+            buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
                 list(ingested_persons_permutation)
             )
             self.assertCountEqual(one(buckets), ingested_persons)
@@ -539,7 +548,7 @@ class TestBucketIngestedPersons(unittest.TestCase):
         ]
 
         for ingested_persons_permutation in permutations(ingested_persons):
-            buckets = StateIngestedTreeMerger.bucket_ingested_persons(
+            buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
                 list(ingested_persons_permutation)
             )
 
@@ -560,9 +569,9 @@ class TestBucketIngestedPersons(unittest.TestCase):
         ]
         with self.assertRaisesRegex(
             ValueError,
-            "Ingested StatePerson objects must have one or more assigned external ids.",
+            "Ingested root entity objects must have one or more assigned external ids.",
         ):
-            _ = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
+            _ = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_persons)
 
     def test_bucket_two_placeholder_people(self) -> None:
         ingested_persons = [
@@ -579,9 +588,9 @@ class TestBucketIngestedPersons(unittest.TestCase):
         ]
         with self.assertRaisesRegex(
             ValueError,
-            "Ingested StatePerson objects must have one or more assigned external ids.",
+            "Ingested root entity objects must have one or more assigned external ids.",
         ):
-            _ = StateIngestedTreeMerger.bucket_ingested_persons(ingested_persons)
+            _ = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_persons)
 
     def test_two_buckets(self) -> None:
         ingested_persons = [
@@ -610,7 +619,7 @@ class TestBucketIngestedPersons(unittest.TestCase):
         ]
 
         for ingested_persons_permutation in permutations(ingested_persons):
-            buckets = StateIngestedTreeMerger.bucket_ingested_persons(
+            buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
                 list(ingested_persons_permutation)
             )
 
@@ -630,3 +639,5 @@ class TestBucketIngestedPersons(unittest.TestCase):
                     for b in expected_buckets
                 ],
             )
+
+    # TODO(#17471): Add test for bucketing entities of mixed types
