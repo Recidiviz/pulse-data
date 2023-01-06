@@ -651,14 +651,19 @@ class BigQueryViewDagWalker:
         return sub_dag
 
     @staticmethod
-    def union_dags(
-        dag_1: "BigQueryViewDagWalker", dag_2: "BigQueryViewDagWalker"
-    ) -> "BigQueryViewDagWalker":
-        views: List[BigQueryView] = [*{*dag_1.views, *dag_2.views}]
+    def union_dags(*dags: "BigQueryViewDagWalker") -> "BigQueryViewDagWalker":
+        found_view_addresses = set()
+        views: List[BigQueryView] = []
+        view_builders: List[BigQueryViewBuilder] = []
+        for dag in dags:
+            for view in dag.views:
+                if view.address not in found_view_addresses:
+                    views.append(view)
+                    view_builders.append(dag.node_for_view(view).view_builder)
+                    found_view_addresses.add(view.address)
+
         unioned_dag = BigQueryViewDagWalker(views=views)
-        unioned_dag.populate_node_view_builders(
-            [*dag_1.view_builders(), *dag_2.view_builders()]
-        )
+        unioned_dag.populate_node_view_builders(view_builders)
         return unioned_dag
 
     def get_sub_dag(
