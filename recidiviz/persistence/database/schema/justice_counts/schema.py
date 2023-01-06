@@ -343,7 +343,11 @@ class Agency(Source):
             "fips_county_code": self.fips_county_code,
             "state": self.get_state_name(),
             "team": [
-                {"name": user_account.name, "auth0_user_id": user_account.auth0_user_id}
+                {
+                    "name": user_account.name,
+                    "auth0_user_id": user_account.auth0_user_id,
+                    "email": user_account.email,
+                }
                 for user_account in self.user_accounts
             ],
         }
