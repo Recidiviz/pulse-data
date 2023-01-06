@@ -29,7 +29,7 @@ from recidiviz.task_eligibility.utils.candidate_population_query_fragments impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "SUPERVISION_POPULATION_ACTIVE_LEVELS"
+_POPULATION_NAME = "SUPERVISION_POPULATION_ACTIVE_LEVELS_08_2020_PRESENT"
 
 _DESCRIPTION = """Selects all spans of time in which a person is actively supervised on parole/probation/dual and
 whose supervision levels are not Unassigned, In Custody, or Interstate Compact, as tracked by data in our `sessions` dataset.
@@ -39,7 +39,9 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
-        additional_filters=supervision_population_active_levels_additional_filters(),
+        additional_filters=supervision_population_active_levels_additional_filters(
+            start_date="2020-08-01"
+        ),
         compartment_level_1="SUPERVISION",
     )
 )

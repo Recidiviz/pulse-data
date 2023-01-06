@@ -37,6 +37,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         session_attributes.compartment_level_2,
         session_attributes.correctional_level AS supervision_level,
         session_attributes.correctional_level_raw_text AS supervision_level_raw_text,
+        session_attributes.case_type,
         start_date,
         end_date_exclusive,
         dataflow_session_id,
@@ -72,6 +73,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         supervision_level,
         supervision_level_raw_text,
+        case_type,
         supervision_level_session_id_unordered,
         correctional_level_priority,
         is_discretionary_level,
@@ -92,6 +94,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
                     session.person_id,
                     session.supervision_level,
                     session.supervision_level_raw_text,
+                    session.case_type,
                     session.correctional_level_priority,
                     session.is_discretionary_level,
                     session.start_date,
@@ -103,10 +106,10 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
                     ON session.state_code = session_lag.state_code
                     AND session.person_id = session_lag.person_id
                     AND session.start_date = session_lag.end_date_exclusive
-                GROUP BY 1,2,3,4,5,6,7,8,9
+                GROUP BY 1,2,3,4,5,6,7,8,9,10
                 )
             )
-    GROUP BY 1,2,3,4,5,6,7
+    GROUP BY 1,2,3,4,5,6,7,8
     )
     ,
     sessionized_cte_ordered AS
@@ -125,6 +128,7 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         session.dataflow_session_id_end,
         session.supervision_level,
         session.supervision_level_raw_text,
+        session.case_type,
         session.start_date,
         session.end_date_exclusive,
         DATE_SUB(session.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
