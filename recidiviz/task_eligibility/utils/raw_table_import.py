@@ -33,34 +33,49 @@ def cis_319_term_cte(external_id: bool = False) -> str:
         - Drops zero-day sessions
         - Drops start dates that come after end_dates
         - Transform magic start and end dates to NULL
+        - In case a revocation happened in between the term, it uses the revocation
+            admission date as the intake_date/start_date
 
     Args:
         external_id (bool): if True, will output external_id column
     """
 
-    return f"""term_cte AS (
-    -- Term data with intake date and expected release date
+    return f"""revocations AS (
     SELECT 
-        state_code, 
         person_id,
+        admission_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
+    WHERE state_code = 'US_ME'
+        AND admission_reason = 'REVOCATION'
+    ),
+    
+    term_cte AS (
+    -- Term data with intake date and expected release date
+    SELECT
+        t.state_code, 
+        t.person_id,
         {"Cis_100_Client_Id AS external_id," if external_id else ""}
-        {revert_nonnull_start_date_clause('start_date')} AS start_date,
+        COALESCE(admission_date, {revert_nonnull_start_date_clause('start_date')}) AS start_date,
         {revert_nonnull_end_date_clause('end_date')} AS end_date,
-        Cis_1200_Term_Status_Cd AS status,
+        t.Cis_1200_Term_Status_Cd AS status,
     FROM (
             SELECT
                 *,
-                {nonnull_start_date_clause('SAFE_CAST(LEFT(intake_date, 10) AS DATE)')} AS start_date,
-                {nonnull_end_date_clause('SAFE_CAST(LEFT(Curr_Cust_Rel_Date, 10) AS DATE)')} AS end_date,  
+                
+                {nonnull_start_date_clause('DATE(SAFE_CAST(intake_date AS DATETIME))')} AS start_date,
+                {nonnull_end_date_clause('DATE(SAFE_CAST(Curr_Cust_Rel_Date AS DATETIME))')} AS end_date,  
                 -- TODO(#16175) should ingest the expected release date sometime soon
             FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_319_TERM_latest`
-            -- Using INNER JOIN here does drop a handful of people who for some reason don't have `person_id` values
+            -- TODO(#17653) INNER JOIN drops a handful of people who don't have `person_id` values
             INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
                 ON Cis_100_Client_Id = external_id
                 AND id_type = 'US_ME_DOC'
-         )
-    WHERE start_date != end_date -- Drop if intake date is = Expected release date
-        AND start_date < end_date -- Drop if end_datetime is before start_datetime
+         ) t
+    LEFT JOIN revocations r
+        ON r.admission_date BETWEEN {nonnull_start_date_clause('t.start_date')} AND {nonnull_end_date_clause('t.end_date')}
+        AND r.person_id = t.person_id
+    WHERE start_date < end_date -- Drop if end_datetime is before start_datetime
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY Term_Id ORDER BY admission_date DESC) = 1
 )"""
 
 
