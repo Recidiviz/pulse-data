@@ -44,7 +44,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     can_atomically_merge_entity,
     generate_child_entity_trees,
     get_all_entity_trees_of_cls,
-    get_all_person_external_ids,
+    get_all_root_entity_external_ids,
     merge_flat_fields,
     nonnull_fields_entity_match,
     remove_child_from_entity,
@@ -544,7 +544,9 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             ],
         )
 
-        self.assertCountEqual([_EXTERNAL_ID], get_all_person_external_ids([person]))
+        self.assertCountEqual(
+            [_EXTERNAL_ID], get_all_root_entity_external_ids([person])
+        )
 
     def test_getAllPersonExternalIds_emptyExternalId_raises(self) -> None:
         incarceration_sentence = schema.StateIncarcerationSentence(
@@ -556,12 +558,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
         with self.assertRaises(EntityMatchingError):
-            get_all_person_external_ids([person])
+            get_all_root_entity_external_ids([person])
 
     def test_getAllPersonExternalIds_emptyPersonExternalId_raises(self) -> None:
         person = schema.StatePerson()
         with self.assertRaises(EntityMatchingError):
-            get_all_person_external_ids([person])
+            get_all_root_entity_external_ids([person])
 
     def test_completeEnumSet_admittedForCommitmentFromSupervision(self) -> None:
         period = schema.StateIncarcerationPeriod()
