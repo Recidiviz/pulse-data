@@ -15,16 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { SearchOutlined } from "@ant-design/icons";
-import {
-  Button,
-  Form,
-  Input,
-  message,
-  PageHeader,
-  Select,
-  Space,
-  Table,
-} from "antd";
+import { Button, Input, message, PageHeader, Select, Space, Table } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
@@ -39,12 +30,10 @@ import {
 } from "./constants";
 
 const UserProvisioningView = (): JSX.Element => {
-  const [showSpinner, setShowSpinner] = useState(false);
-  const { data: usersData, setData: setUsersData } =
-    useFetchedDataJSON<UsersResponse>(getUsers);
+  const [showSpinner] = useState(false);
+  const { data: usersData } = useFetchedDataJSON<UsersResponse>(getUsers);
   const { data: agenciesData } =
     useFetchedDataJSON<AgenciesResponse>(getAgencies);
-  const [form] = Form.useForm();
 
   const onAgencyChange = async (user: User, agencyIds: number[]) => {
     try {

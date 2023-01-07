@@ -249,11 +249,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   // value. Because the return values vary depending on whether the status
   // indicates a success, this function only returns the associated value if
   // the associated status is "fulfilled", otherwise it returns null.
-  function getValueIfResolved<Result extends PromiseSettledResult<any>>(
-    result: Result
-  ): Result extends { status: "fulfilled"; value: infer Value } ? Value : null {
-    const settledResult: PromiseSettledResult<any> = result;
-    return settledResult.status === "fulfilled" ? settledResult.value : null;
+  function getValueIfResolved<Value>(
+    result: PromiseSettledResult<Value>
+  ): Value | null {
+    return result.status === "fulfilled" ? result.value : null;
   }
 
   const getStatusData = React.useCallback(async () => {
@@ -322,7 +321,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       }
       setDataLoading(false);
     }
-  }, [stateInfo]);
+  }, [stateInfo, getStatusData]);
 
   React.useEffect(() => {
     getData();
