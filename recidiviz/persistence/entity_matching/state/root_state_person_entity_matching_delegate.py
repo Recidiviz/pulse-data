@@ -19,7 +19,7 @@ when entity matching root entities of type StatePerson.
 """
 
 import logging
-from typing import List
+from typing import List, Type
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao
@@ -35,6 +35,7 @@ from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_del
 from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     get_all_root_entity_external_ids,
 )
+from recidiviz.persistence.persistence_utils import SchemaRootEntityT
 
 
 class RootStatePersonEntityMatchingDelegate(
@@ -77,3 +78,9 @@ class RootStatePersonEntityMatchingDelegate(
             len(root_external_ids),
         )
         return dao.read_people_by_external_ids(session, region_code, root_external_ids)
+
+    def get_root_entity_backedge_field_name(self) -> str:
+        return "person"
+
+    def get_schema_root_entity_cls(self) -> Type[SchemaRootEntityT]:
+        return state_schema.StatePerson
