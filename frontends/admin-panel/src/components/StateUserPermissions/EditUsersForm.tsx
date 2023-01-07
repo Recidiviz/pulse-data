@@ -14,11 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Button, Form, Input, Select } from "antd";
+import { Alert, Button, Form, Input, Popconfirm, Select } from "antd";
 import * as React from "react";
 import { useState } from "react";
-import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import CustomPermissionsPanel from "./CustomPermissionsPanel";
 
 export const CreateEditUserForm = ({
   editVisible,
@@ -62,6 +62,12 @@ export const CreateEditUserForm = ({
     onRevokeAccess();
   };
 
+  const confirm = () =>
+    new Promise((resolve) => {
+      handleRevokeAccess();
+      resolve(null);
+    });
+
   return (
     <DraggableModal
       visible={editVisible}
@@ -71,9 +77,15 @@ export const CreateEditUserForm = ({
         <Button onClick={handleCancel} key="cancel">
           Cancel
         </Button>,
-        <Button type="primary" danger onClick={handleRevokeAccess} key="revoke">
-          Revoke access
-        </Button>,
+        <Popconfirm
+          title="Confirm revoke access for user(s)"
+          onConfirm={confirm}
+          key="revoke"
+        >
+          <Button type="primary" danger>
+            Revoke access
+          </Button>
+        </Popconfirm>,
         <Button type="primary" onClick={handleEdit} key="edit">
           Edit
         </Button>,

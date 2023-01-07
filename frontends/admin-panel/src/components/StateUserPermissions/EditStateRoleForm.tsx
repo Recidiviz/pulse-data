@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Alert, Button } from "antd";
+import { Form, Alert, Button, Popconfirm } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
@@ -51,7 +51,11 @@ export const CreateEditStateRoleForm = ({
     form.resetFields();
     editOnDelete();
   };
-
+  const confirm = () =>
+    new Promise((resolve) => {
+      handleDelete();
+      resolve(null);
+    });
   return (
     <DraggableModal
       visible={editVisible}
@@ -61,9 +65,15 @@ export const CreateEditStateRoleForm = ({
         <Button onClick={handleCancel} key="cancel">
           Cancel
         </Button>,
-        <Button type="primary" danger onClick={handleDelete} key="delete">
-          Remove role
-        </Button>,
+        <Popconfirm
+          title="Confirm remove role(s)"
+          onConfirm={confirm}
+          key="delete"
+        >
+          <Button type="primary" danger>
+            Remove role
+          </Button>
+        </Popconfirm>,
         <Button type="primary" onClick={handleEdit} key="edit">
           Update
         </Button>,
