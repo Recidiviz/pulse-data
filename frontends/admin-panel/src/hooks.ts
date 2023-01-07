@@ -43,7 +43,7 @@ function useFetchedData<T>(
       setLoading(false);
     };
     fetchData(fetchReq);
-  }, [fetchReq]);
+  }, [fetchReq, responseHandler]);
 
   return { loading, data, setData };
 }
@@ -51,14 +51,23 @@ function useFetchedData<T>(
 export const useFetchedDataJSON = <T>(
   fetchReq: () => Promise<Response>
 ): FetchedDataResponse<T> => {
-  return useFetchedData(fetchReq, (r) => r.json());
+  return useFetchedData(
+    fetchReq,
+    React.useCallback((r) => r.json(), [])
+  );
 };
 
 export const useFetchedDataProtobuf = <T>(
   fetchReq: () => Promise<Response>,
   parseFunction: (data: Uint8Array) => T
 ): FetchedDataResponse<T> => {
-  return useFetchedData(fetchReq, async (r: Response) => {
-    return parseFunction(new Uint8Array(await r.arrayBuffer()));
-  });
+  return useFetchedData(
+    fetchReq,
+    React.useCallback(
+      async (r: Response) => {
+        return parseFunction(new Uint8Array(await r.arrayBuffer()));
+      },
+      [parseFunction]
+    )
+  );
 };
