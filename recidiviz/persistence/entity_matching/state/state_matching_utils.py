@@ -16,7 +16,7 @@
 # ============================================================================
 """State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
 from enum import Enum
-from typing import List, Optional, Sequence, Set, Type, cast
+from typing import List, Optional, Set, Type, cast
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -431,71 +431,6 @@ def get_multiparent_classes() -> List[Type[DatabaseEntity]]:
     direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
     direction_checker.assert_sorted(cls_list)
     return cls_list
-
-
-def get_all_entities_of_cls(
-    sources: Sequence[DatabaseEntity],
-    cls: Type[DatabaseEntity],
-    field_index: CoreEntityFieldIndex,
-) -> List[DatabaseEntity]:
-    """Returns all entities found in the provided |sources| of type |cls|."""
-    seen_entities: List[DatabaseEntity] = []
-    for tree in get_all_entity_trees_of_cls(sources, cls, field_index):
-        seen_entities.append(tree.entity)
-    return seen_entities
-
-
-def get_all_entity_trees_of_cls(
-    sources: Sequence[DatabaseEntity],
-    cls: Type[DatabaseEntity],
-    field_index: CoreEntityFieldIndex,
-) -> List[EntityTree]:
-    """Finds all unique entities of type |cls| in the provided |sources|,
-    and returns their corresponding EntityTrees."""
-    seen_ids: Set[int] = set()
-    seen_trees: List[EntityTree] = []
-    direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
-    for source in sources:
-        tree = EntityTree(entity=source, ancestor_chain=[])
-        _get_all_entity_trees_of_cls_helper(
-            tree, cls, seen_ids, seen_trees, direction_checker, field_index
-        )
-    return seen_trees
-
-
-def _get_all_entity_trees_of_cls_helper(
-    tree: EntityTree,
-    cls: Type[DatabaseEntity],
-    seen_ids: Set[int],
-    seen_trees: List[EntityTree],
-    direction_checker: SchemaEdgeDirectionChecker,
-    field_index: CoreEntityFieldIndex,
-) -> None:
-    """
-    Finds all objects in the provided |tree| graph which have the type |cls|. When an object of type |cls| is found,
-    updates the provided |seen_ids| and |seen_trees| with the object's id and EntityTree respectively.
-    """
-    entity = tree.entity
-    entity_cls = entity.__class__
-
-    # If |cls| is higher ranked than |entity_cls|, it is impossible to reach an object of type |cls| from the current
-    # entity.
-    if direction_checker.is_higher_ranked(cls, entity_cls):
-        return
-    if entity_cls == cls and id(entity) not in seen_ids:
-        seen_ids.add(id(entity))
-        seen_trees.append(tree)
-        return
-    for child_field_name in field_index.get_fields_with_non_empty_values(
-        entity, EntityFieldType.FORWARD_EDGE
-    ):
-        child_trees = tree.generate_child_trees(
-            entity.get_field_as_list(child_field_name)
-        )
-        for child_tree in child_trees:
-            _get_all_entity_trees_of_cls_helper(
-                child_tree, cls, seen_ids, seen_trees, direction_checker, field_index
-            )
 
 
 def db_id_or_object_id(entity: DatabaseEntity) -> int:

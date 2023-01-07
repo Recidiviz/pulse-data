@@ -43,7 +43,6 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     add_child_to_entity,
     can_atomically_merge_entity,
     generate_child_entity_trees,
-    get_all_entity_trees_of_cls,
     get_all_root_entity_external_ids,
     merge_flat_fields,
     nonnull_fields_entity_match,
@@ -495,36 +494,6 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             child_to_remove=charge_another,
         )
         self.assertEqual(sentence.charges, [charge])
-
-    def test_getAllEntityTreesOfCls(self) -> None:
-        incarceration_sentence = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=_ID
-        )
-        incarceration_sentence_2 = schema.StateIncarcerationSentence(
-            incarceration_sentence_id=_ID_2
-        )
-        person = schema.StatePerson(
-            person_id=_ID,
-            incarceration_sentences=[incarceration_sentence, incarceration_sentence_2],
-        )
-
-        self.assertEqual(
-            [
-                EntityTree(entity=incarceration_sentence, ancestor_chain=[person]),
-                EntityTree(entity=incarceration_sentence_2, ancestor_chain=[person]),
-            ],
-            get_all_entity_trees_of_cls(
-                [person],
-                schema.StateIncarcerationSentence,
-                field_index=self.field_index,
-            ),
-        )
-        self.assertEqual(
-            [EntityTree(entity=person, ancestor_chain=[])],
-            get_all_entity_trees_of_cls(
-                [person], schema.StatePerson, field_index=self.field_index
-            ),
-        )
 
     def test_getAllPersonExternalIds(self) -> None:
         supervision_sentence = schema.StateSupervisionSentence(external_id=_EXTERNAL_ID)
