@@ -516,6 +516,7 @@ const StateUserPermissionsView = (): JSX.Element => {
           }}
         />
         <Button
+          disabled={selectedRowKeys.length < 1}
           onClick={() => {
             setEditVisible(true);
           }}
