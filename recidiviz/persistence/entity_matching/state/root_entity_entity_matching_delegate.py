@@ -19,7 +19,7 @@ root entity that is being matched in entity matching.
 """
 
 import abc
-from typing import Generic, List
+from typing import Generic, List, Type
 
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
@@ -47,4 +47,17 @@ class RootEntityEntityMatchingDelegate(Generic[RootEntityT, SchemaRootEntityT]):
     ) -> List[SchemaRootEntityT]:
         """Reads and returns all matching root entities of the appropriate type from the
         DB that are needed for entity matching, given the |ingested_root_entities|.
+        """
+
+    @abc.abstractmethod
+    def get_root_entity_backedge_field_name(self) -> str:
+        """For non-root entity objects that hang off of the root entity associated with
+        this delegate, returns the name of the relationship field that points back to
+        the root entity (e.g the "person" field on StateSupervisionPeriod).
+        """
+
+    @abc.abstractmethod
+    def get_schema_root_entity_cls(self) -> Type[SchemaRootEntityT]:
+        """Returns the class for the SQLAlchemy root entity type associated with this
+        delegate.
         """

@@ -21,13 +21,12 @@ ingested entities.
 import datetime
 import logging
 from collections import defaultdict
-from typing import Dict, Generic, List, Optional, Set, Tuple, Type, cast
+from typing import Dict, Generic, List, Optional, Set, Tuple, Type
 
 from more_itertools import one
 
-from recidiviz.common.common_utils import check_all_objs_have_type
+from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import check_not_dirty
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import (
@@ -70,10 +69,9 @@ from recidiviz.persistence.errors import (
     EntityMatchingError,
     MatchedMultipleIngestedEntitiesError,
 )
-
-# How many person trees to search to fill the non_placeholder_ingest_types set.
 from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
 
+# How many root entity trees to search to fill the non_placeholder_ingest_types set.
 MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 20
 
 
@@ -182,7 +180,9 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                 f"Failed to identify one of the non-placeholder ingest types: "
                 f"[{entity_cls.__name__}]. Entity: [{entity}]"
             )
-            if hasattr(entity, "external_id") or isinstance(entity, schema.StatePerson):
+            if hasattr(entity, "external_id") or isinstance(
+                entity, self.root_entity_delegate.get_schema_root_entity_cls()
+            ):
                 # TODO(#7908): This was changed from raising a value error to just logging
                 # an error. This should probably be re-visited to see if we can re-enable
                 # raising the error.
@@ -346,24 +346,16 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         |db_root_entities|.Assumes no backedges are present in either
         |ingested_root_entities| or |db_root_entities|.
         """
-        # TODO(#17471): Remove these checks/casts and allow StateStaff as well
-        check_all_objs_have_type(ingested_root_entities, schema.StatePerson)
-        ingested_persons = cast(List[schema.StatePerson], ingested_root_entities)
-        check_all_objs_have_type(db_root_entities, schema.StatePerson)
-        db_persons = cast(List[schema.StatePerson], db_root_entities)
-
         # Prevent automatic flushing of any entities associated with this
         # session until we have explicitly finished matching. This ensures
         # errors aren't thrown due to unexpected flushing of incomplete entity
         # relationships.
         session = self.get_session()
         with session.no_autoflush:
-            logging.info("[Entity matching] Pre-processing")
-            ingested_persons = self._perform_match_preprocessing(ingested_persons)
-
-            logging.info("[Entity matching] Matching persons")
-            matched_entities_builder = self._match_persons(
-                ingested_persons=ingested_persons, db_persons=db_persons
+            logging.info("[Entity matching] Matching root entities")
+            matched_entities_builder = self._match_root_entities(
+                ingested_root_entities=ingested_root_entities,
+                db_root_entities=db_root_entities,
             )
             logging.info(
                 "[Entity matching] Matching root entities returned [%s] matched entities",
@@ -372,109 +364,106 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
 
             logging.info("[Entity matching] Matching post-processing")
             self._perform_match_postprocessing(
-                matched_entities_builder.root_entities, db_persons
+                matched_entities_builder.root_entities, db_root_entities
             )
         return matched_entities_builder
 
-    def _perform_match_preprocessing(
-        self, ingested_persons: List[schema.StatePerson]
-    ) -> List[schema.StatePerson]:
-        """Performs state specific preprocessing on the provided
-        |ingested_persons|.
-
-        After post processing, we guarantee that all backedges are properly
-        set on entities within the |ingested_persons| trees.
-        """
-        logging.info("[Entity matching] Pre-processing: Populate person backedges")
-        self._populate_person_backedges(ingested_persons)
-        return ingested_persons
-
     def _perform_match_postprocessing(
         self,
-        matched_persons: List[schema.StatePerson],
-        db_persons: List[schema.StatePerson],
+        matched_root_entities: List[SchemaRootEntityT],
+        db_root_entities: List[SchemaRootEntityT],
     ) -> None:
-        # TODO(#1868): Remove any placeholders in graph without children after
-        # write
         logging.info("[Entity matching] Merge multi-parent entities")
-        self.merge_multiparent_entities(matched_persons)
+        self.merge_multiparent_entities(matched_root_entities)
 
-        # TODO(#2894): Create long term strategy for dealing with/rolling back partially updated DB entities.
-        # Make sure person ids are added to all entities in the matched persons and also to all read DB people. We
-        # populate back edges on DB people as a precaution in case entity matching failed for any of these people
-        # after some updates had already taken place.
-        logging.info("[Entity matching] Populate indirect person backedges")
-        new_people = [p for p in matched_persons if p.person_id is None]
-        self._populate_person_backedges(new_people)
-        self._populate_person_backedges(db_persons)
+        # TODO(#2894): Create long term strategy for dealing with/rolling back partially
+        #  updated DB entities.
+        # Make sure root entity ids are added to all entities in the matched root
+        # entities and also to all read DB root entities. We populate back edges on DB root
+        # entities as a precaution in case entity matching failed for any of these root
+        # entities after some updates had already taken place.
+        logging.info("[Entity matching] Populate indirect root entity backedges")
+        new_root_entities = [
+            p for p in matched_root_entities if p.get_primary_key() is None
+        ]
+        self._populate_root_entity_backedges(new_root_entities)
+        self._populate_root_entity_backedges(db_root_entities)
 
-    def _match_persons(
+    def _match_root_entities(
         self,
         *,
-        ingested_persons: List[schema.StatePerson],
-        db_persons: List[schema.StatePerson],
+        ingested_root_entities: List[SchemaRootEntityT],
+        db_root_entities: List[SchemaRootEntityT],
     ) -> MatchedEntities.Builder:
-        """Attempts to match all persons from |ingested_persons| with the
-        provided |db_persons|. Results are returned in the MatchedEntities
-        object which contains all successfully matched and merged persons as
+        """Attempts to match all root entities from |ingested_root_entities| with the
+        provided |db_root_entities|. Results are returned in the MatchedEntities
+        object which contains all successfully matched and merged root entities as
         well as an error count that is incremented every time an error is raised
-        matching an ingested person.
+        matching an ingested root entity.
 
-        All returned persons have direct and indirect backedges set.
+        All returned root entities have direct and indirect backedges set.
         """
-        db_person_trees = [
-            EntityTree(entity=db_person, ancestor_chain=[]) for db_person in db_persons
+        schema_root_entity_cls = self.root_entity_delegate.get_schema_root_entity_cls()
+        root_entity_cls_name = to_snake_case(schema_root_entity_cls.__name__)
+        db_root_entity_trees = [
+            EntityTree(entity=db_root_entity, ancestor_chain=[])
+            for db_root_entity in db_root_entities
         ]
-        ingested_person_trees = [
-            EntityTree(entity=ingested_person, ancestor_chain=[])
-            for ingested_person in ingested_persons
+        ingested_root_entity_trees = [
+            EntityTree(entity=ingested_root_entity, ancestor_chain=[])
+            for ingested_root_entity in ingested_root_entities
         ]
 
-        total_root_entities = len(ingested_persons)
-        persons_match_results = self._match_entity_trees(
-            ingested_entity_trees=ingested_person_trees,
-            db_entity_trees=db_person_trees,
-            root_entity_cls=schema.StatePerson,
+        total_root_entities = len(ingested_root_entities)
+        root_entity_match_results = self._match_entity_trees(
+            ingested_entity_trees=ingested_root_entity_trees,
+            db_entity_trees=db_root_entity_trees,
+            root_entity_cls=schema_root_entity_cls,
         )
 
-        updated_persons: List[schema.StatePerson] = []
-        for match_result in persons_match_results.individual_match_results:
+        updated_root_entities: List[SchemaRootEntityT] = []
+        for match_result in root_entity_match_results.individual_match_results:
             if not match_result.merged_entity_trees:
                 raise EntityMatchingError(
                     "Expected match_result.merged_entity_trees to not be empty.",
-                    "state_person",
+                    root_entity_cls_name,
                 )
 
-            # It is possible that multiple ingested persons match to the same
-            # DB person, in which case we should only keep one reference to
+            # It is possible that multiple ingested root entities match to the same
+            # DB root entity, in which case we should only keep one reference to
             # that object.
-            for merged_person_tree in match_result.merged_entity_trees:
-                if not isinstance(merged_person_tree.entity, schema.StatePerson):
+            for merged_root_entity_tree in match_result.merged_entity_trees:
+                if not isinstance(
+                    merged_root_entity_tree.entity, schema_root_entity_cls
+                ):
                     raise EntityMatchingError(
-                        f"Expected merged_person_tree.entity [{merged_person_tree.entity}] to "
-                        f"have type schema.StatePerson.",
-                        "state_person",
+                        f"Expected merged_root_entity_tree.entity [{merged_root_entity_tree.entity}] to "
+                        f"have type [{schema_root_entity_cls.__name__}].",
+                        root_entity_cls_name,
                     )
 
-                if merged_person_tree.entity not in updated_persons:
-                    updated_persons.append(merged_person_tree.entity)
+                if merged_root_entity_tree.entity not in updated_root_entities:
+                    updated_root_entities.append(merged_root_entity_tree.entity)
 
-        self._populate_person_backedges(updated_persons)
+        self._populate_root_entity_backedges(updated_root_entities)
 
         matched_entities_builder = MatchedEntities.builder()
-        matched_entities_builder.root_entities = updated_persons
-        matched_entities_builder.error_count = persons_match_results.error_count
+        matched_entities_builder.root_entities = updated_root_entities
+        matched_entities_builder.error_count = root_entity_match_results.error_count
         matched_entities_builder.total_root_entities = total_root_entities
         return matched_entities_builder
 
-    def _populate_person_backedges(
-        self, updated_persons: List[schema.StatePerson]
+    def _populate_root_entity_backedges(
+        self, root_entities: List[SchemaRootEntityT]
     ) -> None:
-        for person in updated_persons:
-            children = get_all_db_objs_from_tree(person, self.field_index)
+        back_edge_field_name = (
+            self.root_entity_delegate.get_root_entity_backedge_field_name()
+        )
+        for root_entity in root_entities:
+            children = get_all_db_objs_from_tree(root_entity, self.field_index)
             for child in children:
-                if child is not person and not is_standalone_entity(child):
-                    child.set_field("person", person)
+                if child is not root_entity and not is_standalone_entity(child):
+                    child.set_field(back_edge_field_name, root_entity)
 
     def _match_entity_trees(
         self,
@@ -1041,7 +1030,10 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         returned.
         """
         db_match_candidates = db_entity_trees
-        if isinstance(ingested_entity_tree.entity, schema.StatePerson):
+        if isinstance(
+            ingested_entity_tree.entity,
+            self.root_entity_delegate.get_schema_root_entity_cls(),
+        ):
             db_match_candidates = self.get_cached_matches(ingested_entity_tree.entity)
 
         # Entities that can have multiple external IDs need special casing to
@@ -1093,7 +1085,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         if not db_matches:
             return None
 
-        # Merge all duplicate persons into the one db match
+        # Merge all duplicate root entities into the one db match
         match_tree = db_matches[0]
         for duplicate_match_tree in db_matches[1:]:
             result = self._match_matched_tree(
@@ -1105,8 +1097,10 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             match_tree = one(result.merged_entity_trees)
         return match_tree
 
-    def merge_multiparent_entities(self, persons: List[schema.StatePerson]) -> None:
-        """For each person in the provided |persons|, looks at all of the child
+    def merge_multiparent_entities(
+        self, root_entities: List[SchemaRootEntityT]
+    ) -> None:
+        """For each entity in the provided |root_entities|, looks at all of the child
         entities that can have multiple parents, and merges these entities where
         possible.
         """
@@ -1117,9 +1111,9 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                 "[Entity matching] Merging multi-parent entities of class [%s]",
                 cls.__name__,
             )
-            for person in persons:
+            for root_entity in root_entities:
                 entity_map: Dict[str, List[_EntityWithParentInfo]] = {}
-                self._populate_multiparent_map(person, cls, entity_map)
+                self._populate_multiparent_map(root_entity, cls, entity_map)
                 self._merge_multiparent_entities_from_map(entity_map)
 
     def _merge_multiparent_entities_from_map(
