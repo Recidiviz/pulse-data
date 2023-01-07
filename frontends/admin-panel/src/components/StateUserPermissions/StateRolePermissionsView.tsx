@@ -232,6 +232,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
           }}
         />
         <Button
+          disabled={selectedRowKeys.length < 1}
           onClick={() => {
             setEditVisible(true);
           }}
