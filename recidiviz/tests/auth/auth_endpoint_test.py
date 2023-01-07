@@ -115,6 +115,10 @@ class AuthEndpointTests(TestCase):
                 "auth_endpoint_blueprint.dashboard_user_restrictions"
             )
             self.users = flask.url_for("auth_endpoint_blueprint.users")
+            self.user = flask.url_for(
+                "auth_endpoint_blueprint.users",
+                email="parameter@domain.org",
+            )
             self.add_user = flask.url_for(
                 "auth_endpoint_blueprint.add_user",
                 email="parameter@domain.org",
@@ -921,6 +925,75 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
         )
         self.assertEqual(expected, json.loads(response.data))
+
+    def test_get_user(self) -> None:
+        user_1 = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_CO",
+            external_id="ABC",
+            role="leadership_role",
+            district="District",
+        )
+        user_2 = generate_fake_rosters(
+            email="user@domain.org",
+            region_code="US_CO",
+            external_id="XXXX",
+            role="line_staff_user",
+            district="District",
+        )
+        default = generate_fake_default_permissions(
+            state="US_CO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes={"A": "B", "B": "C"},
+            feature_variants={"D": "E"},
+        )
+        add_entity_to_database_session(self.database_key, [user_1, user_2, default])
+
+        expected = {
+            "allowedSupervisionLocationIds": "",
+            "allowedSupervisionLocationLevel": "",
+            "blocked": False,
+            "canAccessCaseTriage": False,
+            "canAccessLeadershipDashboard": True,
+            "district": "District",
+            "emailAddress": "parameter@domain.org",
+            "externalId": "ABC",
+            "firstName": None,
+            "lastName": None,
+            "role": "leadership_role",
+            "stateCode": "US_CO",
+            "shouldSeeBetaCharts": True,
+            "routes": {"A": "B", "B": "C"},
+            "featureVariants": {"D": "E"},
+            "userHash": _PARAMETER_USER_HASH,
+        }
+        response = self.client.get(
+            self.user,
+            headers=self.headers,
+        )
+        self.assertEqual(expected, json.loads(response.data))
+
+    def test_get_user_not_found(self) -> None:
+        user = generate_fake_rosters(
+            email="user@domain.org",
+            region_code="US_CO",
+            external_id="XXXX",
+            role="line_staff_user",
+            district="District",
+        )
+
+        add_entity_to_database_session(self.database_key, [user])
+
+        response = self.client.get(
+            self.user,
+            headers=self.headers,
+        )
+        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
+        error_message = "User not found for email address parameter@domain.org"
+        self.assertEqual(error_message, response.data.decode("UTF-8"))
 
     def test_add_user_bad_request(self) -> None:
         no_state = self.client.post(

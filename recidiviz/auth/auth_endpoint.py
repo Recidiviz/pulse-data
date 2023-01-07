@@ -21,7 +21,7 @@ import csv
 import logging
 import os
 from http import HTTPStatus
-from typing import Any, Dict, List, Mapping, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
 
 import sqlalchemy.orm.exc
 from flask import Blueprint, Response, jsonify, request
@@ -34,7 +34,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
 
 from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
-from recidiviz.auth.helpers import generate_user_hash
+from recidiviz.auth.helpers import format_user_info, generate_user_hash
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
@@ -338,117 +338,113 @@ def dashboard_user_restrictions() -> Response:
     )
 
 
-@auth_endpoint_blueprint.route("/users", methods=["GET"])
+@auth_endpoint_blueprint.route("/users", defaults={"email": None}, methods=["GET"])
+@auth_endpoint_blueprint.route("/users/<email>", methods=["GET"])
 @requires_gae_auth
-def users() -> Union[str, Response]:
+def users(email: Optional[str] = None) -> Tuple[Union[str, Response], HTTPStatus]:
     """
     This endpoint is accessed via the admin panel. It queries data from four Case Triage CloudSQL instance tables
     (roster, user_override, state_role_permissions, and permissions_overrides) in order to account for overrides to
     a user's roster data or permissions.
 
-    Returns: JSON string with accurate information about state users and their permissions
+    Returns: JSON string with accurate information about state user/users and their permissions
     """
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     with SessionFactory.using_database(database_key, autocommit=False) as session:
-        user_info = (
-            session.query(
-                func.coalesce(UserOverride.state_code, Roster.state_code).label(
-                    "state_code"
-                ),
-                func.coalesce(UserOverride.email_address, Roster.email_address).label(
-                    "email_address"
-                ),
-                func.coalesce(UserOverride.external_id, Roster.external_id).label(
-                    "external_id"
-                ),
-                func.coalesce(UserOverride.role, Roster.role).label("role"),
-                func.coalesce(UserOverride.district, Roster.district).label("district"),
-                func.coalesce(UserOverride.first_name, Roster.first_name).label(
-                    "first_name"
-                ),
-                func.coalesce(UserOverride.last_name, Roster.last_name).label(
-                    "last_name"
-                ),
-                func.coalesce(UserOverride.blocked, False).label("blocked"),
-                func.coalesce(
-                    PermissionsOverride.can_access_leadership_dashboard,
-                    StateRolePermissions.can_access_leadership_dashboard,
-                    False,
-                ).label("can_access_leadership_dashboard"),
-                func.coalesce(
-                    PermissionsOverride.can_access_case_triage,
-                    StateRolePermissions.can_access_case_triage,
-                    False,
-                ).label("can_access_case_triage"),
-                func.coalesce(
-                    PermissionsOverride.should_see_beta_charts,
-                    StateRolePermissions.should_see_beta_charts,
-                    False,
-                ).label("should_see_beta_charts"),
-                func.coalesce(
-                    PermissionsOverride.routes,
-                    StateRolePermissions.routes,
-                ).label("routes"),
-                func.coalesce(
-                    PermissionsOverride.feature_variants,
-                    StateRolePermissions.feature_variants,
-                ).label("feature_variants"),
-                func.coalesce(
-                    UserOverride.user_hash,
-                    Roster.user_hash,
-                ).label("user_hash"),
-            )
-            .select_from(Roster)
-            .join(
-                UserOverride,
-                UserOverride.email_address == Roster.email_address,
-                full=True,
-            )
-            .outerjoin(
-                StateRolePermissions,
-                (
-                    func.coalesce(UserOverride.state_code, Roster.state_code)
-                    == StateRolePermissions.state_code
+        try:
+            query = (
+                session.query(
+                    func.coalesce(UserOverride.state_code, Roster.state_code).label(
+                        "state_code"
+                    ),
+                    func.coalesce(
+                        UserOverride.email_address, Roster.email_address
+                    ).label("email_address"),
+                    func.coalesce(UserOverride.external_id, Roster.external_id).label(
+                        "external_id"
+                    ),
+                    func.coalesce(UserOverride.role, Roster.role).label("role"),
+                    func.coalesce(UserOverride.district, Roster.district).label(
+                        "district"
+                    ),
+                    func.coalesce(UserOverride.first_name, Roster.first_name).label(
+                        "first_name"
+                    ),
+                    func.coalesce(UserOverride.last_name, Roster.last_name).label(
+                        "last_name"
+                    ),
+                    func.coalesce(UserOverride.blocked, False).label("blocked"),
+                    func.coalesce(
+                        PermissionsOverride.can_access_leadership_dashboard,
+                        StateRolePermissions.can_access_leadership_dashboard,
+                        False,
+                    ).label("can_access_leadership_dashboard"),
+                    func.coalesce(
+                        PermissionsOverride.can_access_case_triage,
+                        StateRolePermissions.can_access_case_triage,
+                        False,
+                    ).label("can_access_case_triage"),
+                    func.coalesce(
+                        PermissionsOverride.should_see_beta_charts,
+                        StateRolePermissions.should_see_beta_charts,
+                        False,
+                    ).label("should_see_beta_charts"),
+                    func.coalesce(
+                        PermissionsOverride.routes,
+                        StateRolePermissions.routes,
+                    ).label("routes"),
+                    func.coalesce(
+                        PermissionsOverride.feature_variants,
+                        StateRolePermissions.feature_variants,
+                    ).label("feature_variants"),
+                    func.coalesce(
+                        UserOverride.user_hash,
+                        Roster.user_hash,
+                    ).label("user_hash"),
                 )
-                & (
-                    func.coalesce(UserOverride.role, Roster.role)
-                    == StateRolePermissions.role
-                ),
+                .select_from(Roster)
+                .join(
+                    UserOverride,
+                    UserOverride.email_address == Roster.email_address,
+                    full=True,
+                )
+                .outerjoin(
+                    StateRolePermissions,
+                    (
+                        func.coalesce(UserOverride.state_code, Roster.state_code)
+                        == StateRolePermissions.state_code
+                    )
+                    & (
+                        func.coalesce(UserOverride.role, Roster.role)
+                        == StateRolePermissions.role
+                    ),
+                )
+                .outerjoin(
+                    PermissionsOverride,
+                    func.coalesce(UserOverride.email_address, Roster.email_address)
+                    == PermissionsOverride.user_email,
+                )
             )
-            .outerjoin(
-                PermissionsOverride,
-                func.coalesce(UserOverride.email_address, Roster.email_address)
-                == PermissionsOverride.user_email,
+            user_info = (
+                query.all()
+                if email is None
+                else query.where(
+                    func.coalesce(UserOverride.email_address, Roster.email_address)
+                    == email,
+                ).one()
             )
-            .all()
-        )
-        return jsonify(
-            [
-                {
-                    "emailAddress": user.email_address,
-                    "stateCode": user.state_code,
-                    "externalId": user.external_id,
-                    "role": user.role,
-                    "district": user.district,
-                    "firstName": user.first_name,
-                    "lastName": user.last_name,
-                    "allowedSupervisionLocationIds": user.district
-                    if user.state_code == "US_MO"
-                    else "",
-                    "allowedSupervisionLocationLevel": "level_1_supervision_location"
-                    if user.state_code == "US_MO" and user.district is not None
-                    else "",
-                    "canAccessLeadershipDashboard": user.can_access_leadership_dashboard,
-                    "canAccessCaseTriage": user.can_access_case_triage,
-                    "shouldSeeBetaCharts": user.should_see_beta_charts,
-                    "routes": user.routes,
-                    "featureVariants": user.feature_variants,
-                    "blocked": user.blocked,
-                    "userHash": user.user_hash,
-                }
-                for user in user_info
-            ]
-        )
+            permissions = (
+                jsonify(format_user_info(user_info))
+                if email is not None
+                else jsonify([format_user_info(user) for user in user_info])
+            )
+            return (permissions, HTTPStatus.OK)
+
+        except sqlalchemy.orm.exc.NoResultFound:
+            return (
+                f"User not found for email address {email}",
+                HTTPStatus.NOT_FOUND,
+            )
 
 
 @auth_endpoint_blueprint.route("/users/<email>", methods=["POST"])
