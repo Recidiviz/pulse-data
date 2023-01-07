@@ -16,6 +16,7 @@
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
 import logging
+from collections import defaultdict
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 
@@ -53,15 +54,23 @@ def get_temporary_table_name(table: Table) -> str:
 temporary_etl_clients_name = get_temporary_table_name(ETLClient.__table__)
 temporary_etl_opps_name = get_temporary_table_name(ETLOpportunity.__table__)
 
-ADDITIONAL_DDL_QUERIES_BY_MODEL = {
+CONSTRAINTS_TO_DROP = defaultdict(list)
+CONSTRAINTS_TO_DROP[temporary_etl_clients_name] = [
+    f"uniq_{temporary_etl_clients_name}",
+    f"{temporary_etl_clients_name}_pkey",
+]
+CONSTRAINTS_TO_DROP[temporary_etl_opps_name] = [f"{temporary_etl_opps_name}_pkey"]
+
+ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME = {
     # TODO(#8579): Remove when the duplicates in `etl_clients` have been removed
-    ETLClient: [
-        f"ALTER TABLE {temporary_etl_clients_name} DROP CONSTRAINT {temporary_etl_clients_name}_pkey;",
-        f"ALTER TABLE {temporary_etl_clients_name} DROP CONSTRAINT {temporary_etl_clients_name}_state_code_person_external_id_key;",
+    temporary_etl_clients_name: [
+        f"ALTER TABLE {temporary_etl_clients_name} DROP CONSTRAINT {constraint_name};"
+        for constraint_name in CONSTRAINTS_TO_DROP[temporary_etl_clients_name]
     ],
     # TODO(#9292): Remove when the duplicates in `etl_opportunities` have been removed
-    ETLOpportunity: [
-        f"ALTER TABLE {temporary_etl_opps_name} DROP CONSTRAINT {temporary_etl_opps_name}_pkey;"
+    temporary_etl_opps_name: [
+        f"ALTER TABLE {temporary_etl_opps_name} DROP CONSTRAINT {constraint_name};"
+        for constraint_name in CONSTRAINTS_TO_DROP[temporary_etl_opps_name]
     ],
 }
 
@@ -84,14 +93,22 @@ def build_temporary_sqlalchemy_table(table: Table) -> Table:
     )
 
     for index in temporary_table.indexes:
-        index.name = get_renamed_index_name(
+        index.name = get_renamed_ddl_name(
             index.name, table_name=table.name, new_base_name=temporary_table.name
         )
+
+    for constraint in temporary_table.constraints:
+        if constraint.name:
+            constraint.name = get_renamed_ddl_name(
+                constraint.name,
+                table_name=table.name,
+                new_base_name=temporary_table.name,
+            )
 
     return temporary_table
 
 
-def get_renamed_index_name(index_name: str, table_name: str, new_base_name: str) -> str:
+def get_renamed_ddl_name(index_name: str, table_name: str, new_base_name: str) -> str:
     if table_name not in index_name:
         raise NotImplementedError(
             f"Cannot rename index ({index_name}) that does not contain the table's name ({table_name})"
@@ -100,6 +117,18 @@ def get_renamed_index_name(index_name: str, table_name: str, new_base_name: str)
     # SQLAlchemy includes the table name inside the index name by default;
     # Map the index to the new base name
     return index_name.replace(table_name, new_base_name)
+
+
+def build_constraint_rename_query(
+    resource_name: str, table_name: str, new_base_name: str
+) -> str:
+    new_constraint_name = get_renamed_ddl_name(
+        resource_name,
+        table_name=table_name,
+        new_base_name=new_base_name,
+    )
+
+    return f"ALTER TABLE {new_base_name} RENAME CONSTRAINT {resource_name} TO {new_constraint_name}"
 
 
 @attr.s
@@ -130,8 +159,21 @@ class ModelSQL:
 
             if isinstance(ddl_statement, CreateTable):
                 queries.append(f"ALTER TABLE {resource_name} RENAME TO {new_base_name}")
+
+                for constraint in ddl_statement.element.constraints:
+                    if (
+                        constraint.name
+                        and constraint.name not in CONSTRAINTS_TO_DROP[self.table.name]
+                    ):
+                        queries.append(
+                            build_constraint_rename_query(
+                                resource_name=constraint.name,
+                                table_name=self.table.name,
+                                new_base_name=new_base_name,
+                            )
+                        )
             elif isinstance(ddl_statement, CreateIndex):
-                new_index_name = get_renamed_index_name(
+                new_index_name = get_renamed_ddl_name(
                     resource_name,
                     table_name=self.table.name,
                     new_base_name=new_base_name,
@@ -231,7 +273,9 @@ def import_gcs_csv_to_cloud_sql(
     with SessionFactory.using_database(database_key=database_key) as session:
         _recreate_table(database_key, temporary_table_model_sql)
 
-        additional_ddl_queries = ADDITIONAL_DDL_QUERIES_BY_MODEL.get(model, [])
+        additional_ddl_queries = ADDITIONAL_DDL_QUERIES_BY_TABLE_NAME.get(
+            temporary_table.name, []
+        )
 
         for query in additional_ddl_queries:
             session.execute(query)

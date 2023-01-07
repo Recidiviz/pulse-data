@@ -559,6 +559,7 @@ class ReportTableDefinition(JusticeCountsBase):
                 filtered_dimension_values,
                 aggregated_dimensions,
                 label,
+                name="report_table_definition_columns_for_key",
             ),
         ]
     )

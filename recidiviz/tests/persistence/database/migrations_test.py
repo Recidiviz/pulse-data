@@ -88,6 +88,27 @@ class MigrationsTestBase(TestCase):
 
         return enums
 
+    def fetch_all_constraints(self) -> Dict[str, str]:
+        """Returns a dictionary mapping constraint name to constraint definition for all
+        CHECK and UNIQUENESS constraints defined in the database.
+        """
+        engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
+
+        conn = engine.connect()
+        rows = conn.execute(
+            """
+       SELECT con.conname, pg_get_constraintdef(con.oid)
+       FROM pg_catalog.pg_constraint con
+            INNER JOIN pg_catalog.pg_class rel
+                       ON rel.oid = con.conrelid
+            INNER JOIN pg_catalog.pg_namespace nsp
+                       ON nsp.oid = connamespace
+       WHERE nsp.nspname = 'public' AND con.contype IN ('c', 'u');
+       """
+        )
+
+        return {row[0]: row[1] for row in rows}
+
     def default_config(self) -> Config:
         return Config.from_raw_config(
             {
@@ -100,6 +121,60 @@ class MigrationsTestBase(TestCase):
     @abc.abstractmethod
     def schema_type(self) -> SchemaType:
         raise NotImplementedError
+
+    def test_constraints_match_schema(self) -> None:
+        with runner(self.default_config(), self.engine) as r:
+            r.migrate_up_to("head")
+
+        # Fetch constraints
+        migration_constraints = self.fetch_all_constraints()
+
+        # Doing teardown/setup to generate a new postgres instance
+        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
+
+        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        self.overridden_env_vars = (
+            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        )
+
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        # Check enum values
+        schema_constraints = self.fetch_all_constraints()
+
+        # Assert that they all match
+        constraints_not_in_schema = (
+            set(migration_constraints)
+            - set(schema_constraints)
+            # This constraint is only added when migrations are run
+            - {"alembic_version_pkc"}
+        )
+        if constraints_not_in_schema:
+            raise ValueError(
+                f"Found constraints defined in migrations but not in schema.py: {constraints_not_in_schema}"
+            )
+        constraints_not_in_migrations = set(schema_constraints) - set(
+            migration_constraints
+        )
+        if constraints_not_in_migrations:
+            raise ValueError(
+                f"Found constraints defined in schema.py but not in migrations: {constraints_not_in_migrations}"
+            )
+
+        for (
+            constraint_name,
+            schema_constraint_definition,
+        ) in schema_constraints.items():
+            migration_constraint_definition = migration_constraints[constraint_name]
+            self.assertEqual(
+                migration_constraint_definition,
+                schema_constraint_definition,
+                f"Found constraint {constraint_name} with conflicting definitions in migrations and schema.py definition",
+            )
+
+        # Cleanup needed for this method.
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     def test_enums_match_schema(self) -> None:
         with runner(self.default_config(), self.engine) as r:
