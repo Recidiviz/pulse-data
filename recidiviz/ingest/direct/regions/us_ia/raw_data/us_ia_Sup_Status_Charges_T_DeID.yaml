@@ -4,7 +4,10 @@ file_description: |-
   Table from Iowa DOC with information about each supervision charge
 data_classification: source
 primary_key_cols:
+  - SupervisionStatusInformationId
   - ChargeId
+  - StartDt
+  - EndDt
 columns:
   - name: SupervisionStatusInformationId
     is_pii: True

@@ -23,14 +23,16 @@ columns:
   - name: CaseManagerStartDt
     is_datetime: True
     description: |-
-      Start date of the case manager-client relationship
+      Start date of the case manager-client relationship as deteremined by the court or
+      Board of Parole. There may be a delay in processing or assignment from this date
+      until the case manager actually receives the case, the CaseManagerAssignedDt.
   - name: InitialCaseManager
     description: |-
       "Yes" if this is the first case manager assigned, "No" otherwise
   - name: CaseManagerAssignedDt
     description: |-
       First day the case manager is actually assigned to client (comes after
-      CaseManagerStartDt) (need to ask IA for clarification)
+      CaseManagerStartDt).
   - name: CaseManagerEndDt
     is_datetime: True
     description: |-
