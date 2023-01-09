@@ -100,8 +100,12 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
                 'Circuit Court' AS court_name,
                 TO_JSON_STRING(docket_numbers) AS all_dockets,
                 docket_numbers,
+                -- Offenses on active sentences
                 current_offenses,
+                -- All offenses (lifetime on active and inactive sentences and prior record)
                 past_offenses,
+                -- All offenses for active and inactive sentences, excluding prior record
+                lifetime_offenses_all,
                 lifetime_offenses_expired,
                 judicial_district,
                 last_DRUN AS drug_screens_past_year,
