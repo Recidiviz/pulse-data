@@ -418,7 +418,7 @@ class SpotlightFacilityType(Enum):
 
 
 # 3-digit codes 1xx, 2xx, 3xx denote Community Correction Centers
-PA_COMMUNITY_CORRECTIONS_MATCH = """REGEXP_CONTAINS(facility, r"^[123]\d\d\D*")"""
+PA_COMMUNITY_CORRECTIONS_MATCH = """REGEXP_CONTAINS(facility, r"^[123]\d\d")"""
 
 
 def spotlight_state_specific_facility_filter(
