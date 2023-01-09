@@ -25,9 +25,6 @@ import {
 } from "../IngestOperationsView/constants";
 import { fetchCurrentIngestInstanceStatus } from "./IngestInstanceUtilities";
 
-// TODO(#13406): Remove flag once raw data can be processed in secondary.
-const disabledSecondaryIngestRerunRawDataSource = true;
-
 export enum RegionAction {
   StartIngestRerun = "start_ingest_rerun",
   TriggerTaskScheduler = "trigger_task_scheduler",
@@ -121,6 +118,9 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
 
     const canStartRerun =
       currentSecondaryIngestInstanceStatus === "NO_RERUN_IN_PROGRESS";
+
+    // TODO(#13406): Remove flag once raw data can be processed in all states in secondary.
+    const disabledSecondaryIngestRerunRawDataSource = regionCode !== "US_OZ";
     const getData = React.useCallback(async () => {
       if (regionCode) {
         const secondaryStatus = await fetchCurrentIngestInstanceStatus(
