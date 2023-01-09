@@ -223,7 +223,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
             
             CASE WHEN offense_description LIKE '%DOMESTIC%' THEN 1 ELSE 0 END AS domestic_flag,
             
-            CASE WHEN ((offense_description LIKE '%SEX%' OR offense_description LIKE '%RAPE%') AND offense_description NOT LIKE '%REGIS%') THEN 1 ELSE 0 END AS sex_offense_flag,
+            CASE WHEN (COALESCE(SexOffenderFlag,'N') = 'Y') THEN 1 ELSE 0 END AS sex_offense_flag,
             
             CASE WHEN offense_description LIKE '%DUI%' OR offense_description LIKE '%INFLUENCE%' THEN 1 ELSE 0 END AS dui_flag,
             
@@ -243,11 +243,11 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
         FROM sent_union_diversion
         LEFT JOIN 
             (
-            SELECT OffenseDescription, AssaultiveOffenseFlag
+            SELECT DISTINCT
+                   OffenseDescription, 
+                   FIRST_VALUE(AssaultiveOffenseFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN AssaultiveOffenseFlag = 'Y' THEN 0 ELSE 1 END) AS AssaultiveOffenseFlag,
+                   FIRST_VALUE(SexOffenderFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN SexOffenderFlag = 'Y' THEN 0 ELSE 1 END) AS SexOffenderFlag 
             FROM  `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderStatute_latest` 
-            WHERE TRUE
-            QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenseDescription 
-                                        ORDER BY CASE WHEN AssaultiveOffenseFlag = 'Y' THEN 0 ELSE 1 END) = 1
             ) statute
                 ON offense_description = statute.OffenseDescription 
         LEFT JOIN CSL
