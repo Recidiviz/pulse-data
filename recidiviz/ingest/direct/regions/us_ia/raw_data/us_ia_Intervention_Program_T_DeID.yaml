@@ -25,7 +25,13 @@ columns:
       Type of intervention program
   - name: InterventionProgramRequired
     description: |-
-      "RQ" or "RC" if the program is required, null otherwise
+      Flags whether an intervention program is required: "RQ" if required, "RC" if not,
+      null if unknown
+    known_values:
+      - value: RQ
+        description: Required
+      - value: RC
+        description: Not required
   - name: ReferringWorkUnitRegionId
     description: |-
       Region ID of the source of the referral

@@ -1,7 +1,10 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Supervision_Level_T_DeID
 file_description: |-
-  Table from Iowa DOC with supervision level spans
+  Table from Iowa DOC with supervision level spans. This file is from the new
+  supervision level system that replaced the old in 2019. The old system is captured in
+  the table Level_of_Supervision_T_DeID. This table should be given priority when two
+  level spans overlap.
 data_classification: source
 primary_key_cols:
   - OffenderSupervisionLevelId

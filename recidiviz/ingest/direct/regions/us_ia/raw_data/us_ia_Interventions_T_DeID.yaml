@@ -62,13 +62,27 @@ columns:
       End reason for the program intervention
   - name: InterventionType
     description: |-
-      Intervention type: A, E, or T
+      Intervention type: activity, education, or treatment
+    known_values:
+      - value: A
+        description: Activity
+      - value: E
+        description: Education
+      - value: T
+        description: Treatment
   - name: InterventionCategory
     description: |-
       Intervention category
   - name: InterventionSite
     description: |-
-      Intervention site: E, I, or P
+      Intervention site: external, internal, or purchase of service
+    known_values:
+      - value: E
+        description: External
+      - value: I
+        description: Internal
+      - value: P
+        description: Purchase of Service
   - name: InterventionSetting
     description: |-
       Setting of the intervention
