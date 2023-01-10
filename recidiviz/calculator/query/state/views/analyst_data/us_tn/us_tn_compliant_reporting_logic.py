@@ -90,7 +90,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     ),
     -- This CTE uses standards list and creates flags to apply supervision level and time spent criteria, as well as bringing various supervision and system session dates
     standards AS (
-        SELECT  DISTINCT
+        SELECT  
                 standards.first_name,
                 standards.last_name,
                 standards.Phone_Number AS phone_number,
@@ -206,6 +206,10 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 SELECT MAX(date_of_standards)
                 FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due`
             )
+            -- Keep the row corresponding to the latest upload. If there are duplicates, deterministically choose based
+            -- on staff last name
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY Offender_ID 
+                                      ORDER BY date_of_standards DESC, Staff_Last_Name) = 1
     ), 
     -- This CTE uses flags from the previous CTE to determine when people become eligible for being on the right supervision level, and also determine C4 eligibility (ISC + minimum people)
     determine_sup_level_eligibility AS (
