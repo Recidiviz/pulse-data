@@ -325,6 +325,8 @@ class Agency(Source):
         back_populates="agencies",
     )
 
+    agency_settings = relationship("AgencySetting")
+
     __mapper_args__ = {
         "polymorphic_identity": "agency",
     }
@@ -350,6 +352,30 @@ class Agency(Source):
                 }
                 for user_account in self.user_accounts
             ],
+            "settings": [setting.to_json() for setting in self.agency_settings],
+        }
+
+    def to_public_json(self) -> Dict[str, Any]:
+        whitelisted_agency_settings = list(
+            filter(
+                lambda setting: setting.setting_type
+                in [
+                    AgencySettingType.PURPOSE_AND_FUNCTIONS.value,
+                    AgencySettingType.HOMEPAGE_URL.value,
+                ],
+                self.agency_settings,
+            )
+        )
+        return {
+            "id": self.id,
+            "name": self.name,
+            "systems": [
+                system_enum.value
+                for system_enum in System.sort(
+                    systems=[System(system_str) for system_str in (self.systems or [])]
+                )
+            ],
+            "settings": [setting.to_json() for setting in whitelisted_agency_settings],
         }
 
 
@@ -798,6 +824,12 @@ class DatapointHistory(JusticeCountsBase):
     datapoint = relationship(Datapoint, back_populates="datapoint_histories")
 
 
+class AgencySettingType(enum.Enum):
+    TEST = "TEST"
+    PURPOSE_AND_FUNCTIONS = "PURPOSE_AND_FUNCTIONS"
+    HOMEPAGE_URL = "HOMEPAGE_URL"
+
+
 class AgencySetting(JusticeCountsBase):
     """A custom setting for an Agency."""
 
@@ -828,6 +860,13 @@ class AgencySetting(JusticeCountsBase):
     )
 
     source = relationship(Source)
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            "setting_type": self.setting_type,
+            "value": self.value,
+            "source_id": self.source_id,
+        }
 
 
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same

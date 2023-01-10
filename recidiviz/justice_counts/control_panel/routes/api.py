@@ -31,10 +31,7 @@ from werkzeug.wrappers import response
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.agency_setting import (
-    AgencySettingInterface,
-    AgencySettingType,
-)
+from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
     get_agency_ids_from_session,
@@ -104,7 +101,7 @@ def get_api_blueprint(
                     AgencySettingInterface.create_or_update_agency_setting(
                         session=current_session,
                         agency_id=agency_id,
-                        setting_type=AgencySettingType(setting_type),
+                        setting_type=schema.AgencySettingType(setting_type),
                         value=setting_value,
                     )
 
@@ -127,16 +124,9 @@ def get_api_blueprint(
                 session=current_session,
                 agency_id=agency_id,
             )
-            # Need to add this line in order to avoid jsonify error
-            agency_settings_unpacked = [
-                {
-                    "setting_type": setting.setting_type,
-                    "value": setting.value,
-                    "source_id": setting.source_id,
-                }
-                for setting in agency_settings
-            ]
-            return jsonify({"settings": agency_settings_unpacked})
+            return jsonify(
+                {"settings": [setting.to_json() for setting in agency_settings]}
+            )
         except Exception as e:
             raise _get_error(error=e) from e
 
@@ -905,7 +895,7 @@ def get_api_blueprint(
 
             return jsonify(
                 {
-                    "agency": agency.to_json(),
+                    "agency": agency.to_public_json(),
                     "metrics": metrics_json,
                 }
             )

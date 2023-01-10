@@ -17,10 +17,7 @@
 """This class implements tests for the Justice Counts AgencySettingInterface."""
 
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.agency_setting import (
-    AgencySettingInterface,
-    AgencySettingType,
-)
+from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -63,13 +60,13 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
             AgencySettingInterface.create_or_update_agency_setting(
                 session=session,
                 agency_id=self.agency_A_id,
-                setting_type=AgencySettingType.TEST,
+                setting_type=schema.AgencySettingType.TEST,
                 value=["foo", "bar"],
             )
             AgencySettingInterface.create_or_update_agency_setting(
                 session=session,
                 agency_id=self.agency_B_id,
-                setting_type=AgencySettingType.TEST,
+                setting_type=schema.AgencySettingType.TEST,
                 value=[],
             )
 
@@ -84,12 +81,12 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(agency_B_settings), 1)
             self.assertEqual(
                 agency_A_settings[0].setting_type,
-                AgencySettingType.TEST.value,
+                schema.AgencySettingType.TEST.value,
             )
             self.assertEqual(agency_A_settings[0].value, ["foo", "bar"])
             self.assertEqual(
                 agency_B_settings[0].setting_type,
-                AgencySettingType.TEST.value,
+                schema.AgencySettingType.TEST.value,
             )
             self.assertEqual(agency_B_settings[0].value, [])
 
@@ -98,7 +95,7 @@ class TestAgencySettingInterface(JusticeCountsDatabaseTestCase):
             AgencySettingInterface.create_or_update_agency_setting(
                 session=session,
                 agency_id=self.agency_A_id,
-                setting_type=AgencySettingType.TEST,
+                setting_type=schema.AgencySettingType.TEST,
                 value="new value",
             )
 

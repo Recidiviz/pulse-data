@@ -35,7 +35,6 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.agency_setting import AgencySettingType
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
@@ -57,6 +56,7 @@ from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
+    AgencySettingType,
     Datapoint,
     DatapointHistory,
     Report,
@@ -613,10 +613,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         agency = result["agency"]
         metrics = result["metrics"]
 
-        self.assertEqual(agency["fips_county_code"], "us_ca_san_francisco")
         self.assertEqual(agency["name"], "Agency Prison")
-        self.assertEqual(agency["state"], "Test State")
-        self.assertEqual(agency["state_code"], "US_XX")
         self.assertEqual(agency["systems"], ["PRISONS"])
 
         self.shared_test_agency_metrics(metrics=metrics)
@@ -804,6 +801,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "fips_county_code": agency.fips_county_code,
                     "id": agency.id,
                     "name": agency.name,
+                    "settings": [],
                     "systems": agency.systems,
                     "state_code": agency.state_code,
                     "state": agency.get_state_name(),
@@ -859,6 +857,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "fips_county_code": agency_A.fips_county_code,
                     "id": agency_A.id,
                     "name": agency_A.name,
+                    "settings": [],
                     "systems": agency_A.systems,
                     "state_code": agency_A.state_code,
                     "state": agency_A.get_state_name(),
@@ -870,6 +869,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "fips_county_code": agency_B.fips_county_code,
                     "id": agency_B.id,
                     "name": agency_B.name,
+                    "settings": [],
                     "systems": agency_B.systems,
                     "state_code": agency_B.state_code,
                     "state": agency_B.get_state_name(),
@@ -881,6 +881,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "fips_county_code": agency_C.fips_county_code,
                     "id": agency_C.id,
                     "name": agency_C.name,
+                    "settings": [],
                     "systems": agency_C.systems,
                     "state_code": agency_C.state_code,
                     "state": agency_C.get_state_name(),
@@ -2032,7 +2033,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         {
                             "setting_type": AgencySettingType.PURPOSE_AND_FUNCTIONS.value,
                             "value": "My agency has the following purpose and functions ...",
-                        }
+                        },
+                        {
+                            "setting_type": AgencySettingType.HOMEPAGE_URL.value,
+                            "value": "www.agencyhomepage.com",
+                        },
                     ]
                 },
             )
@@ -2050,7 +2055,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         "setting_type": AgencySettingType.PURPOSE_AND_FUNCTIONS.value,
                         "value": "My agency has the following purpose and functions ...",
                         "source_id": agency_id,
-                    }
+                    },
+                    {
+                        "setting_type": AgencySettingType.HOMEPAGE_URL.value,
+                        "value": "www.agencyhomepage.com",
+                        "source_id": agency_id,
+                    },
                 ]
             },
         )
