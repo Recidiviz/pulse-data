@@ -375,9 +375,6 @@ class BuildableAttr:
         any fields with ForwardRef attribute types. Any date values
         must be in the format 'YYYY-MM-DD' if they are present.
         """
-        if not attr.has(cls):
-            raise Exception("Parent class must be an attr class")
-
         if not build_dict:
             raise ValueError("build_dict cannot be empty")
 

@@ -118,8 +118,7 @@ gevent = ">=20.5.1"
 google-cloud-logging = "<2.0.0"
 google-cloud-trace = "<2.0.0"
 wrapt = "*"
-# TODO(#17515): Version == 22.2.0 creates mypy errors in attr_mixins.py that need to be fixed to unlock library
-attrs = "<22.2.0"
+attrs = "*"
 requests = "*"
 pytz = "*"
 # TODO(#9732): Upgrade to 4.0 introduces dateparsing errors to ingest controller tests
