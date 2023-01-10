@@ -36,10 +36,13 @@ resource "google_bigquery_job" "load" {
   # to ensure the new resource can be created without conflict.
   # There's an outstanding terraform issue where GCP deletes the BQ job history after 6
   # months, causing terraform to assume that this version of the file hasn't been loaded
-  # into the table. Until this issue is resolved we are required to update the `vX`
+  # into the table. Until this issue is resolved we are required to increment the `vX`
   # fragment below on a 6-month cadence.
-  # Issue: https://github.com/hashicorp/terraform-provider-google/issues/9768)
-  job_id = "${var.table_name}_load_v4_${md5(google_storage_bucket_object.table_data.crc32c)}"
+  # See issue for more context: https://github.com/hashicorp/terraform-provider-google/issues/9768.
+  # !!!!!!! If, during terraform applies in deploys, you see failures that look like the one below:
+  # !!!!!!!   `Error: Error creating Job: googleapi: Error 404: Not found: Job`
+  # !!!!!!! update the `job_id` below by changing `_vX_` to `_vX+1_` (ex: `_v5_` to `_v6_`).
+  job_id = "${var.table_name}_load_v5_${md5(google_storage_bucket_object.table_data.crc32c)}"
 
   load {
     source_uris = [
