@@ -25,7 +25,10 @@ import {
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
-import { ROUTES_PERMISSIONS_LABELS } from "../constants";
+import {
+  FEATURE_VARIANTS_LABELS,
+  ROUTES_PERMISSIONS_LABELS,
+} from "../constants";
 import { CreateEditStateRoleForm } from "./EditStateRoleForm";
 import { checkResponse, updatePermissionsObject } from "./utils";
 
@@ -103,7 +106,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
-    ...routes
+    ...rest
   }: StateRolePermissionsResponse) => {
     try {
       const createdRole = await createStateRolePermissions(
@@ -112,7 +115,8 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         canAccessLeadershipDashboard,
         canAccessCaseTriage,
         shouldSeeBetaCharts,
-        updatePermissionsObject({}, routes, ROUTES_PERMISSIONS_LABELS)
+        updatePermissionsObject({}, rest, ROUTES_PERMISSIONS_LABELS),
+        updatePermissionsObject({}, rest, FEATURE_VARIANTS_LABELS)
       );
       await checkResponse(createdRole);
       setAddVisible(false);
@@ -129,7 +133,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
-    ...routes
+    ...rest
   }: StateRolePermissionsResponse) => {
     const results: Promise<unknown>[] = [];
     selectedRows.forEach((row: StateRolePermissionsResponse) => {
@@ -140,7 +144,8 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
           canAccessLeadershipDashboard,
           canAccessCaseTriage,
           shouldSeeBetaCharts,
-          updatePermissionsObject({}, routes, ROUTES_PERMISSIONS_LABELS)
+          updatePermissionsObject({}, rest, ROUTES_PERMISSIONS_LABELS),
+          updatePermissionsObject({}, rest, FEATURE_VARIANTS_LABELS)
         );
         await checkResponse(response);
       };
@@ -202,12 +207,19 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
       title: "Routes",
       dataIndex: "routes",
       width: 300,
-      render: (
-        text: Record<string, unknown>,
-        record: StateRolePermissionsResponse
-      ) => {
+      render: (text: Record<string, unknown>) => {
         if (text) {
           return JSON.stringify(text, null, 2).slice(2, -2);
+        }
+      },
+    },
+    {
+      title: "Feature variants",
+      dataIndex: "featureVariants",
+      width: 350,
+      render: (text: Record<string, unknown>) => {
+        if (text) {
+          return JSON.stringify(text, null, "\t").slice(2, -2);
         }
       },
     },

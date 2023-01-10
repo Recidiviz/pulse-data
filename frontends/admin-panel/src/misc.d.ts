@@ -79,4 +79,5 @@ interface StateRolePermissionsResponse {
   canAccessCaseTriage: boolean;
   shouldSeeBetaCharts: boolean;
   routes: Record<string, boolean>;
+  featureVariants: Record<string, boolean>;
 }
