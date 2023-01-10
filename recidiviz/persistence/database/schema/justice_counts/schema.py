@@ -31,7 +31,7 @@ import enum
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
-from sqlalchemy import BOOLEAN, ForeignKey, Table
+from sqlalchemy import BOOLEAN, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     DeclarativeMeta,
@@ -251,13 +251,15 @@ class ReportStatus(enum.Enum):
     PUBLISHED = "PUBLISHED"
 
 
-# This table maintains the many-to-many relationship between UserAccount and Agency.
-agency_user_account_association_table = Table(
-    "agency_user_account_association",
-    JusticeCountsBase.metadata,
-    Column("agency_id", ForeignKey("source.id"), primary_key=True),
-    Column("user_account_id", ForeignKey("user_account.id"), primary_key=True),
-)
+class AgencyUserAccountAssociation(JusticeCountsBase):
+    """his table maintains the many-to-many relationship between UserAccount and Agency."""
+
+    __tablename__ = "agency_user_account_association"
+
+    agency_id = Column(ForeignKey("source.id"), primary_key=True)
+    user_account_id = Column(ForeignKey("user_account.id"), primary_key=True)
+    invitation_status = Column(Enum(UserAccountInvitationStatus), nullable=True)
+    role = Column(Enum(UserAccountRole), nullable=True)
 
 
 class Source(JusticeCountsBase):
@@ -321,7 +323,7 @@ class Agency(Source):
 
     user_accounts = relationship(
         "UserAccount",
-        secondary=agency_user_account_association_table,
+        secondary="agency_user_account_association",
         back_populates="agencies",
     )
 
@@ -394,10 +396,6 @@ class UserAccount(JusticeCountsBase):
     # in the team management tool within agency settings.
     email = Column(String(255), nullable=True)
 
-    invitation_status = Column(Enum(UserAccountInvitationStatus), nullable=True)
-
-    role = Column(Enum(UserAccountRole), nullable=True)
-
     # Auth0 is an authentication and authorization platform we use for users of the Control Panel.
     # This field refers to the Auth0 `user_id` property:
     # https://auth0.com/docs/manage-users/user-accounts/identify-users
@@ -407,7 +405,7 @@ class UserAccount(JusticeCountsBase):
 
     agencies = relationship(
         "Agency",
-        secondary=agency_user_account_association_table,
+        secondary="agency_user_account_association",
         back_populates="user_accounts",
     )
 
