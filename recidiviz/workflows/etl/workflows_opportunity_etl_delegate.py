@@ -47,6 +47,10 @@ CONFIG_BY_STATE: Dict[StateCode, List[OpportunityExportConfig]] = {
             source_filename="us_ix_complete_full_term_discharge_from_supervision_request_record.json",
             export_collection_name="US_ID-pastFTRDReferrals",
         ),
+        OpportunityExportConfig(
+            source_filename="us_ix_supervision_level_downgrade_record.json",
+            export_collection_name="US_ID-supervisionLevelDowngrade",
+        ),
     ],
     StateCode.US_ND: [
         OpportunityExportConfig(
