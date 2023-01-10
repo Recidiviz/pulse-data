@@ -28,6 +28,9 @@ from more_itertools import one
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state.dao import check_not_dirty
+from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
+    convert_entities_to_schema,
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -55,6 +58,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     add_child_to_entity,
     db_id_or_object_id,
     generate_child_entity_trees,
+    get_all_root_entity_external_ids,
     get_multiparent_classes,
     get_root_entity_external_ids,
     is_match,
@@ -70,6 +74,7 @@ from recidiviz.persistence.errors import (
     MatchedMultipleIngestedEntitiesError,
 )
 from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
+from recidiviz.utils.types import assert_type
 
 # How many root entity trees to search to fill the non_placeholder_ingest_types set.
 MAX_NUM_TREES_TO_SEARCH_FOR_NON_PLACEHOLDER_TYPES = 20
@@ -281,11 +286,12 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             "at time [%s].",
             datetime.datetime.now().isoformat(),
         )
-        ingested_db_root_entities = (
-            self.root_entity_delegate.convert_root_entities_to_schema_root_entities(
+        ingested_db_root_entities = [
+            assert_type(p, self.root_entity_delegate.get_schema_root_entity_cls())
+            for p in convert_entities_to_schema(
                 ingested_root_entities, populate_back_edges=False
             )
-        )
+        ]
         self.non_placeholder_ingest_types = self.get_non_placeholder_ingest_types(
             ingested_db_root_entities
         )
@@ -296,10 +302,16 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             datetime.datetime.now().isoformat(),
         )
 
+        root_external_ids = get_all_root_entity_external_ids(ingested_db_root_entities)
+        logging.info(
+            "[Entity Matching] Reading entities of class schema.StatePerson using [%s] "
+            "external ids",
+            len(root_external_ids),
+        )
         db_root_entities = (
-            self.root_entity_delegate.read_potential_match_db_root_entities(
-                session=session,
-                ingested_root_entities=ingested_db_root_entities,
+            self.root_entity_delegate.read_root_entities_with_external_ids(
+                session,
+                external_ids=root_external_ids,
                 region_code=self.state_specific_logic_delegate.get_region_code(),
             )
         )
