@@ -248,14 +248,6 @@ class CalculationDocumentationGenerator:
 
         self.all_views_to_document = self._get_all_views_to_document()
 
-    def _get_all_export_config_view_builder_addresses(self) -> Set[BigQueryAddress]:
-        all_export_view_builder_addresses: Set[BigQueryAddress] = set()
-        for product in self.products:
-            all_export_view_builder_addresses = all_export_view_builder_addresses.union(
-                self._get_all_config_view_addresses_for_product(product)
-            )
-        return all_export_view_builder_addresses
-
     def get_states_by_product(
         self,
     ) -> Dict[ProductName, Dict[GCPEnvironment, List[StateCode]]]:
