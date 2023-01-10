@@ -57,14 +57,13 @@ def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
-    node = dag_walker.nodes_by_key[
+    view = dag_walker.view_for_key(
         DagKey(view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id))
-    ]
-    dag_walker.populate_node_family_for_node(node=node)
+    )
     print(
-        node.node_family.child_dfs_tree_str
+        dag_walker.descendants_dfs_tree_str(view=view)
         if print_downstream_tree
-        else node.node_family.parent_dfs_tree_str
+        else dag_walker.ancestors_dfs_tree_str(view=view)
     )
 
 

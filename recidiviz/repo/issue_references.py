@@ -74,10 +74,22 @@ TODO_REGEX = rf"TODO\({GithubIssue.ISSUE_REGEX}\)"
 
 def _read_todo_lines_from_codebase() -> List[str]:
     # Gets all TODOs:
-    # - Gets all files that are tracked by our git repo (so as to skip those in .gitignore)
-    # - Runs grep over each file, pulling lines that contain "TODO"
+    # - git ls-files -z returns a list of all files tracked by our git repo
+    #    and skips files in .gitignore
+    # - The first xargs pass returns a list of all files that match "TODO"
+    # - The second xargs pass runs over each matching file to return those
+    #    that contain "TODO"
+    #
+    # The reason for two passes is the interaction between grep and xargs
+    # and the non-deterministic behavior of xargs.
+    # Cursory google search reveals that the xargs max command line is
+    # 128k characters. While there are > 700000k characters in all what
+    # is returned from git ls-files. This means it is possible to fail
+    # because grep doesn't find any matches in the files in a given
+    # xargs command line. For this reason, we first filter to only files
+    # that match
     res = subprocess.run(
-        "git ls-files -z | xargs -0 grep -n -e 'TODO'",
+        "git ls-files -z | xargs -0 grep -l 'TODO' | xargs grep -n 'TODO'",
         shell=True,
         stdout=subprocess.PIPE,
         check=True,
