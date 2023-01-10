@@ -29,7 +29,8 @@ from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import delete, func
+from sqlalchemy import delete, func, inspect
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
 
@@ -753,17 +754,27 @@ def update_state_role(
                 request_dict["role"] = rr.lower()
 
             # Perform update
+            json_columns = [
+                c.name
+                for c in inspect(StateRolePermissions).columns
+                if isinstance(c.type, JSONB)
+            ]
             for k, v in request_dict.items():
-                if k == "routes":
+                if k in json_columns:
                     continue
                 setattr(state_role, k, v)
 
-            if routes := request_dict.get("routes"):
-                # Note: JSONB does not detect in-place changes when used with the ORM.
-                # (https://docs.sqlalchemy.org/en/13/dialects/postgresql.html#sqlalchemy.dialects.postgresql.JSONB)
-                # The sqlalchemy.ext.mutable extension supposedly makes it so it does, but it didn't
-                # for me, so instead we just assign it to a new dict, which does the trick.
-                state_role.routes = {**state_role.routes, **routes}
+            for col_name in json_columns:
+                if col_value := request_dict.get(col_name):
+                    # Note: JSONB does not detect in-place changes when used with the ORM.
+                    # (https://docs.sqlalchemy.org/en/13/dialects/postgresql.html#sqlalchemy.dialects.postgresql.JSONB)
+                    # The sqlalchemy.ext.mutable extension supposedly makes it so it does, but it didn't
+                    # for me, so instead we just assign it to a new dict, which does the trick.
+                    setattr(
+                        state_role,
+                        col_name,
+                        {**getattr(state_role, col_name), **col_value},
+                    )
 
             session.commit()
 

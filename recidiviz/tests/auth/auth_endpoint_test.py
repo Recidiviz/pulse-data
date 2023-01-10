@@ -1912,6 +1912,7 @@ class AuthEndpointTests(TestCase):
             can_access_case_triage=False,
             should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
+            feature_variants={"C": True, "D": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context():
@@ -1922,7 +1923,7 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
-                    "featureVariants": {"D": "E"},
+                    "featureVariants": {"D": True, "E": False},
                 },
             )
 
@@ -1933,7 +1934,7 @@ class AuthEndpointTests(TestCase):
                 "canAccessLeadershipDashboard": True,
                 "shouldSeeBetaCharts": False,
                 "routes": {"A": True, "B": False, "C": True},
-                "featureVariants": {"D": "E"},
+                "featureVariants": {"C": True, "D": True, "E": False},
             }
 
             self.assertEqual(expected, json.loads(response.data))

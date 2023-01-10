@@ -208,13 +208,15 @@ export const createStateRolePermissions = async (
   canAccessLeadershipDashboard: boolean,
   canAccessCaseTriage: boolean,
   shouldSeeBetaCharts: boolean,
-  routes: Record<string, boolean> | undefined
+  routes: Record<string, boolean> | undefined,
+  featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
   return postAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
     routes,
+    featureVariants,
   });
 };
 
@@ -224,13 +226,15 @@ export const updateStateRolePermissions = async (
   canAccessLeadershipDashboard: boolean,
   canAccessCaseTriage: boolean,
   shouldSeeBetaCharts: boolean,
-  routes: Record<string, boolean> | undefined
+  routes: Record<string, boolean> | undefined,
+  featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
   return patchAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
     routes,
+    featureVariants,
   });
 };
 
