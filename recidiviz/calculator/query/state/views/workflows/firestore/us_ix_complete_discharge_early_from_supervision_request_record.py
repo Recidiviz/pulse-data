@@ -77,6 +77,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
       SELECT
         sent.state_code,
         sent.person_id,
+        sent.sentence_type,
         sent.date_imposed,
         sentences_preprocessed_id,
         sent.projected_completion_date_max,
@@ -98,6 +99,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         USING (state_code, person_id, charge_id)
       WHERE sent.state_code = "US_IX"
       AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+      AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
     ),
     supervision_officer AS (
       SELECT 
@@ -288,6 +290,10 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
                 "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
                 "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
                 )
+        INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` cses
+            ON tes.state_code = cses.state_code
+            AND tes.person_id = cses.person_id 
+            AND CURRENT_DATE('US/Pacific') BETWEEN cses.start_date AND {nonnull_end_date_clause('cses.end_date')}
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` proj
             ON proj.state_code = ses.state_code
             AND proj.person_id = ses.person_id
@@ -304,6 +310,8 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         LEFT JOIN sentence_charge_description charge
             ON tes.state_code = charge.state_code
             AND tes.person_id = charge.person_id
+            --only list Probation sentences for ED from Probation and Parole sentencecs for ED from Parole 
+            AND IF(cses.compartment_level_2 IN ("DUAL", "PAROLE"), "INCARCERATION", "SUPERVISION") = charge.sentence_type
         LEFT JOIN supervision_officer so
             ON tes.state_code = so.state_code
             AND tes.person_id = so.person_id
