@@ -61,6 +61,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         USING (state_code, person_id, sentences_preprocessed_id)
       WHERE state_code = "US_IX"
       AND CURRENT_DATE BETWEEN start_date AND COALESCE(end_date, "9999-12-31")
+      AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
     ),
     person_info AS (
       SELECT
