@@ -99,13 +99,12 @@ class IngestOperationsStore(AdminPanelStore):
     def state_codes_launched_in_env(self) -> List[StateCode]:
         return get_direct_ingest_states_launched_in_env()
 
-    def _verify_clean_secondary_raw_data_state(
-        self, state_code: StateCode, instance: DirectIngestInstance
-    ) -> None:
-        """Confirm that all raw file metadata / data has been invalidated in SECONDARY."""
-
+    def _verify_clean_secondary_raw_data_state(self, state_code: StateCode) -> None:
+        """Confirm that all raw file metadata / data has been invalidated and the BQ raw data dataset is clean in
+        SECONDARY."""
         raw_data_manager = PostgresDirectIngestRawFileMetadataManager(
-            region_code=state_code.value, raw_data_instance=instance
+            region_code=state_code.value,
+            raw_data_instance=DirectIngestInstance.SECONDARY,
         )
 
         # Confirm there aren't non-invalidated raw files for the instance. The metadata state should be completely
@@ -115,17 +114,22 @@ class IngestOperationsStore(AdminPanelStore):
                 "Cannot kick off ingest rerun, as there are still unprocessed raw files on Postgres."
             )
 
-        # Confirm that there isn't any secondary raw data on BQ
+        # Confirm that all the tables in the `us_xx_raw_data_secondary` on BQ are empty
         secondary_raw_data_dataset = raw_tables_dataset_for_region(
-            state_code=state_code, instance=instance
+            state_code=state_code, instance=DirectIngestInstance.SECONDARY
         )
-        if (
-            self.bq_client.dataset_exists(secondary_raw_data_dataset)
-            and len(list(self.bq_client.list_tables(secondary_raw_data_dataset))) > 0
-        ):
+        query = (
+            "SELECT SUM(size_bytes) as total_bytes FROM "
+            f"{metadata.project_id()}.{secondary_raw_data_dataset}.__TABLES__"
+        )
+        query_job = self.bq_client.run_query_async(
+            query_str=query, use_query_cache=False
+        )
+        results = list(query_job)
+        if int(results[0]["total_bytes"]) > 0:
             raise DirectIngestInstanceError(
-                f"There are raw data results in {secondary_raw_data_dataset} that have not been"
-                f"cleaned up. Cannot proceed with ingest rerun."
+                f"There are tables in {secondary_raw_data_dataset} that are not empty. Cannot proceed with "
+                f"ingest rerun."
             )
 
     def _verify_clean_ingest_view_state(
@@ -266,9 +270,7 @@ class IngestOperationsStore(AdminPanelStore):
                 StateCode(formatted_state_code.upper())
             )
         ):
-            self._verify_clean_secondary_raw_data_state(
-                state_code, raw_data_source_instance
-            )
+            self._verify_clean_secondary_raw_data_state(state_code)
 
         # Confirm that all ingest view metadata / data has been invalidated.
         self._verify_clean_ingest_view_state(state_code, instance)
