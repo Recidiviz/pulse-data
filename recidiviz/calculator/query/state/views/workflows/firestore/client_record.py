@@ -100,6 +100,11 @@ ELIGIBILITY_QUERY_CONFIGS = [
         "us_ix_complete_full_term_discharge_from_supervision_request_record_materialized",
     ),
     EligibilityQueryConfig(
+        "US_IX",
+        "usIdSupervisionLevelDowngrade",
+        "us_ix_supervision_level_downgrade_record_materialized",
+    ),
+    EligibilityQueryConfig(
         "US_ND",
         "earlyTermination",
         "us_nd_complete_discharge_early_from_supervision_record_materialized",
