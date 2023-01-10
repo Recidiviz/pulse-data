@@ -17,18 +17,12 @@
 """Interface for working with the AgencySetting model."""
 
 
-import enum
 from typing import Any, List
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from recidiviz.persistence.database.schema.justice_counts import schema
-
-
-class AgencySettingType(enum.Enum):
-    TEST = "TEST"
-    PURPOSE_AND_FUNCTIONS = "PURPOSE_AND_FUNCTIONS"
 
 
 class AgencySettingInterface:
@@ -38,7 +32,7 @@ class AgencySettingInterface:
     def create_or_update_agency_setting(
         session: Session,
         agency_id: int,
-        setting_type: AgencySettingType,
+        setting_type: schema.AgencySettingType,
         value: Any,
     ) -> None:
         insert_statement = insert(schema.AgencySetting).values(
