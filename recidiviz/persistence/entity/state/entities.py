@@ -114,6 +114,8 @@ from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
     ExternalIdEntity,
+    HasExternalIdEntity,
+    HasMultipleExternalIdsEntity,
 )
 
 # **** Entity Types for convenience *****:
@@ -146,18 +148,12 @@ PeriodType = TypeVar(
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
+class StatePersonExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an external id associated with a particular StatePerson."""
 
     # State Code
     # State providing the external id
     state_code: str = attr.ib(validator=attr_validators.is_str)
-
-    external_id: str = attr.ib(validator=attr_validators.is_str)
-
-    # Attributes
-    #   - What
-    id_type: str = attr.ib(validator=attr_validators.is_str)
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
@@ -248,7 +244,9 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StatePerson(Entity, BuildableAttr, DefaultableAttr):
+class StatePerson(
+    HasMultipleExternalIdsEntity[StatePersonExternalId], BuildableAttr, DefaultableAttr
+):
     """Models a StatePerson moving through the criminal justice system."""
 
     # State Code
@@ -302,6 +300,7 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     external_ids: List["StatePersonExternalId"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+
     aliases: List["StatePersonAlias"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
@@ -348,9 +347,12 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
         factory=list, validator=attr_validators.is_list
     )
 
+    def get_external_ids(self) -> List["StatePersonExternalId"]:
+        return self.external_ids
+
 
 @attr.s(eq=False, kw_only=True)
-class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateCharge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateCharge against a particular StatePerson."""
 
     # State Code
@@ -458,7 +460,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a StateAssessment conducted about a particular StatePerson."""
 
     #  State Code
@@ -519,7 +521,7 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a sentence for a supervisory period associated with one or more Charges
     against a StatePerson."""
 
@@ -604,7 +606,7 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
 
 
 @attr.s(eq=False, kw_only=True)
-class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateIncarcerationSentence(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a sentence for prison/jail time associated with one or more Charges
     against a StatePerson."""
 
@@ -717,7 +719,7 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationPeriod(
-    ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
+    HasExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
 ):
     """Models an uninterrupted period of time that a StatePerson is incarcerated at a
     single facility as a result of a particular sentence.
@@ -845,7 +847,7 @@ class StateIncarcerationPeriod(
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionPeriod(
-    ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
+    HasExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin
 ):
     """Models a distinct period of time that a StatePerson is under supervision as a
     result of a particular sentence."""
@@ -986,7 +988,7 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a documented incident for a StatePerson while incarcerated."""
 
     # State Code
@@ -1041,7 +1043,7 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
 
 @attr.s(eq=False, kw_only=True)
 class StateIncarcerationIncidentOutcome(
-    ExternalIdEntity, BuildableAttr, DefaultableAttr
+    HasExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """Models the documented outcome in response to some StateIncarcerationIncident."""
 
@@ -1156,7 +1158,7 @@ class StateSupervisionViolatedConditionEntry(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionViolation(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """
     Models a recorded instance where a StatePerson has violated one or more of the
     conditions of their StateSupervisionSentence.
@@ -1240,7 +1242,7 @@ class StateSupervisionViolationResponseDecisionEntry(
 
 @attr.s(eq=False, kw_only=True)
 class StateSupervisionViolationResponse(
-    ExternalIdEntity, BuildableAttr, DefaultableAttr
+    HasExternalIdEntity, BuildableAttr, DefaultableAttr
 ):
     """Models a response to a StateSupervisionViolation"""
 
@@ -1306,7 +1308,7 @@ class StateSupervisionViolationResponse(
 
 
 @attr.s(eq=False, kw_only=True)
-class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateAgent(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an agent working within a justice system."""
 
     # State Code
@@ -1342,7 +1344,7 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models an person's assignment to a particular program."""
 
     # State Code
@@ -1394,7 +1396,7 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateEarlyDischarge(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a person's sentenced-level early discharge requests."""
 
     # State Code
@@ -1461,7 +1463,7 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a person's contact with their supervising officer."""
 
     # State Code
@@ -1533,7 +1535,7 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateEmploymentPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models information about a person's employment status during a certain period of
     time.
     """
@@ -1590,7 +1592,7 @@ class StateEmploymentPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False, kw_only=True)
-class StateDrugScreen(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     """The StateDrugScreen object represents information about a person's drug screen results for a given date."""
 
     # State Code

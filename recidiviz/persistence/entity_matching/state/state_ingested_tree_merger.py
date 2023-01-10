@@ -21,6 +21,7 @@ few placeholder nodes as possible.
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
+from recidiviz.persistence.entity.base_entity import ExternalIdEntity
 from recidiviz.persistence.entity.entity_deserialize import Entity, EntityT
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -28,7 +29,6 @@ from recidiviz.persistence.entity.entity_utils import (
     get_flat_fields_json_str,
     is_placeholder,
 )
-from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence_utils import RootEntityT
 
@@ -282,11 +282,7 @@ class StateIngestedTreeMerger:
     def _get_non_placeholder_ingested_entity_key(self, entity: Entity) -> str:
         """Returns a string key that can be used to bucket this non-placeholder entity."""
         external_id = entity.get_external_id()
-        if not external_id or isinstance(
-            # TODO(#17471): Update to include entities.StateStaffExternalId
-            entity,
-            entities.StatePersonExternalId,
-        ):
+        if not external_id or isinstance(entity, ExternalIdEntity):
             return get_flat_fields_json_str(entity, self.field_index)
 
         return external_id

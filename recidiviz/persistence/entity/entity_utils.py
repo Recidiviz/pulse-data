@@ -61,6 +61,8 @@ from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
     ExternalIdEntity,
+    HasExternalIdEntity,
+    HasMultipleExternalIdsEntity,
 )
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
@@ -230,18 +232,19 @@ def _check_class_hierarchy_includes_all_expected_classes(
 
 
 def get_all_entity_classes_in_module(entities_module: ModuleType) -> Set[Type[Entity]]:
-    """Returns a set of all subclasses of Entity/ExternalIdEntity that are
+    """Returns a set of all subclasses of Entity that are
     defined in the given module."""
     expected_classes: Set[Type[Entity]] = set()
     for attribute_name in dir(entities_module):
         attribute = getattr(entities_module, attribute_name)
         if inspect.isclass(attribute):
-            if (
-                attribute is not Entity
-                and attribute is not ExternalIdEntity
-                and attribute is not EnumEntity
-                and issubclass(attribute, Entity)
-            ):
+            if attribute not in (
+                Entity,
+                HasExternalIdEntity,
+                ExternalIdEntity,
+                HasMultipleExternalIdsEntity,
+                EnumEntity,
+            ) and issubclass(attribute, Entity):
                 expected_classes.add(attribute)
 
     return expected_classes
@@ -295,7 +298,7 @@ def get_entity_class_in_module_with_name(
 
 
 def get_all_entity_class_names_in_module(entities_module: ModuleType) -> Set[str]:
-    """Returns a set of all names of subclasses of Entity/ExternalIdEntity that
+    """Returns a set of all names of subclasses of Entity that
     are defined in the given module."""
     return {cls_.__name__ for cls_ in get_all_entity_classes_in_module(entities_module)}
 
@@ -865,7 +868,7 @@ def get_ids(entities_list: Iterable[CoreEntity]) -> Set[int]:
 
 
 def get_single_state_code(
-    external_id_entities: Iterable[Union[ExternalIdEntity, StatePersonExternalId]]
+    external_id_entities: Iterable[Union[HasExternalIdEntity, StatePersonExternalId]]
 ) -> str:
     """Returns the state code corresponding to the list of objects. Asserts if the list is empty or if there are
     multiple different state codes."""
@@ -907,7 +910,7 @@ def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optiona
     if not property_class_name:
         raise ValueError(
             f"Non-flat field [{property_name}] on class [{obj.__class__}] should "
-            f"either correspond to list or union."
+            f"either correspond to list or union. Found: [{property_class_name}]"
         )
     return property_class_name
 
