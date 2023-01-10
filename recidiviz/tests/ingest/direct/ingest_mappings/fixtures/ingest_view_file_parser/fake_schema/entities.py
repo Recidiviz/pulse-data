@@ -25,7 +25,7 @@ from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.base_entity import (
     Entity,
     EnumEntity,
-    ExternalIdEntity,
+    HasExternalIdEntity,
 )
 
 
@@ -145,7 +145,7 @@ class FakePersonRace(EnumEntity):
 
 
 @attr.s(eq=False)
-class FakeAgent(ExternalIdEntity):
+class FakeAgent(HasExternalIdEntity):
     fake_state_code: str = attr.ib(validator=attr_validators.is_str)
 
     name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
@@ -157,7 +157,7 @@ class FakeAgent(ExternalIdEntity):
 
 
 @attr.s(eq=False)
-class FakeSentence(ExternalIdEntity):
+class FakeSentence(HasExternalIdEntity):
     fake_state_code: str = attr.ib(validator=attr_validators.is_str)
 
     length_days: Optional[int] = attr.ib(
@@ -169,7 +169,7 @@ class FakeSentence(ExternalIdEntity):
 
 
 @attr.s(eq=False)
-class FakeCharge(ExternalIdEntity):
+class FakeCharge(HasExternalIdEntity):
     fake_state_code: str = attr.ib(validator=attr_validators.is_str)
 
     statute: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)

@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Base class for all entity types"""
-from typing import Callable, Dict, List, Optional, Type
+import abc
+from typing import Callable, Dict, Generic, List, Optional, Type, TypeVar
 
 import attr
 
 # TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
+from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.core_entity import CoreEntity
 
 
@@ -39,11 +41,49 @@ class Entity(CoreEntity):
 
 @attr.s(eq=False, kw_only=True)
 class ExternalIdEntity(Entity):
-    external_id: Optional[str] = attr.ib(default=None)
+    """An entity that encodes ONLY external id information. This id entity will always
+    be connected to a HasMultipleExternalIdsEntity.
+    """
+
+    external_id: str = attr.ib(validator=attr_validators.is_str)
+    id_type: str = attr.ib(validator=attr_validators.is_str)
 
     # Consider ExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is ExternalIdEntity:
+            raise Exception("Abstract class cannot be instantiated")
+        return super().__new__(cls)
+
+
+@attr.s(eq=False, kw_only=True)
+class HasExternalIdEntity(Entity):
+    """An entity that has a flat external_id field but also stores other meaningful
+    information besides the id.
+    """
+
+    external_id: Optional[str] = attr.ib(default=None)
+
+    # Consider HasExternalIdEntity abstract and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is HasExternalIdEntity:
+            raise Exception("Abstract class cannot be instantiated")
+        return super().__new__(cls)
+
+
+ExternalIdT = TypeVar("ExternalIdT", bound=ExternalIdEntity)
+
+
+@attr.s(eq=False, kw_only=True)
+class HasMultipleExternalIdsEntity(Generic[ExternalIdT], Entity):
+    """An entity that has multiple associated external ids."""
+
+    @abc.abstractmethod
+    def get_external_ids(self) -> List[ExternalIdT]:
+        """Returns the list of external id objects for this class."""
+
+    # Consider HasMultipleExternalIdsEntity abstract and only allow instantiating subclasses
+    def __new__(cls, *_, **__):
+        if cls is HasMultipleExternalIdsEntity:
             raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
@@ -55,7 +95,7 @@ class EnumEntity(Entity):
 
     # Consider EnumEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
-        if cls is ExternalIdEntity:
+        if cls is HasExternalIdEntity:
             raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
