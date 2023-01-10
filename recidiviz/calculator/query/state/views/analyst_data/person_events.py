@@ -26,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
     STATE_BASE_DATASET,
 )
+from recidiviz.task_eligibility.dataset_config import TASK_COMPLETION_EVENTS_DATASET_ID
 from recidiviz.task_eligibility.task_eligiblity_spans import TASK_ELIGIBILITY_DATASET_ID
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -64,6 +65,26 @@ person-day, the GROUP BY clause should include all attribute name columns as wel
 """
 
 PERSON_EVENTS_QUERY_TEMPLATE = """
+
+WITH task_eligibility_spans AS (
+    -- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        end_reason,
+        is_eligible,
+        TO_JSON_STRING(STRUCT(
+            task_name,
+            completion_event_type AS task_type
+        )) AS event_attributes,
+    FROM
+        `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+    INNER JOIN
+        `{project_id}.{reference_views_dataset}.task_to_completion_event`
+    USING (task_name)
+)
 
 -- transitions to liberty or supervision
 -- only include in-state starts. So out-of-state to in-state is included, but 
@@ -554,18 +575,14 @@ WHERE
 UNION ALL
 
 -- opportunity eligibility starts and ends
--- keep one eligibility start per person-day-task_name
--- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
 SELECT
     state_code,
     person_id,
     "TASK_ELIGIBILITY_START" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(STRUCT(
-        task_name
-    )) AS event_attributes,
+    event_attributes,
 FROM
-    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+    task_eligibility_spans
 WHERE
     is_eligible
 
@@ -579,7 +596,8 @@ SELECT DISTINCT
     "TASK_ELIGIBILITY_START" AS event,
     start_date AS event_date,
     TO_JSON_STRING(STRUCT(
-        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name,
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_type
     )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
@@ -598,7 +616,8 @@ SELECT DISTINCT
     "TASK_COMPLETED" AS event,
     end_date AS event_date,
     TO_JSON_STRING(STRUCT(
-        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name,
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_type
     )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
@@ -609,17 +628,14 @@ UNION ALL
 
 -- late responses to eligible opportunities eligibility
 -- 7 days
--- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
 SELECT
     state_code,
     person_id,
     "TASK_ELIGIBLE_7_DAYS" AS event,
     DATE_ADD(start_date, INTERVAL 7 DAY) AS event_date,
-    TO_JSON_STRING(STRUCT(
-        task_name
-    )) AS event_attributes,
+    event_attributes,
 FROM
-    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+    task_eligibility_spans
 WHERE
     is_eligible
     AND LEAST(
@@ -636,7 +652,8 @@ SELECT DISTINCT
     "TASK_ELIGIBLE_7_DAYS" AS event,
     DATE_ADD(start_date, INTERVAL 7 DAY) AS event_date,
     TO_JSON_STRING(STRUCT(
-        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name,
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_type
     )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
@@ -650,17 +667,14 @@ WHERE
 UNION ALL
 
 -- 30 days
--- TODO(#17252): pull from collapsed eligibility table instead of `all_tasks_materialized`
 SELECT
     state_code,
     person_id,
     "TASK_ELIGIBLE_30_DAYS" AS event,
     DATE_ADD(start_date, INTERVAL 30 DAY) AS event_date,
-    TO_JSON_STRING(STRUCT(
-        task_name
-    )) AS event_attributes,
+    event_attributes,
 FROM
-    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+    task_eligibility_spans
 WHERE
     is_eligible
     AND LEAST(
@@ -677,7 +691,8 @@ SELECT DISTINCT
     "TASK_ELIGIBLE_30_DAYS" AS event,
     DATE_ADD(start_date, INTERVAL 30 DAY) AS event_date,
     TO_JSON_STRING(STRUCT(
-        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_name,
+        "SUPERVISION_LEVEL_DOWNGRADE" AS task_type
     )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
@@ -688,6 +703,38 @@ WHERE
             CURRENT_DATE("US/Eastern")
         ) > DATE_ADD(start_date, INTERVAL 30 DAY)
     
+UNION ALL
+
+-- TODO(#17706): remove once TN compliant reporting transfers are added to `all_tasks_materialized`
+-- keep one eligibility grant per person-day-task_name
+SELECT DISTINCT
+    state_code,
+    person_id,
+    "TASK_COMPLETED" AS event,
+    completion_event_date AS event_date,
+    TO_JSON_STRING(STRUCT(
+        "COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM" AS task_name,
+        "TRANSFER_TO_LIMITED_SUPERVISION" AS task_type
+    )) AS event_attributes,
+FROM
+    `{project_id}.{task_completion_events_dataset}.transfer_to_limited_supervision_materialized`
+WHERE
+    state_code = "US_TN"
+
+UNION ALL
+
+-- task completed events
+SELECT
+    state_code,
+    person_id,
+    "TASK_COMPLETED" AS event,
+    end_date AS event_date,
+    event_attributes,
+FROM
+    task_eligibility_spans
+WHERE
+    end_reason = "TASK_COMPLETED"
+
 UNION ALL
 
 -- assigned to tracked experiment
@@ -722,24 +769,6 @@ SELECT
 FROM
     `{project_id}.{state_base_dataset}.state_program_assignment`
 GROUP BY 1, 2, 3, 4, program_id, referring_agent_id, referral_metadata, participation_status
-
-UNION ALL
-
--- task completed events
-SELECT
-    state_code,
-    person_id,
-    "TASK_COMPLETED" AS event,
-    end_date AS event_date,
-    TO_JSON_STRING(
-        STRUCT(task_name, completion_event_type AS task_type)
-    ) AS event_attributes,
-FROM
-    `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
-INNER JOIN `{project_id}.{reference_views_dataset}.task_to_completion_event`
-    USING (task_name)
-WHERE
-    end_reason = "TASK_COMPLETED"
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -755,6 +784,7 @@ PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_id_raw_dataset=US_ID_RAW_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,
     task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
+    task_completion_events_dataset=TASK_COMPLETION_EVENTS_DATASET_ID,
     should_materialize=True,
     clustering_fields=["state_code", "event"],
 )
