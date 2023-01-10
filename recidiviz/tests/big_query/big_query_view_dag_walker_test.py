@@ -563,90 +563,6 @@ The following views have less restrictive projects_to_deploy than their parents:
         ).build()
         _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
-    def test_populate_node_family_full_parentage(self) -> None:
-        dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-
-        # root node start
-        start_node = dag_walker.node_for_view(self.x_shaped_dag_views_list[0])
-        dag_walker.populate_node_family_for_node(
-            node=start_node, view_source_table_datasets={"source_dataset"}
-        )
-
-        self.assertEqual(
-            {
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="source_dataset", table_id="source_table"
-                    )
-                )
-            },
-            start_node.node_family.full_parentage,
-        )
-
-        # start in middle
-        start_node = dag_walker.node_for_view(self.x_shaped_dag_views_list[2])
-        dag_walker.populate_node_family_for_node(
-            node=start_node, view_source_table_datasets={"source_dataset"}
-        )
-        expected_parent_nodes = {
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id="source_dataset", table_id="source_table"
-                )
-            ),
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id="source_dataset", table_id="source_table_2"
-                )
-            ),
-            DagKey.for_view(self.x_shaped_dag_views_list[0]),
-            DagKey.for_view(self.x_shaped_dag_views_list[1]),
-        }
-        self.assertEqual(
-            expected_parent_nodes,
-            start_node.node_family.full_parentage,
-        )
-
-        # single start node
-        start_node = dag_walker.node_for_view(self.x_shaped_dag_views_list[3])
-        dag_walker.populate_node_family_for_node(
-            node=start_node, view_source_table_datasets={"source_dataset"}
-        )
-        expected_parent_nodes = {
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id="source_dataset", table_id="source_table"
-                )
-            ),
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id="source_dataset", table_id="source_table_2"
-                )
-            ),
-            DagKey.for_view(self.x_shaped_dag_views_list[0]),
-            DagKey.for_view(self.x_shaped_dag_views_list[1]),
-            DagKey.for_view(self.x_shaped_dag_views_list[2]),
-        }
-        self.assertEqual(
-            expected_parent_nodes,
-            start_node.node_family.full_parentage,
-        )
-
-        # multiple start nodes
-        start_nodes = [
-            start_node,
-            dag_walker.node_for_view(self.x_shaped_dag_views_list[4]),
-        ]
-
-        parentage_set: Set[DagKey] = set()
-        for node in start_nodes:
-            dag_walker.populate_node_family_for_node(
-                node=node, view_source_table_datasets={"source_dataset"}
-            )
-            parentage_set = parentage_set.union(node.node_family.full_parentage)
-
-        self.assertEqual(expected_parent_nodes, parentage_set)
-
     def test_populate_ancestors_sub_dag(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
         all_views_dag_walker.populate_node_view_builders(
@@ -660,13 +576,13 @@ The following views have less restrictive projects_to_deploy than their parents:
         }
 
         # Expected ancestor DAG views by view given this diamond structure:
-        #  1     2
-        #   \   /
-        #     3
-        #   /   \
-        #  4     5
-        #   \   /
-        #     6
+        #    1     2
+        #     \   /
+        #       3
+        #     /   \
+        #    4     5
+        #     \   /
+        #       6
         expected_results = {
             BigQueryAddress(dataset_id="dataset_1", table_id="table_1"): [
                 # All ancestor DAGs include the target view
@@ -1178,70 +1094,20 @@ The following views have less restrictive projects_to_deploy than their parents:
             sub_dag_walker.views,
         )
 
-    def test_populate_node_family_full_parentage_complex_dependencies(self) -> None:
-        view_1 = SimpleBigQueryViewBuilder(
+    def test_ancestors_dfs_tree_str(self) -> None:
+        view_builder_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        ).build()
-        view_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-        ).build()
-        view_3 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_3",
-            view_id="table_3",
-            description="table_3 description",
-            view_query_template="""
-                           SELECT * FROM `{project_id}.dataset_1.table_1`
-                           JOIN `{project_id}.dataset_2.table_2`
-                           USING (col)""",
-        ).build()
-        view_4 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_4",
-            view_id="table_4",
-            description="table_4 description",
-            view_query_template="""
-                           SELECT * FROM `{project_id}.dataset_2.table_2`
-                           JOIN `{project_id}.dataset_3.table_3`
-                           USING (col)""",
-        ).build()
-
-        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4])
-        start_node = dag_walker.node_for_view(view_4)
-
-        dag_walker.populate_node_family_for_node(
-            node=start_node, view_source_table_datasets={"source_dataset"}
         )
-        expected_parent_nodes = {
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id="source_dataset", table_id="source_table"
-                )
-            ),
-            DagKey.for_view(view_1),
-            DagKey.for_view(view_2),
-            DagKey.for_view(view_3),
-        }
-        self.assertEqual(expected_parent_nodes, start_node.node_family.full_parentage)
-
-    def test_populate_node_family_parentage_dfs_tree_str(self) -> None:
-        view_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        ).build()
-        view_2 = SimpleBigQueryViewBuilder(
+        view_builder_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        ).build()
-        view_3 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -1249,26 +1115,34 @@ The following views have less restrictive projects_to_deploy than their parents:
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
-        ).build()
-        view_4 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_4 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_4",
             view_id="table_4",
             description="table_4 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        ).build()
-        view_5 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_5 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_5",
             view_id="table_5",
             description="table_5 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        ).build()
-        dag_walker = BigQueryViewDagWalker([view_1, view_2, view_3, view_4, view_5])
+        )
+        all_view_builders = [
+            view_builder_1,
+            view_builder_2,
+            view_builder_3,
+            view_builder_4,
+            view_builder_5,
+        ]
+        dag_walker = BigQueryViewDagWalker([b.build() for b in all_view_builders])
+        dag_walker.populate_node_view_builders(all_view_builders)
+        dag_walker.populate_ancestor_sub_dags()
 
         # Top level view
-        node = dag_walker.node_for_view(view_5)
-        dag_walker.populate_node_family_for_node(node=node)
+        dfs_tree = dag_walker.ancestors_dfs_tree_str(view_builder_5.build())
         expected_tree = """dataset_5.table_5
 |--dataset_3.table_3
 |----dataset_2.table_2
@@ -1276,37 +1150,25 @@ The following views have less restrictive projects_to_deploy than their parents:
 |----dataset_1.table_1
 |------source_dataset.source_table
 """
-        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
+        self.assertEqual(expected_tree, dfs_tree)
 
         # Middle of tree
-        node = dag_walker.node_for_view(view_3)
-        dag_walker.populate_node_family_for_node(node=node)
+        dfs_tree = dag_walker.ancestors_dfs_tree_str(view_builder_3.build())
         expected_tree = """dataset_3.table_3
 |--dataset_2.table_2
 |----source_dataset.source_table_2
 |--dataset_1.table_1
 |----source_dataset.source_table
 """
-        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
-
-        # Skip datasets
-        dag_walker.populate_node_family_for_node(
-            node=node,
-            datasets_to_skip={"dataset_1"},
-        )
-        expected_tree = """dataset_3.table_3
-|--dataset_2.table_2
-|----source_dataset.source_table_2
-|--source_dataset.source_table
-"""
-        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
+        self.assertEqual(expected_tree, dfs_tree)
 
         # Custom formatted
-        def _custom_formatter(dag_key: DagKey) -> str:
-            return f"custom_formatted_{dag_key.dataset_id}_{dag_key.table_id}"
+        def _custom_formatter(address: BigQueryAddress) -> str:
+            return f"custom_formatted_{address.dataset_id}_{address.table_id}"
 
-        dag_walker.populate_node_family_for_node(
-            node=node, custom_node_formatter=_custom_formatter
+        dfs_tree = dag_walker.ancestors_dfs_tree_str(
+            view_builder_3.build(),
+            custom_node_formatter=_custom_formatter,
         )
 
         expected_tree = """custom_formatted_dataset_3_table_3
@@ -1315,22 +1177,36 @@ The following views have less restrictive projects_to_deploy than their parents:
 |--custom_formatted_dataset_1_table_1
 |----custom_formatted_source_dataset_source_table
 """
-        self.assertEqual(expected_tree, node.node_family.parent_dfs_tree_str)
+        self.assertEqual(expected_tree, dfs_tree)
+
+        # Skip datasets
+        dag_walker = BigQueryViewDagWalker([b.build() for b in all_view_builders])
+        dag_walker.populate_node_view_builders(all_view_builders)
+        dag_walker.populate_ancestor_sub_dags()
+        dfs_tree = dag_walker.ancestors_dfs_tree_str(
+            view_builder_3.build(), datasets_to_skip={"dataset_1"}
+        )
+        expected_tree = """dataset_3.table_3
+|--source_dataset.source_table
+|--dataset_2.table_2
+|----source_dataset.source_table_2
+"""
+        self.assertEqual(expected_tree, dfs_tree)
 
     def test_populate_node_family_descendants_dfs_tree_str(self) -> None:
-        view_1 = SimpleBigQueryViewBuilder(
+        view_builder_1 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
             view_id="table_1",
             description="table_1 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        ).build()
-        view_2 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_2",
             view_id="table_2",
             description="table_2 description",
             view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
-        ).build()
-        view_3 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_3 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_3",
             view_id="table_3",
             description="table_3 description",
@@ -1338,52 +1214,63 @@ The following views have less restrictive projects_to_deploy than their parents:
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
             USING (col)""",
-        ).build()
-        view_4 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_4 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_4",
             view_id="table_4",
             description="table_4 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        ).build()
-        view_5 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_5 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_5",
             view_id="table_5",
             description="table_5 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
-        ).build()
-        view_6 = SimpleBigQueryViewBuilder(
+        )
+        view_builder_6 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_6",
             view_id="table_6",
             description="table_6 description",
             view_query_template="""
             SELECT * FROM `{project_id}.dataset_5.table_5`""",
-        ).build()
-        dag_walker = BigQueryViewDagWalker(
-            [view_1, view_2, view_3, view_4, view_5, view_6]
         )
+        all_builders = [
+            view_builder_1,
+            view_builder_2,
+            view_builder_3,
+            view_builder_4,
+            view_builder_5,
+            view_builder_6,
+        ]
+        all_views = [b.build() for b in all_builders]
+        dag_walker = BigQueryViewDagWalker(all_views)
+        dag_walker.populate_node_view_builders(all_builders)
+        dag_walker.populate_descendant_sub_dags()
 
         # Top level view
-        node = dag_walker.node_for_view(view_2)
-        dag_walker.populate_node_family_for_node(node=node)
+        descendant_tree = dag_walker.descendants_dfs_tree_str(
+            view=view_builder_2.build()
+        )
         expected_tree = """dataset_2.table_2
 |--dataset_3.table_3
 |----dataset_4.table_4
 |----dataset_5.table_5
 |------dataset_6.table_6
 """
-        self.assertEqual(expected_tree, node.node_family.child_dfs_tree_str)
+        self.assertEqual(expected_tree, descendant_tree)
 
         # Descendants from middle of tree
-        node = dag_walker.node_for_view(view_3)
-        dag_walker.populate_node_family_for_node(node=node)
+        descendant_tree = dag_walker.descendants_dfs_tree_str(
+            view=view_builder_3.build()
+        )
         expected_tree = """dataset_3.table_3
 |--dataset_4.table_4
 |--dataset_5.table_5
 |----dataset_6.table_6
 """
-        self.assertEqual(expected_tree, node.node_family.child_dfs_tree_str)
+        self.assertEqual(expected_tree, descendant_tree)
 
     def test_dag_materialized_view_clobbers_other(self) -> None:
         view_1 = SimpleBigQueryViewBuilder(
@@ -1674,6 +1561,33 @@ The following views have less restrictive projects_to_deploy than their parents:
             all_views_dag_walker.populate_node_view_builders(
                 DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0:-1]
             )
+
+    def test_related_ancestor_keys(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        all_views_dag_walker.populate_node_view_builders(
+            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
+        )
+        all_views_dag_walker.populate_ancestor_sub_dags()
+        view_1, view_2, view_3, *_ = self.diamond_shaped_dag_views_list
+        assert all_views_dag_walker.related_ancestor_keys(
+            dag_key=DagKey.for_view(view_3)
+        ) == set(
+            [
+                DagKey.for_view(view_1),
+                DagKey.for_view(view_2),
+                DagKey.for_view(view_3),
+                DagKey(
+                    view_address=BigQueryAddress(
+                        dataset_id="source_dataset", table_id="source_table"
+                    )
+                ),
+                DagKey(
+                    view_address=BigQueryAddress(
+                        dataset_id="source_dataset", table_id="source_table_2"
+                    )
+                ),
+            ]
+        )
 
     def test_dag_perf_config(self) -> None:
         walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)

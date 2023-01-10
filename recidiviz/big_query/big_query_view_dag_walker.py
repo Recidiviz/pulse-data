@@ -176,20 +176,12 @@ class BigQueryViewDagNode:
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
         self.is_root = is_root
         self.is_leaf = is_leaf
-        # Note: Must call populate_node_family_for_node() on a node before using this member variable.
-        self._node_family: Optional[BigQueryViewDagNodeFamily] = None
 
         self._view_builder: Optional[BigQueryViewBuilder] = None
         self._ancestors_sub_dag: Optional[BigQueryViewDagWalker] = None
         self._ancestors_tree_num_edges: Optional[int] = None
         self._descendants_sub_dag: Optional[BigQueryViewDagWalker] = None
         self._descendants_tree_num_edges: Optional[int] = None
-
-    @property
-    def node_family(self) -> "BigQueryViewDagNodeFamily":
-        if not self._node_family:
-            raise ValueError("Must set node_family via set_node_family().")
-        return self._node_family
 
     @property
     def dag_key(self) -> DagKey:
@@ -228,9 +220,6 @@ class BigQueryViewDagNode:
         self, materialized_addresss: Dict[BigQueryAddress, DagKey]
     ) -> None:
         self.materialized_addresss = materialized_addresss
-
-    def set_node_family(self, node_family: "BigQueryViewDagNodeFamily") -> None:
-        self._node_family = node_family
 
     @property
     def child_keys(self) -> Set[DagKey]:
@@ -277,7 +266,7 @@ class BigQueryViewDagNode:
     def set_ancestors_tree_num_edges(self, num_edges: int) -> None:
         # pylint: disable=anomalous-backslash-in-string
         """Returns the number of edges in the tree with this node at the root and all
-          *root* ancestor nodes in the ancestors_sub_dag as leaves. Consider the following
+          source tables in the ancestors_sub_dag as leaves. Consider the following
           ancestors DAG for node F:
                A
               /\
@@ -345,26 +334,13 @@ class BigQueryViewDagNode:
         return self._descendants_tree_num_edges
 
 
-@attr.s
-class BigQueryViewDagNodeFamily:
-    """Class that holds a DAG node's full child and parent dependencies, as well as string
-    representations of those dependency trees.
-    Attributes can be populated using the DAG walker's populate_node_family_for_node()"""
-
-    # The set of DagKeys for all views this view relies on (parents, grandparents, etc...)
-    full_parentage: Set[DagKey] = attr.ib(default=None)
-    # The set of DagKeys for all views that depend on this view (children, grandchildren, etc...)
-    full_descendants: Set[DagKey] = attr.ib(default=None)
-    # The visual string representation of the full parentage dependency tree.
-    parent_dfs_tree_str: str = attr.ib(default=None)
-    # The visual string representation of the full descendants dependency tree.
-    child_dfs_tree_str: str = attr.ib(default=None)
-
-
 class BigQueryViewDagWalker:
     """Class implementation that walks a DAG of BigQueryViews."""
 
-    def __init__(self, views: List[BigQueryView]):
+    def __init__(
+        self,
+        views: List[BigQueryView],
+    ):
         self.views = views
         dag_nodes = [BigQueryViewDagNode(view) for view in views]
         self.nodes_by_key: Dict[DagKey, BigQueryViewDagNode] = {
@@ -375,6 +351,7 @@ class BigQueryViewDagWalker:
         self._prepare_dag()
         self.roots = [node for node in self.nodes_by_key.values() if node.is_root]
         self.leaves = [node for node in self.nodes_by_key.values() if node.is_leaf]
+
         self._check_for_cycles()
 
     def _get_materialized_addresss_map(self) -> Dict[BigQueryAddress, DagKey]:
@@ -529,7 +506,6 @@ class BigQueryViewDagWalker:
 
         Will throw if a node execution time exceeds |max_node_process_time_sec|.
         """
-
         queue = set(self.leaves) if reverse else set(self.roots)
         processed: Set[DagKey] = set()
         view_results: Dict[BigQueryView, ViewResultT] = {}
@@ -800,94 +776,6 @@ class BigQueryViewDagWalker:
 
         return sub_dag_walker
 
-    def populate_node_family_for_node(
-        self,
-        node: BigQueryViewDagNode,
-        datasets_to_skip: Optional[Set[str]] = None,
-        custom_node_formatter: Optional[Callable[[DagKey], str]] = None,
-        view_source_table_datasets: Optional[Set[str]] = None,
-    ) -> None:
-        """Populates the BigQueryViewDagNodeFamily for a given node. This includes the
-         full set of all parent nodes, the full set of all child nodes, and the string
-        representations of those dependency trees. If |view_source_table_datasets| are
-        specified, we stop searching for parent nodes when we hit a source dataset.
-        """
-
-        def _get_one_way_dependencies(
-            descendants: bool = False,
-        ) -> Tuple[Set[DagKey], str]:
-            """Returns a set of all dependent DagKeys in one direction, and a string
-             representation of that tree.
-
-            If |descendants| is True, returns info about the tree of views that are
-            dependent on the view. If |descendants| is False, returns info about the
-            tree of all views that this view depends on."""
-            stack = [
-                (
-                    DagKey(
-                        view_address=BigQueryAddress(
-                            dataset_id=node.view.dataset_id, table_id=node.view.table_id
-                        )
-                    ),
-                    0,
-                )
-            ]
-            tree = ""
-            full_dependencies: Set[DagKey] = set()
-            while len(stack) > 0:
-                dag_key, tabs = stack.pop()
-                if not datasets_to_skip or dag_key.dataset_id not in datasets_to_skip:
-                    table_name = (
-                        custom_node_formatter(dag_key)
-                        if custom_node_formatter
-                        else f"{dag_key.dataset_id}.{dag_key.table_id}"
-                    )
-                    tree += ("|" if tabs else "") + ("--" * tabs) + table_name + "\n"
-
-                # Stop if we reached a source view
-                if (
-                    view_source_table_datasets
-                    and not descendants
-                    and dag_key.dataset_id in view_source_table_datasets
-                ):
-                    continue
-
-                curr_node = self.nodes_by_key.get(dag_key)
-                if curr_node:
-                    next_related_keys = (
-                        curr_node.child_keys if descendants else curr_node.parent_keys
-                    )
-
-                    for related_key in sorted(
-                        next_related_keys,
-                        key=lambda key: (key.dataset_id, key.table_id),
-                        reverse=descendants,
-                    ):
-                        full_dependencies.add(related_key)
-                        stack.append(
-                            (
-                                related_key,
-                                # We don't add a tab if we are skipping a view
-                                tabs
-                                if datasets_to_skip
-                                and dag_key.dataset_id in datasets_to_skip
-                                else tabs + 1,
-                            )
-                        )
-            return full_dependencies, tree
-
-        full_parentage, parent_tree = _get_one_way_dependencies()
-        full_descendants, child_tree = _get_one_way_dependencies(descendants=True)
-
-        node.set_node_family(
-            BigQueryViewDagNodeFamily(
-                full_parentage=full_parentage,
-                parent_dfs_tree_str=parent_tree,
-                full_descendants=full_descendants,
-                child_dfs_tree_str=child_tree,
-            )
-        )
-
     def populate_node_view_builders(
         self, all_candidate_view_builders: Sequence[BigQueryViewBuilder]
     ) -> None:
@@ -973,4 +861,163 @@ class BigQueryViewDagWalker:
 
         # Process the DAG in the leaves -> roots direction so we process children
         # first.
+
         self.process_dag(populate_node_descendants_sub_dag, reverse=True)
+
+    def ancestors_dfs_tree_str(
+        self,
+        view: BigQueryView,
+        parent_sort_fn: Callable[[str], str] = lambda s: s,
+        custom_node_formatter: Callable[
+            [BigQueryAddress], str
+        ] = lambda a: f"{a.dataset_id}.{a.table_id}",
+        datasets_to_skip: Optional[Set[str]] = None,
+    ) -> str:
+        # pylint: disable=anomalous-backslash-in-string
+        """
+        Generate a string representing the dependency graph for ancestors.
+        The graph begins at the given view, and ascends through ancestors
+        in reverse sorted order with additional indentation at each level.
+        Generally, the graph will terminate at a source view (which is not
+        a node of the graph itself, but is calculated by taking the difference
+        between all parent keys and the parent keys found from the
+        process_dag parent results). For example, given node C in the graph
+        A     B
+         \   /
+           C
+           |
+           D
+           |
+          ...
+        the ancestor tree representation may look something like:
+        - C
+        - - B
+        - - - Source
+        - - A
+        - - - Source
+        The ancestors sub_dag used for the operation is cached in
+        the node representing the view during populate_ancestor_sub_dags.
+        """
+
+        sub_dag = self.node_for_view(view).ancestors_sub_dag
+
+        def _build_dfs_str(
+            v: BigQueryView, parent_results: Dict[BigQueryView, str]
+        ) -> str:
+            view_parent_addresses = {p.address for p in parent_results}
+            node = self.node_for_view(v)
+            parent_keys = {key.view_address for key in node.parent_keys}
+            source_table_addresses = parent_keys - view_parent_addresses
+            return self._build_dfs_str(
+                v=v,
+                parent_view_dfs_strs=parent_results,
+                parent_source_tables=source_table_addresses,
+                parent_table_sort_fn=lambda *args: sorted(
+                    *args, key=parent_sort_fn, reverse=True
+                ),
+                node_formatter_fn=custom_node_formatter,
+                datasets_to_skip=datasets_to_skip,
+            )
+
+        return sub_dag.process_dag(_build_dfs_str).view_results[view] + "\n"
+
+    def descendants_dfs_tree_str(
+        self,
+        view: BigQueryView,
+        parent_sort_fn: Callable[[str], str] = lambda s: s,
+        custom_node_formatter: Callable[
+            [BigQueryAddress], str
+        ] = lambda a: f"{a.dataset_id}.{a.table_id}",
+        datasets_to_skip: Optional[Set[str]] = None,
+    ) -> str:
+        # pylint: disable=anomalous-backslash-in-string
+        """
+        Generate a string representing the dependency graph for descendants.
+        The graph begins at the given view, and descends through descendants
+        in sorted order with additional indentation at each level.
+        Source views need not be considered when constructing the descendants
+        tree. For example, given node C in the graph
+        A     B
+         \   /
+           C
+           |
+           D
+         /   \
+        E     F
+        the descendant tree representation may look something like:
+        - C
+        - - D
+        - - - E
+        - - - F
+        The descendants sub_dag used for the operation is cached in
+        the node representing the view during populate_descendant_sub_dags.
+        """
+
+        sub_dag = self.node_for_view(view).descendants_sub_dag
+
+        def _build_dfs_str(
+            v: BigQueryView, parent_results: Dict[BigQueryView, str]
+        ) -> str:
+            return self._build_dfs_str(
+                v=v,
+                parent_view_dfs_strs=parent_results,
+                parent_source_tables=set(),
+                parent_table_sort_fn=lambda *args: sorted(
+                    *args, key=parent_sort_fn, reverse=False
+                ),
+                node_formatter_fn=custom_node_formatter,
+                datasets_to_skip=datasets_to_skip,
+            )
+
+        return (
+            sub_dag.process_dag(_build_dfs_str, reverse=True).view_results[view] + "\n"
+        )
+
+    def _build_dfs_str(
+        self,
+        v: BigQueryView,
+        parent_view_dfs_strs: Dict[BigQueryView, str],
+        parent_source_tables: Set[BigQueryAddress],
+        parent_table_sort_fn: Callable,
+        node_formatter_fn: Callable[[BigQueryAddress], str],
+        datasets_to_skip: Optional[Set[str]],
+    ) -> str:
+        parent_source_tables = {
+            k
+            for k in parent_source_tables
+            if not datasets_to_skip or k.dataset_id not in datasets_to_skip
+        }
+        formatted_source_table_names = [
+            node_formatter_fn(a) for a in parent_source_tables
+        ]
+        # TODO(#17679): Remove unecessarily complex sorting logic
+        all_parent_results = parent_table_sort_fn(
+            [
+                *parent_view_dfs_strs.values(),
+                *formatted_source_table_names,
+            ]
+        )
+        if datasets_to_skip and v.dataset_id in datasets_to_skip:
+            return "\n".join(all_parent_results)
+        table_name = node_formatter_fn(v.address)
+        return "\n".join(
+            [
+                table_name,
+                *("|--" + p.replace("|--", "|----") for p in all_parent_results),
+            ]
+        )
+
+    def related_ancestor_keys(
+        self, dag_key: DagKey, terminating_datasets: Optional[Set[str]] = None
+    ) -> Set[DagKey]:
+        if terminating_datasets is None:
+            terminating_datasets = set()
+        related_keys = set()
+        node = self.nodes_by_key[dag_key]
+        ancestors = set(node.ancestors_sub_dag.nodes_by_key)
+        related_keys |= ancestors
+        for key in ancestors:
+            if not key.dataset_id in terminating_datasets:
+                node = self.nodes_by_key[key]
+                related_keys |= node.parent_keys
+        return related_keys

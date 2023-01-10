@@ -23,6 +23,7 @@ Can be run on-demand using:
 
 import logging
 import os
+import re
 import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Type
@@ -33,13 +34,7 @@ from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.big_query.big_query_view_dag_walker import (
-    BigQueryViewDagNodeFamily,
-    BigQueryViewDagWalker,
-    DagKey,
-    ProcessDagPerfConfig,
-)
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -208,13 +203,17 @@ class CalculationDocumentationGenerator:
             for environment, states in environments_to_states.items():
                 for state in states:
                     self.products_by_state[state][environment].append(product_name)
+        all_view_builders = all_deployed_view_builders()
         self.dag_walker = BigQueryViewDagWalker(
             build_views_to_update(
                 view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=all_deployed_view_builders(),
+                candidate_view_builders=all_view_builders,
                 address_overrides=None,
-            )
+            ),
         )
+        self.dag_walker.populate_node_view_builders(all_view_builders)
+        self.dag_walker.populate_ancestor_sub_dags()
+        self.dag_walker.populate_descendant_sub_dags()
         self.prod_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)
 
         self.metric_pipelines = self.prod_templates_yaml.pop_dicts("metric_pipelines")
@@ -247,30 +246,6 @@ class CalculationDocumentationGenerator:
                     DATAFLOW_METRICS_TO_TABLES[metric]
                 ] = generic_type
 
-        def _preprocess_views(
-            v: BigQueryView, _parent_results: Dict[BigQueryView, None]
-        ) -> None:
-            dag_key = DagKey(view_address=v.address)
-            node = self.dag_walker.nodes_by_key[dag_key]
-
-            # Fills out full child/parent dependencies and tree representations for use
-            # in various sections.
-            self.dag_walker.populate_node_family_for_node(
-                node=node,
-                datasets_to_skip=RAW_TABLE_DATASETS,
-                custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS
-                | LATEST_VIEW_DATASETS,
-            )
-
-        self.dag_walker.process_dag(
-            _preprocess_views,
-            perf_config=ProcessDagPerfConfig(
-                # TODO(#17183): Remove custom config once runtime improvements are implemented.
-                node_max_processing_time_seconds=240,
-                node_allowed_process_time_overrides={},
-            ),
-        )
         self.all_views_to_document = self._get_all_views_to_document()
 
     def _get_all_export_config_view_builder_addresses(self) -> Set[BigQueryAddress]:
@@ -523,7 +498,7 @@ class CalculationDocumentationGenerator:
                 self.bulleted_list(
                     [
                         self._dependency_tree_formatter_for_gitbook(
-                            dag_key, products_section=True
+                            dag_key.view_address, products_section=True
                         )
                         for dag_key in keys
                     ],
@@ -642,11 +617,10 @@ class CalculationDocumentationGenerator:
         all_parent_keys: Set[DagKey] = set()
         for view_address in all_config_view_addresses:
             dag_key = DagKey(view_address=view_address)
-            node = self.dag_walker.nodes_by_key[dag_key]
-            # Add in the top level view
-            all_parent_keys.add(dag_key)
-            # Add in all ancestors
-            all_parent_keys = all_parent_keys.union(node.node_family.full_parentage)
+            all_related_keys = self.dag_walker.related_ancestor_keys(
+                dag_key=dag_key, terminating_datasets=LATEST_VIEW_DATASETS
+            )
+            all_parent_keys |= all_related_keys
 
         # Ignore materialized metric views as relevant metric info can be found in a
         # different dataset (DATAFLOW_METRICS_DATASET).
@@ -699,6 +673,7 @@ class CalculationDocumentationGenerator:
     def generate_products_markdowns(self) -> bool:
         """Generates markdown files if necessary for the docs/calculation/products
         directories"""
+        logging.info("Generating product documentation")
         anything_modified = False
 
         products_dir_path = os.path.join(self.root_calc_docs_dir, "products")
@@ -816,6 +791,7 @@ class CalculationDocumentationGenerator:
 
     def generate_states_markdowns(self) -> bool:
         """Generate markdown files for each state."""
+        logging.info("Generating state documenation")
         anything_modified = False
 
         states_dir_path = os.path.join(self.root_calc_docs_dir, "states")
@@ -854,7 +830,7 @@ class CalculationDocumentationGenerator:
 
     def _dependency_tree_formatter_for_gitbook(
         self,
-        dag_key: DagKey,
+        dag_key: BigQueryAddress,
         products_section: bool = False,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
@@ -915,40 +891,62 @@ class CalculationDocumentationGenerator:
 
         return table_name_str + " <br/>"
 
-    @staticmethod
     def _get_view_tree_string(
-        node_family: BigQueryViewDagNodeFamily,
+        self,
         dag_key: DagKey,
         descendants: bool = False,
     ) -> str:
         """Gets the string representation of the view's tree.
 
         If it is too large a command to generate it will be output instead."""
-        if (node_family.full_parentage and not descendants) or (
-            node_family.full_descendants and descendants
-        ):
-            # Gitbook has a line count limit of ~525 for the view markdowns, so we
-            # only print trees if they are small enough. Otherwise, we direct readers
-            # to a script that prints the tree to console.
-            if descendants:
-                if (
-                    node_family.child_dfs_tree_str.count("<br/>")
-                    < MAX_DEPENDENCY_TREE_LENGTH
-                ):
-                    return node_family.child_dfs_tree_str
-            else:
-                if (
-                    node_family.parent_dfs_tree_str.count("<br/>")
-                    < MAX_DEPENDENCY_TREE_LENGTH
-                ):
-                    return node_family.parent_dfs_tree_str
+
+        node = self.dag_walker.nodes_by_key[dag_key]
+        if descendants:
+            num_tree_edges = node.descendants_tree_num_edges
+            sub_dag = node.descendants_sub_dag
+        else:
+            num_tree_edges = node.ancestors_tree_num_edges
+            sub_dag = node.ancestors_sub_dag
+
+        sub_dag_addresses = {v.address for v in sub_dag.views}
+
+        # Each LATEST raw data view has a corresponding RAW table parent that is
+        # skipped, which corresponds to one line in the docstring tree.
+        num_skipped_views = len(
+            {a for a in sub_dag_addresses if a.dataset_id in LATEST_VIEW_DATASETS}
+        )
+        num_tree_edges = num_tree_edges - num_skipped_views
+
+        if num_tree_edges == 0:
+            return (
+                f"This view has no {'child' if descendants else 'parent'} dependencies."
+            )
+
+        if num_tree_edges + 1 >= MAX_DEPENDENCY_TREE_LENGTH:
             return StrictStringFormatter().format(
                 DEPENDENCY_TREE_SCRIPT_TEMPLATE,
                 dataset_id=dag_key.dataset_id,
                 table_id=dag_key.table_id,
                 descendants=descendants,
             )
-        return f"This view has no {'child' if descendants else 'parent'} dependencies."
+
+        view = self.dag_walker.view_for_key(dag_key)
+        if descendants:
+            # TODO(#17679): Remove unecessarily complex sorting logic
+            return self.dag_walker.descendants_dfs_tree_str(
+                view,
+                parent_sort_fn=lambda s: re.sub(r"^\[", "", s),
+                custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
+                datasets_to_skip=RAW_TABLE_DATASETS,
+            )
+
+        # TODO(#17679): Remove unecessarily complex sorting logic
+        return self.dag_walker.ancestors_dfs_tree_str(
+            view,
+            parent_sort_fn=lambda s: re.sub(r"^\[", "", s),
+            custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
+            datasets_to_skip=RAW_TABLE_DATASETS,
+        )
 
     @staticmethod
     def _create_script_text_for_dependencies(metric_name: str) -> str:
@@ -987,10 +985,8 @@ class CalculationDocumentationGenerator:
             description=view_node.view.description,
             staging_link=staging_link,
             prod_link=prod_link,
-            parent_tree=self._get_view_tree_string(view_node.node_family, view_key),
-            child_tree=self._get_view_tree_string(
-                view_node.node_family, view_key, descendants=True
-            ),
+            parent_tree=self._get_view_tree_string(view_key),
+            child_tree=self._get_view_tree_string(view_key, descendants=True),
         )
         return documentation
 
@@ -1006,27 +1002,31 @@ class CalculationDocumentationGenerator:
 
     def generate_view_markdowns(self) -> bool:
         """Generate markdown files for each view."""
-        anything_modified = False
+        logging.info("Generating view documentation")
         views_dir_path = os.path.join(self.root_calc_docs_dir, "views")
         os.makedirs(views_dir_path, exist_ok=True)
+
+        datasets = {v.dataset_id for v in self.all_views_to_document}
+        for dataset_id in datasets:
+            dataset_dir = os.path.join(views_dir_path, dataset_id)
+            os.makedirs(dataset_dir, exist_ok=True)
 
         existing_view_files: Set[str] = get_all_files_recursive(views_dir_path)
         new_view_files: Set[str] = set()
 
-        for view_key in self.all_views_to_document:
+        anything_modified = False
+        for key in self.all_views_to_document:
+            view_address = key.view_address
             # Generate documentation
-            documentation = self._get_view_information(view_key)
+            documentation = self._get_view_information(
+                DagKey(view_address=view_address)
+            )
 
             # Write to markdown files
-            dataset_dir = os.path.join(
-                views_dir_path,
-                view_key.dataset_id,
-            )
-            os.makedirs(dataset_dir, exist_ok=True)
-            view_file_name = f"{view_key.table_id}.md"
             view_markdown_path = os.path.join(
-                dataset_dir,
-                view_file_name,
+                views_dir_path,
+                view_address.dataset_id,
+                f"{view_address.table_id}.md",
             )
 
             anything_modified |= persist_file_contents(
@@ -1157,6 +1157,7 @@ class CalculationDocumentationGenerator:
 
     def generate_metric_markdowns(self) -> bool:
         """Generate markdown files for each metric."""
+        logging.info("Generating Dataflow metric documentation")
         anything_modified = False
         metrics_dir_path = os.path.join(self.root_calc_docs_dir, "metrics")
         os.makedirs(metrics_dir_path, exist_ok=True)

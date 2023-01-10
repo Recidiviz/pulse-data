@@ -20,7 +20,6 @@ import unittest
 
 import mock
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
 from recidiviz.calculator.query.state import dataset_config, view_config
@@ -74,21 +73,19 @@ class ViewExportConfigTest(unittest.TestCase):
         all_views_dag_walker = BigQueryViewDagWalker(
             [view_builder.build() for view_builder in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
         )
+        all_views_dag_walker.populate_node_view_builders(
+            VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
+        )
+        all_views_dag_walker.populate_ancestor_sub_dags()
 
         for view_builder in REFERENCE_VIEW_BUILDERS:
-            node = all_views_dag_walker.nodes_by_key[
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id=view_builder.dataset_id,
-                        table_id=view_builder.view_id,
-                    )
-                )
-            ]
-            all_views_dag_walker.populate_node_family_for_node(node=node)
-            for parent_node in node.node_family.full_parentage:
+            sub_dag = all_views_dag_walker.node_for_view(
+                view_builder.build()
+            ).ancestors_sub_dag
+            for view in sub_dag.views:
                 self.assertNotEqual(
                     dataset_config.DATAFLOW_METRICS_DATASET,
-                    parent_node.dataset_id,
+                    view.address.dataset_id,
                     f"View {view_builder.dataset_id}.{view_builder.view_id} relies on "
                     f"Dataflow metrics. Shared views that pull from Dataflow metrics "
                     f"should be in the shared_metric_views dataset, not the "
@@ -101,24 +98,24 @@ class ViewExportConfigTest(unittest.TestCase):
         all_views_dag_walker = BigQueryViewDagWalker(
             [view_builder.build() for view_builder in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
         )
+        all_views_dag_walker.populate_node_view_builders(
+            VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
+        )
+        all_views_dag_walker.populate_ancestor_sub_dags()
 
         for view_builder in SHARED_METRIC_VIEW_BUILDERS:
-            node = all_views_dag_walker.nodes_by_key[
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id=view_builder.dataset_id,
-                        table_id=view_builder.view_id,
-                    )
-                )
-            ]
-            all_views_dag_walker.populate_node_family_for_node(node=node)
-
             dataflow_parent = False
-            for parent_node in node.node_family.full_parentage:
-                if parent_node.dataset_id == dataset_config.DATAFLOW_METRICS_DATASET:
-                    dataflow_parent = True
-                    break
-
+            sub_dag = all_views_dag_walker.node_for_view(
+                view_builder.build()
+            ).ancestors_sub_dag
+            for view in sub_dag.views:
+                node = all_views_dag_walker.nodes_by_key[
+                    DagKey(view_address=view.address)
+                ]
+                # check source tables which exist beyond ancestors
+                for key in node.parent_keys:
+                    if key.dataset_id == dataset_config.DATAFLOW_METRICS_DATASET:
+                        dataflow_parent = True
             self.assertTrue(
                 dataflow_parent,
                 f"Found view {view_builder.dataset_id}.{view_builder.view_id} "
