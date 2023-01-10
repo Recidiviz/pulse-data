@@ -19,7 +19,7 @@ root entity that is being matched in entity matching.
 """
 
 import abc
-from typing import Generic, List, Type
+from typing import Generic, List, Set, Type
 
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
@@ -31,22 +31,11 @@ class RootEntityEntityMatchingDelegate(Generic[RootEntityT, SchemaRootEntityT]):
     """
 
     @abc.abstractmethod
-    def convert_root_entities_to_schema_root_entities(
-        self, root_entities: List[RootEntityT], populate_back_edges: bool = True
-    ) -> List[SchemaRootEntityT]:
-        """Converts ingested pure Python root entities into their corresponding
-        SQLAlchemy schema entity type.
-        """
-
-    @abc.abstractmethod
-    def read_potential_match_db_root_entities(
-        self,
-        session: Session,
-        region_code: str,
-        ingested_root_entities: List[SchemaRootEntityT],
+    def read_root_entities_with_external_ids(
+        self, session: Session, region_code: str, external_ids: Set[str]
     ) -> List[SchemaRootEntityT]:
         """Reads and returns all matching root entities of the appropriate type from the
-        DB that are needed for entity matching, given the |ingested_root_entities|.
+        DB that have one of the provided |external_ids|.
         """
 
     @abc.abstractmethod
