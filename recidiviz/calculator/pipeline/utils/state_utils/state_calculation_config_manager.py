@@ -301,6 +301,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_recidivism_metr
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_sentence_normalization_delegate import (
     UsIxSentenceNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_supervision_compliance import (
+    UsIxSupervisionCaseCompliance,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_ix.us_ix_supervision_delegate import (
     UsIxSupervisionDelegate,
 )
@@ -772,9 +775,18 @@ def get_state_specific_case_compliance_manager(
             supervision_delegate,
         )
     if state_code == StateCode.US_IX.value:
-        # TODO(#15901): Add case compliance logic back.
-        return None
-
+        return UsIxSupervisionCaseCompliance(
+            person,
+            supervision_period,
+            case_type,
+            start_of_supervision,
+            assessments,
+            supervision_contacts,
+            violation_responses,
+            incarceration_sentences,
+            incarceration_period_index,
+            supervision_delegate,
+        )
     if state_code == StateCode.US_ND.value:
         return UsNdSupervisionCaseCompliance(
             person,
