@@ -598,15 +598,16 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def delete_from_table_async(
-        self, dataset_id: str, table_id: str, filter_clause: str
+        self, dataset_id: str, table_id: str, filter_clause: Optional[str] = None
     ) -> bigquery.QueryJob:
-        """Deletes rows from the given table that match the filter clause.
+        """Deletes rows from the given table that match the filter clause. If no filter is provided, all rows are
+        deleted.
 
         Args:
             dataset_id: The name of the dataset where the table lives.
             table_id: The name of the table to delete from.
-            filter_clause: A clause that filters the contents of the table to determine which rows should be deleted.
-                Must start with "WHERE".
+            filter_clause: An optional clause that filters the contents of the table to determine which rows should be
+             deleted. If present, it must start with "WHERE".
 
         Returns:
             A QueryJob which will contain the results once the query is complete.
@@ -1479,22 +1480,24 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def delete_from_table_async(
-        self, dataset_id: str, table_id: str, filter_clause: str
+        self, dataset_id: str, table_id: str, filter_clause: Optional[str] = None
     ) -> bigquery.QueryJob:
-        if not filter_clause.startswith("WHERE"):
+        if filter_clause and not filter_clause.startswith("WHERE"):
             raise ValueError(
                 "Cannot delete from a table without a valid filter clause starting with WHERE."
             )
 
+        # BQ requires a WHERE clause for all DELETE statements. The `WHERE true` filter deletes all rows.
+        filter_str = filter_clause if filter_clause else "WHERE true"
         delete_query = (
-            f"DELETE FROM `{self.project_id}.{dataset_id}.{table_id}` {filter_clause}"
+            f"DELETE FROM `{self.project_id}.{dataset_id}.{table_id}` {filter_str}"
         )
 
         logging.info(
             "Deleting data from %s.%s matching this filter: %s",
             dataset_id,
             table_id,
-            filter_clause,
+            filter_str,
         )
 
         return self.client.query(delete_query)

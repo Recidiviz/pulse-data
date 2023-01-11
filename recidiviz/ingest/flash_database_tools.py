@@ -159,10 +159,13 @@ def delete_contents_of_raw_data_tables(
         bigquery.table.TableListItem
     ] = big_query_client.list_tables(dataset_id=raw_dataset_id)
 
+    query_jobs = []
     for table in list_of_tables:
-        big_query_client.delete_from_table_async(
-            dataset_id=raw_dataset_id, table_id=table.table_id, filter_clause=""
+        query_job = big_query_client.delete_from_table_async(
+            dataset_id=raw_dataset_id, table_id=table.table_id
         )
+        query_jobs.append(query_job)
+    big_query_client.wait_for_big_query_jobs(query_jobs)
 
 
 def copy_raw_data_to_backup(
