@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BaseSchemaEntityConverter"""
-from types import ModuleType
 from unittest import TestCase
 from unittest.mock import create_autospec
 
@@ -23,6 +22,9 @@ from more_itertools import one
 
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
+)
+from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
+    SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -55,15 +57,12 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
         entities.Toy.__name__,
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
+        class_mapper = SchemaToEntityClassMapper.get(
+            schema_module=schema, entities_module=entities
+        )
         direction_checker = SchemaEdgeDirectionChecker(self.CLASS_HIERARCHY, entities)
-        super().__init__(direction_checker)
-
-    def _get_schema_module(self) -> ModuleType:
-        return schema
-
-    def _get_entities_module(self) -> ModuleType:
-        return entities
+        super().__init__(class_mapper, direction_checker)
 
     def _populate_indirect_back_edges(self, _):
         return

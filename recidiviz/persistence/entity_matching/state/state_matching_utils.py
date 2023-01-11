@@ -20,8 +20,13 @@ from typing import List, Optional, Set, Type, cast
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_utils import get_state_database_entities
-from recidiviz.persistence.entity.base_entity import EnumEntity
+from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
+    SchemaToEntityClassMapper,
+)
+from recidiviz.persistence.entity.base_entity import (
+    EnumEntity,
+    HasMultipleExternalIdsEntity,
+)
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
@@ -30,6 +35,7 @@ from recidiviz.persistence.entity.entity_utils import (
     is_placeholder,
     is_reference_only_entity,
 )
+from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence_utils import SchemaRootEntityT
@@ -229,33 +235,13 @@ def generate_child_entity_trees(
     return child_trees
 
 
-def is_multiple_id_entity(entity: DatabaseEntity) -> bool:
+def is_multiple_id_entity(db_entity_cls: Type[DatabaseEntity]) -> bool:
     """Returns True if the given entity can have multiple external ids."""
-    if entity.__class__ is schema.StateStaff:
-        raise ValueError(
-            f"TODO(#17471): Unsupported class [{entity.__class__}] - add support and "
-            f"associated entity matching tests."
-        )
-    return entity.__class__ in get_multiple_id_classes()
-
-
-# TODO(#17471): Update to look at associated Entity classes and return those that are
-#  HasMultipleExternalIdEntity.
-def get_multiple_id_classes() -> List[Type[DatabaseEntity]]:
-    """Returns a list of all classes that have multiple external ids."""
-    to_return: List[Type[DatabaseEntity]] = []
-    for cls in get_state_database_entities():
-        if "external_ids" in cls.get_relationship_property_names():
-            if cls not in {schema.StatePerson, schema.StateStaff}:
-                raise ValueError(
-                    f"Untested multiple id class. To remove this, please add "
-                    f"test coverage to ensure entities of class {cls} are "
-                    f"merged properly when there are 2 ingested entities and "
-                    f"when there are 2 database entities. See tests for state"
-                    f"person for examples."
-                )
-            to_return.append(cls)
-    return to_return
+    class_mapper = SchemaToEntityClassMapper.get(
+        schema_module=schema, entities_module=entities
+    )
+    entity_cls = class_mapper.entity_cls_for_schema_cls(db_entity_cls)
+    return issubclass(entity_cls, HasMultipleExternalIdsEntity)
 
 
 def remove_child_from_entity(

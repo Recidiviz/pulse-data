@@ -19,7 +19,6 @@ Defines a class for converting between state-specific Entity and schema Base
 objects.
 """
 
-from types import ModuleType
 from typing import Type, TypeVar
 
 import attr
@@ -30,6 +29,9 @@ from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_c
     BaseSchemaEntityConverter,
     DstBaseType,
     SrcBaseType,
+)
+from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
+    SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
@@ -43,14 +45,15 @@ class _StateSchemaEntityConverter(BaseSchemaEntityConverter[SrcBaseType, DstBase
     """State-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self) -> None:
-        super().__init__(SchemaEdgeDirectionChecker.state_direction_checker())
+        class_mapper = SchemaToEntityClassMapper.get(
+            schema_module=schema, entities_module=entities
+        )
+        super().__init__(
+            class_mapper, SchemaEdgeDirectionChecker.state_direction_checker()
+        )
 
-    def _get_schema_module(self) -> ModuleType:
-        return schema
-
-    def _get_entities_module(self) -> ModuleType:
-        return entities
-
+    # TODO(#17471): Generalize this code to do the same for StateStaff indirect
+    #  backedges.
     def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:
         if isinstance(dst, (StatePerson, schema.StatePerson)):
             self._add_person_to_dst(dst, dst)
