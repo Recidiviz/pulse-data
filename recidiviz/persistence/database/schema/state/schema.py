@@ -1365,6 +1365,7 @@ class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
     completion_date = Column(
         Date, comment="The date the person actually did complete their supervision."
     )
+    is_life = Column(Boolean, comment="Whether or not this is a life sentence.")
     state_code = Column(
         String(255),
         nullable=False,
