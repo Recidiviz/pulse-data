@@ -628,9 +628,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   >
                     python -m
                     recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
-                    \ --project-id {projectId} \ --region{" "}
-                    {stateCode.toLowerCase()} \ --ingest-instance SECONDARY \
-                    --dry-run True
+                    --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
+                    --ingest-instance SECONDARY --skip-prompts True --dry-run
+                    True
                   </CodeBlock>
                 </p>
               }
@@ -1143,7 +1143,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   >
                     gsutil -m mv &#39;gs://{projectId}
                     -direct-ingest-state-storage-secondary/
-                    {stateCode.toLowerCase()}/raw/* gs://
+                    {stateCode.toLowerCase()}/raw/*&#39; gs://
                     {projectId}
                     -direct-ingest-state-storage/
                     {stateCode.toLowerCase()}/raw/

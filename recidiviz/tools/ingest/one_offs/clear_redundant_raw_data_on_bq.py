@@ -104,6 +104,8 @@ def postgres_file_ids_present_in_bq(
     postgres_results = session.execute(sqlalchemy.text(command))
     logging.info("[%s] %s", file_tag, command)
     postgres_file_ids = [result[0] for result in postgres_results]
+    if len(postgres_file_ids) < 2:
+        return []
 
     logging.info(
         "[%s] Postgres min and max file_ids: min=(%s, %s), max=(%s, %s)",

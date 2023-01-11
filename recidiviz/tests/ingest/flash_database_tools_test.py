@@ -257,7 +257,7 @@ class FlashDatabaseToolsTest(unittest.TestCase):
                     dataset_id=raw_source_id,
                 ),
                 call.delete_from_table_async(
-                    dataset_id=raw_source_id, table_id="my_table", filter_clause=""
+                    dataset_id=raw_source_id, table_id="my_table"
                 ),
             ]
         )

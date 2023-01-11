@@ -32,6 +32,7 @@ python -m recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
     --end-date-bound 2019-08-17 --project-id recidiviz-staging \
     --ingest-instance PRIMARY \
     --dry-run True \
+    --skip-prompts False
     [--file-tag-filters docstars_contacts elite_offenders]
 
 """
@@ -76,6 +77,7 @@ class MoveFilesToDeprecatedController:
         dry_run: bool,
         project_id: str,
         file_tag_filters: List[str],
+        skip_prompts: bool,
     ):
         self.region_code = region_code
         self.start_date_bound = start_date_bound
@@ -83,6 +85,7 @@ class MoveFilesToDeprecatedController:
         self.dry_run = dry_run
         self.file_tag_filters = file_tag_filters
         self.project_id = project_id
+        self.skip_prompts = skip_prompts
 
         if (
             ingest_instance == DirectIngestInstance.SECONDARY
@@ -116,31 +119,32 @@ class MoveFilesToDeprecatedController:
     def run(self) -> None:
         """Main function that will execute the move to deprecated."""
 
-        prompt_for_confirmation(
-            "You have chosen to deprecate RAW DATA files. It is relatively "
-            "rare that this should happen - generally only if we have received bad "
-            "data from the state. \nAre you sure you want to proceed?",
-            dry_run=self.dry_run,
-        )
+        if not self.skip_prompts:
+            prompt_for_confirmation(
+                "You have chosen to deprecate RAW DATA files. It is relatively "
+                "rare that this should happen - generally only if we have received bad "
+                "data from the state. \nAre you sure you want to proceed?",
+                dry_run=self.dry_run,
+            )
 
-        prompt_for_confirmation(
-            f"All associated rows in the BigQuery dataset "
-            f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
-            f"these files to a deprecated location.\nHave you already done so?",
-            dry_run=self.dry_run,
-        )
+            prompt_for_confirmation(
+                f"All associated rows in the BigQuery dataset "
+                f"`{self.region_code.lower()}_raw_data` must be deleted before moving "
+                f"these files to a deprecated location.\nHave you already done so?",
+                dry_run=self.dry_run,
+            )
 
-        # TODO(#3666): Update this script to make updates to our Operations db and
-        #  BigQuery (if necessary). For now we print these messages to check if
-        #  appropriate data has been deleted from operations db.
-        operations_table = DirectIngestRawFileMetadata.__tablename__
+            # TODO(#3666): Update this script to make updates to our Operations db and
+            #  BigQuery (if necessary). For now we print these messages to check if
+            #  appropriate data has been deleted from operations db.
+            operations_table = DirectIngestRawFileMetadata.__tablename__
 
-        prompt_for_confirmation(
-            f"All associated rows from our postgres table `{operations_table}` "
-            "must be deleted or marked as invalidated before moving these files to a deprecated "
-            "location.\nHave you already done so?",
-            dry_run=self.dry_run,
-        )
+            prompt_for_confirmation(
+                f"All associated rows from our postgres table `{operations_table}` "
+                "must be deleted or marked as invalidated before moving these files to a deprecated "
+                "location.\nHave you already done so?",
+                dry_run=self.dry_run,
+            )
 
         OperateOnStorageRawFilesController(
             region_code=self.region_code,
@@ -200,6 +204,14 @@ def parse_arguments() -> argparse.Namespace:
         help="List of file tags to filter for. If not set, will move all files.",
     )
 
+    parser.add_argument(
+        "--skip-prompts",
+        default=False,
+        type=str_to_bool,
+        help="Skip confirmation prompts, if true. This should only be used in the "
+        "context of a flashing checklist.",
+    )
+
     return parser.parse_args()
 
 
@@ -217,6 +229,7 @@ def main() -> None:
         project_id=args.project_id,
         dry_run=args.dry_run,
         file_tag_filters=args.file_tag_filters,
+        skip_prompts=args.skip_prompts,
     ).run()
 
 

@@ -637,7 +637,21 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.bq_client.delete_from_table_async(
             self.mock_dataset_id, self.mock_table_id, filter_clause="WHERE x > y"
         )
-        self.mock_client.query.assert_called()
+        expected_query = (
+            "DELETE FROM `fake-recidiviz-project.fake-dataset.test_table` WHERE x > y"
+        )
+        self.mock_client.query.assert_called_with(expected_query)
+
+    def test_delete_from_table_no_filter(self) -> None:
+        """Tests that the delete_from_table function runs a query without a filter."""
+        self.bq_client.delete_from_table_async(
+            self.mock_dataset_id,
+            self.mock_table_id,
+        )
+        expected_query = (
+            "DELETE FROM `fake-recidiviz-project.fake-dataset.test_table` WHERE true"
+        )
+        self.mock_client.query.assert_called_with(expected_query)
 
     def test_delete_from_table_invalid_filter_clause(self) -> None:
         """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
