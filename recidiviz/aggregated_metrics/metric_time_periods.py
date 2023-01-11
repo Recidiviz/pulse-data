@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,59 +16,69 @@
 # =============================================================================
 """End-date exclusive time ranges at month, quarter, and year intervals, starting on the provided date."""
 
-from datetime import date
-
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _VIEW_NAME = "metric_time_periods"
-_METRICS_START_DATE = date(2016, 1, 1)
+_METRICS_YEARS_TRACKED = "7"
 
-_VIEW_DESCRIPTION = f"""
-End-date exclusive time ranges at month, quarter, and year intervals, starting on {_METRICS_START_DATE.isoformat()}.
-"""
-
+_VIEW_DESCRIPTION = (
+    "End-date exclusive time ranges at month, quarter, and year intervals over the "
+    f"past {_METRICS_YEARS_TRACKED} years."
+)
 
 _QUERY_TEMPLATE = """
 WITH date_array AS (
     SELECT
-        date,
+        month,
     FROM
         UNNEST(GENERATE_DATE_ARRAY(
-            "{metrics_start_date_string}",
+            DATE_SUB(
+                DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY), MONTH),
+                INTERVAL {metrics_years_tracked} YEAR
+            ),
             DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 1 DAY), MONTH),
-            INTERVAL 1 DAY
-        )) AS date
+            INTERVAL 1 MONTH
+        )) AS month
 )
 
--- Define end-date-exclusive periods
-SELECT DISTINCT
+-- Define month, quarter, and year end-date-exclusive periods
+SELECT
+    *
+FROM (
+SELECT
     "MONTH" AS period,
-    DATE_TRUNC(date, MONTH) AS population_start_date,
-    DATE_ADD(DATE_TRUNC(date, MONTH), INTERVAL 1 MONTH) AS population_end_date,
+    month AS population_start_date,
+    DATE_ADD(month, INTERVAL 1 MONTH) AS population_end_date,
 FROM
     date_array 
 
 UNION ALL
 
-SELECT DISTINCT
+-- we repeat the quarter period monthly to allow greater flexibility downstream
+SELECT
     "QUARTER" AS period,
-    DATE_TRUNC(date, QUARTER) AS population_start_date,
-    DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 QUARTER) AS population_end_date,
+    month AS population_start_date,
+    DATE_ADD(month, INTERVAL 1 QUARTER) AS population_end_date,
 FROM
     date_array 
 
 UNION ALL
 
--- we repeat the year period quarterly to allow greater flexibility downstream
-SELECT DISTINCT
+-- we repeat the year period monthly to allow greater flexibility downstream
+SELECT
     "YEAR" AS period,
-    DATE_TRUNC(date, QUARTER) AS population_start_date,
-    DATE_ADD(DATE_TRUNC(date, QUARTER), INTERVAL 1 YEAR) AS population_end_date,
+    month AS population_start_date,
+    DATE_ADD(month, INTERVAL 1 YEAR) AS population_end_date,
 FROM
     date_array
+)
+-- keep completed periods only
+WHERE
+    -- OK if = current date since exclusive
+    population_end_date <= CURRENT_DATE("US/Eastern")
 """
 
 METRIC_TIME_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -76,7 +86,7 @@ METRIC_TIME_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=_VIEW_NAME,
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
-    metrics_start_date_string=_METRICS_START_DATE.isoformat(),
+    metrics_years_tracked=_METRICS_YEARS_TRACKED,
     should_materialize=True,
 )
 

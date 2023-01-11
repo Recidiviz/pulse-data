@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@
 """Generates view builder calculating assignment-event metrics"""
 from typing import List
 
+from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
+    get_unioned_time_granularity_clause,
+)
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentEventAggregatedMetric,
@@ -58,12 +61,13 @@ assignments AS (
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population.population_name_short}_{aggregation_level.level_name_short}_metrics_assignment_sessions_materialized`
 )
 
-SELECT
-    population_start_date AS start_date,
-    population_end_date AS end_date,
-    period,
-    {aggregation_level.get_index_columns_query_string()},
-"""
+, month_metrics AS (
+    SELECT
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date AS start_date,
+        population_end_date AS end_date,
+        period,
+    """
         + ",\n".join(
             [
                 f"SUM({metric.name}_{metric.window_length_days}) AS {metric.name}_{metric.window_length_days}"
@@ -71,16 +75,16 @@ SELECT
             ]
         )
         + f"""
-FROM (
-    SELECT
-        population_start_date,
-        population_end_date,
-        period,
-        {aggregation_level.get_index_columns_query_string("assign")},
-        assign.person_id,
-        assign.assignment_date,
-    -- Sum the number of days from assignment to the first subsequent person event
-"""
+    FROM (
+        SELECT
+            {aggregation_level.get_index_columns_query_string("assign")},
+            population_start_date,
+            population_end_date,
+            period,
+            assign.person_id,
+            assign.assignment_date,
+        -- Sum the number of days from assignment to the first subsequent person event
+    """
         + ",\n".join(
             [
                 metric.generate_aggregation_query_fragment(
@@ -92,30 +96,37 @@ FROM (
             ]
         )
         + f"""
-    FROM 
-        time_periods pop
-    LEFT JOIN
-        assignments assign
-    ON 
-        assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
-    LEFT JOIN
-        `{{project_id}}.{{analyst_dataset}}.person_events_materialized` events
-    ON
-        assign.person_id = events.person_id
-        AND events.event_date >= assign.assignment_date
-    GROUP BY
-        population_start_date,
-        population_end_date,
-        period,
-        {aggregation_level.get_index_columns_query_string("assign")},
-        assign.person_id,
-        assign.assignment_date
-)
-GROUP BY 
-    {aggregation_level.get_index_columns_query_string()}, 
-    population_start_date, population_end_date, period
-    """
+        FROM 
+            time_periods pop
+        LEFT JOIN
+            assignments assign
+        ON 
+            assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
+        LEFT JOIN
+            `{{project_id}}.{{analyst_dataset}}.person_events_materialized` events
+        ON
+            assign.person_id = events.person_id
+            AND events.event_date >= assign.assignment_date
+        WHERE
+            period = "MONTH"
+        GROUP BY
+            {aggregation_level.get_index_columns_query_string("assign")},
+            population_start_date,
+            population_end_date,
+            period,
+            assign.person_id,
+            assign.assignment_date
     )
+    GROUP BY 
+        {aggregation_level.get_index_columns_query_string()}, 
+        population_start_date, population_end_date, period
+)"""
+        + get_unioned_time_granularity_clause(
+            aggregation_level=aggregation_level,
+            metrics=metrics,
+        )
+    )
+
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
         view_id=view_id,

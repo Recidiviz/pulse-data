@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,6 +39,13 @@ class AggregatedMetric:
 
     # A description of what this metric computes, which can be displayed in various surfaces, such as Looker or Gitbook.
     description: str = attr.field(validator=attr_validators.is_non_empty_str)
+
+    @abc.abstractmethod
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        """
+        Returns a query fragment used to aggregate a metric over multiple time periods,
+        e.g. from monthly to quarterly and yearly granularity
+        """
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -97,6 +104,9 @@ class AssignmentEventAggregatedMetric(AggregatedMetric):
 
     # Length (in days) of the window following assignment date over which to calculate metric
     window_length_days: int = 365
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}_{self.window_length_days}) AS {self.name}_{self.window_length_days}"
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -217,6 +227,12 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
             ) AS {self.name}
         """
 
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return (
+            f"SUM(DATE_DIFF(end_date, start_date, DAY) * {self.name}) /\n\t"
+            f"SUM(DATE_DIFF(end_date, start_date, DAY)) AS {self.name}"
+        )
+
 
 @attr.define(frozen=True, kw_only=True)
 class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
@@ -258,6 +274,12 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
                     ) * IF({self.get_metric_conditions_string()}, 1, 0) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY), 0)
             )  AS {self.name}
         """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return (
+            f"SUM(avg_daily_population * DATE_DIFF(end_date, start_date, DAY) * {self.name}) /\n\t"
+            f"SUM(avg_daily_population * DATE_DIFF(end_date, start_date, DAY)) AS {self.name}"
+        )
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -312,6 +334,12 @@ class DailyAvgTimeSinceSpanStartMetric(
             )  AS {self.name}
         """
 
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return (
+            f"SUM(avg_daily_population * DATE_DIFF(end_date, start_date, DAY) * {self.name}) /\n\t"
+            f"SUM(avg_daily_population * DATE_DIFF(end_date, start_date, DAY)) AS {self.name}"
+        )
+
 
 @attr.define(frozen=True, kw_only=True)
 class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
@@ -330,6 +358,10 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
         period_start_date_col: str,
         period_end_date_col: str,
     ) -> str:
+        # TODO(#16824): Add query fragment function
+        return ""
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
         # TODO(#16824): Add query fragment function
         return ""
 
@@ -364,6 +396,9 @@ class AssignmentSpanDaysMetric(
             ) AS {self.name}_{self.window_length_days}
         """
 
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}_{self.window_length_days}) AS {self.name}_{self.window_length_days}"
+
 
 @attr.define(frozen=True, kw_only=True)
 class AssignmentAvgSpanValueMetric(
@@ -380,6 +415,10 @@ class AssignmentAvgSpanValueMetric(
     def generate_aggregation_query_fragment(
         self, span_start_date_col: str, span_end_date_col: str, assignment_date_col: str
     ) -> str:
+        # TODO(#16824): Add query fragment function
+        return ""
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
         # TODO(#16824): Add query fragment function
         return ""
 
@@ -400,6 +439,9 @@ class EventCountMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
             )) AS {self.name}
         """
 
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}) AS {self.name}"
+
 
 @attr.define(frozen=True, kw_only=True)
 class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
@@ -419,6 +461,20 @@ class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
                 NULL
             )) AS {self.name}
         """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        """
+        To aggregate monthly avg_lsir_score_change_any_officer to yearly, we need to
+        know how many lsir assessments there were over the month and then use:
+
+            SUM(assessment_count * avg_lsir_score_change_any_officer) /
+                SUM(assessment_count)
+
+        Since this metric type is not implemented in aggregated metrics, we'll skip for
+        now.
+        """
+        # TODO(#16824): Add query fragment function
+        return ""
 
 
 @attr.define(frozen=True, kw_only=True)
