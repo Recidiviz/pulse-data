@@ -63,6 +63,9 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
+    INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
@@ -439,13 +442,14 @@ DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI = (
 DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-dashboard-user-restrictions"
 )
+INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
 OVERDUE_DISCHARGE_ALERT_OUTPUT_DIRECTORY_URI = (
     "gs://{project_id}-report-data/overdue_discharge_alert"
 )
 PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
+PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-product-user-import"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
-INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
 
@@ -626,6 +630,15 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         # We export all opportunities for all states, so we expect some files to be empty.
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
+    ),
+    # Product users
+    ExportViewCollectionConfig(
+        view_builders_to_export=[INGESTED_PRODUCT_USERS_VIEW_BUILDER],
+        output_directory_uri_template=PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
+        export_name="PRODUCT_USER_IMPORT",
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
+        },
     ),
 ]
 
