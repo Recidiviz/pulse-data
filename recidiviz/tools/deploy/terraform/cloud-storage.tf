@@ -105,6 +105,13 @@ module "dashboard-user-restrictions-bucket" {
   name_suffix = "dashboard-user-restrictions"
 }
 
+module "product-user-import-bucket" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "product-user-import"
+}
+
 # TODO(#13703): Figure out what we want to do with this data and whether we still want
 #  to manage this bucket, which contains data from deprecated state aggregate scrapers,
 #  via TF.
