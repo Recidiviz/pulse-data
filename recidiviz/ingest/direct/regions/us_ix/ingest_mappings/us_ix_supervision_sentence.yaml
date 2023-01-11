@@ -9,6 +9,10 @@ input_columns:
   - SentenceOrderTypeCode
   - EndDate
   - TermStatusDesc
+  - SentenceOrderEventTypeName
+  - _parentsentenceid
+  - Sequence
+  - ChargeId
 unused_columns: []
 output:
   StatePerson:
@@ -62,3 +66,12 @@ output:
                         - Active - Incarceration # Doesn't appear too often, only n=549
           date_imposed: SentenceDate
           supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
+          sentence_metadata:
+            $json_dict:
+              sentence_event_type: SentenceOrderEventTypeName
+              parent_sentence: _parentsentenceid
+              sentence_sequence:
+                $concat:
+                  $values:
+                    - ChargeId
+                    - Sequence
