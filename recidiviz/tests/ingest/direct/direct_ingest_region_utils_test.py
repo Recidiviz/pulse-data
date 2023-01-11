@@ -75,6 +75,7 @@ class TestDirectIngestRegionUtils(unittest.TestCase):
         self.assertEqual(
             state_codes,
             {
+                StateCode.US_IX,
                 StateCode.US_PA,
                 StateCode.US_ME,
                 StateCode.US_MI,
