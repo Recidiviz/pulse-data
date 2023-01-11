@@ -18,7 +18,7 @@
 Defines a criteria span view that shows spans of time during which
 someone in ID has a valid LSIR level for the required number of days:
 -LSI-R score at or below the low potential level to reoffend with no increase in risk
- for the 90 days of active superivion
+ for the 90 days of active supervision
 -At or below moderate potential to reoffend can have no increase in risk level 360 days prior
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
@@ -44,7 +44,7 @@ _CRITERIA_NAME = "US_IX_LSIR_LEVEL_LOW_MODERATE_FOR_X_DAYS"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone in ID has a valid LSIR level for the required number of days:
 -LSI-R score at or below the low potential level to reoffend with no increase in risk 
- for the 90 days of active superivion
+ for the 90 days of active supervision
 -At or below moderate potential to reoffend can have no increase in risk level 360 days prior 
 """
 
@@ -74,7 +74,8 @@ WITH LSIR_level_gender AS(
     ON score.state_code = ses.state_code
     AND score.person_id = ses.person_id
     --only consider scores relevant in the supervision session during which they occur 
-    AND {nonnull_end_date_clause('''DATE_ADD(score.score_end_date, INTERVAL 1 DAY)''')} BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+    AND ses.start_date < {nonnull_end_date_clause('score.score_end_date_exclusive')}
+    AND score.assessment_date < {nonnull_end_date_clause('ses.end_date_exclusive')}
   LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` info
       ON score.state_code = info.state_code
       AND score.person_id = info.person_id
