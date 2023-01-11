@@ -20,10 +20,7 @@ state entities).
 See recidiviz.tools.calculator.create_or_update_dataflow_sandbox.py for running this
 locally to create sandbox Dataflow datasets.
 """
-import argparse
-import logging
-import sys
-from typing import List, Tuple
+from typing import List
 
 import attr
 
@@ -64,8 +61,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def update_dataflow_metric_tables_schemas(
@@ -262,29 +257,3 @@ def update_supplemental_dataset_schemas(
                 table_id,
                 schema_for_supplemental_dataset,
             )
-
-
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
-    """Parses the arguments needed to call the desired function."""
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--project_id",
-        dest="project_id",
-        type=str,
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
-    )
-
-    return parser.parse_known_args(argv)
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
-
-    with local_project_id_override(known_args.project_id):
-        update_dataflow_metric_tables_schemas()
-        update_supplemental_dataset_schemas()
-        update_state_specific_normalized_state_schemas()
-        update_normalized_state_schema()
