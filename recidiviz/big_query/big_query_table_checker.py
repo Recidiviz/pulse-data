@@ -19,6 +19,8 @@ for checking if a column exists in the table."""
 
 from typing import Callable, List, Optional
 
+from google.api_core import exceptions
+
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 
 
@@ -35,10 +37,13 @@ class BigQueryTableChecker:
     def columns(self) -> List[str]:
         if self._columns is None:
             bq_client = BigQueryClientImpl()
-            t = bq_client.get_table(
-                bq_client.dataset_ref_for_id(self.dataset_id), self.table_id
-            )
-            self._columns = [col.name for col in t.schema]
+            try:
+                t = bq_client.get_table(
+                    bq_client.dataset_ref_for_id(self.dataset_id), self.table_id
+                )
+                self._columns = [col.name for col in t.schema]
+            except exceptions.NotFound:
+                self._columns = []
 
         return self._columns
 
@@ -46,8 +51,11 @@ class BigQueryTableChecker:
         return col_name in self.columns
 
     def get_has_column_predicate(self, col: str) -> Callable[[], bool]:
-        """Returns a predicate that can be called to check that this table has a given column. The predicate function,
-        when called, will lazily load table columns from BigQuery if they have not been loaded already."""
+        """Returns a predicate that can be called to check that this table has a given
+        column. The predicate function, when called, will lazily load table columns from
+        BigQuery if they have not been loaded already. If the table does not exist, the
+        predicate will always return False.
+        """
 
         def has_column() -> bool:
             return self._table_has_column(col)
