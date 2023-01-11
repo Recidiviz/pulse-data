@@ -56,11 +56,17 @@ columns:
       - value: LP
         description: Leave Pending
   - name: RESPONSIBLE_LOCATION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: ID_NUMBER
     description: |-
       Unique DOCNO for each adult in custody.
   - name: RESPONSIBLE_DIVISION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SUPERVISING_AUTHORITY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: FIRST_NAME
     description: |-
       First Name of the Adult in Custody (AIC).
@@ -71,6 +77,8 @@ columns:
     description: |-
       Middle Name of the Adult in Custody (AIC).
   - name: NAME_KEY
+    description: |-
+      Indicates if name is alias, true name, etc.
   - name: BIRTHDATE
     description: |-
       Birthdate of the Adult in Custody (AIC).
@@ -92,24 +100,62 @@ columns:
   - name: BAF_NO
   - name: BAF_GROUP_NO
   - name: ORS_NUMBER
+    description: |-
+      Oregon Statute Number.
   - name: ORS_PARAGRAPH
+    description: |-
+      Oregon Statute description paragraph.
   - name: CRIME_ABBREVIATION
+    description: |-
+      Abbreviation of crime.
   - name: CRIME_CLASS
+    description: |-
+      Class of the crime.
   - name: OFF_SEVERITY
+    description: |-
+      Severity of crime.
   - name: CRIME_CATEGORY
+    description: |-
+      Category of the crime.
   - name: CASELOAD
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: INSTITUTION_RISK
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: COMMUNITY_SUPER_LVL
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: HISTORY_RISK
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: DANG_OFFENDER
+    description: |-
+      Indicator for dangerous adult in custody (AIC).
   - name: SXDANG_OFFENDER
+    description: |-
+      Indicator for sexual offense.
   - name: PROJECTED_RELEASE_DATE
+    description: |-
+      Projected release date.
   - name: EXTRA_GOOD_TIME
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: GT_PROJ_RELE_DATE
+    description: |-
+      Good time projected release date.
   - name: ET_PROJ_RELE_DATE
+    description: |-
+      Earned time projected release date.
   - name: CURRENT_CUSTODY_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PAROLE_RELEASE_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: MAXIMUM_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: PROGRAM_ASSIGNMENT_NAME
   - name: SEX_ASSESSMENT
   - name: ASSESSMENT_SCORE
@@ -121,3 +167,5 @@ columns:
     description: |-
       Date of earliest possible release.
   - name: LIFE_OR_DEATH
+    description: |-
+      Indicates if life sentence or a death sentence.
