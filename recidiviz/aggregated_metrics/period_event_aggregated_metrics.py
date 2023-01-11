@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@
 """Creates view builders that generate SQL views calculating period-event metrics"""
 from typing import List
 
+from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
+    get_unioned_time_granularity_clause,
+)
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodEventAggregatedMetric,
@@ -58,12 +61,13 @@ assignments AS (
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population.population_name_short}_{aggregation_level.level_name_short}_metrics_assignment_sessions_materialized`
 )
 
-SELECT
-    {aggregation_level.get_index_columns_query_string("assign")},
-    population_start_date AS start_date,
-    population_end_date AS end_date,
-    period,
-"""
+, month_metrics AS (
+    SELECT
+        {aggregation_level.get_index_columns_query_string("assign")},
+        population_start_date AS start_date,
+        population_end_date AS end_date,
+        period,
+    """
         + ",\n".join(
             [
                 metric.generate_aggregation_query_fragment(
@@ -73,30 +77,36 @@ SELECT
             ]
         )
         + f"""
-FROM 
-    time_periods pop
-INNER JOIN
-    assignments assign
-ON
-    assign.assignment_date < pop.population_end_date
-    AND {nonnull_end_date_clause("assign.end_date")} >= pop.population_start_date
-LEFT JOIN 
-    `{{project_id}}.{{analyst_dataset}}.person_events_materialized` AS events
-ON 
-    events.person_id = assign.person_id
-    -- Include events occurring on the last date of an end-date exclusive span,
-    -- but exclude events occurring on the last date of an end-date exclusive analysis period.
-    AND events.event_date BETWEEN GREATEST(assign.assignment_date, pop.population_start_date) 
-        AND LEAST(
-            {nonnull_end_date_clause("assign.end_date")}, 
-            DATE_SUB(pop.population_end_date, INTERVAL 1 DAY)
+    FROM 
+        time_periods pop
+    INNER JOIN
+        assignments assign
+    ON
+        assign.assignment_date < pop.population_end_date
+        AND {nonnull_end_date_clause("assign.end_date")} >= pop.population_start_date
+    LEFT JOIN 
+        `{{project_id}}.{{analyst_dataset}}.person_events_materialized` AS events
+    ON 
+        events.person_id = assign.person_id
+        -- Include events occurring on the last date of an end-date exclusive span,
+        -- but exclude events occurring on the last date of an end-date exclusive analysis period.
+        AND events.event_date BETWEEN GREATEST(assign.assignment_date, pop.population_start_date) 
+            AND LEAST(
+                {nonnull_end_date_clause("assign.end_date")}, 
+                DATE_SUB(pop.population_end_date, INTERVAL 1 DAY)
+            )
+    WHERE
+        period = "MONTH"
+    GROUP BY 
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date, population_end_date, period
+)"""
+        + get_unioned_time_granularity_clause(
+            aggregation_level=aggregation_level,
+            metrics=metrics,
         )
-
-GROUP BY 
-    population_start_date, population_end_date, period,
-    {aggregation_level.get_index_columns_query_string()}
-"""
     )
+
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
         view_id=view_id,

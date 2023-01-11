@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,9 @@
 """Creates view builders that generate SQL views calculating period-span metrics"""
 from typing import List
 
+from recidiviz.aggregated_metrics.aggregated_metrics_utils import (
+    get_unioned_time_granularity_clause,
+)
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodSpanAggregatedMetric,
@@ -89,12 +92,14 @@ eligible_spans AS (
         -- Disregard zero day sample spans for calculating population metrics
         AND assign.assignment_date != {nonnull_end_date_clause("assign.end_date")}
 )
-SELECT
-    population_start_date AS start_date,
-    population_end_date AS end_date,
-    period,
-    {aggregation_level.get_index_columns_query_string()},
-"""
+
+, month_metrics AS (
+    SELECT
+        {aggregation_level.get_index_columns_query_string()},
+        population_start_date AS start_date,
+        population_end_date AS end_date,
+        period,
+    """
         + ",\n".join(
             [
                 metric.generate_aggregation_query_fragment(
@@ -107,18 +112,25 @@ SELECT
             ]
         )
         + f"""
-FROM 
-    eligible_spans ses
-INNER JOIN 
-    time_periods pop
-ON 
-    ses.start_date < pop.population_end_date
-    AND pop.population_start_date < {nonnull_current_date_clause("ses.end_date")}
-GROUP BY 
-    {aggregation_level.get_index_columns_query_string()}, 
-    population_start_date, population_end_date, period
-    """
+    FROM 
+        eligible_spans ses
+    INNER JOIN 
+        time_periods pop
+    ON 
+        ses.start_date < pop.population_end_date
+        AND pop.population_start_date < {nonnull_current_date_clause("ses.end_date")}
+    WHERE
+        period = "MONTH"
+    GROUP BY 
+        {aggregation_level.get_index_columns_query_string()}, 
+        population_start_date, population_end_date, period
+)"""
+        + get_unioned_time_granularity_clause(
+            aggregation_level=aggregation_level,
+            metrics=metrics,
+        )
     )
+
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,
         view_id=view_id,
