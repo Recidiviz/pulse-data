@@ -18,7 +18,7 @@
 import unittest
 from copy import deepcopy
 from itertools import permutations
-from typing import Any
+from typing import Any, List, Union
 
 import attr
 from more_itertools import one
@@ -37,6 +37,8 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StatePersonExternalId,
     StatePersonRace,
+    StateStaff,
+    StateStaffExternalId,
 )
 from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
     StateIngestedTreeMerger,
@@ -49,8 +51,16 @@ def make_person(**kwargs: Any) -> StatePerson:
     return StatePerson.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
+def make_staff(**kwargs: Any) -> StateStaff:
+    return StateStaff.new_with_defaults(state_code=_STATE_CODE, **kwargs)
+
+
 def make_person_external_id(**kwargs: Any) -> StatePersonExternalId:
     return StatePersonExternalId.new_with_defaults(state_code=_STATE_CODE, **kwargs)
+
+
+def make_staff_external_id(**kwargs: Any) -> StateStaffExternalId:
+    return StateStaffExternalId.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
 def make_person_race(**kwargs: Any) -> StatePersonRace:
@@ -89,7 +99,6 @@ def make_incarceration_incident_outcome(
     )
 
 
-# TODO(#17471): Add analogous tests for `StateStaff` once it exists
 class TestStateIngestedTreeMerger(unittest.TestCase):
     """Tests for the StateIngestedTreeMerger class."""
 
@@ -118,6 +127,29 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
         self.assertCountEqual([expected_person], merge_result)
 
+    def test_merge_staff_exact_match(self) -> None:
+        ingested_staff = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+            ),
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+            ),
+        ]
+        expected_person = attr.evolve(ingested_staff[0])
+
+        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+
+        merge_result = tree_merger.merge(ingested_staff)
+
+        self.assertCountEqual([expected_person], merge_result)
+
+    # TODO(#17471): Add analogous test for StateStaff once StateStaff has child
+    #  entities other than external_id.
     def test_merge_people_exact_match_with_child(self) -> None:
         ingested_persons = [
             make_person(
@@ -145,6 +177,8 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
         self.assertCountEqual([expected_person], merge_result)
 
+    # TODO(#17471): Add analogous test for StateStaff once StateStaff has child
+    #  entities other than external_id.
     def test_merge_people_with_different_children(self) -> None:
         ingested_persons = [
             make_person(
@@ -441,6 +475,17 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
         )
         self.assertCountEqual(buckets, [ingested_persons])
 
+    def test_bucket_single_ingested_staff(self) -> None:
+        ingested_staff = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+            )
+        ]
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_staff)
+        self.assertCountEqual(buckets, [ingested_staff])
+
     def test_bucket_two_people_different_id_types(self) -> None:
         ingested_persons = [
             make_person(
@@ -458,6 +503,22 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
             ingested_persons
         )
         self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
+
+    def test_bucket_two_staff_different_id_types(self) -> None:
+        ingested_staff = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+            ),
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_2")
+                ],
+            ),
+        ]
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_staff)
+        self.assertCountEqual(buckets, [[ingested_staff[0]], [ingested_staff[1]]])
 
     def test_bucket_two_people_different_ids(self) -> None:
         ingested_persons = [
@@ -640,4 +701,23 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             )
 
-    # TODO(#17471): Add test for bucketing entities of mixed types
+    def test_bucket_two_people_different_entity_types(self) -> None:
+        ingested_root_entities: List[Union[StateStaff, StatePerson]] = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+            ),
+            make_person(
+                external_ids=[
+                    make_person_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+            ),
+        ]
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            ingested_root_entities
+        )
+        self.assertCountEqual(
+            [[ingested_root_entities[0]], [ingested_root_entities[1]]],
+            buckets,
+        )
