@@ -112,6 +112,8 @@ def check_people_do_not_have_multiple_ids_same_type(
     return True
 
 
+# TODO(#17471): Adapt logic to allow for List[schema.StateStaff] and add similar id_type
+# validation for StateStaff.
 def get_state_database_invariant_validators() -> List[
     Callable[[Session, str, List[schema.StatePerson]], bool]
 ]:

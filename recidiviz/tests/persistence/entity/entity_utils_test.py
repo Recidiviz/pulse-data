@@ -59,7 +59,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -73,7 +72,6 @@ from recidiviz.persistence.entity.entity_utils import (
     deep_entity_update,
     is_placeholder,
     is_reference_only_entity,
-    is_standalone_class,
 )
 from recidiviz.persistence.entity.state.entities import (
     StateCharge,
@@ -249,6 +247,8 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
         )
     ],
+    schema.StateStaff: [schema.StateStaff(state_code=StateCode.US_XX.value)],
+    schema.StateStaffExternalId: [],
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
     ],
@@ -388,6 +388,19 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
             participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
         )
     ],
+    schema.StateStaff: [
+        schema.StateStaff(
+            state_code=StateCode.US_XX.value,
+            external_ids=[
+                schema.StateStaffExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+        )
+    ],
+    schema.StateStaffExternalId: [],
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
@@ -636,6 +649,14 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             start_date=datetime.date(2021, 1, 1),
         ),
     ],
+    schema.StateStaff: [
+        # TODO(#17471): Fill this out once there are other entities hanging off of StateStaff
+    ],
+    schema.StateStaffExternalId: [
+        schema.StateStaffExternalId(
+            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+    ],
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(
             state_code=StateCode.US_XX.value,
@@ -763,13 +784,6 @@ class TestEntityUtils(TestCase):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=False
         )
-
-    def test_isStandaloneClass(self) -> None:
-        for cls in schema_utils.get_state_database_entities():
-            if cls == schema.StateAgent:
-                self.assertTrue(is_standalone_class(cls))
-            else:
-                self.assertFalse(is_standalone_class(cls))
 
     def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()

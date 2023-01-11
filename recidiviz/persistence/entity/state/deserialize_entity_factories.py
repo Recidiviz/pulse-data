@@ -389,3 +389,31 @@ class StateTaskDeadlineFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateStaffFactory(EntityFactory):
+    @staticmethod
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateStaff:
+        return entity_deserialize(
+            cls=entities.StateStaff,
+            converter_overrides={
+                "full_name": EntityFieldConverter(str, normalize_flat_json),
+                # Do not normalize emails - retain input capitalization.
+                "email": EntityFieldConverter(str, lambda x: x),
+            },
+            defaults={},
+            **kwargs,
+        )
+
+
+class StateStaffExternalIdFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateStaffExternalId:
+        return entity_deserialize(
+            cls=entities.StateStaffExternalId,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

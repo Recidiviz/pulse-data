@@ -938,3 +938,35 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
 
         self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateStaff(self) -> None:
+        result = deserialize_entity_factories.StateStaffFactory.deserialize(
+            state_code="us_xx",
+            full_name='{"full_name": "full NAME"}',
+            email="Full.Name@domain.org",
+        )
+
+        # Assert
+        expected_result = entities.StateStaff.new_with_defaults(
+            full_name='{"full_name": "FULL NAME"}',
+            state_code="US_XX",
+            email="Full.Name@domain.org",
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateStaffExternalId(self) -> None:
+        result = deserialize_entity_factories.StateStaffExternalIdFactory.deserialize(
+            external_id="123a",
+            id_type="state_id",
+            state_code="us_xx",
+        )
+
+        # Assert
+        expected_result = entities.StateStaffExternalId(
+            external_id="123A",
+            id_type="STATE_ID",
+            state_code="US_XX",
+        )
+
+        self.assertEqual(expected_result, result)

@@ -119,10 +119,6 @@ from recidiviz.persistence.entity.base_entity import (
 )
 
 # **** Entity Types for convenience *****:
-SentenceType = TypeVar(
-    "SentenceType", "StateSupervisionSentence", "StateIncarcerationSentence"
-)
-
 PeriodType = TypeVar(
     "PeriodType", bound=Union["StateSupervisionPeriod", "StateIncarcerationPeriod"]
 )
@@ -1682,3 +1678,58 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
 
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Models an external id associated with a particular StateStaff."""
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    external_id: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - What
+    id_type: str = attr.ib(validator=attr_validators.is_str)
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    staff_external_id_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    staff: Optional["StateStaff"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateStaff(
+    HasMultipleExternalIdsEntity[StateStaffExternalId], BuildableAttr, DefaultableAttr
+):
+    """Models a staff member working within a justice system."""
+
+    # State Code
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - What
+    full_name: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    email: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    staff_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    external_ids: List["StateStaffExternalId"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
+
+    def get_external_ids(self) -> List[StateStaffExternalId]:
+        return self.external_ids
