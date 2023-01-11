@@ -43,10 +43,15 @@ VIEW_QUERY_TEMPLATE = f"""
         (DATE(SentenceDate)) as SentenceDate,
         SentenceOrderTypeCode,
         (DATE(EndDate)) as EndDate,
-        TermStatusDesc
+        TermStatusDesc,
+        SentenceOrderEventTypeName,
+        _ParentSentenceId,
+        Sequence,
+        ChargeId
     FROM ({sentences_base}) sent
     LEFT JOIN ProbationSupervision prob_sup ON sent.SentenceOrderId = prob_sup.SentenceOrderId
     WHERE SentenceOrderCategoryId = '1'
+    AND SentenceOrderEventTypeId IN ('1', '2', '5') -- keep "Initial", "Amendment", and "Linked Event" sentences
 """
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_ix",

@@ -9,6 +9,10 @@ input_columns:
   - DpedApprovedDate
   - FtrdApprovedDate
   - TermStatusDesc
+  - SentenceOrderEventTypeName
+  - _parentsentenceid
+  - Sequence
+  - ChargeId
 unused_columns: []
 output:
   StatePerson:
@@ -76,3 +80,12 @@ output:
                     $args:
                       start_date_str: EffectiveDate
                       end_date_str: DpedApprovedDate
+          sentence_metadata:
+            $json_dict:
+              sentence_event_type: SentenceOrderEventTypeName
+              parent_sentence: _parentsentenceid
+              sentence_sequence:
+                $concat:
+                  $values:
+                    - ChargeId
+                    - Sequence

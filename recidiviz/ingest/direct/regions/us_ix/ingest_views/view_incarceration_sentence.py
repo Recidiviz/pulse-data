@@ -36,9 +36,14 @@ VIEW_QUERY_TEMPLATE = f"""
         (DATE(SentenceDate)) as SentenceDate,
         (DATE(DpedApprovedDate)) as DpedApprovedDate,
         (DATE(FtrdApprovedDate)) as FtrdApprovedDate,
-        TermStatusDesc,
+        TermStatusDesc, 
+        SentenceOrderEventTypeName,
+        _parentsentenceid,
+        Sequence,
+        ChargeId
     FROM ({sentences_base}) sent
     WHERE SentenceOrderCategoryId = '2'
+    AND SentenceOrderEventTypeId IN ('1', '2') -- keep "Initial" and "Amendment" sentences
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
