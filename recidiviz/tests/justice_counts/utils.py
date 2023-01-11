@@ -26,15 +26,11 @@ from sqlalchemy.engine import Engine
 from recidiviz.auth.auth0_client import Auth0User, JusticeCountsAuth0AppMetadata
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    PrisonsOffenseType,
     PrisonsReleaseType,
     PrisonsStaffType,
 )
-from recidiviz.justice_counts.dimensions.law_enforcement import (
-    CallType,
-    ForceType,
-    OffenseType,
-)
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonClinicalStaffIncludesExcludes,
@@ -288,12 +284,12 @@ class JusticeCountsSchemaTestObjects:
             aggregated_dimensions=[
                 MetricAggregatedDimensionData(
                     dimension_to_value={
-                        PrisonsOffenseType.DRUG: 1,
-                        PrisonsOffenseType.OTHER: 2,
-                        PrisonsOffenseType.PERSON: 3,
-                        PrisonsOffenseType.PROPERTY: 4,
-                        PrisonsOffenseType.PUBLIC_ORDER: 5,
-                        PrisonsOffenseType.UNKNOWN: 6,
+                        OffenseType.DRUG: 1,
+                        OffenseType.OTHER: 2,
+                        OffenseType.PERSON: 3,
+                        OffenseType.PROPERTY: 4,
+                        OffenseType.PUBLIC_ORDER: 5,
+                        OffenseType.UNKNOWN: 6,
                     }
                 )
             ],
@@ -646,7 +642,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
                 dimension_identifier_to_member={
-                    PrisonsOffenseType.dimension_identifier(): PrisonsOffenseType.PERSON.name
+                    OffenseType.dimension_identifier(): OffenseType.PERSON.name
                 },
                 enabled=False,
                 source_id=agency_id,
@@ -654,7 +650,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
                 dimension_identifier_to_member={
-                    PrisonsOffenseType.dimension_identifier(): PrisonsOffenseType.PROPERTY.name
+                    OffenseType.dimension_identifier(): OffenseType.PROPERTY.name
                 },
                 enabled=False,
                 source_id=agency_id,
@@ -662,7 +658,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
                 dimension_identifier_to_member={
-                    PrisonsOffenseType.dimension_identifier(): PrisonsOffenseType.DRUG.name
+                    OffenseType.dimension_identifier(): OffenseType.DRUG.name
                 },
                 enabled=False,
                 source_id=agency_id,
@@ -670,7 +666,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
                 dimension_identifier_to_member={
-                    PrisonsOffenseType.dimension_identifier(): PrisonsOffenseType.PUBLIC_ORDER.name
+                    OffenseType.dimension_identifier(): OffenseType.PUBLIC_ORDER.name
                 },
                 enabled=False,
                 source_id=agency_id,
@@ -678,7 +674,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
                 dimension_identifier_to_member={
-                    PrisonsOffenseType.dimension_identifier(): PrisonsOffenseType.OTHER.name
+                    OffenseType.dimension_identifier(): OffenseType.OTHER.name
                 },
                 enabled=False,
                 source_id=agency_id,
@@ -686,7 +682,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
                 dimension_identifier_to_member={
-                    PrisonsOffenseType.dimension_identifier(): PrisonsOffenseType.UNKNOWN.name
+                    OffenseType.dimension_identifier(): OffenseType.UNKNOWN.name
                 },
                 enabled=False,
                 source_id=agency_id,
@@ -803,16 +799,12 @@ class JusticeCountsSchemaTestObjects:
         )
 
     @staticmethod
-    def get_total_arrests_metric() -> MetricInterface:
+    def get_arrests_metric() -> MetricInterface:
         return MetricInterface(
-            key=law_enforcement.total_arrests.key,
+            key=law_enforcement.arrests.key,
             is_metric_enabled=True,
             value=120,
             contexts=[
-                MetricContextData(
-                    key=ContextKey.JURISDICTION_DEFINITION_OF_ARREST,
-                    value="it is an arrest",
-                ),
                 MetricContextData(
                     key=ContextKey.ADDITIONAL_CONTEXT,
                     value="this is a test for additional context",
@@ -824,6 +816,7 @@ class JusticeCountsSchemaTestObjects:
                         OffenseType.DRUG: 60,
                         OffenseType.PERSON: 10,
                         OffenseType.PROPERTY: 40,
+                        OffenseType.PUBLIC_ORDER: 0,
                         OffenseType.UNKNOWN: 10,
                         OffenseType.OTHER: 0,
                     },
@@ -831,6 +824,7 @@ class JusticeCountsSchemaTestObjects:
                         OffenseType.DRUG: True,
                         OffenseType.PERSON: True,
                         OffenseType.PROPERTY: True,
+                        OffenseType.PUBLIC_ORDER: True,
                         OffenseType.UNKNOWN: True,
                         OffenseType.OTHER: True,
                     },

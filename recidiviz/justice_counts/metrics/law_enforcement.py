@@ -23,8 +23,8 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     LawEnforcementExpenseType,
     LawEnforcementFundingType,
     LawEnforcementStaffType,
-    OffenseType,
 )
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -34,6 +34,7 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceEmergencyCallsIncludesExcludes,
     CallsForServiceIncludesExcludes,
     CallsForServiceNonEmergencyCallsIncludesExcludes,
+    LawEnforcementArrestsIncludesExcludes,
     LawEnforcementAssetForfeitureIncludesExcludes,
     LawEnforcementCivilianStaffIncludesExcludes,
     LawEnforcementCountyOrMunicipalAppropriation,
@@ -49,6 +50,16 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     LawEnforcementTrainingIncludesExcludes,
     LawEnforcementVacantStaffIncludesExcludes,
     LawEnforcementVictimAdvocateStaffIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.offense import (
+    DrugOffenseIncludesExcludes,
+    PersonOffenseIncludesExcludes,
+    PropertyOffenseIncludesExcludes,
+    PublicOrderOffenseIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -302,6 +313,17 @@ staff = MetricDefinition(
         AggregatedDimension(
             dimension=BiologicalSex,
             required=False,
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                # Unknown Biological Sex has a Y/N Table associated with it.
+            },
             dimension_to_description={
                 BiologicalSex.MALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
                 BiologicalSex.FEMALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
@@ -328,26 +350,60 @@ reported_crime = MetricDefinition(
     aggregated_dimensions=[AggregatedDimension(dimension=OffenseType, required=True)],
 )
 
-total_arrests = MetricDefinition(
+arrests = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.ARRESTS,
     category=MetricCategory.POPULATIONS,
-    display_name="Total Arrests",
-    description="Measures the number of arrests made by your agency.",
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_ARREST,
-            value_type=ValueType.TEXT,
-            label="Please provide your jurisdiction's definition of arrest.",
-            required=True,
-        )
-    ],
+    display_name="Arrests",
+    description="The number of arrests, citations, and summonses made by the agency.",
     measurement_type=MeasurementType.DELTA,
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementArrestsIncludesExcludes,
+        excluded_set={LawEnforcementArrestsIncludesExcludes.OUTSIDE_JURISDICTION},
+    ),
+    reporting_note="Arrests are based on the number of arrest events, not the number of unique people arrested. If the same person was arrested three times during a time period, it would count as three arrests. A person suspected of committing more than one offense, but arrested only once, should be counted as one arrest classified by the most serious charge in the incident. Law enforcement agencies should only share data for those arrests made for offenses committed within their own jurisdictions.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=OffenseType, required=True),
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=True,
+            dimension_to_description={
+                OffenseType.PERSON: "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a crime against a person.",
+                OffenseType.PROPERTY: "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a property offense.",
+                OffenseType.DRUG: "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a drug offense.",
+                OffenseType.PUBLIC_ORDER: "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a public order offense.",
+                OffenseType.OTHER: "The number of arrests, citations, or summonses made by the agency in which the most serious offense was another type of crime that was not a person, property, drug, or public order offense.",
+                OffenseType.UNKNOWN: "The number of arrests, citations, or summonses made by the agency in which the most serious offense is not known.",
+            },
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes
+                ),
+            },
+        ),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
+        AggregatedDimension(dimension=BiologicalSex, required=True),
     ],
 )
 

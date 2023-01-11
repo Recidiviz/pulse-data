@@ -25,12 +25,8 @@ import pytest
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsOffenseType
-from recidiviz.justice_counts.dimensions.law_enforcement import (
-    CallType,
-    ForceType,
-    OffenseType,
-)
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -194,7 +190,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 admissions_metric.aggregated_dimensions[  # type: ignore[index]
                     0
-                ].dimension_to_value[PrisonsOffenseType.DRUG],
+                ].dimension_to_value[OffenseType.DRUG],
                 2,
             )
             self.assertEqual(metrics[1].value, 2151.29)
@@ -454,6 +450,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     OffenseType.DRUG: None,
                     OffenseType.OTHER: None,
                     OffenseType.PROPERTY: None,
+                    OffenseType.PUBLIC_ORDER: None,
                     OffenseType.UNKNOWN: None,
                 },
             )
@@ -494,7 +491,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # the arrest metric should have the aggregate value that is reported, not any of the inferred
             # values from the breakdown
             arrest_metric = list(
-                filter(lambda m: m.key == law_enforcement.total_arrests.key, metrics)
+                filter(lambda m: m.key == law_enforcement.arrests.key, metrics)
             )[0]
             self.assertEqual(arrest_metric.value, 200)
             for aggregated_dimension in arrest_metric.aggregated_dimensions:
@@ -540,7 +537,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(len(metric_key_to_errors), 3)
-            arrest_errors = metric_key_to_errors[law_enforcement.total_arrests.key]
+            arrest_errors = metric_key_to_errors[law_enforcement.arrests.key]
             self.assertEqual(len(arrest_errors), 1)
             arrest_error = arrest_errors[0]
             self.assertEqual(arrest_error.title, "Missing Total Value")

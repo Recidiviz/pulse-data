@@ -23,7 +23,8 @@ from freezegun import freeze_time
 
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
@@ -965,15 +966,13 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             # ANNUAL
             self.assertEqual(len(metrics), 2)
 
-            total_arrests = metrics[0]
+            arrests = metrics[0]
 
             # Arrests metric should be blank
-            self.assertEqual(total_arrests.key, law_enforcement.total_arrests.key)
-            self.assertEqual(total_arrests.value, None)
+            self.assertEqual(arrests.key, law_enforcement.arrests.key)
+            self.assertEqual(arrests.value, None)
             self.assertEqual(
-                assert_type(total_arrests.aggregated_dimensions, list)[
-                    0
-                ].dimension_to_value,
+                assert_type(arrests.aggregated_dimensions, list)[0].dimension_to_value,
                 {d: None for d in OffenseType},
             )
 
@@ -1071,7 +1070,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             arrests = [
                 metric
                 for metric in metrics
-                if metric.key == law_enforcement.total_arrests.key
+                if metric.key == law_enforcement.arrests.key
             ].pop()
 
             self.assertIsNotNone(calls_for_service)

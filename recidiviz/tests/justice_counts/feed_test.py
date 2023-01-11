@@ -83,11 +83,11 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 [
-                    row["gender"]
-                    for row in filename_to_rows["arrests_by_gender"]
+                    row["biological_sex"]
+                    for row in filename_to_rows["arrests_by_biological_sex"]
                     if row["year"] == 2022 and row["month"] == 12
                 ],
-                ["FEMALE", "MALE", "NON_BINARY", "OTHER", "UNKNOWN"],
+                ["FEMALE", "MALE", "UNKNOWN"],
             )
 
     def test_get_supervision_feed(self) -> None:

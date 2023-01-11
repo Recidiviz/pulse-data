@@ -23,7 +23,8 @@ from unittest import TestCase
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsReleaseType
-from recidiviz.justice_counts.dimensions.law_enforcement import CallType, OffenseType
+from recidiviz.justice_counts.dimensions.law_enforcement import CallType
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -32,7 +33,14 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceEmergencyCallsIncludesExcludes,
     CallsForServiceIncludesExcludes,
     CallsForServiceNonEmergencyCallsIncludesExcludes,
+    LawEnforcementArrestsIncludesExcludes,
     LawEnforcementFundingIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.offense import (
+    DrugOffenseIncludesExcludes,
+    PersonOffenseIncludesExcludes,
+    PropertyOffenseIncludesExcludes,
+    PublicOrderOffenseIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonGrievancesIncludesExcludes,
@@ -328,8 +336,8 @@ class TestMetricInterface(TestCase):
         )
 
     def test_total_arrests_metric_json(self) -> None:
-        reported_metric = self.test_schema_objects.get_total_arrests_metric()
-        metric_definition = law_enforcement.total_arrests
+        reported_metric = self.test_schema_objects.get_arrests_metric()
+        metric_definition = law_enforcement.arrests
         self.assertEqual(
             reported_metric.to_json(
                 entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -349,7 +357,7 @@ class TestMetricInterface(TestCase):
                 "category": metric_definition.category.human_readable_string,
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
-                "label": "Total Arrests",
+                "label": "Arrests",
                 "enabled": True,
                 "frequency": "MONTHLY",
                 "custom_frequency": None,
@@ -358,19 +366,10 @@ class TestMetricInterface(TestCase):
                     "arrests",
                     "arrests_by_type",
                     "arrests_by_race",
-                    "arrests_by_gender",
+                    "arrests_by_biological_sex",
                 ],
                 "settings": [],
                 "contexts": [
-                    {
-                        "key": "JURISDICTION_DEFINITION_OF_ARREST",
-                        "display_name": "Please provide your jurisdiction's definition of arrest.",
-                        "reporting_note": None,
-                        "required": True,
-                        "type": "TEXT",
-                        "value": "it is an arrest",
-                        "multiple_choice_options": [],
-                    },
                     {
                         "key": "ADDITIONAL_CONTEXT",
                         "display_name": "Please provide additional context.",
@@ -383,7 +382,7 @@ class TestMetricInterface(TestCase):
                 ],
                 "disaggregations": [
                     {
-                        "key": "metric/law_enforcement/reported_crime/type",
+                        "key": "metric/offense/type",
                         "display_name": "Offense Types",
                         "required": True,
                         "should_sum_to_total": False,
@@ -392,47 +391,56 @@ class TestMetricInterface(TestCase):
                         "dimensions": [
                             {
                                 "datapoints": None,
-                                "key": "Drug",
-                                "label": "Drug",
+                                "key": "Drug Offenses",
+                                "label": "Drug Offenses",
                                 "value": 60,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a drug offense.",
                                 "contexts": [],
                             },
                             {
                                 "datapoints": None,
-                                "key": "Person",
-                                "label": "Person",
+                                "key": "Person Offenses",
+                                "label": "Person Offenses",
                                 "value": 10,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a crime against a person.",
                                 "contexts": [],
                             },
                             {
                                 "datapoints": None,
-                                "key": "Property",
-                                "label": "Property",
+                                "key": "Property Offenses",
+                                "label": "Property Offenses",
                                 "value": 40,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a property offense.",
                                 "contexts": [],
                             },
                             {
                                 "datapoints": None,
-                                "key": "Unknown",
-                                "label": "Unknown",
-                                "value": 10,
-                                "enabled": True,
-                                "description": None,
-                                "contexts": [],
-                            },
-                            {
-                                "datapoints": None,
-                                "key": "Other",
-                                "label": "Other",
+                                "key": "Public Order Offenses",
+                                "label": "Public Order Offenses",
                                 "value": 0,
                                 "enabled": True,
-                                "description": None,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a public order offense.",
+                                "contexts": [],
+                            },
+                            {
+                                "datapoints": None,
+                                "key": "Unknown Offenses",
+                                "label": "Unknown Offenses",
+                                "value": 10,
+                                "enabled": True,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense is not known.",
+                                "contexts": [],
+                            },
+                            {
+                                "datapoints": None,
+                                "key": "Other Offenses",
+                                "label": "Other Offenses",
+                                "value": 0,
+                                "enabled": True,
+                                "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was another type of crime that was not a person, property, drug, or public order offense.",
                                 "contexts": [
                                     {"key": "ADDITIONAL_CONTEXT", "value": None}
                                 ],
@@ -446,14 +454,14 @@ class TestMetricInterface(TestCase):
     def test_aggregated_dimension_from_json(self) -> None:
         # When two dimension enabled status changes, the other dimension status' are None
         request_json: Dict[str, Any] = {
-            "key": "metric/law_enforcement/reported_crime/type",
+            "key": "metric/offense/type",
             "dimensions": [
                 {
-                    "key": "Drug",
+                    "key": "Drug Offenses",
                     "enabled": True,
                 },
                 {
-                    "key": "Person",
+                    "key": "Person Offenses",
                     "enabled": True,
                 },
             ],
@@ -477,10 +485,10 @@ class TestMetricInterface(TestCase):
 
         # When one dimension is disabled, the other dimension status' are not effected.
         request_json = {
-            "key": "metric/law_enforcement/reported_crime/type",
+            "key": "metric/offense/type",
             "dimensions": [
                 {
-                    "key": "Person",
+                    "key": "Person Offenses",
                     "enabled": False,
                 },
             ],
@@ -501,7 +509,7 @@ class TestMetricInterface(TestCase):
 
         # When disaggregation is disabled all dimensions are turned off
         request_json = {
-            "key": "metric/law_enforcement/reported_crime/type",
+            "key": "metric/offense/type",
             "enabled": False,
         }
 
@@ -519,7 +527,7 @@ class TestMetricInterface(TestCase):
 
         # When disaggregation is enabled all dimensions are turned on
         request_json = {
-            "key": "metric/law_enforcement/reported_crime/type",
+            "key": "metric/offense/type",
             "enabled": True,
         }
 
@@ -537,7 +545,7 @@ class TestMetricInterface(TestCase):
         )
 
     def test_arrest_metric_json_to_report_metric(self) -> None:
-        metric_definition = law_enforcement.total_arrests
+        metric_definition = law_enforcement.arrests
         response_json = {
             "key": metric_definition.key,
             "value": 100,
@@ -555,6 +563,7 @@ class TestMetricInterface(TestCase):
                         {"key": OffenseType.DRUG.value, "value": 50},
                         {"key": OffenseType.PERSON.value, "value": 50},
                         {"key": OffenseType.PROPERTY.value, "value": 0},
+                        {"key": OffenseType.PUBLIC_ORDER.value, "value": 0},
                         {"key": OffenseType.UNKNOWN.value, "value": 0},
                         {"key": OffenseType.OTHER.value, "value": 0},
                     ],
@@ -578,6 +587,7 @@ class TestMetricInterface(TestCase):
                             OffenseType.DRUG: 50,
                             OffenseType.PERSON: 50,
                             OffenseType.PROPERTY: 0,
+                            OffenseType.PUBLIC_ORDER: 0,
                             OffenseType.UNKNOWN: 0,
                             OffenseType.OTHER: 0,
                         }
@@ -2042,7 +2052,7 @@ class TestMetricInterface(TestCase):
         )
 
     def test_total_arrests_json_to_agency_metric(self) -> None:
-        metric_definition = law_enforcement.total_arrests
+        metric_definition = law_enforcement.arrests
         metric_json = {
             "key": metric_definition.key,
             "settings": [],
@@ -2057,10 +2067,29 @@ class TestMetricInterface(TestCase):
             MetricInterface(
                 key=metric_definition.key,
                 value=None,
+                includes_excludes_member_to_setting={
+                    d: None for d in LawEnforcementArrestsIncludesExcludes
+                },
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_enabled_status={d: False for d in OffenseType},
                         dimension_to_value=None,
+                        dimension_to_includes_excludes_member_to_setting={
+                            OffenseType.PERSON: {
+                                d: None for d in PersonOffenseIncludesExcludes
+                            },
+                            OffenseType.PROPERTY: {
+                                d: None for d in PropertyOffenseIncludesExcludes
+                            },
+                            OffenseType.PUBLIC_ORDER: {
+                                d: None for d in PublicOrderOffenseIncludesExcludes
+                            },
+                            OffenseType.DRUG: {
+                                d: None for d in DrugOffenseIncludesExcludes
+                            },
+                            OffenseType.OTHER: {},
+                            OffenseType.UNKNOWN: {},
+                        },
                     )
                 ],
             ),

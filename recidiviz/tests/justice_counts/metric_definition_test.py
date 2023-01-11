@@ -96,7 +96,7 @@ class TestMetricDefinition(TestCase):
     def test_unit_from_metric_type(self) -> None:
         self.assertEqual(law_enforcement.funding.metric_type.unit, "USD")
         self.assertEqual(law_enforcement.calls_for_service.metric_type.unit, "CALLS")
-        self.assertEqual(law_enforcement.total_arrests.metric_type.unit, "ARRESTS")
+        self.assertEqual(law_enforcement.arrests.metric_type.unit, "ARRESTS")
         self.assertEqual(law_enforcement.staff.metric_type.unit, "PEOPLE")
         self.assertEqual(
             law_enforcement.civilian_complaints_sustained.metric_type.unit,

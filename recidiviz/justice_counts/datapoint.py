@@ -199,8 +199,8 @@ class DatapointInterface:
                         ) = datapoint.get_dimension_id_and_member()
                         if dimension_id is not None:
                             dimension = DIMENSION_IDENTIFIER_TO_DIMENSION[dimension_id][
-                                dimension_member
-                            ]  # type: ignore[misc]
+                                dimension_member  # type: ignore[index]
+                            ]
                             metric_datapoints.dimension_to_context_key_to_datapoints[
                                 dimension
                             ] = {datapoint.context_key: datapoint}

@@ -65,7 +65,7 @@ METRICS = [
     law_enforcement.residents,
     law_enforcement.calls_for_service,
     law_enforcement.reported_crime,
-    law_enforcement.total_arrests,
+    law_enforcement.arrests,
     law_enforcement.officer_use_of_force_incidents,
     law_enforcement.civilian_complaints_sustained,
     prisons.funding,

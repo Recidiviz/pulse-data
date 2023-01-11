@@ -34,6 +34,7 @@ class PersonOffenseIncludesExcludes(Enum):
     FONDLING = "Fondling"
     INCEST = "Incest"
     STATUTORY_RAPE = "Statutory rape"
+    ROBBERY = "Robbery"
     JUSTIFIABLE_HOMICIDE = "Justifiable homicide"
 
 
@@ -60,9 +61,9 @@ class PropertyOffenseIncludesExcludes(Enum):
     THEFT_FROM_VEHICLE = "Theft from motor vehicle"
     THEFT_OF_VEHICLE_PARTS = "Theft of motor vehicle parts or accessories"
     LARCENY = "All other larceny"
-    THEFT_OF_VEHICLE = "Theft of motor vehicle"
-    ROBBERY = "Robbery"
+    THEFT_OF_VEHICLE = "Motor vehicle theft"
     STOLEN_PROPERTY = "Stolen property offenses"
+    ROBBERY = "Robbery"
 
 
 class PublicOrderOffenseIncludesExcludes(Enum):
