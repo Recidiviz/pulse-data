@@ -20,7 +20,7 @@ import os
 import pwd
 import subprocess
 import sys
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
 
 def prompt_for_confirmation(
@@ -46,6 +46,28 @@ def prompt_for_confirmation(
         if exit_on_cancel:
             sys.exit(1)
     return confirm
+
+
+def interactive_prompt_retry_on_exception(
+    fn: Callable,
+    input_text: str,
+    accepted_response_override: Optional[str] = None,
+    exit_on_cancel: bool = True,
+) -> Any:
+    while True:
+        try:
+            x = fn()
+        except Exception as e:
+            logging.warning("%s %s", str(type(e)), str(e))
+            if prompt_for_confirmation(
+                input_text=input_text,
+                accepted_response_override=accepted_response_override,
+                dry_run=False,
+                exit_on_cancel=exit_on_cancel,
+            ):
+                continue
+            raise e
+        return x
 
 
 def _get_run_as_user_fn(password_record: pwd.struct_passwd) -> Callable[[], None]:

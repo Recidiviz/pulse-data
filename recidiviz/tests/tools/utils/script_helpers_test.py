@@ -17,12 +17,16 @@
 
 """recidiviz.deploy.utls.script_helpers.py tests"""
 import logging
-from typing import Any, Dict, List, Tuple
+from contextlib import nullcontext
+from typing import Any, Callable, Dict, List, Tuple
 from unittest import mock
 
 import pytest
 
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import (
+    interactive_prompt_retry_on_exception,
+    prompt_for_confirmation,
+)
 
 
 @pytest.mark.parametrize(
@@ -133,3 +137,53 @@ def test_prompt_for_confirmation_no_exit_boolean(
     assert rv == prompt_for_confirmation("test input", exit_on_cancel=False)
     assert input_mock.mock_calls == [mock.call("test input [y/n]: ")]
     assert caplog.record_tuples == logging_results
+
+
+@pytest.mark.parametrize(
+    ("prompt_rv", "calls", "expected", "exception_context"),
+    [
+        pytest.param(
+            True,
+            lambda m: m.mock_calls == [mock.call(), mock.call()],
+            "A",
+            nullcontext(),
+            id="confirm retry",
+        ),
+        pytest.param(
+            False,
+            lambda m: m.mock_calls == [mock.call()],
+            None,
+            pytest.raises(KeyError),
+            id="cancel retry",
+        ),
+    ],
+)
+@mock.patch(
+    "recidiviz.tools.utils.script_helpers.prompt_for_confirmation", return_value=True
+)
+def test_interactive_prompt_retry_on_exception(
+    prompt_mock: mock.MagicMock,
+    prompt_rv: bool,
+    calls: Callable,
+    expected: Any,
+    exception_context: Any,
+) -> None:
+    prompt_mock.return_value = prompt_rv
+    exceptional_call_mock = mock.MagicMock(side_effect=[KeyError(), "A"])
+    with exception_context:
+        answer = interactive_prompt_retry_on_exception(
+            fn=exceptional_call_mock,
+            input_text="test input",
+            accepted_response_override="yes",
+            exit_on_cancel=False,
+        )
+        assert answer == expected
+    assert calls(exceptional_call_mock)
+    assert prompt_mock.mock_calls == [
+        mock.call(
+            input_text="test input",
+            accepted_response_override="yes",
+            dry_run=False,
+            exit_on_cancel=False,
+        )
+    ]

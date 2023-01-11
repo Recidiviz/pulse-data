@@ -67,13 +67,12 @@ function upload_internet_speed {
     if [[ $(command -v networkQuality) != "" ]]; then
       NETWORK_SPEED=$(networkQuality)
       local MESSAGE
-      MESSAGE=$(
-    cat <<- EOM
-    \`\`\`
-    ${NETWORK_SPEED}
-    \`\`\`
-    EOM
-    )
+      MESSAGE=$(cat << EOM
+\`\`\`
+${NETWORK_SPEED}
+\`\`\`
+EOM
+)
 
       deployment_bot_message "${PROJECT_ID}" \
         "${SLACK_CHANNEL_DEPLOYMENT_BOT}" \
@@ -205,7 +204,7 @@ function pre_deploy_configure_infrastructure {
     # Update the Dataflow output table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow output table schemas to match the corresponding classes"
     verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.calculator.dataflow_output_table_manager --project_id "${PROJECT}"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.update_dataflow_output_table_manager_schemas --project-id "${PROJECT}"
 
     echo "Deploying views to test schema"
     verify_hash "$COMMIT_HASH"
