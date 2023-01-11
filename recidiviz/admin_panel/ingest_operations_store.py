@@ -283,9 +283,10 @@ class IngestOperationsStore(AdminPanelStore):
         )
         instance_status_manager.change_status_to(
             DirectIngestStatus.STANDARD_RERUN_STARTED
+            if raw_data_source_instance == DirectIngestInstance.PRIMARY
+            else DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED
         )
 
-        # TODO(#123123): configure raw data source instance as a part of ingest rerun.
         self.trigger_task_scheduler(state_code, instance.value)
 
     def get_ingest_instance_summary(
