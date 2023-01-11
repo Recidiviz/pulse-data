@@ -565,6 +565,9 @@ class StateSupervisionSentence(HasExternalIdEntity, BuildableAttr, DefaultableAt
     completion_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
+    is_life: Optional[bool] = attr.ib(
+        default=None, validator=attr_validators.is_opt_bool
+    )
 
     #   - Where
     # The county where this sentence was issued
