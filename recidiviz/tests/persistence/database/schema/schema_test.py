@@ -27,7 +27,7 @@ import sqlalchemy
 from recidiviz.persistence.database.reserved_words import RESERVED_WORDS
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
-    _get_all_database_entities_in_module,
+    get_all_database_entities_in_module,
     get_all_table_classes,
     get_all_table_classes_in_module,
 )
@@ -126,7 +126,7 @@ class TestSchemaTableConsistency(TestCase):
     def testNoRepeatDatabaseClassNames(self):
         table_class_names_set = set()
         for schema_module in ALL_SCHEMA_MODULES:
-            db_classes = _get_all_database_entities_in_module(schema_module)
+            db_classes = get_all_database_entities_in_module(schema_module)
             for cls in db_classes:
                 class_name = cls.__name__
                 self.assertNotIn(
@@ -138,7 +138,7 @@ class TestSchemaTableConsistency(TestCase):
 
     def testAllTableNamesMatchClassNames(self):
         for schema_module in ALL_SCHEMA_MODULES:
-            for cls in _get_all_database_entities_in_module(schema_module):
+            for cls in get_all_database_entities_in_module(schema_module):
                 table_name = cls.__tablename__
                 table_name_to_capital_case = table_name.title().replace("_", "")
                 self.assertEqual(
@@ -150,7 +150,7 @@ class TestSchemaTableConsistency(TestCase):
 
     def testDatabaseEntityFunctionality(self):
         for schema_module in ALL_SCHEMA_MODULES:
-            for cls in _get_all_database_entities_in_module(schema_module):
+            for cls in get_all_database_entities_in_module(schema_module):
                 primary_key_col_name = cls.get_primary_key_column_name()
                 self.assertIsNotNone(primary_key_col_name)
                 primary_key_prop_name = cls.get_column_property_names()

@@ -60,7 +60,7 @@ from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
-    _get_all_database_entities_in_module,
+    get_all_database_entities_in_module,
     get_all_table_classes_in_module,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -169,7 +169,7 @@ class TestStateSchemaTableConsistency(TestSchemaTableConsistency):
             self.assertTrue(cls.name.startswith("state_"))
 
     def testAllDatabaseEntityNamesPrefixedWithState(self):
-        for cls in _get_all_database_entities_in_module(schema):
+        for cls in get_all_database_entities_in_module(schema):
             self.assertTrue(cls.__name__.startswith("State"))
 
 

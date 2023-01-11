@@ -19,14 +19,15 @@ Defines a class for converting between operations-specific Entity and schema Bas
 objects.
 """
 
-from types import ModuleType
-
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.base_schema_entity_converter import (
     BaseSchemaEntityConverter,
     DstBaseType,
     SrcBaseType,
+)
+from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
+    SchemaToEntityClassMapper,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.operations import entities
@@ -38,13 +39,10 @@ class _OperationsSchemaEntityConverter(
     """Operations-specific implementation of BaseSchemaEntityConverter"""
 
     def __init__(self) -> None:
-        super().__init__(direction_checker=None)
-
-    def _get_schema_module(self) -> ModuleType:
-        return schema
-
-    def _get_entities_module(self) -> ModuleType:
-        return entities
+        class_mapper = SchemaToEntityClassMapper.get(
+            schema_module=schema, entities_module=entities
+        )
+        super().__init__(class_mapper=class_mapper, direction_checker=None)
 
     def _populate_indirect_back_edges(self, _: DstBaseType) -> None:
         return

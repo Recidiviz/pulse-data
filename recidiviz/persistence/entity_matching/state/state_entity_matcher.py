@@ -114,6 +114,12 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             RootEntityT, SchemaRootEntityT
         ],
     ):
+        if root_entity_delegate.get_schema_root_entity_cls().__name__ == "StateStaff":
+            raise ValueError(
+                "TODO(#17471): Unsupported class StateStaff - add support and "
+                "associated entity matching tests."
+            )
+
         self.all_ingested_db_objs: Set[DatabaseEntity] = set()
 
         # Cache of root entity DB objects (e.g. objs of type schema.StatePerson)
@@ -1016,7 +1022,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             return
 
         # Entities with multiple external ids can be matched multiple times.
-        if is_multiple_id_entity(db_entity_match):
+        if is_multiple_id_entity(db_entity_match.__class__):
             return
 
         raise MatchedMultipleIngestedEntitiesError(db_entity_match, ingested_matches)
@@ -1051,7 +1057,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         # Entities that can have multiple external IDs need special casing to
         # handle the fact that multiple DB entities could match the provided
         # ingested entity.
-        if is_multiple_id_entity(ingested_entity_tree.entity):
+        if is_multiple_id_entity(ingested_entity_tree.entity.__class__):
             exact_match = self._get_only_match_for_multiple_id_entity(
                 ingested_entity_tree=ingested_entity_tree,
                 db_entity_trees=db_match_candidates,

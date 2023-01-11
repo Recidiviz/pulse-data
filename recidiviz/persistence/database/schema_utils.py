@@ -149,17 +149,17 @@ def get_pathways_table_classes() -> Iterator[Table]:
 
 
 def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
-    return list(_get_all_database_entities_in_module(pathways_schema))
+    return list(get_all_database_entities_in_module(pathways_schema))
 
 
 def get_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
-    for cls in _get_all_database_entities_in_module(state_schema):
+    for cls in get_all_database_entities_in_module(state_schema):
         to_return.append(cls)
     return to_return
 
 
-def _get_all_database_entities_in_module(
+def get_all_database_entities_in_module(
     module: ModuleType,
 ) -> Iterator[Type[DatabaseEntity]]:
     """This should only be called in tests and by the
@@ -228,7 +228,7 @@ def _is_database_entity_subclass(member: Any) -> bool:
 
 @lru_cache(maxsize=None)
 def get_state_database_entity_with_name(class_name: str) -> Type[StateBase]:
-    state_table_classes = _get_all_database_entities_in_module(state_schema)
+    state_table_classes = get_all_database_entities_in_module(state_schema)
 
     for member in state_table_classes:
         if member.__name__ == class_name:

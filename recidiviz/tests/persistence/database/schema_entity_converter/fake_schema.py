@@ -89,3 +89,16 @@ class Toy(FakeBase):
     toy_id = Column(Integer, primary_key=True)
 
     name = Column(String(255))
+
+
+class NotInEntities(FakeBase):
+    """Represents an object in the test schema that is NOT in entities.py. This is valid
+    since we sometimes leave legacy tables around so we can do a migration in multiple
+    parts. This should not cause anything to crash.
+    """
+
+    __tablename__ = "not_in_entities"
+
+    not_in_entities_id = Column(Integer, primary_key=True)
+
+    field = Column(String(255))

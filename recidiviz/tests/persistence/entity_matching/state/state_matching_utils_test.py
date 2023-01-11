@@ -44,6 +44,7 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import (
     can_atomically_merge_entity,
     generate_child_entity_trees,
     get_all_root_entity_external_ids,
+    is_multiple_id_entity,
     merge_flat_fields,
     nonnull_fields_entity_match,
     remove_child_from_entity,
@@ -684,3 +685,27 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                     self.assertFalse(can_atomically_merge_entity(entity, field_index))
                 else:
                     self.assertTrue(can_atomically_merge_entity(entity, field_index))
+
+    def test_is_multiple_id_entity(self) -> None:
+        multiple_id_entities = set()
+        for cls in get_state_database_entities():
+            # Shouldn't crash for any entity
+            if is_multiple_id_entity(cls):
+                multiple_id_entities.add(cls)
+            elif "external_ids" in cls.get_relationship_property_names():
+                raise ValueError(
+                    f"Untested multiple id class. To remove this, please add "
+                    f"test coverage to ensure entities of class {cls} are "
+                    f"merged properly when there are 2 ingested entities and "
+                    f"when there are 2 database entities. See tests for state"
+                    f"person for examples."
+                )
+
+        # These are the only expected multiple id entities
+        self.assertEqual(
+            {
+                schema.StatePerson,
+                schema.StateStaff,
+            },
+            multiple_id_entities,
+        )

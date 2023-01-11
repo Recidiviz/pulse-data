@@ -22,7 +22,6 @@ objects.
 import abc
 from collections import defaultdict
 from enum import Enum
-from types import ModuleType
 from typing import (
     Any,
     Dict,
@@ -41,6 +40,9 @@ import attr
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import get_enum_cls, is_enum
 from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
+    SchemaToEntityClassMapper,
+)
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
 
@@ -79,7 +81,11 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
     entity types.
     """
 
-    def __init__(self, direction_checker: Optional[SchemaEdgeDirectionChecker]):
+    def __init__(
+        self,
+        class_mapper: SchemaToEntityClassMapper,
+        direction_checker: Optional[SchemaEdgeDirectionChecker],
+    ):
         """
         Args:
             direction_checker: A SchemaEdgeDirectionChecker object that is
@@ -87,6 +93,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
             determine which edges of the graph are back edges. May be null if there
             are no edges between nodes in the graph.
         """
+        self._class_mapper = class_mapper
         self._direction_checker = direction_checker
 
         # Cache of src object id to corresponding converted object
@@ -99,14 +106,6 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         self._back_edges: Dict[
             SrcIdType, Dict[FieldNameType, List[SrcIdType]]
         ] = defaultdict(lambda: defaultdict(list))
-
-    @abc.abstractmethod
-    def _get_entities_module(self) -> ModuleType:
-        pass
-
-    @abc.abstractmethod
-    def _get_schema_module(self) -> ModuleType:
-        pass
 
     @abc.abstractmethod
     def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:
@@ -374,23 +373,15 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
 
         self._back_edges = not_found_back_edges
 
-    def _check_is_valid_module(self, obj: Union[SrcBaseType, DstBaseType]) -> None:
-        if obj.__module__ not in [
-            self._get_schema_module().__name__,
-            self._get_entities_module().__name__,
-        ]:
-            raise DatabaseConversionError(
-                f"Attempting to convert class with unexpected"
-                f" module: [{obj.__module__}]"
-            )
-
     def _get_entity_class(self, obj: Union[SrcBaseType, DstBaseType]) -> Type[Entity]:
-        self._check_is_valid_module(obj)
-        return getattr(self._get_entities_module(), obj.__class__.__name__)
+        if isinstance(obj, Entity):
+            return obj.__class__
+        return self._class_mapper.entity_cls_for_schema_cls(obj.__class__)
 
     def _get_schema_class(self, src: SrcBaseType) -> Type[DatabaseEntity]:
-        self._check_is_valid_module(src)
-        return getattr(self._get_schema_module(), src.__class__.__name__)
+        if isinstance(src, DatabaseEntity):
+            return src.__class__
+        return self._class_mapper.schema_cls_for_entity_cls(src.__class__)
 
     @staticmethod
     def _convert_enum(src: SrcBaseType, field: str, attribute: attr.Attribute) -> Enum:

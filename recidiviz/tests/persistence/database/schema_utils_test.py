@@ -25,7 +25,7 @@ from recidiviz.persistence.database.schema.operations import schema as operation
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
-    _get_all_database_entities_in_module,
+    get_all_database_entities_in_module,
     get_all_table_classes,
     get_database_entity_by_table_name,
     get_state_database_association_with_names,
@@ -96,8 +96,8 @@ class TestSchemaUtils(unittest.TestCase):
         )
 
         all_database_entity_names = list(
-            _get_all_database_entities_in_module(state_schema)
-        ) + list(_get_all_database_entities_in_module(operations_schema))
+            get_all_database_entities_in_module(state_schema)
+        ) + list(get_all_database_entities_in_module(operations_schema))
 
         all_database_entity_names = _database_entities_to_qualified_names(  # type: ignore[assignment]
             all_database_entity_names
