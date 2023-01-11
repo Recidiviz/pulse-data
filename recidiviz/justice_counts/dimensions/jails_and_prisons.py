@@ -110,19 +110,6 @@ class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
         return "metric/correctional_facility/force/type"
 
 
-class PrisonsOffenseType(DimensionBase, enum.Enum):
-    PERSON = "Person Offenses"
-    PROPERTY = "Property Offenses"
-    DRUG = "Drug Offenses"
-    PUBLIC_ORDER = "Public Order Offenses"
-    OTHER = "Other Offenses"
-    UNKNOWN = "Unknown Offenses"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/prisons/offense/type"
-
-
 class PrisonsFundingType(DimensionBase, enum.Enum):
     STATE_APPROPRIATION = "State Appropriation"
     GRANTS = "Grants"

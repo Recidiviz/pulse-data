@@ -88,10 +88,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
             self.assertEqual(len(json_response["metrics"]), 8)
             for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.total_arrests.key:
+                if metric["key"] == law_enforcement.arrests.key:
                     self.assertEqual(
                         metric["display_name"],
-                        law_enforcement.total_arrests.display_name,
+                        law_enforcement.arrests.display_name,
                     )
                     self.assertEqual(len(metric["metric_errors"]), 2)
                     for sheet in metric["metric_errors"]:
@@ -136,9 +136,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                                 <= sheet["messages"][0].items()
                             )
 
-                    # 24 total datapoints. 2 for aggregate total (May and June), 10 for gender breakdowns (May-June),
-                    # 10 for arrest_by_type breakdowns (May - June).
-                    self.assertEqual(len(metric["datapoints"]), 22)
+                    # 24 total datapoints. 2 for aggregate total (May and June), 6 for sex breakdowns (May-June),
+                    # 12 for arrest_by_type breakdowns (May - June).
+                    self.assertEqual(len(metric["datapoints"]), 20)
                 else:
                     metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
                     self.assertEqual(len(metric["metric_errors"]), 1)

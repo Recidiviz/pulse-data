@@ -227,3 +227,18 @@ class CallsForServiceNonEmergencyCallsIncludesExcludes(enum.Enum):
         "Calls routed to civilian community service officers for response"
     )
     STOLEN_PROPERTY = "Calls to take a report of stolen property"
+
+
+# Arrests
+
+
+class LawEnforcementArrestsIncludesExcludes(enum.Enum):
+    ON_VIEW = "On-view arrest (i.e., apprehension without a warrant or previous incident report)"
+    WARRANT = "Arrests for warrants or previous incident reports"
+    CITATION = "Summonses or citations"
+    IN_JURISDICTION = (
+        "Arrests made for offenses committed within the agency’s jurisdiction"
+    )
+    OUTSIDE_JURISDICTION = (
+        "Arrests made for offenses committed outside the agency’s jurisdiction"
+    )

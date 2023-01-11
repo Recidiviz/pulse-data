@@ -57,18 +57,6 @@ class LawEnforcementFundingType(DimensionBase, enum.Enum):
         return "metric/law_enforcement/funding/type"
 
 
-class OffenseType(DimensionBase, enum.Enum):
-    PERSON = "Person"
-    PROPERTY = "Property"
-    DRUG = "Drug"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/law_enforcement/reported_crime/type"
-
-
 class ForceType(DimensionBase, enum.Enum):
     PHYSICAL = "Physical"
     RESTRAINT = "Restraint"

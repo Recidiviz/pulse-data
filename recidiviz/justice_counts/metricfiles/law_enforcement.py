@@ -22,13 +22,9 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     LawEnforcementExpenseType,
     LawEnforcementFundingType,
     LawEnforcementStaffType,
-    OffenseType,
 )
-from recidiviz.justice_counts.dimensions.person import (
-    BiologicalSex,
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.offense import OffenseType
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import law_enforcement
 
@@ -97,25 +93,25 @@ LAW_ENFORCEMENT_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="arrests",
-        definition=law_enforcement.total_arrests,
+        definition=law_enforcement.arrests,
     ),
     MetricFile(
         canonical_filename="arrests_by_type",
-        definition=law_enforcement.total_arrests,
+        definition=law_enforcement.arrests,
         disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
         canonical_filename="arrests_by_race",
-        definition=law_enforcement.total_arrests,
+        definition=law_enforcement.arrests,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="arrests_by_gender",
-        definition=law_enforcement.total_arrests,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        canonical_filename="arrests_by_biological_sex",
+        definition=law_enforcement.arrests,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="use_of_force",

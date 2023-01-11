@@ -15,16 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines all Justice Counts metrics for the Prison system."""
-
 from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     GrievancesUpheldType,
     PrisonsExpenseType,
     PrisonsFundingType,
-    PrisonsOffenseType,
     PrisonsReadmissionType,
     PrisonsReleaseType,
     PrisonsStaffType,
 )
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -351,26 +350,26 @@ admissions = MetricDefinition(
     specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonsOffenseType,
+            dimension=OffenseType,
             required=False,
             display_name="Prison Offense Type",
             dimension_to_description={
-                PrisonsOffenseType.PERSON: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
-                PrisonsOffenseType.PROPERTY: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a property offense (the definition of property offenses configured in Section 2.3 will be applied to this section).",
-                PrisonsOffenseType.PUBLIC_ORDER: "The number of post-adjudication admissions to the agency’s jail jurisdiction for which the most serious offense was a public order offense (the definition of drug offenses configured in Section 2.4 will be applied to this section).",
-                PrisonsOffenseType.DRUG: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was a drug offense (the definition of public order offenses configured in Section 2.5 will be applied to this section).",
-                PrisonsOffenseType.OTHER: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was for another type of offense that was not a person offense, a property offense, a drug offense, or a public order offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
-                PrisonsOffenseType.UNKNOWN: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense charge type is not known.",
+                OffenseType.PERSON: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
+                OffenseType.PROPERTY: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a property offense (the definition of property offenses configured in Section 2.3 will be applied to this section).",
+                OffenseType.PUBLIC_ORDER: "The number of post-adjudication admissions to the agency’s jail jurisdiction for which the most serious offense was a public order offense (the definition of drug offenses configured in Section 2.4 will be applied to this section).",
+                OffenseType.DRUG: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was a drug offense (the definition of public order offenses configured in Section 2.5 will be applied to this section).",
+                OffenseType.OTHER: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was for another type of offense that was not a person offense, a property offense, a drug offense, or a public order offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
+                OffenseType.UNKNOWN: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense charge type is not known.",
             },
             dimension_to_includes_excludes={
-                PrisonsOffenseType.PERSON: IncludesExcludesSet(
+                OffenseType.PERSON: IncludesExcludesSet(
                     members=PersonOffenseIncludesExcludes,
                     excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
                 ),
-                PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
+                OffenseType.PROPERTY: IncludesExcludesSet(
                     members=PropertyOffenseIncludesExcludes,
                 ),
-                PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
                     members=PublicOrderOffenseIncludesExcludes,
                     excluded_set={
                         PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
@@ -383,7 +382,7 @@ admissions = MetricDefinition(
                         PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
                     },
                 ),
-                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                OffenseType.DRUG: IncludesExcludesSet(
                     members=DrugOffenseIncludesExcludes,
                 ),
             },
@@ -428,30 +427,30 @@ daily_population = MetricDefinition(
         ),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         AggregatedDimension(
-            dimension=PrisonsOffenseType,
+            dimension=OffenseType,
             required=True,
             dimension_to_description={
-                PrisonsOffenseType.PERSON: "A single day count of the number of people incarcerated whose most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
-                PrisonsOffenseType.PROPERTY: "A single day count of the number of people incarcerated whose most serious offense was a property crime (the definition of property offenses configured in Section 2.3 will be applied to this section).",
-                PrisonsOffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated whose most serious offense was a public order crime (the definition of public order offenses configured in Section 2.4 will be applied to this section).",
-                PrisonsOffenseType.DRUG: "A single day count of the number of people incarcerated whose most serious offense was a drug crime (the definition of drug offenses configured in Section 2.5 will be applied to this section).",
-                PrisonsOffenseType.OTHER: "A single day count of the number of people incarcerated whose most serious offense was not a person offense, property offense, public order offense, or drug offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
-                PrisonsOffenseType.UNKNOWN: "A single day count of the number of people incarcerated whose most serious offense was an unknown crime.",
+                OffenseType.PERSON: "A single day count of the number of people incarcerated whose most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
+                OffenseType.PROPERTY: "A single day count of the number of people incarcerated whose most serious offense was a property crime (the definition of property offenses configured in Section 2.3 will be applied to this section).",
+                OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated whose most serious offense was a public order crime (the definition of public order offenses configured in Section 2.4 will be applied to this section).",
+                OffenseType.DRUG: "A single day count of the number of people incarcerated whose most serious offense was a drug crime (the definition of drug offenses configured in Section 2.5 will be applied to this section).",
+                OffenseType.OTHER: "A single day count of the number of people incarcerated whose most serious offense was not a person offense, property offense, public order offense, or drug offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
+                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated whose most serious offense was an unknown crime.",
             },
             dimension_to_includes_excludes={
-                PrisonsOffenseType.PERSON: IncludesExcludesSet(
+                OffenseType.PERSON: IncludesExcludesSet(
                     members=PersonOffenseIncludesExcludes,
                     excluded_set={
                         PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
                     },
                 ),
-                PrisonsOffenseType.PROPERTY: IncludesExcludesSet(
+                OffenseType.PROPERTY: IncludesExcludesSet(
                     members=PropertyOffenseIncludesExcludes,
                 ),
-                PrisonsOffenseType.DRUG: IncludesExcludesSet(
+                OffenseType.DRUG: IncludesExcludesSet(
                     members=DrugOffenseIncludesExcludes,
                 ),
-                PrisonsOffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
                     members=PublicOrderOffenseIncludesExcludes,
                     excluded_set={
                         PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,

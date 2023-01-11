@@ -43,8 +43,8 @@ from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsOffenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReleasesToParoleIncludesExcludes,
     PrisonStaffIncludesExcludes,
@@ -195,7 +195,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(len(metrics), 3)
         self.assertEqual(metrics[0]["key"], law_enforcement.calls_for_service.key)
         self.assertEqual(metrics[1]["key"], law_enforcement.reported_crime.key)
-        self.assertEqual(metrics[2]["key"], law_enforcement.total_arrests.key)
+        self.assertEqual(metrics[2]["key"], law_enforcement.arrests.key)
 
     def shared_test_agency_metrics(self, metrics: List[Dict[str, Any]]) -> None:
         """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
@@ -264,7 +264,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             ],
         )
-        # Admissions metric is enabled but PrisonsOffenseType
+        # Admissions metric is enabled but OffenseType
         # disaggregation is disabled
         dimension_to_includes_excludes = assert_type(
             prisons.admissions.aggregated_dimensions, list
@@ -273,7 +273,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[3]["enabled"], True)
         self.assertEqual(
             metrics[3]["disaggregations"][0]["key"],
-            PrisonsOffenseType.dimension_identifier(),
+            OffenseType.dimension_identifier(),
         )
         self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
 
@@ -282,11 +282,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][0]["label"],
-            PrisonsOffenseType.PERSON.value,
+            OffenseType.PERSON.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][0]["key"],
-            PrisonsOffenseType.PERSON.value,
+            OffenseType.PERSON.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][0]["settings"],
@@ -298,7 +298,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "default": default_setting.value,
                 }
                 for member, default_setting in dimension_to_includes_excludes[
-                    PrisonsOffenseType.PERSON
+                    OffenseType.PERSON
                 ].member_to_default_inclusion_setting.items()
             ],
         )
@@ -308,11 +308,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][1]["label"],
-            PrisonsOffenseType.PROPERTY.value,
+            OffenseType.PROPERTY.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][1]["key"],
-            PrisonsOffenseType.PROPERTY.value,
+            OffenseType.PROPERTY.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][1]["settings"],
@@ -324,7 +324,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "default": default_setting.value,
                 }
                 for member, default_setting in dimension_to_includes_excludes[
-                    PrisonsOffenseType.PROPERTY
+                    OffenseType.PROPERTY
                 ].member_to_default_inclusion_setting.items()
             ],
         )
@@ -334,11 +334,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][2]["label"],
-            PrisonsOffenseType.DRUG.value,
+            OffenseType.DRUG.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][2]["key"],
-            PrisonsOffenseType.DRUG.value,
+            OffenseType.DRUG.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][2]["settings"],
@@ -350,7 +350,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "default": default_setting.value,
                 }
                 for member, default_setting in dimension_to_includes_excludes[
-                    PrisonsOffenseType.DRUG
+                    OffenseType.DRUG
                 ].member_to_default_inclusion_setting.items()
             ],
         )
@@ -360,11 +360,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][3]["label"],
-            PrisonsOffenseType.PUBLIC_ORDER.value,
+            OffenseType.PUBLIC_ORDER.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][3]["key"],
-            PrisonsOffenseType.PUBLIC_ORDER.value,
+            OffenseType.PUBLIC_ORDER.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][3]["settings"],
@@ -376,7 +376,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "default": default_setting.value,
                 }
                 for member, default_setting in dimension_to_includes_excludes[
-                    PrisonsOffenseType.PUBLIC_ORDER
+                    OffenseType.PUBLIC_ORDER
                 ].member_to_default_inclusion_setting.items()
             ],
         )
@@ -386,11 +386,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][4]["label"],
-            PrisonsOffenseType.OTHER.value,
+            OffenseType.OTHER.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][4]["key"],
-            PrisonsOffenseType.OTHER.value,
+            OffenseType.OTHER.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][4]["settings"],
@@ -402,11 +402,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][5]["label"],
-            PrisonsOffenseType.UNKNOWN.value,
+            OffenseType.UNKNOWN.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][5]["key"],
-            PrisonsOffenseType.UNKNOWN.value,
+            OffenseType.UNKNOWN.value,
         )
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][5]["settings"],
@@ -636,7 +636,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[3]["enabled"], True)
         self.assertEqual(
             metrics[3]["disaggregations"][0]["key"],
-            PrisonsOffenseType.dimension_identifier(),
+            OffenseType.dimension_identifier(),
         )
         self.assertEqual(metrics[3]["disaggregations"][0]["enabled"], False)
         self.check_agency_metric_datapoint(
@@ -646,7 +646,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             value=3.0,
             report_id=report_published.id,
             dimension_display_name="Person Offenses",
-            disaggregation_display_name="Prisons Offense Type",
+            disaggregation_display_name="Offense Type",
         )
         self.check_agency_metric_datapoint(
             datapoint=metrics[3]["disaggregations"][0]["dimensions"][1]["datapoints"][
@@ -655,7 +655,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             value=4.0,
             report_id=report_published.id,
             dimension_display_name="Property Offenses",
-            disaggregation_display_name="Prisons Offense Type",
+            disaggregation_display_name="Offense Type",
         )
         self.check_agency_metric_datapoint(
             datapoint=metrics[3]["disaggregations"][0]["dimensions"][2]["datapoints"][
@@ -664,7 +664,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             value=1.0,
             report_id=report_published.id,
             dimension_display_name="Drug Offenses",
-            disaggregation_display_name="Prisons Offense Type",
+            disaggregation_display_name="Offense Type",
         )
         self.check_agency_metric_datapoint(
             datapoint=metrics[3]["disaggregations"][0]["dimensions"][3]["datapoints"][
@@ -673,7 +673,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             value=5.0,
             report_id=report_published.id,
             dimension_display_name="Public Order Offenses",
-            disaggregation_display_name="Prisons Offense Type",
+            disaggregation_display_name="Offense Type",
         )
         self.check_agency_metric_datapoint(
             datapoint=metrics[3]["disaggregations"][0]["dimensions"][4]["datapoints"][
@@ -682,7 +682,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             value=2.0,
             report_id=report_published.id,
             dimension_display_name="Other Offenses",
-            disaggregation_display_name="Prisons Offense Type",
+            disaggregation_display_name="Offense Type",
         )
         self.check_agency_metric_datapoint(
             datapoint=metrics[3]["disaggregations"][0]["dimensions"][5]["datapoints"][
@@ -691,7 +691,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             value=6.0,
             report_id=report_published.id,
             dimension_display_name="Unknown Offenses",
-            disaggregation_display_name="Prisons Offense Type",
+            disaggregation_display_name="Offense Type",
         )
 
     def test_create_report_invalid_permissions(self) -> None:
@@ -1804,8 +1804,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response_json_dimensions,
             {
                 "LAW_ENFORCEMENT_ARRESTS": {
-                    "Gender": ["Male", "Female", "Other", "Non-Binary", "Unknown"],
-                    "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"],
+                    "Biological Sex": [
+                        "Male Biological Sex",
+                        "Female Biological Sex",
+                        "Unknown Biological Sex",
+                    ],
+                    "Offense Type": [
+                        "Person Offenses",
+                        "Property Offenses",
+                        "Drug Offenses",
+                        "Public Order Offenses",
+                        "Other Offenses",
+                        "Unknown Offenses",
+                    ],
                     "Race / Ethnicity": [
                         "American Indian / Alaskan Native / Hispanic",
                         "Asian / Hispanic",
@@ -1862,7 +1873,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
                 "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED": {},
                 "LAW_ENFORCEMENT_REPORTED_CRIME": {
-                    "Offense Type": ["Person", "Property", "Drug", "Other", "Unknown"]
+                    "Offense Type": [
+                        "Person Offenses",
+                        "Property Offenses",
+                        "Drug Offenses",
+                        "Public Order Offenses",
+                        "Other Offenses",
+                        "Unknown Offenses",
+                    ]
                 },
                 "LAW_ENFORCEMENT_TOTAL_STAFF": {
                     "Law Enforcement Staff Type": [

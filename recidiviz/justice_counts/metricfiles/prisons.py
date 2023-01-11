@@ -21,11 +21,11 @@ from recidiviz.justice_counts.dimensions.jails_and_prisons import (
     GrievancesUpheldType,
     PrisonsExpenseType,
     PrisonsFundingType,
-    PrisonsOffenseType,
     PrisonsReadmissionType,
     PrisonsReleaseType,
     PrisonsStaffType,
 )
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import prisons
@@ -78,7 +78,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="admissions_by_type",
         definition=prisons.admissions,
-        disaggregation=PrisonsOffenseType,
+        disaggregation=OffenseType,
         disaggregation_column_name="admission_type",
     ),
     MetricFile(
@@ -88,7 +88,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="population_by_type",
         definition=prisons.daily_population,
-        disaggregation=PrisonsOffenseType,
+        disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
