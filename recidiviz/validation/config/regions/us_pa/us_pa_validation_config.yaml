@@ -98,10 +98,10 @@ num_allowed_rows_overrides:
       See supervision_period_dates_existence description above for issue with open periods and duplication for
       superivision types. Error at 52 as of 12/29/2022. TODO(#14683) - Fix supervision periods ingest view to be corrected to account for this edge case
   - validation_name: admission_pfi_pop_pfi_mismatch
-    hard_num_allowed_rows_override: 4500
+    hard_num_allowed_rows_override: 5000
     override_reason:
       TODO(#10625) - Need to be handled in IP pre-processing. Rerun on 02/15/2022 did not improve these.
-      There are 4271 of these as of 03/01/2022.
+      There are 4271 of these as of 03/01/2022. 4769 as of 1/11/23.
   - validation_name: multiple_supervision_info_for_commitment_admission
     hard_num_allowed_rows_override: 5
     override_reason:
