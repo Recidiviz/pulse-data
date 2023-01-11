@@ -70,3 +70,8 @@ repos:
         language: script
         files: ^recidiviz/tools/deploy/terraform/
         require_serial: true
+      - id: terraform_fmt
+        name: terraform_fmt
+        entry: recidiviz/tools/deploy/format_terraform.sh
+        language: script
+        files: ^recidiviz/tools/deploy/terraform/
