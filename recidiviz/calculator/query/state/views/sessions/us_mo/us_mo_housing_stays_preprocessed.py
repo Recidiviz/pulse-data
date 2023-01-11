@@ -49,15 +49,22 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
         ) AS end_date_exclusive,
         IFNULL(h.BN_PLN, "EXTERNAL_UNKNOWN") AS facility_code,
         IF (
-            h.BN_HPT IS NULL,
-            "EXTERNAL_UNKNOWN",
-            (
-                CASE h.BN_HPT
-                WHEN "P" THEN "PERMANENT"
-                WHEN "T" THEN "TEMPORARY"
-                ELSE
-                "INTERNAL_UNKNOWN"
-                END
+            # TASC is by definition meant to be a temporary stay, and accordingly there are very few instances (only 2 
+            # out of 444 TASC stays) of Permanent (BN_HPT = P) TASC. There have been more historically but even then a 
+            # very small percent of the total TASC stays (<3%)
+            h.BN_LRU = "TAS",
+            "TEMPORARY-TASC",
+            IF (
+                h.BN_HPT IS NULL,
+                "EXTERNAL_UNKNOWN",
+                (
+                    CASE h.BN_HPT
+                    WHEN "P" THEN "PERMANENT"
+                    WHEN "T" THEN "TEMPORARY-OTHER"
+                    ELSE
+                    "INTERNAL_UNKNOWN"
+                    END
+                ) 
             ) 
         ) AS stay_type,
         h.BN_HPT AS stay_type_raw_text,
@@ -68,12 +75,17 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
                 CASE h.BN_LRU
                 WHEN "GNP" THEN "GENERAL"
                 WHEN "ADS" THEN "SOLITARY_CONFINEMENT"
+                WHEN "DIS" THEN "SOLITARY_CONFINEMENT"
+                WHEN "HOS" THEN "HOSPITALIZED"
+                WHEN "NOC" THEN "SOLITARY_CONFINEMENT"
                 WHEN "TAS" THEN "SOLITARY_CONFINEMENT"
+                WHEN "PRC" THEN "PROTECTIVE_CUSTODY"
                 ELSE "INTERNAL_UNKNOWN"
                 END
             ) 
         ) AS confinement_type,
-        h.BN_LRU AS confinement_type_raw_text
+        h.BN_LRU AS confinement_type_raw_text,
+        h.BN_HDS AS reason_raw_text
     FROM {project_id}.{raw_dataset}.LBAKRDTA_TAK017_latest h
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
     ON
