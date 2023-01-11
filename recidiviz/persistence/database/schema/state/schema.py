@@ -2974,3 +2974,137 @@ class StateTaskDeadline(StateBase, _ReferencesStatePersonSharedColumns):
         comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
         "this task deadline.",
     )
+
+
+class StateStaff(StateBase):
+    """Represents a StateStaff in the SQL schema"""
+
+    __tablename__ = "state_staff"
+    __table_args__ = {
+        "comment": (
+            "The StateStaff object represents some staff member operating on behalf of "
+            "the criminal justice system, usually referenced in the context of taking "
+            "some action related to a person moving through that system. This includes "
+            "references such as the officers supervising people on parole, corrections "
+            "officers overseeing people in prisons, people who manage those officers, "
+            "and so on. This is not intended to be used to represent justice impacted "
+            "individuals who are employed by the state as part of some work program."
+        )
+    }
+
+    staff_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="staff member"
+        ),
+    )
+
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    full_name = Column(
+        String(255),
+        comment=(
+            "The staff member's full name. The value in this field may change over "
+            "time as the staff member's name changes."
+        ),
+    )
+    email = Column(
+        String(255),
+        comment=(
+            "The staff member's official email. The value in this field may change over "
+            "time if the staff member's official email changes."
+        ),
+    )
+
+    # Cross-entity relationships
+    external_ids = relationship(
+        "StateStaffExternalId", backref="staff", lazy="selectin"
+    )
+
+
+# Shared mixin columns
+class _ReferencesStateStaffSharedColumns:
+    """A mixin which defines columns for any table whose rows reference an
+    individual StateStaff"""
+
+    # Consider this class a mixin and only allow instantiating subclasses
+    def __new__(cls, *_: Any, **__: Any) -> "_ReferencesStateStaffSharedColumns":
+        if cls is _ReferencesStateStaffSharedColumns:
+            raise Exception(f"[{cls}] cannot be instantiated")
+        return super().__new__(cls)  # type: ignore
+
+    @declared_attr
+    def staff_id(self) -> Column:
+        return Column(
+            Integer,
+            ForeignKey("state_staff.staff_id", deferrable=True, initially="DEFERRED"),
+            index=True,
+            nullable=False,
+            comment=StrictStringFormatter().format(
+                FOREIGN_KEY_COMMENT_TEMPLATE, object_name="staff member"
+            ),
+        )
+
+
+class StateStaffExternalId(StateBase, _ReferencesStateStaffSharedColumns):
+    """Represents a StateStaffExternalId in the SQL schema"""
+
+    __tablename__ = "state_staff_external_id"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "id_type",
+            "external_id",
+            name="staff_external_ids_unique_within_type_and_region",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "Each StateStaffExternalId holds a single external id for a given "
+                "staff member provided by the source data system being ingested. An "
+                "external id is a unique identifier for an individual, unique within "
+                "the scope of the source data system. We include information denoting "
+                "the source of the id to make this into a globally unique identifier. "
+                "A staff member may have multiple StateStaffExternalId, but cannot "
+                "have multiple with the same id_type."
+            )
+        },
+    )
+
+    staff_external_id_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="staff member external id"
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateStaffExternalId"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    id_type = Column(
+        String(255),
+        nullable=False,
+        comment=(
+            "The type of id provided by the system. In a state where there are "
+            "multiple identifiers used (e.g. a system user id vs an employee id), this "
+            "type will help us differentiate between the different schemes."
+        ),
+    )

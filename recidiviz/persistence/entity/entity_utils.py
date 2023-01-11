@@ -71,6 +71,7 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.errors import PersistenceError
 
 _STATE_CLASS_HIERARCHY = [
+    # StatePerson hierarchy
     state_entities.StatePerson.__name__,
     state_entities.StatePersonExternalId.__name__,
     state_entities.StatePersonAlias.__name__,
@@ -97,6 +98,9 @@ _STATE_CLASS_HIERARCHY = [
     state_entities.StateEmploymentPeriod.__name__,
     state_entities.StateDrugScreen.__name__,
     state_entities.StateTaskDeadline.__name__,
+    # StateStaff hierarchy
+    state_entities.StateStaff.__name__,
+    state_entities.StateStaffExternalId.__name__,
 ]
 
 _state_direction_checker = None
@@ -495,6 +499,11 @@ def is_placeholder(entity: CoreEntity, field_index: CoreEntityFieldIndex) -> boo
         if any([entity.external_ids, entity.races, entity.aliases, entity.ethnicities]):
             return False
 
+    if isinstance(entity, (state_schema.StateStaff, state_entities.StateStaff)):
+        if entity.external_ids:
+            return False
+        return True
+
     set_flat_fields = get_explicilty_set_flat_fields(entity, field_index)
     return not bool(set_flat_fields)
 
@@ -512,6 +521,12 @@ def is_reference_only_entity(
         if set_flat_fields or any([entity.races, entity.aliases, entity.ethnicities]):
             return False
         return bool(entity.external_ids)
+
+    if isinstance(entity, (state_schema.StateStaff, state_entities.StateStaff)):
+        if set_flat_fields:
+            return False
+        return bool(entity.external_ids)
+
     return set_flat_fields == {"external_id"}
 
 
@@ -837,18 +852,12 @@ def get_entities_by_type(
     return entities_of_type
 
 
-def is_standalone_class(cls: Type[DatabaseEntity]) -> bool:
-    """Returns True if the provided cls is a class that can exist separate
-    from a StatePerson tree.
-    """
-    return "person_id" not in cls.get_column_property_names()
-
-
+# TODO(#17471): Clarify/eliminate concept of a standalone entity
 def is_standalone_entity(entity: DatabaseEntity) -> bool:
     """Returns True if the provided entity is an instance of a class that
     can exist separate from a StatePerson tree.
     """
-    return is_standalone_class(entity.__class__)
+    return "person_id" not in entity.__class__.get_column_property_names()
 
 
 def person_has_id(

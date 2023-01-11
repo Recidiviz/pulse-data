@@ -231,15 +231,22 @@ def generate_child_entity_trees(
 
 def is_multiple_id_entity(entity: DatabaseEntity) -> bool:
     """Returns True if the given entity can have multiple external ids."""
+    if entity.__class__ is schema.StateStaff:
+        raise ValueError(
+            f"TODO(#17471): Unsupported class [{entity.__class__}] - add support and "
+            f"associated entity matching tests."
+        )
     return entity.__class__ in get_multiple_id_classes()
 
 
+# TODO(#17471): Update to look at associated Entity classes and return those that are
+#  HasMultipleExternalIdEntity.
 def get_multiple_id_classes() -> List[Type[DatabaseEntity]]:
     """Returns a list of all classes that have multiple external ids."""
     to_return: List[Type[DatabaseEntity]] = []
     for cls in get_state_database_entities():
         if "external_ids" in cls.get_relationship_property_names():
-            if cls != schema.StatePerson:
+            if cls not in {schema.StatePerson, schema.StateStaff}:
                 raise ValueError(
                     f"Untested multiple id class. To remove this, please add "
                     f"test coverage to ensure entities of class {cls} are "
@@ -300,9 +307,9 @@ def can_atomically_merge_entity(
     are null.
     """
 
-    # We often get data about a person from multiple sources - do not overwrite person
-    # information with new updates to the person.
-    if isinstance(new_entity, schema.StatePerson):
+    # We often get data about a root entity from multiple sources - do not overwrite
+    # all information with new updates to that entity.
+    if isinstance(new_entity, (schema.StatePerson, schema.StateStaff)):
         return False
 
     # If this entity only contains external id information - do not merge atomically
@@ -331,6 +338,7 @@ def can_atomically_merge_entity(
             schema.StateIncarcerationPeriod,
             schema.StatePersonExternalId,
             schema.StateProgramAssignment,
+            schema.StateStaffExternalId,
             schema.StateSupervisionContact,
             schema.StateSupervisionCaseTypeEntry,
             schema.StateSupervisionPeriod,

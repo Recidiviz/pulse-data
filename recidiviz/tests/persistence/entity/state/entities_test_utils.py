@@ -79,7 +79,6 @@ from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     EntityFieldType,
     get_entities_by_type,
-    is_standalone_class,
     print_entity_tree,
 )
 from recidiviz.persistence.entity.state import entities
@@ -119,12 +118,13 @@ def assert_no_unexpected_entities_in_db(
     entity_counter: Dict[Type, List[DatabaseEntity]] = defaultdict(list)
     get_entities_by_type(expected_entities, field_index, entity_counter)
     for cls, entities_of_cls in entity_counter.items():
-        # Standalone classes do not need to be attached to a person by design,
-        # so it is valid if some standalone entities are not reachable from the
-        # provided |expected_entities|
-        if is_standalone_class(cls):
+        # TODO(#17471): Clean up this logic when StateAgent has been deleted from
+        #  the schema.
+        if cls.__name__ == "StateAgent":
+            # The StateAgent class does not need to be attached to a root entity, so it
+            # is valid if some StateAgent are not reachable from the provided
+            # |expected_entities|.
             continue
-
         expected_ids = set()
         for entity in entities_of_cls:
             expected_ids.add(entity.get_id())
@@ -134,7 +134,7 @@ def assert_no_unexpected_entities_in_db(
             db_ids.add(entity.get_id())
 
         if expected_ids != db_ids:
-            print("\n********** Entities from |found_persons| **********\n")
+            print("\n********** Entities from |expected_entities| **********\n")
             for entity in sorted(entities_of_cls, key=lambda x: x.get_id()):
                 print_entity_tree(entity, field_index=field_index)
             print("\n********** Entities from db **********\n")

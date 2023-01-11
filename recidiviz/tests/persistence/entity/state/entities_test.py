@@ -85,26 +85,45 @@ class TestStateEntities(TestCase):
                 f"|state_code| field of class [{cls}].",
             )
 
-    def test_all_classes_have_person_reference(self):
-        classes_without_a_person_ref = [
+    def test_all_classes_have_person_or_staff_reference(self):
+        classes_without_a_person_or_staff_ref = [
             entities.StatePerson,
             entities.StateAgent,
+            entities.StateStaff,
         ]
 
         for cls in get_all_entity_classes_in_module(entities):
-            if cls in classes_without_a_person_ref:
+            if cls in classes_without_a_person_or_staff_ref:
                 continue
+            has_person_ref = "person" in attr.fields_dict(cls)
+            has_staff_ref = "staff" in attr.fields_dict(cls)
             self.assertTrue(
-                "person" in attr.fields_dict(cls),
-                f"Expected field |person| not defined for class [{cls}].",
+                has_person_ref or has_staff_ref,
+                f"Expected field |person| or |staff| defined for class [{cls}].",
             )
-            attribute = attr.fields_dict(cls)["person"]
-            self.assertEqual(
-                attribute.type,
-                Optional[ForwardRef("StatePerson")],
-                f"Unexpected type [{attribute.type}] for |person| "
-                f"field of class [{cls}].",
+
+            self.assertTrue(
+                not has_person_ref or not has_staff_ref,
+                f"Expected field |person| or |staff| defined for class [{cls}], but "
+                f"not both.",
             )
+
+            if has_person_ref:
+                attribute = attr.fields_dict(cls)["person"]
+                self.assertEqual(
+                    attribute.type,
+                    Optional[ForwardRef("StatePerson")],
+                    f"Unexpected type [{attribute.type}] for |person| "
+                    f"field of class [{cls}].",
+                )
+            if has_staff_ref:
+                attribute = attr.fields_dict(cls)["staff"]
+                self.assertEqual(
+                    attribute.type,
+                    Optional[ForwardRef("StateStaff")],
+                    f"Unexpected type [{attribute.type}] for |staff| "
+                    f"field of class [{cls}].",
+                )
 
     def test_person_equality_no_backedges(self):
         person1 = generate_full_graph_state_person(set_back_edges=False)

@@ -17,7 +17,7 @@
 
 """Utils for the persistence layer."""
 import os
-from typing import Generic, List, TypeVar
+from typing import Generic, List, TypeVar, Union
 
 import attr
 
@@ -37,13 +37,15 @@ def should_persist() -> bool:
 
 
 # A generic type to define any pure python root entity defined in entities.py.
-# TODO(#17471): Update to allow for either state_entities.StatePerson or state_entities.StateStaff
-RootEntityT = TypeVar("RootEntityT", bound=state_entities.StatePerson)
+RootEntityT = TypeVar(
+    "RootEntityT", bound=Union[state_entities.StatePerson, state_entities.StateStaff]
+)
 
 
 # A generic type to define any SQLAlchemy database entity defined in schema.py.
-# TODO(#17471): Update to allow for either stte_schema.StatePerson or stte_schema.StateStaff
-SchemaRootEntityT = TypeVar("SchemaRootEntityT", bound=state_schema.StatePerson)
+SchemaRootEntityT = TypeVar(
+    "SchemaRootEntityT", bound=Union[state_schema.StatePerson, state_schema.StateStaff]
+)
 
 
 @attr.s(frozen=True)
