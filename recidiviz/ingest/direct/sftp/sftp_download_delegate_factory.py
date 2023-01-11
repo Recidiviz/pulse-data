@@ -20,6 +20,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.regions.us_id.us_id_sftp_download_delegate import (
     UsIdSftpDownloadDelegate,
 )
+from recidiviz.ingest.direct.regions.us_ix.us_ix_sftp_download_delegate import (
+    UsIxSftpDownloadDelegate,
+)
 from recidiviz.ingest.direct.regions.us_me.us_me_sftp_download_delegate import (
     UsMeSftpDownloadDelegate,
 )
@@ -43,6 +46,8 @@ class SftpDownloadDelegateFactory:
         region_code = region_code.upper()
         if region_code == StateCode.US_ID.value:
             return UsIdSftpDownloadDelegate()
+        if region_code == StateCode.US_IX.value:
+            return UsIxSftpDownloadDelegate()
         if region_code == StateCode.US_PA.value:
             return UsPaSftpDownloadDelegate()
         if region_code == StateCode.US_ME.value:
