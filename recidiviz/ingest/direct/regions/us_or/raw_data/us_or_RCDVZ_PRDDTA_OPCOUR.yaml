@@ -1,26 +1,69 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OPCOUR
 file_description: |-
-  TODO(#16741): Fill in the file description
+  This file contains court case information.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
+  - COURT_CASE_NUMBER
+  - COUNTY
+  - STRUCTURED_SANCTION_STATUS
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
   - name: COURT_CASE_NUMBER
+    description: |-
+      Number of court case.
   - name: COUNTY
+    description: |-
+      County where court case took place.
   - name: STRUCTURED_SANCTION_STATUS
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SG_HISTORY_SCALE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: CURRENT_STATUS
+    description: |-
+      Current status of court case.
   - name: SENTENCE_GUIDELINES_APP
   - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating order of custody.
   - name: ADMISSION_NUMBER
+    description: |-
+      Number indicating order of admission.
   - name: JUDGE
+    description: |-
+      Judge in the case.
+    is_pii: True
   - name: DISTRICT_ATTORNEY
+    description: |-
+      The district attorney in the case.
+    is_pii: True
   - name: DA_CASE_NUMBER
+    description: |-
+      DA case number.
   - name: DEFENSE_COUNSEL
+    description: |-
+      The defence counsel in the case.
+    is_pii: True
   - name: TERMINATION_CODE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: TERMINATION_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SANCTION_SUPV_CODE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: STRUCTURED_SANC_SUPV_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SENTENCE_BEGIN_DATE
+    description: |-
+      Date the sentence began.
   - name: CRIME_CATEGORY
+    description: |-
+      Category of the crime.
