@@ -169,12 +169,12 @@ class TestMetricInterface(TestCase):
                 "settings": [],
                 "contexts": [
                     {
-                        "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Please provide additional context.",
+                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
-                        "value": "additional context",
+                        "value": "our metrics are different because xyz",
                         "multiple_choice_options": [],
                     },
                 ],
@@ -218,12 +218,12 @@ class TestMetricInterface(TestCase):
                 "settings": [],
                 "contexts": [
                     {
-                        "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Please provide additional context.",
+                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
-                        "value": "additional context",
+                        "value": "our metrics are different because xyz",
                         "multiple_choice_options": [],
                     },
                 ],
@@ -319,17 +319,7 @@ class TestMetricInterface(TestCase):
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
                 "label": "Civilian Complaints Sustained",
-                "contexts": [
-                    {
-                        "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Please provide additional context.",
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
-                        "value": None,
-                        "multiple_choice_options": [],
-                    },
-                ],
+                "contexts": [],
                 "disaggregations": [],
                 "datapoints": None,
             },
@@ -371,12 +361,12 @@ class TestMetricInterface(TestCase):
                 "settings": [],
                 "contexts": [
                     {
-                        "key": "ADDITIONAL_CONTEXT",
-                        "display_name": "Please provide additional context.",
+                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                        "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                         "reporting_note": None,
                         "required": False,
                         "type": "TEXT",
-                        "value": "this is a test for additional context",
+                        "value": "our metrics are different because xyz",
                         "multiple_choice_options": [],
                     },
                 ],
@@ -1109,7 +1099,7 @@ class TestMetricInterface(TestCase):
 
     def test_to_json_prefilled_contexts(self) -> None:
         metric_interface = self.test_schema_objects.get_agency_metric_interface(
-            is_metric_enabled=True, include_disaggregation=True, include_contexts=True
+            is_metric_enabled=True, include_disaggregation=True
         )
         self.assertEqual(
             metric_interface.to_json(
@@ -1189,17 +1179,7 @@ class TestMetricInterface(TestCase):
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "definitions": [],
-                "contexts": [
-                    {
-                        "display_name": "Please provide additional context.",
-                        "key": "ADDITIONAL_CONTEXT",
-                        "multiple_choice_options": [],
-                        "reporting_note": None,
-                        "required": False,
-                        "type": "TEXT",
-                        "value": "this additional context provides contexts",
-                    }
-                ],
+                "contexts": [],
                 "disaggregations": [
                     {
                         "key": "metric/law_enforcement/calls_for_service/type",

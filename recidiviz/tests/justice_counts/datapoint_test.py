@@ -343,10 +343,11 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                         self.assertEqual(datapoint.enabled, False)
                 else:
                     self.assertEqual(
-                        datapoint.context_key, ContextKey.ADDITIONAL_CONTEXT.value
+                        datapoint.context_key,
+                        ContextKey.INCLUDES_EXCLUDES_DESCRIPTION.value,
                     )
                     self.assertEqual(
-                        datapoint.value, "this additional context provides contexts"
+                        datapoint.value, "our metrics are different because xyz"
                     )
 
     def test_save_includes_excludes_histories(self) -> None:

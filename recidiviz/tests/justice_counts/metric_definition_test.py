@@ -81,6 +81,9 @@ class TestMetricDefinition(TestCase):
         )
 
     def test_additional_context(self) -> None:
+        # Does not have metric level includes_excludes
+        self.assertEqual(len(law_enforcement.reported_crime.contexts), 0)
+        # Has metric level includes_excludes
         self.assertEqual(len(law_enforcement.funding.contexts), 1)
         requested_metrics = assert_type(
             law_enforcement.funding.specified_contexts, list
@@ -90,7 +93,7 @@ class TestMetricDefinition(TestCase):
         self.assertEqual(len(requested_metrics), 0)
         self.assertEqual(
             law_enforcement.funding.contexts[0].key,
-            ContextKey.ADDITIONAL_CONTEXT,
+            ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
         )
 
     def test_unit_from_metric_type(self) -> None:

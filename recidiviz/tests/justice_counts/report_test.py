@@ -644,7 +644,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     CallType.NON_EMERGENCY
                 ],
             )
-            self.assertEqual(datapoints_with_value[2].get_value(), "additional context")
+            self.assertEqual(
+                datapoints_with_value[2].get_value(),
+                "our metrics are different because xyz",
+            )
 
     def test_add_calls_for_service_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -689,7 +692,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 datapoints_with_value[4].get_value(),
-                "additional context",
+                "our metrics are different because xyz",
             )
 
     def test_add_population_metric(self) -> None:
@@ -1224,7 +1227,10 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(datapoints_with_value[1].get_value(), 20.0)
             self.assertEqual(datapoints_with_value[2].get_value(), 60.0)
             self.assertEqual(datapoints_with_value[3].get_value(), 20.0)
-            self.assertEqual(datapoints_with_value[4].get_value(), "additional context")
+            self.assertEqual(
+                datapoints_with_value[4].get_value(),
+                "our metrics are different because xyz",
+            )
 
             # If user explicitly sets metric value as None, but doesn't include disaggregations or contexts,
             # the metric value will be changed, but disaggregations and contexts will be left alone. You have

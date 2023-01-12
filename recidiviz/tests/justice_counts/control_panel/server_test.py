@@ -420,13 +420,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[5]["contexts"],
             [
                 {
-                    "display_name": "Please provide additional context.",
-                    "key": "ADDITIONAL_CONTEXT",
+                    "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                    "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                     "multiple_choice_options": [],
                     "reporting_note": None,
                     "required": False,
                     "type": "TEXT",
-                    "value": "this additional context provides contexts",
+                    "value": None,
                 },
             ],
         )
@@ -1007,8 +1007,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             "value": 2000000,
                             "contexts": [
                                 {
-                                    "key": ContextKey.ADDITIONAL_CONTEXT.value,
-                                    "value": "additional context",
+                                    "key": ContextKey.INCLUDES_EXCLUDES_DESCRIPTION.value,
+                                    "value": "our metrics are different because xyz",
                                 },
                             ],
                         },
@@ -1032,8 +1032,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(datapoints[4].get_value(), None)
             # Funding
             self.assertEqual(datapoints[5].get_value(), 2000000)
-            # Additional Context
-            self.assertEqual(datapoints[6].get_value(), "additional context")
+            # INCLUDES_EXCLUDES_DESCRIPTION
+            self.assertEqual(
+                datapoints[6].get_value(), "our metrics are different because xyz"
+            )
 
     def test_update_report_version_conflict(self) -> None:
         report = self.test_schema_objects.test_report_monthly
