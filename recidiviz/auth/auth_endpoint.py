@@ -35,7 +35,7 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
 
 from recidiviz.auth.auth0_client import CaseTriageAuth0AppMetadata
-from recidiviz.auth.helpers import format_user_info, generate_user_hash
+from recidiviz.auth.helpers import format_user_info, generate_user_hash, log_reason
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
@@ -480,6 +480,9 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                     "A user with this email already exists in Roster.",
                     HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
+
+            log_reason(user_dict, f"adding user {user_dict['email_address']}")
+
             user = UserOverride(**user_dict)
             session.add(user)
             session.commit()
@@ -898,6 +901,7 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                 assert_type(request.json, dict), to_snake_case
             )
             user_dict["email_address"] = email
+            log_reason(user_dict, f"updating user {user_dict['email_address']}")
             if (
                 session.query(UserOverride)
                 .filter(UserOverride.email_address == email)
@@ -975,6 +979,10 @@ def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str
             if feature_variants_json is not None:
                 user_dict["feature_variants"] = assert_type(feature_variants_json, dict)
 
+            log_reason(
+                user_dict, f"updating permissions for user {user_dict['user_email']}"
+            )
+
             if (
                 session.query(PermissionsOverride)
                 .filter(PermissionsOverride.user_email == email)
@@ -1037,15 +1045,25 @@ def delete_user_permissions(email: str) -> tuple[str, int]:
                 PermissionsOverride.user_email == email
             )
             if overrides.first() is None:
-                raise ValueError
+                raise ValueError(
+                    f"An entry for {email} in PermissionsOverride does not exist."
+                )
+
+            request_json = assert_type(request.json, dict)
+            request_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
+            log_reason(
+                request_dict,
+                f"removing custom permissions for user {email}",
+            )
+
             overrides.delete(synchronize_session=False)
             return (
                 f"{email} has been deleted from PermissionsOverride.",
                 HTTPStatus.OK,
             )
-    except ValueError:
+    except ValueError as error:
         return (
-            f"An entry for {email} in PermissionsOverride does not exist.",
+            f"{error}",
             HTTPStatus.BAD_REQUEST,
         )
 
@@ -1057,6 +1075,13 @@ def delete_user(email: str) -> tuple[str, int]:
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
         with SessionFactory.using_database(database_key) as session:
+            request_json = assert_type(request.json, dict)
+            request_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
+            log_reason(
+                request_dict,
+                f"blocking user {email}",
+            )
+
             existing_override = session.query(UserOverride).filter(
                 UserOverride.email_address == email
             )
@@ -1067,7 +1092,7 @@ def delete_user(email: str) -> tuple[str, int]:
                     session.query(Roster).filter(Roster.email_address == email).first()
                 )
                 if roster_user is None:
-                    raise ValueError
+                    raise ValueError(f"An entry for {email} does not exist.")
                 user_override = UserOverride(
                     state_code=roster_user.state_code,
                     email_address=email,
@@ -1080,8 +1105,8 @@ def delete_user(email: str) -> tuple[str, int]:
                 f"{email} has been blocked.",
                 HTTPStatus.OK,
             )
-    except ValueError:
+    except ValueError as error:
         return (
-            f"An entry for {email} does not exist.",
+            f"{error}",
             HTTPStatus.BAD_REQUEST,
         )

@@ -105,11 +105,15 @@ export const putAuthWithURLAndBody = async (
   });
 };
 
-export const deleteResource = async (url: string): Promise<Response> => {
+export const deleteResource = async (
+  url: string,
+  body?: Record<string, unknown>
+): Promise<Response> => {
   return fetch(`/auth${url}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
     },
+    ...(body && { body: JSON.stringify(body) }),
   });
 };

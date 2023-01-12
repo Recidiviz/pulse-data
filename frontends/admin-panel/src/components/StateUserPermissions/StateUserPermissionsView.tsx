@@ -112,31 +112,15 @@ const StateUserPermissionsView = (): JSX.Element => {
     }
   };
 
-  const onAdd = async ({
-    emailAddress,
-    stateCode,
-    externalId,
-    role,
-    district,
-    firstName,
-    lastName,
-  }: StateUserPermissionsResponse) => {
+  const onAdd = async (request: AddUserRequest) => {
     try {
-      const createdUser = await createNewUser(
-        emailAddress,
-        stateCode,
-        externalId,
-        role,
-        district,
-        firstName,
-        lastName
-      );
+      const createdUser = await createNewUser(request);
       await checkResponse(createdUser);
       setAddVisible(false);
-      message.success(`${emailAddress} added!`);
+      message.success(`${request.emailAddress} added!`);
       updateTable();
     } catch (err) {
-      message.error(`Error adding ${emailAddress}: ${err}`);
+      message.error(`Error adding ${request.emailAddress}: ${err}`);
     }
   };
 
@@ -148,6 +132,8 @@ const StateUserPermissionsView = (): JSX.Element => {
       email: emailAddress,
       stateCode,
       blocked: false,
+      // TODO(#17562): Add a popup for a user to add a reason
+      reason: "enabling user in UI",
     });
     finishPromises([checkResponse(updatedUser)], "Enabled");
   };
@@ -164,8 +150,9 @@ const StateUserPermissionsView = (): JSX.Element => {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
+    reason,
     ...rest
-  }: StateUserPermissionsResponse) => {
+  }: StateUserPermissionsRequest) => {
     const results = [];
 
     for (let index = 0; index < selectedRowKeys.length; index += 1) {
@@ -181,13 +168,17 @@ const StateUserPermissionsView = (): JSX.Element => {
             district,
             firstName,
             lastName,
+            reason,
           });
           await checkResponse(updatedUser);
         }
 
         // delete user's custom permissions
         if (useCustomPermissions === false) {
-          const deletedPermissions = await deleteCustomUserPermissions(email);
+          const deletedPermissions = await deleteCustomUserPermissions(
+            email,
+            reason
+          );
           await checkResponse(deletedPermissions);
         }
 
@@ -207,6 +198,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         if (useCustomPermissions) {
           const updatedPermissions = await updateUserPermissions(
             email,
+            reason,
             canAccessLeadershipDashboard,
             canAccessCaseTriage,
             shouldSeeBetaCharts,
@@ -222,10 +214,10 @@ const StateUserPermissionsView = (): JSX.Element => {
     finishPromises(results, `Updated`);
   };
 
-  const onRevokeAccess = async () => {
+  const onRevokeAccess = async (reason: string) => {
     const results: Array<Promise<Response>> = [];
     selectedRows.forEach((row) => {
-      results.push(blockUser(row.emailAddress));
+      results.push(blockUser(row.emailAddress, reason));
     });
     finishPromises(results, `Blocked`);
   };

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Alert } from "antd";
+import { Form, Input } from "antd";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
 export const CreateAddUserForm = ({
@@ -23,7 +23,7 @@ export const CreateAddUserForm = ({
   addOnCancel,
 }: {
   addVisible: boolean;
-  addOnCreate: (arg0: StateUserPermissionsResponse) => Promise<void>;
+  addOnCreate: (arg0: AddUserRequest) => Promise<void>;
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
@@ -34,25 +34,42 @@ export const CreateAddUserForm = ({
       title="Add a New User"
       onCancel={addOnCancel}
       onOk={() => {
-        form.validateFields().then((values) => {
-          form.resetFields();
-          addOnCreate(values);
-        });
+        form
+          .validateFields()
+          .then((values) => {
+            form.resetFields();
+            addOnCreate(values);
+          })
+          .catch((errorInfo) => {
+            // hypothetically setting `scrollToFirstError` on the form should do this (or at least
+            // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
+            // input directly.
+            document
+              .getElementById(errorInfo.errorFields?.[0].name?.[0])
+              ?.focus();
+          });
       }}
     >
-      <Alert
-        message="Caution!"
-        description="This form should only be used by members of the Polaris team."
-        type="warning"
-        showIcon
-      />
       <br />
       <Form
         form={form}
         layout="horizontal"
         onFinish={addOnCreate}
-        labelCol={{ span: 6 }}
+        labelCol={{ span: 8 }}
       >
+        <Form.Item
+          name="reason"
+          label="Reason for addition"
+          rules={[
+            {
+              required: true,
+              message: "Please input a reason for the change.",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <hr />
         <Form.Item
           name="emailAddress"
           label="Email Address"

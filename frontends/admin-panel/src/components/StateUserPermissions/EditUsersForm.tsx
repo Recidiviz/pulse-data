@@ -28,9 +28,9 @@ export const CreateEditUserForm = ({
   selectedEmails,
 }: {
   editVisible: boolean;
-  editOnCreate: (arg0: StateUserPermissionsResponse) => Promise<void>;
+  editOnCreate: (arg0: StateUserPermissionsRequest) => Promise<void>;
   editOnCancel: () => void;
-  onRevokeAccess: () => Promise<void>;
+  onRevokeAccess: (reason: string) => Promise<void>;
   selectedEmails: React.Key[];
 }): JSX.Element => {
   const { Option } = Select;
@@ -49,17 +49,35 @@ export const CreateEditUserForm = ({
     editOnCancel();
   };
   const handleEdit = () => {
-    form.validateFields().then((values) => {
-      form.resetFields();
-      showPermissions(false);
-      editOnCreate(values);
-    });
+    form
+      .validateFields()
+      .then((values) => {
+        form.resetFields();
+        showPermissions(false);
+        editOnCreate(values);
+      })
+      .catch((errorInfo) => {
+        // hypothetically setting `scrollToFirstError` on the form should do this (or at least
+        // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
+        // input directly.
+        document.getElementById(errorInfo.errorFields?.[0].name?.[0])?.focus();
+      });
   };
 
   const handleRevokeAccess = () => {
-    form.resetFields();
-    showPermissions(false);
-    onRevokeAccess();
+    form
+      .validateFields()
+      .then((values) => {
+        form.resetFields();
+        showPermissions(false);
+        onRevokeAccess(values.reason);
+      })
+      .catch((errorInfo) => {
+        // hypothetically setting `scrollToFirstError` on the form should do this (or at least
+        // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
+        // input directly.
+        document.getElementById(errorInfo.errorFields?.[0]?.name?.[0])?.focus();
+      });
   };
 
   const confirm = () =>
@@ -108,6 +126,19 @@ export const CreateEditUserForm = ({
         </span>
       </p>
       <Form form={form} layout="horizontal" onFinish={editOnCreate}>
+        <Form.Item
+          name="reason"
+          label="Reason for modification"
+          rules={[
+            {
+              required: true,
+              message: "Please input a reason for the change.",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <hr />
         <Form.Item name="role" label="Role" labelCol={{ span: 5 }}>
           <Input />
         </Form.Item>

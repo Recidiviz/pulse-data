@@ -127,22 +127,13 @@ export const getStateRoleDefaultPermissions = async (): Promise<Response> => {
 };
 
 export const createNewUser = async (
-  email: string,
-  stateCode: string,
-  externalId: string | undefined,
-  role: string,
-  district: string | undefined,
-  firstName: string | undefined,
-  lastName: string | undefined
+  request: AddUserRequest
 ): Promise<Response> => {
-  return postAuthWithURLAndBody(`/users/${email}`, {
-    stateCode,
-    externalId,
-    role,
-    district,
-    firstName,
-    lastName,
-  });
+  const { emailAddress, ...rest } = request;
+  return postAuthWithURLAndBody(
+    `/users/${emailAddress}`,
+    rest as unknown as Record<string, unknown>
+  );
 };
 
 export const updateUser = async ({
@@ -154,6 +145,7 @@ export const updateUser = async ({
   firstName,
   lastName,
   blocked = false,
+  reason,
 }: {
   email: string;
   stateCode: string;
@@ -163,6 +155,7 @@ export const updateUser = async ({
   firstName?: string;
   lastName?: string;
   blocked?: boolean;
+  reason: string;
 }): Promise<Response> => {
   return patchAuthWithURLAndBody(`/users/${email}`, {
     stateCode,
@@ -172,11 +165,13 @@ export const updateUser = async ({
     firstName,
     lastName,
     blocked,
+    reason,
   });
 };
 
 export const updateUserPermissions = async (
   email: string,
+  reason: string,
   canAccessLeadershipDashboard?: boolean,
   canAccessCaseTriage?: boolean,
   shouldSeeBetaCharts?: boolean,
@@ -189,17 +184,22 @@ export const updateUserPermissions = async (
     shouldSeeBetaCharts,
     routes,
     featureVariants,
+    reason,
   });
 };
 
 export const deleteCustomUserPermissions = async (
-  email: string
+  email: string,
+  reason: string
 ): Promise<Response> => {
-  return deleteResource(`/users/${email}/permissions`);
+  return deleteResource(`/users/${email}/permissions`, { reason });
 };
 
-export const blockUser = async (email: string): Promise<Response> => {
-  return deleteResource(`/users/${email}`);
+export const blockUser = async (
+  email: string,
+  reason: string
+): Promise<Response> => {
+  return deleteResource(`/users/${email}`, { reason });
 };
 
 export const createStateRolePermissions = async (
