@@ -25,16 +25,19 @@ interface InstanceRawFileMetadataProps {
   stateCode: string;
   instance: DirectIngestInstance;
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
+  secondaryRawDataImportEnabled: boolean;
 }
 
 const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
   stateCode,
   instance,
   ingestRawFileProcessingStatus: ingestFileProcessingStatus,
+  secondaryRawDataImportEnabled,
 }) => {
   // TODO(#12387): Update this once secondary reruns are available for all states.
   const isSecondaryUsingPrimary =
-    instance === DirectIngestInstance.SECONDARY && stateCode !== "US_OZ";
+    instance === DirectIngestInstance.SECONDARY &&
+    !secondaryRawDataImportEnabled;
 
   return (
     <div>

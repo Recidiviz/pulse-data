@@ -19,6 +19,7 @@ import { Alert, Button, Form, Input, Modal } from "antd";
 import { rem } from "polished";
 import * as React from "react";
 import { useState } from "react";
+import { secondaryRawDataImportEnabledInState } from "../../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
   GCP_STORAGE_BASE_URL,
@@ -110,7 +111,9 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
       ingestRerunRawDataSourceInstance,
       setIngestRerunRawDataSourceInstance,
     ] = useState<DirectIngestInstance | undefined>(undefined);
-
+    // TODO(#13406): Remove flag once raw data can be processed in all states in secondary.
+    const [secondaryRawDataImportEnabled, setSecondaryRawDataImportEnabled] =
+      useState<boolean>(false);
     const [
       currentSecondaryIngestInstanceStatus,
       setSecondaryIngestInstanceStatus,
@@ -119,15 +122,17 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
     const canStartRerun =
       currentSecondaryIngestInstanceStatus === "NO_RERUN_IN_PROGRESS";
 
-    // TODO(#13406): Remove flag once raw data can be processed in all states in secondary.
-    const disabledSecondaryIngestRerunRawDataSource = regionCode !== "US_OZ";
     const getData = React.useCallback(async () => {
       if (regionCode) {
-        const secondaryStatus = await fetchCurrentIngestInstanceStatus(
-          regionCode,
-          DirectIngestInstance.SECONDARY
-        );
-        setSecondaryIngestInstanceStatus(secondaryStatus);
+        const response = await Promise.all([
+          fetchCurrentIngestInstanceStatus(
+            regionCode,
+            DirectIngestInstance.SECONDARY
+          ),
+          secondaryRawDataImportEnabledInState(regionCode),
+        ]);
+        setSecondaryIngestInstanceStatus(response[0]);
+        setSecondaryRawDataImportEnabled(await response[1].json());
       }
     }, [regionCode]);
 
@@ -203,7 +208,7 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             generate ingest view results based on that data.
           </li>
         </ul>
-        {disabledSecondaryIngestRerunRawDataSource ? (
+        {!secondaryRawDataImportEnabled ? (
           <i>
             For now, the raw data source for secondary reruns can only be
             PRIMARY.
@@ -226,7 +231,7 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
           </Button>
           <Button
             // TODO(#13406): Remove 'disabled' setting once raw data can be processed in secondary.
-            disabled={disabledSecondaryIngestRerunRawDataSource}
+            disabled={!secondaryRawDataImportEnabled}
             style={{ marginRight: 5 }}
             onClick={async () => {
               setIngestRerunRawDataSourceInstance(

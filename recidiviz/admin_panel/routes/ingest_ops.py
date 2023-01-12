@@ -65,6 +65,7 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_man
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
+    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.flash_database_tools import (
@@ -974,3 +975,22 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
         except ValueError as error:
             logging.exception(error)
             return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR
+
+    @bp.route(
+        "/api/ingest_operations/secondary_raw_data_import_enabled_in_state",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _secondary_raw_data_import_enabled_in_state() -> Tuple[
+        Union[str, Response], HTTPStatus
+    ]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        return (
+            jsonify(secondary_raw_data_import_enabled_in_state(state_code)),
+            HTTPStatus.OK,
+        )
