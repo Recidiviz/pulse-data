@@ -364,8 +364,8 @@ class JusticeCountsSchemaTestObjects:
             is_metric_enabled=True,
             contexts=[
                 MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value="additional context"
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                    value="our metrics are different because xyz"
                     if not nullify_contexts_and_disaggregations
                     else None,
                 ),
@@ -387,8 +387,8 @@ class JusticeCountsSchemaTestObjects:
             is_metric_enabled=is_metric_enabled,
             contexts=[
                 MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value="this additional context provides contexts",
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                    value="our metrics are different because xyz",
                 ),
             ]
             if include_contexts
@@ -731,10 +731,10 @@ class JusticeCountsSchemaTestObjects:
             is_metric_enabled=True,
             contexts=[
                 MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value=None
-                    if nullify_contexts_and_disaggregations
-                    else "additional context",
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                    value="our metrics are different because xyz"
+                    if not nullify_contexts_and_disaggregations
+                    else None,
                 ),
             ],
             aggregated_dimensions=[
@@ -772,12 +772,7 @@ class JusticeCountsSchemaTestObjects:
             key=law_enforcement.reported_crime.key,
             is_metric_enabled=True,
             value=230,
-            contexts=[
-                MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value="this is a test for additional context",
-                ),
-            ],
+            contexts=[],
             aggregated_dimensions=[
                 MetricAggregatedDimensionData(
                     dimension_to_value={
@@ -806,8 +801,8 @@ class JusticeCountsSchemaTestObjects:
             value=120,
             contexts=[
                 MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value="this is a test for additional context",
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                    value="our metrics are different because xyz",
                 ),
             ],
             aggregated_dimensions=[
@@ -838,10 +833,5 @@ class JusticeCountsSchemaTestObjects:
             key=law_enforcement.civilian_complaints_sustained.key,
             value=30,
             is_metric_enabled=False,
-            contexts=[
-                MetricContextData(
-                    key=ContextKey.ADDITIONAL_CONTEXT,
-                    value=None,
-                ),
-            ],
+            contexts=[],
         )

@@ -257,14 +257,17 @@ class MetricDefinition:
         Appends an additional context to the list of required/requested contexts. Returns
         only a list containing the additional contexts if no contexts are associated with the metric.
         """
-        additional_context: List[Context] = [
-            Context(
-                key=ContextKey.ADDITIONAL_CONTEXT,
-                value_type=ValueType.TEXT,
-                label="Please provide additional context.",
-                required=False,
+        additional_context: List[Context] = []
+
+        if self.includes_excludes is not None:
+            additional_context.append(
+                Context(
+                    key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                    value_type=ValueType.TEXT,
+                    label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                    required=False,
+                )
             )
-        ]
 
         return (
             self.specified_contexts + additional_context
