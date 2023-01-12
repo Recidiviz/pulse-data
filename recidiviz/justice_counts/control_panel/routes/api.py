@@ -36,7 +36,9 @@ from recidiviz.justice_counts.control_panel.constants import ControlPanelPermiss
 from recidiviz.justice_counts.control_panel.utils import (
     get_agency_ids_from_session,
     get_auth0_user_id,
-    raise_if_user_is_unauthorized,
+    raise_if_user_is_not_agency_admin_or_recidiviz_admin,
+    raise_if_user_is_not_in_agency,
+    raise_if_user_is_not_recidiviz_admin,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
@@ -79,11 +81,14 @@ def get_api_blueprint(
         """
         Currently, the supported updates are:
             - Changing the set of systems associated with the agency
-            - Adding a description of the agency's purpose and functions
+            - Updating AgencySettings
         """
         try:
             request_json = assert_type(request.json, dict)
-            raise_if_user_is_unauthorized(agency_id=agency_id)
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            raise_if_user_is_not_agency_admin_or_recidiviz_admin(
+                auth0_user_id=get_auth0_user_id(request_dict=request_json)
+            )
 
             systems = request_json.get("systems")
             if systems is not None:
@@ -118,7 +123,7 @@ def get_api_blueprint(
         """
 
         try:
-            raise_if_user_is_unauthorized(agency_id=agency_id)
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
 
             agency_settings = AgencySettingInterface.get_agency_settings(
                 session=current_session,
@@ -234,7 +239,7 @@ def get_api_blueprint(
         Used for rendering the Reports Overview page.
         """
         try:
-            raise_if_user_is_unauthorized(agency_id=agency_id)
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )
@@ -267,7 +272,7 @@ def get_api_blueprint(
             report = ReportInterface.get_report_by_id(
                 session=current_session, report_id=report_id_int
             )
-            raise_if_user_is_unauthorized(agency_id=report.source_id)
+            raise_if_user_is_not_in_agency(agency_id=report.source_id)
 
             report_metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=current_session
@@ -311,7 +316,7 @@ def get_api_blueprint(
                 session=current_session,
                 report_id=report_id_int,
             )
-            raise_if_user_is_unauthorized(agency_id=report.source_id)
+            raise_if_user_is_not_in_agency(agency_id=report.source_id)
 
             _check_for_conflicts(
                 report=report,
@@ -368,22 +373,12 @@ def get_api_blueprint(
             month = assert_type(request_json.get("month"), int)
             year = assert_type(request_json.get("year"), int)
             frequency = assert_type(request_json.get("frequency"), str)
+            auth0_user_id = get_auth0_user_id(request_dict=request_json)
             user_account = UserAccountInterface.get_user_by_auth0_user_id(
                 current_session,
-                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+                auth0_user_id=auth0_user_id,
             )
-            permissions = g.user_context.permissions
-            if (
-                not permissions
-                or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
-            ):
-                raise JusticeCountsServerError(
-                    code="justice_counts_create_report_permission",
-                    description=(
-                        f"User {user_account.id} does not have permission to "
-                        "create reports for agency {agency_id}."
-                    ),
-                )
+            raise_if_user_is_not_recidiviz_admin(auth0_user_id=auth0_user_id)
 
             try:
                 report = ReportInterface.create_report(
@@ -419,15 +414,9 @@ def get_api_blueprint(
         try:
             request_json = assert_type(request.json, dict)
             report_ids = request_json.get("report_ids")
-            permissions = g.user_context.permissions
-            if (
-                not permissions
-                or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
-            ):
-                raise JusticeCountsServerError(
-                    code="justice_counts_delete_report_permission",
-                    description=("User does not have permission to delete reports."),
-                )
+            raise_if_user_is_not_recidiviz_admin(
+                auth0_user_id=get_auth0_user_id(request_dict=request_json)
+            )
 
             if report_ids is None or len(report_ids) == 0:
                 raise JusticeCountsServerError(
@@ -452,7 +441,7 @@ def get_api_blueprint(
         Used by the Metric Configuration page in Settings.
         """
         try:
-            raise_if_user_is_unauthorized(agency_id=agency_id)
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
@@ -476,7 +465,7 @@ def get_api_blueprint(
         """
         try:
             request_json = assert_type(request.json, dict)
-            raise_if_user_is_unauthorized(agency_id=agency_id)
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
 
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
@@ -816,7 +805,7 @@ def get_api_blueprint(
     @auth_decorator
     def get_datapoints_by_agency_id(agency_id: int) -> Response:
         try:
-            raise_if_user_is_unauthorized(agency_id=agency_id)
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
             return get_agency_datapoints(agency_id=agency_id)
         except Exception as e:
             raise _get_error(error=e) from e
