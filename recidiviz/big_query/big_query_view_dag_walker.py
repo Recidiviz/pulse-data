@@ -173,6 +173,7 @@ class BigQueryViewDagNode:
         # Note: Must use add_child_key() to populate this member variable before using.
         self.child_node_keys: Set[DagKey] = set()
         self.parent_node_keys: Set[DagKey] = set()
+        self.source_table_addresses: Set[BigQueryAddress] = set()
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
         self.is_root = is_root
         self.is_leaf = is_leaf
@@ -191,6 +192,16 @@ class BigQueryViewDagNode:
     def parent_tables(self) -> Set[BigQueryAddress]:
         """The set of actual tables/views referenced by this view."""
         return self.view.parent_tables
+
+    @property
+    def source_addresses(self) -> Set[BigQueryAddress]:
+        """
+        The set of addresses referenced by this view which are
+        not also nodes in the DAG. When the DAG contains all
+        existing views, this result gives the source tables
+        referenced by this view.
+        """
+        return self.source_table_addresses
 
     @property
     def parent_keys(self) -> Set[DagKey]:
@@ -215,6 +226,9 @@ class BigQueryViewDagNode:
 
     def add_parent_key(self, dag_key: DagKey) -> None:
         self.parent_node_keys.add(dag_key)
+
+    def add_source_address(self, source_address: BigQueryAddress) -> None:
+        self.source_table_addresses.add(source_address)
 
     def set_materialized_addresss(
         self, materialized_addresss: Dict[BigQueryAddress, DagKey]
@@ -400,6 +414,8 @@ class BigQueryViewDagWalker:
                     parent_node.add_child_key(key)
                     node.is_root = False
                     node.add_parent_key(parent_key)
+                else:
+                    node.add_source_address(parent_key.view_address)
 
     def _check_for_cycles(self) -> None:
         """
@@ -904,10 +920,8 @@ class BigQueryViewDagWalker:
         def _build_dfs_str(
             v: BigQueryView, parent_results: Dict[BigQueryView, str]
         ) -> str:
-            view_parent_addresses = {p.address for p in parent_results}
             node = self.node_for_view(v)
-            parent_keys = {key.view_address for key in node.parent_keys}
-            source_table_addresses = parent_keys - view_parent_addresses
+            source_table_addresses = node.source_addresses
             return self._build_dfs_str(
                 v=v,
                 parent_view_dfs_strs=parent_results,
