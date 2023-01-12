@@ -329,7 +329,7 @@ CONTACTS_HOME_VISIT = EventCountMetric(
 )
 
 DAYS_EMPLOYED_365 = AssignmentSpanDaysMetric(
-    name="days_employed",
+    name="days_employed_365",
     display_name="Days Employed Within 1 Year Of Assignment",
     description="Sum of the number of days clients had valid employment status within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -341,7 +341,7 @@ DAYS_EMPLOYED_365 = AssignmentSpanDaysMetric(
 )
 
 DAYS_IN_COMMUNITY_365 = AssignmentSpanDaysMetric(
-    name="days_in_community",
+    name="days_in_community_365",
     display_name="Days In Community Within 1 Year Of Assignment",
     description="Sum of the number of days spent in community (supervision or at liberty) within 1 year following "
     "assignment, for all assignments during the analysis period",
@@ -353,7 +353,7 @@ DAYS_IN_COMMUNITY_365 = AssignmentSpanDaysMetric(
 )
 
 DAYS_INCARCERATED_365 = AssignmentSpanDaysMetric(
-    name="days_incarcerated",
+    name="days_incarcerated_365",
     display_name="Days Incarcerated Within 1 Year Of Assignment",
     description="Sum of the number of incarcerated days within 1 year following assignment, for all assignments "
     "during the analysis period",
@@ -385,7 +385,7 @@ DAYS_SINCE_MOST_RECENT_LSIR = DailyAvgTimeSinceSpanStartMetric(
 )
 
 DAYS_TO_FIRST_ABSCONSION_BENCH_WARRANT_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_absconsion_bench_warrant",
+    name="days_to_first_absconsion_bench_warrant_365",
     display_name="Days To First Absconsion/Bench Warrant (Legal Status) Within 1 Year After Assignment",
     description="Sum of the number of days prior to first absconsion/bench warrant legal status within 1 year "
     "following assignment, for all assignments during the analysis period",
@@ -395,7 +395,7 @@ DAYS_TO_FIRST_ABSCONSION_BENCH_WARRANT_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_INCARCERATION_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_incarceration",
+    name="days_to_first_incarceration_365",
     display_name="Days To First Incarceration Within 1 Year After Assignment",
     description="Sum of the number of days prior to first incarceration within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -405,7 +405,7 @@ DAYS_TO_FIRST_INCARCERATION_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_SUPERVISION_START_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_supervision_start",
+    name="days_to_first_supervision_start_365",
     display_name="Days To First Supervision Start Within 1 Year After Assignment",
     description="Sum of the number of days prior to first supervision start within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -415,7 +415,7 @@ DAYS_TO_FIRST_SUPERVISION_START_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation",
+    name="days_to_first_violation_365",
     display_name="Days To First Violation Within 1 Year After Assignment",
     description="Sum of the number of days prior to first violation within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -425,7 +425,7 @@ DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_VIOLATION_ABSCONDED_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_absconded",
+    name="days_to_first_violation_absconded_365",
     display_name="Days To First Absconsion Violation Within 1 Year After Assignment",
     description="Sum of the number of days prior to first absconsion violation within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -435,7 +435,7 @@ DAYS_TO_FIRST_VIOLATION_ABSCONDED_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_VIOLATION_NEW_CRIME_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_new_crime",
+    name="days_to_first_violation_new_crime_365",
     display_name="Days To First New Crime Violation Within 1 Year After Assignment",
     description="Sum of the number of days prior to first new crime violation within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -445,7 +445,7 @@ DAYS_TO_FIRST_VIOLATION_NEW_CRIME_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response",
+    name="days_to_first_violation_response_365",
     display_name="Days To First Violation Response Within 1 Year After Assignment",
     description="Sum of the number of days prior to first violation response within 1 year following assignment, "
     "for all assignments during the analysis period",
@@ -455,7 +455,7 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
 )
 
 DAYS_TO_FIRST_VIOLATION_RESPONSE_ABSCONDED_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response_absconded",
+    name="days_to_first_violation_response_absconded_365",
     display_name="Days To First Absconsion Violation Response Within 1 Year After Assignment",
     description="Sum of the number of days prior to first absconsion violation response within 1 year following "
     "assignment, for all assignments during the analysis period",
@@ -465,7 +465,7 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_ABSCONDED_365 = AssignmentDaysToFirstEventMetri
 )
 
 DAYS_TO_FIRST_VIOLATION_RESPONSE_NEW_CRIME_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response_new_crime",
+    name="days_to_first_violation_response_new_crime_365",
     display_name="Days To First New Crime Violation Response Within 1 Year After Assignment",
     description="Sum of the number of days prior to first new crime violation response within 1 year following "
     "assignment, for all assignments during the analysis period",
@@ -475,7 +475,7 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_NEW_CRIME_365 = AssignmentDaysToFirstEventMetri
 )
 
 DAYS_TO_FIRST_VIOLATION_RESPONSE_TECHNICAL_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response_technical",
+    name="days_to_first_violation_response_technical_365",
     display_name="Days To First Technical Violation Response Within 1 Year After Assignment",
     description="Sum of the number of days prior to first technical violation response within 1 year following "
     "assignment, for all assignments during the analysis period",
@@ -485,7 +485,7 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_TECHNICAL_365 = AssignmentDaysToFirstEventMetri
 )
 
 DAYS_TO_FIRST_VIOLATION_TECHNICAL_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_technical",
+    name="days_to_first_violation_technical_365",
     display_name="Days To First Technical Violation Within 1 Year After Assignment",
     description="Sum of the number of days prior to first technical violation within 1 year following assignment, "
     "for all assignments during the analysis period",

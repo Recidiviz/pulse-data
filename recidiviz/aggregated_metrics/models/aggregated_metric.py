@@ -106,7 +106,7 @@ class AssignmentEventAggregatedMetric(AggregatedMetric):
     window_length_days: int = 365
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        return f"SUM({self.name}_{self.window_length_days}) AS {self.name}_{self.window_length_days}"
+        return f"SUM({self.name}) AS {self.name}"
 
     @abc.abstractmethod
     def generate_aggregation_query_fragment(
@@ -393,11 +393,11 @@ class AssignmentSpanDaysMetric(
                       ),
                       DAY
                 ), 0)
-            ) AS {self.name}_{self.window_length_days}
+            ) AS {self.name}
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        return f"SUM({self.name}_{self.window_length_days}) AS {self.name}_{self.window_length_days}"
+        return f"SUM({self.name}) AS {self.name}"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -499,7 +499,7 @@ class AssignmentDaysToFirstEventMetric(
                         NULL
                     ), DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY)),
                 {assignment_date_col}, DAY
-            )) AS {self.name}_{self.window_length_days}
+            )) AS {self.name}
         """
 
 
