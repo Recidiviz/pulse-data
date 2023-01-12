@@ -46,6 +46,7 @@ _QUERY_TEMPLATE = f"""
         accounts for LIFE sentences in ISC data */
         GREATEST(life_sentence, lifetime_supervision) AS lifetime_flag,
       FROM `{{project_id}}.{{sessions_dataset}}.us_tn_sentences_preprocessed_materialized`
+      WHERE completion_date > date_imposed
     ),
     {create_sub_sessions_with_attributes('sentences')}
     , 

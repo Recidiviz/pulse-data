@@ -260,8 +260,7 @@ sex_offenses AS (
          latest_sentences.docket_numbers AS form_information_docket_numbers,
          latest_sentences.conviction_counties AS form_information_conviction_counties,
          stg.STGID AS form_information_gang_affiliation_id,      
-  -- TODO(#16285): Switch to complete_full_term_discharge_from_supervision_materialized when merged in
-  FROM `{{project_id}}.{{task_eligibility_dataset}}.supervision_level_downgrade_materialized`  tes
+  FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized`  tes
   LEFT JOIN sidebar_contact_notes_array arr
     USING(person_id)
   LEFT JOIN sex_offense_pse_code pse
