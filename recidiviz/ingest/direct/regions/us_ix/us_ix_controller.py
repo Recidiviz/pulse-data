@@ -22,7 +22,6 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils.environment import in_gcp_production
 
 
 class UsIxController(BaseDirectIngestController):
@@ -41,24 +40,17 @@ class UsIxController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        tags = []
-
-        if not in_gcp_production():
-            tags.extend(
-                [
-                    "person",
-                    "assessments",
-                    "drug_screen",
-                    "incarceration_period",
-                    "supervision_period",
-                    "incarceration_sentence",
-                    "supervision_sentence",
-                    "employment_periods",
-                    "charges",
-                    "supervision_violation",
-                    "supervision_violation_legacy",
-                    "supervision_contacts",
-                ]
-            )
-
-        return tags
+        return [
+            "person",
+            "assessments",
+            "drug_screen",
+            "incarceration_period",
+            "supervision_period",
+            "incarceration_sentence",
+            "supervision_sentence",
+            "employment_periods",
+            "charges",
+            "supervision_violation",
+            "supervision_violation_legacy",
+            "supervision_contacts",
+        ]
