@@ -51,17 +51,17 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.metrics.export import export_config
-from recidiviz.metrics.export.export_config import (
-    PRODUCTS_CONFIG_PATH,
-    BadProductExportSpecificationError,
-    ExportBigQueryViewConfig,
-    ProductConfigs,
-)
+from recidiviz.metrics.export.export_config import ExportBigQueryViewConfig
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import (
     OptimizedMetricBigQueryViewExportValidator,
 )
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import (
     OptimizedMetricBigQueryViewExporter,
+)
+from recidiviz.metrics.export.products.product_configs import (
+    PRODUCTS_CONFIG_PATH,
+    BadProductExportSpecificationError,
+    ProductConfigs,
 )
 from recidiviz.metrics.export.view_export_cloud_task_manager import (
     ViewExportCloudTaskManager,
@@ -71,7 +71,7 @@ from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import
 )
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.params import get_bool_param_value, get_str_param_value
 from recidiviz.utils.pubsub_helper import extract_pubsub_message_from_json
 
 m_failed_metric_export_validation = measure.MeasureInt(
@@ -199,7 +199,7 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
         return str(e), HTTPStatus.BAD_REQUEST
 
     # TODO(#4593): Remove dry_run after endpoint tested
-    dry_run = request.args.get("dry_run", default=False, type=bool)
+    dry_run = get_bool_param_value("dry_run", request.args, False)
     start = datetime.datetime.now()
 
     if dry_run:

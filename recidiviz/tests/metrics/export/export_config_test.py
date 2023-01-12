@@ -17,7 +17,6 @@
 """Tests the classes in the metric_export_config file."""
 import unittest
 from unittest import mock
-from unittest.mock import Mock
 
 from google.cloud import bigquery
 
@@ -29,201 +28,18 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export.export_config import (
     _VIEW_COLLECTION_EXPORT_CONFIGS,
     VIEW_COLLECTION_EXPORT_INDEX,
-    BadProductExportSpecificationError,
     ExportBigQueryViewConfig,
     ExportViewCollectionConfig,
-    ProductConfig,
-    ProductConfigs,
-    ProductExportConfig,
-    ProductStateConfig,
 )
+from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.ingest import fixtures
-from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.string import StrictStringFormatter
 
 
 def strip_each_line(text: str) -> str:
     return "\n".join([line.strip() for line in text.splitlines()])
-
-
-# TODO(#11034): Add a test to make sure products launched in production have the required calc metrics enabled
-# in production.
-class TestProductConfig(unittest.TestCase):
-    """Tests the functionality of the ProductConfig class."""
-
-    def test_product_config_valid(self) -> None:
-        _ = ProductConfig(
-            name="Test Product",
-            description="Test Product description",
-            exports=["EXPORT", "OTHER_EXPORT"],
-            states=[
-                ProductStateConfig(state_code="US_XX", environment="production"),
-                ProductStateConfig(state_code="US_WW", environment="staging"),
-            ],
-            environment=None,
-            is_state_agnostic=False,
-        )
-
-    def test_product_config_invalid_environment(self) -> None:
-        with self.assertRaises(ValueError):
-            _ = ProductConfig(
-                name="Test Product",
-                description="Test Product description",
-                exports=["EXPORT", "OTHER_EXPORT"],
-                states=[
-                    ProductStateConfig(state_code="US_XX", environment="production"),
-                    ProductStateConfig(state_code="US_WW", environment="staging"),
-                ],
-                environment="production",
-                is_state_agnostic=False,
-            )
-
-    def test_product_config_invalid_is_state_agnostic(self) -> None:
-        with self.assertRaises(ValueError):
-            _ = ProductConfig(
-                name="Test Product",
-                description="Test Product description",
-                exports=["EXPORT", "OTHER_EXPORT"],
-                states=[
-                    ProductStateConfig(state_code="US_XX", environment="production"),
-                    ProductStateConfig(state_code="US_WW", environment="staging"),
-                ],
-                environment="production",
-                is_state_agnostic=True,
-            )
-
-        with self.assertRaises(ValueError):
-            _ = ProductConfig(
-                name="Test Product",
-                description="Test Product description",
-                exports=["EXPORT", "OTHER_EXPORT"],
-                states=None,
-                environment="production",
-                is_state_agnostic=False,
-            )
-
-
-class TestProductConfigs(unittest.TestCase):
-    """Tests the functionality of the ProductConfigs class."""
-
-    def test_from_file(self) -> None:
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-
-        expected_product_configs = [
-            ProductConfig(
-                name="Test Product",
-                description="Test Product description",
-                exports=["EXPORT", "OTHER_EXPORT"],
-                states=[
-                    ProductStateConfig(state_code="US_XX", environment="production"),
-                    ProductStateConfig(state_code="US_WW", environment="staging"),
-                ],
-                environment=None,
-                is_state_agnostic=False,
-            ),
-            ProductConfig(
-                name="Test State Agnostic Product",
-                description="Test State Agnostic Product description",
-                exports=["MOCK_EXPORT_NAME"],
-                states=None,
-                environment="staging",
-                is_state_agnostic=True,
-            ),
-            ProductConfig(
-                name="Test Product Without Exports",
-                description="Test Product Without Exports description",
-                exports=[],
-                states=[ProductStateConfig(state_code="US_XX", environment="staging")],
-                environment=None,
-                is_state_agnostic=False,
-            ),
-        ]
-
-        self.assertEqual(expected_product_configs, product_configs.products)
-        self.assertEqual(expected_product_configs, product_configs.products)
-
-    def test_get_all_product_export_configs(self) -> None:
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-        export_configs = product_configs.get_all_export_configs()
-        expected = [
-            ProductExportConfig(export_job_name="EXPORT", state_code="US_XX"),
-            ProductExportConfig(export_job_name="EXPORT", state_code="US_WW"),
-            ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_XX"),
-            ProductExportConfig(export_job_name="OTHER_EXPORT", state_code="US_WW"),
-            ProductExportConfig(export_job_name="MOCK_EXPORT_NAME", state_code=None),
-        ]
-        self.assertEqual(expected, export_configs)
-
-    def test_get_export_config_valid(self) -> None:
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-        _export_config = product_configs.get_export_config(
-            export_job_name="EXPORT",
-            state_code="US_XX",
-        )
-
-    def test_get_export_config_missing_state_code(self) -> None:
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-        with self.assertRaisesRegex(
-            BadProductExportSpecificationError,
-            "Missing required state_code parameter for export_job_name EXPORT",
-        ):
-            product_configs.get_export_config(
-                export_job_name="EXPORT",
-            )
-
-    def test_get_export_config_too_many_exports(self) -> None:
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-        product_configs.products.append(product_configs.products[0])
-        with self.assertRaisesRegex(
-            BadProductExportSpecificationError,
-            "Wrong number of products returned for export for export_job_name EXPORT",
-        ):
-            product_configs.get_export_config(
-                export_job_name="EXPORT",
-            )
-
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_is_export_launched_in_env_is_launched(
-        self,
-        mock_get_gcp_environment: Mock,
-    ) -> None:
-        mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-        export_config = product_configs.is_export_launched_in_env(
-            export_job_name="EXPORT",
-            state_code="US_XX",
-        )
-        self.assertTrue(export_config)
-
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment")
-    def test_is_export_launched_in_env_not_launched(
-        self,
-        mock_get_gcp_environment: Mock,
-    ) -> None:
-        mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
-        product_configs = ProductConfigs.from_file(
-            path=fixtures.as_filepath("fixture_products.yaml")
-        )
-        export_config = product_configs.is_export_launched_in_env(
-            export_job_name="EXPORT",
-            state_code="US_WW",
-        )
-        self.assertFalse(export_config)
 
 
 class TestExportViewCollectionConfig(unittest.TestCase):
