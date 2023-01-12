@@ -45,7 +45,7 @@ VIEW_QUERY_TEMPLATE = f"""
         (DATE(EndDate)) as EndDate,
         TermStatusDesc,
         SentenceOrderEventTypeName,
-        _ParentSentenceId,
+        _parentsentenceid,
         Sequence,
         ChargeId
     FROM ({sentences_base}) sent
