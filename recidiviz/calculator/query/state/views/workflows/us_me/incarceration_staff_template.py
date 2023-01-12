@@ -30,20 +30,20 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = """
         SELECT DISTINCT
             ids.id,
             ids.state_code,
-            UPPER(roster.First_Name || " " || roster.Last_Name) AS name,
+            UPPER(state_table.First_Name || " " || state_table.Last_Name) AS name,
             CAST(NULL AS STRING) AS district,
-            LOWER(roster.Email_Tx) AS email,
+            LOWER(state_table.Email_Tx) AS email,
             false AS has_caseload,
             true AS has_facility_caseload,
-            UPPER(roster.First_Name) as given_names,
-            UPPER(roster.Last_Name) as surname,
+            UPPER(state_table.First_Name) as given_names,
+            UPPER(state_table.Last_Name) as surname,
         FROM caseload_staff_ids ids
-        LEFT JOIN `{project_id}.{us_me_raw_data_dataset}.CIS_900_EMPLOYEE` roster
-            ON roster.Employee_Id = ids.id
+        LEFT JOIN `{project_id}.{us_me_raw_data_dataset}.CIS_900_EMPLOYEE` state_table
+            ON state_table.Employee_Id = ids.id
     )
     , leadership_staff AS (
         SELECT DISTINCT
-            roster.Employee_Id AS id,
+            state_table.Employee_Id AS id,
             state_code,
             UPPER(lu.first_name || " " || lu.last_name) AS name,
             CAST(NULL AS STRING) AS district,
@@ -53,8 +53,23 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = """
             UPPER(lu.first_name) as given_names,
             UPPER(lu.last_name) as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_me_leadership_users` lu
-        LEFT JOIN `{project_id}.{us_me_raw_data_dataset}.CIS_900_EMPLOYEE` roster
-            ON LOWER(roster.Email_Tx) = LOWER(lu.email_address)
+        LEFT JOIN `{project_id}.{us_me_raw_data_dataset}.CIS_900_EMPLOYEE` state_table
+            ON LOWER(state_table.Email_Tx) = LOWER(lu.email_address)
+    ), staff_without_caseloads AS (
+        SELECT DISTINCT 
+            CAST(roster.external_id AS string) as id,
+            "US_ME" as state_code,
+            UPPER(employee_name) as name,
+            district as district,
+            email_address as email,
+            false AS has_caseload,
+            false AS has_facility_caseload,
+            UPPER(state_table.first_name) as given_names,
+            UPPER(state_table.last_name) as surname,
+        FROM `{project_id}.{static_reference_tables_dataset}.us_me_roster` roster
+        LEFT JOIN `{project_id}.{us_me_raw_data_dataset}.CIS_900_EMPLOYEE` state_table
+            ON LOWER(state_table.Email_Tx) = LOWER(roster.email_address)
+        WHERE CAST(roster.external_id AS STRING) NOT IN (SELECT id from caseload_staff_ids)
     )
     SELECT 
         {columns}
@@ -65,4 +80,10 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = """
     SELECT 
         {columns}
     FROM leadership_staff
+    
+    UNION ALL
+    
+    SELECT 
+        {columns}
+    FROM staff_without_caseloads
 """
