@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Export data from BigQuery metric views to configurable locations."""
+import datetime
 import logging
+import time
 from http import HTTPStatus
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -41,9 +43,13 @@ from recidiviz.big_query.export.export_query_config import (
     ExportOutputFormatType,
     ExportValidationType,
 )
+from recidiviz.big_query.view_export_success_persister import (
+    MetricViewDataExportSuccessPersister,
+)
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.metrics.export import export_config
 from recidiviz.metrics.export.export_config import (
     PRODUCTS_CONFIG_PATH,
@@ -166,6 +172,7 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
         export_job_name: Name of job to initiate export for (e.g. PO_MONTHLY).
         state_code: (Optional) State code to initiate export for (e.g. US_ID)
                     State code must be present if the job is not state agnostic.
+        dry_run: (Optional) If dry_run is true will wait for 10 seconds and then return success.
     Args:
         N/A
     Returns:
@@ -191,10 +198,31 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
         logging.exception(e)
         return str(e), HTTPStatus.BAD_REQUEST
 
-    if export_launched:
+    # TODO(#4593): Remove dry_run after endpoint tested
+    dry_run = request.args.get("dry_run", default=False, type=bool)
+    start = datetime.datetime.now()
+
+    if dry_run:
+        time.sleep(10)
+    elif export_launched:
         export_view_data_to_cloud_storage(
             export_job_name=export_job_name, state_code=state_code
         )
+
+    end = datetime.datetime.now()
+    runtime_sec = int((end - start).total_seconds())
+
+    success_persister = MetricViewDataExportSuccessPersister(
+        bq_client=BigQueryClientImpl()
+    )
+    success_persister.record_success_in_bq(
+        export_job_name=export_job_name,
+        state_code=state_code,
+        runtime_sec=runtime_sec,
+        cloud_task_id=get_current_cloud_task_id(),
+    )
+
+    logging.info("Finished saving success record to database.")
 
     return "", HTTPStatus.OK
 

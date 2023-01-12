@@ -46,7 +46,7 @@ VIEW_UPDATE_TRACKER_TABLE_ID = "view_update_tracker"
 
 ViEW_UPDATE_RUNTIME_SEC_COL = "view_update_runtime_sec"
 
-# Table that hold information about refresh BQ dataset jubs
+# Table that holds information about refresh BQ dataset jobs
 REFRESH_BQ_DATASET_TRACKER_TABLE_ID = "refresh_bq_dataset_tracker"
 
 REFRESH_BQ_DATASET_RUNTIME_SEC_COL = "refresh_bq_dataset_runtime_sec"
