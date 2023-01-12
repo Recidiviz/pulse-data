@@ -22,7 +22,7 @@ import unittest
 from http import HTTPStatus
 from typing import Any, Dict
 from unittest import mock
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import flask
 from flask import Flask
@@ -97,6 +97,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.metadata_patcher = mock.patch("recidiviz.utils.metadata.project_id")
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
+
+        self.metric_view_data_export_success_persister_patcher = patch(
+            "recidiviz.metrics.export.view_export_manager.MetricViewDataExportSuccessPersister"
+        )
+        self.metric_view_data_export_success_persister_constructor = (
+            self.metric_view_data_export_success_persister_patcher.start()
+        )
+        self.mock_metric_view_data_export_success_persister = (
+            self.metric_view_data_export_success_persister_constructor.return_value
+        )
 
         self.client_patcher = mock.patch(
             "recidiviz.metrics.export.view_export_manager.BigQueryClientImpl"
@@ -173,6 +183,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.gcs_factory_patcher.stop()
         self.mock_uuid_patcher.stop()
         self.mock_cloud_task_client_patcher.stop()
+        self.metric_view_data_export_success_persister_patcher.stop()
 
     @mock.patch("recidiviz.utils.environment.get_gcp_environment")
     def test_get_configs_for_export_name(
@@ -509,10 +520,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self, mock_export_view_data_to_cloud_storage: Mock
     ) -> None:
         with self.app.test_request_context():
+            current_cloud_task_id = "my_cloud_task_id_abcd"
+            headers: Dict[str, Any] = {
+                **self.headers,
+                "X-AppEngine-TaskName": current_cloud_task_id,
+            }
+
             mock_export_view_data_to_cloud_storage.return_value = None
             response = self.client.get(
                 self.metric_view_data_export_url,
-                headers=self.headers,
+                headers=headers,
                 query_string="export_job_name=EXPORT&state_code=US_XX",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -520,11 +537,74 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
             response = self.client.get(
                 self.metric_view_data_export_url,
-                headers=self.headers,
+                headers=headers,
                 query_string="export_job_name=export&state_code=us_xx",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
             mock_export_view_data_to_cloud_storage.assert_called()
+
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_persists_success(
+        self, mock_export_view_data_to_cloud_storage: Mock, _mock_bq_client: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            current_cloud_task_id = "my_cloud_task_id_abcd"
+            headers: Dict[str, Any] = {
+                **self.headers,
+                "X-AppEngine-TaskName": current_cloud_task_id,
+            }
+            export_job_name = "export"
+            state_code = "us_xx"
+
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=headers,
+                query_string=f"export_job_name={export_job_name}&state_code={state_code}",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_export_view_data_to_cloud_storage.assert_called()
+            self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
+                export_job_name=export_job_name,
+                state_code=state_code,
+                runtime_sec=mock.ANY,
+                cloud_task_id=current_cloud_task_id,
+            )
+
+    # TODO(#4593): Remove after dry run tested
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
+    )
+    def test_metric_view_data_export_dry_run(
+        self, mock_export_view_data_to_cloud_storage: Mock, _mock_bq_client: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            current_cloud_task_id = "my_cloud_task_id_abcd"
+            headers: Dict[str, Any] = {
+                **self.headers,
+                "X-AppEngine-TaskName": current_cloud_task_id,
+            }
+            export_job_name = "export"
+            state_code = "us_xx"
+
+            mock_export_view_data_to_cloud_storage.return_value = None
+            response = self.client.get(
+                self.metric_view_data_export_url,
+                headers=headers,
+                query_string=f"export_job_name={export_job_name}&state_code={state_code}&dry_run=true",
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            mock_export_view_data_to_cloud_storage.assert_not_called()
+            self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
+                export_job_name=export_job_name,
+                state_code=state_code,
+                runtime_sec=mock.ANY,
+                cloud_task_id=current_cloud_task_id,
+            )
 
     @mock.patch("recidiviz.utils.environment.get_gcp_environment")
     @mock.patch(
@@ -536,11 +616,17 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         mock_get_gcp_environment: Mock,
     ) -> None:
         with self.app.test_request_context():
+            current_cloud_task_id = "my_cloud_task_id_abcd"
+            headers: Dict[str, Any] = {
+                **self.headers,
+                "X-AppEngine-TaskName": current_cloud_task_id,
+            }
+
             mock_export_view_data_to_cloud_storage.return_value = None
             mock_get_gcp_environment.return_value = GCPEnvironment.PRODUCTION.value
             response = self.client.get(
                 self.metric_view_data_export_url,
-                headers=self.headers,
+                headers=headers,
                 query_string="export_job_name=EXPORT&state_code=US_WW",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -548,7 +634,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
             response = self.client.get(
                 self.metric_view_data_export_url,
-                headers=self.headers,
+                headers=headers,
                 query_string="export_job_name=export&state_code=us_ww",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -561,10 +647,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self, mock_export_view_data_to_cloud_storage: Mock
     ) -> None:
         with self.app.test_request_context():
+            current_cloud_task_id = "my_cloud_task_id_abcd"
+            headers: Dict[str, Any] = {
+                **self.headers,
+                "X-AppEngine-TaskName": current_cloud_task_id,
+            }
+
             mock_export_view_data_to_cloud_storage.return_value = None
             response = self.client.get(
                 self.metric_view_data_export_url,
-                headers=self.headers,
+                headers=headers,
                 query_string="export_job_name=MOCK_EXPORT_NAME",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
@@ -572,7 +664,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             # case insensitive
             response = self.client.get(
                 self.metric_view_data_export_url,
-                headers=self.headers,
+                headers=headers,
                 query_string="export_job_name=mock_export_name",
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
