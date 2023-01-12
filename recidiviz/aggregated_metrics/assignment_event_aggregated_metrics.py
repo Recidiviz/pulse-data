@@ -68,12 +68,7 @@ assignments AS (
         population_end_date AS end_date,
         period,
     """
-        + ",\n".join(
-            [
-                f"SUM({metric.name}_{metric.window_length_days}) AS {metric.name}_{metric.window_length_days}"
-                for metric in metrics
-            ]
-        )
+        + ",\n".join([f"SUM({metric.name}) AS {metric.name}" for metric in metrics])
         + f"""
     FROM (
         SELECT
