@@ -16,14 +16,17 @@
 # =============================================================================
 """Interface for working with the User model."""
 
-from typing import List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import coalesce
 
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.schema.justice_counts.schema import UserAccount
+from recidiviz.persistence.database.schema.justice_counts.schema import (
+    AgencyUserAccountAssociation,
+    UserAccount,
+)
 
 
 class UserAccountInterface:
@@ -36,6 +39,9 @@ class UserAccountInterface:
         name: Optional[str] = None,
         auth0_user_id: Optional[str] = None,
         email: Optional[str] = None,
+        agency_id_to_invitation_status: Optional[
+            Dict[int, schema.UserAccountInvitationStatus]
+        ] = None,
     ) -> UserAccount:
         """Creates a user or updates an existing user"""
         insert_statement = insert(UserAccount).values(
@@ -59,6 +65,22 @@ class UserAccountInterface:
         user = session.query(UserAccount).get(result.inserted_primary_key)
         if agencies is not None:
             user.agencies = agencies
+
+        if agency_id_to_invitation_status is not None:
+            user_accounts_associations = (
+                session.query(AgencyUserAccountAssociation)
+                .filter(
+                    AgencyUserAccountAssociation.user_account_id == user.id,
+                    AgencyUserAccountAssociation.agency_id.in_(
+                        list(agency_id_to_invitation_status.keys())
+                    ),
+                )
+                .all()
+            )
+            for association in user_accounts_associations:
+                association.invitation_status = agency_id_to_invitation_status.get(
+                    association.agency_id
+                )
 
         return user
 
@@ -89,3 +111,7 @@ class UserAccountInterface:
             .filter(UserAccount.id.in_(user_account_ids))
             .all()
         )
+
+    @staticmethod
+    def get_users_by_email(session: Session, emails: Set[str]) -> List[UserAccount]:
+        return session.query(UserAccount).filter(UserAccount.email.in_(emails)).all()

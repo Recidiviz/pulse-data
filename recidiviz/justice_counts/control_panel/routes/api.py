@@ -32,6 +32,9 @@ from werkzeug.wrappers import response
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
+from recidiviz.justice_counts.agency_user_account_association import (
+    AgencyUserAccountAssociationInterface,
+)
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
     get_agency_ids_from_session,
@@ -136,56 +139,75 @@ def get_api_blueprint(
             raise _get_error(error=e) from e
 
     ### Users ###
-
     @api_blueprint.route("/users", methods=["PATCH"])
     @auth_decorator
-    def update_user_email_and_name() -> Response:
+    def create_or_update_user_in_auth0() -> Response:
         """
-        This endpoint updates name and email in Auth0 and name in UserAccount table
+        This endpoint creates or updates a user in Auth0 and in the Justice Counts Database.
+        We save the information in both Justice Counts DB and Auth0 because the Justice Counts
+        Database, especially the UserAccount table acts as a cache for user metadata.
+        - If agency_id is passed in, we will send an invitation to a user to the agency.
+        - If agency_id is None, but name and email are specified, will will update the user's name
+        and email in Auth0 and in the Justice Counts Database.
         """
         try:
-            request_json = assert_type(request.json, dict)
-            auth0_user_id = get_auth0_user_id(request_dict=request_json)
-            name = request_json.get("name")
-            email = request_json.get("email")
-            onboarding_topics_completed = request_json.get(
-                "onboarding_topics_completed"
-            )
             if auth0_client is None:
                 return make_response(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
                     500,
                 )
-
-            if name is not None or email is not None:
-                auth0_client.update_user(
-                    user_id=auth0_user_id,
-                    name=name,
-                    email=email,
-                    email_verified=email is None,
-                )
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=current_session, agency_ids=get_agency_ids_from_session()
+            request_json = assert_type(request.json, dict)
+            auth0_user_id = get_auth0_user_id(request_dict=request_json)
+            name = request_json.get("name")
+            email = request_json.get("email")
+            invite_name = request_json.get("invite_name")
+            invite_email = request_json.get("invite_email")
+            agency_id = request_json.get("agency_id")
+            onboarding_topics_completed = request_json.get(
+                "onboarding_topics_completed"
             )
-            if name is not None:
-                UserAccountInterface.create_or_update_user(
+
+            if agency_id is not None:
+                # If agency_id is passed in, then we are adding a new user to an agency.
+                raise_if_user_is_unauthorized(agency_id=agency_id)
+                AgencyUserAccountAssociationInterface.invite_user_to_agency(
+                    name=assert_type(invite_name, str),
+                    email=assert_type(invite_email, str),
+                    agency_id=assert_type(agency_id, int),
+                    auth0_client=auth0_client,
                     session=current_session,
-                    name=name,
-                    auth0_user_id=auth0_user_id,
-                    agencies=agencies,
-                    email=email,
                 )
 
-            if email is not None:
-                auth0_client.send_verification_email(user_id=auth0_user_id)
-
-            if onboarding_topics_completed is not None:
-                auth0_client.update_user_app_metadata(
-                    user_id=auth0_user_id,
-                    app_metadata={
-                        "onboarding_topics_completed": onboarding_topics_completed
-                    },
+            else:
+                if name is not None or email is not None:
+                    auth0_client.update_user(
+                        user_id=auth0_user_id,
+                        name=name,
+                        email=email,
+                        email_verified=email is None,
+                    )
+                agencies = AgencyInterface.get_agencies_by_id(
+                    session=current_session, agency_ids=get_agency_ids_from_session()
                 )
+                if name is not None:
+                    UserAccountInterface.create_or_update_user(
+                        session=current_session,
+                        name=name,
+                        auth0_user_id=auth0_user_id,
+                        agencies=agencies,
+                        email=email,
+                    )
+
+                if email is not None:
+                    auth0_client.send_verification_email(user_id=auth0_user_id)
+
+                if onboarding_topics_completed is not None:
+                    auth0_client.update_user_app_metadata(
+                        user_id=auth0_user_id,
+                        app_metadata={
+                            "onboarding_topics_completed": onboarding_topics_completed
+                        },
+                    )
 
             current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

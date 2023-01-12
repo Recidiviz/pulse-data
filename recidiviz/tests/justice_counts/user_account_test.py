@@ -86,6 +86,28 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 agencies=[agency],
             )
 
+            # Can update invitation status
+            UserAccountInterface.create_or_update_user(
+                session=session,
+                auth0_user_id=user.auth0_user_id,
+                agency_id_to_invitation_status={
+                    agency.id: schema.UserAccountInvitationStatus.PENDING
+                },
+            )
+
+            user_account_association = (
+                session.query(schema.AgencyUserAccountAssociation)
+                .filter(
+                    schema.AgencyUserAccountAssociation.user_account_id == user.id,
+                    schema.AgencyUserAccountAssociation.agency_id == agency.id,
+                )
+                .one()
+            )
+            self.assertEqual(
+                user_account_association.invitation_status,
+                schema.UserAccountInvitationStatus.PENDING,
+            )
+
     def get_user_by_auth0_user_id(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             user = UserAccountInterface.get_user_by_auth0_user_id(

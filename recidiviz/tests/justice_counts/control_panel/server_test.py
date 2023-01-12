@@ -57,6 +57,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
     AgencySettingType,
+    AgencyUserAccountAssociation,
     Datapoint,
     DatapointHistory,
     Report,
@@ -67,6 +68,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     SpreadsheetStatus,
     System,
     UserAccount,
+    UserAccountInvitationStatus,
 )
 from recidiviz.tests.auth.utils import get_test_auth0_config
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
@@ -929,6 +931,86 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         db_user = self.session.query(UserAccount).one()
         self.assertEqual(db_user.name, new_name)
         self.assertEqual(db_user.email, new_email_address)
+
+    def test_invite_user_to_agency(self) -> None:
+        agency_A = self.test_schema_objects.test_agency_A
+        agency_B = self.test_schema_objects.test_agency_B
+        user_A = self.test_schema_objects.test_user_A
+        self.session.add_all([agency_A, agency_B, user_A])
+        self.session.commit()
+        self.session.refresh(agency_A)
+        self.session.refresh(agency_B)
+        email_address = "newuser@fake.com"
+        name = "NAME"
+        auth0_id = "auth0_id_A"
+        auth0_user = {
+            "email": email_address,
+            "user_id": auth0_id,
+            "name": name,
+            "app_metadata": JusticeCountsAuth0AppMetadata(
+                agency_ids=[agency_A.id], has_seen_onboarding={}
+            ),
+        }
+        self.test_auth0_client.create_JC_user.return_value = auth0_user
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user_A.auth0_user_id,
+                agency_ids=[agency_A.id, agency_B.id],
+            )
+            response = self.client.patch(
+                "/api/users",
+                json={
+                    "invite_name": name,
+                    "invite_email": email_address,
+                    "agency_id": agency_A.id,
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            # Creates new user in DB with auth0_id
+            db_user = self.session.query(UserAccount).one()
+            self.assertEqual(db_user.name, name)
+            self.assertEqual(db_user.email, email_address)
+            self.assertEqual(db_user.auth0_user_id, auth0_id)
+            user_account_association = self.session.query(
+                AgencyUserAccountAssociation
+            ).one()
+            self.assertEqual(user_account_association.user_account_id, db_user.id)
+            self.assertEqual(user_account_association.agency_id, agency_A.id)
+            self.assertEqual(
+                user_account_association.invitation_status,
+                UserAccountInvitationStatus.PENDING,
+            )
+
+            # Updates existing user with new agency
+            updated_auth0_user = {
+                "email": email_address,
+                "user_id": auth0_id,
+                "name": name,
+                "app_metadata": JusticeCountsAuth0AppMetadata(
+                    agency_ids=[agency_A.id, agency_B.id], has_seen_onboarding={}
+                ),
+            }
+            self.test_auth0_client.create_JC_user.return_value = updated_auth0_user
+            response = self.client.patch(
+                "/api/users",
+                json={
+                    "invite_name": name,
+                    "invite_email": email_address,
+                    "agency_id": agency_B.id,
+                },
+            )
+            db_user = self.session.query(UserAccount).one()
+            user_account_associations = self.session.query(
+                AgencyUserAccountAssociation
+            ).all()
+            self.assertEqual(len(user_account_associations), 2)
+            self.assertEqual(user_account_associations[1].agency_id, agency_B.id)
+            self.assertEqual(user_account_associations[1].user_account_id, db_user.id)
+            self.assertEqual(
+                user_account_associations[1].invitation_status,
+                UserAccountInvitationStatus.PENDING,
+            )
 
     def test_update_report(self) -> None:
         report = self.test_schema_objects.test_report_monthly

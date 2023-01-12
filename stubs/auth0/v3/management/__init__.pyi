@@ -39,6 +39,12 @@ class Users:
             str, Union[CaseTriageAuth0AppMetadata, JusticeCountsAuth0AppMetadata]
         ],
     ) -> Auth0User: ...
+    def create(
+        self,
+        body: Dict[
+            str, Union[CaseTriageAuth0AppMetadata, JusticeCountsAuth0AppMetadata]
+        ],
+    ) -> Auth0User: ...
     def get(self, id: str) -> Auth0User: ...
 
 class Jobs:
