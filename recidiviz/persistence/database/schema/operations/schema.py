@@ -186,25 +186,13 @@ class DirectIngestRawFileMetadata(OperationsBase):
     # Time when the file is actually discovered by our controller's handle_new_files endpoint.
     file_discovery_time = Column(DateTime(timezone=True))
 
-    # TODO(#17300): Unused. Remove this column once `file_discovery_time` usage is fully deployed in both staging
-    # and prod.
-    discovery_time = Column(DateTime)
-
     # Time when we have finished fully processing this file by uploading to BQ.
     file_processed_time = Column(DateTime(timezone=True))
-
-    # TODO(#17300): Unused. Remove this column once `file_processed_time` usage is fully deployed in both staging
-    # and prod.
-    processed_time = Column(DateTime)
 
     # The date we received the raw data. This is the field you should use when looking
     # for data current through date X. This is the date in the normalized file name
     # for this raw data file.
     update_datetime = Column(DateTime(timezone=True), nullable=False)
-
-    # TODO(#17300): Unused. Remove this column once `update_datetime` usage is fully
-    #  deployed in both staging and prod
-    datetimes_contained_upper_bound_inclusive = Column(DateTime, nullable=False)
 
     # The instance that this raw data was imported to.
     raw_data_instance = Column(direct_ingest_instance, nullable=False, index=True)

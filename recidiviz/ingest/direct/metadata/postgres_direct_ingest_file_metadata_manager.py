@@ -85,8 +85,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
                     file_discovery_time=datetime.datetime.now(tz=pytz.UTC),
                     file_processed_time=None,
                     update_datetime=parts.utc_upload_datetime,
-                    # TODO(#17300): Remove after full release of `update_datetime`
-                    datetimes_contained_upper_bound_inclusive=parts.utc_upload_datetime,
                     raw_data_instance=self.raw_data_instance.value,
                     is_invalidated=False,
                 )
