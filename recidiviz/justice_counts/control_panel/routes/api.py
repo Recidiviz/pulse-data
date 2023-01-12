@@ -169,7 +169,7 @@ def get_api_blueprint(
 
             if agency_id is not None:
                 # If agency_id is passed in, then we are adding a new user to an agency.
-                raise_if_user_is_unauthorized(agency_id=agency_id)
+                raise_if_user_is_not_in_agency(agency_id=agency_id)
                 AgencyUserAccountAssociationInterface.invite_user_to_agency(
                     name=assert_type(invite_name, str),
                     email=assert_type(invite_email, str),
