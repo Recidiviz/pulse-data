@@ -52,6 +52,17 @@ interface POFeedbackResponse {
 }
 
 // State User Permissions
+interface AddUserRequest {
+  emailAddress: string;
+  stateCode: string;
+  externalId: string;
+  role: string;
+  district: string;
+  firstName: string;
+  lastName: string;
+  reason: string;
+}
+
 interface StateUserPermissionsResponse {
   emailAddress: string;
   stateCode: string;
@@ -67,8 +78,12 @@ interface StateUserPermissionsResponse {
   externalId: string;
   role: string;
   district: string;
-  useCustomPermissions: boolean;
   featureVariants: Record<string, boolean>;
+}
+
+interface StateUserPermissionsRequest extends StateUserPermissionsResponse {
+  useCustomPermissions: boolean;
+  reason: string;
 }
 
 // State Role Permissions

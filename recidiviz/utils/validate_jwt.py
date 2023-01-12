@@ -36,7 +36,7 @@ _key_cache: Dict[str, Any] = {}
 
 def validate_iap_jwt_from_app_engine(
     iap_jwt: str, cloud_project_number: Optional[str], cloud_project_id: str
-) -> Tuple[Optional[str], Optional[str], str]:
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Validate a JWT passed to your App Engine app by Identity-Aware Proxy.
 
     Args:
@@ -55,7 +55,7 @@ def validate_iap_jwt_from_app_engine(
 
 def validate_iap_jwt_from_compute_engine(
     iap_jwt: str, cloud_project_number: str, backend_service_id: str
-) -> Tuple[Optional[str], Optional[str], str]:
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """Validate an IAP JWT for your (Compute|Container) Engine service.
 
     Args:
@@ -79,7 +79,7 @@ def validate_iap_jwt_from_compute_engine(
 
 def _validate_iap_jwt(
     iap_jwt: str, expected_audience: str
-) -> Tuple[Optional[str], Optional[str], str]:
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     try:
         key_id = jwt.get_unverified_header(iap_jwt).get("kid")
         if not key_id:
@@ -88,7 +88,7 @@ def _validate_iap_jwt(
         decoded_jwt = jwt.decode(
             iap_jwt, key, algorithms=["ES256"], audience=expected_audience
         )
-        return (decoded_jwt["sub"], decoded_jwt["email"], "")
+        return (decoded_jwt["sub"], decoded_jwt["email"], None)
     except (
         jwt.exceptions.InvalidTokenError,
         requests.exceptions.RequestException,

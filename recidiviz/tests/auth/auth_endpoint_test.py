@@ -19,7 +19,7 @@
 import json
 import os
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
@@ -163,6 +163,12 @@ class AuthEndpointTests(TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
+        self.assertIn(
+            f"INFO:root:State User Permissions: [test-user@recidiviz.org] is {expected}",
+            log_messages,
+        )
 
     @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
     def test_handle_import_user_restrictions_csv_to_sql(
@@ -869,18 +875,24 @@ class AuthEndpointTests(TestCase):
             feature_variants={"D": "E"},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
-        self.client.post(
-            self.add_user,
-            headers=self.headers,
-            json={
-                "stateCode": "US_MO",
-                "externalId": None,
-                "role": "leadership_role",
-                "district": "1, 2",
-                "firstName": None,
-                "lastName": None,
-            },
-        )
+        with self.assertLogs(level="INFO") as log:
+            self.client.post(
+                self.add_user,
+                headers=self.headers,
+                json={
+                    "stateCode": "US_MO",
+                    "externalId": None,
+                    "role": "leadership_role",
+                    "district": "1, 2",
+                    "firstName": None,
+                    "lastName": None,
+                    "reason": "test",
+                },
+            )
+            self.assertReasonLog(
+                log.output, "adding user parameter@domain.org with reason: test"
+            )
+
         with self.app.test_request_context():
             expected = [
                 {
@@ -1006,6 +1018,7 @@ class AuthEndpointTests(TestCase):
                 "district": "D1",
                 "firstName": "Test",
                 "lastName": "User",
+                "reason": "test",
             },
         )
         self.assertEqual(HTTPStatus.BAD_REQUEST, no_state.status_code)
@@ -1019,12 +1032,13 @@ class AuthEndpointTests(TestCase):
                 "district": "D1",
                 "firstName": "Test",
                 "lastName": "User",
+                "reason": "test",
             },
         )
         self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
 
     def test_add_user_repeat_email(self) -> None:
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             user_override_user = self.client.post(
                 self.add_user,
                 headers=self.headers,
@@ -1035,6 +1049,7 @@ class AuthEndpointTests(TestCase):
                     "district": "D1",
                     "firstName": "Test",
                     "lastName": "User",
+                    "reason": "Test",
                 },
             )
             expected = {  # no default permissions
@@ -1047,7 +1062,11 @@ class AuthEndpointTests(TestCase):
                 "stateCode": "US_ID",
                 "userHash": _PARAMETER_USER_HASH,
             }
+            self.assertEqual(HTTPStatus.OK, user_override_user.status_code)
             self.assertEqual(expected, json.loads(user_override_user.data))
+            self.assertReasonLog(
+                log.output, "adding user parameter@domain.org with reason: Test"
+            )
             repeat_user_override_user = self.client.post(
                 self.add_user,
                 headers=self.headers,
@@ -1058,9 +1077,9 @@ class AuthEndpointTests(TestCase):
                     "district": None,
                     "firstName": None,
                     "lastName": None,
+                    "reason": "Test",
                 },
             )
-            self.assertEqual(HTTPStatus.OK, user_override_user.status_code)
             self.assertEqual(
                 HTTPStatus.UNPROCESSABLE_ENTITY, repeat_user_override_user.status_code
             )
@@ -1316,13 +1335,14 @@ class AuthEndpointTests(TestCase):
             last_name="User",
         )
         add_entity_to_database_session(self.database_key, [user])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             new_role = self.client.patch(
                 self.update_user,
                 headers=self.headers,
                 json={
                     "stateCode": "US_CO",
                     "role": "leadership_role",
+                    "reason": "test",
                 },
             )
             expected_user = [
@@ -1351,6 +1371,9 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, new_role.status_code)
             self.assertEqual(expected_user, json.loads(response.data))
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
 
     def test_update_user_in_user_override(self) -> None:
         user = generate_fake_user_overrides(
@@ -1362,7 +1385,7 @@ class AuthEndpointTests(TestCase):
             last_name="Name",
         )
         add_entity_to_database_session(self.database_key, [user])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             new_name_id = self.client.patch(
                 self.update_user,
                 headers=self.headers,
@@ -1370,6 +1393,7 @@ class AuthEndpointTests(TestCase):
                     "stateCode": "US_TN",
                     "externalId": "Updated ID",
                     "firstName": "Updated",
+                    "reason": "test",
                 },
             )
             expected_user = [
@@ -1398,6 +1422,9 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.OK, new_name_id.status_code)
             self.assertEqual(expected_user, json.loads(response.data))
+            self.assertReasonLog(
+                log.output, "updating user parameter@domain.org with reason: test"
+            )
 
     def test_update_user_permissions_roster(self) -> None:
         user = generate_fake_rosters(
@@ -1413,7 +1440,7 @@ class AuthEndpointTests(TestCase):
             should_see_beta_charts=True,
         )
         add_entity_to_database_session(self.database_key, [user, default_co])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             update_routes = self.client.put(
                 self.update_user_permissions,
                 headers=self.headers,
@@ -1425,14 +1452,20 @@ class AuthEndpointTests(TestCase):
                     "featureVariants": {
                         "variant1": "true",
                     },
+                    "reason": "test",
                 },
             )
             self.assertEqual(HTTPStatus.OK, update_routes.status_code)
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for user user@domain.org with reason: test",
+            )
             wrong_type = self.client.put(
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
                     "routes": "prisonToSupervision",
+                    "reason": "test",
                 },
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
@@ -1483,21 +1516,27 @@ class AuthEndpointTests(TestCase):
             feature_variants={"C": "D"},
         )
         add_entity_to_database_session(self.database_key, [added_user, default_tn])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             update_tn_access = self.client.put(
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
                     "canAccessLeadershipDashboard": False,
                     "canAccessCaseTriage": False,
+                    "reason": "test",
                 },
             )
             self.assertEqual(HTTPStatus.OK, update_tn_access.status_code)
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for user user@domain.org with reason: test",
+            )
             wrong_type = self.client.put(
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
                     "canAccessLeadershipDashboard": "Should be boolean",
+                    "reason": "test",
                 },
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
@@ -1544,16 +1583,21 @@ class AuthEndpointTests(TestCase):
         add_entity_to_database_session(
             self.database_key, [added_user, override_permissions]
         )
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             response = self.client.put(
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
                     "canAccessLeadershipDashboard": True,
                     "canAccessCaseTriage": False,
+                    "reason": "test",
                 },
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for user user@domain.org with reason: test",
+            )
             expected = {
                 "canAccessCaseTriage": False,
                 "canAccessLeadershipDashboard": True,
@@ -1589,12 +1633,19 @@ class AuthEndpointTests(TestCase):
         add_entity_to_database_session(
             self.database_key, [roster_user, default, roster_user_override_permissions]
         )
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             delete_roster_user = self.client.delete(
                 self.delete_user_permissions,
                 headers=self.headers,
+                json={
+                    "reason": "test",
+                },
             )
             self.assertEqual(HTTPStatus.OK, delete_roster_user.status_code)
+            self.assertReasonLog(
+                log.output,
+                "removing custom permissions for user user@domain.org with reason: test",
+            )
             expected_response = [
                 {
                     "allowedSupervisionLocationIds": "D1",
@@ -1637,7 +1688,7 @@ class AuthEndpointTests(TestCase):
             feature_variants={"E": "F", "G": "H"},
         )
         add_entity_to_database_session(self.database_key, [user, default])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.put(
                 self.update_user_permissions,
                 headers=self.headers,
@@ -1646,13 +1697,21 @@ class AuthEndpointTests(TestCase):
                     "shouldSeeBetaCharts": False,
                     "routes": {"A": "B"},
                     "featureVariants": {"E": "F"},
+                    "reason": "test",
                 },
             )
             delete_roster_user = self.client.delete(
                 self.delete_user_permissions,
                 headers=self.headers,
+                json={
+                    "reason": "test",
+                },
             )
             self.assertEqual(HTTPStatus.OK, delete_roster_user.status_code)
+            self.assertReasonLog(
+                log.output,
+                "removing custom permissions for user user@domain.org with reason: test",
+            )
             expected_response = [
                 {
                     "allowedSupervisionLocationIds": "",
@@ -1700,12 +1759,18 @@ class AuthEndpointTests(TestCase):
             role="leadership_role",
         )
         add_entity_to_database_session(self.database_key, [user])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             delete = self.client.delete(
                 self.delete_user,
                 headers=self.headers,
+                json={
+                    "reason": "test",
+                },
             )
             self.assertEqual(HTTPStatus.OK, delete.status_code)
+            self.assertReasonLog(
+                log.output, "blocking user parameter@domain.org with reason: test"
+            )
             response = self.client.get(
                 self.users,
                 headers=self.headers,
@@ -1733,20 +1798,27 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(expected_response, json.loads(response.data))
 
     def test_delete_user_user_override(self) -> None:
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
                 self.add_user,
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
                     "role": "line_staff_user",
+                    "reason": "test",
                 },
             )
             delete = self.client.delete(
                 self.delete_user,
                 headers=self.headers,
+                json={
+                    "reason": "test",
+                },
             )
             self.assertEqual(HTTPStatus.OK, delete.status_code)
+            self.assertReasonLog(
+                log.output, "blocking user parameter@domain.org with reason: test"
+            )
             response = self.client.get(
                 self.users,
                 headers=self.headers,

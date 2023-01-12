@@ -18,7 +18,15 @@
 
 import base64
 import hashlib
-from typing import Any
+import logging
+from typing import Any, Optional, Tuple
+
+from flask import request
+
+from recidiviz.utils import metadata, validate_jwt
+
+_UNKNOWN_USER = "unknown"
+_REASON_KEY = "reason"
 
 
 def generate_user_hash(email: str) -> bytes:
@@ -48,3 +56,35 @@ def format_user_info(user: Any) -> dict[str, str]:
         "blocked": user.blocked,
         "userHash": user.user_hash,
     }
+
+
+def get_authenticated_user_email() -> Tuple[str, Optional[str]]:
+    jwt = request.headers.get("x-goog-iap-jwt-assertion")
+    if not jwt:
+        return (_UNKNOWN_USER, None)
+
+    project_id = metadata.project_id()
+    project_number = metadata.project_number()
+    (
+        _user_id,
+        user_email,
+        error_str,
+    ) = validate_jwt.validate_iap_jwt_from_app_engine(jwt, project_number, project_id)
+    return user_email or _UNKNOWN_USER, error_str
+
+
+def log_reason(request_dict: dict[str, Any], action: str) -> None:
+    reason = request_dict.pop(_REASON_KEY, None)
+    if not reason:
+        raise ValueError("Request is missing a reason")
+
+    authenticated_user, error_str = get_authenticated_user_email()
+    if error_str:
+        logging.error("Error determining logged-in user: %s", error_str)
+
+    logging.info(
+        "State User Permissions: [%s] is %s with reason: %s",
+        authenticated_user,
+        action,
+        reason,
+    )
