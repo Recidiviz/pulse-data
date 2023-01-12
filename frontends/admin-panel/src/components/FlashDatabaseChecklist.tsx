@@ -623,7 +623,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   <CodeBlock
                     enabled={
                       currentStepSection ===
-                      FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                      CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                     }
                   >
                     python -m
@@ -633,9 +633,6 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     True
                   </CodeBlock>
                 </p>
-              }
-              nextSection={
-                CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
               }
             />
             <StyledStep
@@ -654,6 +651,9 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   stateCode,
                   DirectIngestInstance.SECONDARY
                 )
+              }
+              nextSection={
+                CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
               }
             />
           </ChecklistSection>
@@ -967,9 +967,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   >
                     python -m
                     recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
-                    \ --project-id {projectId} \ --region{" "}
-                    {stateCode.toLowerCase()} \ --ingest-instance PRIMARY \
-                    --dry-run True
+                    --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
+                    --ingest-instance PRIMARY --skip-prompts True --dry-run True
                   </CodeBlock>
                 </p>
               }
@@ -1281,8 +1280,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             stepSection={FlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP}
             headerContents={
               <p>
-                Clean Up Raw Data and Associated Metadata in{" "}
-                <code>SECONDARY</code>
+                Clean Up Raw Data in <code>SECONDARY</code>
               </p>
             }
           >
@@ -1520,7 +1518,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     activeComponent = <Spin />;
   } else if (
     currentSecondaryRawDataSourceInstance === DirectIngestInstance.SECONDARY &&
-    !emptyIngestBuckets
+    !emptyIngestBuckets &&
+    proceedWithFlash === null
   ) {
     const formattedStateCode = stateInfo.code
       .toLowerCase()
@@ -1557,6 +1556,21 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             ))}
           </ul>
         )}
+        <h3 style={{ color: "green" }}>
+          Regardless of ingest bucket status, you may proceed with cleaning up
+          the secondary instance and canceling the flash:{" "}
+          <Button
+            type="primary"
+            onClick={async () => {
+              setProceedWithFlash(false);
+              moveToNextChecklistSection(
+                CancelFlashChecklistStepSection.PAUSE_OPERATIONS
+              );
+            }}
+          >
+            CLEAN UP SECONDARY + CANCEL FLASH
+          </Button>
+        </h3>
       </div>
     );
   } else if (
