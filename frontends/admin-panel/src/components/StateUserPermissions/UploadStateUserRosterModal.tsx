@@ -27,6 +27,7 @@ export const UploadStateUserRosterModal = ({
 }): JSX.Element => {
   const [stateCode, setStateCode] = useState<string | undefined>();
   const [role, setRole] = useState<string | undefined>();
+  const [reason, setReason] = useState<string | undefined>();
 
   const handleCancel = () => {
     onCancel();
@@ -58,6 +59,8 @@ export const UploadStateUserRosterModal = ({
         stateCode={stateCode}
         setRole={setRole}
         enableRoleSelector
+        setReason={setReason}
+        reason={reason}
       />
     </DraggableModal>
   );

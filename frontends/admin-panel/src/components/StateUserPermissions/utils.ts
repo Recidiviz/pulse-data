@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { FormInstance } from "antd";
 import { Routes } from "../constants";
 
 export const updatePermissionsObject = (
@@ -46,4 +47,19 @@ export const checkResponse = async (response: Response): Promise<void> => {
     const error = await response.text();
     throw error;
   }
+};
+
+export const validateAndFocus = <Param>(
+  form: FormInstance,
+  thenFunc: (values: Param) => void
+): void => {
+  form
+    .validateFields()
+    .then(thenFunc)
+    .catch((errorInfo) => {
+      // hypothetically setting `scrollToFirstError` on the form should do this (or at least
+      // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
+      // input directly.
+      document.getElementById(errorInfo.errorFields?.[0].name?.[0])?.focus();
+    });
 };

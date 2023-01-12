@@ -20,6 +20,7 @@ import UploadRoster from "./UploadRoster";
 
 const UploadLineStaffRostersView = (): JSX.Element => {
   const [stateCode, setStateCode] = useState<string | undefined>();
+  const [reason, setReason] = useState<string | undefined>();
 
   return (
     <>
@@ -36,6 +37,8 @@ const UploadLineStaffRostersView = (): JSX.Element => {
         ]}
         setStateCode={setStateCode}
         stateCode={stateCode}
+        setReason={setReason}
+        reason={reason}
       />
     </>
   );

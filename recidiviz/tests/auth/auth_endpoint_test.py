@@ -1112,15 +1112,19 @@ class AuthEndpointTests(TestCase):
     def test_upload_roster(self) -> None:
         with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file)
+            data = dict(file=file, reason="test")
 
-            with self.app.test_request_context():
+            with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
                 self.client.put(
                     self.upload_roster("us_xx"),
                     headers=self.headers,
                     data=data,
                     follow_redirects=True,
                     content_type="multipart/form-data",
+                )
+                self.assertReasonLog(
+                    log.output,
+                    "uploading roster for state us_xx, role all with reason: test",
                 )
                 expected = [
                     {
@@ -1169,7 +1173,7 @@ class AuthEndpointTests(TestCase):
     def test_upload_roster_with_incorrect_role(self) -> None:
         with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file)
+            data = dict(file=file, reason="test")
 
             with self.app.test_request_context():
                 response = self.client.put(
@@ -1196,7 +1200,7 @@ class AuthEndpointTests(TestCase):
             os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_email.csv"), "rb"
         ) as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file)
+            data = dict(file=file, reason="test")
 
             with self.app.test_request_context():
                 response = self.client.put(
@@ -1270,15 +1274,19 @@ class AuthEndpointTests(TestCase):
             os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
         ) as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file)
+            data = dict(file=file, reason="test")
 
-            with self.app.test_request_context():
+            with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
                 self.client.put(
                     self.upload_roster("us_xx", "leadership_role"),
                     headers=self.headers,
                     data=data,
                     follow_redirects=True,
                     content_type="multipart/form-data",
+                )
+                self.assertReasonLog(
+                    log.output,
+                    "uploading roster for state us_xx, role leadership_role with reason: test",
                 )
                 expected = [
                     {
