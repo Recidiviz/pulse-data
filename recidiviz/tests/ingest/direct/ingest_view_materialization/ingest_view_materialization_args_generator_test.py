@@ -81,8 +81,6 @@ class _RawFileMetadata:
     update_datetime: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
-    # TODO(#17300): Remove after full release of `update_datetime`
-    datetimes_contained_upper_bound_inclusive: datetime.datetime = attr.ib()
     file_discovery_time: datetime.datetime = attr.ib(
         validator=attr_validators.is_utc_timezone_aware_datetime
     )
@@ -354,10 +352,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 update_datetime=datetime.datetime(
                     2021, 7, 25, 9, 2, 24, tzinfo=pytz.UTC
                 ),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
-                    "2021-07-25 09:02:24"
-                ),
                 file_discovery_time=datetime.datetime(
                     2021, 7, 25, 9, 29, 33, tzinfo=pytz.UTC
                 ),
@@ -371,10 +365,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                 file_tag=file_tag_2,
                 update_datetime=datetime.datetime(
                     2021, 7, 25, 9, 2, 24, tzinfo=pytz.UTC
-                ),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime.fromisoformat(
-                    "2021-07-25 09:02:24"
                 ),
                 file_discovery_time=datetime.datetime(
                     2021, 7, 25, 9, 29, 37, tzinfo=pytz.UTC
@@ -447,8 +437,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
                     file_tag=raw_file_datetimes_item.file_tag,
                     normalized_file_name=f"{raw_file_datetimes_item.file_tag}_{i}_raw",
                     update_datetime=raw_file_datetimes_item.update_datetime,
-                    # TODO(#17300): Remove after full release of `update_datetime`
-                    datetimes_contained_upper_bound_inclusive=raw_file_datetimes_item.update_datetime,
                     file_discovery_time=raw_file_datetimes_item.file_discovery_time,
                     file_processed_time=raw_file_datetimes_item.file_processed_time.replace(
                         tzinfo=pytz.UTC

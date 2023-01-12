@@ -139,8 +139,6 @@ class TestDao(TestCase):
                     file_discovery_time=now,
                     file_processed_time=None,
                     update_datetime=now,
-                    # TODO(#17300): Remove after full release of `update_datetime`
-                    datetimes_contained_upper_bound_inclusive=now,
                     raw_data_instance=DirectIngestInstance.PRIMARY.value,
                     is_invalidated=False,
                 )

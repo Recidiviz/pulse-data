@@ -71,10 +71,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_discovery_time=datetime.datetime.now(),
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 10, 11, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 10, 11
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -96,10 +92,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_discovery_time=datetime.datetime(2019, 10, 12),
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 10, 11, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 10, 11
-                ),
                 file_processed_time=datetime.datetime.now(tz=pytz.UTC),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
@@ -122,10 +114,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_discovery_time=datetime.datetime(2019, 10, 11),
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 10, 10
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -135,10 +123,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_discovery_time=datetime.datetime(2019, 11, 12),
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 11, 11, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 11, 11
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -165,10 +149,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 file_discovery_time=datetime.datetime(2019, 10, 11),
                 update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 10, 10
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -194,10 +174,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_tag="file_tag",
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 10, 10
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -222,10 +198,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_discovery_time=datetime.datetime(2019, 10, 11),
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 10, 10
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
@@ -241,10 +213,6 @@ class OperationsSchemaTest(unittest.TestCase):
                 file_discovery_time=datetime.datetime(2019, 11, 12),
                 normalized_file_name="foo.txt",
                 update_datetime=datetime.datetime(2019, 11, 11, tzinfo=pytz.UTC),
-                # TODO(#17300): Remove after full release of `update_datetime`
-                datetimes_contained_upper_bound_inclusive=datetime.datetime(
-                    2019, 11, 11
-                ),
                 raw_data_instance=DirectIngestInstance.PRIMARY.value,
                 is_invalidated=False,
             )
