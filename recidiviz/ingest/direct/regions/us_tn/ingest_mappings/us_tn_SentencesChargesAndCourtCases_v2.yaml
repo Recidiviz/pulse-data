@@ -285,6 +285,16 @@ output:
                           - SentencedTo
                     # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
                     $custom_parser: us_tn_custom_parsers.parse_supervision_type
+                is_life:
+                  $in:
+                    $value: lifetime_flag
+                    $options:
+                      - $literal("L") # Life Sentence - this should not occur for supervision sentences, but worth keeping in mappings to see if it happens as a flag for investigation?
+                      - $literal("W") # Life sentence without parole - this should not occur for supervision sentences, but worth keeping in mappings to see if it happens as a flag for investigation?
+                      - $literal("H") # Habitual (equivalent to life sentence) - this should not occur for supervision sentences, but worth keeping in mappings to see if it happens as a flag for investigation?
+                      - $literal("is_life") # Lifetime flag for ISC Sentences
+                      - $literal("Y") # Lifetime Flag for Supervision
+                      - $literal("R") # Lifetime Flag for Supervision
                 conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 charges:
