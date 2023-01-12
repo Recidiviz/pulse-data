@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Alert, Button, Popconfirm } from "antd";
+import { Form, Button, Popconfirm, Input } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
@@ -26,9 +26,9 @@ export const CreateEditStateRoleForm = ({
   selectedRows,
 }: {
   editVisible: boolean;
-  editOnCreate: (arg0: StateRolePermissionsResponse) => Promise<void>;
+  editOnCreate: (arg0: StateRolePermissionsRequest) => Promise<void>;
   editOnCancel: () => void;
-  editOnDelete: () => Promise<void>;
+  editOnDelete: (reason: string) => Promise<void>;
   selectedRows: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const [form] = Form.useForm();
@@ -42,19 +42,37 @@ export const CreateEditStateRoleForm = ({
     editOnCancel();
   };
   const handleEdit = () => {
-    form.validateFields().then((values) => {
-      form.resetFields();
-      editOnCreate(values);
-    });
+    form
+      .validateFields()
+      .then((values) => {
+        form.resetFields();
+        editOnCreate(values);
+      })
+      .catch((errorInfo) => {
+        // hypothetically setting `scrollToFirstError` on the form should do this (or at least
+        // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
+        // input directly.
+        document.getElementById(errorInfo.errorFields?.[0].name?.[0])?.focus();
+      });
   };
   const handleDelete = () => {
-    form.resetFields();
-    editOnDelete();
+    form
+      .validateFields()
+      .then((values) => {
+        form.resetFields();
+        editOnDelete(values.reason);
+      })
+      .catch((errorInfo) => {
+        // hypothetically setting `scrollToFirstError` on the form should do this (or at least
+        // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
+        // input directly.
+        document.getElementById(errorInfo.errorFields?.[0].name?.[0])?.focus();
+      });
   };
   const confirm = () =>
     new Promise((resolve) => {
-      handleDelete();
       resolve(null);
+      handleDelete();
     });
   return (
     <DraggableModal
@@ -79,13 +97,6 @@ export const CreateEditStateRoleForm = ({
         </Button>,
       ]}
     >
-      <Alert
-        message="Caution!"
-        description="This form should only be used by members of the Polaris team."
-        type="warning"
-        showIcon
-      />
-      <br />
       <p>
         <span style={{ fontWeight: "bold" }}>
           {selectedRowNames.length} selected state/role(s):
@@ -97,6 +108,20 @@ export const CreateEditStateRoleForm = ({
       </p>
       <p>If any value is unset, the entry will not be changed.</p>
       <Form form={form} layout="horizontal" labelCol={{ span: 6 }}>
+        <Form.Item
+          name="reason"
+          label="Reason for modification"
+          labelCol={{ span: 9 }}
+          rules={[
+            {
+              required: true,
+              message: "Please input a reason for the change.",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <hr />
         <CustomPermissionsPanel hidePermissions={false} />
       </Form>
     </DraggableModal>

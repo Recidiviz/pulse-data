@@ -106,12 +106,14 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
+    reason,
     ...rest
-  }: StateRolePermissionsResponse) => {
+  }: StateRolePermissionsRequest) => {
     try {
       const createdRole = await createStateRolePermissions(
         stateCode,
         role,
+        reason,
         canAccessLeadershipDashboard,
         canAccessCaseTriage,
         shouldSeeBetaCharts,
@@ -133,14 +135,16 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     canAccessLeadershipDashboard,
     canAccessCaseTriage,
     shouldSeeBetaCharts,
+    reason,
     ...rest
-  }: StateRolePermissionsResponse) => {
+  }: StateRolePermissionsRequest) => {
     const results: Promise<unknown>[] = [];
     selectedRows.forEach((row: StateRolePermissionsResponse) => {
       const editRow = async () => {
         const response = await updateStateRolePermissions(
           row.stateCode,
           row.role,
+          reason,
           canAccessLeadershipDashboard,
           canAccessCaseTriage,
           shouldSeeBetaCharts,
@@ -154,11 +158,11 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     finishPromises(results, `Updated`);
   };
 
-  const onDelete = async () => {
+  const onDelete = async (reason: string) => {
     const results: Promise<unknown>[] = [];
     selectedRows.forEach((row) => {
       const deleteRow = async () => {
-        const response = await deleteStateRole(row.stateCode, row.role);
+        const response = await deleteStateRole(row.stateCode, row.role, reason);
         await checkResponse(response);
       };
       results.push(deleteRow());

@@ -1888,7 +1888,7 @@ class AuthEndpointTests(TestCase):
             routes={"route_A": True, "routeB": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
                 self.add_state_role("US_MO", "line_staff_role"),
                 headers=self.headers,
@@ -1897,7 +1897,12 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "shouldSeeBetaCharts": False,
                     "routes": {"route_A": True, "routeB": False},
+                    "reason": "test",
                 },
+            )
+            self.assertReasonLog(
+                log.output,
+                "adding permissions for state US_MO, role line_staff_role with reason: test",
             )
             expected = [
                 {
@@ -1926,7 +1931,7 @@ class AuthEndpointTests(TestCase):
             self.assertEqual(expected, json.loads(response.data))
 
     def test_states_add_state_role_missing_routes(self) -> None:
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
                 self.add_state_role("US_MO", "line_staff_role"),
                 headers=self.headers,
@@ -1934,7 +1939,12 @@ class AuthEndpointTests(TestCase):
                     "canAccessLeadershipDashboard": True,
                     "canAccessCaseTriage": True,
                     "shouldSeeBetaCharts": False,
+                    "reason": "test",
                 },
+            )
+            self.assertReasonLog(
+                log.output,
+                "adding permissions for state US_MO, role line_staff_role with reason: test",
             )
             expected = [
                 {
@@ -1987,15 +1997,16 @@ class AuthEndpointTests(TestCase):
             feature_variants={"C": True, "D": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             response = self.client.patch(
-                self.add_state_role("US_MO", "leadership_role"),
+                self.update_state_role("US_MO", "leadership_role"),
                 headers=self.headers,
                 json={
                     "canAccessCaseTriage": True,
                     "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
                     "featureVariants": {"D": True, "E": False},
+                    "reason": "test",
                 },
             )
 
@@ -2010,6 +2021,10 @@ class AuthEndpointTests(TestCase):
             }
 
             self.assertEqual(expected, json.loads(response.data))
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for state US_MO, role leadership_role with reason: test",
+            )
 
             response = self.client.get(
                 self.states,
@@ -2027,15 +2042,16 @@ class AuthEndpointTests(TestCase):
             routes={"A": True, "B": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             response = self.client.patch(
-                self.add_state_role("US_MO", "leadership_role"),
+                self.update_state_role("US_MO", "leadership_role"),
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
                     "canAccessCaseTriage": True,
                     "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
+                    "reason": "test",
                 },
             )
 
@@ -2050,6 +2066,10 @@ class AuthEndpointTests(TestCase):
             }
 
             self.assertEqual(expected, json.loads(response.data))
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for state US_MO, role leadership_role with reason: test",
+            )
 
             response = self.client.get(
                 self.states,
@@ -2069,7 +2089,7 @@ class AuthEndpointTests(TestCase):
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context():
             response = self.client.patch(
-                self.add_state_role("US_MO", "line_staff_role"),
+                self.update_state_role("US_MO", "line_staff_role"),
                 headers=self.headers,
                 json={
                     "canAccessCaseTriage": True,
@@ -2185,12 +2205,17 @@ class AuthEndpointTests(TestCase):
                 override_keep,
             ],
         )
-        with self.app.test_request_context():
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             response = self.client.delete(
                 self.delete_state_role("US_MO", "leadership_role"),
                 headers=self.headers,
+                json={"reason": "test"},
             )
             self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertReasonLog(
+                log.output,
+                "removing permissions and blocked users for state US_MO, role leadership_role with reason: test",
+            )
 
             # Check that the leadership_role role no longer exists
             response = self.client.get(
