@@ -25,6 +25,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
     TokenClaims,
@@ -66,7 +67,7 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
     )
 
 
-def raise_if_user_is_unauthorized(agency_id: int) -> None:
+def raise_if_user_is_not_in_agency(agency_id: int) -> None:
     """Use this helper in API routes for which the user making the request
     must have access to the agency indicated in the `agency_id` parameter (or the
     agency connected to the report indicated by the `report_id` parameter), or else
@@ -80,6 +81,49 @@ def raise_if_user_is_unauthorized(agency_id: int) -> None:
             description=(
                 f"User does not have permission to access "
                 f"reports from agency {agency_id}."
+            ),
+        )
+
+
+def raise_if_user_is_not_agency_admin_or_recidiviz_admin(auth0_user_id: str) -> None:
+    """Use this helper in API routes for when the user making the request must have
+    either the RECIDIVIZ_ADMIN or AGENCY_ADMIN auth0 permission
+    """
+    user_account = UserAccountInterface.get_user_by_auth0_user_id(
+        current_session,
+        auth0_user_id=auth0_user_id,
+    )
+    permissions = g.user_context.permissions
+
+    if not permissions or (
+        ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+        and ControlPanelPermission.AGENCY_ADMIN.value not in permissions
+    ):
+        raise JusticeCountsServerError(
+            code="justice_counts_admin_permission",
+            description=(
+                f"User {user_account.id} is missing recidiviz admin or agency admin permissions."
+            ),
+        )
+
+
+def raise_if_user_is_not_recidiviz_admin(auth0_user_id: str) -> None:
+    """Use this helper in API routes for when the user making the request must have
+    the RECIDIVIZ_ADMIN auth0 permission
+    """
+    user_account = UserAccountInterface.get_user_by_auth0_user_id(
+        current_session,
+        auth0_user_id=auth0_user_id,
+    )
+    permissions = g.user_context.permissions
+
+    if not permissions or (
+        ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
+    ):
+        raise JusticeCountsServerError(
+            code="justice_counts_admin_permission",
+            description=(
+                f"User {user_account.id} is missing recidiviz admin permission."
             ),
         )
 

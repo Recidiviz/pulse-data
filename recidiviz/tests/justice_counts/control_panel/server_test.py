@@ -2015,22 +2015,48 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         with self.app.test_request_context():
             g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id, agency_ids=[agency_id]
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency_id],
+                permissions=[],  # no permissions should throw an unauthorized error
             )
             response = self.client.patch(
                 f"/api/agencies/{agency_id}",
                 json={"systems": [schema.System.PAROLE.value]},
             )
 
-        self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.status_code, 500)
 
-        agency = AgencyInterface.get_agency_by_id(
-            session=self.session, agency_id=agency_id
-        )
-        self.assertEqual(
-            set(agency.systems),
-            {schema.System.PAROLE.value, schema.System.SUPERVISION.value},
-        )
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency_id],
+                permissions=["agency_admin"],
+            )
+            response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={"systems": [schema.System.PAROLE.value]},
+            )
+
+            self.assertEqual(response.status_code, 200)
+
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency_id],
+                permissions=["recidiviz_admin"],
+            )
+            response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={"systems": [schema.System.PAROLE.value]},
+            )
+
+            self.assertEqual(response.status_code, 200)
+
+            agency = AgencyInterface.get_agency_by_id(
+                session=self.session, agency_id=agency_id
+            )
+            self.assertEqual(
+                set(agency.systems),
+                {schema.System.PAROLE.value, schema.System.SUPERVISION.value},
+            )
 
     def test_update_and_get_agency_settings(self) -> None:
         user = self.test_schema_objects.test_user_A
@@ -2040,13 +2066,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.refresh(agency)
         agency_id = agency.id
 
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id, agency_ids=[agency_id]
-            )
-
-            # First, update agency settings
-            update_response = self.client.patch(
+        def update_agency_settings() -> Any:
+            return self.client.patch(
                 f"/api/agencies/{agency_id}",
                 json={
                     "settings": [
@@ -2061,26 +2082,54 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ]
                 },
             )
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency_id],
+                permissions=[],  # no permissions should throw an unauthorized error
+            )
+            update_response = update_agency_settings()
+            self.assertEqual(update_response.status_code, 500)
+
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency_id],
+                permissions=["recidiviz_admin"],
+            )
+            update_response = update_agency_settings()
+            self.assertEqual(update_response.status_code, 200)
+
+            # First, update agency settings
+            update_response = update_agency_settings()
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+                agency_ids=[agency_id],
+                permissions=["agency_admin"],
+            )
+
+            # First, update agency settings
+            update_response = update_agency_settings()
             # Next, get the agency setting
             get_response = self.client.get(f"/api/agencies/{agency_id}")
 
-        self.assertEqual(update_response.status_code, 200)
-        self.assertEqual(get_response.status_code, 200)
+            self.assertEqual(update_response.status_code, 200)
+            self.assertEqual(get_response.status_code, 200)
 
-        self.assertEqual(
-            get_response.json,
-            {
-                "settings": [
-                    {
-                        "setting_type": AgencySettingType.PURPOSE_AND_FUNCTIONS.value,
-                        "value": "My agency has the following purpose and functions ...",
-                        "source_id": agency_id,
-                    },
-                    {
-                        "setting_type": AgencySettingType.HOMEPAGE_URL.value,
-                        "value": "www.agencyhomepage.com",
-                        "source_id": agency_id,
-                    },
-                ]
-            },
-        )
+            self.assertEqual(
+                get_response.json,
+                {
+                    "settings": [
+                        {
+                            "setting_type": AgencySettingType.PURPOSE_AND_FUNCTIONS.value,
+                            "value": "My agency has the following purpose and functions ...",
+                            "source_id": agency_id,
+                        },
+                        {
+                            "setting_type": AgencySettingType.HOMEPAGE_URL.value,
+                            "value": "www.agencyhomepage.com",
+                            "source_id": agency_id,
+                        },
+                    ]
+                },
+            )
