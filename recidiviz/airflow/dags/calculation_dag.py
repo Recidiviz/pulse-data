@@ -78,6 +78,10 @@ except ImportError:
     )
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
+from recidiviz.metrics.export.products.product_configs import (
+    PRODUCTS_CONFIG_PATH,
+    ProductConfigs,
+)
 from recidiviz.utils.yaml_dict import YAMLDict
 
 GCP_PROJECT_STAGING = "recidiviz-staging"
@@ -283,6 +287,76 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
     )
 
 
+def trigger_metric_view_data_operator(
+    export_job_name: str,
+    state_code: Optional[str],
+    dry_run: Optional[bool],
+) -> CloudTasksTaskCreateOperator:
+    queue_location = "us-east1"
+    queue_name = "bq-view-update"
+    endpoint = f"/export/metric_view_data?export_job_name={export_job_name}{f'&state_code={state_code}' if state_code else ''}{'&dry_run=True' if dry_run else ''}"
+    if not project_id:
+        raise ValueError("project_id must be configured.")
+    task_path = CloudTasksClient.task_path(
+        project=project_id,
+        location=queue_location,
+        queue=queue_name,
+        task=uuid.uuid4().hex,
+    )
+    task = tasks_v2.types.Task(
+        name=task_path,
+        app_engine_http_request={
+            "http_method": "POST",
+            "relative_uri": endpoint,
+            "body": json.dumps({}).encode(),
+        },
+    )
+    return CloudTasksTaskCreateOperator(
+        task_id=f"trigger_{export_job_name.lower()}{f'_{state_code.lower()}' if state_code else ''}_metric_view_data_export",
+        location=queue_location,
+        queue_name=queue_name,
+        task=task,
+        retry=retry,
+    )
+
+
+def create_metric_view_data_export_nodes(
+    export_job_filter: str,
+    dry_run: Optional[bool],
+) -> List[CloudTasksTaskCreateOperator]:
+    """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
+    relevant_product_exports = ProductConfigs.from_file(
+        path=PRODUCTS_CONFIG_PATH
+    ).get_export_configs_for_job_filter(export_job_filter)
+
+    metric_view_data_triggers: List[CloudTasksTaskCreateOperator] = []
+    for export in relevant_product_exports:
+        export_job_name = export["export_job_name"]
+        state_code = export["state_code"]
+        trigger_metric_view_data = trigger_metric_view_data_operator(
+            export_job_name=export_job_name,
+            state_code=state_code,
+            dry_run=dry_run,
+        )
+
+        wait_for_metric_view_data_export = BQResultSensor(
+            task_id=f"wait_for_{export_job_name.lower()}{f'_{state_code.lower()}' if state_code else ''}_metric_view_data_export_success",
+            query_generator=FinishedCloudTaskQueryGenerator(
+                project_id=project_id,
+                cloud_task_create_operator_task_id=trigger_metric_view_data.task_id,
+                tracker_dataset_id="view_update_metadata",
+                tracker_table_id="metric_view_data_export_tracker",
+            ),
+            timeout=(60 * 4),
+        )
+
+        trigger_metric_view_data >> wait_for_metric_view_data_export
+
+        metric_view_data_triggers.append(trigger_metric_view_data)
+
+    return metric_view_data_triggers
+
+
 def response_can_refresh_proceed_check(response: Response) -> bool:
     """Checks whether the refresh lock can proceed is true."""
     data = response.text
@@ -356,7 +430,6 @@ def create_bq_refresh_nodes(
 def update_all_views_branch_func(
     trigger_update_all_views_task_id: str, trigger_source: str
 ) -> str:
-    print(trigger_source)
     if trigger_source == "POST_DEPLOY":
         return trigger_update_all_views_task_id
     if trigger_source == "DAILY":
@@ -536,6 +609,8 @@ def create_calculation_dag() -> None:
     states_to_trigger = {
         pipeline.peek("state_code", str) for pipeline in metric_pipelines
     }
+
+    # TODO(#4593): Old metric export operators to be removed once new metric export nodes are tested.
     state_trigger_export_operators = {
         state_code: trigger_export_operator(state_code)
         for state_code in states_to_trigger
@@ -548,16 +623,45 @@ def create_calculation_dag() -> None:
         *[trigger_export_operator(export) for export in PIPELINE_AGNOSTIC_EXPORTS],
     }
 
+    # New metric export operators that directly call `metric_view_data` endpoint
+    state_create_metric_view_data_export_nodes = {
+        state_code: create_metric_view_data_export_nodes(state_code, dry_run=True)
+        for state_code in states_to_trigger
+    }
+
+    case_triage_create_metric_view_data_export_nodes = (
+        create_metric_view_data_export_nodes("CASE_TRIAGE", dry_run=True)
+    )
+    all_create_metric_view_data_export_nodes = [
+        *state_create_metric_view_data_export_nodes.values(),
+        case_triage_create_metric_view_data_export_nodes,
+        *[
+            create_metric_view_data_export_nodes(export, dry_run=True)
+            for export in PIPELINE_AGNOSTIC_EXPORTS
+        ],
+    ]
+
     for export_operator in all_trigger_export_operators:
         wait_for_rematerialize >> export_operator
+
+    for data_export_operator in all_create_metric_view_data_export_nodes:
+        wait_for_rematerialize >> data_export_operator
 
     for state_code, metric_pipeline_operators in metric_pipelines_by_state.items():
         for metric_pipeline_operator in metric_pipeline_operators:
             # If any metric pipeline for a particular state fails, then the exports
             # for that state should not proceed.
             (metric_pipeline_operator >> state_trigger_export_operators[state_code])
+            (
+                metric_pipeline_operator
+                >> state_create_metric_view_data_export_nodes[state_code]
+            )
             if state_code in CASE_TRIAGE_STATES:
                 (metric_pipeline_operator >> case_triage_export_operator)
+                (
+                    metric_pipeline_operator
+                    >> case_triage_create_metric_view_data_export_nodes
+                )
 
 
 calculation_dag = create_calculation_dag()

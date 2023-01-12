@@ -69,9 +69,9 @@ from recidiviz.common import attr_validators
 from recidiviz.common.attr_utils import get_enum_cls
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import delete_files, get_all_files_recursive
-from recidiviz.metrics.export.export_config import (
+from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
-    VIEW_COLLECTION_EXPORT_INDEX,
     ProductConfig,
     ProductConfigs,
     ProductName,

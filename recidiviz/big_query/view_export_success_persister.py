@@ -80,7 +80,6 @@ class MetricViewDataExportSuccessPersister(SuccessPersister):
             bigquery.SchemaField(
                 name=STATE_CODE_COL,
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
-                mode="OPTIONAL",
             ),
             bigquery.SchemaField(
                 name=METRIC_VIEW_DATA_EXPORT_RUNTIME_SEC_COL,

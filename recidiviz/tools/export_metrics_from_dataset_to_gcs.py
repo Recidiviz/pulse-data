@@ -33,9 +33,9 @@ import sys
 from typing import List, Optional, Tuple
 
 from recidiviz.common.constants import states
-from recidiviz.metrics.export.export_config import (
+from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
+from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
-    VIEW_COLLECTION_EXPORT_INDEX,
     ProductConfigs,
 )
 from recidiviz.metrics.export.view_export_manager import (

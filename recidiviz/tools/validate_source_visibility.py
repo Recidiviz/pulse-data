@@ -106,6 +106,10 @@ def get_invalid_dependencies_for_entrypoint(
     for name in m.modules:
         if is_invalid_recidiviz_dependency(name, valid_module_prefixes):
             call_chain = m.call_chain_for_name(name)
+            if len(call_chain) < 1:
+                raise ValueError(
+                    f"invalid {name} module has empty call_chain for file '{entrypoint_file}'"
+                )
             if not is_invalid_recidiviz_dependency(
                 call_chain[0],
                 valid_module_prefixes,
@@ -267,8 +271,12 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow",
-                "recidiviz.utils.yaml_dict",
                 "recidiviz.cloud_functions.cloud_function_utils",
+                "recidiviz.common.attr_validators",
+                "recidiviz.common.constants.states",
+                "recidiviz.metrics.export.products",
+                "recidiviz.utils.environment",
+                "recidiviz.utils.yaml_dict",
             }
         ),
         allowed_missing_module_prefixes=make_module_matcher(set()),
