@@ -205,6 +205,7 @@ export const blockUser = async (
 export const createStateRolePermissions = async (
   stateCode: string,
   role: string,
+  reason: string,
   canAccessLeadershipDashboard: boolean,
   canAccessCaseTriage: boolean,
   shouldSeeBetaCharts: boolean,
@@ -217,12 +218,14 @@ export const createStateRolePermissions = async (
     shouldSeeBetaCharts,
     routes,
     featureVariants,
+    reason,
   });
 };
 
 export const updateStateRolePermissions = async (
   stateCode: string,
   role: string,
+  reason: string,
   canAccessLeadershipDashboard: boolean,
   canAccessCaseTriage: boolean,
   shouldSeeBetaCharts: boolean,
@@ -235,12 +238,14 @@ export const updateStateRolePermissions = async (
     shouldSeeBetaCharts,
     routes,
     featureVariants,
+    reason,
   });
 };
 
 export const deleteStateRole = async (
   stateCode: string,
-  role: string
+  role: string,
+  reason: string
 ): Promise<Response> => {
-  return deleteResource(`/states/${stateCode}/roles/${role}`);
+  return deleteResource(`/states/${stateCode}/roles/${role}`, { reason });
 };

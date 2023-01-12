@@ -665,7 +665,7 @@ def state_info(state_code: str) -> Response:
 def add_state_role(
     state_code: str, role: str
 ) -> Union[tuple[Response, int], tuple[str, int]]:
-    """Updates the default permissions for a given role in a state."""
+    """Adds default permissions for a given role in a state."""
     if not StateCode.is_state_code(state_code.upper()):
         return (
             f"Unknown state_code [{state_code}] received, must be a valid state code.",
@@ -684,6 +684,12 @@ def add_state_role(
             request_dict["role"] = role.lower()
             if routes := request_dict.get("routes"):
                 request_dict["routes"] = assert_type(routes, dict)
+
+            log_reason(
+                request_dict,
+                f"adding permissions for state {request_dict['state_code']}, role {request_dict['role']}",
+            )
+
             state_role = StateRolePermissions(**request_dict)
             session.add(state_role)
             session.commit()
@@ -713,7 +719,7 @@ def add_state_role(
                 HTTPStatus.BAD_REQUEST,
             )
         raise e
-    except ProgrammingError as error:
+    except (ProgrammingError, ValueError) as error:
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,
@@ -755,6 +761,11 @@ def update_state_role(
                 request_dict["state_code"] = rsc.upper()
             if rr := request_dict.get("role"):
                 request_dict["role"] = rr.lower()
+
+            log_reason(
+                request_dict,
+                f"updating permissions for state {state_code.upper()}, role {role.lower()}",
+            )
 
             # Perform update
             json_columns = [
@@ -807,7 +818,7 @@ def update_state_role(
                 HTTPStatus.BAD_REQUEST,
             )
         raise e
-    except ProgrammingError as error:
+    except (ProgrammingError, ValueError) as error:
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,
@@ -866,6 +877,13 @@ def delete_state_role(
                     HTTPStatus.BAD_REQUEST,
                 )
 
+            request_json = assert_type(request.json, dict)
+            request_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
+            log_reason(
+                request_dict,
+                f"removing permissions and blocked users for state {state_code.upper()}, role {role.lower()}",
+            )
+
             # Delete remaining users
             for (override_user, roster_user) in state_role_users:
                 if override_user:
@@ -888,6 +906,8 @@ def delete_state_role(
             f"State {state_code.upper()} with role {role.lower()} does not exist in StateRolePermissions.",
             HTTPStatus.NOT_FOUND,
         )
+    except ValueError as error:
+        return (f"{error}", HTTPStatus.BAD_REQUEST)
 
 
 @auth_endpoint_blueprint.route("/users/<email>", methods=["PATCH"])

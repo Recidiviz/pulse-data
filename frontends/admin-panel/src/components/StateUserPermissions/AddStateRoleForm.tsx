@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Alert, Select } from "antd";
+import { Form, Input, Select } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
@@ -26,7 +26,7 @@ export const CreateAddStateRoleForm = ({
   addOnCancel,
 }: {
   addVisible: boolean;
-  addOnCreate: (arg0: StateRolePermissionsResponse) => Promise<void>;
+  addOnCreate: (arg0: StateRolePermissionsRequest) => Promise<void>;
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
@@ -47,19 +47,26 @@ export const CreateAddStateRoleForm = ({
         });
       }}
     >
-      <Alert
-        message="Caution!"
-        description="This form should only be used by members of the Polaris team."
-        type="warning"
-        showIcon
-      />
-      <br />
       <Form
         form={form}
         layout="horizontal"
         labelCol={{ span: 6 }}
         initialValues={{ role: ROLES[0] }}
       >
+        <Form.Item
+          name="reason"
+          label="Reason for addition"
+          labelCol={{ span: 8 }}
+          rules={[
+            {
+              required: true,
+              message: "Please input a reason for the change.",
+            },
+          ]}
+        >
+          <Input />
+        </Form.Item>
+        <hr />
         <Form.Item
           name="stateCode"
           label="State Code"

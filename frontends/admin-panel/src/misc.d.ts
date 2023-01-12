@@ -96,3 +96,6 @@ interface StateRolePermissionsResponse {
   routes: Record<string, boolean>;
   featureVariants: Record<string, boolean>;
 }
+interface StateRolePermissionsRequest extends StateRolePermissionsResponse {
+  reason: string;
+}
