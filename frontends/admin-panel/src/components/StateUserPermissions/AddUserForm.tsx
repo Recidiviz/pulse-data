@@ -16,6 +16,8 @@
 // =============================================================================
 import { Form, Input } from "antd";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import ReasonInput from "./ReasonInput";
+import { validateAndFocus } from "./utils";
 
 export const CreateAddUserForm = ({
   addVisible,
@@ -34,20 +36,10 @@ export const CreateAddUserForm = ({
       title="Add a New User"
       onCancel={addOnCancel}
       onOk={() => {
-        form
-          .validateFields()
-          .then((values) => {
-            form.resetFields();
-            addOnCreate(values);
-          })
-          .catch((errorInfo) => {
-            // hypothetically setting `scrollToFirstError` on the form should do this (or at least
-            // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
-            // input directly.
-            document
-              .getElementById(errorInfo.errorFields?.[0].name?.[0])
-              ?.focus();
-          });
+        validateAndFocus<AddUserRequest>(form, (values) => {
+          form.resetFields();
+          addOnCreate(values);
+        });
       }}
     >
       <br />
@@ -57,18 +49,7 @@ export const CreateAddUserForm = ({
         onFinish={addOnCreate}
         labelCol={{ span: 8 }}
       >
-        <Form.Item
-          name="reason"
-          label="Reason for addition"
-          rules={[
-            {
-              required: true,
-              message: "Please input a reason for the change.",
-            },
-          ]}
-        >
-          <Input />
-        </Form.Item>
+        <ReasonInput label="Reason for addition" />
         <hr />
         <Form.Item
           name="emailAddress"

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { UploadOutlined } from "@ant-design/icons";
-import { Alert, Button, message, Select, Space, Upload } from "antd";
+import { Alert, Button, Input, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
 import { fetchRosterStateCodes } from "../../AdminPanelAPI";
 import { USER_ROLES } from "../constants";
@@ -29,6 +29,8 @@ type UploadRosterProps = {
   stateCode?: string;
   setRole?: (role: string) => void;
   enableRoleSelector?: boolean;
+  setReason: (reason: string) => void;
+  reason?: string;
 };
 
 const UploadRoster = ({
@@ -39,11 +41,13 @@ const UploadRoster = ({
   stateCode,
   setRole,
   enableRoleSelector = false,
+  setReason,
+  reason,
 }: UploadRosterProps): JSX.Element => {
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | void>();
 
-  const disabled = !stateCode;
+  const disabled = !stateCode || !reason;
 
   return (
     <>
@@ -66,6 +70,15 @@ const UploadRoster = ({
             onChange={setRole}
           />
         )}
+        <Input
+          name="reason"
+          placeholder="Reason for roster upload"
+          onChange={(
+            e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+          ) => {
+            setReason(e.target.value);
+          }}
+        />
 
         <Alert
           message="Instructions"
@@ -99,6 +112,7 @@ const UploadRoster = ({
           accept=".csv"
           action={action}
           method={method}
+          data={{ reason }}
           maxCount={1}
           disabled={disabled}
           onChange={(info) => {

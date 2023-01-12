@@ -46,6 +46,7 @@ import {
   USER_ROLES,
 } from "../constants";
 import { checkResponse, updatePermissionsObject } from "./utils";
+import { CreateEnableUserForm } from "./EnableUserForm";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -55,6 +56,8 @@ const StateUserPermissionsView = (): JSX.Element => {
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [uploadRosterVisible, setUploadRosterVisible] = useState(false);
+  const [userToEnable, setUserToEnable] =
+    useState<StateUserPermissionsResponse | undefined>();
 
   // control row selection
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
@@ -124,18 +127,18 @@ const StateUserPermissionsView = (): JSX.Element => {
     }
   };
 
-  const onEnableUser = async ({
-    emailAddress,
-    stateCode,
-  }: StateUserPermissionsResponse) => {
+  const onEnableUser = async (reason: string) => {
+    if (!userToEnable) {
+      return;
+    }
     const updatedUser = await updateUser({
-      email: emailAddress,
-      stateCode,
+      email: userToEnable.emailAddress,
+      stateCode: userToEnable.stateCode,
+      reason,
       blocked: false,
-      // TODO(#17562): Add a popup for a user to add a reason
-      reason: "enabling user in UI",
     });
     finishPromises([checkResponse(updatedUser)], "Enabled");
+    setUserToEnable(undefined);
   };
 
   const onEdit = async ({
@@ -479,7 +482,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         return (
           <Button
             onClick={() => {
-              onEnableUser(record);
+              setUserToEnable(record);
             }}
           >
             Enable user
@@ -536,6 +539,13 @@ const StateUserPermissionsView = (): JSX.Element => {
           onCancel={() => {
             updateTable();
             setUploadRosterVisible(false);
+          }}
+        />
+        <CreateEnableUserForm
+          enableVisible={!!userToEnable}
+          enableOnCreate={onEnableUser}
+          enableOnCancel={() => {
+            setUserToEnable(undefined);
           }}
         />
       </Space>

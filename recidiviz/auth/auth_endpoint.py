@@ -533,6 +533,15 @@ def upload_roster() -> Tuple[str, HTTPStatus]:
     try:
         if state_code is None:
             raise ValueError("Request is missing the state_code param")
+
+        request_dict = convert_nested_dictionary_keys(
+            assert_type(request.form, dict), to_snake_case
+        )
+        log_reason(
+            request_dict,
+            f"uploading roster for state {state_code}, role {role or 'all'}",
+        )
+
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
         ) as session:

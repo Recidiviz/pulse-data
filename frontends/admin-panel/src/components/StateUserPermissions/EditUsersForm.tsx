@@ -19,6 +19,8 @@ import * as React from "react";
 import { useState } from "react";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
+import ReasonInput from "./ReasonInput";
+import { validateAndFocus } from "./utils";
 
 export const CreateEditUserForm = ({
   editVisible,
@@ -49,35 +51,19 @@ export const CreateEditUserForm = ({
     editOnCancel();
   };
   const handleEdit = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        form.resetFields();
-        showPermissions(false);
-        editOnCreate(values);
-      })
-      .catch((errorInfo) => {
-        // hypothetically setting `scrollToFirstError` on the form should do this (or at least
-        // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
-        // input directly.
-        document.getElementById(errorInfo.errorFields?.[0].name?.[0])?.focus();
-      });
+    validateAndFocus<StateUserPermissionsRequest>(form, (values) => {
+      form.resetFields();
+      showPermissions(false);
+      editOnCreate(values);
+    });
   };
 
   const handleRevokeAccess = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        form.resetFields();
-        showPermissions(false);
-        onRevokeAccess(values.reason);
-      })
-      .catch((errorInfo) => {
-        // hypothetically setting `scrollToFirstError` on the form should do this (or at least
-        // scroll so the error is visible), but it doesn't seem to, so instead put the cursor in the
-        // input directly.
-        document.getElementById(errorInfo.errorFields?.[0]?.name?.[0])?.focus();
-      });
+    validateAndFocus<StateUserPermissionsRequest>(form, (values) => {
+      form.resetFields();
+      showPermissions(false);
+      onRevokeAccess(values.reason);
+    });
   };
 
   const confirm = () =>
@@ -126,18 +112,7 @@ export const CreateEditUserForm = ({
         </span>
       </p>
       <Form form={form} layout="horizontal" onFinish={editOnCreate}>
-        <Form.Item
-          name="reason"
-          label="Reason for modification"
-          rules={[
-            {
-              required: true,
-              message: "Please input a reason for the change.",
-            },
-          ]}
-        >
-          <Input />
-        </Form.Item>
+        <ReasonInput label="Reason for modification" />
         <hr />
         <Form.Item name="role" label="Role" labelCol={{ span: 5 }}>
           <Input />

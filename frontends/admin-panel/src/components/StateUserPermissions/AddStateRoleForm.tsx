@@ -17,6 +17,7 @@
 import { Form, Input, Select } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import ReasonInput from "./ReasonInput";
 
 const ROLES = ["leadership_role", "line_staff_user", "level_1_access_role"];
 
@@ -53,19 +54,7 @@ export const CreateAddStateRoleForm = ({
         labelCol={{ span: 6 }}
         initialValues={{ role: ROLES[0] }}
       >
-        <Form.Item
-          name="reason"
-          label="Reason for addition"
-          labelCol={{ span: 8 }}
-          rules={[
-            {
-              required: true,
-              message: "Please input a reason for the change.",
-            },
-          ]}
-        >
-          <Input />
-        </Form.Item>
+        <ReasonInput label="Reason for addition" />
         <hr />
         <Form.Item
           name="stateCode"
