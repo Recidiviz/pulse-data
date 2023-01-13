@@ -125,7 +125,7 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_person` spi
       WHERE state_code = 'US_IX'
     ),
-    latest_assessment_score AS (
+    latest_within_session_assessment_score AS (
       SELECT
         ses.person_id,
         ses.state_code,
@@ -134,14 +134,31 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         FIRST_VALUE(assessment_date) OVER (PARTITION BY score.person_id ORDER BY score.assessment_date DESC) AS latest_assessment_date,
         FIRST_VALUE(assessment_score) OVER (PARTITION BY score.person_id ORDER BY score.assessment_date DESC) AS latest_assessment_score,
       FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` ses
-      INNER JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
+      LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
         ON ses.state_code = score.state_code
         AND ses.person_id = score.person_id 
         AND score.assessment_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
+        AND score.assessment_type = "LSIR" 
       WHERE ses.state_code = 'US_IX'
       AND CURRENT_DATE('US/Pacific') BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY assessment_date)=1
     ),
+    latest_assessment_score AS(
+    --if no within session LSI-R information is found, use the latest score
+      SELECT 
+        l.person_id,
+        l.state_code,
+        --only fill out first assessment information if it is different than the latest information
+        IF(l.first_assessment_date = l.latest_assessment_date, NULL, l.first_assessment_date) AS first_assessment_date,
+        IF(l.first_assessment_score = l.latest_assessment_score, NULL, l.first_assessment_score) AS first_assessment_score,
+        COALESCE(l.latest_assessment_date, score.assessment_date) AS latest_assessment_date,
+        COALESCE(l.latest_assessment_score, score.assessment_score) AS latest_assessment_score,
+      FROM latest_within_session_assessment_score l
+      INNER JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
+        USING(state_code, person_id)
+      WHERE assessment_type = "LSIR"
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY assessment_date DESC)=1
+        ),
     latest_ncic_ilets_check AS(
       SELECT 
         a.state_code,
