@@ -81,7 +81,6 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         assessment_score,
       FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` score
       WHERE assessment_type = 'LSIR'
-        AND score_end_date IS NULL
         AND state_code = 'US_IX'
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY assessment_date DESC)=1
     ),
@@ -299,7 +298,6 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       LEFT JOIN latest_assessment_score score
         ON tes.state_code = score.state_code
         AND tes.person_id = score.person_id
-        AND score.assessment_date >= ses.start_date
       LEFT JOIN latest_employment_info ei
         ON tes.state_code = ei.state_code
         AND tes.person_id = ei.person_id
