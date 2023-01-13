@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_PBMIS_COMMON_INOP
+file_description: |-
+  TODO(#17148): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - INOP_ID
+columns:
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
+  - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating order of custody.
+  - name: OFFENSE_NUMBER
+    description: |-
+      Number indicating order of offense.
+  - name: CREATE_DATE
+  - name: CREATEDBY
+  - name: MODIFY_DATE
+  - name: WARRANT_ID
+  - name: SENTENCE_NUMBER
+    description: |-
+      Number indicating order of sentence.
+  - name: SUBFILE_KEY
+  - name: INOP_DAYS_APPLIED
+  - name: VERSION_NUM
+  - name: INOP_ID
+    description: |-
+      Unique id for row.

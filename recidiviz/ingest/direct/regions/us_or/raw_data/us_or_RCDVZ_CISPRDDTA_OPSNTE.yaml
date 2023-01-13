@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_OPSNTE
+file_description: |-
+  This file contains supervision and revocation data.
+data_classification: source
+primary_key_cols:
+  - SENT_NEXT_NUMBER
+columns:
+  - name: LAST_UPDATED_WHEN
+  - name: EDIS_YN_FLAG
+  - name: LAST_UPDATE_USERID
+  - name: LAST_UPDATE_LOCATION
+  - name: ET_MAX_PERCENT
+  - name: COURT_CASE_NUMBER
+  - name: FLAG_M57CONV
+  - name: FLAG_M57ELG
+  - name: PROBATION_REVOKE_TYPE
+  - name: PROBATION_REVOKE_DATE
+  - name: WRKREL_REMAINING_RSTR
+  - name: WRKREL_TO_SERVE_RSTR
+  - name: WRKREL_DATE_RSTR
+  - name: ALCDRG_REMAINING_RSTR
+  - name: ALCDRG_TO_SERVE_RSTR
+  - name: ALCDRG_DATE_RSTR
+  - name: SUMMIT_REMAINING_RSTR
+  - name: SUMMIT_TO_SERVE_RSTR
+  - name: SUMMIT_DATE_RSTR
+  - name: TRNLV_REMAINING_RSTR
+  - name: TRNLV_TO_SERVE_RSTR
+  - name: TRNLV_DATE_RSTR
+  - name: ORS_SUMMIT_UNTIL_YEARS2
+  - name: ORS_SUMMIT_UNTIL_MONTHS2
+  - name: ORS_SUMMIT_UNTIL_DAYS2
+  - name: ORS_SUMMIT_UNTIL_YEARS
+  - name: ORS_SUMMIT_UNTIL_MONTHS
+  - name: ORS_SUMMIT_UNTIL_DAYS
+  - name: ORS_AIP_UNTIL_YEARS2
+  - name: ORS_AIP_UNTIL_MONTHS2
+  - name: ORS_AIP_UNTIL_DAYS2
+  - name: ORS_AIP_UNTIL_YEARS
+  - name: ORS_AIP_UNTIL_MONTHS
+  - name: ORS_AIP_UNTIL_DAYS
+  - name: ORS_WORK_RELE_DT
+  - name: ORS_WORK_RELE
+  - name: ORS_ALT_INCAR_DT
+  - name: ORS_ALT_INCAR
+  - name: ORS_SUMMIT_DT
+  - name: ORS_SUMMIT
+  - name: ORS_LEAVE_DT
+  - name: ORS_LEAVE
+  - name: PAROLE_CONSIDER_HEARING
+  - name: PAROLE_CONSIDER_DATE
+  - name: PPS_REVOKE_DATE
+  - name: DO_TO
+  - name: CC_END_ET_DATE
+  - name: CC_BEGIN_ET_DATE
+  - name: MIN_137635_SENT_DAYS
+  - name: MIN_137635_SENT_MOS
+  - name: MIN_137635_SENT_YRS
+  - name: MINIMUM_137635_DATE
+  - name: M11_SENTENCE_DAYS
+  - name: M11_SENTENCE_MONTHS
+  - name: M11_SENTENCE_YEARS
+  - name: M11_MIN_DATE
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
+  - name: SENT_NEXT_NUMBER
+    description: |-
+      Number of the next sentence.
+  - name: ENTERED_BY_USERID
+  - name: REVIEW_USERID

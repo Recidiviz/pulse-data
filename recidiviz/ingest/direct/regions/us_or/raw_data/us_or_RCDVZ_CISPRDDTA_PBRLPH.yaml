@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_PBRLPH
+file_description: |-
+  TODO(#17148): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - RLPH_NEXT_NUMBER
+columns:
+  - name: TRANSPORT_IN
+  - name: RESIDENCE2_STATUS
+  - name: RESIDENCE2_COMMENT
+  - name: OFFENDER_LANGUAGE
+  - name: TRANSPORT_DATE
+  - name: VETERAN
+  - name: DL_STATUS
+  - name: BAF_NO4
+  - name: STATUS_CODE
+  - name: STATUS_TABLE
+  - name: PBM_APPLNIDST
+  - name: MINSENTC
+  - name: MIN_TIME_TO_SERVE_LEFT
+  - name: EMRGCY_RELATION
+  - name: PHONE
+  - name: STATE
+  - name: CITY
+  - name: ADDRESS_LINE_ONE
+  - name: LOCATION_CODE
+  - name: CONDITIONS_MODIFIED
+  - name: CONDITIONS_APPROVED
+  - name: SEX_ASSESSMENT_FLAG
+  - name: TRANSITIONAL_LEAVE
+  - name: INST_DISCHARGE_FLAG
+  - name: RE_RELEASE_FLAG
+  - name: OBLIGATION_FLAG
+  - name: PROGRAM_FLAG
+  - name: DETAINER_FLAG
+  - name: PREDATORY_SEX_OFFENDER
+  - name: DANG_OFFENDER
+  - name: COUNTY_WAIVER
+  - name: RELEASE_TO_COUNTY
+  - name: COUNSELOR_CODE
+  - name: COUNSELOR_TABLE
+  - name: PBM_APPLNID
+  - name: COMM_CASELOAD
+  - name: LAST_UPDATED_WHEN
+  - name: CCDUE_DATE
+  - name: DATE_COMPLETED
+  - name: TENT_PARO_DISC_DATE
+  - name: ACTIVE_SUPERVISION_REVIEW_DT
+  - name: PPS_EXPIRATION_DATE
+  - name: MATRIX_EXPIRATION_DATE
+  - name: BM10_DATE
+  - name: PHYSICAL_RELEASE_DATE
+  - name: PROJECTED_RELEASE_DATE
+  - name: PAROLE_RELEASE_DATE
+  - name: ENTRY_DATE
+  - name: INST_CASELOAD
+  - name: PRIM_CASELOAD
+  - name: SG_HISTORY_SCALE
+  - name: CRIME_CATEGORY
+  - name: CELL_NUMBER
+  - name: RESPONSIBLE_LOCATION
+  - name: RECORD_KEY
+  - name: RELEASE_PLAN_TYPE
+  - name: RLPH_NEXT_NUMBER
+    description: |-
+      Unique row identifier.
+  - name: SECOND_LOOK
+  - name: RELEASE_LOCATION
+  - name: JOB_DESCRIPTION
+  - name: COUNTY2_WAIVER
+  - name: RELEASE_TO_COUNTY2
+  - name: RESIDENCE1_STATUS
+  - name: RESIDENCE1_COMMENT
+  - name: CCTX_NOTE1
+  - name: ALL_TX_REQUESTS
+  - name: ALL_INTX
+  - name: INTX_NOTE1
+  - name: ALL_STG
+  - name: STG_NOTE1
+  - name: PREDSO_NOR_DATE
+  - name: SO_ASSESSMT_DATE
+  - name: SO_REGISTER_DATE

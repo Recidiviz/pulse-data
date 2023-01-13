@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_CMOFPSC
+file_description: |-
+  Risk and assesment scores, as well as previous arrest history, for Adults in Custody (AIC).
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - ASSESSMENT_DATE
+columns:
+  - name: DATE_LAST_UPDATED
+    description: |-
+      Date this information was last updated.
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
+  - name: LAST_UPDATE_LOCATION
+  - name: RECORD_ADD_WHEN
+  - name: PROXY_REASON_CODE
+  - name: PROXY_PRIOR_ARRESTS_SCORE
+  - name: PROXY_PRIOR_ARRESTS
+  - name: PROXY_AGE_FIRST_ARREST_SCORE
+  - name: PROXY_AGE_FIRST_ARREST
+  - name: PROXY_AGE_SCORE
+  - name: PROXY_AGE
+  - name: PROXY_CREATE_DATE
+  - name: EFFECTIVE_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: DATA_SOURCE
+  - name: FELONY_THEFT_CRIMINAL_HISTORY
+  - name: REVOCATION_CRIMINAL_HISTORY
+  - name: PROP_OFFENSE_NEW_CONVICTION
+  - name: PRIOR_INCARCERATION
+  - name: LAST_SENTENCE_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: RISK_FELONY_ARREST_5Y_10Y
+  - name: PRIOR_VIOLENT_ARRESTS_5Y_LEDS
+  - name: STAT_OFFENSE_NEW_CONVICTION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: OFF_SEVERITY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: RISK__RECONVICTION_FELONY_3Y
+  - name: PRIOR_PROP_ARRESTS_5Y_LEDS
+  - name: PRIOR_VIOLENT_ARRESTS_LEDS
+  - name: PRIOR_PROP_ARRESTS_LEDS
+  - name: PRIOR_STAT_ARRESTS_LEDS
+  - name: PERSON_OFFENSE_NEW_CONVICTION
+  - name: PRIOR_STAT_ARRESTS_5Y_LEDS
+  - name: DOMESTIC_VIOLENCE_OJIN
+  - name: AGE_FIRST_ARREST
+  - name: AGE
+    description: |-
+      Age of the AIC.
+  - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating the order of custody.
+  - name: START_DATE
+    description: |-
+      Start date of arrest period.
+  - name: ADMISSION_DATE
+    description: |-
+      Date admitted to current custody period.
+  - name: SEX
+    description: |-
+      Sex of the AIC.
+  - name: BIRTHDATE
+    description: |-
+      Birthdate of the AIC.
+  - name: PROXY_RISK_LEVEL
+  - name: PROXY_RISK_SCORE
+  - name: PSC_RISK_LEVEL
+  - name: PSC_RISK_SCORE
+  - name: ASSESSMENT_TOOL
+  - name: ASSESSMENT_DATE
+    description: |-
+      Date the assesment was taken.

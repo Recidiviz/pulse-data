@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_EDUTEST_T_EDUCNEED
+file_description: |-
+  TODO(#17148): Fill in the file description - This table has no PKs.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECID
+  - name: LOC
+  - name: INSERTDATE
+  - name: LOOKUPSTRING
+  - name: COMPYOUTH
+  - name: EXEMPTSTATUS
+  - name: NEWNEEDCODE2
+  - name: NEWNEEDCODE
+  - name: NEEDDESC
+  - name: EDUC_EXEMPT
+  - name: MATHGRP
+  - name: READGRP
+  - name: ENROLLSTATUS_EXITCD
+  - name: ENROLLSTATUS_EXITDT
+  - name: ENROLLSTATUS_INST
+  - name: ENROLLSTATUS
+  - name: ENROLL_PROGRAM
+  - name: DETAIN
+  - name: SENTENCE
+  - name: CUSTODY
+  - name: NEEDCODE
+  - name: LAST_ATTND_PY_AT_LOC
+  - name: FIRST_ATTND_PY_AT_LOC
+  - name: TOTAL_ABSDHRS_PY_AT_LOC
+  - name: LAST_ATTND_THIS_PY
+  - name: FIRST_ATTND_THIS_PY
+  - name: TOTAL_ABSDHRS_THIS_PY
+  - name: LAST_ATTND_SINCE_ADMIT
+  - name: FIRST_ATTND_SINCE_ADMIT
+  - name: TOTAL_ABSDHRS_SINCE_ADMIT
+  - name: TYPE
+  - name: NOTE
+  - name: TARGETED
+  - name: CERTIFICATE
+  - name: MATHLEVEL
+  - name: MATHSCORE
+  - name: MATHDATE
+  - name: MATHFORM
+  - name: READLEVELESL
+  - name: READLEVEL
+  - name: READSCORE
+  - name: READDATE
+  - name: READFORM
+  - name: ESLLEVEL
+  - name: ESLSCORE
+  - name: ESLDATE
+  - name: ESLFORM
+  - name: JOB
+  - name: AGE
+  - name: RACE
+  - name: SEX
+  - name: ADMITDT
+  - name: NAME
+  - name: SID

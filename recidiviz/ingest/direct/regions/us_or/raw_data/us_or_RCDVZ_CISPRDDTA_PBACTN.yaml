@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_PBACTN
+file_description: |-
+  This file contains supervision data - TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+columns:
+  - name: PPS_MIN_MONTHS
+  - name: SUPER_REV_DATE
+  - name: SUM_HIGH_RANGE
+  - name: SUM_LOW_RANGE
+  - name: PB_CAT
+  - name: INACTIVE_SUPERVISION
+  - name: DECISION_APPEAL
+  - name: REVOKE_MONTHS_SUPER
+  - name: REVOKE_SEVERE_CRIME
+  - name: REST_PLAN_APPR
+  - name: REST_PLAN_DATE
+  - name: COMPELLED_PAROLE
+  - name: NEXT_DATE
+  - name: NEXT_ACTION
+  - name: ADJ_INCEPTION_DATE
+  - name: RECORD_KEY
+    description: |-
+      A unique identifier for each Adult in Custody (AIC).
+  - name: LAST_UPDATED_WHEN
+  - name: LAST_UPDATE_LOCATION
+  - name: MATRIX_MIN_SUPV
+  - name: PPS_SENTENCE_MONTHS
+  - name: SG_HISTORY_SCALE
+  - name: CRIME_CATEGORY
+  - name: TIME_SERVED
+  - name: PREDATORY_SEX_OFFENDER
+  - name: HRDO_IND
+  - name: BM10_IND
+  - name: DISCRETIONARY_IND
+  - name: TENT_PARO_DISC_DATE
+  - name: ACTIVE_REV_DATE
+  - name: PA_EXTENDED_DATE
+  - name: PPS_RELEASE_DATE
+  - name: PPS_EXPIRATION_DATE
+  - name: MONTHS_SET

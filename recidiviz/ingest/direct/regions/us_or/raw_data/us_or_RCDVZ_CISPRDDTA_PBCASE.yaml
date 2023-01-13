@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_PBCASE
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - SUBFILE_KEY
+columns:
+  - name: CUSTODY_NUMBER
+    description: |-
+      Numbder indicating order of custody.
+  - name: OFFENSE_NUMBER
+    description: |-
+      Number indicating order of offense.
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each AIC.
+  - name: TIME_LAST_UPDATED
+  - name: DATE_LAST_UPDATED
+  - name: LAST_UPDATED_WHEN
+  - name: PB_CASE_LINK
+  - name: PB_CASE_TYPE
+  - name: TERMINATION_DATE
+  - name: TIME_SERVED_SYNC
+  - name: TIME_SERVED
+  - name: PPS_SENTENCE_MONTHS
+  - name: PPS_MIN_MONTHS
+  - name: CRIME_CATEGORY
+  - name: SG_HISTORY_SCALE
+  - name: PPS_EXPIRATION_DATE
+  - name: RESTITUTION_AMOUNT
+    description: |-
+      Amount of restitution required.
+  - name: OFFENSE_TYPE
+    description: |-
+      Type of offense.
+  - name: HB3384_IND
+  - name: PROBATION_REVOKE
+  - name: PRINCIPAL_CRIME
+  - name: PB_HISTORY_RISK
+  - name: PRINCIPAL_HIGH_RANGE
+  - name: PRINCIPAL_LOW_RANGE
+  - name: BASE_HIGH_RANGE
+  - name: BASE_LOW_RANGE
+  - name: ORS_SUB_CATEGORY
+  - name: ORS_GRID_CATEGORY
+  - name: SUM_MATRIX_RANGE
+  - name: JUDGE_MIN_OVERRIDE
+  - name: PB_SENTENCE_DATE
+  - name: BAF_GROUP_NO
+  - name: CRIME_NUMBER
+    description: |-
+      Number of crime.
+  - name: SUBFILE_KEY
+    description: |-
+      File key, part of composite key.
