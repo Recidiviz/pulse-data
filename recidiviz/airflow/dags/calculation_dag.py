@@ -293,7 +293,7 @@ def trigger_metric_view_data_operator(
     dry_run: Optional[bool],
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
-    queue_name = "bq-view-update"
+    queue_name = "metric-view-export"
     endpoint = f"/export/metric_view_data?export_job_name={export_job_name}{f'&state_code={state_code}' if state_code else ''}{'&dry_run=True' if dry_run else ''}"
     if not project_id:
         raise ValueError("project_id must be configured.")
