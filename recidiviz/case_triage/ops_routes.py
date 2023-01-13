@@ -38,6 +38,7 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
+from recidiviz.persistence.database.schema.case_triage.schema import ETLClientEvent
 from recidiviz.persistence.database.schema_utils import (
     SchemaType,
     get_database_entity_by_table_name,
@@ -49,6 +50,11 @@ from recidiviz.utils.pubsub_helper import OBJECT_ID, extract_pubsub_message_from
 from recidiviz.utils.string import StrictStringFormatter
 
 CASE_TRIAGE_DB_OPERATIONS_QUEUE = "case-triage-db-operations-queue"
+
+IMPORT_SECONDS_TO_WAIT_BY_ENTITY = {
+    ETLClientEvent: 600,
+}
+
 
 case_triage_ops_blueprint = Blueprint("/case_triage_ops", __name__)
 
@@ -75,12 +81,16 @@ def _run_gcs_imports() -> Tuple[str, HTTPStatus]:
             )
         )
 
+        database_entity = get_database_entity_by_table_name(
+            case_triage_schema, builder.view_id
+        )
+
         import_gcs_csv_to_cloud_sql(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
-            get_database_entity_by_table_name(case_triage_schema, builder.view_id),
+            database_entity,
             csv_path,
             builder.columns,
-            seconds_to_wait=180,
+            seconds_to_wait=IMPORT_SECONDS_TO_WAIT_BY_ENTITY.get(database_entity, 180),
         )
         logging.info("View (%s) successfully imported", builder.view_id)
 
