@@ -217,7 +217,10 @@ def get_api_blueprint(
     @api_blueprint.route("/users", methods=["PUT"])
     @auth_decorator
     def create_user_if_necessary() -> Response:
-        """Returns user agencies and permissions"""
+        """
+        Returns user agencies and permissions. If email_verified is passed in,
+        we will update the user's invitation_status.
+        """
         try:
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
@@ -225,12 +228,20 @@ def get_api_blueprint(
                 session=current_session, agency_ids=get_agency_ids_from_session()
             )
             email = request_dict.get("email")
+            is_email_verified = request_dict.get("email_verified")
+
             user_account = UserAccountInterface.create_or_update_user(
                 session=current_session,
                 name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
                 agencies=agencies,
                 email=email,
+                agency_id_to_invitation_status={
+                    agency_id: schema.UserAccountInvitationStatus.ACCEPTED
+                    for agency_id in [agency.id for agency in agencies]
+                }
+                if is_email_verified is True
+                else None,
             )
             permissions = g.user_context.permissions if "user_context" in g else []
             if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
