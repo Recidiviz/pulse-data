@@ -2262,4 +2262,4 @@ class AuthEndpointTests(TestCase):
                 {"emailAddress": user["emailAddress"], "role": user["role"]}
                 for user in json.loads(response.data)
             ]
-            self.assertEqual(expected_users, actual_users)
+            self.assertCountEqual(expected_users, actual_users)
