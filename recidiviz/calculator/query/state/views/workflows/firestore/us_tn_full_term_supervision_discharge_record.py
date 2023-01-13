@@ -35,7 +35,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_NAME = (
-    "us_tn_full_term_supervision_dicharge_record"
+    "us_tn_full_term_supervision_discharge_record"
 )
 
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_DESCRIPTION = """
