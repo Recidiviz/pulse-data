@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_PBREVO
+file_description: |-
+  TODO(#17148): Fill in the file description
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - SUBFILE_KEY
+columns:
+  - name: TIME_LAST_UPDATED
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each AIC.
+  - name: LAST_UPDATED_WHEN
+  - name: OFFENSE_TYPE
+    description: |-
+      Type of offense.
+  - name: TERMINATION_DATE
+  - name: TERMINATION_CODE
+  - name: PB_SENTENCE_DATE
+  - name: PB_SENTENCE_TYPE
+  - name: BAF_GROUP_NO
+  - name: CRIME_NUMBER
+    description: |-
+      Number of crime.
+  - name: CUSTODY_NUMBER
+    description: |-
+      Number indicating sequence of custody.
+  - name: SUBFILE_KEY
+    description: |-
+      File key, part of composite key.
+  - name: DATE_LAST_UPDATED
