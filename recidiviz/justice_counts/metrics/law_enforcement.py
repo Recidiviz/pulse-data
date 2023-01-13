@@ -117,7 +117,6 @@ funding = MetricDefinition(
             LawEnforcementFundingIncludesExcludes.SUPERVISION_SERVICES,
         },
     ),
-    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=LawEnforcementFundingType,

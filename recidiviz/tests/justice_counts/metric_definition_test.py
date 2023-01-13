@@ -26,7 +26,6 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.metrics import law_enforcement
 from recidiviz.justice_counts.metrics.metric_definition import Context
 from recidiviz.justice_counts.metrics.metric_registry import METRICS
-from recidiviz.utils.types import assert_type
 
 
 class TestAggregatedDimension(TestCase):
@@ -85,12 +84,6 @@ class TestMetricDefinition(TestCase):
         self.assertEqual(len(law_enforcement.reported_crime.contexts), 0)
         # Has metric level includes_excludes
         self.assertEqual(len(law_enforcement.funding.contexts), 1)
-        requested_metrics = assert_type(
-            law_enforcement.funding.specified_contexts, list
-        )
-        # The Funding metric has no specified metrics, because specified
-        # contexts have been deprecated.
-        self.assertEqual(len(requested_metrics), 0)
         self.assertEqual(
             law_enforcement.funding.contexts[0].key,
             ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
