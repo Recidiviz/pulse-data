@@ -16,7 +16,7 @@
 # ============================================================================
 """State specific utils for entity matching. Utils in this file are generic to any DatabaseEntity."""
 from enum import Enum
-from typing import List, Optional, Set, Type, cast
+from typing import List, Set, Type, cast
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
@@ -25,6 +25,8 @@ from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_cla
 )
 from recidiviz.persistence.entity.base_entity import (
     EnumEntity,
+    ExternalIdEntity,
+    HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
 )
 from recidiviz.persistence.entity.entity_utils import (
@@ -65,13 +67,23 @@ def _is_match(
     """Returns true if the provided |ingested_entity| matches the provided
     |db_entity|. Otherwise returns False.
     """
-    if not ingested_entity or not db_entity:
-        return ingested_entity == db_entity
+    # We should never be entity-matching objects from different states.
+    if ingested_entity.get_field("state_code") != db_entity.get_field("state_code"):
+        raise ValueError(
+            f"Attempting to match entity from state "
+            f"[{ingested_entity.get_field('state_code')}] with entity from state "
+            f"[{db_entity.get_field('state_code')}]"
+        )
+
+    if not ingested_entity:
+        raise ValueError("Found null ingested_entity.")
+    if not db_entity:
+        raise ValueError("Found null db_entity.")
 
     if ingested_entity.__class__ != db_entity.__class__:
         raise ValueError(
-            f"is_match received entities of two different classes: ingested entity [{ingested_entity}] and db_entity "
-            f"[{db_entity}]"
+            f"is_match received entities of two different classes: ingested entity "
+            f"[{ingested_entity}] and db_entity [{db_entity}]"
         )
 
     if not isinstance(ingested_entity, DatabaseEntity):
@@ -83,10 +95,16 @@ def _is_match(
             f"Unexpected type for db entity [{db_entity}]: [{type(db_entity)}]"
         )
 
-    if isinstance(ingested_entity, schema.StatePerson):
-        db_entity = cast(schema.StatePerson, db_entity)
-        for ingested_external_id in ingested_entity.external_ids:
-            for db_external_id in db_entity.external_ids:
+    class_mapper = SchemaToEntityClassMapper.get(
+        schema_module=schema, entities_module=entities
+    )
+    ingested_entity_cls = class_mapper.entity_cls_for_schema_cls(
+        ingested_entity.__class__
+    )
+
+    if issubclass(ingested_entity_cls, HasMultipleExternalIdsEntity):
+        for ingested_external_id in ingested_entity.get_field("external_ids"):
+            for db_external_id in db_entity.get_field("external_ids"):
                 if _is_match(
                     ingested_entity=ingested_external_id,
                     db_entity=db_external_id,
@@ -95,18 +113,12 @@ def _is_match(
                     return True
         return False
 
-    # Aside from people, all entities are state specific.
-    if ingested_entity.get_field("state_code") != db_entity.get_field("state_code"):
-        return False
-
     # TODO(#2671): Update all person attributes below to use complete entity
     # equality instead of just comparing individual fields.
-    if isinstance(ingested_entity, schema.StatePersonExternalId):
-        db_entity = cast(schema.StatePersonExternalId, db_entity)
-        return (
-            ingested_entity.external_id == db_entity.external_id
-            and ingested_entity.id_type == db_entity.id_type
-        )
+    if issubclass(ingested_entity_cls, ExternalIdEntity):
+        return ingested_entity.get_field("external_id") == db_entity.get_field(
+            "external_id"
+        ) and ingested_entity.get_field("id_type") == db_entity.get_field("id_type")
 
     # As person has already been matched, assume that any of these 'person
     # attribute' entities are matches if specific attributes match.
@@ -120,19 +132,9 @@ def _is_match(
         db_entity = cast(schema.StatePersonEthnicity, db_entity)
         return ingested_entity.ethnicity == db_entity.ethnicity
 
-    if isinstance(
-        ingested_entity,
-        (
-            schema.StateSupervisionViolationResponseDecisionEntry,
-            schema.StateSupervisionViolatedConditionEntry,
-            schema.StateSupervisionViolationTypeEntry,
-            schema.StateSupervisionCaseTypeEntry,
-            schema.StateTaskDeadline,
-        ),
-    ):
-        return _base_entity_match(
-            ingested_entity, db_entity, skip_fields=set(), field_index=field_index
-        )
+    # For entities with no external id, rely on matching based on other flat fields.
+    if not issubclass(ingested_entity_cls, HasExternalIdEntity):
+        return _base_entity_match(ingested_entity, db_entity, field_index=field_index)
 
     # Placeholders entities are considered equal
     if (
@@ -149,7 +151,6 @@ def nonnull_fields_entity_match(
     ingested_entity: EntityTree,
     db_entity: EntityTree,
     field_index: CoreEntityFieldIndex,
-    skip_fields: Optional[Set[str]] = None,
 ) -> bool:
     """
     Matching logic for comparing entities that might not have external ids, by
@@ -157,20 +158,14 @@ def nonnull_fields_entity_match(
     entities that we know might not have external_ids based on the ingested
     state data.
     """
-    if skip_fields is None:
-        skip_fields = set()
-
     a = ingested_entity.entity
     b = db_entity.entity
-    return _base_entity_match(
-        a, b, skip_fields=skip_fields, allow_null_mismatch=True, field_index=field_index
-    )
+    return _base_entity_match(a, b, allow_null_mismatch=True, field_index=field_index)
 
 
 def _base_entity_match(
     a: DatabaseEntity,
     b: DatabaseEntity,
-    skip_fields: Set[str],
     field_index: CoreEntityFieldIndex,
     allow_null_mismatch: bool = False,
 ) -> bool:
@@ -179,8 +174,6 @@ def _base_entity_match(
     Args:
         a: The first entity to match
         b: The second entity to match
-        skip_fields: A list of names of fields that should be ignored when determining if two objects match based on
-            flat fields.
         allow_null_mismatch: Allow for two objects to still match if one has a null value in a field where the other's
             is nonnull.
     """
@@ -199,7 +192,7 @@ def _base_entity_match(
     ) | field_index.get_fields_with_non_empty_values(b, EntityFieldType.FLAT_FIELD)
     for field_name in all_set_flat_field_names:
         # Skip primary key
-        if field_name == a.get_class_id_name() or field_name in skip_fields:
+        if field_name == a.get_class_id_name():
             continue
         a_field = a.get_field(field_name)
         b_field = b.get_field(field_name)
@@ -293,10 +286,18 @@ def can_atomically_merge_entity(
     are null.
     """
 
-    # We often get data about a root entity from multiple sources - do not overwrite
+    # We often get data about a multi-id entity from multiple sources - do not overwrite
     # all information with new updates to that entity.
-    if isinstance(new_entity, (schema.StatePerson, schema.StateStaff)):
+    new_entity_cls = SchemaToEntityClassMapper.get(
+        entities_module=entities, schema_module=schema
+    ).entity_cls_for_schema_cls(new_entity.__class__)
+    if issubclass(new_entity_cls, HasMultipleExternalIdsEntity):
         return False
+
+    # Entities that only represent external id information should always be atomically
+    # merged.
+    if issubclass(new_entity_cls, ExternalIdEntity):
+        return True
 
     # If this entity only contains external id information - do not merge atomically
     # onto database.
@@ -306,7 +307,7 @@ def can_atomically_merge_entity(
         return False
 
     # Enum-like objects with no external id should always be merged atomically.
-    if not hasattr(new_entity, "external_id"):
+    if not issubclass(new_entity_cls, HasExternalIdEntity):
         return True
 
     # Entities were added to this list by default, with exemptions (below) selected
@@ -322,9 +323,7 @@ def can_atomically_merge_entity(
             schema.StateIncarcerationIncident,
             schema.StateIncarcerationIncidentOutcome,
             schema.StateIncarcerationPeriod,
-            schema.StatePersonExternalId,
             schema.StateProgramAssignment,
-            schema.StateStaffExternalId,
             schema.StateSupervisionContact,
             schema.StateSupervisionCaseTypeEntry,
             schema.StateSupervisionPeriod,

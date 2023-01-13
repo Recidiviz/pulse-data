@@ -109,6 +109,38 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             )
         )
 
+    def test_isMatch_stateStaff(self) -> None:
+        external_id = schema.StateStaffExternalId(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID
+        )
+        external_id_same = schema.StateStaffExternalId(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID
+        )
+        external_id_different = schema.StateStaffExternalId(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2
+        )
+
+        staff = schema.StateStaff(full_name="name", external_ids=[external_id])
+        staff_another = schema.StateStaff(
+            full_name="name_2", external_ids=[external_id_same]
+        )
+
+        self.assertTrue(
+            _is_match(
+                ingested_entity=staff,
+                db_entity=staff_another,
+                field_index=self.field_index,
+            )
+        )
+        staff_another.external_ids = [external_id_different]
+        self.assertFalse(
+            _is_match(
+                ingested_entity=staff,
+                db_entity=staff_another,
+                field_index=self.field_index,
+            )
+        )
+
     def test_isMatch_statePersonExternalId_type(self) -> None:
         external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID,
@@ -118,6 +150,36 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
         external_id_different = schema.StatePersonExternalId(
             person_external_id_id=None,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID,
+        )
+        self.assertTrue(
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
+        )
+
+        external_id.id_type = _ID_TYPE_ANOTHER
+        self.assertFalse(
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
+        )
+
+    def test_isMatch_stateStaffExternalId_type(self) -> None:
+        external_id = schema.StateStaffExternalId(
+            staff_external_id_id=_ID,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID,
+        )
+        external_id_different = schema.StateStaffExternalId(
+            staff_external_id_id=None,
             state_code=_STATE_CODE,
             id_type=_ID_TYPE,
             external_id=_EXTERNAL_ID,
@@ -169,6 +231,36 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             )
         )
 
+    def test_isMatch_stateStaffExternalId_externalId(self) -> None:
+        external_id = schema.StateStaffExternalId(
+            staff_external_id_id=_ID,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID,
+        )
+        external_id_different = schema.StateStaffExternalId(
+            staff_external_id_id=None,
+            state_code=_STATE_CODE,
+            id_type=_ID_TYPE,
+            external_id=_EXTERNAL_ID,
+        )
+        self.assertTrue(
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
+        )
+
+        external_id.external_id = _EXTERNAL_ID_2
+        self.assertFalse(
+            _is_match(
+                ingested_entity=external_id,
+                db_entity=external_id_different,
+                field_index=self.field_index,
+            )
+        )
+
     def test_isMatch_statePersonExternalId_stateCode(self) -> None:
         external_id = schema.StatePersonExternalId(
             person_external_id_id=_ID,
@@ -191,13 +283,16 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         )
 
         external_id.state_code = _STATE_CODE_ANOTHER
-        self.assertFalse(
-            _is_match(
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Attempting to match entity from state \[US_XY\] with entity from state "
+            r"\[US_XX\]",
+        ):
+            _ = _is_match(
                 ingested_entity=external_id,
                 db_entity=external_id_different,
                 field_index=self.field_index,
             )
-        )
 
     def test_isMatch_statePersonAlias(self) -> None:
         alias = schema.StatePersonAlias(state_code=_STATE_CODE, full_name="full_name")
@@ -211,7 +306,10 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 field_index=self.field_index,
             )
         )
-        alias_another.state_code = _STATE_CODE_ANOTHER
+
+        alias_another = schema.StatePersonAlias(
+            state_code=_STATE_CODE, full_name="another_full_name"
+        )
         self.assertFalse(
             _is_match(
                 ingested_entity=alias,
@@ -219,6 +317,20 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 field_index=self.field_index,
             )
         )
+
+        alias_another = schema.StatePersonAlias(
+            state_code=_STATE_CODE_ANOTHER, full_name="full_name"
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Attempting to match entity from state \[US_XX\] with entity from state "
+            r"\[US_XY\]",
+        ):
+            _ = _is_match(
+                ingested_entity=alias,
+                db_entity=alias_another,
+                field_index=self.field_index,
+            )
 
     def test_isMatch_defaultCompareExternalId(self) -> None:
         charge = schema.StateCharge(external_id=_EXTERNAL_ID, description="description")
@@ -670,6 +782,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
     def test_isAtomicallyMergedEntity(self) -> None:
         field_index = CoreEntityFieldIndex()
         for db_entity_cls in get_state_database_entities():
+            print(db_entity_cls)
             for entity in PLACEHOLDER_ENTITY_EXAMPLES[db_entity_cls]:
                 self.assertFalse(can_atomically_merge_entity(entity, field_index))
             for entity in REFERENCE_ENTITY_EXAMPLES[db_entity_cls]:
