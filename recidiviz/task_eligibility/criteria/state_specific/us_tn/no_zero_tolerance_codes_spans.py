@@ -108,7 +108,7 @@ _QUERY_TEMPLATE = f"""
             end_date,
             -- Someone meets the criteria if there are no zero tolerance contact codes in a given span
             NOT LOGICAL_OR(critical_date_has_passed) AS meets_criteria,
-            TO_JSON(STRUCT(ARRAY_AGG(critical_date IGNORE NULLS))) AS reason,
+            TO_JSON(STRUCT(ARRAY_AGG(critical_date IGNORE NULLS) AS zero_tolerance_code_dates)) AS reason,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )
