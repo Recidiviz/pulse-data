@@ -216,6 +216,10 @@ class BiologicalSex(DimensionBase, enum.Enum):
     def dimension_identifier(cls) -> str:
         return "global/biological_sex"
 
+    @classmethod
+    def display_name(cls) -> str:
+        return "Biological Sex"
+
 
 class GenderRestricted(DimensionBase, enum.Enum):
     MALE = "Male"
