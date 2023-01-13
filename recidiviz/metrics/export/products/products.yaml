@@ -159,6 +159,5 @@ products:
         environment: production
       - state_code: US_ME
         environment: production
-      # TODO(#16465): Turn this back on in production
       - state_code: US_IX
-        environment: staging
+        environment: production
