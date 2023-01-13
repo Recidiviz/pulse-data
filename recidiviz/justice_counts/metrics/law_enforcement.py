@@ -172,7 +172,6 @@ expenses = MetricDefinition(
             LawEnforcementExpensesIncludesExcludes.SUPERVISION,
         },
     ),
-    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=LawEnforcementExpenseType,
