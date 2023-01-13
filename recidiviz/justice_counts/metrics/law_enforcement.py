@@ -246,7 +246,6 @@ staff = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    specified_contexts=[],
     includes_excludes=IncludesExcludesSet(
         members=LawEnforcementStaffIncludesExcludes,
         excluded_set={
@@ -299,7 +298,7 @@ staff = MetricDefinition(
                 LawEnforcementStaffType.CIVILIAN_STAFF: "The number of full-time equivalent positions that work as civilian or non-sworn employees.",
                 LawEnforcementStaffType.MENTAL_HEALTH: "The number of full-time equivalent positions that are members of a Crisis Intervention Team or provide mental health services in collaboration with law enforcement.",
                 LawEnforcementStaffType.VICTIM_ADVOCATES: "The number of full-time equivalent positions that provide victim support services.",
-                LawEnforcementStaffType.OTHER: " The number of full-time equivalent positions budgeted to the law enforcement agency that are not sworn/uniformed police officers, civilian staff, mental health/Crisis Intervention Team staff, or victim advocate staff.",
+                LawEnforcementStaffType.OTHER: "The number of full-time equivalent positions budgeted to the law enforcement agency that are not sworn/uniformed police officers, civilian staff, mental health/Crisis Intervention Team staff, or victim advocate staff.",
                 LawEnforcementStaffType.UNKNOWN: "The number of full-time equivalent positions budgeted to the law enforcement agency that are of an unknown type.",
                 LawEnforcementStaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
             },
@@ -324,7 +323,7 @@ staff = MetricDefinition(
             },
             dimension_to_description={
                 BiologicalSex.MALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
-                BiologicalSex.FEMALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people in filled staff positions whose biological sex is female.",
                 BiologicalSex.UNKNOWN: "A single day count of the number of people in filled staff positions whose biological sex is unknown.",
             },
         ),
