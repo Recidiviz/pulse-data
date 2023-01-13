@@ -35,6 +35,7 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceNonEmergencyCallsIncludesExcludes,
     LawEnforcementArrestsIncludesExcludes,
     LawEnforcementFundingIncludesExcludes,
+    LawEnforcementReportedCrimeIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.offense import (
     DrugOffenseIncludesExcludes,
@@ -2108,6 +2109,10 @@ class TestMetricInterface(TestCase):
                 ],
                 value=None,
                 aggregated_dimensions=[],
+                includes_excludes_member_to_setting={
+                    member: None
+                    for member in LawEnforcementReportedCrimeIncludesExcludes
+                },
             ),
         )
 
