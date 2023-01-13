@@ -37,7 +37,10 @@ external_data AS (
     person_external_id,
     external_id_type,
     date_of_stay,
-    region_code AS facility
+    CASE region_code
+      WHEN 'US_PA' THEN UPPER(LEFT(facility, 3))
+      ELSE facility
+    END AS facility
   FROM `{{project_id}}.{{external_accuracy_dataset}}.incarceration_population_person_level_materialized`
 ), external_data_with_ids AS (
     -- Find the internal person_id for the people in the external data
