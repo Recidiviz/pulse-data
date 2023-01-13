@@ -240,7 +240,8 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
     GROUP BY 1,2
     ),
     client_notes AS (
-        SELECT 
+        SELECT
+            tes.is_eligible, 
             pei.external_id AS external_id,
             tes.state_code,
             tes.start_date AS eligible_start_date,
@@ -281,15 +282,17 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
             ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
             ARRAY_AGG(n.case_notes IGNORE NULLS)[ORDINAL(1)] AS case_notes,
-        FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes 
+            -- Almost eligible if there is only 1 ineligible_criteria present
+            IF(ARRAY_LENGTH(ARRAY_CONCAT_AGG(tes.ineligible_criteria)) = 1, ARRAY_AGG(tes.ineligible_criteria[SAFE_ORDINAL(1)]), []) AS ineligible_criteria,
+        FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
             ON tes.state_code = ses.state_code
             AND tes.person_id = ses.person_id
             AND tes.start_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
             AND task_name IN ( 
-                "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-                "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
-                )
+            "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
+            "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
+        )
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` cses
             ON tes.state_code = cses.state_code
             AND tes.person_id = cses.person_id 
@@ -326,11 +329,48 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             AND tes.person_id = ncic.person_id
             AND DATE_ADD(review_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
         WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-            AND tes.is_eligible
             AND tes.state_code = 'US_IX'
-        GROUP BY 1,2,3,4,5,6,8,9,17,18,19,20,21
-    )
-   SELECT * FROM client_notes
+        GROUP BY 1,2,3,4,5,6,7,9,10,18,19,20,21,22
+    ),
+        
+    eligible_and_almost_eligible AS (
+        SELECT *
+        FROM client_notes
+        
+        WHERE is_eligible 
+        
+       UNION ALL
+    
+        -- ALMOST ELIGIBLE <income verified within 3 months>
+        SELECT
+            *,
+        FROM client_notes
+        WHERE 
+            -- keep if only ineligible criteria is criteria_name
+            'US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria) 
+        
+        UNION ALL
+        
+        -- ALMOST ELIGIBLE <past early discharge date>
+        SELECT
+            *,
+        FROM client_notes
+        WHERE 
+          -- keep if only ineligible criteria is criteria_name
+          'US_IX_PAROLE_DUAL_SUPERVISION_PAST_EARLY_DISCHARGE_DATE' IN UNNEST(ineligible_criteria) 
+        
+        UNION ALL
+        
+        -- ALMOST ELIGIBLE <on supervision at least one year>
+        SELECT
+            *,
+        FROM client_notes
+        WHERE 
+          -- keep if only ineligible criteria is criteria_name
+          'ON_PROBATION_AT_LEAST_ONE_YEAR' IN UNNEST(ineligible_criteria) 
+    )           
+   
+   SELECT * FROM eligible_and_almost_eligible
 """
 
 US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
