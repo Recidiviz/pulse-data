@@ -18,8 +18,13 @@
 
 from enum import Enum
 
-
 # Supervision Types
+SUPERVISION_PROBATION_BREAKDOWN_DESCRIPTION = "People who are supervised in the community by a public or private probation agency. Probation is generally a sentence from a court that serves in lieu of incarceration. When probation follows incarceration, it differs from parole in that it does not provide early release from incarceration. Rather, it is a determinate sentence that follows a period of incarceration. Decisions to revoke probation are generally the responsibility of a court."
+SUPERVISION_PAROLE_BREAKDOWN_DESCRIPTION = "People who are conditionally released from prison to serve the remainder of their sentence in the community. Parole releases may be determined by a parole board or by mandatory release according to statute. Decisions to revoke parole are generally the responsibility of a parole board."
+SUPERVISION_PRETRIAL_BREAKDOWN_DESCRIPTION = "People who are supervised while awaiting trial as a condition of staying in the community until the disposition of their case. Decisions to revoke pretrial supervision are generally the responsibility of a court."
+SUPERVISION_OTHER_COMMUNITY_BREAKDOWN_DESCRIPTION = "People who are under a type of community supervision, by a public or private agency, that is not probation, parole, or pretrial."
+
+
 class SupervisionProbationDefinitionIncludesExcludes(Enum):
     IN_LIEU_INCARCERATION = "People sentenced to a period of probation in lieu of incarceration (including to electronic monitoring, home confinement, traditional supervision, etc.)"
     AFTER_INCARCERATION = "People sentenced to a period of probation after a period of incarceration (including to electronic monitoring, home confinement, traditional supervision, etc.)"
