@@ -26,26 +26,28 @@ from recidiviz.utils.metadata import local_project_id_override
 
 sentences_base = sentence_view_template()
 
-
 VIEW_QUERY_TEMPLATE = f"""
-    SELECT 
-        SentenceId, 
-        OffenderId, 
-        CountyId,
-        (DATE(EffectiveDate)) as EffectiveDate, 
-        (DATE(SentenceDate)) as SentenceDate,
-        (DATE(DpedApprovedDate)) as DpedApprovedDate,
-        (DATE(FtrdApprovedDate)) as FtrdApprovedDate,
-        TermStatusDesc, 
-        SentenceOrderEventTypeName,
-        _parentsentenceid,
-        Sequence,
-        ChargeId
-    FROM ({sentences_base}) sent
-    WHERE SentenceOrderCategoryId = '2'
-    AND SentenceOrderEventTypeId IN ('1', '2') -- keep "Initial" and "Amendment" sentences
+    WITH
+        {sentences_base}
+        SELECT
+            SentenceId,
+            OffenderId, 
+            CountyId,
+            EffectiveDate, 
+            SentenceDate,
+            DpedApprovedDate,
+            FtrdApprovedDate,
+            TermStatusDesc, 
+            SentenceOrderEventTypeName,
+            _parentsentenceid,
+            Sequence,
+            ChargeId,
+            relationships,
+            CorrectionsCompactEndDate
+        FROM final_sentences
+        WHERE SentenceOrderCategoryId = '2'
+        AND SentenceOrderEventTypeId IN ('1', '2') -- keep "Initial" and "Amendment" sentences
 """
-
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_ix",
     ingest_view_name="incarceration_sentence",

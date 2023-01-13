@@ -13,6 +13,7 @@ input_columns:
   - _parentsentenceid
   - Sequence
   - ChargeId
+  - relationships
 unused_columns: []
 output:
   StatePerson:
@@ -75,3 +76,4 @@ output:
                   $values:
                     - ChargeId
                     - Sequence
+              relationships: relationships
