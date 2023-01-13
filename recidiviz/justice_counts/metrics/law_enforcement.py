@@ -358,7 +358,6 @@ arrests = MetricDefinition(
         members=LawEnforcementArrestsIncludesExcludes,
         excluded_set={LawEnforcementArrestsIncludesExcludes.OUTSIDE_JURISDICTION},
     ),
-    reporting_note="Arrests are based on the number of arrest events, not the number of unique people arrested. If the same person was arrested three times during a time period, it would count as three arrests. A person suspected of committing more than one offense, but arrested only once, should be counted as one arrest classified by the most serious charge in the incident. Law enforcement agencies should only share data for those arrests made for offenses committed within their own jurisdictions.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
         AggregatedDimension(
@@ -400,7 +399,15 @@ arrests = MetricDefinition(
             },
         ),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=BiologicalSex, required=True),
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=True,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of arrests, citations, and summonses by the agency of people whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of arrests, citations, and summonses by the agency of people whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of arrests, citations, and summonses by the agency of people whose biological sex is not known.",
+            },
+        ),
     ],
 )
 
