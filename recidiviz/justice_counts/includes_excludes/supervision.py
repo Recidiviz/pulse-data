@@ -319,7 +319,6 @@ class SupervisionStaffIncludesExcludes(Enum):
     PART_TIME = "Part-time positions"
     CONTRACTED = "Contracted positions"
     TEMPORARY = "Temporary positions"
-    OTHER = "Other staff positions not captured by the listed categories"
     VOLUNTEER = "Volunteer positions"
     INTERN = "Intern positions"
 
@@ -345,7 +344,7 @@ class SupervisionClinicalMedicalStaffIncludesExcludes(Enum):
     CLINICIANS = "Clinicians (e.g., substance use treatment specialists)"
     THERAPISTS = "Therapists (e.g., mental health counselors)"
     PSYCHIATRISTS = "Psychiatrists"
-    VACANT = "Clinical or medical staff positions budgeted but currently vacant"
+    VACANT = "Clinical and medical staff positions budgeted but currently vacant"
 
 
 class SupervisionProgrammaticStaffIncludesExcludes(Enum):
@@ -360,7 +359,7 @@ class SupervisionProgrammaticStaffIncludesExcludes(Enum):
 class SupervisionVacantStaffIncludesExcludes(Enum):
     VACANT_SUPERVISION = "Vacant supervision staff positions"
     VACANT_MANAGEMENT_AND_OPS = "Vacant management and operations"
-    VACANT_CLINICAL_OR_MEDICAL = "Vacant clinical or medical staff positions"
+    VACANT_CLINICAL_AND_MEDICAL = "Vacant clinical and medical staff positions"
     VACANT_PROGRAMMATIC = "Vacant programmatic staff positions"
     VACANT_UNKNOWN = "Vacant staff positions of unknown type"
     FILLED = "Filled positions"

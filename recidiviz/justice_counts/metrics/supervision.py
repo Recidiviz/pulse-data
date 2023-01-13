@@ -212,12 +212,6 @@ total_staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-    definitions=[
-        Definition(
-            term="Full-time staff",
-            definition="Number of people employed in a full-time (0.9+) capacity.",
-        )
-    ],
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -235,7 +229,7 @@ total_staff = MetricDefinition(
                         SupervisionManagementOperationsStaffIncludesExcludes.VACANT
                     },
                 ),
-                SupervisionStaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
+                SupervisionStaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
                     members=SupervisionClinicalMedicalStaffIncludesExcludes,
                     excluded_set={
                         SupervisionClinicalMedicalStaffIncludesExcludes.VACANT,
@@ -258,9 +252,9 @@ total_staff = MetricDefinition(
             dimension_to_description={
                 SupervisionStaffType.SUPERVISION: "The number of full-time equivalent positions that work directly with people who are on supervision and are responsible for their supervision and case management.",
                 SupervisionStaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are supervised in the community but support the day-to-day operations of the supervision agency.",
-                SupervisionStaffType.CLINICAL_OR_MEDICAL: "The number of full-time equivalent positions that work directly with people on probation, parole, or other community supervision and are responsible for their physical or mental health.",
+                SupervisionStaffType.CLINICAL_AND_MEDICAL: "The number of full-time equivalent positions that work directly with people on probation, parole, or other community supervision and are responsible for their physical or mental health.",
                 SupervisionStaffType.PROGRAMMATIC: "The number of full-time equivalent positions that provide services and programming to people on community supervision but are not medical or clinical staff.",
-                SupervisionStaffType.OTHER: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not supervision staff, management and operations staff, clinical or medical staff, or programmatic staff.",
+                SupervisionStaffType.OTHER: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not supervision staff, management and operations staff, clinical and medical staff, or programmatic staff.",
                 SupervisionStaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are of an unknown type.",
                 SupervisionStaffType.VACANT: "The number of full-time equivalent positions of any type dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are budgeted but not currently filled.",
             },

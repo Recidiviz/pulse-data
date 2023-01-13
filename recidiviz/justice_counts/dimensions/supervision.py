@@ -49,7 +49,7 @@ class SupervisionExpenseType(DimensionBase, enum.Enum):
 class SupervisionStaffType(DimensionBase, enum.Enum):
     SUPERVISION = "Supervision Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
-    CLINICAL_OR_MEDICAL = "Clinical or Medical Staff"
+    CLINICAL_AND_MEDICAL = "Clinical and Medical Staff"
     PROGRAMMATIC = "Programmatic Staff"
     OTHER = "Other Staff"
     UNKNOWN = "Unknown Staff"
