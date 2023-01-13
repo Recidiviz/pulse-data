@@ -17,7 +17,6 @@
 
 """Tests for view_export_manager.py."""
 
-import base64
 import unittest
 from http import HTTPStatus
 from typing import Any, Dict
@@ -45,9 +44,6 @@ from recidiviz.metrics.export.view_export_manager import (
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
-from recidiviz.tests.metrics.export.view_export_cloud_task_manager_test import (
-    CLOUD_TASK_MANAGER_PACKAGE_NAME,
-)
 from recidiviz.utils.environment import GCPEnvironment
 
 
@@ -78,14 +74,9 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             "google.cloud.tasks_v2.CloudTasksClient"
         )
         self.mock_cloud_task_client_patcher.start()
-        self.mock_uuid_patcher = mock.patch(f"{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid")
-        self.mock_uuid = self.mock_uuid_patcher.start()
         with self.app.test_request_context():
             self.metric_view_data_export_url = flask.url_for(
                 "export.metric_view_data_export"
-            )
-            self.create_metric_view_data_export_tasks_url = flask.url_for(
-                "export.create_metric_view_data_export_tasks"
             )
         self.mock_state_code = "US_XX"
         self.mock_project_id = "test-project"
@@ -181,7 +172,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         self.export_config_patcher.stop()
         self.metadata_patcher.stop()
         self.gcs_factory_patcher.stop()
-        self.mock_uuid_patcher.stop()
         self.mock_cloud_task_client_patcher.stop()
         self.metric_view_data_export_success_persister_patcher.stop()
 
@@ -574,38 +564,6 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 cloud_task_id=current_cloud_task_id,
             )
 
-    # TODO(#4593): Remove after dry run tested
-    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
-    )
-    def test_metric_view_data_export_dry_run(
-        self, mock_export_view_data_to_cloud_storage: Mock, _mock_bq_client: MagicMock
-    ) -> None:
-        with self.app.test_request_context():
-            current_cloud_task_id = "my_cloud_task_id_abcd"
-            headers: Dict[str, Any] = {
-                **self.headers,
-                "X-AppEngine-TaskName": current_cloud_task_id,
-            }
-            export_job_name = "export"
-            state_code = "us_xx"
-
-            mock_export_view_data_to_cloud_storage.return_value = None
-            response = self.client.get(
-                self.metric_view_data_export_url,
-                headers=headers,
-                query_string=f"export_job_name={export_job_name}&state_code={state_code}&dry_run=true",
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_export_view_data_to_cloud_storage.assert_not_called()
-            self.mock_metric_view_data_export_success_persister.record_success_in_bq.assert_called_with(
-                export_job_name=export_job_name,
-                state_code=state_code,
-                runtime_sec=mock.ANY,
-                cloud_task_id=current_cloud_task_id,
-            )
-
     @mock.patch("recidiviz.utils.environment.get_gcp_environment")
     @mock.patch(
         "recidiviz.metrics.export.view_export_manager.export_view_data_to_cloud_storage"
@@ -716,129 +674,4 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
                 b"Missing required export_job_name URL parameter", response.data
-            )
-
-    @mock.patch(
-        "recidiviz.metrics.export.view_export_cloud_task_manager.ViewExportCloudTaskManager.create_metric_view_data_export_task"
-    )
-    def test_create_metric_view_data_export_tasks_state_code_filter(
-        self, mock_create_metric_view_data_export_task: Mock
-    ) -> None:
-        with self.app.test_request_context():
-            mock_create_metric_view_data_export_task.return_value = None
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={"message": {"data": base64.b64encode(b"US_XX").decode()}},
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_create_metric_view_data_export_task.assert_has_calls(
-                [
-                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
-                    mock.call(export_job_name="OTHER_EXPORT", state_code="US_XX"),
-                ],
-                any_order=True,
-            )
-
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={"message": {"data": base64.b64encode(b"us_xx").decode()}},
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_create_metric_view_data_export_task.assert_has_calls(
-                [
-                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
-                    mock.call(export_job_name="OTHER_EXPORT", state_code="US_XX"),
-                ],
-                any_order=True,
-            )
-
-    @mock.patch(
-        "recidiviz.metrics.export.view_export_cloud_task_manager.ViewExportCloudTaskManager.create_metric_view_data_export_task"
-    )
-    def test_create_metric_view_data_export_tasks_export_name_filter_state_agnostic(
-        self, mock_create_metric_view_data_export_task: Mock
-    ) -> None:
-        with self.app.test_request_context():
-            mock_create_metric_view_data_export_task.return_value = None
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={
-                    "message": {"data": base64.b64encode(b"MOCK_EXPORT_NAME").decode()}
-                },
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_create_metric_view_data_export_task.assert_has_calls(
-                [
-                    mock.call(export_job_name="MOCK_EXPORT_NAME", state_code=None),
-                ],
-                any_order=True,
-            )
-
-            # case insensitive
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={
-                    "message": {"data": base64.b64encode(b"mock_export_name").decode()}
-                },
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_create_metric_view_data_export_task.assert_has_calls(
-                [
-                    mock.call(export_job_name="MOCK_EXPORT_NAME", state_code=None),
-                ],
-                any_order=True,
-            )
-
-    @mock.patch(
-        "recidiviz.metrics.export.view_export_cloud_task_manager.ViewExportCloudTaskManager.create_metric_view_data_export_task"
-    )
-    def test_create_metric_view_data_export_tasks_export_name_filter(
-        self, mock_create_metric_view_data_export_task: Mock
-    ) -> None:
-        with self.app.test_request_context():
-            mock_create_metric_view_data_export_task.return_value = None
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={"message": {"data": base64.b64encode(b"EXPORT").decode()}},
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_create_metric_view_data_export_task.assert_has_calls(
-                [
-                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
-                    mock.call(export_job_name="EXPORT", state_code="US_WW"),
-                ],
-                any_order=True,
-            )
-
-            # case insensitive
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={"message": {"data": base64.b64encode(b"export").decode()}},
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
-            mock_create_metric_view_data_export_task.assert_has_calls(
-                [
-                    mock.call(export_job_name="EXPORT", state_code="US_XX"),
-                    mock.call(export_job_name="EXPORT", state_code="US_WW"),
-                ],
-                any_order=True,
-            )
-
-    def test_create_metric_view_data_export_tasks_invalid_request(self) -> None:
-        with self.app.test_request_context():
-            response = self.client.post(
-                self.create_metric_view_data_export_tasks_url,
-                headers=self.headers,
-                json={"message": {}},
-            )
-            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-            self.assertEqual(
-                b"Missing required export_job_filter in data of the Pub/Sub message.",
-                response.data,
             )

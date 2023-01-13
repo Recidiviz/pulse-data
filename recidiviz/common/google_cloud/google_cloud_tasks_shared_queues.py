@@ -18,5 +18,3 @@
 
 CLOUD_SQL_TO_BQ_REFRESH_QUEUE = "cloud-sql-to-bq-refresh"
 CLOUD_SQL_TO_BQ_REFRESH_SCHEDULER_QUEUE = "cloud-sql-to-bq-refresh-scheduler"
-
-METRIC_VIEW_EXPORT_QUEUE = "metric-view-export"

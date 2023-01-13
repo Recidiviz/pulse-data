@@ -17,7 +17,6 @@
 """Export data from BigQuery metric views to configurable locations."""
 import datetime
 import logging
-import time
 from http import HTTPStatus
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -63,16 +62,12 @@ from recidiviz.metrics.export.products.product_configs import (
     BadProductExportSpecificationError,
     ProductConfigs,
 )
-from recidiviz.metrics.export.view_export_cloud_task_manager import (
-    ViewExportCloudTaskManager,
-)
 from recidiviz.metrics.export.with_metadata_query_big_query_view_exporter import (
     WithMetadataQueryBigQueryViewExporter,
 )
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.params import get_bool_param_value, get_str_param_value
-from recidiviz.utils.pubsub_helper import extract_pubsub_message_from_json
+from recidiviz.utils.params import get_str_param_value
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -113,54 +108,6 @@ class ViewExportConfigurationError(Exception):
     """Error thrown when views are misconfigured."""
 
 
-# TODO(#4593): We might be able to get rid of this endpoint entirely once we run the
-#  metric export endpoints directly in Airflow, rather than just triggering the tasks
-#  with Pub/Sub topics.
-@export_blueprint.route("/create_metric_view_data_export_tasks", methods=["POST"])
-@requires_gae_auth
-def create_metric_view_data_export_tasks() -> Tuple[str, HTTPStatus]:
-    """Queues a task to export data in BigQuery metric views to cloud storage buckets.
-
-    Example:
-        gcloud pubsub topics publish v1.export.view.data --mesage="US_ID"
-    Request body:
-        data: Base64-encoded job name to initiate export for (e.g. US_ID or LANTERN).
-                If state_code, will create tasks for all products that have launched for that state_code.
-                If product name, will create tasks for all states that have launched for that product.
-    Args:
-        N/A
-    Returns:
-        N/A
-    """
-    logging.info("Queueing a task to export view data to cloud storage")
-
-    try:
-        message = extract_pubsub_message_from_json(request.get_json())
-    except Exception as e:
-        return str(e), HTTPStatus.BAD_REQUEST
-
-    # We don't need to b64-decode here because the protobuf parser does it automatically, so just
-    # convert from bytes to string
-    export_job_filter = message.data.decode()
-
-    if not export_job_filter:
-        return (
-            "Missing required export_job_filter in data of the Pub/Sub message.",
-            HTTPStatus.BAD_REQUEST,
-        )
-
-    relevant_product_exports = ProductConfigs.from_file(
-        path=PRODUCTS_CONFIG_PATH
-    ).get_export_configs_for_job_filter(export_job_filter)
-
-    for export in relevant_product_exports:
-        ViewExportCloudTaskManager().create_metric_view_data_export_task(
-            export_job_name=export["export_job_name"], state_code=export["state_code"]
-        )
-
-    return "", HTTPStatus.OK
-
-
 @export_blueprint.route("/metric_view_data", methods=["GET", "POST"])
 @requires_gae_auth
 def metric_view_data_export() -> Tuple[str, HTTPStatus]:
@@ -172,7 +119,6 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
         export_job_name: Name of job to initiate export for (e.g. PO_MONTHLY).
         state_code: (Optional) State code to initiate export for (e.g. US_ID)
                     State code must be present if the job is not state agnostic.
-        dry_run: (Optional) If dry_run is true will wait for 10 seconds and then return success.
     Args:
         N/A
     Returns:
@@ -198,13 +144,9 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
         logging.exception(e)
         return str(e), HTTPStatus.BAD_REQUEST
 
-    # TODO(#4593): Remove dry_run after endpoint tested
-    dry_run = get_bool_param_value("dry_run", request.args, False)
     start = datetime.datetime.now()
 
-    if dry_run:
-        time.sleep(10)
-    elif export_launched:
+    if export_launched:
         export_view_data_to_cloud_storage(
             export_job_name=export_job_name, state_code=state_code
         )

@@ -168,7 +168,7 @@ class CheckAssertionsTest(unittest.TestCase):
             ),
             (
                 frozenset(["recidiviz/metrics/export/view_export_manager.py"]),
-                frozenset(["docs/endpoints/export"]),
+                frozenset(["docs/endpoints/export/metric_view_data.md"]),
                 "endpoints_docs",
             ),
         ]
