@@ -243,7 +243,12 @@ class TestMetricInterface(TestCase):
                                 "value": 20,
                                 "enabled": True,
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -252,7 +257,12 @@ class TestMetricInterface(TestCase):
                                 "value": 60,
                                 "enabled": True,
                                 "description": "The number of calls for police assistance received by the agency that do not require immediate response.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -386,7 +396,12 @@ class TestMetricInterface(TestCase):
                                 "value": 60,
                                 "enabled": True,
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a drug offense.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -395,7 +410,12 @@ class TestMetricInterface(TestCase):
                                 "value": 10,
                                 "enabled": True,
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a crime against a person.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -404,7 +424,12 @@ class TestMetricInterface(TestCase):
                                 "value": 40,
                                 "enabled": True,
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a property offense.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -413,7 +438,12 @@ class TestMetricInterface(TestCase):
                                 "value": 0,
                                 "enabled": True,
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was a public order offense.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                             },
                             {
                                 "datapoints": None,
@@ -759,7 +789,12 @@ class TestMetricInterface(TestCase):
                                 "label": "Emergency Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "PRIORITY",
@@ -817,7 +852,12 @@ class TestMetricInterface(TestCase):
                                 "label": "Non-emergency Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "ROUTINE_RESPONSE",
@@ -976,7 +1016,12 @@ class TestMetricInterface(TestCase):
                                 "label": "Emergency Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "PRIORITY",
@@ -1034,7 +1079,12 @@ class TestMetricInterface(TestCase):
                                 "label": "Non-emergency Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "ROUTINE_RESPONSE",
@@ -1193,7 +1243,12 @@ class TestMetricInterface(TestCase):
                                 "label": "Emergency Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "PRIORITY",
@@ -1251,7 +1306,12 @@ class TestMetricInterface(TestCase):
                                 "label": "Non-emergency Calls",
                                 "enabled": False,
                                 "datapoints": None,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "ROUTINE_RESPONSE",
@@ -1422,7 +1482,12 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.EMERGENCY.value,
                                 "key": CallType.EMERGENCY.value,
                                 "description": "The number of calls for police assistance received by the agency that require immediate response.",
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "PRIORITY",
@@ -1479,7 +1544,12 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "label": CallType.NON_EMERGENCY.value,
                                 "key": CallType.NON_EMERGENCY.value,
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "ROUTINE_RESPONSE",
@@ -1781,7 +1851,12 @@ class TestMetricInterface(TestCase):
                                         "value": 51890,
                                     }
                                 ],
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "PRIORITY",
@@ -1854,7 +1929,12 @@ class TestMetricInterface(TestCase):
                                         "value": 66995,
                                     }
                                 ],
-                                "contexts": [],
+                                "contexts": [
+                                    {
+                                        "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                        "value": None,
+                                    },
+                                ],
                                 "settings": [
                                     {
                                         "key": "ROUTINE_RESPONSE",
