@@ -128,24 +128,12 @@ class TestCalculationPipelineDag(unittest.TestCase):
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
-        export_task_id_regex = ".*bq_metric_export.*"
-        export_tasks = dag.partial_subset(
-            task_ids_or_regex=export_task_id_regex,
-            include_downstream=False,
-            include_upstream=True,
-        )
-
         metric_view_data_export_id_regex = "trigger.*metric_view_data_export.*"
         metric_view_data_export_tasks = dag.partial_subset(
             task_ids_or_regex=metric_view_data_export_id_regex,
             include_downstream=False,
             include_upstream=True,
         )
-
-        self.assertNotEqual(0, len(export_tasks.leaves))
-        for task in export_tasks.leaves:
-            self.assertRegex(task.task_id, export_task_id_regex)
-            self.assertIn(_WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids)
 
         self.assertNotEqual(0, len(metric_view_data_export_tasks.leaves))
         for task in metric_view_data_export_tasks.leaves:
