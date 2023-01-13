@@ -27,7 +27,6 @@ from typing import Any, Dict, List, NamedTuple, Optional
 from airflow.decorators import dag
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, ShortCircuitOperator
-from airflow.providers.google.cloud.operators.pubsub import PubSubPublishMessageOperator
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.state import State
 from airflow.utils.trigger_rule import TriggerRule
@@ -98,16 +97,6 @@ PipelineConfigArgs = NamedTuple(
     "PipelineConfigArgs",
     [("state_code", str), ("pipeline_name", str), ("staging_only", Optional[bool])],
 )
-
-
-def trigger_export_operator(export_name: str) -> PubSubPublishMessageOperator:
-    # TODO(#4593) Migrate to IAPHTTPOperator
-    return PubSubPublishMessageOperator(
-        task_id=f"trigger_{export_name.lower()}_bq_metric_export",
-        project_id=project_id,
-        topic="v1.export.view.data",
-        messages=[{"data": bytes(export_name, "utf-8")}],
-    )
 
 
 def get_zone_for_region(pipeline_region: str) -> str:
@@ -290,11 +279,10 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
 def trigger_metric_view_data_operator(
     export_job_name: str,
     state_code: Optional[str],
-    dry_run: Optional[bool],
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "metric-view-export"
-    endpoint = f"/export/metric_view_data?export_job_name={export_job_name}{f'&state_code={state_code}' if state_code else ''}{'&dry_run=True' if dry_run else ''}"
+    endpoint = f"/export/metric_view_data?export_job_name={export_job_name}{f'&state_code={state_code}' if state_code else ''}"
     if not project_id:
         raise ValueError("project_id must be configured.")
     task_path = CloudTasksClient.task_path(
@@ -322,7 +310,6 @@ def trigger_metric_view_data_operator(
 
 def create_metric_view_data_export_nodes(
     export_job_filter: str,
-    dry_run: Optional[bool],
 ) -> List[CloudTasksTaskCreateOperator]:
     """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
     relevant_product_exports = ProductConfigs.from_file(
@@ -336,7 +323,6 @@ def create_metric_view_data_export_nodes(
         trigger_metric_view_data = trigger_metric_view_data_operator(
             export_job_name=export_job_name,
             state_code=state_code,
-            dry_run=dry_run,
         )
 
         wait_for_metric_view_data_export = BQResultSensor(
@@ -347,7 +333,7 @@ def create_metric_view_data_export_nodes(
                 tracker_dataset_id="view_update_metadata",
                 tracker_table_id="metric_view_data_export_tracker",
             ),
-            timeout=(60 * 4),
+            timeout=(60 * 60 * 4),
         )
 
         trigger_metric_view_data >> wait_for_metric_view_data_export
@@ -610,39 +596,22 @@ def create_calculation_dag() -> None:
         pipeline.peek("state_code", str) for pipeline in metric_pipelines
     }
 
-    # TODO(#4593): Old metric export operators to be removed once new metric export nodes are tested.
-    state_trigger_export_operators = {
-        state_code: trigger_export_operator(state_code)
-        for state_code in states_to_trigger
-    }
-
-    case_triage_export_operator = trigger_export_operator("CASE_TRIAGE")
-    all_trigger_export_operators = {
-        *state_trigger_export_operators.values(),
-        case_triage_export_operator,
-        *[trigger_export_operator(export) for export in PIPELINE_AGNOSTIC_EXPORTS],
-    }
-
-    # New metric export operators that directly call `metric_view_data` endpoint
     state_create_metric_view_data_export_nodes = {
-        state_code: create_metric_view_data_export_nodes(state_code, dry_run=True)
+        state_code: create_metric_view_data_export_nodes(state_code)
         for state_code in states_to_trigger
     }
 
     case_triage_create_metric_view_data_export_nodes = (
-        create_metric_view_data_export_nodes("CASE_TRIAGE", dry_run=True)
+        create_metric_view_data_export_nodes("CASE_TRIAGE")
     )
     all_create_metric_view_data_export_nodes = [
         *state_create_metric_view_data_export_nodes.values(),
         case_triage_create_metric_view_data_export_nodes,
         *[
-            create_metric_view_data_export_nodes(export, dry_run=True)
+            create_metric_view_data_export_nodes(export)
             for export in PIPELINE_AGNOSTIC_EXPORTS
         ],
     ]
-
-    for export_operator in all_trigger_export_operators:
-        wait_for_rematerialize >> export_operator
 
     for data_export_operator in all_create_metric_view_data_export_nodes:
         wait_for_rematerialize >> data_export_operator
@@ -651,13 +620,11 @@ def create_calculation_dag() -> None:
         for metric_pipeline_operator in metric_pipeline_operators:
             # If any metric pipeline for a particular state fails, then the exports
             # for that state should not proceed.
-            (metric_pipeline_operator >> state_trigger_export_operators[state_code])
             (
                 metric_pipeline_operator
                 >> state_create_metric_view_data_export_nodes[state_code]
             )
             if state_code in CASE_TRIAGE_STATES:
-                (metric_pipeline_operator >> case_triage_export_operator)
                 (
                     metric_pipeline_operator
                     >> case_triage_create_metric_view_data_export_nodes
