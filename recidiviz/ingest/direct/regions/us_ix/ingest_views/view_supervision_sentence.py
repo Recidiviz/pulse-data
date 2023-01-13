@@ -34,24 +34,27 @@ supervision_addon_CTE = """
 """
 
 VIEW_QUERY_TEMPLATE = f"""
-    WITH ProbationSupervision as ({supervision_addon_CTE})
-    SELECT
-        SentenceId, 
-        OffenderId, 
-        CountyId,
-        (DATE(EffectiveDate)) as EffectiveDate, 
-        (DATE(SentenceDate)) as SentenceDate,
-        SentenceOrderTypeCode,
-        (DATE(EndDate)) as EndDate,
-        TermStatusDesc,
-        SentenceOrderEventTypeName,
-        _parentsentenceid,
-        Sequence,
-        ChargeId
-    FROM ({sentences_base}) sent
-    LEFT JOIN ProbationSupervision prob_sup ON sent.SentenceOrderId = prob_sup.SentenceOrderId
-    WHERE SentenceOrderCategoryId = '1'
-    AND SentenceOrderEventTypeId IN ('1', '2', '5') -- keep "Initial", "Amendment", and "Linked Event" sentences
+    WITH
+        {sentences_base},
+        ProbationSupervision as ({supervision_addon_CTE})
+        SELECT 
+            SentenceId,
+            OffenderId, 
+            CountyId,
+            EffectiveDate, 
+            SentenceDate,
+            SentenceOrderTypeCode,
+            (DATE(EndDate)) as EndDate,
+            TermStatusDesc,
+            SentenceOrderEventTypeName,
+            _parentsentenceid,
+            Sequence,
+            ChargeId,
+            relationships
+        FROM final_sentences sent
+        LEFT JOIN ProbationSupervision prob_sup ON sent.SentenceOrderId = prob_sup.SentenceOrderId
+        WHERE SentenceOrderCategoryId = '1'
+        AND SentenceOrderEventTypeId IN ('1', '2', '5') -- keep "Initial", "Amendment", and "Linked Event" sentences
 """
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_ix",

@@ -13,7 +13,18 @@ input_columns:
   - _parentsentenceid
   - Sequence
   - ChargeId
+  - relationships
+  - CorrectionsCompactEndDate
 unused_columns: []
+variables:
+  # FtrdApprovedDate is sometimes empty in the case of interstate compact sentences so we'll proxy it using CorrectionsCompactEndDate
+  # However, note that FtrdApprovedDate is on the term level while CorrectionsCompactEndDate is at the sentence level
+  - proj_completion_date_var:
+      $conditional:
+        - $if:
+            $is_null: FtrdApprovedDate
+          $then: CorrectionsCompactEndDate
+        - $else: FtrdApprovedDate
 output:
   StatePerson:
     external_ids:
@@ -52,22 +63,23 @@ output:
                   - Inactive
           incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
           date_imposed: SentenceDate
-          projected_max_release_date: FtrdApprovedDate # This is technically the full term release date for the entire term and not just the incarceration sentence, so might not be totally true
+          projected_max_release_date: $variable(proj_completion_date_var) # Depending on which variable is used for projected_max_release_date, this might be on the term or sentence level (see note at Variables section)
           projected_min_release_date: DpedApprovedDate # I think this is the same date as parole eligibility date? At least true in spotchecking some records
           parole_eligibility_date: DpedApprovedDate # This is technially the PED for the entire term, so not 100% true in all cases
           # couldn't find information for completion_date  #TODO(#17196): Revisit pulling this in
           max_length_days:
+            # Depending on which variable is used for projected_max_release_date, this might be on the term or sentence level (see note at Variables section)
             $conditional:
               - $if:
                   $and:
                     - $not_null: EffectiveDate
-                    - $not_null: FtrdApprovedDate
+                    - $not_null: $variable(proj_completion_date_var)
                 $then:
                   $custom:
                     $function: us_ix_custom_parsers.parse_duration_from_two_dates
                     $args:
                       start_date_str: EffectiveDate
-                      end_date_str: FtrdApprovedDate
+                      end_date_str: $variable(proj_completion_date_var)
           min_length_days:
             $conditional:
               - $if:
@@ -80,6 +92,15 @@ output:
                     $args:
                       start_date_str: EffectiveDate
                       end_date_str: DpedApprovedDate
+          is_life:
+            $conditional:
+              - $if:
+                  $not_null: $variable(proj_completion_date_var)
+                $then:
+                  $custom:
+                    $function: us_ix_custom_parsers.parse_is_life_from_date
+                    $args:
+                      proj_completion_date: $variable(proj_completion_date_var)
           sentence_metadata:
             $json_dict:
               sentence_event_type: SentenceOrderEventTypeName
@@ -89,3 +110,4 @@ output:
                   $values:
                     - ChargeId
                     - Sequence
+              relationships: relationships

@@ -38,7 +38,7 @@ def parse_duration_from_two_dates(
         start_dt = parse_datetime(start_date_str)
         end_dt = parse_datetime(end_date_str)
 
-        if start_dt and end_dt:
+        if start_dt and end_dt and end_dt.year != 9999:
             return str((end_dt - start_dt).days)
     except ValueError:
         return None
@@ -62,3 +62,7 @@ def parse_supervision_violation_is_sex_offense(new_crime_types: str) -> bool:
         if "SEX" in new_crime_type.upper():
             return True
     return False
+
+
+def parse_is_life_from_date(proj_completion_date: str) -> bool:
+    return proj_completion_date[:4] == "9999"
