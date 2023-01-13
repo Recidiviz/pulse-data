@@ -1238,8 +1238,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response = self.client.get(f"/api/agencies/{agency.id}/metrics")
             # Check that GET request suceeded
             self.assertEqual(response.status_code, 200)
-            # Check that all dimensions have either empty list for contexts (not an OTHER member)
-            # or has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (no data provided by user)
+            # For all dimensions, their 'context' field has 4 possible cases
+            # dimension has an empty contexts lists (no dimension_to_includes_excludes, not an OTHER member)
+            # dimension has singleton list [{"key": "ADDITIONAL_CONTEXT", "value": None}] (no dimension_to_includes_excludes, is an OTHER member)
+            # dimension has singleton list [{"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes, is not an OTHER member)
+            # dimension has list of 2 contexts [{"key": "ADDITIONAL_CONTEXT", "value": None}, {"key": "INCLUDES_EXCLUDES_DESCRIPTION", "value": None}] (has dimension_to_includes_excludes and is an OTHER member)
             if response.json is not None:
                 for settings in response.json:
                     for disaggregations in settings["disaggregations"]:
@@ -1250,14 +1253,41 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             dimension_enum = dimension_class(
                                 dimension["key"]
                             )  # type: ignore[abstract]
-                            if dimension_enum.name.strip() == "OTHER":  # type: ignore[attr-defined]
-                                # OTHER dimension within the aggregation, but a user has yet to provide that data
+                            includes_excludes = dimension.get("settings", [])
+                            if (
+                                dimension_enum.name.strip() == "OTHER"  # type: ignore[attr-defined]
+                                and includes_excludes != []
+                            ):
+                                # OTHER dimension within the aggregation, and dimension has includes/excludes
+                                self.assertEqual(
+                                    dimension["contexts"],
+                                    [
+                                        {"key": "ADDITIONAL_CONTEXT", "value": None},
+                                        {
+                                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                            "value": None,
+                                        },
+                                    ],
+                                )
+                            elif dimension_enum.name.strip() == "OTHER":  # type: ignore[attr-defined]
+                                # OTHER dimension within the aggregation, dimension does not have includes/excludes
                                 self.assertEqual(
                                     dimension["contexts"],
                                     [{"key": "ADDITIONAL_CONTEXT", "value": None}],
                                 )
+                            elif includes_excludes != []:
+                                # not an OTHER dimension, and dimension has includes/excludes
+                                self.assertEqual(
+                                    dimension["contexts"],
+                                    [
+                                        {
+                                            "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                                            "value": None,
+                                        }
+                                    ],
+                                )
                             else:
-                                # When dimension_to_contexts is None (not an OTHER member within the aggregation)
+                                # When dimension_to_contexts is None and not an OTHER member within the aggregation
                                 self.assertEqual(dimension["contexts"], [])
 
     def test_update_and_get_metric_settings(self) -> None:

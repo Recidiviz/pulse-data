@@ -171,22 +171,43 @@ class AggregatedDimension:
     def dimension_to_contexts(
         self,
     ) -> Optional[Dict[DimensionBase, List[Context]]]:
-        """Returns a dictionary with 1 key (the OTHER dimension for the disaggregation).
-        The value of the dictionary is a singleton list containing the additional context
-        for that dimension. This is used in the UI to provide additional context text
-        boxes for OTHER dimensions."""
+        """
+        Returns a dictionary of dimension members as keys. The values of the dictionary
+        are lists of Contexts. A given dimension member can potentially have 2 contexts:
+            - if the dimension member has an includes/excludes, that dimension member
+            will have the 'includes excludes description' context. This is used in the UI
+            to provide text boxes to describe additional data alements included in the
+            agency's metric definition.
+            - OTHER dimension members can have the 'additional context' context. This is
+             used in the UI to provide additional context text boxes for OTHER dimensions"""
+        dim_to_contexts: Dict[DimensionBase, List[Context]] = {}
         for member in self.dimension:  # type: ignore[attr-defined]
+            context_lst = []
+            if (
+                self.dimension_to_includes_excludes is not None
+                and self.dimension_to_includes_excludes.get(member) is not None
+            ):
+                context_lst.append(
+                    Context(
+                        key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                        value_type=ValueType.TEXT,
+                        label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                        required=False,
+                    )
+                )
             if member.name.strip() == "OTHER":
-                return {
-                    member: [
-                        Context(
-                            key=ContextKey.ADDITIONAL_CONTEXT,
-                            value_type=ValueType.TEXT,
-                            label="Please describe what data is being included in this breakdown.",
-                            required=False,
-                        )
-                    ]
-                }
+                context_lst.append(
+                    Context(
+                        key=ContextKey.ADDITIONAL_CONTEXT,
+                        value_type=ValueType.TEXT,
+                        label="Please describe what data is being included in this breakdown.",
+                        required=False,
+                    )
+                )
+            if len(context_lst) > 0:
+                dim_to_contexts[member] = context_lst
+        if bool(dim_to_contexts) is True:
+            return dim_to_contexts
         return None
 
     def dimension_identifier(self) -> str:
