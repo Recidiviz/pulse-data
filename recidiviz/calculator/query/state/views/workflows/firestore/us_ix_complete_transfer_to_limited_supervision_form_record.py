@@ -243,6 +243,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
     form AS (
       SELECT
           pei.external_id,
+          tes.is_eligible,
           tes.state_code,
           tes.start_date AS eligible_start_date,
           ses.start_date AS supervision_start_date,
@@ -271,7 +272,9 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           ARRAY_AGG(n.case_notes IGNORE NULLS)[ORDINAL(1)] AS case_notes,
           ds.drug_screen_date AS metadata_latest_negative_drug_screen_date, 
           ad.assessment_date AS metadata_lsir_alchohol_drug_date,
-          ad.alcohol_drug_total AS metadata_lsir_alcohol_drug_score
+          ad.alcohol_drug_total AS metadata_lsir_alcohol_drug_score,
+          -- Almost eligible if there is only 1 ineligible_criteria present
+         IF(ARRAY_LENGTH(ARRAY_CONCAT_AGG(tes.ineligible_criteria)) = 1, ARRAY_AGG(tes.ineligible_criteria[SAFE_ORDINAL(1)]), []) AS ineligible_criteria,
       FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_limited_supervision_form_materialized` tes
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
         ON tes.state_code = ses.state_code
@@ -328,12 +331,29 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         ON tes.state_code = n.state_code
         AND tes.person_id = n.person_id
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-        AND tes.is_eligible
+        
         AND tes.state_code = 'US_IX'
-      GROUP BY 1,2,3,4,5,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,24,25,26
+      GROUP BY 1,2,3,4,5,6,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,25,26,27
      )
-     SELECT * from form 
-     ORDER BY external_id
+     SELECT *
+     FROM form
+     WHERE is_eligible
+     
+     UNION ALL
+     
+     SELECT *
+     FROM form
+     WHERE 
+        -- keep if only ineligible criteria is criteria_name
+        'US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS' IN UNNEST(ineligible_criteria)
+    
+    UNION ALL
+     
+     SELECT *
+     FROM form
+     WHERE 
+        -- keep if only ineligible criteria is criteria_name
+        'ON_SUPERVISION_AT_LEAST_ONE_YEAR' IN UNNEST(ineligible_criteria)
 """
 
 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
