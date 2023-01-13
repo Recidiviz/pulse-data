@@ -56,9 +56,6 @@ module "bq-view-update-queue" {
 }
 
 # Queue used to process tasks that export the results of metric view queries to GCS.
-# TODO(#4593): We might be able to get rid of this queue entirely once we run the metric
-#  export endpoints directly in Airflow, rather than just triggering the tasks with
-#  Pub/Sub topics.
 module "metric-view-export-queue" {
   source = "./modules/base-task-queue"
 
