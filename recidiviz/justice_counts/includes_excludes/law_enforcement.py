@@ -242,3 +242,15 @@ class LawEnforcementArrestsIncludesExcludes(enum.Enum):
     OUTSIDE_JURISDICTION = (
         "Arrests made for offenses committed outside the agency’s jurisdiction"
     )
+
+
+# Reported Crime
+
+
+class LawEnforcementReportedCrimeIncludesExcludes(enum.Enum):
+    CALL = "Incidents originating from calls for service"
+    REPORT = "Incidents originating from police-generated reports"
+    ORIGINATING_FROM_OTHER_AGENCY = (
+        "Incidents originating from reports by other law enforcement agencies"
+    )
+    REFERRED_TO_OTHER_AGENCY = "Incidents referred to another law enforcement agency"

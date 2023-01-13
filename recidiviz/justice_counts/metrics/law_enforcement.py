@@ -45,6 +45,7 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     LawEnforcementMentalHealthStaffIncludesExcludes,
     LawEnforcementPersonnelIncludesExcludes,
     LawEnforcementPoliceOfficersIncludesExcludes,
+    LawEnforcementReportedCrimeIncludesExcludes,
     LawEnforcementStaffIncludesExcludes,
     LawEnforcementStateAppropriationIncludesExcludes,
     LawEnforcementTrainingIncludesExcludes,
@@ -335,16 +336,29 @@ reported_crime = MetricDefinition(
     metric_type=MetricType.REPORTED_CRIME,
     category=MetricCategory.POPULATIONS,
     display_name="Reported Crime",
-    description="Measures the number of crimes reported to your agency.",
-    definitions=[
-        Definition(
-            term="Crime incident",
-            definition="One case that represents one or more offenses committed by the same person/group of persons at the same time and place and for which a crime report was filed. Report each incident only once, relying on the FBI hierarchy rule for crime reporting.",
-        )
-    ],
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementReportedCrimeIncludesExcludes,
+        excluded_set={
+            LawEnforcementReportedCrimeIncludesExcludes.REFERRED_TO_OTHER_AGENCY
+        },
+    ),
+    description="The number of criminal incidents made known to the agency.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[AggregatedDimension(dimension=OffenseType, required=True)],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=True,
+            dimension_to_description={
+                OffenseType.DRUG: "The number of reported crime incidents received by the agency in which the most serious offense was a drug offense.",
+                OffenseType.PERSON: "The number of reported crime incidents received by the agency in which the most serious offense was a crime against a person.",
+                OffenseType.PROPERTY: "The number of reported crime incidents received by the agency in which the most serious offense was a property offense.",
+                OffenseType.PUBLIC_ORDER: "The number of reported crime incidents received by the agency in which the most serious offense was a public order offense.",
+                OffenseType.OTHER: "The number of reported crime incidents received by the agency in which the most serious offense was another type of crime that was not a person, property, drug, or public order offense.",
+                OffenseType.UNKNOWN: "The number of reported crime incidents received by the agency in which the most serious offense is not known.",
+            },
+        )
+    ],
 )
 
 arrests = MetricDefinition(
