@@ -100,6 +100,9 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
       WHERE sent.state_code = "US_IX"
       AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
+      --Pick one record per person and ChargeId, selecting the lowest sentence sequence number
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id,SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
+      ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(1)])=1
     ),
     supervision_officer AS (
       SELECT 

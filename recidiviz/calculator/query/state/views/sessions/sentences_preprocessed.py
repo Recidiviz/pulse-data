@@ -66,6 +66,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.min_length_days,
         sis.max_length_days,
         sis.county_code,
+        sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
@@ -112,6 +113,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.min_length_days,
         sss.max_length_days,
         sss.county_code,
+        sss.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
@@ -214,6 +216,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             sen.offense_attempted_uniform,
             sen.offense_conspired_uniform,
             sen.county_code,
+            sen.sentence_metadata,
             cs.consecutive_sentence_id,
             -- Set the session_id_imposed if the sentence date imposed matches the session start date
             IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
