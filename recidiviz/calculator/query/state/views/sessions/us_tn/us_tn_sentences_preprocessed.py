@@ -87,6 +87,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.initial_time_served_days,
         COALESCE(sis.is_life, FALSE) AS life_sentence,
         sis.county_code,
+        sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
@@ -130,6 +131,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(NULL AS INT64) AS initial_time_served_days,
         FALSE AS life_sentence,
         sss.county_code,
+        sss.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
     FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
@@ -219,7 +221,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sen.offense_attempted_uniform,
         sen.offense_conspired_uniform, 
         sen.county_code,       
-        
+        sen.sentence_metadata,
         --these are TN specific fields which are not included in the state-agnostic schema at this point
         raw.total_program_credits,
         raw.total_behavior_credits,

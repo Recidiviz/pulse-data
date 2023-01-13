@@ -82,6 +82,7 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.min_length_days,
         sis.max_length_days,
         sis.county_code,
+        sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
     FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc

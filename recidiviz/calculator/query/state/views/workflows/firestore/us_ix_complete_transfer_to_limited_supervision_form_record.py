@@ -62,6 +62,9 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       WHERE state_code = "US_IX"
       AND CURRENT_DATE BETWEEN start_date AND COALESCE(end_date, "9999-12-31")
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
+      --Pick one record per person and ChargeId, selecting the lowest sentence sequence number
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id,SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
+      ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(1)])=1
     ),
     person_info AS (
       SELECT
