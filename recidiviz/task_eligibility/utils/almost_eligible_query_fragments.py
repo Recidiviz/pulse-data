@@ -30,7 +30,7 @@ def json_to_array_cte(from_table: str) -> str:
     """
 
     return f""" json_to_array_cte AS (
-    -- Transform the reason json column into an arrray for easier manipulation
+    -- Transform the reason json column into an array for easier manipulation
     SELECT 
         *,
         JSON_QUERY_ARRAY(reasons) AS array_reasons
