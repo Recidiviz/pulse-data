@@ -27,7 +27,10 @@ from flask import Flask
 
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient
+from recidiviz.persistence.database.schema.case_triage.schema import (
+    ETLClient,
+    ETLClientEvent,
+)
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -176,6 +179,29 @@ class OpsRoutesTest(TestCase):
                 seconds_to_wait=180,
             )
             self.assertCountEqual(mock_import_csv.call_args.args[3], self.columns)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(b"", response.data)
+
+    @patch(
+        "recidiviz.case_triage.ops_routes.import_gcs_csv_to_cloud_sql", autospec=True
+    )
+    def test_run_gcs_imports_custom_timeout(self, mock_import_csv: MagicMock) -> None:
+        filename = "etl_client_events.csv"
+        gcs_csv_uri = GcsfsFilePath.from_absolute_path(f"{self.bucket}/{filename}")
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.run_gcs_imports,
+                headers=self.headers,
+                json={"filename": filename},
+            )
+            mock_import_csv.assert_called_with(
+                database_key=self.database_key,
+                model=ETLClientEvent,
+                gcs_uri=gcs_csv_uri,
+                columns=ANY,
+                seconds_to_wait=600,
+            )
+
             self.assertEqual(HTTPStatus.OK, response.status_code)
             self.assertEqual(b"", response.data)
 
