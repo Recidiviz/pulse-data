@@ -929,6 +929,8 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
             user_dict = convert_nested_dictionary_keys(
                 assert_type(request.json, dict), to_snake_case
             )
+            if "state_code" not in user_dict:
+                raise ValueError("Must provide a state_code when updating a user")
             user_dict["email_address"] = email
             log_reason(user_dict, f"updating user {user_dict['email_address']}")
             if (
@@ -983,7 +985,7 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                 ),
                 HTTPStatus.OK,
             )
-    except IntegrityError as error:
+    except (IntegrityError, ValueError) as error:
         return (
             f"{error}",
             HTTPStatus.BAD_REQUEST,

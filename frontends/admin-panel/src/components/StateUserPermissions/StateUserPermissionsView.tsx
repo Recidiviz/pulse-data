@@ -156,16 +156,15 @@ const StateUserPermissionsView = (): JSX.Element => {
     reason,
     ...rest
   }: StateUserPermissionsRequest) => {
-    const results = [];
+    const results: Promise<unknown>[] = [];
 
-    for (let index = 0; index < selectedRowKeys.length; index += 1) {
-      const email = selectedRows[index].emailAddress;
+    selectedRows.forEach((row: StateUserPermissionsResponse) => {
       const editRow = async () => {
         // update user info
         if (role || district || externalId || firstName || lastName) {
           const updatedUser = await updateUser({
-            email,
-            stateCode,
+            email: row.emailAddress,
+            stateCode: row.stateCode,
             externalId,
             role,
             district,
@@ -179,28 +178,26 @@ const StateUserPermissionsView = (): JSX.Element => {
         // delete user's custom permissions
         if (useCustomPermissions === false) {
           const deletedPermissions = await deleteCustomUserPermissions(
-            email,
+            row.emailAddress,
             reason
           );
           await checkResponse(deletedPermissions);
         }
 
         // update user's custom permissions
-        const existingRoutes = selectedRows[index].routes;
         const newRoutes = updatePermissionsObject(
-          existingRoutes,
+          row.routes,
           rest,
           ROUTES_PERMISSIONS_LABELS
         );
-        const existingFeatureVariants = selectedRows[index].featureVariants;
         const newFeatureVariants = updatePermissionsObject(
-          existingFeatureVariants,
+          row.featureVariants,
           rest,
           FEATURE_VARIANTS_LABELS
         );
         if (useCustomPermissions) {
           const updatedPermissions = await updateUserPermissions(
-            email,
+            row.emailAddress,
             reason,
             canAccessLeadershipDashboard,
             canAccessCaseTriage,
@@ -213,7 +210,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         return "Success!";
       };
       results.push(editRow());
-    }
+    });
     finishPromises(results, `Updated`);
   };
 
