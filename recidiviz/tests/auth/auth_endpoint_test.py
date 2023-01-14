@@ -1434,6 +1434,28 @@ class AuthEndpointTests(TestCase):
                 log.output, "updating user parameter@domain.org with reason: test"
             )
 
+    def test_update_user_missing_state_code(self) -> None:
+        user = generate_fake_user_overrides(
+            email="parameter@domain.org",
+            region_code="US_TN",
+            external_id="Original",
+            role="leadership_role",
+            first_name="Original",
+            last_name="Name",
+        )
+        add_entity_to_database_session(self.database_key, [user])
+        with self.app.test_request_context():
+            response = self.client.patch(
+                self.update_user,
+                headers=self.headers,
+                json={
+                    "externalId": "Updated ID",
+                    "firstName": "Updated",
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
     def test_update_user_permissions_roster(self) -> None:
         user = generate_fake_rosters(
             email="user@domain.org",
