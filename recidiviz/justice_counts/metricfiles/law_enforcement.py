@@ -18,6 +18,7 @@
 
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
+    ComplaintType,
     ForceType,
     LawEnforcementExpenseType,
     LawEnforcementFundingType,
@@ -126,5 +127,11 @@ LAW_ENFORCEMENT_METRIC_FILES = [
     MetricFile(
         canonical_filename="civilian_complaints_sustained",
         definition=law_enforcement.civilian_complaints_sustained,
+    ),
+    MetricFile(
+        canonical_filename="civilian_complaints_sustained_by_type",
+        definition=law_enforcement.civilian_complaints_sustained,
+        disaggregation=ComplaintType,
+        disaggregation_column_name="complaint_type",
     ),
 ]

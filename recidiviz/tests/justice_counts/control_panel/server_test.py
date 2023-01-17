@@ -2024,7 +2024,14 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                         "Unknown Calls",
                     ]
                 },
-                "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED": {},
+                "LAW_ENFORCEMENT_COMPLAINTS_SUSTAINED": {
+                    "Complaint Type": [
+                        "Excessive Uses of Force",
+                        "Discrimination or Racial Bias",
+                        "Other Complaints",
+                        "Unknown Complaints",
+                    ]
+                },
                 "LAW_ENFORCEMENT_REPORTED_CRIME": {
                     "Offense Type": [
                         "Person Offenses",

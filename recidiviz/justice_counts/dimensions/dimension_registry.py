@@ -47,6 +47,7 @@ DIMENSIONS = [
     location.Country,
     law_enforcement.CallType,
     law_enforcement.ForceType,
+    law_enforcement.ComplaintType,
     law_enforcement.LawEnforcementStaffType,
     law_enforcement.LawEnforcementFundingType,
     law_enforcement.LawEnforcementExpenseType,
