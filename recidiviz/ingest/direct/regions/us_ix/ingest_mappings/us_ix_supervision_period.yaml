@@ -144,6 +144,7 @@ output:
                         # TODO(#16848): Is it possible someone isn't admitted to incarceration after this?
                         - Sanction
                         - Temporary Remand To Custody
+                        - Initial Facility Intake
                       StateSupervisionPeriodTerminationReason.DEATH:
                         - Death - Natural
                         - Death - Unnatural
