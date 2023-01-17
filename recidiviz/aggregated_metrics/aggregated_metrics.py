@@ -42,7 +42,8 @@ def generate_aggregated_metrics_view_builder(
     """
 
     query_template = f"""
-    SELECT *
+    SELECT * EXCEPT (assignments),
+        COALESCE(assignments, 0) AS assignments,
     FROM
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_span_aggregated_metrics` period_span
     LEFT JOIN
