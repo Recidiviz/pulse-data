@@ -14,21 +14,37 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input } from "antd";
+import { Form, Input, Select } from "antd";
+import { useState } from "react";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import ReasonInput from "./ReasonInput";
 import { validateAndFocus } from "./utils";
 
-export const CreateAddUserForm = ({
+export const AddUserForm = ({
   addVisible,
   addOnCreate,
   addOnCancel,
+  stateRoleData,
 }: {
   addVisible: boolean;
   addOnCreate: (arg0: AddUserRequest) => Promise<void>;
   addOnCancel: () => void;
+  stateRoleData: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const [form] = Form.useForm();
+  const [roles, setRoles] = useState([] as string[]);
+
+  const handleSelectStateCode = (stateCode: string) => {
+    const permissionsForState = stateRoleData?.filter(
+      (d) => d.stateCode === stateCode
+    );
+    const rolesForState = permissionsForState?.map((p) => p.role);
+    if (rolesForState) setRoles(rolesForState);
+  };
+
+  const stateCodes = stateRoleData
+    .map((d) => d.stateCode)
+    .filter((v, i, a) => a.indexOf(v) === i);
 
   return (
     <DraggableModal
@@ -66,7 +82,7 @@ export const CreateAddUserForm = ({
         </Form.Item>
         <Form.Item
           name="stateCode"
-          label="State"
+          label="State code"
           rules={[
             {
               required: true,
@@ -74,7 +90,12 @@ export const CreateAddUserForm = ({
             },
           ]}
         >
-          <Input />
+          <Select
+            onChange={handleSelectStateCode}
+            options={stateCodes.map((c) => {
+              return { value: c, label: c };
+            })}
+          />
         </Form.Item>
         <Form.Item
           name="role"
@@ -86,7 +107,12 @@ export const CreateAddUserForm = ({
             },
           ]}
         >
-          <Input />
+          <Select
+            options={roles.map((r) => {
+              return { value: r, label: r };
+            })}
+            disabled={roles.length === 0}
+          />
         </Form.Item>
         <Form.Item name="externalId" label="External ID">
           <Input />

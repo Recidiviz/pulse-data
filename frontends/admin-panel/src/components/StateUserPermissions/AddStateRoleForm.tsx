@@ -14,12 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Input, Select } from "antd";
+import { Form, Input } from "antd";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import ReasonInput from "./ReasonInput";
-
-const ROLES = ["leadership_role", "line_staff_user", "level_1_access_role"];
 
 export const CreateAddStateRoleForm = ({
   addVisible,
@@ -31,10 +29,6 @@ export const CreateAddStateRoleForm = ({
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
-
-  const roleOptions = ROLES.map((role) => (
-    <Select.Option key={role}>{role}</Select.Option>
-  ));
 
   return (
     <DraggableModal
@@ -48,12 +42,7 @@ export const CreateAddStateRoleForm = ({
         });
       }}
     >
-      <Form
-        form={form}
-        layout="horizontal"
-        labelCol={{ span: 6 }}
-        initialValues={{ role: ROLES[0] }}
-      >
+      <Form form={form} layout="horizontal" labelCol={{ span: 8 }}>
         <ReasonInput label="Reason for addition" />
         <hr />
         <Form.Item
@@ -71,15 +60,16 @@ export const CreateAddStateRoleForm = ({
         </Form.Item>
         <Form.Item
           name="role"
-          label="Role Name"
+          label="Role"
+          extra="Please try to use the same role names across states when possible"
           rules={[
             {
               required: true,
-              message: "Role name is required.",
+              message: "Role is required. ex: leadership_user",
             },
           ]}
         >
-          <Select>{roleOptions}</Select>
+          <Input />
         </Form.Item>
         <CustomPermissionsPanel hidePermissions={false} />
       </Form>
