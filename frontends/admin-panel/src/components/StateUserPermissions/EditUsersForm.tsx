@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Alert, Button, Form, Input, Popconfirm, Select } from "antd";
+import { Button, Form, Input, Popconfirm, Select } from "antd";
 import * as React from "react";
 import { useState } from "react";
 import { DraggableModal } from "../Utilities/DraggableModal";
@@ -108,13 +108,6 @@ export const EditUserForm = ({
         </Button>,
       ]}
     >
-      <Alert
-        message="Caution!"
-        description="This form should only be used by members of the Polaris team."
-        type="warning"
-        showIcon
-      />
-      <br />
       <p>
         <span style={{ fontWeight: "bold" }}>
           {selectedEmails.length} selected user(s):
