@@ -92,7 +92,7 @@ REMOTE_IMAGE_BASE=us.gcr.io/${PROJECT_ID}/${SUBDIRECTORY}
 # getting into a weird state where a new commit is checked in during the deploy.
 # note: can't use run_cmd here because of the way cd works in shell scripts
 cd ../justice-counts || exit
-JUSTICE_COUNTS_COMMIT_HASH=$(git rev-parse origin/main) || exit_on_fail
+JUSTICE_COUNTS_COMMIT_HASH=$(git fetch && git rev-parse origin/main) || exit_on_fail
 cd ../pulse-data || exit
 
 echo "Building Docker image off of main in pulse-data and ${JUSTICE_COUNTS_COMMIT_HASH} in justice-counts..."
