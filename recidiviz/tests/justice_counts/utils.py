@@ -436,7 +436,7 @@ class JusticeCountsSchemaTestObjects:
             }
         if use_disabled_disaggregation:
             metric_json = {
-                "key": law_enforcement.officer_use_of_force_incidents.key,
+                "key": law_enforcement.use_of_force_incidents.key,
                 "enabled": True,
                 "disaggregations": [
                     {

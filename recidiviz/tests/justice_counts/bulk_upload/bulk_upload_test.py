@@ -548,7 +548,7 @@
 #         )
 
 #         use_of_force_errors = metric_key_to_errors[
-#             law_enforcement.officer_use_of_force_incidents.key
+#             law_enforcement.ouse_of_force_incidents.key
 #         ]
 #         self.assertEqual(len(use_of_force_errors), 1)
 #         use_of_force_error = use_of_force_errors[0]

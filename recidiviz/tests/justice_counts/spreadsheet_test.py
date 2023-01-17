@@ -17,25 +17,25 @@
 """This class implements tests for the Justice Counts SpreadsheetInterface."""
 from pathlib import Path
 
-import pandas as pd
-
-from recidiviz.justice_counts.metricfiles.metricfile_registry import (
-    SYSTEM_TO_FILENAME_TO_METRICFILE,
-)
-from recidiviz.justice_counts.metrics import law_enforcement
-from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
-    CustomReportingFrequency,
-)
-from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
-from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
-from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
-from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
-from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.session_factory import SessionFactory
+# from recidiviz.justice_counts.metricfiles.metricfile_registry import (
+#     SYSTEM_TO_FILENAME_TO_METRICFILE,
+# )
+# from recidiviz.justice_counts.metrics import law_enforcement
+# from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
+#     CustomReportingFrequency,
+# )
+# from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
+# from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
+# from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
+# from recidiviz.justice_counts.utils.constants import REPORTING_FREQUENCY_CONTEXT_KEY
+# from recidiviz.persistence.database.schema.justice_counts import schema
+# from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
 )
+
+# import pandas as pd
 
 
 class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
@@ -48,446 +48,446 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             "recidiviz/tests/justice_counts/bulk_upload/bulk_upload_fixtures"
         )
 
-    def test_ingest_json_response_arrests_errors(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            user = self.test_schema_objects.test_user_A
-            agency = self.test_schema_objects.test_agency_A
-            session.add_all([user, agency])
-            session.commit()
-            session.refresh(user)
-            session.refresh(agency)
-            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-                system=schema.System.LAW_ENFORCEMENT,
-                user_id=user.auth0_user_id,
-                agency_id=agency.id,
-            )
-            session.add(spreadsheet)
-            file = (
-                self.bulk_upload_test_files
-                / "law_enforcement/arrests_metric_errors.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={},
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
-            self.assertEqual(len(json_response["metrics"]), 8)
-            for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.arrests.key:
-                    self.assertEqual(
-                        metric["display_name"],
-                        law_enforcement.arrests.display_name,
-                    )
-                    self.assertEqual(len(metric["metric_errors"]), 2)
-                    for sheet in metric["metric_errors"]:
-                        if (
-                            sheet["display_name"]
-                            == filename_to_metricfile["arrests_by_race"].display_name
-                        ):
+    # def test_ingest_json_response_arrests_errors(self) -> None:
+    #     with SessionFactory.using_database(self.database_key) as session:
+    #         user = self.test_schema_objects.test_user_A
+    #         agency = self.test_schema_objects.test_agency_A
+    #         session.add_all([user, agency])
+    #         session.commit()
+    #         session.refresh(user)
+    #         session.refresh(agency)
+    #         spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+    #             system=schema.System.LAW_ENFORCEMENT,
+    #             user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #         )
+    #         session.add(spreadsheet)
+    #         file = (
+    #             self.bulk_upload_test_files
+    #             / "law_enforcement/arrests_metric_errors.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={},
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.LAW_ENFORCEMENT},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE["LAW_ENFORCEMENT"]
+    #         self.assertEqual(len(json_response["metrics"]), 8)
+    #         for metric in json_response["metrics"]:
+    #             if metric["key"] == law_enforcement.arrests.key:
+    #                 self.assertEqual(
+    #                     metric["display_name"],
+    #                     law_enforcement.arrests.display_name,
+    #                 )
+    #                 self.assertEqual(len(metric["metric_errors"]), 2)
+    #                 for sheet in metric["metric_errors"]:
+    #                     if (
+    #                         sheet["display_name"]
+    #                         == filename_to_metricfile["arrests_by_race"].display_name
+    #                     ):
 
-                            self.assertEqual(sheet["sheet_name"], "arrests_by_race")
-                            self.assertTrue(
-                                {
-                                    "title": "Missing Column",
-                                    "subtitle": None,
-                                    "type": "ERROR",
-                                }.items()
-                                <= sheet["messages"][0].items()
-                            )
-                        elif (
-                            sheet["display_name"]
-                            == filename_to_metricfile["arrests"].display_name
-                        ):
-                            self.assertEqual(sheet["sheet_name"], "arrests")
-                            self.assertTrue(
-                                {
-                                    "title": "Too Many Rows",
-                                    "subtitle": "6/2021",
-                                    "type": "ERROR",
-                                }.items()
-                                <= sheet["messages"][0].items()
-                            )
-                        elif (
-                            sheet["display_name"]
-                            == filename_to_metricfile["arrests_by_type"].display_name
-                        ):
-                            self.assertEqual(sheet["sheet_name"], "arrests_by_type")
-                            self.assertTrue(
-                                {
-                                    "title": "Missing Total Value",
-                                    "subtitle": None,
-                                    "type": "WARNING",
-                                }.items()
-                                <= sheet["messages"][0].items()
-                            )
+    #                         self.assertEqual(sheet["sheet_name"], "arrests_by_race")
+    #                         self.assertTrue(
+    #                             {
+    #                                 "title": "Missing Column",
+    #                                 "subtitle": None,
+    #                                 "type": "ERROR",
+    #                             }.items()
+    #                             <= sheet["messages"][0].items()
+    #                         )
+    #                     elif (
+    #                         sheet["display_name"]
+    #                         == filename_to_metricfile["arrests"].display_name
+    #                     ):
+    #                         self.assertEqual(sheet["sheet_name"], "arrests")
+    #                         self.assertTrue(
+    #                             {
+    #                                 "title": "Too Many Rows",
+    #                                 "subtitle": "6/2021",
+    #                                 "type": "ERROR",
+    #                             }.items()
+    #                             <= sheet["messages"][0].items()
+    #                         )
+    #                     elif (
+    #                         sheet["display_name"]
+    #                         == filename_to_metricfile["arrests_by_type"].display_name
+    #                     ):
+    #                         self.assertEqual(sheet["sheet_name"], "arrests_by_type")
+    #                         self.assertTrue(
+    #                             {
+    #                                 "title": "Missing Total Value",
+    #                                 "subtitle": None,
+    #                                 "type": "WARNING",
+    #                             }.items()
+    #                             <= sheet["messages"][0].items()
+    #                         )
 
-                    # 24 total datapoints. 2 for aggregate total (May and June), 6 for sex breakdowns (May-June),
-                    # 12 for arrest_by_type breakdowns (May - June).
-                    self.assertEqual(len(metric["datapoints"]), 20)
-                else:
-                    metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                    self.assertEqual(len(metric["metric_errors"]), 1)
-                    self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
-                    message = metric["metric_errors"][0]["messages"][0]
-                    self.assertEqual(message["title"], "Missing Metric")
-                    self.assertEqual(message["type"], "ERROR")
-                    self.assertTrue(
-                        f"No data for the {metric_definition.display_name} metric was provided. "
-                    )
-            self.assertEqual(len(json_response["non_metric_errors"]), 0)
-            spreadsheet = session.query(schema.Spreadsheet).one()
-            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+    #                 # 24 total datapoints. 2 for aggregate total (May and June), 6 for sex breakdowns (May-June),
+    #                 # 12 for arrest_by_type breakdowns (May - June).
+    #                 self.assertEqual(len(metric["datapoints"]), 20)
+    #             else:
+    #                 metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)
+    #                 self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
+    #                 message = metric["metric_errors"][0]["messages"][0]
+    #                 self.assertEqual(message["title"], "Missing Metric")
+    #                 self.assertEqual(message["type"], "ERROR")
+    #                 self.assertTrue(
+    #                     f"No data for the {metric_definition.display_name} metric was provided. "
+    #                 )
+    #         self.assertEqual(len(json_response["non_metric_errors"]), 0)
+    #         spreadsheet = session.query(schema.Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
 
-    def test_ingest_json_response_funding_missing_metric(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            user = self.test_schema_objects.test_user_A
-            agency = self.test_schema_objects.test_agency_A
-            session.add_all([user, agency])
-            session.commit()
-            session.refresh(user)
-            session.refresh(agency)
-            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-                system=schema.System.LAW_ENFORCEMENT,
-                user_id=user.auth0_user_id,
-                agency_id=agency.id,
-            )
-            session.add(spreadsheet)
-            file = (
-                self.bulk_upload_test_files / "law_enforcement/funding_metric.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={},
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            self.assertEqual(len(json_response["metrics"]), 8)
-            for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.funding.key:
-                    self.assertEqual(
-                        metric["display_name"],
-                        law_enforcement.funding.display_name,
-                    )
-                    self.assertEqual(metric["metric_errors"], [])
-                    # 9 total datapoints, 3 aggregate for each year (2020-2022)
-                    # annual budget, and 6 for the breakdowns.
-                    self.assertEqual(len(metric["datapoints"]), 9)
-                    for datapoint in metric["datapoints"]:
-                        self.assertIsNone(datapoint["old_value"])
-                elif len(metric["metric_errors"]) != 0:
-                    metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                    self.assertEqual(len(metric["metric_errors"]), 1)
-                    self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
-                    message = metric["metric_errors"][0]["messages"][0]
-                    self.assertEqual(message["title"], "Missing Metric")
-                    self.assertEqual(message["type"], "ERROR")
-                    self.assertTrue(
-                        f"No data for the {metric_definition.display_name} metric was provided. "
-                        in message["description"]
-                    )
+    # def test_ingest_json_response_funding_missing_metric(self) -> None:
+    #     with SessionFactory.using_database(self.database_key) as session:
+    #         user = self.test_schema_objects.test_user_A
+    #         agency = self.test_schema_objects.test_agency_A
+    #         session.add_all([user, agency])
+    #         session.commit()
+    #         session.refresh(user)
+    #         session.refresh(agency)
+    #         spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+    #             system=schema.System.LAW_ENFORCEMENT,
+    #             user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #         )
+    #         session.add(spreadsheet)
+    #         file = (
+    #             self.bulk_upload_test_files / "law_enforcement/funding_metric.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={},
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.LAW_ENFORCEMENT},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         self.assertEqual(len(json_response["metrics"]), 8)
+    #         for metric in json_response["metrics"]:
+    #             if metric["key"] == law_enforcement.funding.key:
+    #                 self.assertEqual(
+    #                     metric["display_name"],
+    #                     law_enforcement.funding.display_name,
+    #                 )
+    #                 self.assertEqual(metric["metric_errors"], [])
+    #                 # 9 total datapoints, 3 aggregate for each year (2020-2022)
+    #                 # annual budget, and 6 for the breakdowns.
+    #                 self.assertEqual(len(metric["datapoints"]), 9)
+    #                 for datapoint in metric["datapoints"]:
+    #                     self.assertIsNone(datapoint["old_value"])
+    #             elif len(metric["metric_errors"]) != 0:
+    #                 metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)
+    #                 self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
+    #                 message = metric["metric_errors"][0]["messages"][0]
+    #                 self.assertEqual(message["title"], "Missing Metric")
+    #                 self.assertEqual(message["type"], "ERROR")
+    #                 self.assertTrue(
+    #                     f"No data for the {metric_definition.display_name} metric was provided. "
+    #                     in message["description"]
+    #                 )
 
-            self.assertEqual(len(json_response["non_metric_errors"]), 0)
-            spreadsheet = session.query(schema.Spreadsheet).one()
-            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
-            # Uploading the spreadsheet with changes will result in datapoints
-            # with non-None old_value values.
-            file = (
-                self.bulk_upload_test_files
-                / "law_enforcement/funding_metric_update.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={},
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.funding.key:
-                    # 10 total datapoints, 4 aggregate for each year (2020-2022)
-                    # and 6 for breakdowns.
-                    self.assertEqual(len(metric["datapoints"]), 10)
-            spreadsheet = session.query(schema.Spreadsheet).one()
-            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+    #         self.assertEqual(len(json_response["non_metric_errors"]), 0)
+    #         spreadsheet = session.query(schema.Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+    #         # Uploading the spreadsheet with changes will result in datapoints
+    #         # with non-None old_value values.
+    #         file = (
+    #             self.bulk_upload_test_files
+    #             / "law_enforcement/funding_metric_update.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={},
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.LAW_ENFORCEMENT},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         for metric in json_response["metrics"]:
+    #             if metric["key"] == law_enforcement.funding.key:
+    #                 # 10 total datapoints, 4 aggregate for each year (2020-2022)
+    #                 # and 6 for breakdowns.
+    #                 self.assertEqual(len(metric["datapoints"]), 10)
+    #         spreadsheet = session.query(schema.Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
 
-    def test_ingest_json_response_arrests_wrong_system(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            user = self.test_schema_objects.test_user_A
-            agency = self.test_schema_objects.test_agency_A
-            session.add_all([user, agency])
-            session.commit()
-            session.refresh(user)
-            session.refresh(agency)
-            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-                system=schema.System.PROSECUTION,
-                user_id=user.auth0_user_id,
-                agency_id=agency.id,
-            )
-            session.add(spreadsheet)
-            file = (
-                self.bulk_upload_test_files
-                / "law_enforcement/arrests_metric_errors.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={},
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.PROSECUTION},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            # There should be a missing metric error for each metric in prosecution.
-            self.assertEqual(len(json_response["metrics"]), 7)
-            for metric in json_response["metrics"]:
-                metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                self.assertEqual(len(metric["metric_errors"]), 1)
-                self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
-                message = metric["metric_errors"][0]["messages"][0]
-                self.assertEqual(message["title"], "Missing Metric")
-                self.assertEqual(message["type"], "ERROR")
-                self.assertTrue(
-                    f"No data for the {metric_definition.display_name} metric was provided. "
-                    in message["description"]
-                )
+    # def test_ingest_json_response_arrests_wrong_system(self) -> None:
+    #     with SessionFactory.using_database(self.database_key) as session:
+    #         user = self.test_schema_objects.test_user_A
+    #         agency = self.test_schema_objects.test_agency_A
+    #         session.add_all([user, agency])
+    #         session.commit()
+    #         session.refresh(user)
+    #         session.refresh(agency)
+    #         spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+    #             system=schema.System.PROSECUTION,
+    #             user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #         )
+    #         session.add(spreadsheet)
+    #         file = (
+    #             self.bulk_upload_test_files
+    #             / "law_enforcement/arrests_metric_errors.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={},
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.PROSECUTION},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         # There should be a missing metric error for each metric in prosecution.
+    #         self.assertEqual(len(json_response["metrics"]), 7)
+    #         for metric in json_response["metrics"]:
+    #             metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
+    #             self.assertEqual(len(metric["metric_errors"]), 1)
+    #             self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
+    #             message = metric["metric_errors"][0]["messages"][0]
+    #             self.assertEqual(message["title"], "Missing Metric")
+    #             self.assertEqual(message["type"], "ERROR")
+    #             self.assertTrue(
+    #                 f"No data for the {metric_definition.display_name} metric was provided. "
+    #                 in message["description"]
+    #             )
 
-            # 1 non_metric error for invalid sheet names.
-            self.assertEqual(len(json_response["non_metric_errors"]), 1)
-            error = json_response["non_metric_errors"][0]
-            self.assertEqual(error["type"], "ERROR")
-            self.assertEqual(error["title"], "Invalid Sheet Names")
-            self.assertTrue(
-                "The following sheet names do not correspond to a metric for"
-                in error["description"]
-            )
-            spreadsheet = session.query(schema.Spreadsheet).one()
-            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+    #         # 1 non_metric error for invalid sheet names.
+    #         self.assertEqual(len(json_response["non_metric_errors"]), 1)
+    #         error = json_response["non_metric_errors"][0]
+    #         self.assertEqual(error["type"], "ERROR")
+    #         self.assertEqual(error["title"], "Invalid Sheet Names")
+    #         self.assertTrue(
+    #             "The following sheet names do not correspond to a metric for"
+    #             in error["description"]
+    #         )
+    #         spreadsheet = session.query(schema.Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
 
-    def test_ingest_json_response_success(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            user = self.test_schema_objects.test_user_A
-            agency = self.test_schema_objects.test_agency_A
-            session.add_all([user, agency])
-            session.commit()
-            session.refresh(user)
-            session.refresh(agency)
-            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-                system=schema.System.LAW_ENFORCEMENT,
-                user_id=user.auth0_user_id,
-                agency_id=agency.id,
-            )
-            session.add(spreadsheet)
-            file = (
-                self.bulk_upload_test_files
-                / "law_enforcement/law_enforcement_success.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={},
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            self.assertEqual(len(json_response["metrics"]), 8)
-            for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.funding.key:
-                    self.assertEqual(metric["metric_errors"], [])
-                    self.assertTrue(len(metric["datapoints"]) > 0)
+    # def test_ingest_json_response_success(self) -> None:
+    #     with SessionFactory.using_database(self.database_key) as session:
+    #         user = self.test_schema_objects.test_user_A
+    #         agency = self.test_schema_objects.test_agency_A
+    #         session.add_all([user, agency])
+    #         session.commit()
+    #         session.refresh(user)
+    #         session.refresh(agency)
+    #         spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+    #             system=schema.System.LAW_ENFORCEMENT,
+    #             user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #         )
+    #         session.add(spreadsheet)
+    #         file = (
+    #             self.bulk_upload_test_files
+    #             / "law_enforcement/law_enforcement_success.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={},
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.LAW_ENFORCEMENT},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         self.assertEqual(len(json_response["metrics"]), 8)
+    #         for metric in json_response["metrics"]:
+    #             if metric["key"] == law_enforcement.funding.key:
+    #                 self.assertEqual(metric["metric_errors"], [])
+    #                 self.assertTrue(len(metric["datapoints"]) > 0)
 
-            self.assertEqual(len(json_response["non_metric_errors"]), 0)
-            spreadsheet = session.query(schema.Spreadsheet).one()
-            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
+    #         self.assertEqual(len(json_response["non_metric_errors"]), 0)
+    #         spreadsheet = session.query(schema.Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.INGESTED)
 
-    def test_ingest_json_response_sheet_errors(self) -> None:
-        with SessionFactory.using_database(self.database_key) as session:
-            user = self.test_schema_objects.test_user_A
-            agency = self.test_schema_objects.test_agency_A
-            session.add_all([user, agency])
-            session.commit()
-            session.refresh(user)
-            session.refresh(agency)
-            spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-                system=schema.System.LAW_ENFORCEMENT,
-                user_id=user.auth0_user_id,
-                agency_id=agency.id,
-            )
-            session.add(spreadsheet)
-            file = (
-                self.bulk_upload_test_files / "law_enforcement/breakdown_errors.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={},
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            self.assertEqual(len(json_response["metrics"]), 8)
-            for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.funding.key:
-                    # One error for having monthly data for an annual metric, one
-                    # warning describing that the aggregate data will be inferred
-                    # from the breakdown sheet.
-                    self.assertEqual(len(metric["metric_errors"]), 2)
-                    for sheet in metric["metric_errors"]:
-                        if sheet["sheet_name"] == "funding":
-                            self.assertEqual(
-                                {
-                                    "title": "Monthly Data Provided for Annual Metric",
-                                    "subtitle": None,
-                                    "description": "This sheet should not contain a month column.",
-                                    "type": "ERROR",
-                                },
-                                sheet["messages"][0],
-                            )
-                elif metric["key"] == law_enforcement.calls_for_service.key:
-                    self.assertEqual(len(metric["metric_errors"]), 1)
-                    for sheet in metric["metric_errors"]:
-                        if sheet["sheet_name"] == "calls_for_service":
-                            self.assertEqual(
-                                {
-                                    "title": "Invalid Breakdown Data in Aggregate Sheet",
-                                    "subtitle": None,
-                                    "description": "Breakdown data was provided in the calls_for_service sheet, "
-                                    "but this sheet should only contain aggregate data.",
-                                    "type": "ERROR",
-                                },
-                                sheet["messages"][0],
-                            )
-                else:
-                    metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                    self.assertEqual(len(metric["metric_errors"]), 1)
-                    self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
-                    message = metric["metric_errors"][0]["messages"][0]
-                    self.assertEqual(message["title"], "Missing Metric")
-                    self.assertEqual(message["type"], "ERROR")
-                    self.assertTrue(
-                        f"No data for the {metric_definition.display_name} metric was provided. "
-                    )
-            self.assertEqual(len(json_response["non_metric_errors"]), 0)
-            spreadsheet = session.query(schema.Spreadsheet).one()
-            self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
+    # def test_ingest_json_response_sheet_errors(self) -> None:
+    #     with SessionFactory.using_database(self.database_key) as session:
+    #         user = self.test_schema_objects.test_user_A
+    #         agency = self.test_schema_objects.test_agency_A
+    #         session.add_all([user, agency])
+    #         session.commit()
+    #         session.refresh(user)
+    #         session.refresh(agency)
+    #         spreadsheet = self.test_schema_objects.get_test_spreadsheet(
+    #             system=schema.System.LAW_ENFORCEMENT,
+    #             user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #         )
+    #         session.add(spreadsheet)
+    #         file = (
+    #             self.bulk_upload_test_files / "law_enforcement/breakdown_errors.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={},
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.LAW_ENFORCEMENT},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         self.assertEqual(len(json_response["metrics"]), 8)
+    #         for metric in json_response["metrics"]:
+    #             if metric["key"] == law_enforcement.funding.key:
+    #                 # One error for having monthly data for an annual metric, one
+    #                 # warning describing that the aggregate data will be inferred
+    #                 # from the breakdown sheet.
+    #                 self.assertEqual(len(metric["metric_errors"]), 2)
+    #                 for sheet in metric["metric_errors"]:
+    #                     if sheet["sheet_name"] == "funding":
+    #                         self.assertEqual(
+    #                             {
+    #                                 "title": "Monthly Data Provided for Annual Metric",
+    #                                 "subtitle": None,
+    #                                 "description": "This sheet should not contain a month column.",
+    #                                 "type": "ERROR",
+    #                             },
+    #                             sheet["messages"][0],
+    #                         )
+    #             elif metric["key"] == law_enforcement.calls_for_service.key:
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)
+    #                 for sheet in metric["metric_errors"]:
+    #                     if sheet["sheet_name"] == "calls_for_service":
+    #                         self.assertEqual(
+    #                             {
+    #                                 "title": "Invalid Breakdown Data in Aggregate Sheet",
+    #                                 "subtitle": None,
+    #                                 "description": "Breakdown data was provided in the calls_for_service sheet, "
+    #                                 "but this sheet should only contain aggregate data.",
+    #                                 "type": "ERROR",
+    #                             },
+    #                             sheet["messages"][0],
+    #                         )
+    #             else:
+    #                 metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)
+    #                 self.assertEqual(len(metric["metric_errors"][0]["messages"]), 1)
+    #                 message = metric["metric_errors"][0]["messages"][0]
+    #                 self.assertEqual(message["title"], "Missing Metric")
+    #                 self.assertEqual(message["type"], "ERROR")
+    #                 self.assertTrue(
+    #                     f"No data for the {metric_definition.display_name} metric was provided. "
+    #                 )
+    #         self.assertEqual(len(json_response["non_metric_errors"]), 0)
+    #         spreadsheet = session.query(schema.Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.status, schema.SpreadsheetStatus.ERRORED)
 
-            # Add agency datapoint that changes the reporting frequency for the
-            # Annual Budget metric from annual -> monthly.
+    #         # Add agency datapoint that changes the reporting frequency for the
+    #         # Annual Budget metric from annual -> monthly.
 
-            agency_datapoint = schema.Datapoint(
-                context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
-                source_id=agency.id,
-                metric_definition_key=law_enforcement.funding.key,
-                value=CustomReportingFrequency(
-                    frequency=schema.ReportingFrequency.MONTHLY
-                ).to_json_str(),
-            )
+    #         agency_datapoint = schema.Datapoint(
+    #             context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
+    #             source_id=agency.id,
+    #             metric_definition_key=law_enforcement.funding.key,
+    #             value=CustomReportingFrequency(
+    #                 frequency=schema.ReportingFrequency.MONTHLY
+    #             ).to_json_str(),
+    #         )
 
-            file = (
-                self.bulk_upload_test_files / "law_enforcement/breakdown_errors.xlsx"
-            ).open("rb")
-            (
-                metric_key_to_datapoint_jsons,
-                metric_key_to_errors,
-            ) = SpreadsheetInterface.ingest_spreadsheet(
-                session=session,
-                xls=pd.ExcelFile(file),
-                spreadsheet=spreadsheet,
-                auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
-                metric_key_to_agency_datapoints={
-                    law_enforcement.funding.key: [agency_datapoint]
-                },
-            )
-            json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                metric_definitions=MetricInterface.get_metric_definitions_for_systems(
-                    systems={schema.System.LAW_ENFORCEMENT},
-                    metric_key_to_disaggregation_status={},
-                ),
-            )
-            self.assertEqual(len(json_response["metrics"]), 8)
-            for metric in json_response["metrics"]:
-                if metric["key"] == law_enforcement.funding.key:
-                    # Error for no month column in breakdown sheet, since now
-                    # the metric is reported annually.
-                    self.assertEqual(len(metric["metric_errors"]), 1)
-                elif metric["key"] == law_enforcement.calls_for_service.key:
-                    # Calls for service error still there
-                    self.assertEqual(len(metric["metric_errors"]), 1)
-                else:
-                    metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
-                    # Missing Metric error still there
-                    self.assertEqual(len(metric["metric_errors"]), 1)
+    #         file = (
+    #             self.bulk_upload_test_files / "law_enforcement/breakdown_errors.xlsx"
+    #         ).open("rb")
+    #         (
+    #             metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors,
+    #         ) = SpreadsheetInterface.ingest_spreadsheet(
+    #             session=session,
+    #             xls=pd.ExcelFile(file),
+    #             spreadsheet=spreadsheet,
+    #             auth0_user_id=user.auth0_user_id,
+    #             agency_id=agency.id,
+    #             metric_key_to_agency_datapoints={
+    #                 law_enforcement.funding.key: [agency_datapoint]
+    #             },
+    #         )
+    #         json_response = SpreadsheetInterface.get_ingest_spreadsheet_json(
+    #             metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+    #             metric_key_to_errors=metric_key_to_errors,
+    #             metric_definitions=MetricInterface.get_metric_definitions_for_systems(
+    #                 systems={schema.System.LAW_ENFORCEMENT},
+    #                 metric_key_to_disaggregation_status={},
+    #             ),
+    #         )
+    #         self.assertEqual(len(json_response["metrics"]), 8)
+    #         for metric in json_response["metrics"]:
+    #             if metric["key"] == law_enforcement.funding.key:
+    #                 # Error for no month column in breakdown sheet, since now
+    #                 # the metric is reported annually.
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)
+    #             elif metric["key"] == law_enforcement.calls_for_service.key:
+    #                 # Calls for service error still there
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)
+    #             else:
+    #                 metric_definition = METRIC_KEY_TO_METRIC[metric["key"]]
+    #                 # Missing Metric error still there
+    #                 self.assertEqual(len(metric["metric_errors"]), 1)

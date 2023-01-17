@@ -116,11 +116,11 @@ LAW_ENFORCEMENT_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="use_of_force",
-        definition=law_enforcement.officer_use_of_force_incidents,
+        definition=law_enforcement.use_of_force_incidents,
     ),
     MetricFile(
         canonical_filename="use_of_force_by_type",
-        definition=law_enforcement.officer_use_of_force_incidents,
+        definition=law_enforcement.use_of_force_incidents,
         disaggregation=ForceType,
         disaggregation_column_name="force_type",
     ),

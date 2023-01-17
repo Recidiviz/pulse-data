@@ -2099,11 +2099,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
                 "LAW_ENFORCEMENT_USE_OF_FORCE_INCIDENTS": {
                     "Force Type": [
-                        "Physical",
+                        "Physical Force",
                         "Restraint",
-                        "Verbal",
-                        "Weapon",
-                        "Unknown",
+                        "Firearm",
+                        "Other Weapon",
+                        "Other Force",
+                        "Unknown Force",
                     ]
                 },
             },

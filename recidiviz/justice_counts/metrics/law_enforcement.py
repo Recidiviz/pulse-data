@@ -66,7 +66,6 @@ from recidiviz.justice_counts.includes_excludes.person import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -426,30 +425,28 @@ arrests = MetricDefinition(
     ],
 )
 
-officer_use_of_force_incidents = MetricDefinition(
+use_of_force_incidents = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.USE_OF_FORCE_INCIDENTS,
     category=MetricCategory.PUBLIC_SAFETY,
     display_name="Use of Force Incidents",
-    description="Measures the number of use of force incidents.",
+    description="The number of incidents in which agency staff used physical coercion to gain compliance from a person.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Select the most serious type of force used per incident.",
-    definitions=[
-        Definition(
-            term="Use of force incident",
-            definition="An event in which an officer uses force towards or in the vicinity of a civilian. The FBI focuses on uses of force resulting in injury or a discharge of a weapon.  Count all uses of force occurring during the same event as 1 incident.",
-        )
-    ],
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_USE_OF_FORCE,
-            value_type=ValueType.TEXT,
-            label="Please provide your jurisdiction's definition of use of force.",
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ForceType,
+            dimension_to_description={
+                ForceType.PHYSICAL: "The number of incidents in which agency staff used physical force to gain compliance from a person.",
+                ForceType.FIREARM: "The number of incidents in which agency staff used a firearm to gain compliance from a person.",
+                ForceType.RESTRAINT: "The number of incidents in which agency staff used a restraint to gain compliance from a person.",
+                ForceType.OTHER_WEAPON: "The number of incidents in which agency staff used a non-firearm weapon to gain compliance from a person.",
+                ForceType.OTHER_FORCE: "The number of incidents in which agency staff used another type of force to gain compliance from a person.",
+                ForceType.UNKNOWN_FORCE: "The number of incidents in which agency staff used an unknown type of force to gain compliance from a person.",
+            },
             required=True,
         )
     ],
-    aggregated_dimensions=[AggregatedDimension(dimension=ForceType, required=True)],
 )
 
 civilian_complaints_sustained = MetricDefinition(

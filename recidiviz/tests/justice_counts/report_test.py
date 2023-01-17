@@ -1010,7 +1010,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             ),
             key=lambda x: x.key,
         )
-        # There should only be five metrics (expenses, funding, officer_use_of_force_incidents,
+        # There should only be five metrics (expenses, funding, use_of_force_incidents,
         # civilian_complaints_sustained, total_staff) because the annual report is from
         # Jan - Dec and the calls_for_service metric has been changed to only be reported
         # annually starting in February.
@@ -1022,9 +1022,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[1].key, law_enforcement.expenses.key)
         self.assertEqual(metrics[2].key, law_enforcement.funding.key)
         self.assertEqual(metrics[3].key, law_enforcement.staff.key)
-        self.assertEqual(
-            metrics[4].key, law_enforcement.officer_use_of_force_incidents.key
-        )
+        self.assertEqual(metrics[4].key, law_enforcement.use_of_force_incidents.key)
 
         metrics = sorted(
             ReportInterface.get_metrics_by_report(
