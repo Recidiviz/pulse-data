@@ -21,9 +21,11 @@ import { DraggableModal } from "../Utilities/DraggableModal";
 export const UploadStateUserRosterModal = ({
   visible,
   onCancel,
+  stateRoleData,
 }: {
   visible: boolean;
   onCancel: () => void;
+  stateRoleData: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const [stateCode, setStateCode] = useState<string | undefined>();
   const [role, setRole] = useState<string | undefined>();
@@ -58,9 +60,10 @@ export const UploadStateUserRosterModal = ({
         setStateCode={setStateCode}
         stateCode={stateCode}
         setRole={setRole}
-        enableRoleSelector
+        stateUserRoster
         setReason={setReason}
         reason={reason}
+        stateRoleData={stateRoleData}
       />
     </DraggableModal>
   );

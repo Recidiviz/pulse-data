@@ -37,8 +37,8 @@ import {
   updateUserPermissions,
 } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
-import { CreateAddUserForm } from "./AddUserForm";
-import { CreateEditUserForm } from "./EditUsersForm";
+import { AddUserForm } from "./AddUserForm";
+import { EditUserForm } from "./EditUsersForm";
 import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
 import {
   FEATURE_VARIANTS_LABELS,
@@ -47,11 +47,15 @@ import {
 } from "../constants";
 import { checkResponse, updatePermissionsObject } from "./utils";
 import { CreateEnableUserForm } from "./EnableUserForm";
+import { getStateRoleDefaultPermissions } from "../../AdminPanelAPI/LineStaffTools";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
     StateUserPermissionsResponse[]
   >(getStateUserPermissions);
+  const { loading: roleLoading, data: stateRoleData } = useFetchedDataJSON<
+    StateRolePermissionsResponse[]
+  >(getStateRoleDefaultPermissions);
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -79,7 +83,7 @@ const StateUserPermissionsView = (): JSX.Element => {
     }),
   };
 
-  if (loading || !data) {
+  if (loading || roleLoading || !data || !stateRoleData) {
     return (
       <div className="center">
         <Spin size="large" />
@@ -500,12 +504,13 @@ const StateUserPermissionsView = (): JSX.Element => {
         >
           Add User
         </Button>
-        <CreateAddUserForm
+        <AddUserForm
           addVisible={addVisible}
           addOnCreate={onAdd}
           addOnCancel={() => {
             setAddVisible(false);
           }}
+          stateRoleData={stateRoleData}
         />
         <Button
           disabled={selectedRowKeys.length < 1}
@@ -522,14 +527,15 @@ const StateUserPermissionsView = (): JSX.Element => {
         >
           Upload Roster
         </Button>
-        <CreateEditUserForm
+        <EditUserForm
           editVisible={editVisible}
           editOnCreate={onEdit}
           editOnCancel={() => {
             setEditVisible(false);
           }}
           onRevokeAccess={onRevokeAccess}
-          selectedEmails={selectedRowKeys}
+          selectedUsers={selectedRows}
+          stateRoleData={stateRoleData}
         />
         <UploadStateUserRosterModal
           visible={uploadRosterVisible}
@@ -537,6 +543,7 @@ const StateUserPermissionsView = (): JSX.Element => {
             updateTable();
             setUploadRosterVisible(false);
           }}
+          stateRoleData={stateRoleData}
         />
         <CreateEnableUserForm
           enableVisible={!!userToEnable}

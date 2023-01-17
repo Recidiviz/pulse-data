@@ -18,7 +18,6 @@ import { UploadOutlined } from "@ant-design/icons";
 import { Alert, Button, Input, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
 import { fetchRosterStateCodes } from "../../AdminPanelAPI";
-import { USER_ROLES } from "../constants";
 import StateSelector from "../Utilities/StateSelector";
 
 type UploadRosterProps = {
@@ -28,9 +27,10 @@ type UploadRosterProps = {
   setStateCode: (stateCode: string) => void;
   stateCode?: string;
   setRole?: (role: string) => void;
-  enableRoleSelector?: boolean;
+  stateUserRoster?: boolean;
   setReason: (reason: string) => void;
   reason?: string;
+  stateRoleData?: StateRolePermissionsResponse[];
 };
 
 const UploadRoster = ({
@@ -40,23 +40,48 @@ const UploadRoster = ({
   setStateCode,
   stateCode,
   setRole,
-  enableRoleSelector = false,
   setReason,
   reason,
+  stateUserRoster = false,
+  stateRoleData = [],
 }: UploadRosterProps): JSX.Element => {
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | void>();
+  const [roles, setRoles] = useState([] as string[]);
 
   const disabled = !stateCode || !reason;
+
+  // Determine state codes and role data for state user roster upload
+  const stateRoleStateCodes = stateRoleData
+    .map((d) => d.stateCode)
+    .filter((v, i, a) => a.indexOf(v) === i);
+  const handleSelectStateCode = (selectedStateCode: string) => {
+    const permissionsForState = stateRoleData?.filter(
+      (d) => d.stateCode === selectedStateCode
+    );
+    const rolesForState = permissionsForState?.map((p) => p.role);
+    if (rolesForState) setRoles(rolesForState);
+    setStateCode(selectedStateCode);
+  };
 
   return (
     <>
       <Space direction="vertical">
-        <StateSelector
-          fetchStateList={fetchRosterStateCodes}
-          onChange={(stateInfo) => setStateCode(stateInfo.code)}
-        />
-        {enableRoleSelector && (
+        {stateUserRoster ? (
+          <Select
+            placeholder="Select a state"
+            onChange={handleSelectStateCode}
+            options={stateRoleStateCodes.map((c) => {
+              return { value: c, label: c };
+            })}
+          />
+        ) : (
+          <StateSelector
+            fetchStateList={fetchRosterStateCodes}
+            onChange={(stateInfo) => setStateCode(stateInfo.code)}
+          />
+        )}
+        {stateUserRoster && (
           <Select
             defaultValue={null}
             placeholder="Select a role"
@@ -64,8 +89,8 @@ const UploadRoster = ({
             style={{
               width: 200,
             }}
-            options={USER_ROLES.map((roleName) => {
-              return { value: roleName, name: roleName };
+            options={roles.map((r) => {
+              return { value: r, label: r };
             })}
             onChange={setRole}
           />

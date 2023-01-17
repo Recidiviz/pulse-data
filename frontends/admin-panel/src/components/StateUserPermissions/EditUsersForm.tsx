@@ -22,22 +22,33 @@ import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
 import { validateAndFocus } from "./utils";
 
-export const CreateEditUserForm = ({
+export const EditUserForm = ({
   editVisible,
   editOnCreate,
   editOnCancel,
   onRevokeAccess,
-  selectedEmails,
+  selectedUsers,
+  stateRoleData,
 }: {
   editVisible: boolean;
   editOnCreate: (arg0: StateUserPermissionsRequest) => Promise<void>;
   editOnCancel: () => void;
   onRevokeAccess: (reason: string) => Promise<void>;
-  selectedEmails: React.Key[];
+  selectedUsers: StateUserPermissionsResponse[];
+  stateRoleData: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const { Option } = Select;
-
   const [form] = Form.useForm();
+
+  const stateCodes = selectedUsers
+    .map((u) => u.stateCode)
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  // Determine roles available for selected user(s)
+  const permissionsForState = stateRoleData?.filter((d) =>
+    stateCodes.includes(d.stateCode)
+  );
+  const rolesForState = permissionsForState?.map((p) => p.role);
 
   // control useCustomPermissions
   const [hidePermissions, setHidePermissions] = useState(true);
@@ -71,6 +82,8 @@ export const CreateEditUserForm = ({
       handleRevokeAccess();
       resolve(null);
     });
+
+  const selectedEmails = selectedUsers.map((u) => u.emailAddress);
 
   return (
     <DraggableModal
@@ -115,7 +128,12 @@ export const CreateEditUserForm = ({
         <ReasonInput label="Reason for modification" />
         <hr />
         <Form.Item name="role" label="Role" labelCol={{ span: 5 }}>
-          <Input />
+          <Select
+            options={rolesForState.map((r) => {
+              return { value: r, label: r };
+            })}
+            disabled={rolesForState.length === 0 || stateCodes.length > 1}
+          />
         </Form.Item>
         <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
           <Input />
