@@ -281,9 +281,14 @@ class MetricAggregatedDimensionData:
                             json_context = {
                                 "key": context.key.value,
                                 "value": actual_contexts.get(context.key.value),
+                                "label": context.label,
                             }
                         else:
-                            json_context = {"key": context.key.value, "value": None}
+                            json_context = {
+                                "key": context.key.value,
+                                "value": None,
+                                "label": context.label,
+                            }
                         json["contexts"].append(json_context)
                 if (
                     dimension_to_includes_excludes is not None

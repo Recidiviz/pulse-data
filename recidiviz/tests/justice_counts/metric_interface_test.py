@@ -248,6 +248,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -262,6 +263,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -282,7 +284,11 @@ class TestMetricInterface(TestCase):
                                 "enabled": True,
                                 "description": "The number of calls for police assistance received by the agency that are not emergency or non-emergency calls.",
                                 "contexts": [
-                                    {"key": "ADDITIONAL_CONTEXT", "value": None}
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
                                 ],
                             },
                         ],
@@ -395,6 +401,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -409,6 +416,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -423,6 +431,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -437,6 +446,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -457,7 +467,11 @@ class TestMetricInterface(TestCase):
                                 "enabled": True,
                                 "description": "The number of arrests, citations, or summonses made by the agency in which the most serious offense was another type of crime that was not a person, property, drug, or public order offense.",
                                 "contexts": [
-                                    {"key": "ADDITIONAL_CONTEXT", "value": None}
+                                    {
+                                        "key": "ADDITIONAL_CONTEXT",
+                                        "value": None,
+                                        "label": "Please describe what data is being included in this breakdown.",
+                                    }
                                 ],
                             },
                         ],
@@ -788,6 +802,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -851,6 +866,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1015,6 +1031,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1078,6 +1095,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1242,6 +1260,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1305,6 +1324,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1481,6 +1501,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1543,6 +1564,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1850,6 +1872,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [
@@ -1928,6 +1951,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
+                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 "settings": [

@@ -1262,10 +1262,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                 self.assertEqual(
                                     dimension["contexts"],
                                     [
-                                        {"key": "ADDITIONAL_CONTEXT", "value": None},
+                                        {
+                                            "key": "ADDITIONAL_CONTEXT",
+                                            "value": None,
+                                            "label": "Please describe what data is being included in this breakdown.",
+                                        },
                                         {
                                             "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                             "value": None,
+                                            "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                         },
                                     ],
                                 )
@@ -1273,7 +1278,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                 # OTHER dimension within the aggregation, dimension does not have includes/excludes
                                 self.assertEqual(
                                     dimension["contexts"],
-                                    [{"key": "ADDITIONAL_CONTEXT", "value": None}],
+                                    [
+                                        {
+                                            "key": "ADDITIONAL_CONTEXT",
+                                            "value": None,
+                                            "label": "Please describe what data is being included in this breakdown.",
+                                        }
+                                    ],
                                 )
                             elif includes_excludes != []:
                                 # not an OTHER dimension, and dimension has includes/excludes
@@ -1283,6 +1294,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                                         {
                                             "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                             "value": None,
+                                            "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
                                         }
                                     ],
                                 )
@@ -1358,6 +1370,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     {
                         "key": "ADDITIONAL_CONTEXT",
                         "value": "User entered text...",
+                        "label": "Please describe what data is being included in this breakdown.",
                     }
                 ],
             )
