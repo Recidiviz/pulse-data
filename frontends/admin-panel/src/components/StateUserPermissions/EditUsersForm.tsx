@@ -136,16 +136,16 @@ export const EditUserForm = ({
           />
         </Form.Item>
         <Form.Item name="externalId" label="External ID" labelCol={{ span: 5 }}>
-          <Input />
+          <Input disabled={selectedEmails.length > 1} />
         </Form.Item>
         <Form.Item name="district" label="District" labelCol={{ span: 5 }}>
           <Input />
         </Form.Item>
         <Form.Item name="firstName" label="First Name" labelCol={{ span: 5 }}>
-          <Input />
+          <Input disabled={selectedEmails.length > 1} />
         </Form.Item>
         <Form.Item name="lastName" label="Last Name" labelCol={{ span: 5 }}>
-          <Input />
+          <Input disabled={selectedEmails.length > 1} />
         </Form.Item>
         <hr />
         <Form.Item
