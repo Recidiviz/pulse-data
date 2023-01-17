@@ -99,7 +99,7 @@ class TestMetricDefinition(TestCase):
             "COMPLAINTS SUSTAINED",
         )
         self.assertEqual(
-            law_enforcement.officer_use_of_force_incidents.metric_type.unit,
+            law_enforcement.use_of_force_incidents.metric_type.unit,
             "USE OF FORCE INCIDENTS",
         )
 

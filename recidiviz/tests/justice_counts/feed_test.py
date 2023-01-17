@@ -71,7 +71,14 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
                     for row in filename_to_rows["use_of_force_by_type"]
                     if row["year"] == 2021
                 ],
-                ["PHYSICAL", "RESTRAINT", "UNKNOWN", "VERBAL", "WEAPON"],
+                [
+                    "FIREARM",
+                    "OTHER_FORCE",
+                    "OTHER_WEAPON",
+                    "PHYSICAL",
+                    "RESTRAINT",
+                    "UNKNOWN_FORCE",
+                ],
             )
             self.assertEqual(
                 [

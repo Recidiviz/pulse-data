@@ -58,11 +58,12 @@ class LawEnforcementFundingType(DimensionBase, enum.Enum):
 
 
 class ForceType(DimensionBase, enum.Enum):
-    PHYSICAL = "Physical"
+    PHYSICAL = "Physical Force"
     RESTRAINT = "Restraint"
-    VERBAL = "Verbal"
-    WEAPON = "Weapon"
-    UNKNOWN = "Unknown"
+    FIREARM = "Firearm"
+    OTHER_WEAPON = "Other Weapon"
+    OTHER_FORCE = "Other Force"
+    UNKNOWN_FORCE = "Unknown Force"
 
     @classmethod
     def dimension_identifier(cls) -> str:
