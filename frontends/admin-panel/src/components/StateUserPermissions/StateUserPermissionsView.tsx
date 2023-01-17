@@ -259,7 +259,10 @@ const StateUserPermissionsView = (): JSX.Element => {
             Search
           </Button>
           <Button
-            onClick={clearFilters}
+            onClick={() => {
+              clearFilters?.();
+              confirm();
+            }}
             size="small"
             style={{
               width: 90,
