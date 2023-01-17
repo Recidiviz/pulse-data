@@ -19,6 +19,7 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
+    ComplaintType,
     ForceType,
     LawEnforcementExpenseType,
     LawEnforcementFundingType,
@@ -455,19 +456,20 @@ civilian_complaints_sustained = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.COMPLAINTS_SUSTAINED,
     category=MetricCategory.FAIRNESS,
-    reporting_note="Disclaimer: Many factors can lead to a complaint being filed, and to a final decision on the complaint. These factors may also vary by agency and jurisdiction.",
     display_name="Civilian Complaints Sustained",
-    description="Measures the number of complaints filed against officers in your agency that were ultimately sustained.",
+    description="The number of allegations of misconduct filed against agency staff that were sustained by an internal affairs unit or review board.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    definitions=[
-        Definition(
-            term="Complaint",
-            definition="One case that represents one or more acts committed by the same officer, or group of officers at the same time and place. Count all complaints, regardless of whether an underlying incident was filed.",
-        ),
-        Definition(
-            term="Sustained",
-            definition="Found to be supported by the evidence, and may or may not result in disciplinary action.",
-        ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ComplaintType,
+            required=False,
+            dimension_to_description={
+                ComplaintType.EXCESSIVE_USES_OF_FORCE: "The number of allegations of misconduct filed against agency staff relating to excessive uses of force that were sustained by an internal affairs unit or conduct review board.",
+                ComplaintType.DISCRIMINATION: "The number of allegations of misconduct filed against agency staff relating to discrimination or racial bias that were sustained by an internal affairs unit or review board.",
+                ComplaintType.OTHER: "The number of allegations of misconduct filed against agency staff that were sustained by an internal affairs unit or review board and were not excessive uses of force or discrimination or racial bias.",
+                ComplaintType.UNKNOWN: "The number of allegations of misconduct filed against agency staff of an unknown type that were sustained by an internal affairs unit or review board.",
+            },
+        )
     ],
 )

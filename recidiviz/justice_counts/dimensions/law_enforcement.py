@@ -69,6 +69,17 @@ class ForceType(DimensionBase, enum.Enum):
         return "metric/law_enforcement/officer_use_of_force_incidents/type"
 
 
+class ComplaintType(DimensionBase, enum.Enum):
+    EXCESSIVE_USES_OF_FORCE = "Excessive Uses of Force"
+    DISCRIMINATION = "Discrimination or Racial Bias"
+    OTHER = "Other Complaints"
+    UNKNOWN = "Unknown Complaints"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/law_enforcement/complaint/type"
+
+
 class LawEnforcementStaffType(DimensionBase, enum.Enum):
     LAW_ENFORCEMENT_OFFICERS = "Sworn/Uniformed Police Officers"
     CIVILIAN_STAFF = "Civilian Staff"

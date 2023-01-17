@@ -313,17 +313,11 @@ class TestMetricInterface(TestCase):
                 "frequency": "ANNUAL",
                 "custom_frequency": None,
                 "starting_month": None,
-                "filenames": ["civilian_complaints_sustained"],
-                "definitions": [
-                    {
-                        "term": "Complaint",
-                        "definition": "One case that represents one or more acts committed by the same officer, or group of officers at the same time and place. Count all complaints, regardless of whether an underlying incident was filed.",
-                    },
-                    {
-                        "term": "Sustained",
-                        "definition": "Found to be supported by the evidence, and may or may not result in disciplinary action.",
-                    },
+                "filenames": [
+                    "civilian_complaints_sustained",
+                    "civilian_complaints_sustained_by_type",
                 ],
+                "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.human_readable_string,
                 "settings": [],
