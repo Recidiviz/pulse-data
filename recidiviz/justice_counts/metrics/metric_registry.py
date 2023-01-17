@@ -111,7 +111,7 @@ for supervision_subsystem in schema.System.supervision_subsystems():
         attr.evolve(
             metric,
             # the display name will look like "Supervision Violations (Parole)"
-            display_name=f"{metric.display_name} ({supervision_subsystem.value.title()})",
+            display_name=f"{metric.display_name} ({supervision_subsystem.value.title().replace('_', ' ')})",
             system=supervision_subsystem,
         )
         for metric in METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
