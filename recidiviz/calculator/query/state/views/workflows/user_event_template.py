@@ -35,6 +35,15 @@ def user_event_template(
             -- this incorporates state code so we don't need to join on it explicitly
             pseudonymized_id,
         FROM `{{project_id}}.{{workflows_views_dataset}}.client_record_archive_materialized` client_records
+
+        UNION ALL
+
+        SELECT DISTINCT
+            person_id,
+            person_external_id,
+            pseudonymized_id,
+        # TODO(#17870): replace with resident record archive once available
+        FROM `{{project_id}}.{{workflows_views_dataset}}.resident_record_materialized` resident_records
     )
 
     SELECT
