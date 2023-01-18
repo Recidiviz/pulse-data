@@ -18,11 +18,9 @@
 when entity matching root entities of type StatePerson.
 """
 
-from typing import List, Set, Type
+from typing import Type
 
-from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_delegate import (
     RootEntityEntityMatchingDelegate,
@@ -38,11 +36,6 @@ class RootStatePersonEntityMatchingDelegate(
     """An implementation of RootEntityEntityMatchingDelegate that should be used when
     entity matching root entities of type StatePerson.
     """
-
-    def read_root_entities_with_external_ids(
-        self, session: Session, region_code: str, external_ids: Set[str]
-    ) -> List[SchemaRootEntityT]:
-        return dao.read_people_by_external_ids(session, region_code, external_ids)
 
     def get_root_entity_backedge_field_name(self) -> str:
         return "person"
