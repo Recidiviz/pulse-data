@@ -32,9 +32,11 @@ output:
                 - OffenderId
                 - OffenderNoteInfoId
           verified_employment:
-            $equal:
-              - verified_employment
-              - $literal("1")
+            $in:
+              $value: verified_employment
+              $options:
+                - $literal("1") # Legacy Contacts
+                - $literal("17") # Atlas Contacts
           contact_date: NoteDate
           contact_method:
             $enum_mapping:
