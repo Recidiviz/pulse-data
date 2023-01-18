@@ -21,6 +21,7 @@ columns:
     is_pii: True
   - name: Created_On_Date
   - name: Email_Tx
+    description: The employee's government-issued email address
     is_pii: True
   - name: Employee_Id
     description: The primary key for this table and the ID used in all other raw tables for CIS_900_EMPLOYEE_ID fields.
