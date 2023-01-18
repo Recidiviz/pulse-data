@@ -51,10 +51,7 @@ try:
         RecidivizDataflowTemplateOperator,
     )
     from utils.default_args import DEFAULT_ARGS  # type: ignore
-    from utils.export_tasks_config import (  # type: ignore
-        CASE_TRIAGE_STATES,
-        PIPELINE_AGNOSTIC_EXPORTS,
-    )
+    from utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS  # type: ignore
 except ImportError:
     from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
         FinishedCloudTaskQueryGenerator,
@@ -63,7 +60,6 @@ except ImportError:
         BQResultSensor,
     )
     from recidiviz.airflow.dags.utils.export_tasks_config import (
-        CASE_TRIAGE_STATES,
         PIPELINE_AGNOSTIC_EXPORTS,
     )
     from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
@@ -601,12 +597,8 @@ def create_calculation_dag() -> None:
         for state_code in states_to_trigger
     }
 
-    case_triage_create_metric_view_data_export_nodes = (
-        create_metric_view_data_export_nodes("CASE_TRIAGE")
-    )
     all_create_metric_view_data_export_nodes = [
         *state_create_metric_view_data_export_nodes.values(),
-        case_triage_create_metric_view_data_export_nodes,
         *[
             create_metric_view_data_export_nodes(export)
             for export in PIPELINE_AGNOSTIC_EXPORTS
@@ -624,11 +616,6 @@ def create_calculation_dag() -> None:
                 metric_pipeline_operator
                 >> state_create_metric_view_data_export_nodes[state_code]
             )
-            if state_code in CASE_TRIAGE_STATES:
-                (
-                    metric_pipeline_operator
-                    >> case_triage_create_metric_view_data_export_nodes
-                )
 
 
 calculation_dag = create_calculation_dag()

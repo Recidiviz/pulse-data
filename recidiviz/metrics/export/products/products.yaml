@@ -8,20 +8,6 @@ products:
       - INGEST_METADATA
       - VALIDATION_METADATA
     environment: production
-  - name: Case Triage
-    description: Case Triage is a web tool for parole and probation officers (line staff) to manage their caseloads by understanding client needs and acting on timely opportunities.
-    # TODO(#7758): Case Triage isn't a state-agnostic product, but its view exports are state
-    # agnostic. This distinction should be clarified in the products.yaml spec.
-    is_state_agnostic: True
-    exports:
-      - CASE_TRIAGE
-    environment: production
-  - name: COVID Dashboard
-    description: COVID dashboard aids corrections leadership in their COVID response. The web app models the spread of COVID through jails and prisons and the projected impact on COVID cases and community hospital resources. Scenario modeling enables users to understand the impact of their interventions on the projected spread.
-    is_state_agnostic: True
-    exports:
-      - COVID_DASHBOARD
-    environment: production
   - name: Justice Counts
     description: The Justice Counts Data Dashboards are designed to keep policymakers and other actors in the CJ arena informed of basic trends on the corrections systems in all fifty states.
     is_state_agnostic: True
