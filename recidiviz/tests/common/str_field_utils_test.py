@@ -31,7 +31,6 @@ from recidiviz.common.str_field_utils import (
     parse_int,
     roman_numeral_uppercase,
     safe_parse_date_from_date_pieces,
-    safe_parse_days_from_duration_str,
 )
 
 
@@ -91,6 +90,19 @@ class TestStrFieldUtils(TestCase):
 
         assert combo_duration_with_start_date == (2 * 30 + 3)
 
+        # Remove erroneous commas from strings
+        combo_duration = parse_days_from_duration_pieces(
+            years_str="1", months_str=",", days_str="3"
+        )
+
+        assert combo_duration == (1 * 365 + 0 * 30 + 3)
+
+        combo_duration = parse_days_from_duration_pieces(
+            years_str="1", months_str="2,", days_str="3"
+        )
+
+        assert combo_duration == (1 * 365 + 2 * 30 + 3)
+
     def test_parseDaysFromDurationPieces_negativePieces(self) -> None:
         duration = parse_days_from_duration_pieces(years_str="2", months_str="-5")
 
@@ -101,13 +113,6 @@ class TestStrFieldUtils(TestCase):
         )
 
         assert duration == (2 * 365 + -5 * 30 - 15)
-
-    def test_parseDaysFromDurationStr(self) -> None:
-        self.assertEqual(365, safe_parse_days_from_duration_str("1Y"))
-        self.assertEqual(30, safe_parse_days_from_duration_str("1M 0D"))
-        self.assertEqual(100, safe_parse_days_from_duration_str("100D"))
-        self.assertEqual(40, safe_parse_days_from_duration_str("1M 10D"))
-        self.assertEqual(405, safe_parse_days_from_duration_str("1Y 1M 10D"))
 
     def test_parseDateFromDatePieces(self) -> None:
         parsed = parse_date_from_date_pieces("2005", "10", "12")

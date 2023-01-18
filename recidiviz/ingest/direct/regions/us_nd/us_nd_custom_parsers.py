@@ -32,10 +32,7 @@ from typing import Optional
 from recidiviz.common import ncic
 from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
-    safe_parse_days_from_duration_str,
-)
-from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
-    get_normalized_ymd_str,
+    safe_parse_days_from_duration_pieces,
 )
 from recidiviz.ingest.direct.regions.us_nd.us_nd_county_code_reference import (
     COUNTY_CODES,
@@ -112,13 +109,11 @@ def are_new_offenses_violent(
 
 
 def max_length_days_from_ymd(years: str, months: str, days: str) -> str:
-    normalized_ymd_str = get_normalized_ymd_str(
-        years_numerical_str=years,
-        months_numerical_str=months,
-        days_numerical_str=days,
+    return str(
+        safe_parse_days_from_duration_pieces(
+            years_str=years, months_str=months, days_str=days
+        )
     )
-
-    return str(safe_parse_days_from_duration_str(normalized_ymd_str))
 
 
 def classification_type_raw_text_from_raw_text(raw_charge_text: str) -> Optional[str]:
