@@ -24,12 +24,13 @@ import {
   updateStateRolePermissions,
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
-import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import {
   FEATURE_VARIANTS_LABELS,
   ROUTES_PERMISSIONS_LABELS,
 } from "../constants";
+import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import { CreateEditStateRoleForm } from "./EditStateRoleForm";
+import { ReasonsLogButton } from "./ReasonsLogButton";
 import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {
@@ -261,6 +262,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         >
           Update Permissions
         </Button>
+        <ReasonsLogButton />
         <Button onClick={() => resetFilters()}>Reset Filters</Button>
         <CreateEditStateRoleForm
           editVisible={editVisible}
