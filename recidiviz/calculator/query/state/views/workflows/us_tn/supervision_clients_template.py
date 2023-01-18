@@ -25,6 +25,12 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             "supervisionLevelDowngrade" AS opportunity_name,
         FROM `{{project_id}}.{{workflows_dataset}}.us_tn_supervision_level_downgrade_record_materialized`
     ),
+    tn_expiration_eligibility AS (
+        SELECT 
+            external_id AS person_external_id,
+            "usTnExpiration" AS opportunity_name,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_tn_full_term_supervision_discharge_record_materialized`
+    ),
     tn_compliant_reporting_eligibility AS (
         SELECT
             *,
@@ -52,8 +58,10 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             board_conditions,
             district,
             {columns_to_array(["tn_supervision_level_downgrade_eligibility.opportunity_name",
-                               "tn_compliant_reporting_eligibility.opportunity_name"])} AS all_eligible_opportunities,
+                               "tn_compliant_reporting_eligibility.opportunity_name",
+                               "tn_expiration_eligibility.opportunity_name"])} AS all_eligible_opportunities,
         FROM tn_compliant_reporting_eligibility
         LEFT JOIN tn_supervision_level_downgrade_eligibility USING (person_external_id)
+        LEFT JOIN tn_expiration_eligibility USING (person_external_id)
     )
 """

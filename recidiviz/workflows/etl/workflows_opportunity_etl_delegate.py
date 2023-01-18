@@ -63,6 +63,10 @@ CONFIG_BY_STATE: Dict[StateCode, List[OpportunityExportConfig]] = {
             source_filename="us_tn_supervision_level_downgrade_record.json",
             export_collection_name="US_TN-supervisionLevelDowngrade",
         ),
+        OpportunityExportConfig(
+            source_filename="us_tn_full_term_supervision_discharge_record.json",
+            export_collection_name="US_TN-expirationReferrals",
+        ),
     ],
     StateCode.US_ME: [
         OpportunityExportConfig(
