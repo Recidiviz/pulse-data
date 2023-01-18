@@ -77,11 +77,11 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_assessment,
     generate_charge,
     generate_ethnicity,
-    generate_external_id,
     generate_incarceration_incident,
     generate_incarceration_period,
     generate_incarceration_sentence,
     generate_person,
+    generate_person_external_id,
     generate_race,
     generate_supervision_case_type_entry,
     generate_supervision_period,
@@ -493,7 +493,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_match_ErrorMergingIngestedEntities(self) -> None:
         # Arrange 1 - Match
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -504,7 +504,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
         entity_person = self.to_entity(db_person)
 
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             id_type=_ID_TYPE,
@@ -553,11 +553,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             _ = self._match(session, [person, person_2])
 
     def test_matchPersons_multipleIngestedPeopleMatchOneDbPerson(self) -> None:
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             external_id=_EXTERNAL_ID, id_type=_ID_TYPE
         )
         entity_external_id = self.to_entity(db_external_id)
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE_ANOTHER,
         )
@@ -635,7 +635,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             state_code=_STATE_CODE,
         )
         entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -746,13 +746,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         people to merge have distinct DB children.
         """
         # Arrange 1 - Match
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
         )
         entity_external_id = self.to_entity(db_external_id)
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             id_type=_ID_TYPE_ANOTHER,
@@ -839,7 +839,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             person=db_person, external_id=_EXTERNAL_ID
         )
         entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -868,7 +868,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             max_length_days=10,
         )
         entity_supervision_sentence_dup = self.to_entity(db_supervision_sentence_dup)
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             id_type=_ID_TYPE_ANOTHER,
@@ -967,7 +967,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             ethnicity=StateEthnicity.HISPANIC.value,
         )
         entity_ethnicity = self.to_entity(db_ethnicity)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -1056,7 +1056,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             county_code="county_code",
         )
         entity_incarceration_sentence = self.to_entity(db_incarceration_sentence)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             person=db_person,
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
@@ -1263,7 +1263,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             min_length_days=0,
         )
         entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID
         )
         entity_external_id = self.to_entity(db_external_id)
@@ -1455,7 +1455,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_ingestedPersonWithNewExternalId(self) -> None:
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -1499,7 +1499,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_holeInDbGraph(self) -> None:
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -1607,7 +1607,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         )
         entity_supervision_sentence = self.to_entity(db_supervision_sentence)
 
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID
         )
         entity_external_id = self.to_entity(db_external_id)
@@ -1661,7 +1661,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_dbPlaceholderSplits(self) -> None:
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID
         )
         db_person = generate_person(
@@ -1772,7 +1772,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             charges=[db_charge, db_charge_another],
         )
         entity_supervision_sentence = self.to_entity(db_supervision_sentence)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID
         )
         entity_external_id = self.to_entity(db_external_id)
@@ -1831,7 +1831,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_multipleHolesInDbGraph(self) -> None:
         # Arrange 1 - Match
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             id_type=_ID_TYPE,
             external_id=_EXTERNAL_ID,
@@ -1931,7 +1931,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_matchAfterManyIngestedPlaceholders(self) -> None:
         # Arrange 1 - Match
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             id_type=_ID_TYPE,
             external_id=_EXTERNAL_ID,
@@ -1980,13 +1980,13 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_multipleExternalIdsOnRootEntity(self) -> None:
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             id_type=_ID_TYPE,
         )
         entity_external_id = self.to_entity(db_external_id)
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             external_id=_EXTERNAL_ID_2,
             state_code=_STATE_CODE,
             id_type=_ID_TYPE_ANOTHER,
@@ -2259,11 +2259,11 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
     )
     def test_mismatchedTreeShapeEnumTypesOnly(self) -> None:
         # Arrange 1 - Match
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             external_id=_EXTERNAL_ID, id_type=_ID_TYPE
         )
         entity_external_id = self.to_entity(db_external_id)
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE_ANOTHER,
         )
@@ -2319,7 +2319,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         """
         # Arrange
         db_person = generate_person(state_code=_STATE_CODE)
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -2384,7 +2384,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
     def test_mergePersonIntoPersonWithPlaceholderChains(self) -> None:
         # Arrange
         db_person_1 = generate_person(state_code=_STATE_CODE)
-        db_external_id_1 = generate_external_id(
+        db_external_id_1 = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
             id_type=_ID_TYPE,
@@ -2394,7 +2394,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self._commit_to_db(db_person_1)
 
         db_person_2 = generate_person(state_code=_STATE_CODE)
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID_2,
             id_type=_ID_TYPE_ANOTHER,
@@ -2475,7 +2475,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
 
     def test_matchPersons_atomicIpMerge(self) -> None:
         # Arrange 1 - Match
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID
         )
         db_person = generate_person(
