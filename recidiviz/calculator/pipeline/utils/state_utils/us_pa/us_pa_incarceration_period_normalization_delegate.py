@@ -29,23 +29,17 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.in
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolationResponse,
 )
-from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
-    NormalizedSupervisionPeriodIndex,
-)
 from recidiviz.calculator.pipeline.utils.violation_response_utils import (
     responses_on_most_recent_response_date,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
-    StateIncarcerationPeriodAdmissionReason,
     StateSpecializedPurposeForIncarceration,
     is_commitment_from_supervision,
 )
-from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecidingBodyType,
     StateSupervisionViolationResponseType,
 )
-from recidiviz.persistence.entity.entity_utils import deep_entity_update
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 PURPOSE_FOR_INCARCERATION_PVC = "CCIS-26"
@@ -98,37 +92,6 @@ class UsPaIncarcerationNormalizationDelegate(
         """The normalize_period_if_commitment_from_supervision_and_set_pfi_subtype
         function for US_PA relies on violation response entities."""
         return True
-
-    def normalize_period_if_commitment_from_supervision(
-        self,
-        incarceration_period_list_index: int,
-        sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        original_sorted_incarceration_periods: List[StateIncarcerationPeriod],
-        supervision_period_index: Optional[NormalizedSupervisionPeriodIndex],
-    ) -> StateIncarcerationPeriod:
-
-        incarceration_period = sorted_incarceration_periods[
-            incarceration_period_list_index
-        ]
-
-        # TODO(#16703): update the ingest mappings to be conditional on the program id value
-        #  so that all non-transfers are cast as INTERNAL_UNKNOWN for ccis periods with program IDs not in 26,46,51
-        #  so that this logic will no longer be needed
-
-        if (
-            incarceration_period.custodial_authority
-            == StateCustodialAuthority.SUPERVISION_AUTHORITY
-            and incarceration_period.specialized_purpose_for_incarceration
-            != StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
-            and incarceration_period.admission_reason
-            != StateIncarcerationPeriodAdmissionReason.TRANSFER
-        ):
-            incarceration_period = deep_entity_update(
-                incarceration_period,
-                admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-            )
-
-        return incarceration_period
 
 
 def _us_pa_get_pfi_info_for_incarceration_period(
