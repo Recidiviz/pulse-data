@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: informix_incarcer
 file_description: |-
-  TODO(#12372)(): Fill in the file description
+  TODO(#12372): Fill in the file description
 data_classification: validation
 primary_key_cols:
   - DOCNO
