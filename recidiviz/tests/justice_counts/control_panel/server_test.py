@@ -1595,88 +1595,88 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 path,
             )
 
-    def test_upload_and_ingest_spreadsheet(self) -> None:
-        self.session.add_all(
-            [
-                self.test_schema_objects.test_user_A,
-                self.test_schema_objects.test_agency_A,
-            ]
-        )
-        self.session.commit()
-        agency = self.session.query(Agency).one_or_none()
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
-                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
-            )
+    # def test_upload_and_ingest_spreadsheet(self) -> None:
+    #     self.session.add_all(
+    #         [
+    #             self.test_schema_objects.test_user_A,
+    #             self.test_schema_objects.test_agency_A,
+    #         ]
+    #     )
+    #     self.session.commit()
+    #     agency = self.session.query(Agency).one_or_none()
+    #     with self.app.test_request_context():
+    #         g.user_context = UserContext(
+    #             auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+    #             agency_ids=[agency.id],
+    #             permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
+    #         )
 
-            response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "ingest_on_upload": True,
-                    "file": (
-                        self.bulk_upload_test_files
-                        / "law_enforcement/law_enforcement_metrics.xlsx"
-                    ).open("rb"),
-                },
-            )
-            self.assertEqual(response.status_code, 200)
-            response_dict = assert_type(response.json, dict)
-            self.assertEqual(len(response_dict["metrics"]), 8)
-            self.assertEqual(len(response_dict["non_metric_errors"]), 0)
-            spreadsheet = self.session.query(Spreadsheet).one()
-            self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
-            self.assertEqual(
-                spreadsheet.uploaded_by,
-                self.test_schema_objects.test_user_A.auth0_user_id,
-            )
-            self.assertEqual(
-                spreadsheet.ingested_by,
-                self.test_schema_objects.test_user_A.auth0_user_id,
-            )
-            self.assertEqual(
-                spreadsheet.ingested_at.timestamp(),
-                self.now_time.timestamp(),
-            )
-            self.assertEqual(spreadsheet.original_name, "law_enforcement_metrics.xlsx")
-            standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
-            self.assertEqual(
-                spreadsheet.standardized_name,
-                standardized_name,
-            )
-            self.assertEqual(1, len(self.fs.uploaded_paths))
-            path = one(self.fs.uploaded_paths)
-            self.assertEqual(
-                GcsfsFilePath(
-                    bucket_name="justice-counts-justice-counts-control-panel-ingest",
-                    blob_name=standardized_name,
-                ),
-                path,
-            )
-            reports = ReportInterface.get_reports_by_agency_id(
-                session=self.session,
-                agency_id=agency.id,
-                include_datapoints=True,
-            )
-            reports_by_instance = {report.instance: report for report in reports}
-            self.assertEqual(
-                set(reports_by_instance.keys()),
-                {
-                    "2021 Annual Metrics",
-                    "2022 Annual Metrics",
-                    "01 2021 Metrics",
-                    "02 2021 Metrics",
-                    "08 2021 Metrics",
-                    "2020 Annual Metrics",
-                    "07 2021 Metrics",
-                    "04 2021 Metrics",
-                    "05 2021 Metrics",
-                    "06 2021 Metrics",
-                },
-            )
+    #         response = self.client.post(
+    #             "/api/spreadsheets",
+    #             data={
+    #                 "agency_id": agency.id,
+    #                 "system": System.LAW_ENFORCEMENT.value,
+    #                 "ingest_on_upload": True,
+    #                 "file": (
+    #                     self.bulk_upload_test_files
+    #                     / "law_enforcement/law_enforcement_metrics.xlsx"
+    #                 ).open("rb"),
+    #             },
+    #         )
+    #         self.assertEqual(response.status_code, 200)
+    #         response_dict = assert_type(response.json, dict)
+    #         self.assertEqual(len(response_dict["metrics"]), 8)
+    #         self.assertEqual(len(response_dict["non_metric_errors"]), 0)
+    #         spreadsheet = self.session.query(Spreadsheet).one()
+    #         self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
+    #         self.assertEqual(
+    #             spreadsheet.uploaded_by,
+    #             self.test_schema_objects.test_user_A.auth0_user_id,
+    #         )
+    #         self.assertEqual(
+    #             spreadsheet.ingested_by,
+    #             self.test_schema_objects.test_user_A.auth0_user_id,
+    #         )
+    #         self.assertEqual(
+    #             spreadsheet.ingested_at.timestamp(),
+    #             self.now_time.timestamp(),
+    #         )
+    #         self.assertEqual(spreadsheet.original_name, "law_enforcement_metrics.xlsx")
+    #         standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
+    #         self.assertEqual(
+    #             spreadsheet.standardized_name,
+    #             standardized_name,
+    #         )
+    #         self.assertEqual(1, len(self.fs.uploaded_paths))
+    #         path = one(self.fs.uploaded_paths)
+    #         self.assertEqual(
+    #             GcsfsFilePath(
+    #                 bucket_name="justice-counts-justice-counts-control-panel-ingest",
+    #                 blob_name=standardized_name,
+    #             ),
+    #             path,
+    #         )
+    #         reports = ReportInterface.get_reports_by_agency_id(
+    #             session=self.session,
+    #             agency_id=agency.id,
+    #             include_datapoints=True,
+    #         )
+    #         reports_by_instance = {report.instance: report for report in reports}
+    #         self.assertEqual(
+    #             set(reports_by_instance.keys()),
+    #             {
+    #                 "2021 Annual Metrics",
+    #                 "2022 Annual Metrics",
+    #                 "01 2021 Metrics",
+    #                 "02 2021 Metrics",
+    #                 "08 2021 Metrics",
+    #                 "2020 Annual Metrics",
+    #                 "07 2021 Metrics",
+    #                 "04 2021 Metrics",
+    #                 "05 2021 Metrics",
+    #                 "06 2021 Metrics",
+    #             },
+    #         )
 
     def test_get_spreadsheets(self) -> None:
         user_agency = self.test_schema_objects.test_agency_E

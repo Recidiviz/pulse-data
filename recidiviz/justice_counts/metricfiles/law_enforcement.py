@@ -125,11 +125,11 @@ LAW_ENFORCEMENT_METRIC_FILES = [
         disaggregation_column_name="force_type",
     ),
     MetricFile(
-        canonical_filename="civilian_complaints_sustained",
+        canonical_filename="civilian_complaints",
         definition=law_enforcement.civilian_complaints_sustained,
     ),
     MetricFile(
-        canonical_filename="civilian_complaints_sustained_by_type",
+        canonical_filename="civilian_complaints_by_type",
         definition=law_enforcement.civilian_complaints_sustained,
         disaggregation=ComplaintType,
         disaggregation_column_name="complaint_type",

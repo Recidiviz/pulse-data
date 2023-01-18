@@ -320,8 +320,8 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": [
-                    "civilian_complaints_sustained",
-                    "civilian_complaints_sustained_by_type",
+                    "civilian_complaints",
+                    "civilian_complaints_by_type",
                 ],
                 "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
