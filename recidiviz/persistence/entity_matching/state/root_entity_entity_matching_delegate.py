@@ -32,6 +32,7 @@ class RootEntityEntityMatchingDelegate(Generic[RootEntityT, SchemaRootEntityT]):
     root entity that is being matched in entity matching.
     """
 
+    # TODO(#17854): Delete this method and get backedge name from RootEntity class instead.
     @abc.abstractmethod
     def get_root_entity_backedge_field_name(self) -> str:
         """For non-root entity objects that hang off of the root entity associated with

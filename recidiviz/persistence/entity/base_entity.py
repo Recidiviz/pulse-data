@@ -23,6 +23,7 @@ import attr
 # TODO(#1885): Enforce all ForwardRef attributes on an Entity are optional
 from recidiviz.common import attr_validators
 from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.utils import environment
 
 
 @attr.s(eq=False)
@@ -81,6 +82,10 @@ class HasMultipleExternalIdsEntity(Generic[ExternalIdT], Entity):
     def get_external_ids(self) -> List[ExternalIdT]:
         """Returns the list of external id objects for this class."""
 
+    @environment.test_only
+    def has_external_id(self, external_id: str) -> bool:
+        return external_id in {e.external_id for e in self.get_external_ids()}
+
     # Consider HasMultipleExternalIdsEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is HasMultipleExternalIdsEntity:
@@ -98,6 +103,20 @@ class EnumEntity(Entity):
         if cls is HasExternalIdEntity:
             raise Exception("Abstract class cannot be instantiated")
         return super().__new__(cls)
+
+
+class RootEntity:
+    """Mixin interface for an entity that can be ingested as the root of an entity tree
+    (e.g. StatePerson or StateStaff).
+    """
+
+    @classmethod
+    @abc.abstractmethod
+    def back_edge_field_name(cls) -> str:
+        """The name of the field on all entities that are connected to this root
+        entity, which connects that non-root entity back to the root entity (e.g.
+        'person' or 'staff').
+        """
 
 
 def _default_should_ignore_field_cb(_: Type, __: str) -> bool:
