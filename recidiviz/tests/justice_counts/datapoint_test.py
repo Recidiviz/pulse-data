@@ -358,7 +358,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             agency_metric = MetricInterface(
                 key=prisons.funding.key,
                 includes_excludes_member_to_setting={
-                    member: IncludesExcludesSetting.NOT_AVAILABLE
+                    member: IncludesExcludesSetting.NO
                     for member in PrisonFundingIncludesExcludes
                 },
             )
@@ -394,7 +394,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 len(datapoint_histories), len(PrisonFundingIncludesExcludes)
             )
             for datapoint in datapoint_histories:
-                self.assertEqual(datapoint.old_value, "N/A")
+                self.assertEqual(datapoint.old_value, "No")
                 self.assertEqual(datapoint.new_value, "Yes")
 
     def test_save_custom_reporting_frequency(self) -> None:

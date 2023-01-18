@@ -227,7 +227,13 @@ class MetricInterface:
             for member in metric_definition.includes_excludes.members:
                 setting = actual_includes_excludes_member_to_setting.get(member.name)
                 includes_excludes_member_to_setting[member] = (
-                    IncludesExcludesSetting(setting) if setting is not None else None
+                    IncludesExcludesSetting(setting)
+                    if setting
+                    in {
+                        IncludesExcludesSetting.YES.value,
+                        IncludesExcludesSetting.NO.value,
+                    }
+                    else None
                 )
 
         disaggregations = []

@@ -2188,7 +2188,7 @@ class TestMetricInterface(TestCase):
                     for d in PrisonReleasesToParoleIncludesExcludes
                 },
                 PrisonsReleaseType.TO_PROBATION_SUPERVISION: {
-                    d: IncludesExcludesSetting.NOT_AVAILABLE
+                    d: IncludesExcludesSetting.NO
                     for d in PrisonReleasesToProbationIncludesExcludes
                 },
                 PrisonsReleaseType.TO_COMMUNITY_SUPERVISION: {
@@ -2267,31 +2267,31 @@ class TestMetricInterface(TestCase):
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.value,
-                            "included": "N/A",
+                            "included": "No",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.value,
-                            "included": "N/A",
+                            "included": "No",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.value,
-                            "included": "N/A",
+                            "included": "No",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.value,
-                            "included": "N/A",
+                            "included": "No",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.value,
-                            "included": "N/A",
+                            "included": "No",
                             "default": "Yes",
                         },
                     ],
@@ -2413,11 +2413,11 @@ class TestMetricInterface(TestCase):
             value=200,
             includes_excludes_member_to_setting={
                 PrisonGrievancesIncludesExcludes.UPHELD: IncludesExcludesSetting.NO,
-                PrisonGrievancesIncludesExcludes.REMEDY: IncludesExcludesSetting.NOT_AVAILABLE,
+                PrisonGrievancesIncludesExcludes.REMEDY: IncludesExcludesSetting.NO,
                 PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED: IncludesExcludesSetting.YES,
                 PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION: IncludesExcludesSetting.YES,
                 PrisonGrievancesIncludesExcludes.INFORMAL: IncludesExcludesSetting.NO,
-                PrisonGrievancesIncludesExcludes.DUPLICATE: IncludesExcludesSetting.NOT_AVAILABLE,
+                PrisonGrievancesIncludesExcludes.DUPLICATE: IncludesExcludesSetting.NO,
             },
             aggregated_dimensions=[],
             contexts=[],
@@ -2463,7 +2463,7 @@ class TestMetricInterface(TestCase):
                 {
                     "key": PrisonGrievancesIncludesExcludes.REMEDY.name,
                     "label": PrisonGrievancesIncludesExcludes.REMEDY.value,
-                    "included": "N/A",
+                    "included": "No",
                     "default": "Yes",
                 },
                 {
@@ -2487,7 +2487,7 @@ class TestMetricInterface(TestCase):
                 {
                     "key": PrisonGrievancesIncludesExcludes.DUPLICATE.name,
                     "label": PrisonGrievancesIncludesExcludes.DUPLICATE.value,
-                    "included": "N/A",
+                    "included": "No",
                     "default": "No",
                 },
             ],

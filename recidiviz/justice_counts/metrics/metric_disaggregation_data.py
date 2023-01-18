@@ -176,7 +176,7 @@ class MetricAggregatedDimensionData:
         for dim in json.get("dimensions", []):
             dimension_key = dim["key"]
             # First, process the settings (i.e. the includes excludes)
-            # example: {"BLACK": {"SETTING_1": "Yes", "SETTING_2", "N/A"},
+            # example: {"BLACK": {"SETTING_1": "Yes", "SETTING_2", "No"},
             # "WHITE": {"SETTING_1": "No", "SETTING_2", "Yes"}}
             dimension_enum_value_to_includes_excludes_member_to_setting[
                 dimension_key
@@ -221,7 +221,11 @@ class MetricAggregatedDimensionData:
                     setting = member_to_actual_inclusion_setting.get(member.name)
                     member_to_include_excludes_setting[member] = (
                         IncludesExcludesSetting(setting)
-                        if setting is not None
+                        if setting
+                        in {
+                            IncludesExcludesSetting.YES.value,
+                            IncludesExcludesSetting.NO.value,
+                        }
                         else None
                     )
                 dimension_to_includes_excludes_member_to_setting[

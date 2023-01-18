@@ -261,7 +261,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": "INTERN",
                     "label": PrisonStaffIncludesExcludes.INTERN.value,
-                    "included": "N/A",
+                    "included": "No",
                     "default": "No",
                 },
             ],
