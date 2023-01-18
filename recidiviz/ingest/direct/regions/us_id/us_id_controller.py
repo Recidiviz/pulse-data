@@ -48,6 +48,7 @@ from recidiviz.common.constants.state.state_person import (
     StateGender,
     StateRace,
 )
+from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
@@ -77,16 +78,11 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_uti
 from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
     IngestAncestorChainOverridesCallable,
     IngestFilePostprocessorCallable,
+    IngestGatingContext,
     IngestPrimaryKeyOverrideCallable,
     IngestRowPosthookCallable,
     IngestRowPrehookCallable,
     LegacyIngestViewProcessorDelegate,
-)
-from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
-    IngestGatingContext,
-    copy_name_to_alias,
-    gen_label_single_external_id_hook,
-    gen_rationalize_race_and_ethnicity,
 )
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import (
     ALL_NEW_CRIME_TYPES,
@@ -132,14 +128,19 @@ from recidiviz.ingest.direct.regions.us_id.us_id_legacy_enum_helpers import (
     supervision_termination_reason_mapper,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.extractor.csv_data_extractor import RowPosthookCallable
 from recidiviz.ingest.models.ingest_info import (
     IngestObject,
     StateAgent,
+    StateAlias,
     StateAssessment,
     StateCharge,
     StateEarlyDischarge,
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
+    StatePerson,
+    StatePersonEthnicity,
+    StatePersonExternalId,
     StateSupervisionCaseTypeEntry,
     StateSupervisionPeriod,
     StateSupervisionSentence,
@@ -150,6 +151,93 @@ from recidiviz.ingest.models.ingest_info import (
 )
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils.params import str_to_bool
+
+
+# TODO(#8905): This should no-longer be necessary once all ingest views are migrated
+# to v2 mappings.
+def copy_name_to_alias(
+    _gating_context: IngestGatingContext,
+    _row: Dict[str, str],
+    extracted_objects: List[IngestObject],
+    _cache: IngestObjectCache,
+) -> None:
+    """Copy all name fields stored on a StatePerson object to a new StateAlias
+    child object.
+    """
+    for extracted_object in extracted_objects:
+        if isinstance(extracted_object, StatePerson):
+            alias_to_create = StateAlias(
+                full_name=extracted_object.full_name,
+                surname=extracted_object.surname,
+                given_names=extracted_object.given_names,
+                middle_names=extracted_object.middle_names,
+                name_suffix=extracted_object.name_suffix,
+                alias_type=StatePersonAliasType.GIVEN_NAME.value,
+            )
+
+            create_if_not_exists(alias_to_create, extracted_object, "state_aliases")
+
+
+def gen_rationalize_race_and_ethnicity(
+    enum_overrides: Dict[Enum, List[str]]
+) -> RowPosthookCallable:
+    """Generates a row post-hook that will identify provided races which are actually ethnicities, and record
+    them as ethnicities instead of races."""
+
+    def _rationalize_race_and_ethnicity(
+        _gating_context: IngestGatingContext,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        ethnicity_override_values = []
+        for ethnicity in StateEthnicity:
+            ethnicity_override_values.extend(enum_overrides.get(ethnicity, []))
+
+        for obj in extracted_objects:
+            if isinstance(obj, StatePerson):
+                updated_person_races = []
+                for person_race in obj.state_person_races:
+                    if person_race.race in ethnicity_override_values:
+                        ethnicity_to_create = StatePersonEthnicity(
+                            ethnicity=person_race.race
+                        )
+                        create_if_not_exists(
+                            ethnicity_to_create, obj, "state_person_ethnicities"
+                        )
+                    else:
+                        updated_person_races.append(person_race)
+                obj.state_person_races = updated_person_races
+
+    return _rationalize_race_and_ethnicity
+
+
+# TODO(#8905): This row post hook should not be necessary all views are migrated to
+# ingest mappings v2.
+def gen_label_single_external_id_hook(external_id_type: str) -> RowPosthookCallable:
+    """Generates a row post-hook that will hydrate the id_type field on the
+    singular StatePersonExternalId in the extracted objects. Will throw if
+    there is more than one external id to label.
+    """
+
+    def _label_external_id(
+        _gating_context: IngestGatingContext,
+        _row: Dict[str, str],
+        extracted_objects: List[IngestObject],
+        _cache: IngestObjectCache,
+    ) -> None:
+        found = False
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StatePersonExternalId):
+                if found:
+                    raise ValueError(
+                        "Already found object of type StatePersonExternalId"
+                    )
+
+                extracted_object.id_type = external_id_type
+                found = True
+
+    return _label_external_id
 
 
 # TODO(#8900): Delete LegacyIngestViewProcessorDelegate superclass when we have fully

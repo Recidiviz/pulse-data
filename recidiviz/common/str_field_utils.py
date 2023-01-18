@@ -82,35 +82,6 @@ def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None) ->
     raise ValueError(f"Cannot parse time duration: {time_string}")
 
 
-def safe_parse_days_from_duration_str(
-    duration_str: str, start_dt_str: Optional[str] = None
-) -> Optional[int]:
-    """Same as safe_parse_days_from_duration_pieces below, but processes a concatenated duration string directly
-    (e.g. '2Y 4D' or '1M 14D').
-    """
-    pieces = duration_str.upper().split(" ")
-    years_str = None
-    months_str = None
-    days_str = None
-    for piece in pieces:
-        if piece.endswith("D"):
-            days_str = piece.rstrip("D")
-        elif piece.endswith("M"):
-            months_str = piece.rstrip("M")
-        elif piece.endswith("Y"):
-            years_str = piece.rstrip("Y")
-        else:
-            # Not a valid string - can't parse
-            return None
-
-    return safe_parse_days_from_duration_pieces(
-        years_str=years_str,
-        months_str=months_str,
-        days_str=days_str,
-        start_dt_str=start_dt_str,
-    )
-
-
 def safe_parse_days_from_duration_pieces(
     years_str: Optional[str] = None,
     months_str: Optional[str] = None,
@@ -167,6 +138,17 @@ def parse_days_from_duration_pieces(
     Raises:
         ValueError: If one of the provided strings cannot be properly parsed.
     """
+
+    def normalize_numerical_str(numerical_str: Optional[str]) -> Optional[str]:
+        if not numerical_str:
+            return numerical_str
+
+        return numerical_str.replace(",", "")
+
+    years_str = normalize_numerical_str(years_str)
+    months_str = normalize_numerical_str(months_str)
+    days_str = normalize_numerical_str(days_str)
+
     years, months, days = parse_duration_pieces(years_str, months_str, days_str)
 
     if start_dt_str:

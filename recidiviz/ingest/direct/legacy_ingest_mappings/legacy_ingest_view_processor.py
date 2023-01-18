@@ -23,6 +23,8 @@ import abc
 import logging
 from typing import Callable, Dict, List, Optional, cast
 
+import attr
+
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
@@ -32,9 +34,6 @@ from recidiviz.ingest.direct.controllers.ingest_view_processor import (
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     yaml_mappings_filepath,
-)
-from recidiviz.ingest.direct.legacy_ingest_mappings.state_shared_row_posthooks import (
-    IngestGatingContext,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import ExtractAndMergeArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -51,6 +50,13 @@ from recidiviz.ingest.models import ingest_info, serialization
 from recidiviz.ingest.models.ingest_info import IngestInfo, IngestObject
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.persistence import persistence
+
+
+@attr.s(frozen=True, kw_only=True)
+class IngestGatingContext:
+    ingest_view_name: str = attr.ib()
+    ingest_instance: DirectIngestInstance = attr.ib()
+
 
 IngestRowPrehookCallable = Callable[[IngestGatingContext, RowType], None]
 IngestRowPosthookCallable = Callable[
