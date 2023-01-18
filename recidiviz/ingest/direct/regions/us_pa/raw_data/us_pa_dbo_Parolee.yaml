@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: dbo_Parolee
+file_description: |-
+  A table containing information that for people who are on Supervision in Pennsylvania
+data_classification: source
+primary_key_cols:
+  - ParoleNumber
+columns:
+  - name: ParoleNumber
+    is_pii: True
+    description: |-
+      External ID for a unique person who has been supervised by PBPP.
+  - name: ptype_BoardParole
+  - name: ptype_BoardReParole
+  - name: Ptype_SpecProbParole
+  - name: Ptype_OtherStateParole
+  - name: Ptype_OtherStateProb
+  - name: Pa_Drugs
+  - name: PA_Alcoholic
+  - name: PA_Psychiatric
+  - name: PA_PastAssaultive
+  - name: PA_Sexual
+  - name: PA_Assaultive
+  - name: PA_DomesticViolence
+  - name: PA_Commutation
+  - name: PA_Other
+    is_pii: True
+  - name: DOB
+    is_pii: True
+    description: |-
+      Date of Birth.
+  - name: Notes
+    is_pii: True
+    description: |-
+      Details on Scars, Marks, and Tattoos
+  - name: timestamp
+  - name: LastName
+    is_pii: True
+    description: |-
+      Last name of parolee
+  - name: FirstName
+    is_pii: True
+    description: |-
+      First name of parolee
+  - name: MiddleInitial
+    is_pii: True
+    description: |-
+      Middle initial of parolee
+  - name: Suffix
+    is_pii: True
+    description: |-
+      Name Suffix of parolee
+  - name: Alias
+    is_pii: True
+    description: |-
+      Alias of parolee
+  - name: SSAN
+    is_pii: True
+    description: |-
+      Social Security Account Number
+  - name: DriversLicenseNo
+    is_pii: True
+    description: |-
+      Drivers License Number
+  - name: SID
+    is_pii: True
+  - name: FBINo
+    is_pii: True
+  - name: PictureId
+    is_pii: True
+  - name: CensusTract
+    is_pii: True
+  - name: AssignedAgentBadgeNum
+    is_pii: True
+    description: |-
+      Assigned Agent Badge Number
+  - name: SupervisorPosNo
+    is_pii: True
+    description: |-
+      Supervisor Position ID Number
+  - name: Sex
+  - name: Race
+  - name: Height
+  - name: Weight
+  - name: Hair
+  - name: Eyes
+  - name: SkinTone
+  - name: MaritalStatus
+  - name: PA_OtherDesc
+  - name: ParoleType
+  - name: ParoleType2
+  - name: dobid
+    is_pii: True
+  - name: SexOffenderCode
+  - name: ParoleCountID
+    is_pii: True
+    description: |-
+      External ID for a particular stint of a particular person under supervision by PADOC
+  - name: Miscellaneous
+    is_pii: True
+  - name: BoardParole
+  - name: BoardReParole
+  - name: SpecProbParole
+  - name: OtherStateParole
+  - name: OtherStateProb
+  - name: Grade
+  - name: GradeDate
+  - name: Act97
