@@ -39,7 +39,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 class IncludesExcludesSetting(enum.Enum):
     YES = "Yes"
     NO = "No"
-    NOT_AVAILABLE = "N/A"
 
 
 class IncludesExcludesSet:
@@ -55,7 +54,6 @@ class IncludesExcludesSet:
         self,
         members: Type[enum.Enum],
         excluded_set: Optional[Set[enum.Enum]] = None,
-        not_available_set: Optional[Set[enum.Enum]] = None,
     ):
         self.members = members
         self.member_to_default_inclusion_setting = {}
@@ -63,8 +61,6 @@ class IncludesExcludesSet:
             setting = IncludesExcludesSetting.YES
             if excluded_set is not None and member in excluded_set:
                 setting = IncludesExcludesSetting.NO
-            elif not_available_set is not None and member in not_available_set:
-                setting = IncludesExcludesSetting.NOT_AVAILABLE
             self.member_to_default_inclusion_setting[member] = setting
 
 

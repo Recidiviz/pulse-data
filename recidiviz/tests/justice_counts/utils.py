@@ -626,7 +626,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.total_staff.key,
                 includes_excludes_key="INTERN",
-                value="N/A",
+                value="No",
                 source_id=agency_id,
             ),
         ]

@@ -199,6 +199,13 @@ class DatapointsForMetric:
             includes_excludes_dict[member] = (
                 IncludesExcludesSetting(datapoint.value)
                 if datapoint is not None
+                and (
+                    datapoint.value
+                    in {
+                        IncludesExcludesSetting.YES.value,
+                        IncludesExcludesSetting.NO.value,
+                    }
+                )
                 else default
             )
         return includes_excludes_dict
