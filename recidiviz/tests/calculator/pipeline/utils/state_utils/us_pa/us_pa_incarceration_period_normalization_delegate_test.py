@@ -159,40 +159,6 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
             ],
         )
 
-    # TODO(#16703): remove this test when the ingest mappings are updated and logic that is being tested is removed
-
-    def test_normalized_incarceration_periods_ccc_period_not_included_in_state(
-        self,
-    ) -> None:
-        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=222,
-            external_id="ip2",
-            state_code=STATE_CODE,
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
-            admission_date=date(2018, 5, 19),
-            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
-            specialized_purpose_for_incarceration_raw_text="CCIS-60",
-            release_date=date(2019, 3, 3),
-            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-        )
-        incarceration_period.custodial_authority = (
-            StateCustodialAuthority.SUPERVISION_AUTHORITY
-        )
-        updated_period = attr.evolve(
-            incarceration_period,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-        )
-
-        (
-            validated_incarceration_periods,
-            _,
-        ) = self._normalized_incarceration_periods_for_calculations(
-            incarceration_periods=[incarceration_period], violation_responses=[]
-        )
-
-        self.assertEqual([updated_period], validated_incarceration_periods)
-
     # TODO(#9421): This test may need to be removed if once there is a solid plan for for all community facilities
     #   if that plan says that there should be no CCC period with INTERNAL_UNKNOWN specialized_purpose_for_incarceration
     def test_normalized_incarceration_periods_internal_unknown_type(
