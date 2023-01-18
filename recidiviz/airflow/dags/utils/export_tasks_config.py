@@ -16,15 +16,8 @@
 # =============================================================================
 """Config file for export tasks in the DAG."""
 
-# The states where the Case Triage tool has launched. Determines which state
-# pipelines the Case Triage export relies on.
-CASE_TRIAGE_STATES = [
-    "US_ID",
-]
-
 # The exports that do not rely on pipeline output
 PIPELINE_AGNOSTIC_EXPORTS = [
-    "COVID_DASHBOARD",
     "INGEST_METADATA",
     "VALIDATION_METADATA",
     "JUSTICE_COUNTS",

@@ -29,9 +29,6 @@ from recidiviz.big_query.export.export_query_config import (
 from recidiviz.calculator.query.justice_counts.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT as JUSTICE_COUNTS_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import (
-    COVID_DASHBOARD_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import (
     LANTERN_DASHBOARD_VIEW_BUILDERS,
 )
@@ -68,7 +65,6 @@ from recidiviz.calculator.query.state.views.reference.ingested_product_users imp
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
-from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
@@ -212,24 +208,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         # This view has no entries for US_ID in staging (as of 2022-11-03)
         allow_empty=True,
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
-    ),
-    # COVID Dashboard views
-    ExportViewCollectionConfig(
-        view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
-        output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
-        export_name="COVID_DASHBOARD",
-    ),
-    # Case Triage views
-    ExportViewCollectionConfig(
-        view_builders_to_export=CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
-        output_directory_uri_template=CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
-        export_name="CASE_TRIAGE",
-        export_output_formats_and_validations={
-            ExportOutputFormatType.HEADERLESS_CSV: [
-                ExportValidationType.EXISTS,
-                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
-            ]
-        },
     ),
     # Ingest metadata views for admin panel
     ExportViewCollectionConfig(
