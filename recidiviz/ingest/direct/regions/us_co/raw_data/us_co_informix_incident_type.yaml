@@ -3,7 +3,8 @@ file_tag: informix_incident_type
 file_description: |-
   TODO(#17904): Fill in the file description
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - incident_cod
 columns:
   - name: incident_cod
     description: |-
