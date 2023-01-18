@@ -406,12 +406,23 @@ const StateUserPermissionsView = (): JSX.Element => {
         text: Record<string, unknown>,
         record: StateUserPermissionsResponse
       ) => {
-        if (text) {
-          return formatText(
+        const role = stateRoleData.find(
+          (d) => d.stateCode === record.stateCode && d.role === record.role
+        );
+        return {
+          props: {
+            style: {
+              background:
+                JSON.stringify(role?.routes) === JSON.stringify(record.routes)
+                  ? "none"
+                  : "yellow",
+            },
+          },
+          children: formatText(
             JSON.stringify(text, null, "\t").slice(2, -2),
             record
-          );
-        }
+          ),
+        };
       },
     },
     {
@@ -422,12 +433,24 @@ const StateUserPermissionsView = (): JSX.Element => {
         text: Record<string, unknown>,
         record: StateUserPermissionsResponse
       ) => {
-        if (text) {
-          return formatText(
+        const role = stateRoleData.find(
+          (d) => d.stateCode === record.stateCode && d.role === record.role
+        );
+        return {
+          props: {
+            style: {
+              background:
+                JSON.stringify(role?.featureVariants) ===
+                JSON.stringify(record.featureVariants)
+                  ? "none"
+                  : "yellow",
+            },
+          },
+          children: formatText(
             JSON.stringify(text, null, "\t").slice(2, -2),
             record
-          );
-        }
+          ),
+        };
       },
     },
     {
