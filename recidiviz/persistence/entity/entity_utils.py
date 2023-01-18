@@ -23,19 +23,7 @@ from enum import Enum, auto
 from functools import lru_cache
 from io import TextIOWrapper
 from types import ModuleType
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type, cast
 
 import attr
 
@@ -67,7 +55,6 @@ from recidiviz.persistence.entity.base_entity import (
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.persistence.entity.state import entities as state_entities
-from recidiviz.persistence.entity.state.entities import StatePersonExternalId
 from recidiviz.persistence.errors import PersistenceError
 
 _STATE_CLASS_HIERARCHY = [
@@ -858,45 +845,6 @@ def is_standalone_entity(entity: DatabaseEntity) -> bool:
     can exist separate from a StatePerson tree.
     """
     return "person_id" not in entity.__class__.get_column_property_names()
-
-
-def person_has_id(
-    person: Union[state_entities.StatePerson, state_schema.StatePerson],
-    person_external_id: str,
-):
-    """Returns true if the given |person_external_id| matches any of the
-    external_ids for the given |person|.
-    """
-    external_ids_for_person = [eid.external_id for eid in person.external_ids]
-    return person_external_id in external_ids_for_person
-
-
-def get_ids(entities_list: Iterable[CoreEntity]) -> Set[int]:
-    """Returns a set of all database ids in a list of entities"""
-    return {e.get_id() for e in entities_list}
-
-
-def get_single_state_code(
-    external_id_entities: Iterable[Union[HasExternalIdEntity, StatePersonExternalId]]
-) -> str:
-    """Returns the state code corresponding to the list of objects. Asserts if the list is empty or if there are
-    multiple different state codes."""
-    state_code = None
-    for entity in external_id_entities:
-        entity_state_code = entity.get_field("state_code")
-
-        if not state_code:
-            state_code = entity_state_code
-
-        if state_code != entity_state_code:
-            raise ValueError(
-                f"Found two different state codes: {state_code} and {entity_state_code}"
-            )
-
-    if not state_code:
-        raise ValueError("Expected at least one entity, found none.")
-
-    return state_code
 
 
 def get_non_flat_property_class_name(obj: Entity, property_name: str) -> Optional[str]:

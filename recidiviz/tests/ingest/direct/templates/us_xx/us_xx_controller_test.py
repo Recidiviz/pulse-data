@@ -51,7 +51,7 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
         """
 
         # Build expected set of python entities throughout whole test
-        expected_people: List[entities.StatePerson] = []
+        expected_root_entities: List[entities.RootEntity] = []
 
         # NOTE: For each new ingest view, add a block like the one below at the end of
         # the test.
@@ -61,13 +61,13 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
         ######################################
         # Arrange
 
-        # < Add to / update expected_people here>
+        # < Add to / update expected_root_entities here>
 
         # Act
         # self._run_ingest_job_for_filename("<ingest view name here>") <Uncomment this>
 
         # Assert
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_root_entities(expected_root_entities)
 
         ######################################
         # FULL RERUN FOR IDEMPOTENCE
@@ -75,4 +75,4 @@ class TestUsXxController(RegionDirectIngestControllerTestCase):
 
         self._do_ingest_job_rerun_for_tags(self.controller.get_ingest_view_rank_list())
 
-        self.assert_expected_db_people(expected_people)
+        self.assert_expected_db_root_entities(expected_root_entities)

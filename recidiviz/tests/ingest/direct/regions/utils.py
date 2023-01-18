@@ -57,6 +57,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     get_all_entities_from_tree,
@@ -64,16 +65,21 @@ from recidiviz.persistence.entity.entity_utils import (
 from recidiviz.persistence.entity.state import entities
 
 
-def populate_person_backedges(persons: List[entities.StatePerson]) -> None:
-    for person in persons:
-        children = get_all_entities_from_tree(person, CoreEntityFieldIndex())
+def populate_root_entity_backedges(root_entities: List[RootEntity]) -> None:
+    for root_entity in root_entities:
+        back_edge_field_name = root_entity.back_edge_field_name()
+        if not isinstance(root_entity, Entity):
+            raise ValueError(
+                f"Found RootEntity class [{type(root_entity)}] which is not a subclass of Entity"
+            )
+        children = get_all_entities_from_tree(root_entity, CoreEntityFieldIndex())
         for child in children:
             if (
-                child is not person
-                and hasattr(child, "person")
-                and getattr(child, "person", None) is None
+                child is not root_entity
+                and hasattr(child, back_edge_field_name)
+                and getattr(child, back_edge_field_name, None) is None
             ):
-                child.set_field("person", person)
+                child.set_field(back_edge_field_name, root_entity)
 
 
 def build_state_person_entity(

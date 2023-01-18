@@ -22,7 +22,7 @@ import abc
 import datetime
 import os
 import unittest
-from typing import List, Optional, Type, cast
+from typing import List, Optional, Type, Union, cast
 
 import pytest
 from freezegun import freeze_time
@@ -54,13 +54,17 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.base_entity import (
+    Entity,
+    ExternalIdEntity,
+    HasMultipleExternalIdsEntity,
+    RootEntity,
+)
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
-    person_has_id,
     print_entity_trees,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.persistence import (
     DATABASE_INVARIANT_THRESHOLD,
     ENTITY_MATCHING_THRESHOLD,
@@ -405,24 +409,30 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         clear_db_ids(converted)
         return converted
 
-    def assert_expected_db_people(
+    def assert_expected_db_root_entities(
         self,
-        expected_db_people: List[StatePerson],
+        expected_db_root_entities: List[RootEntity],
         debug: bool = False,
-        single_person_to_debug: Optional[str] = None,
+        single_root_entity_to_debug: Optional[str] = None,
         print_tree_structure_only: bool = False,
         # Default arg caches across calls to this function
         field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
     ) -> None:
-        """Asserts that the set of expected people matches all the people that currently exist in the database.
+        """Asserts that the set of expected people matches all the people that currently
+         exist in the database.
 
         Args:
+            expected_db_root_entities: (List[RootEntity) The list of entities we expect
+                to find in the DB.
             debug: (bool) If true, prints out both the found and expected entity trees.
-            single_person_to_debug: (str) A string external_id of a person. If debug=True and this is not None, this
-                will only check for equality between the people with that external_id. This should be used for debugging
-                only and this function will throw if this value is set in CI.
-            print_tree_structure_only: (bool) If True and debug=True, then the printed result only shows the tree
-                structure - external ids and parent-child relationships.
+            single_root_entity_to_debug: (str) A string external_id of a root entity,
+            such as StatePerson. If debug=True and this is not None, this
+                will only check for equality between the root entities with that
+                external_id. This should be used for debugging only and this function
+                will throw if this value is set in CI.
+            print_tree_structure_only: (bool) If True and debug=True, then the printed
+                result only shows the tree structure - external ids and parent-child
+                relationships.
         """
 
         if debug:
@@ -431,41 +441,71 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         if not self.schema_type() == SchemaType.STATE:
             raise ValueError(f"Unsupported schema type [{self.schema_type()}]")
 
+        expected_root_entities = cast(List[Entity], expected_db_root_entities)
+
+        found_root_entities: List[Entity] = []
+        found_schema_root_entities = []
         with SessionFactory.using_database(
             self.main_database_key, autocommit=False
         ) as session:
             found_people_from_db = dao.read_all_people(session)
-            found_people = cast(
-                List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db)
+            found_schema_root_entities.extend(found_people_from_db)
+            found_root_entities.extend(
+                cast(
+                    List[StatePerson],
+                    self.convert_and_clear_db_ids(found_people_from_db),
+                )
+            )
+            found_staff_from_db = dao.read_all_staff(session)
+            found_schema_root_entities.extend(found_staff_from_db)
+            found_root_entities.extend(
+                cast(
+                    List[StateStaff],
+                    self.convert_and_clear_db_ids(found_staff_from_db),
+                )
             )
 
         if debug:
             if in_ci():
                 self.fail("The |debug| flag should only be used for local debugging.")
-            if single_person_to_debug is not None:
-                found_people = [
-                    p for p in found_people if person_has_id(p, single_person_to_debug)
+            if single_root_entity_to_debug is not None:
+                found_root_entities = [
+                    e
+                    for e in found_root_entities
+                    if isinstance(e, (HasMultipleExternalIdsEntity, ExternalIdEntity))
+                    and matches_external_id(e, single_root_entity_to_debug)
                 ]
-                expected_db_people = [
-                    p
-                    for p in expected_db_people
-                    if person_has_id(p, single_person_to_debug)
+                expected_root_entities = [
+                    e
+                    for e in expected_root_entities
+                    if isinstance(e, (HasMultipleExternalIdsEntity, ExternalIdEntity))
+                    and matches_external_id(e, single_root_entity_to_debug)
                 ]
 
             print_visible_header_label("FINAL")
             print_entity_trees(
-                found_people,
+                found_root_entities,
                 print_tree_structure_only=print_tree_structure_only,
                 field_index=field_index,
             )
 
             print_visible_header_label("EXPECTED")
             print_entity_trees(
-                expected_db_people,
+                expected_root_entities,
                 print_tree_structure_only=print_tree_structure_only,
                 field_index=field_index,
             )
 
-        self.assertCountEqual(found_people, expected_db_people)
+        self.assertCountEqual(found_root_entities, expected_root_entities)
 
-        assert_no_unexpected_entities_in_db(found_people_from_db, session)
+        assert_no_unexpected_entities_in_db(found_schema_root_entities, session)
+
+
+def matches_external_id(
+    entity: Union[HasMultipleExternalIdsEntity, ExternalIdEntity], external_id: str
+) -> bool:
+    if isinstance(entity, HasMultipleExternalIdsEntity):
+        return entity.has_external_id(external_id)
+    if isinstance(entity, ExternalIdEntity):
+        return entity.external_id == external_id
+    raise ValueError(f"Unexpected entity type [{type(entity)}]")

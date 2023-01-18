@@ -116,6 +116,7 @@ from recidiviz.persistence.entity.base_entity import (
     ExternalIdEntity,
     HasExternalIdEntity,
     HasMultipleExternalIdsEntity,
+    RootEntity,
 )
 
 # **** Entity Types for convenience *****:
@@ -241,7 +242,10 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
 
 @attr.s(eq=False, kw_only=True)
 class StatePerson(
-    HasMultipleExternalIdsEntity[StatePersonExternalId], BuildableAttr, DefaultableAttr
+    HasMultipleExternalIdsEntity[StatePersonExternalId],
+    RootEntity,
+    BuildableAttr,
+    DefaultableAttr,
 ):
     """Models a StatePerson moving through the criminal justice system."""
 
@@ -345,6 +349,10 @@ class StatePerson(
 
     def get_external_ids(self) -> List["StatePersonExternalId"]:
         return self.external_ids
+
+    @classmethod
+    def back_edge_field_name(cls) -> str:
+        return "person"
 
 
 @attr.s(eq=False, kw_only=True)
@@ -1706,7 +1714,10 @@ class StateStaffExternalId(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 @attr.s(eq=False, kw_only=True)
 class StateStaff(
-    HasMultipleExternalIdsEntity[StateStaffExternalId], BuildableAttr, DefaultableAttr
+    HasMultipleExternalIdsEntity[StateStaffExternalId],
+    RootEntity,
+    BuildableAttr,
+    DefaultableAttr,
 ):
     """Models a staff member working within a justice system."""
 
@@ -1733,3 +1744,7 @@ class StateStaff(
 
     def get_external_ids(self) -> List[StateStaffExternalId]:
         return self.external_ids
+
+    @classmethod
+    def back_edge_field_name(cls) -> str:
+        return "staff"
