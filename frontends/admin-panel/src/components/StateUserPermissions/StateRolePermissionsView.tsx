@@ -37,6 +37,8 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     StateRolePermissionsResponse[]
   >(getStateRoleDefaultPermissions);
 
+  const [tableKey, setTableKey] = useState(0);
+
   // control modal visibility
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -170,6 +172,10 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     finishPromises(results, `Removed`);
   };
 
+  const resetFilters = () => {
+    setTableKey(() => tableKey + 1);
+  };
+
   const columns = [
     {
       title: "State",
@@ -255,6 +261,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         >
           Update Permissions
         </Button>
+        <Button onClick={() => resetFilters()}>Reset Filters</Button>
         <CreateEditStateRoleForm
           editVisible={editVisible}
           editOnCreate={onEdit}
@@ -272,6 +279,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         dataSource={data}
         columns={columns}
         pagination={{ defaultPageSize: 20 }}
+        key={tableKey}
       />
     </>
   );

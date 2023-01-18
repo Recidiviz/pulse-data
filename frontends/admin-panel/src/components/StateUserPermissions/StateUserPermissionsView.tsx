@@ -60,6 +60,7 @@ const StateUserPermissionsView = (): JSX.Element => {
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [uploadRosterVisible, setUploadRosterVisible] = useState(false);
+  const [tableKey, setTableKey] = useState(0);
   const [userToEnable, setUserToEnable] =
     useState<StateUserPermissionsResponse | undefined>();
 
@@ -224,6 +225,10 @@ const StateUserPermissionsView = (): JSX.Element => {
       results.push(blockUser(row.emailAddress, reason));
     });
     finishPromises(results, `Blocked`);
+  };
+
+  const resetFilters = () => {
+    setTableKey(() => tableKey + 1);
   };
 
   const getColumnSearchProps = (dataIndex: string) => ({
@@ -553,6 +558,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         >
           Upload Roster
         </Button>
+        <Button onClick={() => resetFilters()}>Reset Filters</Button>
         <EditUserForm
           editVisible={editVisible}
           editOnCreate={onEdit}
@@ -586,6 +592,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         dataSource={data}
         columns={columns}
         scroll={{ x: 2000 }}
+        key={tableKey}
       />
     </>
   );
