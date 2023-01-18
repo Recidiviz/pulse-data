@@ -75,9 +75,9 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
     generate_charge,
     generate_early_discharge,
-    generate_external_id,
     generate_incarceration_period,
     generate_person,
+    generate_person_external_id,
     generate_program_assignment,
     generate_supervision_case_type_entry,
     generate_supervision_contact,
@@ -208,7 +208,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code,
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -221,7 +221,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
             arrange_session.add(db_person)
             arrange_session.commit()
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,
@@ -246,7 +246,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code,
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -259,7 +259,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
             arrange_session.add(db_person)
             arrange_session.commit()
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,
@@ -282,7 +282,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code,
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -295,7 +295,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
             arrange_session.add(db_person)
             arrange_session.commit()
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_2,
@@ -315,7 +315,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code="OTHER_STATE_CODE",
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -328,7 +328,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
             arrange_session.add(db_person)
             arrange_session.commit()
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,
@@ -345,7 +345,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
 
     def test_add_person_conflicting_external_id_same_session(self) -> None:
         # Arrange
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,
@@ -355,7 +355,7 @@ class TestUniqueExternalIdConstraint(unittest.TestCase):
             state_code=self.state_code, external_ids=[db_external_id]
         )
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,
@@ -429,7 +429,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code,
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -446,7 +446,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
             arrange_session.add(db_object_new)
             arrange_session.commit()
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_2,
             id_type=self.ID_TYPE_1,
@@ -474,7 +474,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
     def test_add_object_conflicting_external_id_no_flush(self, generate_func) -> None:
         # Arrange
         with SessionFactory.using_database(self.database_key) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code,
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -488,7 +488,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
 
             arrange_session.add(db_object_new)
 
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_2,
             id_type=self.ID_TYPE_1,
@@ -516,7 +516,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code="OTHER_STATE_CODE",
                 external_id=self.EXTERNAL_ID_1,
                 id_type=self.ID_TYPE_1,
@@ -533,7 +533,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
             )
             arrange_session.add(db_object)
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_2,
             id_type=self.ID_TYPE_1,
@@ -560,7 +560,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
         self, generate_func
     ) -> None:
         # Arrange
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,
@@ -574,7 +574,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
             state_code=self.state_code,
         )
 
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_2,
             id_type=self.ID_TYPE_1,
@@ -603,7 +603,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
     def test_add_object_diff_external_id_same_state(self, generate_func) -> None:
         # Arrange
         with SessionFactory.using_database(self.database_key) as arrange_session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code,
                 external_id=self.EXTERNAL_ID_2,
                 id_type=self.ID_TYPE_1,
@@ -620,7 +620,7 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
             )
             arrange_session.add(db_object)
 
-        db_external_id_duplicated = generate_external_id(
+        db_external_id_duplicated = generate_person_external_id(
             state_code=self.state_code,
             external_id=self.EXTERNAL_ID_1,
             id_type=self.ID_TYPE_1,

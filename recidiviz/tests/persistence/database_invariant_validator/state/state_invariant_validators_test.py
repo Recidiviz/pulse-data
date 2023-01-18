@@ -31,8 +31,8 @@ from recidiviz.persistence.database_invariant_validator.database_invariant_valid
     validate_invariants,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
-    generate_external_id,
     generate_person,
+    generate_person_external_id,
 )
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -82,7 +82,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             self.database_key, autocommit=False
         ) as session:
             # Arrange
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
             )
 
@@ -106,7 +106,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
             )
 
@@ -130,11 +130,11 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             self.database_key, autocommit=False
         ) as session:
             # Arrange
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
             )
 
-            db_external_id_2 = generate_external_id(
+            db_external_id_2 = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
             )
 
@@ -161,11 +161,11 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             # Arrange
             self.state_code = "US_PA"
 
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
             )
 
-            db_external_id_2 = generate_external_id(
+            db_external_id_2 = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
             )
 
@@ -190,7 +190,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             self.database_key, autocommit=False
         ) as arrange_session:
             # Arrange
-            db_external_id = generate_external_id(
+            db_external_id = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
             )
 
@@ -201,7 +201,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             arrange_session.add(db_person)
             arrange_session.commit()
 
-            db_external_id_2 = generate_external_id(
+            db_external_id_2 = generate_person_external_id(
                 state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
             )
 
@@ -225,7 +225,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     def test_add_two_people_same_id_type(self) -> None:
         # Arrange
-        db_external_id = generate_external_id(
+        db_external_id = generate_person_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_1, id_type=ID_TYPE_1
         )
 
@@ -233,7 +233,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
             state_code=self.state_code, external_ids=[db_external_id]
         )
 
-        db_external_id_2 = generate_external_id(
+        db_external_id_2 = generate_person_external_id(
             state_code=self.state_code, external_id=EXTERNAL_ID_2, id_type=ID_TYPE_1
         )
 

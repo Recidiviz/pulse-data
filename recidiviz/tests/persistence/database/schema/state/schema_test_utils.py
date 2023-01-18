@@ -38,7 +38,7 @@ def generate_person(**kwargs) -> schema.StatePerson:
     return schema.StatePerson(**args)
 
 
-def generate_external_id(**kwargs) -> schema.StatePersonExternalId:
+def generate_person_external_id(**kwargs) -> schema.StatePersonExternalId:
     args = {
         "state_code": _STATE_CODE,
         "id_type": _ID_TYPE,
