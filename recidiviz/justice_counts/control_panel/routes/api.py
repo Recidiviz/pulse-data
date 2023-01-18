@@ -411,7 +411,9 @@ def get_api_blueprint(
                 current_session,
                 auth0_user_id=auth0_user_id,
             )
-            raise_if_user_is_not_recidiviz_admin(auth0_user_id=auth0_user_id)
+            raise_if_user_is_not_agency_admin_or_recidiviz_admin(
+                auth0_user_id=auth0_user_id
+            )
 
             try:
                 report = ReportInterface.create_report(
