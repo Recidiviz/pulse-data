@@ -171,7 +171,7 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
                         }
                     )
             elif key == "ineligible_criteria":
-                ineligible_criteria = {v.lower() for v in value}
+                ineligible_criteria = {self.preprocess_criterion_name(v) for v in value}
             else:
                 new_document[key] = value
 

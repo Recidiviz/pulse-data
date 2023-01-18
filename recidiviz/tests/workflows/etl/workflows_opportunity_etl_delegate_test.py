@@ -159,17 +159,27 @@ TEST_DATA_FOR_IX_WITHOUT_PREFIX_TO_STRIP = {
             "criteria_name": "US_IX_LSIR_LEVEL_LOW_MODERATE_FOR_X_DAYS",
             "reason": {"some_value": "some_data"},
         },
+        {
+            "criteria_name": "US_ID_INCOME_VERIFIED_WITHIN_3_MONTHS",
+            "reason": {"some_value": "some_data"},
+        },
     ],
+    "ineligible_criteria": ["US_IX_INCOME_VERIFIED_WITHIN_3_MONTHS"],
 }
 
 EXPECTED_IX_DOCUMENT_WITHOUT_PREFIX_STRIPPED = {
     "externalId": "456",
-    "criteria": {"usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}},
+    "criteria": {
+        "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"},
+        "usIdIncomeVerifiedWithin3Months": {"someValue": "some_data"},
+    },
     "eligibleCriteria": {
         "usIdLsirLevelLowModerateForXDays": {"someValue": "some_data"}
     },
     "formInformation": {},
-    "ineligibleCriteria": {},
+    "ineligibleCriteria": {
+        "usIdIncomeVerifiedWithin3Months": {"someValue": "some_data"}
+    },
     "metadata": {},
     "caseNotes": {},
 }
