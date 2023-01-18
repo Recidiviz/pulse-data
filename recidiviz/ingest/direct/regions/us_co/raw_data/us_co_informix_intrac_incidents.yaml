@@ -18,6 +18,7 @@ columns:
   - name: summary
     description: |-
       Summary of the incident that took place.
+    is_pii: True
   - name: misc_loc_desc
     description: |-
       TODO(#17904): Fill in with context from CO
