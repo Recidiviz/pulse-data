@@ -108,7 +108,6 @@ locals {
 
 }
 
-# Default WAF policy
 resource "google_compute_security_policy" "recidiviz-waf-policy" {
   project = var.project_id
   name    = "${var.project_id}-waf"
@@ -143,50 +142,6 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
       priority    = rule.value.priority
       description = rule.value.description
       preview     = var.project_id == "recidiviz-123" ? true : false
-      match {
-        expr {
-          expression = rule.value.expression
-        }
-      }
-    }
-  }
-}
-
-# Non-Enforcement WAF Policy
-resource "google_compute_security_policy" "recidiviz-waf-policy-non-enforcement" {
-  project = var.project_id
-  name    = "${var.project_id}-waf-non-enforcement"
-
-  # ----------------------------------------------
-  # Default Allow Rule
-  # ----------------------------------------------
-  rule {
-    action   = local.default_rules.action
-    priority = local.default_rules.priority
-    match {
-      versioned_expr = local.default_rules.versioned_expr
-      config {
-        src_ip_ranges = local.default_rules.src_ip_ranges
-      }
-    }
-    description = local.default_rules.description
-  }
-
-  advanced_options_config {
-    json_parsing = "STANDARD"
-    log_level    = "VERBOSE"
-  }
-
-  # ----------------------------------------------
-  # OWASP Top 10 Rules
-  # ----------------------------------------------
-  dynamic "rule" {
-    for_each = local.owasp_rules.default
-    content {
-      action      = rule.value.action
-      priority    = rule.value.priority
-      description = rule.value.description
-      preview     = true
       match {
         expr {
           expression = rule.value.expression
