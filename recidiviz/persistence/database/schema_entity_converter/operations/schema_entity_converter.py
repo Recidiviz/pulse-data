@@ -44,9 +44,6 @@ class _OperationsSchemaEntityConverter(
         )
         super().__init__(class_mapper=class_mapper, direction_checker=None)
 
-    def _populate_indirect_back_edges(self, _: DstBaseType) -> None:
-        return
-
 
 class OperationsSchemaToEntityConverter(
     _OperationsSchemaEntityConverter[DatabaseEntity, Entity]

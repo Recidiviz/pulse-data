@@ -19,7 +19,6 @@ Defines a base abstract class for converting between Entity and schema Base
 objects.
 """
 
-import abc
 from collections import defaultdict
 from enum import Enum
 from typing import (
@@ -43,8 +42,14 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema_entity_converter.schema_to_entity_class_mapper import (
     SchemaToEntityClassMapper,
 )
-from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
+from recidiviz.persistence.entity.base_entity import Entity, RootEntity
+from recidiviz.persistence.entity.core_entity import CoreEntity
+from recidiviz.persistence.entity.entity_utils import (
+    CoreEntityFieldIndex,
+    SchemaEdgeDirectionChecker,
+    get_all_db_objs_from_tree,
+    get_all_entities_from_tree,
+)
 
 SrcIdType = int
 FieldNameType = str
@@ -106,12 +111,28 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         self._back_edges: Dict[
             SrcIdType, Dict[FieldNameType, List[SrcIdType]]
         ] = defaultdict(lambda: defaultdict(list))
+        self.field_index = CoreEntityFieldIndex()
 
-    @abc.abstractmethod
-    def _populate_indirect_back_edges(self, dst: DstBaseType) -> None:
-        """Populates all back edges in the provided |dst| which point to
-        objects which are not parents (direct back edge). Direct back edges
-        are populated by_pouplate_direct_back_edge"""
+    def _populate_root_entity_back_edges(self, dst: DstBaseType) -> None:
+        """If |dst| is a root entity, populates all root entity back edges on entities
+        connected to |dst|. Back edges to non-root-entity parents are populated by
+        _pouplate_direct_back_edge
+        """
+        root_entity_cls = self._get_entity_class(dst)
+        if not issubclass(root_entity_cls, RootEntity):
+            return
+
+        back_edge_field_name = root_entity_cls.back_edge_field_name()
+        if isinstance(dst, DatabaseEntity):
+            all_entities: Sequence[CoreEntity] = list(
+                get_all_db_objs_from_tree(dst, self.field_index)
+            )
+        else:
+            all_entities = get_all_entities_from_tree(dst, self.field_index)
+
+        for child_dst in all_entities:
+            if hasattr(child_dst, back_edge_field_name):
+                setattr(child_dst, back_edge_field_name, dst)
 
     @staticmethod
     def _id_from_src_object(src: SrcBaseType) -> SrcIdType:
@@ -186,7 +207,7 @@ class BaseSchemaEntityConverter(Generic[SrcBaseType, DstBaseType]):
         dst = self._convert_forward(src, populate_back_edges)
         if populate_back_edges:
             self._populate_direct_back_edges()
-            self._populate_indirect_back_edges(dst)
+            self._populate_root_entity_back_edges(dst)
         return dst
 
     def _convert_forward(

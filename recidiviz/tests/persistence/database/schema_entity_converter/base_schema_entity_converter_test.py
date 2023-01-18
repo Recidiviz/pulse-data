@@ -64,9 +64,6 @@ class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
         direction_checker = SchemaEdgeDirectionChecker(self.CLASS_HIERARCHY, entities)
         super().__init__(class_mapper, direction_checker)
 
-    def _populate_indirect_back_edges(self, _):
-        return
-
 
 class TestBaseSchemaEntityConverter(TestCase):
     """Tests for BaseSchemaEntityConverter"""
