@@ -19,24 +19,18 @@ root entity that is being matched in entity matching.
 """
 
 import abc
-from typing import Generic, List, Set, Type
+from typing import Generic, Type
 
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
 
 
+# TODO(#17854): Do away with this delegate entirely by a) passing the
+#  schema_root_entity_cls directly to entity matcher class and b) making a RootEntity
+#  interface which exposes the backedge field name.
 class RootEntityEntityMatchingDelegate(Generic[RootEntityT, SchemaRootEntityT]):
     """A delegate interface for a class that contains logic specific to the type of
     root entity that is being matched in entity matching.
     """
-
-    @abc.abstractmethod
-    def read_root_entities_with_external_ids(
-        self, session: Session, region_code: str, external_ids: Set[str]
-    ) -> List[SchemaRootEntityT]:
-        """Reads and returns all matching root entities of the appropriate type from the
-        DB that have one of the provided |external_ids|.
-        """
 
     @abc.abstractmethod
     def get_root_entity_backedge_field_name(self) -> str:

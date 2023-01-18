@@ -27,7 +27,10 @@ from more_itertools import one
 
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.persistence.database.database_entity import DatabaseEntity
-from recidiviz.persistence.database.schema.state.dao import check_not_dirty
+from recidiviz.persistence.database.schema.state.dao import (
+    check_not_dirty,
+    read_root_entities_by_external_ids,
+)
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_entities_to_schema,
 )
@@ -314,12 +317,11 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             "external ids",
             len(root_external_ids),
         )
-        db_root_entities = (
-            self.root_entity_delegate.read_root_entities_with_external_ids(
-                session,
-                external_ids=root_external_ids,
-                region_code=self.state_specific_logic_delegate.get_region_code(),
-            )
+        db_root_entities = read_root_entities_by_external_ids(
+            session,
+            schema_root_entity_cls=self.root_entity_delegate.get_schema_root_entity_cls(),
+            cls_external_ids=root_external_ids,
+            state_code=self.state_specific_logic_delegate.get_region_code(),
         )
 
         logging.info(
