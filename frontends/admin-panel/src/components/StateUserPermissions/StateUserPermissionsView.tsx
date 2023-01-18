@@ -36,18 +36,19 @@ import {
   updateUser,
   updateUserPermissions,
 } from "../../AdminPanelAPI";
+import { getStateRoleDefaultPermissions } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
-import { AddUserForm } from "./AddUserForm";
-import { EditUserForm } from "./EditUsersForm";
-import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
 import {
   FEATURE_VARIANTS_LABELS,
   ROUTES_PERMISSIONS_LABELS,
   USER_ROLES,
 } from "../constants";
-import { checkResponse, updatePermissionsObject } from "./utils";
+import { AddUserForm } from "./AddUserForm";
+import { EditUserForm } from "./EditUsersForm";
 import { CreateEnableUserForm } from "./EnableUserForm";
-import { getStateRoleDefaultPermissions } from "../../AdminPanelAPI/LineStaffTools";
+import { ReasonsLogButton } from "./ReasonsLogButton";
+import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
+import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -558,6 +559,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         >
           Upload Roster
         </Button>
+        <ReasonsLogButton />
         <Button onClick={() => resetFilters()}>Reset Filters</Button>
         <EditUserForm
           editVisible={editVisible}
