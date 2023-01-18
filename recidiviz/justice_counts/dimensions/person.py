@@ -22,8 +22,8 @@ from typing import Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.common.constants.county import person_characteristics
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.state import state_person
 from recidiviz.justice_counts.dimensions.base import Dimension, DimensionBase
 from recidiviz.justice_counts.dimensions.helpers import (
     assert_no_overrides,
@@ -46,13 +46,13 @@ class Race(Dimension):
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> "Race":
         parsed_enum = parse_entity_enum(
-            person_characteristics.Race, dimension_cell_value, enum_overrides
+            state_person.StateRace, dimension_cell_value, enum_overrides
         )
         return cls(parsed_enum.value)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(person_characteristics.Race, mapping_overrides)
+        return build_entity_overrides(state_person.StateRace, mapping_overrides)
 
     @classmethod
     def is_normalized(cls) -> bool:
@@ -90,15 +90,13 @@ class Ethnicity(Dimension):
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> "Ethnicity":
         parsed_enum = parse_entity_enum(
-            person_characteristics.Ethnicity, dimension_cell_value, enum_overrides
+            state_person.StateEthnicity, dimension_cell_value, enum_overrides
         )
         return cls(parsed_enum.value)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(
-            person_characteristics.Ethnicity, mapping_overrides
-        )
+        return build_entity_overrides(state_person.StateEthnicity, mapping_overrides)
 
     @classmethod
     def is_normalized(cls) -> bool:
@@ -254,13 +252,13 @@ class Gender(Dimension):
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> "Gender":
         parsed_enum = parse_entity_enum(
-            person_characteristics.Gender, dimension_cell_value, enum_overrides
+            state_person.StateGender, dimension_cell_value, enum_overrides
         )
         return cls(parsed_enum.value)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(person_characteristics.Gender, mapping_overrides)
+        return build_entity_overrides(state_person.StateGender, mapping_overrides)
 
     @classmethod
     def is_normalized(cls) -> bool:

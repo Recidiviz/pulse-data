@@ -58,7 +58,7 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     json_serializable_dict,
 )
-from recidiviz.common.constants.county.person_characteristics import Gender
+from recidiviz.common.constants.state.state_person import StateGender
 
 
 class TestJsonSerializableMetricKey(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
     def test_json_serializable_metric_key(self) -> None:
         metric_key = {
-            "gender": Gender.MALE,
+            "gender": StateGender.MALE,
             "year": 1999,
             "month": 3,
             "state_code": "CA",
@@ -88,7 +88,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
     def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self) -> None:
         metric_key = {
-            "gender": Gender.MALE,
+            "gender": StateGender.MALE,
             "year": 1999,
             "month": 3,
             "state_code": "CA",

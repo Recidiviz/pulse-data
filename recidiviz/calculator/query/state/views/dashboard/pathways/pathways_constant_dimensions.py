@@ -21,7 +21,7 @@ from typing import Dict, List, Union
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states_for_bigquery,
 )
-from recidiviz.common.constants.county.person_characteristics import Ethnicity, Race
+from recidiviz.common.constants.state.state_person import StateEthnicity, StateRace
 
 # for dimensions that have constant values across all states, we need a series of unnest statements
 shared_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {
@@ -42,13 +42,13 @@ shared_constant_dimensions: Dict[str, Union[List[int], List[str]]] = {
         "ALL",
     ],
     "race": [
-        Race.ASIAN.value,
-        Race.NATIVE_HAWAIIAN_PACIFIC_ISLANDER.value,
-        Race.BLACK.value,
-        Race.AMERICAN_INDIAN_ALASKAN_NATIVE.value,
-        Race.WHITE.value,
-        Ethnicity.HISPANIC.value,
-        Race.OTHER.value,
+        StateRace.ASIAN.value,
+        StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER.value,
+        StateRace.BLACK.value,
+        StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE.value,
+        StateRace.WHITE.value,
+        StateEthnicity.HISPANIC.value,
+        StateRace.OTHER.value,
         "ALL",
     ],
 }

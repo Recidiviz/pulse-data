@@ -21,12 +21,12 @@ from unittest import TestCase
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.county.person_characteristics import Race
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
+from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
@@ -40,8 +40,9 @@ class MyEntity(Entity):
     int_with_default: int = attr.ib(default=1, validator=attr_validators.is_int)
     bool_with_default: bool = attr.ib(default=True, validator=attr_validators.is_bool)
     str_with_default: str = attr.ib(default="default", validator=attr_validators.is_str)
-    enum_with_default: Race = attr.ib(
-        default=Race.EXTERNAL_UNKNOWN, validator=attr.validators.instance_of(Race)
+    enum_with_default: StateRace = attr.ib(
+        default=StateRace.EXTERNAL_UNKNOWN,
+        validator=attr.validators.instance_of(StateRace),
     )
 
     opt_int: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
@@ -49,8 +50,8 @@ class MyEntity(Entity):
         default=None, validator=attr_validators.is_opt_bool
     )
     opt_str: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
-    opt_enum: Optional[Race] = attr.ib(
-        default=None, validator=attr_validators.is_opt(Race)
+    opt_enum: Optional[StateRace] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateRace)
     )
 
 
@@ -115,7 +116,7 @@ class TestEntityDeserialize(TestCase):
             _ = MyEntity(
                 enum_with_default=DefaultingAndNormalizingEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
-                    enum_cls=Race,
+                    enum_cls=StateRace,
                     enum_overrides=EnumOverrides.empty(),
                 )
             )
@@ -123,7 +124,7 @@ class TestEntityDeserialize(TestCase):
             _ = MyEntity(
                 enum_with_default=StrictEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
-                    enum_cls=Race,
+                    enum_cls=StateRace,
                     enum_overrides=EnumOverrides.empty(),
                 )
             )
@@ -131,7 +132,7 @@ class TestEntityDeserialize(TestCase):
             _ = MyEntity(
                 opt_enum=DefaultingAndNormalizingEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
-                    enum_cls=Race,
+                    enum_cls=StateRace,
                     enum_overrides=EnumOverrides.empty(),
                 )
             )
@@ -139,7 +140,7 @@ class TestEntityDeserialize(TestCase):
             _ = MyEntity(
                 opt_enum=StrictEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
-                    enum_cls=Race,
+                    enum_cls=StateRace,
                     enum_overrides=EnumOverrides.empty(),
                 )
             )
@@ -149,7 +150,7 @@ class TestEntityDeserialize(TestCase):
             int_with_default=1,
             bool_with_default=True,
             str_with_default="default",
-            enum_with_default=Race.EXTERNAL_UNKNOWN,
+            enum_with_default=StateRace.EXTERNAL_UNKNOWN,
             opt_int=None,
             opt_bool=None,
             opt_str=None,
@@ -163,7 +164,7 @@ class TestEntityDeserialize(TestCase):
             int_with_default=1,
             bool_with_default=True,
             str_with_default="default",
-            enum_with_default=Race.EXTERNAL_UNKNOWN,
+            enum_with_default=StateRace.EXTERNAL_UNKNOWN,
             opt_int=None,
             opt_bool=None,
             opt_str=None,
@@ -200,41 +201,41 @@ class TestEntityDeserialize(TestCase):
         )
 
         enum_parser = DefaultingAndNormalizingEnumParser(
-            raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()
+            raw_text="BLACK", enum_cls=StateRace, enum_overrides=EnumOverrides.empty()
         )
         self.assertEqual(
-            attr.evolve(expected_default_entity, enum_with_default=Race.BLACK),
+            attr.evolve(expected_default_entity, enum_with_default=StateRace.BLACK),
             MyEntityFactory.deserialize(enum_with_default=enum_parser),
         )
         self.assertEqual(
-            attr.evolve(expected_default_entity, opt_enum=Race.BLACK),
+            attr.evolve(expected_default_entity, opt_enum=StateRace.BLACK),
             MyEntityFactory.deserialize(opt_enum=enum_parser),
         )
 
         enum_mappings = (
             EnumOverrides.Builder()
-            .add("BLACK", Race.BLACK, normalize_label=False)
-            .add("Black", Race.BLACK, normalize_label=False)
+            .add("BLACK", StateRace.BLACK, normalize_label=False)
+            .add("Black", StateRace.BLACK, normalize_label=False)
             .build()
         )
         strict_enum_parser = StrictEnumParser(
             raw_text="BLACK",
-            enum_cls=Race,
+            enum_cls=StateRace,
             enum_overrides=enum_mappings,
         )
         self.assertEqual(
-            attr.evolve(expected_default_entity, enum_with_default=Race.BLACK),
+            attr.evolve(expected_default_entity, enum_with_default=StateRace.BLACK),
             MyEntityFactory.deserialize(enum_with_default=strict_enum_parser),
         )
         self.assertEqual(
-            attr.evolve(expected_default_entity, opt_enum=Race.BLACK),
+            attr.evolve(expected_default_entity, opt_enum=StateRace.BLACK),
             MyEntityFactory.deserialize(opt_enum=strict_enum_parser),
         )
 
         # Empty mappings throws
         strict_enum_parser = StrictEnumParser(
             raw_text="BLACK",
-            enum_cls=Race,
+            enum_cls=StateRace,
             enum_overrides=EnumOverrides.empty(),
         )
         with self.assertRaises(EnumParsingError):
@@ -246,20 +247,20 @@ class TestEntityDeserialize(TestCase):
         def parse_int_and_double(int_str: str) -> int:
             return int(int_str) * 2
 
-        def set_race_to_white(_race_enum_parser: EnumParser) -> Race:
-            return Race.WHITE
+        def set_race_to_white(_race_enum_parser: EnumParser) -> StateRace:
+            return StateRace.WHITE
 
         @attr.s(eq=False)
         class MyEntityWithFieldOverrides(Entity):
             str_with_override: str = attr.ib(validator=attr_validators.is_str)
             int_with_override: int = attr.ib(validator=attr_validators.is_int)
-            enum_with_override: Race = attr.ib(
-                validator=attr.validators.instance_of(Race)
+            enum_with_override: StateRace = attr.ib(
+                validator=attr.validators.instance_of(StateRace)
             )
             str_no_override: str = attr.ib(validator=attr_validators.is_str)
             int_no_override: int = attr.ib(validator=attr_validators.is_int)
-            enum_no_override: Race = attr.ib(
-                validator=attr.validators.instance_of(Race)
+            enum_no_override: StateRace = attr.ib(
+                validator=attr.validators.instance_of(StateRace)
             )
 
         class MyEntityWithFieldOverridesFactory:
@@ -286,12 +287,16 @@ class TestEntityDeserialize(TestCase):
             str_with_override="AbCd",
             int_with_override="3",
             enum_with_override=DefaultingAndNormalizingEnumParser(
-                raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()
+                raw_text="BLACK",
+                enum_cls=StateRace,
+                enum_overrides=EnumOverrides.empty(),
             ),
             str_no_override="AbCd",
             int_no_override="3",
             enum_no_override=DefaultingAndNormalizingEnumParser(
-                raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()
+                raw_text="BLACK",
+                enum_cls=StateRace,
+                enum_overrides=EnumOverrides.empty(),
             ),
         )
 
@@ -300,10 +305,10 @@ class TestEntityDeserialize(TestCase):
             MyEntityWithFieldOverrides(
                 str_with_override="abcd",
                 int_with_override=6,
-                enum_with_override=Race.WHITE,
+                enum_with_override=StateRace.WHITE,
                 str_no_override="ABCD",
                 int_no_override=3,
-                enum_no_override=Race.BLACK,
+                enum_no_override=StateRace.BLACK,
             ),
         )
 
@@ -313,8 +318,8 @@ class TestEntityDeserialize(TestCase):
             str_with_deserialize_default: str = attr.ib(
                 validator=attr_validators.is_str
             )
-            enum_with_deserialize_default: Race = attr.ib(
-                validator=attr.validators.instance_of(Race)
+            enum_with_deserialize_default: StateRace = attr.ib(
+                validator=attr.validators.instance_of(StateRace)
             )
             int_with_deserialize_default: int = attr.ib(
                 validator=attr_validators.is_int,
@@ -331,7 +336,7 @@ class TestEntityDeserialize(TestCase):
                     defaults={
                         "str_with_deserialize_default": "deserialize_default",
                         "int_with_deserialize_default": 5,
-                        "enum_with_deserialize_default": Race.WHITE,
+                        "enum_with_deserialize_default": StateRace.WHITE,
                     },
                     **kwargs,
                 )
@@ -347,7 +352,7 @@ class TestEntityDeserialize(TestCase):
             MyEntityWithFieldDefaults(
                 str_with_deserialize_default="deserialize_default",
                 int_with_deserialize_default=5,
-                enum_with_deserialize_default=Race.WHITE,
+                enum_with_deserialize_default=StateRace.WHITE,
             ),
         )
 
