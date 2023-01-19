@@ -95,7 +95,8 @@ METRICS = [
     supervision.reconvictions,
     supervision.discharges,
     supervision.violations,
-    supervision.caseload,
+    supervision.caseload_numerator,
+    supervision.caseload_denominator,
     supervision.revocations,
 ]
 

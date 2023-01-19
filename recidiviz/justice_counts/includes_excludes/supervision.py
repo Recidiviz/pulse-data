@@ -518,13 +518,16 @@ class SupervisionReconvictionsIncludesExcludes(Enum):
 
 
 # Caseload
-class SupervisionCaseloadIncludesExcludes(Enum):
+class SupervisionCaseloadNumeratorIncludesExcludes(Enum):
     PEOPLE_ACTIVE = "People with cases on active supervision status"
     PEOPLE_ADMINISTRATIVE = "People with cases on administrative status"
     PEOPLE_ABSCONDER = "People with cases on absconder status"
     PEOPLE_NON_REPORTING = "People with cases on non-reporting status (e.g., no fees, no reporting, no travel restrictions)"
     PEOPLE_SPECIALIZED = "People with cases on specialized caseloads (e.g., for sex offenses, domestic violence, serious mental illness)"
     PEOPLE_PRETRIAL = "People with cases in pretrial investigation"
+
+
+class SupervisionCaseloadDenominatorIncludesExcludes(Enum):
     SUPERVISION_STAFF = "Supervision staff carrying a caseload"
     SUPERVISION_SUPERVISORS = "Supervision supervisors carrying a caseload"
     NON_SUPERVISION_STAFF = (
