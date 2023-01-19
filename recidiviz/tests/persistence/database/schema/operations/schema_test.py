@@ -104,7 +104,9 @@ class OperationsSchemaTest(unittest.TestCase):
             self.assertEqual(result_metadata, raw_metadata)
             self.assertIsNotNone(result_metadata.file_id)
 
-    def test_raw_file_metadata_normalized_file_name_unique_constraint(self) -> None:
+    def test_raw_file_metadata_normalized_file_name_unique_non_invalidated_index(
+        self,
+    ) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -139,6 +141,45 @@ class OperationsSchemaTest(unittest.TestCase):
             self.assertEqual(
                 [], session.query(schema.DirectIngestRawFileMetadata).all()
             )
+
+    def test_raw_file_metadata_normalized_file_name_unique_one_invalidated_index(
+        self,
+    ) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            raw_metadata_1 = schema.DirectIngestRawFileMetadata(
+                region_code="us_xx_yyyy",
+                file_tag="file_tag",
+                file_discovery_time=datetime.datetime(2019, 10, 11),
+                normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 10, 10, tzinfo=pytz.UTC),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=False,
+            )
+            raw_metadata_2 = schema.DirectIngestRawFileMetadata(
+                region_code="us_xx_yyyy",
+                file_tag="file_tag",
+                file_discovery_time=datetime.datetime(2019, 11, 12),
+                normalized_file_name="foo.txt",
+                update_datetime=datetime.datetime(2019, 11, 11, tzinfo=pytz.UTC),
+                raw_data_instance=DirectIngestInstance.PRIMARY.value,
+                is_invalidated=True,
+            )
+
+            session.add(raw_metadata_1)
+            session.add(raw_metadata_2)
+
+            # Should not raise any errors because one of the added rows is invalidated, and therefore the index
+            # restrictions do not apply.
+            session.commit()
+
+            with SessionFactory.using_database(
+                self.database_key, autocommit=False
+            ) as session:
+                self.assertEqual(
+                    2, len(session.query(schema.DirectIngestRawFileMetadata).all())
+                )
 
     def test_raw_file_metadata_normalized_file_name_nonnull_constraint(self) -> None:
         with SessionFactory.using_database(

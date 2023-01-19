@@ -109,6 +109,27 @@ class MigrationsTestBase(TestCase):
 
         return {row[0]: row[1] for row in rows}
 
+    def fetch_all_indices(self) -> Dict[str, str]:
+        """Returns a list of all indices defined in the database."""
+        engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
+
+        conn = engine.connect()
+        rows = conn.execute(
+            """
+       SELECT
+            indexname,
+            indexdef
+        FROM
+            pg_indexes
+        WHERE
+            schemaname = 'public'
+        ORDER BY
+            indexname;
+       """
+        )
+
+        return {row[0]: row[1] for row in rows}
+
     def default_config(self) -> Config:
         return Config.from_raw_config(
             {
@@ -126,7 +147,7 @@ class MigrationsTestBase(TestCase):
         with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to("head")
 
-        # Fetch constraints
+        # Fetch constraints after loading the schema after running all the migrations
         migration_constraints = self.fetch_all_constraints()
 
         # Doing teardown/setup to generate a new postgres instance
@@ -140,7 +161,7 @@ class MigrationsTestBase(TestCase):
 
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
-        # Check enum values
+        # Fetch constraints after having SQLAlchemy load the schema
         schema_constraints = self.fetch_all_constraints()
 
         # Assert that they all match
@@ -172,6 +193,65 @@ class MigrationsTestBase(TestCase):
                 schema_constraint_definition,
                 f"Found constraint {constraint_name} with conflicting definitions in migrations and schema.py definition",
             )
+
+        # Cleanup needed for this method.
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    def test_indices_match_schema(self) -> None:
+        with runner(self.default_config(), self.engine) as r:
+            r.migrate_up_to("head")
+
+        # Fetch indices after loading the schema after running all the migrations
+        migration_indices = self.fetch_all_indices()
+
+        # Doing teardown/setup to generate a new postgres instance
+        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
+
+        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+        self.overridden_env_vars = (
+            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        )
+
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+
+        # Fetch indices after having SQLAlchemy load the schema
+        schema_indices = self.fetch_all_indices()
+
+        # Assert that they all match
+        indices_not_in_schema = (
+            set(migration_indices)
+            - set(schema_indices)
+            # This constraint is only added when migrations are run
+            - {"alembic_version_pkc"}
+        )
+        if indices_not_in_schema:
+            raise ValueError(
+                f"Found indices defined in migrations but not in schema.py: {indices_not_in_schema}."
+            )
+        # TODO(#17979): Remove `etl_clients_pkey` from exemption below once duplicates from `etl_clients`
+        # are removed or the table itself is deleted.
+        indices_not_in_migrations = (
+            set(schema_indices) - set(migration_indices) - {"etl_clients_pkey"}
+        )
+        if indices_not_in_migrations:
+            raise ValueError(
+                f"Found indices defined in schema.py but not in migrations: {indices_not_in_migrations}"
+            )
+
+        for (
+            index_name,
+            schema_index_definition,
+        ) in schema_indices.items():
+            # TODO(#17979): Remove `etl_clients_pkey` from exemption below once duplicates from `etl_clients`
+            # are removed or the table itself is deleted.
+            if index_name != "etl_clients_pkey":
+                migration_index_definition = migration_indices[index_name]
+                self.assertEqual(
+                    migration_index_definition,
+                    schema_index_definition,
+                    f"Found index {index_name} with conflicting definitions in migrations and schema.py definition",
+                )
 
         # Cleanup needed for this method.
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
