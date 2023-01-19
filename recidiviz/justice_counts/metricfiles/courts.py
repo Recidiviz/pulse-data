@@ -17,11 +17,11 @@
 """Metricfile objects used for Courts metrics."""
 
 from recidiviz.justice_counts.dimensions.courts import (
-    CourtCaseType,
-    CourtReleaseType,
-    CourtsCaseSeverityType,
-    CourtStaffType,
+    CaseSeverityType,
+    CaseType,
+    ReleaseType,
     SentenceType,
+    StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -43,7 +43,7 @@ COURTS_METRIC_FILES = [
     MetricFile(
         canonical_filename="total_staff_by_type",
         definition=courts.total_staff,
-        disaggregation=CourtStaffType,
+        disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
@@ -53,7 +53,7 @@ COURTS_METRIC_FILES = [
     MetricFile(
         canonical_filename="pretrial_releases_by_type",
         definition=courts.pretrial_releases,
-        disaggregation=CourtReleaseType,
+        disaggregation=ReleaseType,
         disaggregation_column_name="release_type",
     ),
     MetricFile(
@@ -85,7 +85,7 @@ COURTS_METRIC_FILES = [
     MetricFile(
         canonical_filename="cases_filed_by_severity",
         definition=courts.criminal_case_filings,
-        disaggregation=CourtsCaseSeverityType,
+        disaggregation=CaseSeverityType,
         disaggregation_column_name="severity_type",
     ),
     MetricFile(
@@ -105,7 +105,7 @@ COURTS_METRIC_FILES = [
     MetricFile(
         canonical_filename="offenses_on_release_by_type",
         definition=courts.new_offenses_while_on_pretrial_release,
-        disaggregation=CourtCaseType,
+        disaggregation=CaseType,
         disaggregation_column_name="case_type",
     ),
     MetricFile(

@@ -20,7 +20,7 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class CourtStaffType(DimensionBase, enum.Enum):
+class StaffType(DimensionBase, enum.Enum):
     CLERK = "Clerk"
     JUDICIAL = "Judicial"
     ADMINISTRATIVE = "Administrative"
@@ -33,7 +33,7 @@ class CourtStaffType(DimensionBase, enum.Enum):
         return "metric/courts/staff/type"
 
 
-class CourtReleaseType(DimensionBase, enum.Enum):
+class ReleaseType(DimensionBase, enum.Enum):
     ROR = "ROR Release"
     MONETARY_BAIL = "Monetary Bail Release"
     SUPERVISION_OR_EM = "Supervision or EM"
@@ -59,7 +59,7 @@ class SentenceType(DimensionBase, enum.Enum):
         return "metric/courts/sentence/type"
 
 
-class CourtsCaseSeverityType(DimensionBase, enum.Enum):
+class CaseSeverityType(DimensionBase, enum.Enum):
     FELONY = "Felony"
     MISDEMEANOR = "Misdemeanor"
     INFRACTION = "Infraction"
@@ -70,7 +70,7 @@ class CourtsCaseSeverityType(DimensionBase, enum.Enum):
         return "metric/courts/case/severity/type"
 
 
-class CourtCaseType(DimensionBase, enum.Enum):
+class CaseType(DimensionBase, enum.Enum):
     VIOLENT = "Violent"
     NON_VIOLENT = "Non-violent"
     UNKNOWN = "Unknown"

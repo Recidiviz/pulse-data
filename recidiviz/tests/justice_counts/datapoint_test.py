@@ -21,8 +21,8 @@ import datetime
 
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.justice_counts.datapoint import DatapointInterface
-from recidiviz.justice_counts.dimensions.jails_and_prisons import PrisonsFundingType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
+from recidiviz.justice_counts.dimensions.prisons import FundingType
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonFundingIncludesExcludes,
@@ -265,7 +265,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 aggregated_dimensions=[
                     MetricAggregatedDimensionData(
                         dimension_to_contexts={
-                            PrisonsFundingType.OTHER: [
+                            FundingType.OTHER: [
                                 MetricContextData(
                                     key=ContextKey["ADDITIONAL_CONTEXT"],
                                     value="User entered text...",
@@ -300,7 +300,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             ]
             self.assertEqual(
                 metric_datapoints.dimension_to_context_key_to_datapoints,
-                {PrisonsFundingType.OTHER: {datapoint.context_key: datapoint}},
+                {FundingType.OTHER: {datapoint.context_key: datapoint}},
             )
 
             agg_dims = metric_datapoints.get_aggregated_dimension_data(
@@ -309,7 +309,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 agg_dims[0].dimension_to_contexts,
                 {
-                    PrisonsFundingType.OTHER: [
+                    FundingType.OTHER: [
                         MetricContextData(
                             key=ContextKey(datapoint.context_key),
                             value=datapoint.get_value(),

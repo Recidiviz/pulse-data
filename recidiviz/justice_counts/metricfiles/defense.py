@@ -23,7 +23,7 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     DispositionType,
-    ProsecutionAndDefenseStaffType,
+    StaffType,
 )
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import defense
@@ -40,7 +40,7 @@ DEFENSE_METRIC_FILES = [
     MetricFile(
         canonical_filename="total_staff_by_type",
         definition=defense.total_staff,
-        disaggregation=ProsecutionAndDefenseStaffType,
+        disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(

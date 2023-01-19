@@ -16,12 +16,11 @@
 # =============================================================================
 """Metricfile objects used for Jails metrics."""
 
-from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    CorrectionalFacilityForceType,
-    JailPopulationType,
-    JailReleaseType,
-    JailsReadmissionType,
-    JailsStaffType,
+from recidiviz.justice_counts.dimensions.jails import (
+    PopulationType,
+    ReadmissionType,
+    ReleaseType,
+    StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -42,7 +41,7 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="total_staff_by_type",
         definition=jails.total_staff,
-        disaggregation=JailsStaffType,
+        disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
@@ -52,7 +51,7 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="readmissions_by_type",
         definition=jails.readmissions,
-        disaggregation=JailsReadmissionType,
+        disaggregation=ReadmissionType,
         disaggregation_column_name="readmission_type",
     ),
     MetricFile(
@@ -62,7 +61,7 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="admissions_by_type",
         definition=jails.admissions,
-        disaggregation=JailPopulationType,
+        disaggregation=PopulationType,
         disaggregation_column_name="admission_type",
     ),
     MetricFile(
@@ -72,7 +71,7 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="population_by_type",
         definition=jails.average_daily_population,
-        disaggregation=JailPopulationType,
+        disaggregation=PopulationType,
         disaggregation_column_name="population_type",
     ),
     MetricFile(
@@ -94,18 +93,12 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="releases_by_type",
         definition=jails.releases,
-        disaggregation=JailReleaseType,
+        disaggregation=ReleaseType,
         disaggregation_column_name="release_type",
     ),
     MetricFile(
         canonical_filename="use_of_force",
         definition=jails.staff_use_of_force_incidents,
-    ),
-    MetricFile(
-        canonical_filename="use_of_force_by_type",
-        definition=jails.staff_use_of_force_incidents,
-        disaggregation=CorrectionalFacilityForceType,
-        disaggregation_column_name="force_type",
     ),
     MetricFile(
         canonical_filename="grievances_upheld",

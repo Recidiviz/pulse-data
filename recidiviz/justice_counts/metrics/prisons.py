@@ -15,19 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines all Justice Counts metrics for the Prison system."""
-from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    GrievancesUpheldType,
-    PrisonsExpenseType,
-    PrisonsFundingType,
-    PrisonsReadmissionType,
-    PrisonsReleaseType,
-    PrisonsStaffType,
-)
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
+)
+from recidiviz.justice_counts.dimensions.prisons import (
+    ExpenseType,
+    FundingType,
+    GrievancesUpheldType,
+    ReadmissionType,
+    ReleaseType,
+    StaffType,
 )
 from recidiviz.justice_counts.includes_excludes.offense import (
     DrugOffenseIncludesExcludes,
@@ -128,18 +128,18 @@ funding = MetricDefinition(
     specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonsFundingType,
+            dimension=FundingType,
             required=False,
             dimension_to_description={
-                PrisonsFundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsFundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsFundingType.COMMISSARY_AND_FEES: "The amount of funding the agency collected through sales and/or fees charged to people who are incarcerated under the jurisdiction of the agency or their visitors.",
-                PrisonsFundingType.CONTRACT_BEDS: "The amount of funding the agency collected through contracts to provide custody and care for people who are incarcerated under the jurisdiction of another agency.",
-                PrisonsFundingType.OTHER: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated that is not appropriated by the state, funded through grants, earned from commissary and fees, or collected from contracted beds.",
-                PrisonsFundingType.UNKNOWN: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated for which the source is not known.",
+                FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                FundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                FundingType.COMMISSARY_AND_FEES: "The amount of funding the agency collected through sales and/or fees charged to people who are incarcerated under the jurisdiction of the agency or their visitors.",
+                FundingType.CONTRACT_BEDS: "The amount of funding the agency collected through contracts to provide custody and care for people who are incarcerated under the jurisdiction of another agency.",
+                FundingType.OTHER: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated that is not appropriated by the state, funded through grants, earned from commissary and fees, or collected from contracted beds.",
+                FundingType.UNKNOWN: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated for which the source is not known.",
             },
             dimension_to_includes_excludes={
-                PrisonsFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
                     members=PrisonsFundingStateAppropriationIncludesExcludes,
                     excluded_set={
                         PrisonsFundingStateAppropriationIncludesExcludes.PROPOSED,
@@ -147,13 +147,13 @@ funding = MetricDefinition(
                         PrisonsFundingStateAppropriationIncludesExcludes.GRANTS,
                     },
                 ),
-                PrisonsFundingType.GRANTS: IncludesExcludesSet(
+                FundingType.GRANTS: IncludesExcludesSet(
                     members=PrisonsFundingGrantsIncludesExcludes,
                 ),
-                PrisonsFundingType.COMMISSARY_AND_FEES: IncludesExcludesSet(
+                FundingType.COMMISSARY_AND_FEES: IncludesExcludesSet(
                     members=PrisonsFundingCommissaryAndFeesIncludesExcludes,
                 ),
-                PrisonsFundingType.CONTRACT_BEDS: IncludesExcludesSet(
+                FundingType.CONTRACT_BEDS: IncludesExcludesSet(
                     members=PrisonsFundingContractBedsIncludesExcludes,
                 ),
             },
@@ -185,44 +185,44 @@ total_staff = MetricDefinition(
     specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonsStaffType,
+            dimension=StaffType,
             required=False,
             dimension_to_description={
-                PrisonsStaffType.SECURITY: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their custody, supervision, and monitoring.",
-                PrisonsStaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are incarcerated but support the day-to-day operations of the agency.",
-                PrisonsStaffType.CLINICAL_OR_MEDICAL: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their health.",
-                PrisonsStaffType.PROGRAMMATIC: "The number of full-time equivalent positions that are not medical or clinical staff and provide services and programming to people who are incarcerated.",
-                PrisonsStaffType.OTHER: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are not security staff, management and operations staff, clinical or medical staff, or programmatic staff.",
-                PrisonsStaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are of an unknown type.",
-                PrisonsStaffType.VACANT: "The number of full-time equivalent positions dedicated to the operation and maintenance of jail facilities under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
+                StaffType.SECURITY: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their custody, supervision, and monitoring.",
+                StaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are incarcerated but support the day-to-day operations of the agency.",
+                StaffType.CLINICAL_OR_MEDICAL: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their health.",
+                StaffType.PROGRAMMATIC: "The number of full-time equivalent positions that are not medical or clinical staff and provide services and programming to people who are incarcerated.",
+                StaffType.OTHER: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are not security staff, management and operations staff, clinical or medical staff, or programmatic staff.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are of an unknown type.",
+                StaffType.VACANT: "The number of full-time equivalent positions dedicated to the operation and maintenance of jail facilities under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
             },
             dimension_to_includes_excludes={
-                PrisonsStaffType.SECURITY: IncludesExcludesSet(
+                StaffType.SECURITY: IncludesExcludesSet(
                     members=PrisonSecurityStaffIncludesExcludes,
                     excluded_set={
                         PrisonSecurityStaffIncludesExcludes.VACANT,
                     },
                 ),
-                PrisonsStaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
+                StaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
                     members=PrisonManagementAndOperationsStaffIncludesExcludes,
                     excluded_set={
                         PrisonManagementAndOperationsStaffIncludesExcludes.VACANT,
                     },
                 ),
-                PrisonsStaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
+                StaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
                     members=PrisonClinicalStaffIncludesExcludes,
                     excluded_set={
                         PrisonClinicalStaffIncludesExcludes.VACANT,
                     },
                 ),
-                PrisonsStaffType.PROGRAMMATIC: IncludesExcludesSet(
+                StaffType.PROGRAMMATIC: IncludesExcludesSet(
                     members=PrisonProgrammaticStaffIncludesExcludes,
                     excluded_set={
                         PrisonProgrammaticStaffIncludesExcludes.VACANT,
                         PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER,
                     },
                 ),
-                PrisonsStaffType.VACANT: IncludesExcludesSet(
+                StaffType.VACANT: IncludesExcludesSet(
                     members=VacantPrisonStaffIncludesExcludes,
                     excluded_set={
                         VacantPrisonStaffIncludesExcludes.FILLED,
@@ -255,36 +255,36 @@ expenses = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonsExpenseType,
+            dimension=ExpenseType,
             required=False,
             dimension_to_description={
-                PrisonsExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used to support maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsExpenseType.HEALTH_CARE: "The amount spent by the agency on medical care for people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsExpenseType.CONTRACT_BEDS: "The amount spent by the agency on contracts with other agencies to provide custody and care for people who are incarcerated under the jurisdiction of the agency.",
-                PrisonsExpenseType.OTHER: "The amount spent by the agency on other costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated that are not personnel, training, facilities and equipment, health care, or contract bed expenses.",
-                PrisonsExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated for a purpose that is not known.",
+                ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used to support maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.HEALTH_CARE: "The amount spent by the agency on medical care for people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.CONTRACT_BEDS: "The amount spent by the agency on contracts with other agencies to provide custody and care for people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.OTHER: "The amount spent by the agency on other costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated that are not personnel, training, facilities and equipment, health care, or contract bed expenses.",
+                ExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated for a purpose that is not known.",
             },
             dimension_to_includes_excludes={
-                PrisonsExpenseType.PERSONNEL: IncludesExcludesSet(
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
                     members=PrisonExpensesPersonnelIncludesExcludes,
                     excluded_set={PrisonExpensesPersonnelIncludesExcludes.CONTRACTORS},
                 ),
-                PrisonsExpenseType.TRAINING: IncludesExcludesSet(
+                ExpenseType.TRAINING: IncludesExcludesSet(
                     members=PrisonExpensesTrainingIncludesExcludes,
                     excluded_set={PrisonExpensesTrainingIncludesExcludes.FREE_PROGRAMS},
                 ),
-                PrisonsExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
                     members=PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
                 ),
-                PrisonsExpenseType.HEALTH_CARE: IncludesExcludesSet(
+                ExpenseType.HEALTH_CARE: IncludesExcludesSet(
                     members=PrisonExpensesHealthCareIncludesExcludes,
                     excluded_set={
                         PrisonExpensesHealthCareIncludesExcludes.TRANSPORTATION
                     },
                 ),
-                PrisonsExpenseType.CONTRACT_BEDS: IncludesExcludesSet(
+                ExpenseType.CONTRACT_BEDS: IncludesExcludesSet(
                     members=PrisonExpensesContractBedsIncludesExcludes,
                 ),
             },
@@ -307,23 +307,23 @@ readmissions = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonsReadmissionType,
+            dimension=ReadmissionType,
             required=False,
             dimension_to_description={
-                PrisonsReadmissionType.NEW_CONVICTION: "The number of incarceration admissions due to new criminal conviction to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                PrisonsReadmissionType.RETURN_FROM_PROBATION: "The number of admissions due to probation hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                PrisonsReadmissionType.RETURN_FROM_PAROLE: "The number of incarceration admissions due to parole hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                PrisonsReadmissionType.OTHER: "The number of admissions, which were not admissions for a new conviction, admissions for a return from probation, or admissions for a return from parole, but an other admission to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                PrisonsReadmissionType.UNKNOWN_READMISSIONS: "The number of admissions, for an unknown reason, to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.NEW_CONVICTION: "The number of incarceration admissions due to new criminal conviction to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.RETURN_FROM_PROBATION: "The number of admissions due to probation hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.RETURN_FROM_PAROLE: "The number of incarceration admissions due to parole hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.OTHER: "The number of admissions, which were not admissions for a new conviction, admissions for a return from probation, or admissions for a return from parole, but an other admission to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.UNKNOWN_READMISSIONS: "The number of admissions, for an unknown reason, to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
             },
             dimension_to_includes_excludes={
-                PrisonsReadmissionType.NEW_CONVICTION: IncludesExcludesSet(
+                ReadmissionType.NEW_CONVICTION: IncludesExcludesSet(
                     members=PrisonReadmissionsNewConvictionIncludesExcludes,
                 ),
-                PrisonsReadmissionType.RETURN_FROM_PROBATION: IncludesExcludesSet(
+                ReadmissionType.RETURN_FROM_PROBATION: IncludesExcludesSet(
                     members=PrisonReadmissionsProbationIncludesExcludes,
                 ),
-                PrisonsReadmissionType.RETURN_FROM_PAROLE: IncludesExcludesSet(
+                ReadmissionType.RETURN_FROM_PAROLE: IncludesExcludesSet(
                     members=PrisonReadmissionsParoleIncludesExcludes,
                 ),
             },
@@ -483,31 +483,31 @@ releases = MetricDefinition(
     specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=PrisonsReleaseType,
+            dimension=ReleaseType,
             required=False,
             dimension_to_description={
-                PrisonsReleaseType.TO_PROBATION_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to probation supervision.",
-                PrisonsReleaseType.TO_PAROLE_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to parole supervision.",
-                PrisonsReleaseType.TO_COMMUNITY_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole or in the agency’s jurisdiction.",
-                PrisonsReleaseType.NO_CONTROL: "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
-                PrisonsReleaseType.DEATH: "The number of release events from the agency’s prison jurisdiction due to death of people in custody.",
-                PrisonsReleaseType.OTHER: "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
-                PrisonsReleaseType.UNKNOWN: "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
+                ReleaseType.TO_PROBATION_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to probation supervision.",
+                ReleaseType.TO_PAROLE_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to parole supervision.",
+                ReleaseType.TO_COMMUNITY_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole or in the agency’s jurisdiction.",
+                ReleaseType.NO_CONTROL: "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
+                ReleaseType.DEATH: "The number of release events from the agency’s prison jurisdiction due to death of people in custody.",
+                ReleaseType.OTHER: "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
+                ReleaseType.UNKNOWN: "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
             },
             dimension_to_includes_excludes={
-                PrisonsReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
+                ReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
                     members=PrisonReleasesToProbationIncludesExcludes,
                 ),
-                PrisonsReleaseType.TO_PAROLE_SUPERVISION: IncludesExcludesSet(
+                ReleaseType.TO_PAROLE_SUPERVISION: IncludesExcludesSet(
                     members=PrisonReleasesToParoleIncludesExcludes,
                 ),
-                PrisonsReleaseType.TO_COMMUNITY_SUPERVISION: IncludesExcludesSet(
+                ReleaseType.TO_COMMUNITY_SUPERVISION: IncludesExcludesSet(
                     members=PrisonReleasesCommunitySupervisionIncludesExcludes,
                 ),
-                PrisonsReleaseType.NO_CONTROL: IncludesExcludesSet(
+                ReleaseType.NO_CONTROL: IncludesExcludesSet(
                     members=PrisonReleasesNoControlIncludesExcludes,
                 ),
-                PrisonsReleaseType.DEATH: IncludesExcludesSet(
+                ReleaseType.DEATH: IncludesExcludesSet(
                     members=PrisonReleasesDeathIncludesExcludes,
                 ),
             },

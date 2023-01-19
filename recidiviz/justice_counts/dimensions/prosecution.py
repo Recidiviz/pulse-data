@@ -21,7 +21,7 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class ProsecutionAndDefenseStaffType(DimensionBase, enum.Enum):
+class StaffType(DimensionBase, enum.Enum):
     ATTORNEY = "Attorney"
     SUPERVISOR = "Supervisor"
     ADMINISTRATIVE = "Administrative"
