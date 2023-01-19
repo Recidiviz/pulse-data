@@ -100,9 +100,41 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
       WHERE sent.state_code = "US_IX"
       AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
-      --Pick one record per person and ChargeId, selecting the lowest sentence sequence number
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id,SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
+      --Pick one record per person, sentence type and ChargeId, selecting the lowest sentence sequence number
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id, sent.sentence_type, SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
       ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(1)])=1
+    ),
+    sentence_charge_description_aggregated AS (
+      SELECT 
+      charge.state_code,
+      charge.person_id,
+      charge.sentence_type,
+      ARRAY_AGG(charge.projected_completion_date_max IGNORE NULLS ORDER BY 
+                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+                AS form_information_full_term_release_dates,
+      ARRAY_AGG(charge.description IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_charge_descriptions,
+      ARRAY_AGG(charge.judge_full_name IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_judge_names,
+      ARRAY_AGG(charge.county_name IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_county_names,
+      ARRAY_AGG(charge.max_sentence_length_days_calculated IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_sentence_max,
+      ARRAY_AGG(charge.min_sentence_length_days_calculated IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_sentence_min,
+      ARRAY_AGG(charge.case_number IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_case_numbers,
+      ARRAY_AGG(charge.date_imposed IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_date_imposed,
+      FROM sentence_charge_description charge
+      GROUP BY 1,2,3
     ),
     supervision_officer AS (
       SELECT 
@@ -269,41 +301,25 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             pi.client_name AS form_information_client_name,
             IF(tes.task_name = "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST", "Probation", "Parole") 
                 AS form_information_supervision_type,
-            ARRAY_AGG(charge.projected_completion_date_max IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_full_term_release_dates,
+            agg_charge.form_information_full_term_release_dates,
             so.supervision_officer_name AS form_information_supervision_officer_name,
             ncic.review_date AS from_information_ncic_check_date,
-            ARRAY_AGG(charge.description IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_charge_descriptions,
-            ARRAY_AGG(charge.judge_full_name IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_judge_names,
-            ARRAY_AGG(charge.county_name IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_county_names,
-            ARRAY_AGG(charge.max_sentence_length_days_calculated IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_sentence_max,
-            ARRAY_AGG(charge.min_sentence_length_days_calculated IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_sentence_min,
-            ARRAY_AGG(charge.case_number IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_case_numbers,
-            ARRAY_AGG(charge.date_imposed IGNORE NULLS ORDER BY 
-                charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
-                AS form_information_date_imposed,
+            agg_charge.form_information_charge_descriptions,
+            agg_charge.form_information_judge_names,
+            agg_charge.form_information_county_names,
+            agg_charge.form_information_sentence_max,
+            agg_charge.form_information_sentence_min,
+            agg_charge.form_information_case_numbers,
+            agg_charge.form_information_date_imposed,
             score.latest_assessment_date AS form_information_latest_assessment_date,
             score.latest_assessment_score AS form_information_latest_assessment_score,
             score.first_assessment_date AS form_information_first_assessment_date,
             score.first_assessment_score AS form_information_first_assessment_score,
             DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
-            ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
-            ARRAY_AGG(n.case_notes IGNORE NULLS)[ORDINAL(1)] AS case_notes,
+            tes.reasons AS reasons,
+            n.case_notes AS case_notes,
             -- Almost eligible if there is only 1 ineligible_criteria present
-            IF(ARRAY_LENGTH(ARRAY_CONCAT_AGG(tes.ineligible_criteria)) = 1, ARRAY_AGG(tes.ineligible_criteria[SAFE_ORDINAL(1)]), []) AS ineligible_criteria,
+            IF(ARRAY_LENGTH(tes.ineligible_criteria) = 1, tes.ineligible_criteria, []) AS ineligible_criteria,
         FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
             ON tes.state_code = ses.state_code
@@ -330,11 +346,11 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             AND ses.person_id = pei.person_id
             AND pei.id_type = "US_IX_DOC"
             --only individuals that are currently eligible for early discharge
-        LEFT JOIN sentence_charge_description charge
-            ON tes.state_code = charge.state_code
-            AND tes.person_id = charge.person_id
+        LEFT JOIN sentence_charge_description_aggregated agg_charge
+            ON tes.state_code = agg_charge.state_code
+            AND tes.person_id = agg_charge.person_id
             --only list Probation sentences for ED from Probation and Parole sentencecs for ED from Parole 
-            AND IF(cses.compartment_level_2 IN ("DUAL", "PAROLE"), "INCARCERATION", "SUPERVISION") = charge.sentence_type
+            AND IF(cses.compartment_level_2 IN ("DUAL", "PAROLE"), "INCARCERATION", "SUPERVISION") = agg_charge.sentence_type
         LEFT JOIN supervision_officer so
             ON tes.state_code = so.state_code
             AND tes.person_id = so.person_id
@@ -350,7 +366,6 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             AND DATE_ADD(review_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific')
         WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
             AND tes.state_code = 'US_IX'
-        GROUP BY 1,2,3,4,5,6,7,9,10,18,19,20,21,22
     ),
         
     eligible_and_almost_eligible AS (
