@@ -83,7 +83,12 @@ WITH task_eligibility_spans AS (
         `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
     INNER JOIN
         `{project_id}.{reference_views_dataset}.task_to_completion_event`
-    USING (task_name)
+    USING
+        (task_name)
+    WHERE
+        -- remove any spans that start after the current millennium, e.g.
+        -- eligibility following a life sentence
+        start_date < "3000-01-01"
 )
 
 -- transitions to liberty or supervision
