@@ -40,6 +40,7 @@ from recidiviz.big_query.view_update_manager import (
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
 from recidiviz.tools.load_views_to_sandbox import str_to_list
+from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.view_registry.address_overrides_factory import (
@@ -157,8 +158,13 @@ if __name__ == "__main__":
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        deploy_views(
-            known_args.project_id,
-            known_args.test_schema_only,
-            known_args.dataset_ids_to_load,
+        interactive_prompt_retry_on_exception(
+            fn=lambda: deploy_views(
+                known_args.project_id,
+                known_args.test_schema_only,
+                known_args.dataset_ids_to_load,
+            ),
+            input_text="failed to deploy all views - retry?",
+            accepted_response_override="yes",
+            exit_on_cancel=False,
         )
