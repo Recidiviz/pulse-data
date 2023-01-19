@@ -41,7 +41,8 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     PeopleOnActiveSupervisionIncludesExcludes,
     PeopleOnAdministrativeSupervisionIncludesExcludes,
     SupervisionAbscondingViolationsIncludesExcludes,
-    SupervisionCaseloadIncludesExcludes,
+    SupervisionCaseloadDenominatorIncludesExcludes,
+    SupervisionCaseloadNumeratorIncludesExcludes,
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionCountyMunicipalAppropriationIncludesExcludes,
     SupervisionDischargesIncludesExcludes,
@@ -470,18 +471,31 @@ reconvictions = MetricDefinition(
     ),
 )
 
-caseload = MetricDefinition(
+caseload_numerator = MetricDefinition(
     system=System.SUPERVISION,
-    metric_type=MetricType.CASELOADS,
+    metric_type=MetricType.CASELOADS_PEOPLE,
     category=MetricCategory.POPULATIONS,
-    display_name="Caseload",
-    description="The ratio of the number of people with open supervision cases under the jurisdiction of the supervision agency to the number of staff carrying a supervision caseload.",
+    display_name="Open Cases",
+    description="Number of people with open cases under the jurisdiction of the supervision agency (used as the numerator in the calculation of the caseloads metric).",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=IncludesExcludesSet(
-        members=SupervisionCaseloadIncludesExcludes,
+        members=SupervisionCaseloadNumeratorIncludesExcludes,
+    ),
+)
+
+caseload_denominator = MetricDefinition(
+    system=System.SUPERVISION,
+    metric_type=MetricType.CASELOADS_STAFF,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Staff with Caseload",
+    description="The number of staff carrying a supervision caseload (used as the denominator in the calculation of the caseloads metric).",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=SupervisionCaseloadDenominatorIncludesExcludes,
         excluded_set={
-            SupervisionCaseloadIncludesExcludes.STAFF_ON_LEAVE,
+            SupervisionCaseloadDenominatorIncludesExcludes.STAFF_ON_LEAVE,
         },
     ),
 )

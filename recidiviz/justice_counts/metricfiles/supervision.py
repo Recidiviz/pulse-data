@@ -118,8 +118,12 @@ SUPERVISION_METRIC_FILES = [
         definition=supervision.reconvictions,
     ),
     MetricFile(
-        canonical_filename="caseload",
-        definition=supervision.caseload,
+        canonical_filename="open_cases",
+        definition=supervision.caseload_numerator,
+    ),
+    MetricFile(
+        canonical_filename="staff_with_caseload",
+        definition=supervision.caseload_denominator,
     ),
     MetricFile(
         canonical_filename="revocations",
