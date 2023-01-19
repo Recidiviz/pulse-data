@@ -955,8 +955,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user_A.auth0_user_id,
                 agency_ids=[agency_A.id, agency_B.id],
             )
-            response = self.client.patch(
-                "/api/users",
+            response = self.client.post(
+                "/api/users/invite",
                 json={
                     "invite_name": name,
                     "invite_email": email_address,
@@ -990,8 +990,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 ),
             }
             self.test_auth0_client.create_JC_user.return_value = updated_auth0_user
-            response = self.client.patch(
-                "/api/users",
+            response = self.client.post(
+                "/api/users/invite",
                 json={
                     "invite_name": name,
                     "invite_email": email_address,

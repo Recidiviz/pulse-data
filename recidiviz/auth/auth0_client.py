@@ -17,6 +17,8 @@
 """Wrapper around the Auth0 Client
 """
 import logging
+import random
+import string
 from functools import wraps
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional, TypedDict, Union
@@ -185,11 +187,16 @@ class Auth0Client:
     @_refresh_token_if_needed
     def create_JC_user(self, email: str, name: str, agency_id: int) -> Auth0User:
         """Creates a single Auth0 user in the Justice Counts Auth0 tenant."""
+        random_password = "".join(
+            random.choices(string.ascii_letters + string.digits, k=10)
+        )
         body: Dict[str, Any] = {
             "email": email,
             "name": name,
             "email_verified": False,
             "app_metadata": {"agency_ids": [agency_id]},
+            "connection": "Username-Password-Authentication",
+            "password": random_password,
         }
 
         return self.client.users.create(body=body)
