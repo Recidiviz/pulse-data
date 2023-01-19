@@ -24,7 +24,7 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     DispositionType,
-    ProsecutionAndDefenseStaffType,
+    StaffType,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -88,9 +88,7 @@ total_staff = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full-time staff position filled.",
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=ProsecutionAndDefenseStaffType, required=False)
-    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
 )
 
 cases_appointed_counsel = MetricDefinition(

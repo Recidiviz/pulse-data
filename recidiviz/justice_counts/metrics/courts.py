@@ -18,11 +18,11 @@
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.courts import (
-    CourtCaseType,
-    CourtReleaseType,
-    CourtsCaseSeverityType,
-    CourtStaffType,
+    CaseSeverityType,
+    CaseType,
+    ReleaseType,
     SentenceType,
+    StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -91,9 +91,7 @@ total_staff = MetricDefinition(
     description="Measures the number of full-time staff employed by the criminal courts.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=CourtStaffType, required=False)
-    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
 )
 
 pretrial_releases = MetricDefinition(
@@ -111,9 +109,7 @@ pretrial_releases = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     reporting_note="As much as possible, report the initial decision made by the court or on a bail schedule. Many jurisdictions may overwrite this decision if bail is modified at any point. This should be noted.",
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=CourtReleaseType, required=False)
-    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=ReleaseType, required=False)],
 )
 
 
@@ -158,7 +154,7 @@ criminal_case_filings = MetricDefinition(
         )
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CourtsCaseSeverityType, required=False)
+        AggregatedDimension(dimension=CaseSeverityType, required=False)
     ],
 )
 
@@ -190,9 +186,7 @@ new_offenses_while_on_pretrial_release = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     reporting_note="Choose all cases in previous year and identify if they were released, and whether they had any new offense between release and reporting date.",
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=CourtCaseType, required=False)
-    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=CaseType, required=False)],
 )
 
 cases_overturned = MetricDefinition(

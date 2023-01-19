@@ -21,7 +21,7 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class SupervisionFundingType(DimensionBase, enum.Enum):
+class FundingType(DimensionBase, enum.Enum):
     STATE_APPROPRIATION = "State Appropriations"
     COUNTY_MUNICIPAL_APPROPRIATION = "County or Municipal Appropriations"
     GRANTS = "Grants"
@@ -34,7 +34,7 @@ class SupervisionFundingType(DimensionBase, enum.Enum):
         return "metric/supervision/funding/type"
 
 
-class SupervisionExpenseType(DimensionBase, enum.Enum):
+class ExpenseType(DimensionBase, enum.Enum):
     PERSONNEL = "Personnel"
     TRAINING = "Training"
     FACILITIES_EQUIPMENT = "Facilities and Equipment"
@@ -46,7 +46,7 @@ class SupervisionExpenseType(DimensionBase, enum.Enum):
         return "metric/supervision/expense/type"
 
 
-class SupervisionStaffType(DimensionBase, enum.Enum):
+class StaffType(DimensionBase, enum.Enum):
     SUPERVISION = "Supervision Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
     CLINICAL_AND_MEDICAL = "Clinical and Medical Staff"
@@ -60,7 +60,7 @@ class SupervisionStaffType(DimensionBase, enum.Enum):
         return "metric/staff/supervision/type"
 
 
-class SupervisionViolationType(DimensionBase, enum.Enum):
+class ViolationType(DimensionBase, enum.Enum):
     TECHNICAL = "Technical Violations"
     ABSCONDING = "Absconding Violations"
     NEW_OFFENSE = "New Offense Violations"
@@ -72,7 +72,7 @@ class SupervisionViolationType(DimensionBase, enum.Enum):
         return "metric/violation/supervision/type"
 
 
-class SupervisionNewCaseType(DimensionBase, enum.Enum):
+class NewCaseType(DimensionBase, enum.Enum):
     PERSON = "New Cases for Person Charges/Offenses"
     PROPERTY = "New Cases for Property Charges/Offenses"
     DRUG = "New Cases for Drug Charges/Offenses"
@@ -85,7 +85,7 @@ class SupervisionNewCaseType(DimensionBase, enum.Enum):
         return "metric/supervision/new_case/type"
 
 
-class SupervisionDailyPopulationType(DimensionBase, enum.Enum):
+class DailyPopulationType(DimensionBase, enum.Enum):
     ACTIVE = "People on Active Supervision"
     ADMINISTRATIVE = "People on Administrative Supervision"
     ABSCONDED = "People who have Absconded from Supervision"
@@ -98,7 +98,7 @@ class SupervisionDailyPopulationType(DimensionBase, enum.Enum):
         return "metric/supervision/daily_population/type"
 
 
-class SupervisionDischargeType(DimensionBase, enum.Enum):
+class DischargeType(DimensionBase, enum.Enum):
     SUCCESSFUL = "Successful Completion"
     NEUTRAL = "Neutral Discharge"
     UNSUCCESSFUL = "Unsuccessful Discharge"
@@ -122,7 +122,7 @@ class NewOffenseType(DimensionBase, enum.Enum):
         return "metric/supervision/offense/type"
 
 
-class SupervisionRevocationType(DimensionBase, enum.Enum):
+class RevocationType(DimensionBase, enum.Enum):
     TECHNICAL = "For Technical Violations"
     NEW_OFFENSE = "For New Offense Violations"
     OTHER = "Other Revocations"

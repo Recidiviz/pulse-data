@@ -20,10 +20,10 @@ from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ComplaintType,
+    ExpenseType,
     ForceType,
-    LawEnforcementExpenseType,
-    LawEnforcementFundingType,
-    LawEnforcementStaffType,
+    FundingType,
+    StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
@@ -120,36 +120,36 @@ funding = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=LawEnforcementFundingType,
+            dimension=FundingType,
             dimension_to_includes_excludes={
-                LawEnforcementFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
                     members=LawEnforcementStateAppropriationIncludesExcludes,
                     excluded_set={
                         LawEnforcementStateAppropriationIncludesExcludes.PRELIMINARY,
                         LawEnforcementStateAppropriationIncludesExcludes.PROPOSED,
                     },
                 ),
-                LawEnforcementFundingType.COUNTY_APPROPRIATION: IncludesExcludesSet(
+                FundingType.COUNTY_APPROPRIATION: IncludesExcludesSet(
                     members=LawEnforcementStateAppropriationIncludesExcludes,
                     excluded_set={
                         LawEnforcementCountyOrMunicipalAppropriation.PRELIMINARY,
                         LawEnforcementCountyOrMunicipalAppropriation.PROPOSED,
                     },
                 ),
-                LawEnforcementFundingType.ASSET_FORFEITURE: IncludesExcludesSet(
+                FundingType.ASSET_FORFEITURE: IncludesExcludesSet(
                     members=LawEnforcementAssetForfeitureIncludesExcludes,
                 ),
-                LawEnforcementFundingType.GRANTS: IncludesExcludesSet(
+                FundingType.GRANTS: IncludesExcludesSet(
                     members=LawEnforcementGrantsIncludesExcludes,
                 ),
             },
             dimension_to_description={
-                LawEnforcementFundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for agency law enforcement activities.",
-                LawEnforcementFundingType.COUNTY_APPROPRIATION: "The amount of funding appropriated by counties or municipalities for agency law enforcement activities.",
-                LawEnforcementFundingType.ASSET_FORFEITURE: "The amount of funding derived by the agency through the seizure of assets.",
-                LawEnforcementFundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for agency law enforcement activities.",
-                LawEnforcementFundingType.OTHER: "The amount of funding to be used for agency law enforcement activities that is not appropriations from the state, appropriations from the county or city, asset forfeiture, or grants.",
-                LawEnforcementFundingType.UNKNOWN: "The amount of funding to be used for agency law enforcement activities for which the source is not known.",
+                FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for agency law enforcement activities.",
+                FundingType.COUNTY_APPROPRIATION: "The amount of funding appropriated by counties or municipalities for agency law enforcement activities.",
+                FundingType.ASSET_FORFEITURE: "The amount of funding derived by the agency through the seizure of assets.",
+                FundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for agency law enforcement activities.",
+                FundingType.OTHER: "The amount of funding to be used for agency law enforcement activities that is not appropriations from the state, appropriations from the county or city, asset forfeiture, or grants.",
+                FundingType.UNKNOWN: "The amount of funding to be used for agency law enforcement activities for which the source is not known.",
             },
             required=False,
         )
@@ -175,30 +175,30 @@ expenses = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=LawEnforcementExpenseType,
+            dimension=ExpenseType,
             dimension_to_includes_excludes={
-                LawEnforcementExpenseType.TRAINING: IncludesExcludesSet(
+                ExpenseType.TRAINING: IncludesExcludesSet(
                     members=LawEnforcementTrainingIncludesExcludes,
                     excluded_set={
                         LawEnforcementTrainingIncludesExcludes.FREE,
                     },
                 ),
-                LawEnforcementExpenseType.PERSONNEL: IncludesExcludesSet(
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
                     members=LawEnforcementPersonnelIncludesExcludes,
                     excluded_set={
                         LawEnforcementPersonnelIncludesExcludes.COMPANY_CONTRACTS,
                     },
                 ),
-                LawEnforcementExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
                     members=LawEnforcementFacilitiesIncludesExcludes,
                 ),
             },
             dimension_to_description={
-                LawEnforcementExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in law enforcement activities.",
-                LawEnforcementExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in law enforcement activities.",
-                LawEnforcementExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used in law enforcement activities.",
-                LawEnforcementExpenseType.OTHER: "The amount spent by the agency on other costs relating to law enforcement activities that are not personnel, training, or facilities and equipment expenses.",
-                LawEnforcementExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to law enforcement activities for a purpose that is not known.",
+                ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in law enforcement activities.",
+                ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in law enforcement activities.",
+                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used in law enforcement activities.",
+                ExpenseType.OTHER: "The amount spent by the agency on other costs relating to law enforcement activities that are not personnel, training, or facilities and equipment expenses.",
+                ExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to law enforcement activities for a purpose that is not known.",
             },
             required=False,
         )
@@ -261,10 +261,10 @@ staff = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=LawEnforcementStaffType,
+            dimension=StaffType,
             required=False,
             dimension_to_includes_excludes={
-                LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: IncludesExcludesSet(
+                StaffType.LAW_ENFORCEMENT_OFFICERS: IncludesExcludesSet(
                     members=LawEnforcementPoliceOfficersIncludesExcludes,
                     excluded_set={
                         LawEnforcementPoliceOfficersIncludesExcludes.CRISIS_INTERVENTION,
@@ -272,22 +272,22 @@ staff = MetricDefinition(
                         LawEnforcementPoliceOfficersIncludesExcludes.VICTIM_ADVOCATE,
                     },
                 ),
-                LawEnforcementStaffType.CIVILIAN_STAFF: IncludesExcludesSet(
+                StaffType.CIVILIAN_STAFF: IncludesExcludesSet(
                     members=LawEnforcementCivilianStaffIncludesExcludes,
                 ),
-                LawEnforcementStaffType.MENTAL_HEALTH: IncludesExcludesSet(
+                StaffType.MENTAL_HEALTH: IncludesExcludesSet(
                     members=LawEnforcementMentalHealthStaffIncludesExcludes,
                     excluded_set={
                         LawEnforcementMentalHealthStaffIncludesExcludes.PART_TIME,
                     },
                 ),
-                LawEnforcementStaffType.VICTIM_ADVOCATES: IncludesExcludesSet(
+                StaffType.VICTIM_ADVOCATES: IncludesExcludesSet(
                     members=LawEnforcementVictimAdvocateStaffIncludesExcludes,
                     excluded_set={
                         LawEnforcementVictimAdvocateStaffIncludesExcludes.PART_TIME,
                     },
                 ),
-                LawEnforcementStaffType.VACANT: IncludesExcludesSet(
+                StaffType.VACANT: IncludesExcludesSet(
                     members=LawEnforcementVacantStaffIncludesExcludes,
                     excluded_set={
                         LawEnforcementVacantStaffIncludesExcludes.FILLED,
@@ -295,13 +295,13 @@ staff = MetricDefinition(
                 ),
             },
             dimension_to_description={
-                LawEnforcementStaffType.LAW_ENFORCEMENT_OFFICERS: "The number of full-time equivalent positions that perform law enforcement activities and ordinarily carry a firearm and a badge.",
-                LawEnforcementStaffType.CIVILIAN_STAFF: "The number of full-time equivalent positions that work as civilian or non-sworn employees.",
-                LawEnforcementStaffType.MENTAL_HEALTH: "The number of full-time equivalent positions that are members of a Crisis Intervention Team or provide mental health services in collaboration with law enforcement.",
-                LawEnforcementStaffType.VICTIM_ADVOCATES: "The number of full-time equivalent positions that provide victim support services.",
-                LawEnforcementStaffType.OTHER: "The number of full-time equivalent positions budgeted to the law enforcement agency that are not sworn/uniformed police officers, civilian staff, mental health/Crisis Intervention Team staff, or victim advocate staff.",
-                LawEnforcementStaffType.UNKNOWN: "The number of full-time equivalent positions budgeted to the law enforcement agency that are of an unknown type.",
-                LawEnforcementStaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
+                StaffType.LAW_ENFORCEMENT_OFFICERS: "The number of full-time equivalent positions that perform law enforcement activities and ordinarily carry a firearm and a badge.",
+                StaffType.CIVILIAN_STAFF: "The number of full-time equivalent positions that work as civilian or non-sworn employees.",
+                StaffType.MENTAL_HEALTH: "The number of full-time equivalent positions that are members of a Crisis Intervention Team or provide mental health services in collaboration with law enforcement.",
+                StaffType.VICTIM_ADVOCATES: "The number of full-time equivalent positions that provide victim support services.",
+                StaffType.OTHER: " The number of full-time equivalent positions budgeted to the law enforcement agency that are not sworn/uniformed police officers, civilian staff, mental health/Crisis Intervention Team staff, or victim advocate staff.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions budgeted to the law enforcement agency that are of an unknown type.",
+                StaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
             },
         ),
         AggregatedDimension(

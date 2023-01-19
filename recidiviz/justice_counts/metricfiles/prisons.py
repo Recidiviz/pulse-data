@@ -16,17 +16,16 @@
 # =============================================================================
 """Metricfile objects used for prison metrics."""
 
-from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    CorrectionalFacilityForceType,
-    GrievancesUpheldType,
-    PrisonsExpenseType,
-    PrisonsFundingType,
-    PrisonsReadmissionType,
-    PrisonsReleaseType,
-    PrisonsStaffType,
-)
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.prisons import (
+    ExpenseType,
+    FundingType,
+    GrievancesUpheldType,
+    ReadmissionType,
+    ReleaseType,
+    StaffType,
+)
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import prisons
 
@@ -38,7 +37,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="funding_by_type",
         definition=prisons.funding,
-        disaggregation=PrisonsFundingType,
+        disaggregation=FundingType,
         disaggregation_column_name="funding_type",
     ),
     MetricFile(
@@ -48,7 +47,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="expenses_by_type",
         definition=prisons.expenses,
-        disaggregation=PrisonsExpenseType,
+        disaggregation=ExpenseType,
         disaggregation_column_name="expense_type",
     ),
     MetricFile(
@@ -58,7 +57,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="total_staff_by_type",
         definition=prisons.total_staff,
-        disaggregation=PrisonsStaffType,
+        disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
@@ -68,7 +67,7 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="readmissions_by_type",
         definition=prisons.readmissions,
-        disaggregation=PrisonsReadmissionType,
+        disaggregation=ReadmissionType,
         disaggregation_column_name="readmission_type",
     ),
     MetricFile(
@@ -110,18 +109,12 @@ PRISON_METRIC_FILES = [
     MetricFile(
         canonical_filename="releases_by_type",
         definition=prisons.releases,
-        disaggregation=PrisonsReleaseType,
+        disaggregation=ReleaseType,
         disaggregation_column_name="release_type",
     ),
     MetricFile(
         canonical_filename="use_of_force",
         definition=prisons.staff_use_of_force_incidents,
-    ),
-    MetricFile(
-        canonical_filename="use_of_force_by_type",
-        definition=prisons.staff_use_of_force_incidents,
-        disaggregation=CorrectionalFacilityForceType,
-        disaggregation_column_name="force_type",
     ),
     MetricFile(
         canonical_filename="grievances_upheld",

@@ -22,7 +22,7 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class PrisonsReadmissionType(DimensionBase, enum.Enum):
+class ReadmissionType(DimensionBase, enum.Enum):
     NEW_CONVICTION = "New Conviction"
     RETURN_FROM_PROBATION = "Return from Probation"
     RETURN_FROM_PAROLE = "Return from Parole"
@@ -34,7 +34,7 @@ class PrisonsReadmissionType(DimensionBase, enum.Enum):
         return "metric/prisons/readmissions/type"
 
 
-class PrisonsExpenseType(DimensionBase, enum.Enum):
+class ExpenseType(DimensionBase, enum.Enum):
     PERSONNEL = "Personnel"
     TRAINING = "Training"
     FACILITIES_AND_EQUIPMENT = "Facilities and Equipment"
@@ -48,41 +48,7 @@ class PrisonsExpenseType(DimensionBase, enum.Enum):
         return "metric/prisons/expenses/type"
 
 
-class JailsReadmissionType(DimensionBase, enum.Enum):
-    NEW_ADMISSION = "New Admission"
-    VIOLATION_OF_CONDITIONS = "Violation of Conditions"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/jails/readmissions/type"
-
-
-class JailPopulationType(DimensionBase, enum.Enum):
-    PRETRIAL = "Pretrial"
-    SENTENCED = "Sentenced"
-    TRANSFER_OR_HOLD = "Transfer or Hold"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/jails/population/type"
-
-
-class JailReleaseType(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "Sentence Completion"
-    PRETRIAL_RELEASE = "Pretrial Release"
-    TRANSFER = "Transfer"
-    UNAPPROVED_ABSENCE = "Unapproved Absence"
-    COMPASSIONATE = "Compassionate"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/jails/release/type"
-
-
-class PrisonsReleaseType(DimensionBase, enum.Enum):
+class ReleaseType(DimensionBase, enum.Enum):
     TO_PAROLE_SUPERVISION = "To Parole Supervision"
     TO_PROBATION_SUPERVISION = "To Probation Supervision"
     TO_COMMUNITY_SUPERVISION = (
@@ -98,19 +64,7 @@ class PrisonsReleaseType(DimensionBase, enum.Enum):
         return "metric/prisons/release/type"
 
 
-class CorrectionalFacilityForceType(DimensionBase, enum.Enum):
-    PHYSICAL = "Physical"
-    RESTRAINT = "Restraint"
-    VERBAL = "Verbal"
-    WEAPON_INVOLVED = "Weapon"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/correctional_facility/force/type"
-
-
-class PrisonsFundingType(DimensionBase, enum.Enum):
+class FundingType(DimensionBase, enum.Enum):
     STATE_APPROPRIATION = "State Appropriation"
     GRANTS = "Grants"
     COMMISSARY_AND_FEES = "Commissary and Fees"
@@ -123,7 +77,7 @@ class PrisonsFundingType(DimensionBase, enum.Enum):
         return "metric/prisons/funding/type"
 
 
-class PrisonsStaffType(DimensionBase, enum.Enum):
+class StaffType(DimensionBase, enum.Enum):
     SECURITY = "Security Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
     CLINICAL_OR_MEDICAL = "Clinical or Medical Staff"
@@ -135,17 +89,6 @@ class PrisonsStaffType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/prisons/staff/type"
-
-
-class JailsStaffType(DimensionBase, enum.Enum):
-    SECURITY = "Security"
-    SUPPORT = "Support"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/jails/staff/type"
 
 
 class GrievancesUpheldType(DimensionBase, enum.Enum):

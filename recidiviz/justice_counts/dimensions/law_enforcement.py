@@ -32,7 +32,7 @@ class CallType(DimensionBase, enum.Enum):
         return "metric/law_enforcement/calls_for_service/type"
 
 
-class LawEnforcementExpenseType(DimensionBase, enum.Enum):
+class ExpenseType(DimensionBase, enum.Enum):
     PERSONNEL = "Personnel"
     TRAINING = "Training"
     FACILITIES_AND_EQUIPMENT = "Facilities and Equipment"
@@ -44,7 +44,7 @@ class LawEnforcementExpenseType(DimensionBase, enum.Enum):
         return "metric/law_enforcement/expense/type"
 
 
-class LawEnforcementFundingType(DimensionBase, enum.Enum):
+class FundingType(DimensionBase, enum.Enum):
     STATE_APPROPRIATION = "State Appropriation"
     COUNTY_APPROPRIATION = "County or Municipal Appropriation"
     ASSET_FORFEITURE = "Asset Forfeiture"
@@ -81,7 +81,7 @@ class ComplaintType(DimensionBase, enum.Enum):
         return "metric/law_enforcement/complaint/type"
 
 
-class LawEnforcementStaffType(DimensionBase, enum.Enum):
+class StaffType(DimensionBase, enum.Enum):
     LAW_ENFORCEMENT_OFFICERS = "Sworn/Uniformed Police Officers"
     CIVILIAN_STAFF = "Civilian Staff"
     MENTAL_HEALTH = "Mental Health and Crisis Intervention Team Staff"

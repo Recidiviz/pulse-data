@@ -17,12 +17,11 @@
 """Defines all Justice Counts metrics for the Jail system."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
-from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    CorrectionalFacilityForceType,
-    JailPopulationType,
-    JailReleaseType,
-    JailsReadmissionType,
-    JailsStaffType,
+from recidiviz.justice_counts.dimensions.jails import (
+    PopulationType,
+    ReadmissionType,
+    ReleaseType,
+    StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
@@ -106,9 +105,7 @@ total_staff = MetricDefinition(
             multiple_choice_options=YesNoContext,
         ),
     ],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=JailsStaffType, required=False)
-    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
 )
 
 readmissions = MetricDefinition(
@@ -122,7 +119,7 @@ readmissions = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailsReadmissionType, required=False)
+        AggregatedDimension(dimension=ReadmissionType, required=False)
     ],
 )
 
@@ -151,7 +148,7 @@ admissions = MetricDefinition(
         ),
     ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailPopulationType, required=False)
+        AggregatedDimension(dimension=PopulationType, required=False)
     ],
 )
 
@@ -165,7 +162,7 @@ average_daily_population = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     specified_contexts=[],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=JailPopulationType, required=False),
+        AggregatedDimension(dimension=PopulationType, required=False),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         AggregatedDimension(dimension=GenderRestricted, required=True),
     ],
@@ -179,9 +176,7 @@ releases = MetricDefinition(
     description="Measures the number of new releases from your jail system.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=JailReleaseType, required=False)
-    ],
+    aggregated_dimensions=[AggregatedDimension(dimension=ReleaseType, required=False)],
 )
 
 staff_use_of_force_incidents = MetricDefinition(
@@ -206,9 +201,6 @@ staff_use_of_force_incidents = MetricDefinition(
             label="Please provide your agency's definition of 'use of force'.",
             required=True,
         ),
-    ],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=CorrectionalFacilityForceType, required=False)
     ],
 )
 

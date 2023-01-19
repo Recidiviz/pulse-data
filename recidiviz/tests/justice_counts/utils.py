@@ -25,13 +25,10 @@ from sqlalchemy.engine import Engine
 
 from recidiviz.auth.auth0_client import Auth0User, JusticeCountsAuth0AppMetadata
 from recidiviz.common.constants.justice_counts import ContextKey
-from recidiviz.justice_counts.dimensions.jails_and_prisons import (
-    PrisonsReleaseType,
-    PrisonsStaffType,
-)
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import RaceAndEthnicity
+from recidiviz.justice_counts.dimensions.prisons import ReleaseType, StaffType
 from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonClinicalStaffIncludesExcludes,
     PrisonManagementAndOperationsStaffIncludesExcludes,
@@ -497,10 +494,10 @@ class JusticeCountsSchemaTestObjects:
                     "disaggregations": [
                         {
                             "enabled": True,
-                            "key": PrisonsStaffType.dimension_identifier(),
+                            "key": StaffType.dimension_identifier(),
                             "dimensions": [
                                 {
-                                    "key": PrisonsStaffType.SECURITY.value,
+                                    "key": StaffType.SECURITY.value,
                                     "enabled": False,
                                     "settings": [
                                         {
@@ -512,7 +509,7 @@ class JusticeCountsSchemaTestObjects:
                                     else [],
                                 },
                                 {
-                                    "key": PrisonsStaffType.MANAGEMENT_AND_OPERATIONS.value,
+                                    "key": StaffType.MANAGEMENT_AND_OPERATIONS.value,
                                     "enabled": False,
                                     "settings": [
                                         {
@@ -524,7 +521,7 @@ class JusticeCountsSchemaTestObjects:
                                     else [],
                                 },
                                 {
-                                    "key": PrisonsStaffType.CLINICAL_OR_MEDICAL.value,
+                                    "key": StaffType.CLINICAL_OR_MEDICAL.value,
                                     "enabled": True,
                                     "settings": [
                                         {
@@ -536,7 +533,7 @@ class JusticeCountsSchemaTestObjects:
                                     else [],
                                 },
                                 {
-                                    "key": PrisonsStaffType.PROGRAMMATIC.value,
+                                    "key": StaffType.PROGRAMMATIC.value,
                                     "enabled": True,
                                     "settings": [
                                         {
@@ -552,7 +549,7 @@ class JusticeCountsSchemaTestObjects:
                                     else [],
                                 },
                                 {
-                                    "key": PrisonsStaffType.OTHER.value,
+                                    "key": StaffType.OTHER.value,
                                     "enabled": True,
                                     "settings": [],
                                     "contexts": [
@@ -563,12 +560,12 @@ class JusticeCountsSchemaTestObjects:
                                     ],
                                 },
                                 {
-                                    "key": PrisonsStaffType.UNKNOWN.value,
+                                    "key": StaffType.UNKNOWN.value,
                                     "enabled": True,
                                     "settings": [],
                                 },
                                 {
-                                    "key": PrisonsStaffType.VACANT.value,
+                                    "key": StaffType.VACANT.value,
                                     "enabled": True,
                                     "settings": [
                                         {
@@ -691,7 +688,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.releases.key,
                 dimension_identifier_to_member={
-                    PrisonsReleaseType.dimension_identifier(): PrisonsReleaseType.TO_PAROLE_SUPERVISION.name
+                    ReleaseType.dimension_identifier(): ReleaseType.TO_PAROLE_SUPERVISION.name
                 },
                 includes_excludes_key="AFTER_SANCTION",
                 source_id=agency_id,
@@ -700,7 +697,7 @@ class JusticeCountsSchemaTestObjects:
             schema.Datapoint(
                 metric_definition_key=prisons.releases.key,
                 dimension_identifier_to_member={
-                    PrisonsReleaseType.dimension_identifier(): PrisonsReleaseType.TO_PAROLE_SUPERVISION.name
+                    ReleaseType.dimension_identifier(): ReleaseType.TO_PAROLE_SUPERVISION.name
                 },
                 includes_excludes_key="ELIGIBLE",
                 source_id=agency_id,

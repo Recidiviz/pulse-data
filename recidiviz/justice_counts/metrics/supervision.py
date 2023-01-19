@@ -22,14 +22,14 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.supervision import (
-    SupervisionDailyPopulationType,
-    SupervisionDischargeType,
-    SupervisionExpenseType,
-    SupervisionFundingType,
-    SupervisionNewCaseType,
-    SupervisionRevocationType,
-    SupervisionStaffType,
-    SupervisionViolationType,
+    DailyPopulationType,
+    DischargeType,
+    ExpenseType,
+    FundingType,
+    NewCaseType,
+    RevocationType,
+    StaffType,
+    ViolationType,
 )
 from recidiviz.justice_counts.includes_excludes.person import (
     FemaleBiologicalSexIncludesExcludes,
@@ -118,10 +118,10 @@ funding = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionFundingType,
+            dimension=FundingType,
             required=False,
             dimension_to_includes_excludes={
-                SupervisionFundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
                     members=SupervisionStateAppropriationIncludesExcludes,
                     excluded_set={
                         SupervisionStateAppropriationIncludesExcludes.PROPOSED,
@@ -129,17 +129,17 @@ funding = MetricDefinition(
                         SupervisionStateAppropriationIncludesExcludes.GRANTS_NOT_BUDGET,
                     },
                 ),
-                SupervisionFundingType.COUNTY_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
+                FundingType.COUNTY_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
                     members=SupervisionCountyMunicipalAppropriationIncludesExcludes,
                     excluded_set={
                         SupervisionCountyMunicipalAppropriationIncludesExcludes.PROPOSED,
                         SupervisionCountyMunicipalAppropriationIncludesExcludes.PRELIMINARY,
                     },
                 ),
-                SupervisionFundingType.GRANTS: IncludesExcludesSet(
+                FundingType.GRANTS: IncludesExcludesSet(
                     members=SupervisionGrantsIncludesExcludes,
                 ),
-                SupervisionFundingType.FINES_FEES: IncludesExcludesSet(
+                FundingType.FINES_FEES: IncludesExcludesSet(
                     members=SupervisionFinesFeesIncludesExcludes,
                     excluded_set={
                         SupervisionFinesFeesIncludesExcludes.RESTITUTION,
@@ -148,12 +148,12 @@ funding = MetricDefinition(
                 ),
             },
             dimension_to_description={
-                SupervisionFundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionFundingType.COUNTY_MUNICIPAL_APPROPRIATION: "The amount of funding appropriated by counties or cities for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionFundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionFundingType.FINES_FEES: "The amount of funding the agency collected from people on supervision that is used to support the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionFundingType.OTHER: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that is not appropriations from the state, appropriations from the county or municipality, funding from grants, or funding from fines or fees.",
-                SupervisionFundingType.UNKNOWN: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for which the source is not known.",
+                FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                FundingType.COUNTY_MUNICIPAL_APPROPRIATION: "The amount of funding appropriated by counties or cities for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                FundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                FundingType.FINES_FEES: "The amount of funding the agency collected from people on supervision that is used to support the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                FundingType.OTHER: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that is not appropriations from the state, appropriations from the county or municipality, funding from grants, or funding from fines or fees.",
+                FundingType.UNKNOWN: "The amount of funding for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for which the source is not known.",
             },
         )
     ],
@@ -180,28 +180,28 @@ expenses = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionExpenseType,
+            dimension=ExpenseType,
             required=True,
             dimension_to_includes_excludes={
-                SupervisionExpenseType.PERSONNEL: IncludesExcludesSet(
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
                     members=SupervisionPersonnelExpensesIncludesExcludes,
                     excluded_set={
                         SupervisionPersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED,
                     },
                 ),
-                SupervisionExpenseType.TRAINING: IncludesExcludesSet(
+                ExpenseType.TRAINING: IncludesExcludesSet(
                     members=SupervisionTrainingExpensesIncludesExcludes,
                 ),
-                SupervisionExpenseType.FACILITIES_EQUIPMENT: IncludesExcludesSet(
+                ExpenseType.FACILITIES_EQUIPMENT: IncludesExcludesSet(
                     members=SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
                 ),
             },
             dimension_to_description={
-                SupervisionExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency, including any associated expenses, such as registration fees and travel costs.",
-                SupervisionExpenseType.FACILITIES_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionExpenseType.OTHER: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not personnel, training, or facilities and equipment expenses.",
-                SupervisionExpenseType.UNKNOWN: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for a purpose that is not known.",
+                ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency, including any associated expenses, such as registration fees and travel costs.",
+                ExpenseType.FACILITIES_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                ExpenseType.OTHER: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not personnel, training, or facilities and equipment expenses.",
+                ExpenseType.UNKNOWN: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for a purpose that is not known.",
             },
         ),
     ],
@@ -217,33 +217,33 @@ total_staff = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionStaffType,
+            dimension=StaffType,
             required=False,
             dimension_to_includes_excludes={
-                SupervisionStaffType.SUPERVISION: IncludesExcludesSet(
+                StaffType.SUPERVISION: IncludesExcludesSet(
                     members=SupervisionStaffDimIncludesExcludes,
                     excluded_set={SupervisionStaffDimIncludesExcludes.VACANT},
                 ),
-                SupervisionStaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
+                StaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
                     members=SupervisionManagementOperationsStaffIncludesExcludes,
                     excluded_set={
                         SupervisionManagementOperationsStaffIncludesExcludes.VACANT
                     },
                 ),
-                SupervisionStaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
+                StaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
                     members=SupervisionClinicalMedicalStaffIncludesExcludes,
                     excluded_set={
                         SupervisionClinicalMedicalStaffIncludesExcludes.VACANT,
                     },
                 ),
-                SupervisionStaffType.PROGRAMMATIC: IncludesExcludesSet(
+                StaffType.PROGRAMMATIC: IncludesExcludesSet(
                     members=SupervisionProgrammaticStaffIncludesExcludes,
                     excluded_set={
                         SupervisionProgrammaticStaffIncludesExcludes.VOLUNTEER,
                         SupervisionProgrammaticStaffIncludesExcludes.VACANT,
                     },
                 ),
-                SupervisionStaffType.VACANT: IncludesExcludesSet(
+                StaffType.VACANT: IncludesExcludesSet(
                     members=SupervisionVacantStaffIncludesExcludes,
                     excluded_set={
                         SupervisionVacantStaffIncludesExcludes.FILLED,
@@ -251,13 +251,13 @@ total_staff = MetricDefinition(
                 ),
             },
             dimension_to_description={
-                SupervisionStaffType.SUPERVISION: "The number of full-time equivalent positions that work directly with people who are on supervision and are responsible for their supervision and case management.",
-                SupervisionStaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are supervised in the community but support the day-to-day operations of the supervision agency.",
-                SupervisionStaffType.CLINICAL_AND_MEDICAL: "The number of full-time equivalent positions that work directly with people on probation, parole, or other community supervision and are responsible for their physical or mental health.",
-                SupervisionStaffType.PROGRAMMATIC: "The number of full-time equivalent positions that provide services and programming to people on community supervision but are not medical or clinical staff.",
-                SupervisionStaffType.OTHER: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not supervision staff, management and operations staff, clinical and medical staff, or programmatic staff.",
-                SupervisionStaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are of an unknown type.",
-                SupervisionStaffType.VACANT: "The number of full-time equivalent positions of any type dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are budgeted but not currently filled.",
+                StaffType.SUPERVISION: "The number of full-time equivalent positions that work directly with people who are on supervision and are responsible for their supervision and case management.",
+                StaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are supervised in the community but support the day-to-day operations of the supervision agency.",
+                StaffType.CLINICAL_AND_MEDICAL: "The number of full-time equivalent positions that work directly with people on probation, parole, or other community supervision and are responsible for their physical or mental health.",
+                StaffType.PROGRAMMATIC: "The number of full-time equivalent positions that provide services and programming to people on community supervision but are not medical or clinical staff.",
+                StaffType.OTHER: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not supervision staff, management and operations staff, clinical and medical staff, or programmatic staff.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are of an unknown type.",
+                StaffType.VACANT: "The number of full-time equivalent positions of any type dedicated to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are budgeted but not currently filled.",
             },
         ),
     ],
@@ -290,10 +290,10 @@ violations = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionViolationType,
+            dimension=ViolationType,
             required=True,
             dimension_to_includes_excludes={
-                SupervisionViolationType.TECHNICAL: IncludesExcludesSet(
+                ViolationType.TECHNICAL: IncludesExcludesSet(
                     members=SupervisionTechnicalViolationsIncludesExcludes,
                     excluded_set={
                         SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
@@ -302,19 +302,19 @@ violations = MetricDefinition(
                         SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
                     },
                 ),
-                SupervisionViolationType.ABSCONDING: IncludesExcludesSet(
+                ViolationType.ABSCONDING: IncludesExcludesSet(
                     members=SupervisionAbscondingViolationsIncludesExcludes,
                 ),
-                SupervisionViolationType.NEW_OFFENSE: IncludesExcludesSet(
+                ViolationType.NEW_OFFENSE: IncludesExcludesSet(
                     members=SupervisionNewOffenseViolationsIncludesExcludes,
                 ),
             },
             dimension_to_description={
-                SupervisionViolationType.TECHNICAL: "The number of people who violated conditions of supervision in which the most serious violation was defined as “technical” within the supervision agency.",
-                SupervisionViolationType.ABSCONDING: "The number of people who violated conditions of supervision in which the most serious violation was defined as “absconding” within the supervision agency.",
-                SupervisionViolationType.NEW_OFFENSE: "The number of people who violated conditions of supervision in which the most serious violation was defined as “new offense” within the supervision agency.",
-                SupervisionViolationType.OTHER: "The number of people who violated conditions of supervision in which the most serious violation was not covered in technical violations, absconding, or new offenses.",
-                SupervisionViolationType.UNKNOWN: "The number of people who violated an unknown condition of supervision.",
+                ViolationType.TECHNICAL: "The number of people who violated conditions of supervision in which the most serious violation was defined as “technical” within the supervision agency.",
+                ViolationType.ABSCONDING: "The number of people who violated conditions of supervision in which the most serious violation was defined as “absconding” within the supervision agency.",
+                ViolationType.NEW_OFFENSE: "The number of people who violated conditions of supervision in which the most serious violation was defined as “new offense” within the supervision agency.",
+                ViolationType.OTHER: "The number of people who violated conditions of supervision in which the most serious violation was not covered in technical violations, absconding, or new offenses.",
+                ViolationType.UNKNOWN: "The number of people who violated an unknown condition of supervision.",
             },
         )
     ],
@@ -336,15 +336,15 @@ new_cases = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionNewCaseType,
+            dimension=NewCaseType,
             required=False,
             dimension_to_description={
-                SupervisionNewCaseType.PERSON: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a crime against a person.",
-                SupervisionNewCaseType.PROPERTY: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a property offense.",
-                SupervisionNewCaseType.DRUG: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a drug offense.",
-                SupervisionNewCaseType.PUBLIC_ORDER: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a public order offense.",
-                SupervisionNewCaseType.OTHER: "The number of people with new community supervision cases referred to the agency in which the most serious originating charge/offense was another type of crime that was not a person, property, drug, or public order charge/offense.",
-                SupervisionNewCaseType.UNKNOWN: "The number of people with arrests, citations, or summons made by the agency in which the most serious charge/offense is not known.",
+                NewCaseType.PERSON: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a crime against a person.",
+                NewCaseType.PROPERTY: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a property offense.",
+                NewCaseType.DRUG: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a drug offense.",
+                NewCaseType.PUBLIC_ORDER: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a public order offense.",
+                NewCaseType.OTHER: "The number of people with new community supervision cases referred to the agency in which the most serious originating charge/offense was another type of crime that was not a person, property, drug, or public order charge/offense.",
+                NewCaseType.UNKNOWN: "The number of people with arrests, citations, or summons made by the agency in which the most serious charge/offense is not known.",
             },
         )
     ],
@@ -360,22 +360,22 @@ daily_population = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionDailyPopulationType,
+            dimension=DailyPopulationType,
             required=True,
             dimension_to_includes_excludes={
-                SupervisionDailyPopulationType.ACTIVE: IncludesExcludesSet(
+                DailyPopulationType.ACTIVE: IncludesExcludesSet(
                     members=PeopleOnActiveSupervisionIncludesExcludes,
                     excluded_set={
                         PeopleOnActiveSupervisionIncludesExcludes.TELEPHONE_MAIL_CONTACTS
                     },
                 ),
-                SupervisionDailyPopulationType.ADMINISTRATIVE: IncludesExcludesSet(
+                DailyPopulationType.ADMINISTRATIVE: IncludesExcludesSet(
                     members=PeopleOnAdministrativeSupervisionIncludesExcludes,
                 ),
-                SupervisionDailyPopulationType.ABSCONDED: IncludesExcludesSet(
+                DailyPopulationType.ABSCONDED: IncludesExcludesSet(
                     members=PeopleAbscondedSupervisionIncludesExcludes,
                 ),
-                SupervisionDailyPopulationType.HOLD_OR_SANCTION: IncludesExcludesSet(
+                DailyPopulationType.HOLD_OR_SANCTION: IncludesExcludesSet(
                     members=PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes,
                     excluded_set={
                         PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes.REVOKED_TO_PRISON_JAIL,
@@ -383,12 +383,12 @@ daily_population = MetricDefinition(
                 ),
             },
             dimension_to_description={
-                SupervisionDailyPopulationType.ACTIVE: "The number of people who are supervised by the agency on active status.",
-                SupervisionDailyPopulationType.ADMINISTRATIVE: "The number of people who are supervised by the agency on administrative status.",
-                SupervisionDailyPopulationType.ABSCONDED: "The number of people who are supervised by the agency on absconsion status.",
-                SupervisionDailyPopulationType.HOLD_OR_SANCTION: "The number of people supervised by the agency who are temporarily incarcerated or confined but are still considered to be on the supervision caseload.",
-                SupervisionDailyPopulationType.OTHER: "The number of people who are supervised by the agency in the community and have another supervision status that is not active, administrative, absconder, or incarcerated on a hold or sanction.",
-                SupervisionDailyPopulationType.UNKNOWN: "The number of people who are supervised by the agency in the community and have an unknown supervision status.",
+                DailyPopulationType.ACTIVE: "The number of people who are supervised by the agency on active status.",
+                DailyPopulationType.ADMINISTRATIVE: "The number of people who are supervised by the agency on administrative status.",
+                DailyPopulationType.ABSCONDED: "The number of people who are supervised by the agency on absconsion status.",
+                DailyPopulationType.HOLD_OR_SANCTION: "The number of people supervised by the agency who are temporarily incarcerated or confined but are still considered to be on the supervision caseload.",
+                DailyPopulationType.OTHER: "The number of people who are supervised by the agency in the community and have another supervision status that is not active, administrative, absconder, or incarcerated on a hold or sanction.",
+                DailyPopulationType.UNKNOWN: "The number of people who are supervised by the agency in the community and have an unknown supervision status.",
             },
         ),
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
@@ -430,25 +430,25 @@ discharges = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionDischargeType,
+            dimension=DischargeType,
             required=True,
             dimension_to_includes_excludes={
-                SupervisionDischargeType.SUCCESSFUL: IncludesExcludesSet(
+                DischargeType.SUCCESSFUL: IncludesExcludesSet(
                     members=SupervisionSuccessfulCompletionIncludesExcludes,
                 ),
-                SupervisionDischargeType.NEUTRAL: IncludesExcludesSet(
+                DischargeType.NEUTRAL: IncludesExcludesSet(
                     members=SupervisionNeutralDischargeIncludesExcludes,
                 ),
-                SupervisionDischargeType.UNSUCCESSFUL: IncludesExcludesSet(
+                DischargeType.UNSUCCESSFUL: IncludesExcludesSet(
                     members=SupervisionUnsuccessfulDischargeIncludesExcludes,
                 ),
             },
             dimension_to_description={
-                SupervisionDischargeType.SUCCESSFUL: "The number of people who had a term of supervision end due to successful completion of required terms or timeframe.",
-                SupervisionDischargeType.NEUTRAL: "The number of people who had a term of supervision end without a clear successful completion or failure event such as revocation.",
-                SupervisionDischargeType.UNSUCCESSFUL: "The number of people who had a term of supervision end due to unsatisfactory compliance.",
-                SupervisionDischargeType.OTHER: "The number of people who had a term of supervision end for reasons that are not considered successful completions, neutral discharges, or unsuccessful discharges.",
-                SupervisionDischargeType.UNKNOWN: "The number of people who had a supervision term end for unknown reasons.",
+                DischargeType.SUCCESSFUL: "The number of people who had a term of supervision end due to successful completion of required terms or timeframe.",
+                DischargeType.NEUTRAL: "The number of people who had a term of supervision end without a clear successful completion or failure event such as revocation.",
+                DischargeType.UNSUCCESSFUL: "The number of people who had a term of supervision end due to unsatisfactory compliance.",
+                DischargeType.OTHER: "The number of people who had a term of supervision end for reasons that are not considered successful completions, neutral discharges, or unsuccessful discharges.",
+                DischargeType.UNKNOWN: "The number of people who had a supervision term end for unknown reasons.",
             },
         )
     ],
@@ -503,13 +503,13 @@ revocations = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=SupervisionRevocationType,
+            dimension=RevocationType,
             required=True,
             dimension_to_description={
-                SupervisionRevocationType.TECHNICAL: "The number of people revoked from supervision whose most serious violation was defined as technical.",
-                SupervisionRevocationType.NEW_OFFENSE: "The number of people revoked from supervision whose most serious violation was defined as a new offense.",
-                SupervisionRevocationType.OTHER: "The number of people revoked from supervision who were revoked for a violation that was neither technical nor a new offense.",
-                SupervisionRevocationType.UNKNOWN: "The number of people revoked from supervision for an unknown reason.",
+                RevocationType.TECHNICAL: "The number of people revoked from supervision whose most serious violation was defined as technical.",
+                RevocationType.NEW_OFFENSE: "The number of people revoked from supervision whose most serious violation was defined as a new offense.",
+                RevocationType.OTHER: "The number of people revoked from supervision who were revoked for a violation that was neither technical nor a new offense.",
+                RevocationType.UNKNOWN: "The number of people revoked from supervision for an unknown reason.",
             },
         ),
     ],

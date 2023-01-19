@@ -486,9 +486,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[5]["filenames"], ["readmissions", "readmissions_by_type"]
         )
         self.assertEqual(metrics[6]["filenames"], ["releases", "releases_by_type"])
-        self.assertEqual(
-            metrics[7]["filenames"], ["use_of_force", "use_of_force_by_type"]
-        )
+        self.assertEqual(metrics[7]["filenames"], ["use_of_force"])
         self.assertEqual(
             metrics[8]["filenames"], ["grievances_upheld", "grievances_upheld_by_type"]
         )
@@ -2011,7 +2009,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ],
                 },
                 "LAW_ENFORCEMENT_FUNDING": {
-                    "Law Enforcement Funding Type": [
+                    "Funding Type": [
                         "State Appropriation",
                         "County or Municipal Appropriation",
                         "Asset Forfeiture",
@@ -2021,7 +2019,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ]
                 },
                 "LAW_ENFORCEMENT_EXPENSES": {
-                    "Law Enforcement Expense Type": [
+                    "Expense Type": [
                         "Personnel",
                         "Training",
                         "Facilities and Equipment",
@@ -2056,7 +2054,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ]
                 },
                 "LAW_ENFORCEMENT_TOTAL_STAFF": {
-                    "Law Enforcement Staff Type": [
+                    "Staff Type": [
                         "Sworn/Uniformed Police Officers",
                         "Civilian Staff",
                         "Mental Health and Crisis Intervention Team Staff",
