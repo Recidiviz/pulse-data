@@ -25,10 +25,10 @@ from sqlalchemy import (
     Column,
     DateTime,
     Float,
+    Index,
     Integer,
     PrimaryKeyConstraint,
     String,
-    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.sqltypes import Enum
@@ -83,7 +83,9 @@ class DirectIngestInstanceStatus(OperationsBase):
     # The status of a particular instance doing ingest.
     status = Column(direct_ingest_status, nullable=False)
 
-    _table_args__ = PrimaryKeyConstraint(region_code, status_timestamp, instance)
+    __table_args__ = tuple(
+        PrimaryKeyConstraint(region_code, status_timestamp, instance)
+    )
 
 
 class DirectIngestSftpRemoteFileMetadata(OperationsBase):
@@ -158,21 +160,6 @@ class DirectIngestRawFileMetadata(OperationsBase):
 
     __tablename__ = "direct_ingest_raw_file_metadata"
 
-    __table_args__ = (
-        UniqueConstraint(
-            "region_code",
-            "raw_data_instance",
-            "normalized_file_name",
-            name="one_normalized_name_per_region_and_instance",
-        ),
-        CheckConstraint(
-            "file_discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
-        ),
-        CheckConstraint(
-            "normalized_file_name IS NOT NULL", name="nonnull_raw_normalized_file_name"
-        ),
-    )
-
     file_id = Column(Integer, primary_key=True)
 
     region_code = Column(String(255), nullable=False, index=True)
@@ -199,6 +186,23 @@ class DirectIngestRawFileMetadata(OperationsBase):
 
     # Whether or not this row is still valid.
     is_invalidated = Column(Boolean, nullable=False)
+
+    __table_args__ = (
+        Index(
+            "one_non_invalidated_normalized_name_per_region_and_instance",
+            "region_code",
+            "raw_data_instance",
+            "normalized_file_name",
+            unique=True,
+            postgresql_where=(~is_invalidated),
+        ),
+        CheckConstraint(
+            "file_discovery_time IS NOT NULL", name="nonnull_raw_file_discovery_time"
+        ),
+        CheckConstraint(
+            "normalized_file_name IS NOT NULL", name="nonnull_raw_normalized_file_name"
+        ),
+    )
 
 
 class DirectIngestViewMaterializationMetadata(OperationsBase):

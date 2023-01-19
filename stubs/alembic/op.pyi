@@ -61,7 +61,16 @@ def create_foreign_key(
     initially: Optional[str] = None,
 ) -> None: ...
 def create_index(
-    index_name: str, table_name: str, columns: List[str], unique: bool = False
+    index_name: str,
+    table_name: str,
+    columns: List[str],
+    unique: bool = False,
+    postgresql_where: Optional[str] = None,
+) -> None: ...
+def create_primary_key(
+    constraint_name: str,
+    table_name: str,
+    columns: List[str],
 ) -> None: ...
 def create_table(
     table_name: str,
@@ -86,7 +95,11 @@ def drop_column(table_name: str, column_name: str) -> None: ...
 def drop_constraint(
     constraint_name: str, table_name: str, type_: Optional[ConstraintType] = None
 ) -> None: ...
-def drop_index(index_name: str, table_name: Optional[str] = None) -> None: ...
+def drop_index(
+    index_name: str,
+    table_name: Optional[str] = None,
+    postgresql_where: Optional[str] = None,
+) -> None: ...
 def drop_table(table_name: str) -> None: ...
 def drop_table_comment(
     table_name: str,
