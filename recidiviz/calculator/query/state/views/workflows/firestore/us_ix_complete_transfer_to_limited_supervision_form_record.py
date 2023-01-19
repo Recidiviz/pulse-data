@@ -62,9 +62,17 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
       WHERE state_code = "US_IX"
       AND CURRENT_DATE BETWEEN start_date AND COALESCE(end_date, "9999-12-31")
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
-      --Pick one record per person and ChargeId, selecting the lowest sentence sequence number
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id,SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
+      --Pick one record per person, sentence type and ChargeId, selecting the lowest sentence sequence number
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id,sent.sentence_type, SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
       ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(1)])=1
+    ),
+    sentence_charge_description_aggregated AS (
+    SELECT
+        charge.state_code,
+        charge.person_id,
+        ARRAY_AGG(DISTINCT charge.description IGNORE NULLS) AS form_information_charge_descriptions,
+    FROM sentence_charge_description charge
+    GROUP BY 1,2
     ),
     person_info AS (
       SELECT
@@ -251,7 +259,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           ses.start_date AS supervision_start_date,
           DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
           --aggregate all relevant charge descriptions 
-          ARRAY_AGG(DISTINCT charge.description IGNORE NULLS) AS form_information_charge_descriptions,
+          agg_charge.form_information_charge_descriptions,
           pi.current_address AS form_information_current_address,
           pi.current_phone_number AS form_information_current_phone_number,
           pi.current_email_address AS form_information_email_address,
@@ -270,13 +278,13 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           tx.discharge_date AS form_information_tx_discharge_date,
           tx.note_title AS form_information_tx_note_title,
           tx.note_body AS form_information_tx_note_body,
-          ARRAY_AGG(tes.reasons)[ORDINAL(1)] AS reasons,
-          ARRAY_AGG(n.case_notes IGNORE NULLS)[ORDINAL(1)] AS case_notes,
+          tes.reasons AS reasons,
+          n.case_notes AS case_notes,
           ds.drug_screen_date AS metadata_latest_negative_drug_screen_date, 
           ad.assessment_date AS metadata_lsir_alchohol_drug_date,
           ad.alcohol_drug_total AS metadata_lsir_alcohol_drug_score,
           -- Almost eligible if there is only 1 ineligible_criteria present
-         IF(ARRAY_LENGTH(ARRAY_CONCAT_AGG(tes.ineligible_criteria)) = 1, ARRAY_AGG(tes.ineligible_criteria[SAFE_ORDINAL(1)]), []) AS ineligible_criteria,
+         IF(ARRAY_LENGTH(tes.ineligible_criteria) = 1, tes.ineligible_criteria, []) AS ineligible_criteria,
       FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_limited_supervision_form_materialized` tes
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
         ON tes.state_code = ses.state_code
@@ -292,9 +300,9 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         AND proj.person_id = ses.person_id
         --use the projected completion date from the current span
         AND CURRENT_DATE('US/Pacific') BETWEEN proj.start_date AND {nonnull_end_date_exclusive_clause('proj.end_date')}
-      LEFT JOIN sentence_charge_description charge
-        ON tes.state_code = charge.state_code
-        AND tes.person_id = charge.person_id
+      LEFT JOIN sentence_charge_description_aggregated agg_charge
+        ON tes.state_code = agg_charge.state_code
+        AND tes.person_id = agg_charge.person_id
       LEFT JOIN person_info pi
         ON tes.state_code = pi.state_code
         AND tes.person_id = pi.person_id
@@ -332,9 +340,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         ON tes.state_code = n.state_code
         AND tes.person_id = n.person_id
       WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-        
         AND tes.state_code = 'US_IX'
-      GROUP BY 1,2,3,4,5,6,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,25,26,27
      )
      SELECT *
      FROM form
