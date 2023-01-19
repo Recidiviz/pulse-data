@@ -22,8 +22,8 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class SupervisionFundingType(DimensionBase, enum.Enum):
-    STATE_APPROPRIATION = "State Appropriation"
-    COUNTY_MUNICIPAL_APPROPRIATION = "County or Municipal Appropriation"
+    STATE_APPROPRIATION = "State Appropriations"
+    COUNTY_MUNICIPAL_APPROPRIATION = "County or Municipal Appropriations"
     GRANTS = "Grants"
     FINES_FEES = "Fines and Fees"
     OTHER = "Other Funding"
