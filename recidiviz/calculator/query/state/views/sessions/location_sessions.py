@@ -17,7 +17,10 @@
 """Sessionized view of each individual. Session defined as continuous time in a given facility or district office"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    REFERENCE_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -29,17 +32,41 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
     WITH sub_sessions_attributes_unnested AS 
     (
     SELECT DISTINCT
-        state_code,
+        s.state_code,
         person_id, 
         session_attributes.compartment_location AS location,
         session_attributes.facility,
         session_attributes.supervision_office,
+        level_1.level_1_supervision_location_name AS supervision_office_name,
         session_attributes.supervision_district,
+        level_2.level_2_supervision_location_name AS supervision_district_name,
+        level_2.level_3_supervision_location_name AS supervision_region_name,
         start_date,
         end_date_exclusive,
         dataflow_session_id,
-    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` s,
     UNNEST(session_attributes) session_attributes
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized` level_1
+        ON level_1.level_2_supervision_location_external_id = session_attributes.supervision_district
+        AND level_1.level_1_supervision_location_external_id = session_attributes.supervision_office
+        AND level_1.state_code = s.state_code
+    LEFT JOIN (
+        SELECT
+            state_code,
+            level_2_supervision_location_external_id,
+            level_2_supervision_location_name,
+            level_3_supervision_location_name,
+        FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized`
+        -- Deduplicate to one row per level 2 location for the few districts that are
+        -- mapped to more than one region
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY state_code, level_2_supervision_location_external_id,
+                level_2_supervision_location_name
+            ORDER BY level_3_supervision_location_name
+        ) = 1
+    ) level_2
+        ON level_2.level_2_supervision_location_external_id = session_attributes.supervision_district
+        AND level_2.state_code = s.state_code
     WHERE session_attributes.compartment_level_1 != 'INCARCERATION_NOT_INCLUDED_IN_STATE'
     )
     ,
@@ -51,7 +78,10 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         location,
         facility,
         supervision_office,
+        supervision_office_name,
         supervision_district,
+        supervision_district_name,
+        supervision_region_name,
         location_session_id_unordered,
         MIN(start_date) start_date,
         CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
@@ -88,7 +118,10 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                     session.location,
                     session.facility,
                     session.supervision_office,
+                    session.supervision_office_name,
                     session.supervision_district,
+                    session.supervision_district_name,
+                    session.supervision_region_name,
                     session.start_date,
                     session.end_date_exclusive,
                     -- Only count a location toward an location change once if location was not present at all in preceding session
@@ -99,10 +132,10 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                     ON session.state_code = session_lag.state_code
                     AND session.person_id = session_lag.person_id
                     AND session.start_date = session_lag.end_date_exclusive
-                GROUP BY 1,2,3,4,5,6,7,8,9
+                GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
                 )
             )           
-    GROUP BY 1,2,3,4,5,6,7
+    GROUP BY 1,2,3,4,5,6,7,8,9,10
     )
     /*
     The grouping ID that is created isn't in the order that we want. This last step creates an ID for each session within each 
@@ -111,6 +144,17 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
     SELECT 
         * EXCEPT(location_session_id_unordered),
         DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+        -- Flag non-conventional locations that can be excluded downstream
+        (
+          supervision_district NOT IN (
+            "PAROLE COMMISSION OFFICE", -- US_ID out of state
+            "FEDERAL" -- US_ID Bureau of Prisons
+          )
+          AND supervision_office NOT LIKE "%ACTIVATION%" -- US_ID Awaiting Activiation "office"
+          AND supervision_office NOT LIKE "%JAIL TIME%" -- US_ID Jail Time "office"
+          AND supervision_office NOT LIKE "%ELECTRONIC%" -- US_ID Electronic Monitoring "office"
+          AND supervision_office NOT LIKE "%CCD SUPERVISION%" -- US_ID Community Corrections Division "office"
+        ) AS is_conventional_location,
         ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date_exclusive,'9999-01-01'), location) AS location_session_id
     FROM sessionized_cte 
     """
@@ -121,6 +165,7 @@ LOCATION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=LOCATION_SESSIONS_QUERY_TEMPLATE,
     description=LOCATION_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
