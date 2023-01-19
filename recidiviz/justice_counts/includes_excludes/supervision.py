@@ -204,11 +204,12 @@ class SupervisionDrugChargesOffensesIncludesExcludes(Enum):
 
 
 # Funding
+# TODO(#17577)
 class SupervisionFundingIncludesExcludes(Enum):
     SINGLE_FISCAL_YEAR = "Funding for single fiscal year"
-    BIENNIUM = "Biennium funding"
+    BIENNIUM = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
-        "Multi-year appropriations that will not be fully spent this fiscal year"
+        "Multi-year appropriations that are appropriated in during the time period"
     )
     COMMUNITY_SUPERVISION_OFFICE = (
         "Funding for community supervision office facility operations and maintenance"

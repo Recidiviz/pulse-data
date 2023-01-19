@@ -106,10 +106,9 @@ funding = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=IncludesExcludesSet(
+        # TODO(#17577)
         members=SupervisionFundingIncludesExcludes,
         excluded_set={
-            SupervisionFundingIncludesExcludes.BIENNIUM,
-            SupervisionFundingIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
             SupervisionFundingIncludesExcludes.STIPENDS_JAIL,
             SupervisionFundingIncludesExcludes.STIPENDS_PRISON,
             SupervisionFundingIncludesExcludes.JAIL_MAINTENANCE,
