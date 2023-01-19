@@ -94,6 +94,7 @@ class GoogleSlidesManager:
             .get(
                 fileId=self._slides_id,
                 fields="parents",
+                supportsAllDrives=True,
             )
             .execute()["parents"][0]
         )
