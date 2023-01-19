@@ -168,9 +168,11 @@ expenses = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=IncludesExcludesSet(
+        # TODO(#17577)
         members=SupervisionExpensesIncludesExcludes,
         excluded_set={
-            SupervisionExpensesIncludesExcludes.STIPENDS_REIMBURSEMENTS,
+            SupervisionExpensesIncludesExcludes.STIPENDS_JAILS,
+            SupervisionExpensesIncludesExcludes.STIPENDS_PRISONS,
             SupervisionExpensesIncludesExcludes.JAILS,
             SupervisionExpensesIncludesExcludes.PRISONS,
             SupervisionExpensesIncludesExcludes.JUVENILE_SUPERVISION,
@@ -196,7 +198,7 @@ expenses = MetricDefinition(
             },
             dimension_to_description={
                 SupervisionExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
-                SupervisionExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                SupervisionExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency, including any associated expenses, such as registration fees and travel costs.",
                 SupervisionExpenseType.FACILITIES_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
                 SupervisionExpenseType.OTHER: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not personnel, training, or facilities and equipment expenses.",
                 SupervisionExpenseType.UNKNOWN: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for a purpose that is not known.",
