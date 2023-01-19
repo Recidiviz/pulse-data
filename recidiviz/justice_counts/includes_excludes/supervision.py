@@ -265,25 +265,42 @@ class SupervisionFinesFeesIncludesExcludes(Enum):
 
 
 # Expenses
+# TODO(#17577)
 class SupervisionExpensesIncludesExcludes(Enum):
-    COMMUNITY_SUPERVISION = (
-        "Expenses for community supervision facility operations and staff"
+    """Includes/Excludes class for Supervision Expenses"""
+
+    SINGLE_YEAR = ("Expenses for single fiscal year",)
+    BIENNIUM = ("Biennium funding allocated during the time period",)
+    MULTI_YEAR = ("Multi-year appropriations allocated in during the time period",)
+    FACILITY_MAINTENANCE = (
+        "Expenses for community supervision office facility operations and maintenance",
     )
-    CONSTRUCTION_MAINTENANCE = (
-        "Expenses for construction and maintenance of new supervision facilities"
+    CONFINEMENT_FACILITY = (
+        "Expenses for community supervision confinement facility operations and maintenance (e.g., violation centers, halfway back facilities, etc.)",
     )
-    TREATMENT_PROGRAMMING = "Expenses for agency-run or contracted treatment and programming at supervision facilities"
-    MEDICAL_CARE = (
-        "Expenses for agency-run or contracted medical care for people on supervision"
+    RENTAL_FACILITIES = (
+        "Expenses for construction or rental of new community supervision facilities",
     )
-    INTERSTATE_COMPACT = "Expenses for supervision services contracted to other jurisdictions through interstate compact"
+    TREATMENT_PROGRAMMING = (
+        "Expenses for agency-run or contracted treatment and programming",
+    )
+    SUPERVISION_STAFF = ("Expenses for community supervision staff",)
+    SUPPORT_STAFF = ("Expenses for central administrative and support staff",)
     PRIVATE_SERVICES = (
-        "Expenses for the operation of private community supervision services"
+        "Expenses for the operation of private community supervision services contracted by the agency",
     )
-    STIPENDS_REIMBURSEMENTS = "Funding for stipends or reimbursements for people on supervision detained in jail facilities (locally or out of state)"
-    JAILS = "Expenses for jails (general operations)"
-    PRISONS = "Expenses for prisons (general operations)"
-    JUVENILE_SUPERVISION = "Expenses for juvenile supervision"
+    INTERSTATE_COMPACT = (
+        "Expenses for supervision services contracted to other jurisdictions through interstate compact",
+    )
+    STIPENDS_JAILS = (
+        "Expenses for stipends or reimbursements for people on supervision detained in jail facilities (locally or out of state)",
+    )
+    STIPENDS_PRISONS = (
+        "Expenses for stipends or reimbursements for people on supervision detained in prison facilities (locally or out of state)",
+    )
+    JAILS = ("Expenses for jail facility operations and maintenance",)
+    PRISONS = ("Expenses for prison facility operations and maintenance",)
+    JUVENILE_SUPERVISION = ("Expenses for juvenile supervision",)
 
 
 class SupervisionPersonnelExpensesIncludesExcludes(Enum):
