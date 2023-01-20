@@ -72,19 +72,6 @@ class ViolationType(DimensionBase, enum.Enum):
         return "metric/violation/supervision/type"
 
 
-class NewCaseType(DimensionBase, enum.Enum):
-    PERSON = "New Cases for Person Charges/Offenses"
-    PROPERTY = "New Cases for Property Charges/Offenses"
-    DRUG = "New Cases for Drug Charges/Offenses"
-    PUBLIC_ORDER = "New Cases for Public Order Charges/Offenses"
-    OTHER = "New Cases for Other Charges/Offenses"
-    UNKNOWN = "New Cases for Unknown Charges/Offenses"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/supervision/new_case/type"
-
-
 class DailyPopulationType(DimensionBase, enum.Enum):
     ACTIVE = "People on Active Supervision"
     ADMINISTRATIVE = "People on Administrative Supervision"

@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Supervision."""
 
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -26,10 +27,15 @@ from recidiviz.justice_counts.dimensions.supervision import (
     DischargeType,
     ExpenseType,
     FundingType,
-    NewCaseType,
     RevocationType,
     StaffType,
     ViolationType,
+)
+from recidiviz.justice_counts.includes_excludes.offense import (
+    DrugOffenseIncludesExcludes,
+    PersonOffenseIncludesExcludes,
+    PropertyOffenseIncludesExcludes,
+    PublicOrderOffenseIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.person import (
     FemaleBiologicalSexIncludesExcludes,
@@ -337,15 +343,41 @@ new_cases = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=NewCaseType,
+            dimension=OffenseType,
             required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes,
+                ),
+            },
             dimension_to_description={
-                NewCaseType.PERSON: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a crime against a person.",
-                NewCaseType.PROPERTY: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a property offense.",
-                NewCaseType.DRUG: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a drug offense.",
-                NewCaseType.PUBLIC_ORDER: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a public order offense.",
-                NewCaseType.OTHER: "The number of people with new community supervision cases referred to the agency in which the most serious originating charge/offense was another type of crime that was not a person, property, drug, or public order charge/offense.",
-                NewCaseType.UNKNOWN: "The number of people with arrests, citations, or summons made by the agency in which the most serious charge/offense is not known.",
+                OffenseType.PERSON: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a crime against a person.",
+                OffenseType.PROPERTY: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a property offense.",
+                OffenseType.PUBLIC_ORDER: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a public order offense.",
+                OffenseType.DRUG: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a drug offense.",
+                OffenseType.OTHER: "The number of people with new community supervision cases referred to the agency in which the most serious originating charge/offense was another type of crime that was not a person, property, drug, or public order charge/offense.",
+                OffenseType.UNKNOWN: "The number of people with arrests, citations, or summons made by the agency in which the most serious charge/offense is not known.",
             },
         )
     ],
