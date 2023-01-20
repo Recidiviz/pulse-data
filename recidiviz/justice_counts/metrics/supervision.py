@@ -557,6 +557,7 @@ revocations = MetricDefinition(
     description="The number of people who had a term of supervision revoked.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    # TODO(#17579)
     includes_excludes=IncludesExcludesSet(
         members=SupervisionRevocationsIncludesExcludes,
         excluded_set={
@@ -568,6 +569,20 @@ revocations = MetricDefinition(
         AggregatedDimension(
             dimension=RevocationType,
             required=True,
+            dimension_to_includes_excludes={
+                ViolationType.TECHNICAL: IncludesExcludesSet(
+                    members=SupervisionTechnicalViolationsIncludesExcludes,
+                    excluded_set={
+                        SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
+                        SupervisionTechnicalViolationsIncludesExcludes.ARREST,
+                        SupervisionTechnicalViolationsIncludesExcludes.CONVICTION,
+                        SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
+                    },
+                ),
+                ViolationType.NEW_OFFENSE: IncludesExcludesSet(
+                    members=SupervisionNewOffenseViolationsIncludesExcludes,
+                ),
+            },
             dimension_to_description={
                 RevocationType.TECHNICAL: "The number of people revoked from supervision whose most serious violation was defined as technical.",
                 RevocationType.NEW_OFFENSE: "The number of people revoked from supervision whose most serious violation was defined as a new offense.",

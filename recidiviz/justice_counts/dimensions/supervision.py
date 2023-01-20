@@ -110,10 +110,10 @@ class NewOffenseType(DimensionBase, enum.Enum):
 
 
 class RevocationType(DimensionBase, enum.Enum):
-    TECHNICAL = "For Technical Violations"
-    NEW_OFFENSE = "For New Offense Violations"
-    OTHER = "Other Revocations"
-    UNKNOWN = "Unknown Revocations"
+    TECHNICAL = "Revocations for Technical Violations"
+    NEW_OFFENSE = "Revocations for New Offense Violations"
+    OTHER = "Revocations for other reasons"
+    UNKNOWN = "Revocations for unknown reasons"
 
     @classmethod
     def dimension_identifier(cls) -> str:
