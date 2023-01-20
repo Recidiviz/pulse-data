@@ -28,7 +28,12 @@ from recidiviz.persistence.database.session import Session
 
 
 def state_allows_multiple_ids_same_type(state_code: str) -> bool:
-    if state_code.upper() in ("US_ND", "US_PA", "US_MI"):
+    if state_code.upper() in (
+        "US_ND",
+        "US_PA",
+        "US_MI",
+        "US_OR",
+    ):  # TODO(#18005): Edit to allow multiple id for OR id_number but not Record_key
         return True
 
     # By default, states don't allow multiple different ids of the same type
