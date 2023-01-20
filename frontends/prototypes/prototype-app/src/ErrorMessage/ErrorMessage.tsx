@@ -19,7 +19,7 @@ import { Serif34 } from "@recidiviz/design-system";
 import { FC } from "react";
 import { FallbackProps } from "react-error-boundary";
 
-const ErrorMessage: FC<FallbackProps> = ({ error }) => {
+const ErrorMessage: FC<Pick<FallbackProps, "error">> = ({ error }) => {
   return (
     <div>
       <Serif34 as="h1">An error has occurred.</Serif34>

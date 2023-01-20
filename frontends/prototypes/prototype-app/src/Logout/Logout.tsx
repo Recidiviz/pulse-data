@@ -10,15 +10,18 @@ const LogoutButton = styled(Button)`
 `;
 
 const Logout: FC = () => {
-  const { userStore } = useDataStore();
+  const {
+    userStore: { userName },
+    authStore,
+  } = useDataStore();
 
   return (
     <div>
-      {userStore.userName}{" "}
+      {userName}{" "}
       <LogoutButton
         kind="secondary"
         shape="block"
-        onClick={() => userStore.logout()}
+        onClick={() => authStore.logout()}
       >
         Logout
       </LogoutButton>

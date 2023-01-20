@@ -15,14 +15,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
+import { AuthSettings, AuthStore } from "@recidiviz/auth";
+import { when } from "mobx";
 
+import { authenticate } from "../firebase";
 import UserStore from "./UserStore";
 
 /**
  * Returns the auth settings configured for the current environment, if any.
  */
-export function getAuthSettings(): Auth0ClientOptions {
+export function getAuthSettings(): AuthSettings {
   return {
     client_id: "IcT6rZLNbi1PP180bciI63im7gmNWTPB",
     domain: "recidiviz-proto.us.auth0.com",
@@ -32,13 +34,24 @@ export function getAuthSettings(): Auth0ClientOptions {
 }
 
 class RootStore {
+  authStore: AuthStore;
+
   userStore: UserStore;
 
   constructor() {
+    this.authStore = new AuthStore({ authSettings: getAuthSettings() });
+
     this.userStore = new UserStore({
-      authSettings: getAuthSettings(),
       rootStore: this,
     });
+
+    // authenticate to Firestore once user is authorized
+    when(
+      () => this.authStore.isAuthorized,
+      async () => {
+        authenticate(await this.authStore.getTokenSilently());
+      }
+    );
   }
 }
 

@@ -15,140 +15,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import type { Auth0Client, Auth0ClientOptions } from "@auth0/auth0-spa-js";
-import createAuth0Client from "@auth0/auth0-spa-js";
-import { makeAutoObservable, runInAction } from "mobx";
-import qs from "qs";
+import { makeAutoObservable } from "mobx";
 
-import { authenticate } from "../firebase";
 import type { RootStore } from "./RootStore";
 
 type ConstructorProps = {
-  authSettings: Auth0ClientOptions;
   rootStore: RootStore;
 };
 
-export type UserMapping = Record<
-  string,
-  { name: string; officerIds: string[] }
->;
-
-/**
- * Reactive wrapper around Auth0 client.
- * If auth is disabled for this environment, all users will be immediately authorized.
- * Otherwise, call `authorize` to retrieve credentials or start login flow.
- *
- * @example
- *
- * ```js
- * const store = new UserStore({ isAuthRequired: true, authSettings: { domain, client_id, redirect_uri } });
- * if (!store.isAuthorized) {
- *   await store.authorize();
- *   // this may trigger a redirect to the Auth0 login domain;
- *   // if we're still here and user has successfully logged in,
- *   // store.isAuthorized should now be true.
- * }
- * ```
- */
 export default class UserStore {
-  readonly authSettings: Auth0ClientOptions;
-
-  awaitingVerification: boolean;
-
-  isAuthorized: boolean;
-
-  isLoading: boolean;
-
-  userEmail?: string;
-
   readonly rootStore: RootStore;
 
-  constructor({ authSettings, rootStore }: ConstructorProps) {
+  constructor({ rootStore }: ConstructorProps) {
     makeAutoObservable(this, {
       rootStore: false,
-      authSettings: false,
     });
 
-    this.authSettings = authSettings;
     this.rootStore = rootStore;
-
-    this.awaitingVerification = false;
-    this.isAuthorized = false;
-    this.isLoading = true;
-  }
-
-  private get auth0Client(): Promise<Auth0Client> {
-    return createAuth0Client(this.authSettings);
-  }
-
-  /**
-   * If user already has a valid Auth0 credential, this method will retrieve it
-   * and update class properties accordingly. If not, user will be redirected
-   * to the Auth0 login domain for fresh authentication. After successful login,
-   * optional `handleTargetUrl` callback will be called with post-redirect target URL
-   * (useful for, e.g., client-side router that does not listen to history events).
-   * Returns an Error if Auth0 configuration is not present.
-   */
-  async authorize({
-    handleTargetUrl,
-  }: {
-    handleTargetUrl?: (targetUrl: string) => void;
-  } = {}): Promise<void> {
-    const auth0 = await this.auth0Client;
-
-    const urlQuery = qs.parse(window.location.search, {
-      ignoreQueryPrefix: true,
-    });
-    if (urlQuery.code && urlQuery.state) {
-      const { appState } = await auth0.handleRedirectCallback();
-      // auth0 params are single-use, must be removed from history or they can cause errors
-      let replacementUrl;
-      if (appState && appState.targetUrl) {
-        replacementUrl = appState.targetUrl;
-      } else {
-        // strip away all query params just to be safe
-        replacementUrl = `${window.location.origin}${window.location.pathname}`;
-      }
-      window.history.replaceState({}, document.title, replacementUrl);
-      if (handleTargetUrl) handleTargetUrl(replacementUrl);
-    }
-
-    if (await auth0.isAuthenticated()) {
-      const user = await auth0.getUser();
-
-      if (user?.email_verified) {
-        const auth0Token = await auth0.getTokenSilently();
-        await authenticate(auth0Token);
-      }
-
-      runInAction(() => {
-        this.isLoading = false;
-        if (user?.email_verified) {
-          this.isAuthorized = true;
-          this.awaitingVerification = false;
-          this.userEmail = user.email;
-        } else {
-          this.isAuthorized = false;
-          this.awaitingVerification = true;
-        }
-      });
-    } else {
-      auth0.loginWithRedirect({
-        appState: { targetUrl: window.location.href },
-      });
-    }
-  }
-
-  async logout(): Promise<void> {
-    const auth0 = await this.auth0Client;
-    runInAction(() => {
-      this.isAuthorized = false;
-      this.isLoading = true;
-    });
-    return auth0.logout({ returnTo: window.location.origin });
   }
 
   get userName(): string {
-    return this.userEmail ?? "Unknown User";
+    const { user } = this.rootStore.authStore;
+    return user?.name ?? user?.email ?? "Unknown User";
   }
 }
