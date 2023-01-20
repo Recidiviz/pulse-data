@@ -380,7 +380,7 @@ daily_population = MetricDefinition(
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="Daily Population",
-    description="A single day count of the number of people who are supervised under the jurisdiction of the agency (the definition of people on supervision configured in Section 6 will be applied to this section).",
+    description="A single day count of the number of people who are supervised under the jurisdiction of the agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
@@ -416,8 +416,9 @@ daily_population = MetricDefinition(
                 DailyPopulationType.UNKNOWN: "The number of people who are supervised by the agency in the community and have an unknown supervision status.",
             },
         ),
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),  # TODO(#17579)
         AggregatedDimension(
+            # TODO(#17579)
             dimension=BiologicalSex,
             required=True,
             dimension_to_description={
