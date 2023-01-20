@@ -415,7 +415,7 @@ class NormalizedIncarcerationPeriodIndex:
                     not most_recent_board_hold.release_date
                     # TODO(#18015): Remove this once normalization is actually not
                     # allowing for overlapping periods.
-                    and ip.admission_date != most_recent_board_hold_start_date
+                    and ip.admission_date != most_recent_board_hold.admission_date
                 ):
                     raise ValueError(
                         "Found open incarceration period with id "
