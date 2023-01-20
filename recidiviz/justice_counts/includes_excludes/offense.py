@@ -19,7 +19,10 @@
 from enum import Enum
 
 
+# Shared among most metrics
 class PersonOffenseIncludesExcludes(Enum):
+    """Global Includes/Excludes for Person Offenses"""
+
     AGGRAVATED_ASSAULT = "Aggravated assault"
     SIMPLE_ASSAULT = "Simple assault"
     INTIMIDATION = "Intimidation"
@@ -27,7 +30,7 @@ class PersonOffenseIncludesExcludes(Enum):
     MANSLAUGHTER = "Negligent manslaughter"
     HUMAN_TRAFFICKING_COMMERCIAL = "Human trafficking, commercial sex acts"
     HUMAN_TRAFFICKING_INVOLUNTARY = "Human trafficking, involuntary servitude"
-    KIDNAPPING = "Kidnapping or abduction"
+    KIDNAPPING = "Kidnapping/abduction"
     RAPE = "Rape"
     SODOMY = "Sodomy"
     SEXUAL_ASSAULT = "Sexual assault with an object"
@@ -39,9 +42,11 @@ class PersonOffenseIncludesExcludes(Enum):
 
 
 class PropertyOffenseIncludesExcludes(Enum):
+    """Global Includes/Excludes for Property Offenses"""
+
     ARSON = "Arson"
     BRIBERY = "Bribery"
-    BURGLARY = "Burglary/ breaking and entering"
+    BURGLARY = "Burglary/breaking and entering"
     COUNTERFEITING = "Counterfeiting/forgery"
     VANDALISM = "Destruction/damage/vandalism of property"
     EMBEZZLEMENT = "Embezzlement"
@@ -49,8 +54,8 @@ class PropertyOffenseIncludesExcludes(Enum):
     FALSE_PRETENSES = "False pretenses/swindle/confidence game"
     CREDIT_CARD = "Credit card/automated teller machine fraud"
     IMPERSONATION = "Impersonation"
-    WELFARE_FRAUD = "Welfare Fraud"
-    WIRE_FRAUD = "Wire Fraud"
+    WELFARE_FRAUD = "Welfare fraud"
+    WIRE_FRAUD = "Wire fraud"
     IDENTITY_THEFT = "Identity theft"
     HACKING = "Hacking/computer invasion"
     POCKET_PICKING = "Pocket-picking"
@@ -67,7 +72,7 @@ class PropertyOffenseIncludesExcludes(Enum):
 
 
 class PublicOrderOffenseIncludesExcludes(Enum):
-    """Includes/Excludes for Public Order Offenses"""
+    """Global Includes/Excludes for Public Order Offenses"""
 
     ANIMAL_CRUELTY = "Animal cruelty"
     IMPORT_VIOLATIONS = "Import violations"
@@ -82,6 +87,7 @@ class PublicOrderOffenseIncludesExcludes(Enum):
     FLIGHT_DEPORTATION = "Flight to avoid deportation"
     BETTING = "Betting/wagering"
     GAMBLING = "Operating/promoting/assisting gambling"
+    GAMBLING_EQUIPMENT = "Gambling equipment violations"
     SPORTS_TAMPERING = "Sports tampering"
     ILLEGAL_ENTRY = "Illegal entry into the United States"
     FALSE_CITIZENSHIP = "False citizenship"
@@ -116,6 +122,8 @@ class PublicOrderOffenseIncludesExcludes(Enum):
 
 
 class DrugOffenseIncludesExcludes(Enum):
+    """Global Includes/Excludes for Drug Offenses"""
+
     DRUG_VIOLATIONS = "Drug/narcotic violations"
     DRUG_EQUIPMENT_VIOLATIONS = "Drug equipment violations"
     DRUG_SALES = "Drug sales"

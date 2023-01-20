@@ -16,13 +16,13 @@
 # =============================================================================
 """Metricfile objects used for supervision metrics."""
 
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.supervision import (
     DailyPopulationType,
     DischargeType,
     ExpenseType,
     FundingType,
-    NewCaseType,
     RevocationType,
     StaffType,
     ViolationType,
@@ -78,7 +78,7 @@ SUPERVISION_METRIC_FILES = [
     MetricFile(
         canonical_filename="new_cases_by_type",
         definition=supervision.new_cases,
-        disaggregation=NewCaseType,
+        disaggregation=OffenseType,
         disaggregation_column_name="case_type",
     ),
     MetricFile(
