@@ -468,12 +468,36 @@ discharges = MetricDefinition(
             dimension_to_includes_excludes={
                 DischargeType.SUCCESSFUL: IncludesExcludesSet(
                     members=SupervisionSuccessfulCompletionIncludesExcludes,
+                    excluded_set={
+                        SupervisionSuccessfulCompletionIncludesExcludes.OUTSTANDING_VIOLATIONS,
+                        SupervisionSuccessfulCompletionIncludesExcludes.ABSCONSCION,
+                        SupervisionSuccessfulCompletionIncludesExcludes.DIED,
+                        SupervisionSuccessfulCompletionIncludesExcludes.INCARCERATION,
+                        SupervisionSuccessfulCompletionIncludesExcludes.REVOKED,
+                        SupervisionSuccessfulCompletionIncludesExcludes.TERMINATED,
+                    },
                 ),
                 DischargeType.NEUTRAL: IncludesExcludesSet(
                     members=SupervisionNeutralDischargeIncludesExcludes,
+                    excluded_set={
+                        SupervisionNeutralDischargeIncludesExcludes.INCARCERATION,
+                        SupervisionNeutralDischargeIncludesExcludes.REVOKED,
+                        SupervisionNeutralDischargeIncludesExcludes.TERMINATED,
+                        SupervisionNeutralDischargeIncludesExcludes.COMPLETED_REQUIREMENTS,
+                        SupervisionNeutralDischargeIncludesExcludes.EARLY_RELEASE,
+                        SupervisionNeutralDischargeIncludesExcludes.END_OF_TERM,
+                    },
                 ),
                 DischargeType.UNSUCCESSFUL: IncludesExcludesSet(
                     members=SupervisionUnsuccessfulDischargeIncludesExcludes,
+                    excluded_set={
+                        SupervisionUnsuccessfulDischargeIncludesExcludes.OUTSTANDING_VIOLATIONS,
+                        SupervisionUnsuccessfulDischargeIncludesExcludes.ABSCONSCION,
+                        SupervisionUnsuccessfulDischargeIncludesExcludes.DIED,
+                        SupervisionUnsuccessfulDischargeIncludesExcludes.COMPLETED_REQUIREMENTS,
+                        SupervisionUnsuccessfulDischargeIncludesExcludes.EARLY_RELEASE,
+                        SupervisionUnsuccessfulDischargeIncludesExcludes.END_OF_TERM,
+                    },
                 ),
             },
             dimension_to_description={

@@ -86,11 +86,11 @@ class DailyPopulationType(DimensionBase, enum.Enum):
 
 
 class DischargeType(DimensionBase, enum.Enum):
-    SUCCESSFUL = "Successful Completion"
-    NEUTRAL = "Neutral Discharge"
-    UNSUCCESSFUL = "Unsuccessful Discharge"
-    OTHER = "Other Discharge"
-    UNKNOWN = "Unknown Discharge"
+    SUCCESSFUL = "Successful Completions of Supervision"
+    NEUTRAL = "Neutral Discharges from Supervision"
+    UNSUCCESSFUL = "Unsuccessful Discharges from Supervision"
+    OTHER = "Other Discharges from Supervision"
+    UNKNOWN = "Unknown Discharges from Supervision"
 
     @classmethod
     def dimension_identifier(cls) -> str:
