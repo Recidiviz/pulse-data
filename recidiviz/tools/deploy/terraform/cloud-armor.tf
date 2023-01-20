@@ -108,7 +108,6 @@ locals {
 
 }
 
-# Default WAF policy
 resource "google_compute_security_policy" "recidiviz-waf-policy" {
   project = var.project_id
   name    = "${var.project_id}-waf"
@@ -142,7 +141,7 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
       action      = rule.value.action
       priority    = rule.value.priority
       description = rule.value.description
-      preview     = true
+      preview     = var.project_id == "recidiviz-123" ? true : false
       match {
         expr {
           expression = rule.value.expression
@@ -151,4 +150,3 @@ resource "google_compute_security_policy" "recidiviz-waf-policy" {
     }
   }
 }
-
