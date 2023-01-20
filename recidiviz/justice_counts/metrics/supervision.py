@@ -77,7 +77,6 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -283,13 +282,6 @@ violations = MetricDefinition(
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Violations",
     description="The number of incidents in which conditions of supervision were violated. Incidents may include multiple violations that are reported by the agency at the same time, commonly called violation reports.",
-    reporting_note="Report the most serious violation type incurred during the reporting period.",
-    definitions=[
-        Definition(
-            term="Violation",
-            definition="An event in which an individual under supervision ignores, errs, or otherwise breaks a condition of their supervision as defined by your agency. Violations may involve the commission of a new offense or failing to meet agreed upon parameters (appearance in court, a positive drug test, attendance in programming). Record violations whether or not a resulting action may be revocation.",
-        )
-    ],
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=IncludesExcludesSet(
