@@ -373,11 +373,23 @@ class ReportInterface:
                 metric_definition.key,
                 DatapointsForMetric(),
             )
+
+            # If this is a supervision subsystem metric, and the metric is not
+            # supposed to be disaggregated by supervision subsystems, then
+            # disable the metric
+            enabled = reported_datapoints.is_metric_enabled
+            if reported_datapoints.is_metric_enabled is None:
+                if (
+                    metric_definition.system in schema.System.supervision_subsystems()
+                    and not reported_datapoints.disaggregated_by_supervision_subsystems
+                ):
+                    enabled = False
+
             report_metrics.append(
                 MetricInterface(
                     key=metric_definition.key,
                     value=reported_datapoints.aggregated_value,
-                    is_metric_enabled=reported_datapoints.is_metric_enabled,
+                    is_metric_enabled=enabled,
                     aggregated_dimensions=reported_datapoints.get_aggregated_dimension_data(
                         # convert dimension datapoints to MetricAggregatedDimensionData
                         metric_definition=metric_definition

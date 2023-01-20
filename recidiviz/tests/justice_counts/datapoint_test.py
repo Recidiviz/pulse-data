@@ -438,12 +438,21 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 3)
-            for datapoint in datapoints:
+            self.assertEqual(len(datapoints), 6)
+            context_datapoints = [dp for dp in datapoints if dp.context_key is not None]
+            enabled_disabled_datapoints = [
+                dp for dp in datapoints if dp.context_key is None
+            ]
+            for datapoint in context_datapoints:
                 self.assertEqual(datapoint.value, "True")
                 self.assertEqual(
                     datapoint.context_key, DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
                 )
+            for datapoint in enabled_disabled_datapoints:
+                if "SUPERVISION" in datapoint.metric_definition_key:
+                    self.assertFalse(datapoint.enabled)
+                else:
+                    self.assertTrue(datapoint.enabled)
 
             agency_metric = MetricInterface(
                 key=supervision.funding.key,
@@ -456,12 +465,21 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
             )
             datapoints = session.query(Datapoint).all()
-            self.assertEqual(len(datapoints), 3)
-            for datapoint in datapoints:
+            self.assertEqual(len(datapoints), 6)
+            context_datapoints = [dp for dp in datapoints if dp.context_key is not None]
+            enabled_disabled_datapoints = [
+                dp for dp in datapoints if dp.context_key is None
+            ]
+            for datapoint in context_datapoints:
                 self.assertEqual(datapoint.value, "False")
                 self.assertEqual(
                     datapoint.context_key, DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
                 )
+            for datapoint in enabled_disabled_datapoints:
+                if "SUPERVISION" in datapoint.metric_definition_key:
+                    self.assertTrue(datapoint.enabled)
+                else:
+                    self.assertFalse(datapoint.enabled)
 
     def test_save_invalid_datapoint(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:

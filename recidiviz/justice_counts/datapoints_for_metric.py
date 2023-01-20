@@ -347,12 +347,6 @@ class DatapointsForMetric:
         custom reporting frequencies."""
         metrics = MetricInterface.get_metric_definitions_for_systems(
             systems=systems,
-            metric_key_to_disaggregation_status={
-                metric_key: d.disaggregated_by_supervision_subsystems
-                for metric_key, d in metric_key_to_datapoints.items()
-            }
-            if schema.System.SUPERVISION in systems
-            else {},
         )
         metric_definitions = []
         for metric in metrics:

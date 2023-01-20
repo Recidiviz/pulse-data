@@ -435,12 +435,6 @@ class DatapointInterface:
 
         metric_definitions = MetricInterface.get_metric_definitions_for_systems(
             systems={schema.System[system] for system in agency.systems or []},
-            metric_key_to_disaggregation_status={
-                metric_key: d.disaggregated_by_supervision_subsystems
-                for metric_key, d in metric_key_to_datapoints.items()
-            }
-            if schema.System.SUPERVISION.value in agency.systems
-            else {},
         )
 
         agency_metrics = []
@@ -451,10 +445,22 @@ class DatapointInterface:
                 metric_definition.key,
                 DatapointsForMetric(),
             )
+
+            # If this is a supervision subsystem metric, and the metric is not
+            # supposed to be disaggregated by supervision subsystems, then
+            # disable the metric
+            enabled = datapoints.is_metric_enabled
+            if datapoints.is_metric_enabled is None:
+                if (
+                    metric_definition.system in schema.System.supervision_subsystems()
+                    and not datapoints.disaggregated_by_supervision_subsystems
+                ):
+                    enabled = False
+
             agency_metrics.append(
                 MetricInterface(
                     key=metric_definition.key,
-                    is_metric_enabled=datapoints.is_metric_enabled,
+                    is_metric_enabled=enabled,
                     includes_excludes_member_to_setting=datapoints.get_includes_excludes_dict(
                         includes_excludes_set=metric_definition.includes_excludes
                     ),
@@ -570,13 +576,12 @@ class DatapointInterface:
         if agency_metric.disaggregated_by_supervision_subsystems is not None:
             current_system = agency_metric.metric_definition.system.value
             for system in agency.systems:
-                # Add a datapoint for disaggregated_by_supervision_subsystems for every
-                # supervision system that an agency belongs to.
                 if (
                     schema.System[system] == schema.System.SUPERVISION
                     or schema.System[system] in schema.System.supervision_subsystems()
                 ):
-
+                    # First, add a datapoint for disaggregated_by_supervision_subsystems for every
+                    # supervision system that an agency belongs to.
                     metric_definition_key = (
                         agency_metric.key
                         if system == current_system
@@ -594,6 +599,32 @@ class DatapointInterface:
                         ),
                         session,
                     )
+                    # Then, update the enabled/disabled statuses accordingly. If the metric
+                    # is Supervision and we are *not* disaggregating, the metric should be
+                    # enabled; otherwise, disabled. If the metric is a supervsion subsystem,
+                    # the logic is reversed.
+                    if schema.System[system] == schema.System.SUPERVISION:
+                        update_existing_or_create(
+                            ingested_entity=schema.Datapoint(
+                                metric_definition_key=metric_definition_key,
+                                source=agency,
+                                enabled=not agency_metric.disaggregated_by_supervision_subsystems,
+                                dimension_identifier_to_member=None,
+                            ),
+                            session=session,
+                        )
+                    elif (
+                        schema.System[system] in schema.System.supervision_subsystems()
+                    ):
+                        update_existing_or_create(
+                            ingested_entity=schema.Datapoint(
+                                metric_definition_key=metric_definition_key,
+                                source=agency,
+                                enabled=agency_metric.disaggregated_by_supervision_subsystems,
+                                dimension_identifier_to_member=None,
+                            ),
+                            session=session,
+                        )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
             for (dimension, contexts_lst) in (
