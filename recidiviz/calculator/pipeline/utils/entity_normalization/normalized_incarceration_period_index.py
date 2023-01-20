@@ -411,7 +411,12 @@ class NormalizedIncarcerationPeriodIndex:
                         "if most_recent_board_hold is set."
                     )
 
-                if not most_recent_board_hold.release_date:
+                if (
+                    not most_recent_board_hold.release_date
+                    # TODO(#18015): Remove this once normalization is actually not
+                    # allowing for overlapping periods.
+                    and ip.admission_date != most_recent_board_hold_start_date
+                ):
                     raise ValueError(
                         "Found open incarceration period with id "
                         f"[{most_recent_board_hold.incarceration_period_id}] preceding "
@@ -420,9 +425,11 @@ class NormalizedIncarcerationPeriodIndex:
                         f"[{self.sorted_incarceration_periods}]."
                     )
 
-                ip_index_to_most_recent_board_hold_index[index] = DateRange(
-                    lower_bound_inclusive_date=most_recent_board_hold_start_date,
-                    upper_bound_exclusive_date=most_recent_board_hold.release_date,
+                ip_index_to_most_recent_board_hold_index[
+                    index
+                ] = DateRange.from_maybe_open_range(
+                    start_date=most_recent_board_hold_start_date,
+                    end_date=most_recent_board_hold.release_date,
                 )
             else:
                 ip_index_to_most_recent_board_hold_index[index] = None
