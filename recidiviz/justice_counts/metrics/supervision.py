@@ -410,7 +410,7 @@ daily_population = MetricDefinition(
             dimension_to_description={
                 DailyPopulationType.ACTIVE: "The number of people who are supervised by the agency on active status.",
                 DailyPopulationType.ADMINISTRATIVE: "The number of people who are supervised by the agency on administrative status.",
-                DailyPopulationType.ABSCONDED: "The number of people who are supervised by the agency on absconsion status.",
+                DailyPopulationType.ABSCONDED: "The number of people who are supervised by the agency on absconscion status.",
                 DailyPopulationType.HOLD_OR_SANCTION: "The number of people supervised by the agency who are temporarily incarcerated or confined but are still considered to be on the supervision caseload.",
                 DailyPopulationType.OTHER: "The number of people who are supervised by the agency in the community and have another supervision status that is not active, administrative, absconder, or incarcerated on a hold or sanction.",
                 DailyPopulationType.UNKNOWN: "The number of people who are supervised by the agency in the community and have an unknown supervision status.",
