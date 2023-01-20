@@ -463,9 +463,7 @@ def create_calculation_dag() -> None:
             tracker_dataset_id="view_update_metadata",
             tracker_table_id="rematerialization_tracker",
         ),
-        # TODO(#15413): Change the timeout back to the default once rematerialization
-        #  is reliably back down under 2 hours.
-        timeout=(60 * 60 * 4),
+        timeout=(60 * 45),
     )
 
     trigger_update_all_views = trigger_update_all_managed_views_operator()
