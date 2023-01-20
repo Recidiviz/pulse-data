@@ -473,6 +473,16 @@ def set_date_specific_lsir_fields(assessment: StateAssessment) -> StateAssessmen
     return assessment
 
 
+def force_adm_reason_internal_unknown(
+    raw_text: str,
+) -> StateIncarcerationPeriodAdmissionReason:
+    """Maps admission reason raw text to INTERNAL_UNKNOWN; used instead of a literal enum
+    so that raw text can be preserved."""
+    if raw_text:
+        return StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN
+    raise ValueError("This parser should never be called on missing raw text.")
+
+
 def incarceration_period_purpose_mapper(
     raw_text: str,
 ) -> StateSpecializedPurposeForIncarceration:

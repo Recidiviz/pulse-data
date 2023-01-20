@@ -15,6 +15,13 @@ input_columns:
   - inmate_number
 unused_columns: []
 variables:
+  - adm_reason_raw:
+      $concat:
+        $values:
+          - $literal("CCIS")
+          - start_is_new_act_122_admission
+          - start_status_code
+        $include_nulls: True
   - force_internal_unknown:
       $and:
         - $not_in:
@@ -24,28 +31,32 @@ variables:
               - $literal("46")
               - $literal("51")
               - $literal("09")
-        - $not_in:
-            $value: start_status_code
-            $options:
-              - $literal("DPWF")
-              - $literal("INRS")
-              - $literal("PRCH")
-              - $literal("RTRS")
-              - $literal("TRRC")
-              - $literal("AA")
-              - $literal("AIT")
-              - $literal("ASH")
-              - $literal("ATT")
-              - $literal("AW")
-              - $literal("PLC")
-              - $literal("DTT")
-              - $literal("RTT")
-              - $literal("STT")
-              - $literal("TFM")
-              - $literal("TRN")
-              - $literal("TTM")
-              - $literal("XPT")
-              - $literal("SC")
+        - $or:
+            - $not_in:
+                $value: start_status_code
+                $options:
+                  - $literal("DPWF")
+                  - $literal("INRS")
+                  - $literal("PRCH")
+                  - $literal("RTRS")
+                  - $literal("TRRC")
+                  - $literal("AA")
+                  - $literal("AIT")
+                  - $literal("ASH")
+                  - $literal("ATT")
+                  - $literal("AW")
+                  - $literal("PLC")
+                  - $literal("DTT")
+                  - $literal("RTT")
+                  - $literal("STT")
+                  - $literal("TFM")
+                  - $literal("TRN")
+                  - $literal("TTM")
+                  - $literal("XPT")
+                  - $literal("SC")
+            - $equal:
+                - $literal("true")
+                - start_is_new_act_122_admission
 output:
   StatePerson:
     external_ids:
@@ -63,16 +74,13 @@ output:
           admission_reason:
             $conditional:
               - $if: $variable(force_internal_unknown)
-                $then: $literal_enum(StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN)
+                $then:
+                  $enum_mapping:
+                    $raw_text: $variable(adm_reason_raw)
+                    $custom_parser: us_pa_custom_enum_parsers.force_adm_reason_internal_unknown
               - $else:
                   $enum_mapping:
-                    $raw_text:
-                      $concat:
-                        $values:
-                          - $literal("CCIS")
-                          - start_is_new_act_122_admission
-                          - start_status_code
-                        $include_nulls: True
+                    $raw_text: $variable(adm_reason_raw)
                     $custom_parser: us_pa_custom_enum_parsers.incarceration_period_admission_reason_mapper
           release_reason:
             $conditional:
@@ -90,18 +98,14 @@ output:
           facility: location
           incarceration_type: $literal_enum(StateIncarcerationType.COUNTY_JAIL)
           specialized_purpose_for_incarceration:
-            $conditional:
-              - $if: $variable(force_internal_unknown)
-                $then: $literal_enum(StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN)
-              - $else:
-                  $enum_mapping:
-                    $raw_text:
-                      $concat:
-                        $values:
-                          - $literal("CCIS")
-                          - program_id
-                        $include_nulls: True
-                    $custom_parser: us_pa_custom_enum_parsers.incarceration_period_purpose_mapper
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - $literal("CCIS")
+                    - program_id
+                  $include_nulls: True
+              $custom_parser: us_pa_custom_enum_parsers.incarceration_period_purpose_mapper
           custodial_authority:
             $enum_mapping:
               $raw_text: program_id
