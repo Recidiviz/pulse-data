@@ -76,9 +76,9 @@ class LawEnforcementFacilitiesIncludesExcludes(enum.Enum):
 
 class LawEnforcementFundingIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
-    BIENNIUM_FUNDING = "Biennium funding"
+    BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
-        "Multi-year appropriations that will not be fully spent this fiscal year"
+        "Multi-year appropriations that are appropriated in during the time period"
     )
     STAFF_FUNDING = "Funding for agency staff"
     EQUIPMENT = "Funding for the purchase of law enforcement equipment"
@@ -86,12 +86,12 @@ class LawEnforcementFundingIncludesExcludes(enum.Enum):
     MAINTENANCE = (
         "Funding for the maintenance of law enforcement equipment and facilities"
     )
+    OTHER = "Funding for other purposes not captured by the listed categories"
     JAIL_OPERATIONS = "Expenses for the operation of jails"
     SUPERVISION_SERVICES = (
         "Expenses for the operation of community supervision services"
     )
     JUVENILE_JAIL_OPERATIONS = "Expenses for the operation of juvenile jails"
-    OTHER = "Funding for other purposes not captured by the listed categories"
 
 
 class LawEnforcementStateAppropriationIncludesExcludes(enum.Enum):

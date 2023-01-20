@@ -2544,17 +2544,16 @@ class TestMetricInterface(TestCase):
                     "label": "Funding for single fiscal year",
                 },
                 {
-                    "default": "No",
+                    "default": "Yes",
                     "included": "Yes",
                     "key": "BIENNIUM_FUNDING",
-                    "label": "Biennium funding",
+                    "label": "Biennium funding appropriated during the time period",
                 },
                 {
-                    "default": "No",
+                    "default": "Yes",
                     "included": "Yes",
                     "key": "MULTI_YEAR_APPROPRIATIONS",
-                    "label": "Multi-year appropriations that will not be fully "
-                    "spent this fiscal year",
+                    "label": "Multi-year appropriations that are appropriated in during the time period",
                 },
                 {
                     "default": "Yes",
@@ -2584,6 +2583,13 @@ class TestMetricInterface(TestCase):
                     "equipment and facilities",
                 },
                 {
+                    "default": "Yes",
+                    "included": "Yes",
+                    "key": "OTHER",
+                    "label": "Funding for other purposes not captured by the listed "
+                    "categories",
+                },
+                {
                     "default": "No",
                     "included": "Yes",
                     "key": "JAIL_OPERATIONS",
@@ -2601,13 +2607,6 @@ class TestMetricInterface(TestCase):
                     "included": "Yes",
                     "key": "JUVENILE_JAIL_OPERATIONS",
                     "label": "Expenses for the operation of juvenile jails",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "OTHER",
-                    "label": "Funding for other purposes not captured by the listed "
-                    "categories",
                 },
             ],
             "datapoints": None,

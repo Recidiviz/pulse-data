@@ -108,14 +108,13 @@ funding = MetricDefinition(
     description="The amount of funding for agency law enforcement activities.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    # TODO(#17577)
     includes_excludes=IncludesExcludesSet(
         members=LawEnforcementFundingIncludesExcludes,
         excluded_set={
-            LawEnforcementFundingIncludesExcludes.BIENNIUM_FUNDING,
-            LawEnforcementFundingIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
             LawEnforcementFundingIncludesExcludes.JAIL_OPERATIONS,
-            LawEnforcementFundingIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
             LawEnforcementFundingIncludesExcludes.SUPERVISION_SERVICES,
+            LawEnforcementFundingIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
         },
     ),
     aggregated_dimensions=[
