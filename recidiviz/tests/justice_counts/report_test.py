@@ -1323,16 +1323,31 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             }
             self.assertEqual(parole_metric_systems, {schema.System.PAROLE.value})
 
-            # Parole/Probation report should have metrics for Supervision b/c none of
-            # the metrics are broken down by the sub-systems
-            parole_probation_metric_systems = {
+            # Parole/Probation report should have only metrics for Supervision enabled
+            # (and the others disabled)  b/c none of the metrics are broken down by the
+            # sub-systems.
+            parole_probation_enabled_metric_systems = {
                 metric.metric_definition.system.value
                 for metric in parole_probation_metrics
+                if metric.is_metric_enabled is not False
             }
             self.assertEqual(
-                parole_probation_metric_systems,
+                parole_probation_enabled_metric_systems,
                 {
                     schema.System.SUPERVISION.value,
+                },
+            )
+
+            parole_probation_disabled_metric_systems = {
+                metric.metric_definition.system.value
+                for metric in parole_probation_metrics
+                if metric.is_metric_enabled is False
+            }
+            self.assertEqual(
+                parole_probation_disabled_metric_systems,
+                {
+                    schema.System.PAROLE.value,
+                    schema.System.PROBATION.value,
                 },
             )
 

@@ -286,7 +286,6 @@ class MetricInterface:
     @staticmethod
     def get_metric_definitions_for_systems(
         systems: Set[schema.System],
-        metric_key_to_disaggregation_status: Dict[str, bool],
     ) -> List[MetricDefinition]:
         """Given a list of systems and report frequency, return all
         MetricDefinitions that belong to one of the systems and have
@@ -299,23 +298,21 @@ class MetricInterface:
         for system in systems_ordered:
             if system == schema.System.SUPERVISION:
                 for metric in supervision_metrics:
-                    if metric_key_to_disaggregation_status.get(metric.key) is not True:
-                        # If reported as an aggregate, only add a the 'umbrella category'
-                        # metric for supervision.
-                        metrics.append(metric)
+                    metrics.append(metric)
             elif (
                 system in schema.System.supervision_subsystems()
                 and schema.System.SUPERVISION in systems
             ):
+                # Make copies of Supervision metrics for all Supervision subsystems.
+                # Later, these copies will be turned on/off depending on whether the
+                # user has specified "disaggregated_by_supervision_subsystems.""
                 for metric in supervision_metrics:
-                    if metric_key_to_disaggregation_status.get(metric.key) is True:
-                        # If reported disaggregated, add metrics for the subsystem to the list of metrics
-                        subsystem_metric = METRIC_KEY_TO_METRIC[
-                            # Change the key from e.g. SUPERVISION_TOTAL_STAFF
-                            # to PAROLE_TOTAL_STAFF.
-                            metric.key.replace("SUPERVISION", system.value, 1)
-                        ]
-                        metrics.append(subsystem_metric)
+                    subsystem_metric = METRIC_KEY_TO_METRIC[
+                        # Change the key from e.g. SUPERVISION_TOTAL_STAFF
+                        # to PAROLE_TOTAL_STAFF.
+                        metric.key.replace("SUPERVISION", system.value, 1)
+                    ]
+                    metrics.append(subsystem_metric)
             else:
                 metrics += METRICS_BY_SYSTEM[system.value]
 

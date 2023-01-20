@@ -21,7 +21,6 @@ from typing import Any, DefaultDict, Dict, List
 from unittest import TestCase
 
 from recidiviz.common.constants.justice_counts import ContextKey
-from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
@@ -51,14 +50,13 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonReleasesToParoleIncludesExcludes,
     PrisonReleasesToProbationIncludesExcludes,
 )
-from recidiviz.justice_counts.metrics import law_enforcement, prisons, supervision
+from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     IncludesExcludesSetting,
-    MetricDefinition,
 )
 from recidiviz.justice_counts.metrics.metric_interface import (
     DatapointGetRequestEntryPoint,
@@ -66,10 +64,7 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricContextData,
     MetricInterface,
 )
-from recidiviz.justice_counts.metrics.metric_registry import (
-    METRIC_KEY_TO_METRIC,
-    METRICS_BY_SYSTEM,
-)
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
@@ -2671,10 +2666,11 @@ class TestMetricInterface(TestCase):
         )
 
     def test_get_supervision_metrics(self) -> None:
-        # When no metrics are disaggregated, then we should only show supervision metrics
+        # We should always grab all copies of supervision metrics
+        # for each system. Which ones are actually enabled will be
+        # determined later.
         supervision_metrics = MetricInterface.get_metric_definitions_for_systems(
             {schema.System.SUPERVISION, schema.System.PAROLE},
-            metric_key_to_disaggregation_status={},
         )
 
         self.assertEqual(
@@ -2682,69 +2678,7 @@ class TestMetricInterface(TestCase):
             {
                 m.key
                 for m in METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
-                if m.key != supervision.residents.key
-            },
-        )
-
-        # When termination metric is disaggregated, then we should that metric
-        # for parole and post_release and NOT for supervision,
-        agency_metrics = MetricInterface.get_metric_definitions_for_systems(
-            {
-                schema.System.SUPERVISION,
-                schema.System.PAROLE,
-                schema.System.POST_RELEASE,
-                schema.System.PRISONS,
-            },
-            metric_key_to_disaggregation_status={supervision.discharges.key: True},
-        )
-        parole_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
-            supervision.discharges.key.replace(
-                "SUPERVISION", schema.System.PAROLE.value, 1
-            )
-        ]
-
-        post_release_terminations: MetricDefinition = METRIC_KEY_TO_METRIC[
-            supervision.discharges.key.replace(
-                "SUPERVISION", schema.System.POST_RELEASE.value, 1
-            )
-        ]
-
-        self.assertEqual(
-            {m.key for m in agency_metrics},
-            {
-                m.key
-                for m in METRICS_BY_SYSTEM[schema.System.PRISONS.value]
-                + supervision_metrics
-                + [parole_terminations, post_release_terminations]
-                if m.key != supervision.discharges.key and m.disabled is False
-            },
-        )
-
-        report_metrics = DatapointsForMetric.get_metric_definitions_for_report(
-            report_frequency=ReportingFrequency.MONTHLY.value,
-            starting_month=1,
-            systems={
-                schema.System.SUPERVISION,
-                schema.System.PRISONS,
-                schema.System.PAROLE,
-                schema.System.POST_RELEASE,
-            },
-            metric_key_to_datapoints={
-                supervision.discharges.key: DatapointsForMetric(
-                    disaggregated_by_supervision_subsystems=True
-                )
-            },
-        )
-
-        self.assertEqual(
-            {m.key for m in report_metrics},
-            {
-                m.key
-                for m in METRICS_BY_SYSTEM[schema.System.PRISONS.value]
-                + supervision_metrics
-                + [parole_terminations, post_release_terminations]
-                if m.key != supervision.discharges.key
-                and m.disabled is False
-                and m.reporting_frequency == ReportingFrequency.MONTHLY
+                + METRICS_BY_SYSTEM[schema.System.PAROLE.value]
+                if m.disabled is False
             },
         )
