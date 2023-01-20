@@ -15,15 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React, { useContext } from "react";
+import { createContext, FC, useContext } from "react";
 
 import { rootStore } from "../DataStores";
 
-const StoreContext = React.createContext<typeof rootStore | undefined>(
-  undefined
-);
+const StoreContext = createContext<typeof rootStore | undefined>(undefined);
 
-const StoreProvider: React.FC = ({ children }) => {
+const StoreProvider: FC = ({ children }) => {
   return (
     <StoreContext.Provider value={rootStore}>{children}</StoreContext.Provider>
   );

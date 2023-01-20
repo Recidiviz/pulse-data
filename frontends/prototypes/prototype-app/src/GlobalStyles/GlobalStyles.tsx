@@ -15,8 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { fonts, palette } from "@recidiviz/design-system";
-import React from "react";
+import { palette, typography } from "@recidiviz/design-system";
+import { FC } from "react";
 import { createGlobalStyle } from "styled-components/macro";
 import reset from "styled-reset";
 
@@ -25,7 +25,7 @@ const BaseStyles = createGlobalStyle`
 
   html {
     box-sizing: border-box;
-    font-family: ${fonts.sans};
+    ${typography.Sans16}
     
     *, *:before, *:after {
       box-sizing: inherit;
@@ -43,7 +43,7 @@ const BaseStyles = createGlobalStyle`
   }
 `;
 
-const GlobalStyles: React.FC = () => {
+const GlobalStyles: FC = () => {
   return <BaseStyles />;
 };
 

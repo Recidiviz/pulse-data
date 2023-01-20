@@ -15,9 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import React from "react";
+import { FC } from "react";
 
-const VerificationRequired: React.FC = () => {
+const VerificationRequired: FC = () => {
   return (
     <article>
       <h1>Account Verification Required</h1>
