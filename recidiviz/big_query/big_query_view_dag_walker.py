@@ -172,7 +172,7 @@ class BigQueryViewDagNode:
         self.view = view
         # Note: Must use add_child_address() to populate this member variable before using.
         self.child_node_addresses: Set[BigQueryAddress] = set()
-        self.parent_node_keys: Set[DagKey] = set()
+        self.parent_node_addresses: Set[BigQueryAddress] = set()
         self.source_table_addresses: Set[BigQueryAddress] = set()
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
         self.is_root = is_root
@@ -224,8 +224,8 @@ class BigQueryViewDagNode:
     def add_child_address(self, address: BigQueryAddress) -> None:
         self.child_node_addresses.add(address)
 
-    def add_parent_key(self, dag_key: DagKey) -> None:
-        self.parent_node_keys.add(dag_key)
+    def add_parent_address(self, address: BigQueryAddress) -> None:
+        self.parent_node_addresses.add(address)
 
     def add_source_address(self, source_address: BigQueryAddress) -> None:
         self.source_table_addresses.add(source_address)
@@ -413,7 +413,7 @@ class BigQueryViewDagWalker:
                     parent_node.is_leaf = False
                     parent_node.add_child_address(key.view_address)
                     node.is_root = False
-                    node.add_parent_key(parent_key)
+                    node.add_parent_address(parent_key.view_address)
                 else:
                     node.add_source_address(parent_key.view_address)
 
@@ -606,11 +606,12 @@ class BigQueryViewDagWalker:
                     view_processing_stats[node.view] = view_stats
                     processing.remove(node.dag_key)
                     processed.add(node.dag_key)
-                    adjacent_keys = (
-                        node.parent_node_keys
+                    adjacent_addresses = (
+                        node.parent_node_addresses
                         if reverse
-                        else {DagKey(view_address=v) for v in node.child_node_addresses}
+                        else node.child_node_addresses
                     )
+                    adjacent_keys = {DagKey(view_address=v) for v in adjacent_addresses}
                     for adjacent_key in adjacent_keys:
                         adjacent_node = self.nodes_by_key[adjacent_key]
                         if adjacent_node in processed or adjacent_node in queue:
