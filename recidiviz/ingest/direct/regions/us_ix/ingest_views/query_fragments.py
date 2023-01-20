@@ -42,8 +42,23 @@ bed_assignment_periods_cte AS (
         USING (BedId)
     LEFT JOIN {hsn_BedType}
         USING (BedTypeId)
-    LEFT JOIN {hsn_Bed_SecurityLevel}
-        USING (BedId)
+    LEFT JOIN (
+            -- Each BedId can have multiple entries in
+            -- hsn_Bed_SecurityLevelSecurityLevels. We pick the one that was updated
+            -- most recently, as so far all the entries have the same SecurityLevelId.
+            -- TODO(#17975): Might this change in the future, and if so can we get the
+            -- date that the SecurityLevel was associated with the bed?
+            SELECT * EXCEPT (rn)
+            FROM (
+                SELECT
+                    BedSecurityLevelId,
+                    BedId,
+                    SecurityLevelId,
+                    ROW_NUMBER() OVER (PARTITION BY BedId ORDER BY UpdateDate DESC, BedSecurityLevelId DESC) AS rn
+                FROM {hsn_Bed_SecurityLevel}
+            ) ranked_bed_security_level
+            WHERE rn = 1
+        ) bed_security_level USING (BedId)
     LEFT JOIN {hsn_SecurityLevel}
         USING (SecurityLevelId)
 )"""
