@@ -497,7 +497,7 @@ class SupervisionSuccessfulCompletionIncludesExcludes(Enum):
     )
     END_OF_TERM = "People who arrive at the end of their supervision term in good standing and without revocation"
     OUTSTANDING_VIOLATIONS = "People who completed their full term of their supervision sentence, but have outstanding supervision violations pending resolution"
-    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconscion"
+    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconsion"
     DIED = "People who died during their term of supervision"
     INCARCERATION = "People whose supervision term was terminated due to failure to meet the requirements of supervision, resulting in incarceration (e.g., pretrial release revocation probation revocation, etc.)"
     REVOKED = "People who were revoked from one kind of supervision to another (e.g., people revoked to regular probation from a supervision term that, when completed, would result in no criminal record)"
@@ -506,7 +506,7 @@ class SupervisionSuccessfulCompletionIncludesExcludes(Enum):
 
 class SupervisionNeutralDischargeIncludesExcludes(Enum):
     OUTSTANDING_VIOLATIONS = "People who completed their full term of their supervision sentence, but have outstanding supervision violations pending resolution"
-    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconscion"
+    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconsion"
     DIED = "People who died during their term of supervision"
     INCARCERATION = "People whose supervision term was terminated due to failure to meet the requirements of supervision, resulting in incarceration (e.g., pretrial release revocation probation revocation, etc.)"
     REVOKED = "People who were revoked from one kind of supervision to another (e.g., people revoked to regular probation from a supervision term that, when completed, would result in no criminal record)"
@@ -525,7 +525,7 @@ class SupervisionUnsuccessfulDischargeIncludesExcludes(Enum):
     REVOKED = "People who were revoked from one kind of supervision to another (e.g., people revoked to regular probation from a supervision term that, when completed, would result in no criminal record)"
     TERMINATED = "People who were determined to not be a match for supervision and terminated from the agency’s jurisdiction"
     OUTSTANDING_VIOLATIONS = "People who completed their full term of their supervision sentence, but have outstanding supervision violations pending resolution"
-    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconscion"
+    ABSCONSCION = "People who were discharged from supervision due to a prolonged period of absconsion"
     DIED = "People who died during their term of supervision"
     COMPLETED_REQUIREMENTS = (
         "People who completed all requirements of supervision and were released"

@@ -76,9 +76,9 @@ class DailyPopulationType(DimensionBase, enum.Enum):
     ACTIVE = "People on Active Supervision"
     ADMINISTRATIVE = "People on Administrative Supervision"
     ABSCONDED = "People who have Absconded from Supervision"
-    HOLD_OR_SANCTION = "People Incarcerated on a Hold or Sanction"
-    OTHER = "Other Status"
-    UNKNOWN = "Unknown Status"
+    HOLD_OR_SANCTION = "People Incarcerated on a Hold or Sanction while on Supervision"
+    OTHER = "Other Supervision Status"
+    UNKNOWN = "Unknown Supervision Status"
 
     @classmethod
     def dimension_identifier(cls) -> str:
