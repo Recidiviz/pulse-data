@@ -170,8 +170,8 @@ class BigQueryViewDagNode:
 
     def __init__(self, view: BigQueryView, is_root: bool = False, is_leaf: bool = True):
         self.view = view
-        # Note: Must use add_child_key() to populate this member variable before using.
-        self.child_node_keys: Set[DagKey] = set()
+        # Note: Must use add_child_address() to populate this member variable before using.
+        self.child_node_addresses: Set[BigQueryAddress] = set()
         self.parent_node_keys: Set[DagKey] = set()
         self.source_table_addresses: Set[BigQueryAddress] = set()
         self.materialized_addresss: Optional[Dict[BigQueryAddress, DagKey]] = None
@@ -221,8 +221,8 @@ class BigQueryViewDagNode:
 
         return parent_keys
 
-    def add_child_key(self, dag_key: DagKey) -> None:
-        self.child_node_keys.add(dag_key)
+    def add_child_address(self, address: BigQueryAddress) -> None:
+        self.child_node_addresses.add(address)
 
     def add_parent_key(self, dag_key: DagKey) -> None:
         self.parent_node_keys.add(dag_key)
@@ -236,8 +236,8 @@ class BigQueryViewDagNode:
         self.materialized_addresss = materialized_addresss
 
     @property
-    def child_keys(self) -> Set[DagKey]:
-        return self.child_node_keys
+    def child_addresses(self) -> Set[BigQueryAddress]:
+        return self.child_node_addresses
 
     @property
     def view_builder(self) -> BigQueryViewBuilder:
@@ -411,7 +411,7 @@ class BigQueryViewDagWalker:
                 if parent_key in self.nodes_by_key:
                     parent_node = self.nodes_by_key[parent_key]
                     parent_node.is_leaf = False
-                    parent_node.add_child_key(key)
+                    parent_node.add_child_address(key.view_address)
                     node.is_root = False
                     node.add_parent_key(parent_key)
                 else:
@@ -465,14 +465,14 @@ class BigQueryViewDagWalker:
             if start_node in visited:
                 continue
 
-            stack: Deque[Tuple[DagKey, Deque[DagKey]]] = deque()
+            stack: Deque[Tuple[DagKey, Deque[BigQueryAddress]]] = deque()
 
             next_node = start_node
             while True:
                 if next_node not in visited:
-                    child_keys = self.nodes_by_key[next_node].child_node_keys
-                    if child_keys:
-                        stack.append((next_node, deque(child_keys)))
+                    child_addresses = self.nodes_by_key[next_node].child_node_addresses
+                    if child_addresses:
+                        stack.append((next_node, deque(child_addresses)))
                     visited.add(next_node)
 
                 if not stack:
@@ -488,7 +488,7 @@ class BigQueryViewDagWalker:
                     current_path_edges.pop(current_node)
                     continue
 
-                next_node = current_node_children.pop()
+                next_node = DagKey(view_address=current_node_children.pop())
                 if next_node in current_path_edges:
                     raise ValueError(
                         f"Detected cycle in graph reachable from "
@@ -607,7 +607,9 @@ class BigQueryViewDagWalker:
                     processing.remove(node.dag_key)
                     processed.add(node.dag_key)
                     adjacent_keys = (
-                        node.parent_node_keys if reverse else node.child_node_keys
+                        node.parent_node_keys
+                        if reverse
+                        else {DagKey(view_address=v) for v in node.child_node_addresses}
                     )
                     for adjacent_key in adjacent_keys:
                         adjacent_node = self.nodes_by_key[adjacent_key]
@@ -621,7 +623,10 @@ class BigQueryViewDagWalker:
                         previous_level_all_processed = True
                         previous_level_results = {}
                         previous_level_keys = (
-                            adjacent_node.child_keys
+                            {
+                                DagKey(view_address=v)
+                                for v in adjacent_node.child_addresses
+                            }
                             if reverse
                             else adjacent_node.parent_keys
                         )

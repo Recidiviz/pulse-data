@@ -332,7 +332,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         if not max_depth_view:
             self.fail("Found no max_depth_view")
         max_depth_node = walker.node_for_view(max_depth_view)
-        self.assertEqual(set(), max_depth_node.child_keys)
+        self.assertEqual(set(), max_depth_node.child_addresses)
 
     def test_dag_processing_can_be_reversed(self) -> None:
         #  We would like to be able to traverse our DAG both top
@@ -1823,18 +1823,16 @@ class TestBigQueryViewDagNode(unittest.TestCase):
                 )
             },
         )
-        self.assertEqual(node.child_keys, set())
+        self.assertEqual(node.child_addresses, set())
 
         node.is_root = True
-        child_key = DagKey(
-            view_address=BigQueryAddress(
-                dataset_id="other_dataset", table_id="other_table"
-            )
+        child_address = BigQueryAddress(
+            dataset_id="other_dataset", table_id="other_table"
         )
-        node.add_child_key(child_key)
+        node.add_child_address(child_address)
 
         self.assertEqual(node.is_root, True)
-        self.assertEqual(node.child_keys, {child_key})
+        self.assertEqual(node.child_addresses, {child_address})
 
     def test_parse_view_materialized_parent(self) -> None:
         view = SimpleBigQueryViewBuilder(
