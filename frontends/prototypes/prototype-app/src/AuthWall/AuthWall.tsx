@@ -15,11 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { AuthWall as AuthWallBase } from "@recidiviz/auth";
 import { Loading } from "@recidiviz/design-system";
-import { when } from "mobx";
-import { observer } from "mobx-react-lite";
-import { FC, useEffect } from "react";
-import { withErrorBoundary } from "react-error-boundary";
+import { FC } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ErrorMessage from "../ErrorMessage";
@@ -30,44 +28,24 @@ import VerificationRequired from "./VerificationRequired";
  * Verifies authorization before rendering its children.
  */
 const AuthWall: FC = ({ children }) => {
-  const { userStore } = useDataStore();
+  const { authStore } = useDataStore();
   const navigate = useNavigate();
 
-  useEffect(
-    () =>
-      // return when's disposer so it is cleaned up if it never runs
-      when(
-        () => !userStore.isAuthorized,
-        // handler keeps Reach Router in sync with URL changes
-        // that may happen in `authorize` after redirect
-        () =>
-          userStore.authorize({
-            handleTargetUrl: () => {
-              navigate("/", { replace: true });
-            },
-          })
-      ),
-    [navigate, userStore]
+  return (
+    <AuthWallBase
+      authStore={authStore}
+      handleTargetUrl={(targetUrl) => {
+        navigate(new URL(targetUrl), { replace: true });
+      }}
+      loading={<Loading />}
+      emailVerificationPage={<VerificationRequired />}
+      unauthorizedPage={
+        <ErrorMessage error={new Error("Authorization denied.")} />
+      }
+    >
+      {children}
+    </AuthWallBase>
   );
-
-  if (userStore.isLoading) {
-    return <Loading />;
-  }
-
-  if (userStore.awaitingVerification) {
-    return <VerificationRequired />;
-  }
-
-  if (userStore.isAuthorized) {
-    return <>{children}</>;
-  }
-
-  // it should not actually be possible to reach this branch
-  // with the current auth implementation, so something is
-  // probably very wrong if a user hits it
-  throw new Error("Authorization denied.");
 };
 
-export default withErrorBoundary(observer(AuthWall), {
-  FallbackComponent: ErrorMessage,
-});
+export default AuthWall;

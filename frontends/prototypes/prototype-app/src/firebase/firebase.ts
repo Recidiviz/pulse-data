@@ -16,7 +16,11 @@
 // =============================================================================
 
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithCustomToken } from "firebase/auth";
+import {
+  connectAuthEmulator,
+  getAuth,
+  signInWithCustomToken,
+} from "firebase/auth";
 import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -28,6 +32,8 @@ const firebaseConfig = {
   appId: "1:776749136174:web:a45fe1f54aedf0f81762bf",
 };
 
+const USE_EMULATORS = import.meta.env.DEV;
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
@@ -35,6 +41,7 @@ const tokenExchangeEndpoint = import.meta.env.DEV
   ? // requires local function emulator to be running
     `http://localhost:5001/${firebaseConfig.projectId}/us-central1/getFirebaseToken`
   : `https://us-central1-${firebaseConfig.projectId}.cloudfunctions.net/getFirebaseToken`;
+
 export const authenticate = async (
   auth0Token: string
 ): ReturnType<typeof signInWithCustomToken> => {
@@ -47,11 +54,14 @@ export const authenticate = async (
 
   const { firebaseToken } = await tokenExchangeResponse.json();
   const auth = getAuth(app);
+  if (USE_EMULATORS) {
+    connectAuthEmulator(auth, "http://localhost:9099");
+  }
   return signInWithCustomToken(auth, firebaseToken);
 };
 
 const db = getFirestore(app);
-if (import.meta.env.DEV) {
+if (USE_EMULATORS) {
   connectFirestoreEmulator(db, "localhost", 8080);
 }
 

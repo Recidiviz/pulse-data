@@ -9,4 +9,8 @@ export default defineConfig({
       },
     }),
   ],
+  optimizeDeps: {
+    // transitive commonjs-only deps need to be included
+    include: ["@recidiviz/auth > qs"],
+  },
 });
