@@ -18,7 +18,7 @@
 import { Loading } from "@recidiviz/design-system";
 import { when } from "mobx";
 import { observer } from "mobx-react-lite";
-import React, { useEffect } from "react";
+import { FC, useEffect } from "react";
 import { withErrorBoundary } from "react-error-boundary";
 import { useNavigate } from "react-router-dom";
 
@@ -29,7 +29,7 @@ import VerificationRequired from "./VerificationRequired";
 /**
  * Verifies authorization before rendering its children.
  */
-const AuthWall: React.FC = ({ children }) => {
+const AuthWall: FC = ({ children }) => {
   const { userStore } = useDataStore();
   const navigate = useNavigate();
 

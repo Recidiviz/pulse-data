@@ -17,23 +17,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithCustomToken } from "firebase/auth";
-import {
-  addDoc,
-  collection,
-  connectFirestoreEmulator,
-  doc,
-  getFirestore,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-} from "firebase/firestore";
-
-import {
-  CompliantReportingStatusRecord,
-  CompliantReportingUpdateContents,
-  UpcomingDischargeOverrideContents,
-} from "../DataStores/CaseStore";
+import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   projectId: "recidiviz-prototypes",
@@ -71,88 +55,4 @@ if (import.meta.env.DEV) {
   connectFirestoreEmulator(db, "localhost", 8080);
 }
 
-const COLLECTIONS = {
-  compliantReportingCases: "compliantReportingCases",
-  compliantReportingStatus: "compliantReportingStatus",
-  compliantReportingUpdates: "compliantReportingUpdates",
-  compliantReportingReferrals: "compliantReportingReferrals",
-  upcomingDischargeCases: "upcomingDischargeCases",
-  upcomingDischargeOverrides: "upcomingDischargeOverrides",
-  users: "users",
-  officers: "officers",
-};
-
-export const compliantReportingStatusQuery = query(
-  collection(db, COLLECTIONS.compliantReportingStatus)
-);
-
-export function saveCompliantReportingStatus(
-  updateContents: Omit<CompliantReportingStatusRecord, "statusUpdated">,
-  user: string
-): Promise<void> {
-  return setDoc(
-    doc(
-      db,
-      COLLECTIONS.compliantReportingStatus,
-      updateContents.personExternalId
-    ),
-    {
-      ...updateContents,
-      statusUpdated: {
-        date: serverTimestamp(),
-        by: user,
-      },
-    }
-  );
-}
-
-export const compliantReportingUpdatesQuery = query(
-  collection(db, COLLECTIONS.compliantReportingUpdates),
-  orderBy("createdAt", "desc")
-);
-
-export function saveCompliantReportingNote(
-  updateContents: CompliantReportingUpdateContents
-): ReturnType<typeof addDoc> {
-  return addDoc(collection(db, COLLECTIONS.compliantReportingUpdates), {
-    ...updateContents,
-    createdAt: serverTimestamp(),
-  });
-}
-
-export const usersQuery = query(collection(db, COLLECTIONS.users));
-
-export const officersQuery = query(collection(db, COLLECTIONS.officers));
-
-export const compliantReportingCasesQuery = query(
-  collection(db, COLLECTIONS.compliantReportingCases),
-  orderBy("supervisionLevelStart")
-);
-export const compliantReportingReferralsQuery = query(
-  collection(db, COLLECTIONS.compliantReportingReferrals)
-);
-
-export const upcomingDischargeCasesQuery = query(
-  collection(db, COLLECTIONS.upcomingDischargeCases),
-  orderBy("expectedDischargeDate")
-);
-
-export const upcomingDischargeOverridesQuery = query(
-  collection(db, COLLECTIONS.upcomingDischargeOverrides)
-);
-
-export function saveUpcomingDischargeOverride(
-  updateContents: UpcomingDischargeOverrideContents
-): Promise<void> {
-  return setDoc(
-    doc(
-      db,
-      COLLECTIONS.upcomingDischargeOverrides,
-      updateContents.personExternalId
-    ),
-    {
-      ...updateContents,
-      createdAt: serverTimestamp(),
-    }
-  );
-}
+export const COLLECTIONS = {};

@@ -6,20 +6,13 @@ Copy the value of the "service_account" entry in `../functions/.runtimeconfig.js
 
 ## ETL Scripts
 
-### `yarn users`, `yarn users:prod`
+None available at the moment.
 
-These scripts will take a CSV downloaded from the user mapping spreadsheet and ETL it into Firestore collections for known users and known officers. The bare command will load the data to your local emulator so be sure it is running.
+To run a script against the local Firestore emulator, you **MUST** set the `FIRESTORE_EMULATOR_HOST`
+environment variable (the correct value is probably `localhost:8080` but this is managed by the
+`functions` package, which starts an emulator alongside its development server).
 
-Has a fixture file in `fixtures/users.csv` that can be used for local testing.
+To run a script against the live Firestore deployment, omit `FIRESTORE_EMULATOR_HOST` from the environment.
 
-### `yarn discharges`, `yarn discharges:prod`
-
-These scripts will take a CSV of upcoming, overdue, and unknown discharges and ETL it into Firestore collections for known users and known officers. The bare command will load the data to your local emulator so be sure it is running.
-
-Has a fixture file in `fixtures/discharges.csv` that can be used for local testing.
-
-### `yarn cr`, `yarn cr:prod`
-
-These scripts will take a JSON file of compliant reporting case data exported from BigQuery and ETL it into a Firestore collection. The bare command will load the data to your local emulator so be sure it is running. (JSON can accommodate the schema better than CSV because it contains arrays.)
-
-Has a fixture file in `fixtures/cr.json` that can be used for local testing.
+In both cases you will also need `GOOGLE_APPLICATION_CREDENTIALS=service_account.json` to be set
+in the script's environment.

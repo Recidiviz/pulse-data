@@ -15,14 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { H1 } from "@recidiviz/design-system";
-import React from "react";
+import { Serif34 } from "@recidiviz/design-system";
+import { FC } from "react";
 import { FallbackProps } from "react-error-boundary";
 
-const ErrorMessage: React.FC<FallbackProps> = ({ error }) => {
+const ErrorMessage: FC<FallbackProps> = ({ error }) => {
   return (
     <div>
-      <H1>An error has occurred.</H1>
+      <Serif34 as="h1">An error has occurred.</Serif34>
       <p>{error?.message}</p>
     </div>
   );

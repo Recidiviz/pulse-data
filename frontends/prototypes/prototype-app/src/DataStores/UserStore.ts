@@ -17,13 +17,10 @@
 
 import type { Auth0Client, Auth0ClientOptions } from "@auth0/auth0-spa-js";
 import createAuth0Client from "@auth0/auth0-spa-js";
-import type { DocumentData, QuerySnapshot } from "firebase/firestore";
-import { onSnapshot } from "firebase/firestore";
-import { makeAutoObservable, runInAction, when } from "mobx";
+import { makeAutoObservable, runInAction } from "mobx";
 import qs from "qs";
 
-import { authenticate, usersQuery } from "../firebase";
-import { getUserName } from "../utils";
+import { authenticate } from "../firebase";
 import type { RootStore } from "./RootStore";
 
 type ConstructorProps = {
@@ -62,8 +59,6 @@ export default class UserStore {
 
   isLoading: boolean;
 
-  users: UserMapping = {};
-
   userEmail?: string;
 
   readonly rootStore: RootStore;
@@ -80,32 +75,6 @@ export default class UserStore {
     this.awaitingVerification = false;
     this.isAuthorized = false;
     this.isLoading = true;
-
-    this.subscribe();
-  }
-
-  subscribe(): void {
-    when(
-      // our firestore client will not be ready until we are authorized
-      () => this.isAuthorized,
-      () => {
-        // subscribe to Firestore data sources
-        onSnapshot(usersQuery, (snapshot) => this.updateUsers(snapshot));
-      }
-    );
-  }
-
-  private updateUsers(querySnapshot: QuerySnapshot<DocumentData>): void {
-    const userMapping: UserMapping = {};
-    querySnapshot.forEach((doc) => {
-      const { name, officerIds } = doc.data();
-      userMapping[doc.id] = {
-        name,
-        officerIds,
-      };
-    });
-
-    this.users = userMapping;
   }
 
   private get auth0Client(): Promise<Auth0Client> {
@@ -157,15 +126,7 @@ export default class UserStore {
         if (user?.email_verified) {
           this.isAuthorized = true;
           this.awaitingVerification = false;
-
-          // NOTE: in local dev we simulate logging in as one of our test users
-          // (specifically the "supervisor" who can see cases from all test officers).
-          if (import.meta.env.DEV) {
-            // change this to test-officer to simulate an officer's view of their own caseload only
-            this.userEmail = "test-supervisor@recidiviz.org";
-          } else {
-            this.userEmail = user.email;
-          }
+          this.userEmail = user.email;
         } else {
           this.isAuthorized = false;
           this.awaitingVerification = true;
@@ -188,21 +149,6 @@ export default class UserStore {
   }
 
   get userName(): string {
-    return this.userEmail
-      ? getUserName(this.userEmail, this.users)
-      : "Unknown User";
-  }
-
-  get includedOfficers(): string[] {
-    if (!this.userEmail) return [];
-
-    const mappedOfficers = this.users[this.userEmail]?.officerIds;
-    if (mappedOfficers) return mappedOfficers;
-
-    if (this.userEmail.endsWith("recidiviz.org")) {
-      return Object.keys(this.rootStore.caseStore.officers);
-    }
-
-    return [];
+    return this.userEmail ?? "Unknown User";
   }
 }

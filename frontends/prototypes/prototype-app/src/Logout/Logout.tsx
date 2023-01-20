@@ -1,6 +1,6 @@
 import { Button } from "@recidiviz/design-system";
 import { observer } from "mobx-react-lite";
-import React from "react";
+import { FC } from "react";
 import styled from "styled-components/macro";
 
 import { useDataStore } from "../StoreProvider";
@@ -9,7 +9,7 @@ const LogoutButton = styled(Button)`
   display: inline-block;
 `;
 
-const Logout: React.FC = () => {
+const Logout: FC = () => {
   const { userStore } = useDataStore();
 
   return (

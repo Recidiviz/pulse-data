@@ -17,7 +17,6 @@
 
 import { Auth0ClientOptions } from "@auth0/auth0-spa-js";
 
-import CaseStore from "./CaseStore";
 import UserStore from "./UserStore";
 
 /**
@@ -33,8 +32,6 @@ export function getAuthSettings(): Auth0ClientOptions {
 }
 
 class RootStore {
-  caseStore: CaseStore;
-
   userStore: UserStore;
 
   constructor() {
@@ -42,8 +39,6 @@ class RootStore {
       authSettings: getAuthSettings(),
       rootStore: this,
     });
-
-    this.caseStore = new CaseStore({ rootStore: this });
   }
 }
 

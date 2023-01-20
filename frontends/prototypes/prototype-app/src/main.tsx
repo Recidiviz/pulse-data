@@ -1,13 +1,13 @@
-import React from "react";
+import { StrictMode } from "react";
 import ReactDOM from "react-dom";
 import ReactModal from "react-modal";
 
 import App from "./App";
 
 ReactDOM.render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>,
+  </StrictMode>,
   document.getElementById("root"),
   () => {
     ReactModal.setAppElement("#root");
