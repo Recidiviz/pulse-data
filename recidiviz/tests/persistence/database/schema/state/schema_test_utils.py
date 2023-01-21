@@ -228,3 +228,20 @@ def generate_supervision_contact(person, **kwargs) -> schema.StateSupervisionCon
     }
     args.update(kwargs)
     return schema.StateSupervisionContact(person=person, **args)
+
+
+def generate_staff(**kwargs) -> schema.StateStaff:
+    args = {
+        "state_code": _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateStaff(**args)
+
+
+def generate_staff_external_id(**kwargs) -> schema.StateStaffExternalId:
+    args = {
+        "state_code": _STATE_CODE,
+        "id_type": _ID_TYPE,
+    }
+    args.update(kwargs)
+    return schema.StateStaffExternalId(**args)

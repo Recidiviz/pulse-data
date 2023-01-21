@@ -839,7 +839,7 @@ def get_entities_by_type(
     return entities_of_type
 
 
-# TODO(#17471): Clarify/eliminate concept of a standalone entity
+# TODO(#17856): Eliminate concept of a standalone entity when we have deleted StateAgent
 def is_standalone_entity(entity: DatabaseEntity) -> bool:
     """Returns True if the provided entity is an instance of a class that
     can exist separate from a StatePerson tree.

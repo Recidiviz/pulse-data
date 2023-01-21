@@ -16,42 +16,52 @@
 # =============================================================================
 """Contains logic to match database entities with ingested entities."""
 
-from typing import List
+from typing import List, Type
 
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
-from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_delegate_factory import (
-    RootEntityEntityMatchingDelegateFactory,
-)
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     StateEntityMatcher,
 )
 from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate_factory import (
     StateSpecificEntityMatchingDelegateFactory,
 )
-from recidiviz.persistence.persistence_utils import RootEntityT
+from recidiviz.persistence.persistence_utils import RootEntityT, SchemaRootEntityT
 from recidiviz.utils import trace
 
 
 @trace.span
 def match(
+    *,
     session: Session,
     region: str,
+    root_entity_cls: Type[RootEntityT],
+    schema_root_entity_cls: Type[SchemaRootEntityT],
     ingested_root_entities: List[RootEntityT],
     ingest_metadata: IngestMetadata,
-) -> MatchedEntities:
-    matcher = _get_matcher(region, ingest_metadata)
+) -> MatchedEntities[SchemaRootEntityT]:
+    matcher = _get_matcher(
+        region,
+        ingest_metadata,
+        root_entity_cls,
+        schema_root_entity_cls,
+    )
     return matcher.run_match(session, ingested_root_entities)
 
 
 def _get_matcher(
     region_code: str,
     ingest_metadata: IngestMetadata,
-) -> StateEntityMatcher:
+    root_entity_cls: Type[RootEntityT],
+    schema_root_entity_cls: Type[SchemaRootEntityT],
+) -> StateEntityMatcher[RootEntityT, SchemaRootEntityT]:
     state_matching_delegate = StateSpecificEntityMatchingDelegateFactory.build(
         region_code=region_code,
         ingest_metadata=ingest_metadata,
     )
-    root_entity_delegate = RootEntityEntityMatchingDelegateFactory.build()
-    return StateEntityMatcher(state_matching_delegate, root_entity_delegate)
+    return StateEntityMatcher(
+        root_entity_cls=root_entity_cls,
+        schema_root_entity_cls=schema_root_entity_cls,
+        state_specific_logic_delegate=state_matching_delegate,
+    )

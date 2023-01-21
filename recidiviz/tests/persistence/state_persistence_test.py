@@ -39,9 +39,6 @@ from recidiviz.persistence.entity_matching.entity_matching_types import (
     EntityTree,
     IndividualMatchResult,
 )
-from recidiviz.persistence.entity_matching.state.root_state_person_entity_matching_delegate import (
-    RootStatePersonEntityMatchingDelegate,
-)
 from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
     StateEntityMatcher,
 )
@@ -104,8 +101,11 @@ class _PatchedStateEntityMatcher(StateEntityMatcher):
         state_matching_delegate = UsXxMatchingDelegate(
             ingest_metadata=TestStatePersistence.default_metadata
         )
-        root_entity_delegate = RootStatePersonEntityMatchingDelegate()
-        super().__init__(state_matching_delegate, root_entity_delegate)
+        super().__init__(
+            entities.StatePerson,
+            schema.StatePerson,
+            state_matching_delegate,
+        )
         self.erroring_external_ids = erroring_external_ids
         self.erroring_class = erroring_class
 

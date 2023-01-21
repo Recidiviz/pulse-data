@@ -17,14 +17,18 @@
 """Functionality for validating that certain database invariants are true before we commit a transaction."""
 
 import logging
-from typing import Callable, List
+from typing import Callable, List, Type
 
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.state.dao import SessionIsDirtyError
 from recidiviz.persistence.database.session import Session
-from recidiviz.persistence.database_invariant_validator.state.state_invariant_validators import (
-    get_state_database_invariant_validators,
+from recidiviz.persistence.database_invariant_validator.state.state_person_invariant_validators import (
+    get_state_person_database_invariant_validators,
 )
+from recidiviz.persistence.database_invariant_validator.state.state_staff_invariant_validators import (
+    get_state_staff_database_invariant_validators,
+)
+from recidiviz.persistence.persistence_utils import SchemaRootEntityT
 
 ValidatorType = Callable[[Session, str, List[state_schema.StatePerson]], bool]
 
@@ -32,22 +36,30 @@ ValidatorType = Callable[[Session, str, List[state_schema.StatePerson]], bool]
 def validate_invariants(
     session: Session,
     region_code: str,
-    output_people: List[state_schema.StatePerson],
+    schema_root_entity_cls: Type[SchemaRootEntityT],
+    output_root_entities: List[SchemaRootEntityT],
 ) -> int:
     """Validates that certain database invariants are true for the given region.
 
     Args:
         session: The database session
         region_code: The string region code associated with this ingest job
-        output_people: A list of all schema person objects touched by this session.
+        schema_root_entity_cls: The type of the objects in |output_root_entities|.
+        output_root_entities: A list of all schema person objects touched by this session.
     """
 
-    validators: List[ValidatorType] = get_state_database_invariant_validators()
+    validators: List[Callable[[Session, str, List[SchemaRootEntityT]], bool]]
+    if schema_root_entity_cls is state_schema.StatePerson:
+        validators = get_state_person_database_invariant_validators()
+    elif schema_root_entity_cls is state_schema.StateStaff:
+        validators = get_state_staff_database_invariant_validators()
+    else:
+        raise ValueError(f"Unexpected root entity class [{schema_root_entity_cls}]")
 
     errors = 0
     for validator_fn in validators:
         try:
-            success = validator_fn(session, region_code, output_people)
+            success = validator_fn(session, region_code, output_root_entities)
             if not success:
                 errors += 1
         except SessionIsDirtyError as e:
