@@ -695,7 +695,10 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                         lower_bound_update_datetime=lower_bound_update_datetime,
                         gcs_destination_path=gcs_destination_bucket_override,
                     )
-                    download_result = sftp_controller.do_fetch()
+                    (
+                        download_result,
+                        downloaded_items_to_remote_file,
+                    ) = sftp_controller.do_fetch()
 
                     with monitoring.measurements(
                         {TagKey.SFTP_TASK_TYPE: "download"}
@@ -742,6 +745,7 @@ def upload_from_sftp() -> Tuple[str, HTTPStatus]:
                         paths_with_timestamps=download_result.successes,
                         project_id=metadata.project_id(),
                         region_code=region_code,
+                        downloaded_paths_to_remote_files=downloaded_items_to_remote_file,
                         gcs_destination_path=gcs_destination_bucket_override,
                     )
 

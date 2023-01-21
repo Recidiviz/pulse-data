@@ -17,11 +17,13 @@
 """Tests for base_upload_state_files_to_ingest_bucket_controller.py"""
 import datetime
 import unittest
+from typing import Optional
 from unittest.mock import Mock, create_autospec, patch
 
+import pytest
 from mock import call
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
@@ -35,14 +37,17 @@ from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_contr
     UploadStateFilesToIngestBucketController,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 TODAY = datetime.datetime.today()
 
 
+@pytest.mark.uses_db
 @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
 @patch.object(
     PostgresDirectIngestRawFileMetadataManager,
@@ -56,6 +61,13 @@ TODAY = datetime.datetime.today()
 )
 class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
     """Tests for UploadStateFilesToIngestBucketController."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.project_id = "recidiviz-456"
@@ -71,15 +83,19 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.task_manager_cls = self.task_manager_patcher.start()
         self.mock_task_manager = self.task_manager_cls()
 
-        self.operations_database_key = SQLAlchemyDatabaseKey.for_schema(
-            SchemaType.OPERATIONS
-        )
-        fakes.use_in_memory_sqlite_database(self.operations_database_key)
+        self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.operations_key)
         self.task_manager_patcher.stop()
         self.project_id_patcher.stop()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     def test_do_upload_succeeds(self, mock_fs_factory: Mock) -> None:
         self.mock_task_manager.get_scheduler_queue_state.return_value = (
@@ -102,6 +118,9 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
             project_id="recidiviz-456",
             region_code="us_xx",
+            downloaded_paths_to_remote_files={
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt": "test_file.txt"
+            },
         )
         expected_result = [
             "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
@@ -110,6 +129,12 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
         self.assertEqual(result.successes, expected_result)
         self.assertEqual(len(result.failures), 0)
         self.assertEqual(len(controller.skipped_files), 0)
+        with SessionFactory.using_database(self.operations_key) as session:
+            db_results = session.query(
+                schema.DirectIngestSftpIngestReadyFileMetadata
+            ).all()
+            self.assertEqual(len(db_results), 1)
+            self.assertEqual(db_results[0].remote_file_path, "test_file.txt")
         self.mock_task_manager.update_scheduler_queue_state.assert_has_calls(
             [
                 call(
@@ -153,6 +178,10 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
             project_id="recidiviz-456",
             region_code="us_xx",
+            downloaded_paths_to_remote_files={
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt": "test_file.txt",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/non_existent_file.txt": "non_existent_file.txt",
+            },
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertEqual(
@@ -213,6 +242,10 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
             project_id="recidiviz-456",
             region_code="us_xx",
+            downloaded_paths_to_remote_files={
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt": "test_file.txt",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv": "test_file.csv",
+            },
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
@@ -262,12 +295,6 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ),
             local_path=None,
         )
-        mock_fs.test_add_path(
-            path=GcsfsDirectoryPath.from_bucket_and_blob_name(
-                "recidiviz-456-direct-ingest-state-us-xx", "raw_data/subdir2/"
-            ),
-            local_path=None,
-        )
         mock_fs_factory.return_value = mock_fs
         controller = UploadStateFilesToIngestBucketController(
             paths_with_timestamps=[
@@ -275,6 +302,9 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
             project_id="recidiviz-456",
             region_code="us_xx",
+            downloaded_paths_to_remote_files={
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/": "raw_data.zip"
+            },
         )
         result = [
             ("recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt", TODAY),
@@ -284,6 +314,12 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ),
         ]
         self.assertListEqual(result, controller.get_paths_to_upload())
+        with SessionFactory.using_database(self.operations_key) as session:
+            db_results = session.query(
+                schema.DirectIngestSftpIngestReadyFileMetadata
+            ).all()
+            for db_result in db_results:
+                self.assertEqual(db_result.remote_file_path, "raw_data.zip")
         self.mock_task_manager.update_scheduler_queue_state.assert_not_called()
 
     def test_skip_already_processed_or_discovered_files(
@@ -340,6 +376,12 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
             project_id="recidiviz-456",
             region_code="us_xx",
+            downloaded_paths_to_remote_files={
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt": "test_file.txt",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv": "test_file.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv": "skipped.csv",
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/discovered.csv": "discovered.csv",
+            },
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
         self.assertListEqual(
@@ -378,6 +420,9 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             ],
             project_id="recidiviz-456",
             region_code="us_xx",
+            downloaded_paths_to_remote_files={
+                "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt": "test_file.txt"
+            },
         )
         expected_result = [
             "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt"
