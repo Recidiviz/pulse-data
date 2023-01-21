@@ -113,6 +113,7 @@ _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 
 
+# TODO(#17854): Add relevant tests for StateStaff
 class TestStateEntityMatching(BaseStateEntityMatcherTest):
     """Tests for default state entity matching logic."""
 
@@ -148,12 +149,14 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
     @staticmethod
     def _match(
         session: Session, ingested_people: List[state_entities.StatePerson]
-    ) -> MatchedEntities:
+    ) -> MatchedEntities[schema.StatePerson]:
         return entity_matching.match(
-            session,
-            _STATE_CODE,
-            ingested_people,
-            TestStateEntityMatching.default_metadata,
+            session=session,
+            region=_STATE_CODE,
+            ingested_root_entities=ingested_people,
+            root_entity_cls=state_entities.StatePerson,
+            schema_root_entity_cls=schema.StatePerson,
+            ingest_metadata=TestStateEntityMatching.default_metadata,
         )
 
     def test_match_newPerson(self) -> None:

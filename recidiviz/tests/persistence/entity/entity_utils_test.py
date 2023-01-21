@@ -650,7 +650,8 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         ),
     ],
     schema.StateStaff: [
-        # TODO(#17471): Fill this out once there are other entities hanging off of StateStaff
+        # TODO(#17855): Fill this out once there are other entities
+        #  (i.e. StateStaffRolePeriod) hanging off of StateStaff
     ],
     schema.StateStaffExternalId: [
         schema.StateStaffExternalId(

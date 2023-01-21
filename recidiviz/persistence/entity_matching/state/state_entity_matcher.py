@@ -50,9 +50,6 @@ from recidiviz.persistence.entity_matching.entity_matching_types import (
     MatchResults,
 )
 from recidiviz.persistence.entity_matching.monitoring import increment_error
-from recidiviz.persistence.entity_matching.state.root_entity_entity_matching_delegate import (
-    RootEntityEntityMatchingDelegate,
-)
 from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
     StateIngestedTreeMerger,
 )
@@ -112,17 +109,12 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
 
     def __init__(
         self,
+        root_entity_cls: Type[RootEntityT],
+        schema_root_entity_cls: Type[SchemaRootEntityT],
         state_specific_logic_delegate: StateSpecificEntityMatchingDelegate,
-        root_entity_delegate: RootEntityEntityMatchingDelegate[
-            RootEntityT, SchemaRootEntityT
-        ],
-    ):
-        if root_entity_delegate.get_schema_root_entity_cls().__name__ == "StateStaff":
-            raise ValueError(
-                "TODO(#17471): Unsupported class StateStaff - add support and "
-                "associated entity matching tests."
-            )
-
+    ) -> None:
+        self.root_entity_cls: Type[RootEntityT] = root_entity_cls
+        self.schema_root_entity_cls: Type[SchemaRootEntityT] = schema_root_entity_cls
         self.all_ingested_db_objs: Set[DatabaseEntity] = set()
 
         # Cache of root entity DB objects (e.g. objs of type schema.StatePerson)
@@ -140,11 +132,6 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
 
         # Delegate object with all state specific logic
         self.state_specific_logic_delegate = state_specific_logic_delegate
-
-        # Delegate object with helpers for managing root entities of different types
-        self.root_entity_delegate: RootEntityEntityMatchingDelegate[
-            RootEntityT, SchemaRootEntityT
-        ] = root_entity_delegate
 
         self.session: Optional[Session] = None
 
@@ -195,7 +182,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
                 f"[{entity_cls.__name__}]. Entity: [{entity}]"
             )
             if hasattr(entity, "external_id") or isinstance(
-                entity, self.root_entity_delegate.get_schema_root_entity_cls()
+                entity, self.schema_root_entity_cls
             ):
                 # TODO(#7908): This was changed from raising a value error to just logging
                 # an error. This should probably be re-visited to see if we can re-enable
@@ -281,7 +268,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         self,
         session: Session,
         ingested_root_entities: List[RootEntityT],
-    ) -> MatchedEntities:
+    ) -> MatchedEntities[SchemaRootEntityT]:
         """Attempts to match all root entities from |ingested_root_entities| with
         corresponding root entities in our database. Returns a MatchedEntities object
         that contains the results of matching.
@@ -296,7 +283,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
             datetime.datetime.now().isoformat(),
         )
         ingested_db_root_entities = [
-            assert_type(p, self.root_entity_delegate.get_schema_root_entity_cls())
+            assert_type(p, self.schema_root_entity_cls)
             for p in convert_entities_to_schema(
                 ingested_root_entities, populate_back_edges=False
             )
@@ -319,7 +306,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         )
         db_root_entities = read_root_entities_by_external_ids(
             session,
-            schema_root_entity_cls=self.root_entity_delegate.get_schema_root_entity_cls(),
+            schema_root_entity_cls=self.schema_root_entity_cls,
             cls_external_ids=root_external_ids,
             state_code=self.state_specific_logic_delegate.get_region_code(),
         )
@@ -355,7 +342,10 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         # entity matching
         check_not_dirty(session)
 
-        return matched_entities_builder.build()
+        matched_entities: MatchedEntities[
+            SchemaRootEntityT
+        ] = matched_entities_builder.build()
+        return matched_entities
 
     def _run_match(
         self,
@@ -423,7 +413,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
 
         All returned root entities have direct and indirect backedges set.
         """
-        schema_root_entity_cls = self.root_entity_delegate.get_schema_root_entity_cls()
+        schema_root_entity_cls = self.schema_root_entity_cls
         root_entity_cls_name = to_snake_case(schema_root_entity_cls.__name__)
         db_root_entity_trees = [
             EntityTree(entity=db_root_entity, ancestor_chain=[])
@@ -476,9 +466,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
     def _populate_root_entity_backedges(
         self, root_entities: List[SchemaRootEntityT]
     ) -> None:
-        back_edge_field_name = (
-            self.root_entity_delegate.get_root_entity_backedge_field_name()
-        )
+        back_edge_field_name = self.root_entity_cls.back_edge_field_name()
         for root_entity in root_entities:
             children = get_all_db_objs_from_tree(root_entity, self.field_index)
             for child in children:
@@ -1052,7 +1040,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         db_match_candidates = db_entity_trees
         if isinstance(
             ingested_entity_tree.entity,
-            self.root_entity_delegate.get_schema_root_entity_cls(),
+            self.schema_root_entity_cls,
         ):
             db_match_candidates = self.get_cached_matches(ingested_entity_tree.entity)
 

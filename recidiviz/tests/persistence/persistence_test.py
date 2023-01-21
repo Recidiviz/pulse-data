@@ -188,7 +188,7 @@ def mock_build_matching_delegate(
     return StateSpecificEntityMatchingDelegate(region_code, ingest_metadata)
 
 
-# TODO(#17471): Write test for persisting StateStaff
+# TODO(#17854): Write test for persisting StateStaff
 class MultipleStateTestMixin:
     """Defines the test cases for running multiple state transactions simultaneously.
 

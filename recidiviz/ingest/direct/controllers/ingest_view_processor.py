@@ -20,7 +20,7 @@ results and persist the contents appropriately to the Recidiviz schema in Postgr
 
 import abc
 import csv
-from typing import Dict, Iterator, List, cast
+from typing import Dict, Iterator, List, Union, cast
 
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
@@ -84,9 +84,13 @@ class IngestViewProcessorImpl(IngestViewProcessor):
             contents_iterator=self.row_iterator_from_contents_handle(contents_handle),
         )
 
+        root_entities: Union[
+            List[state_entities.StatePerson], List[state_entities.StateStaff]
+        ]
         if all(isinstance(e, state_entities.StatePerson) for e in parsed_entities):
             root_entities = cast(List[state_entities.StatePerson], parsed_entities)
-        # TODO(#17471): Add support here for root entities of type `StateStaff`
+        elif all(isinstance(e, state_entities.StateStaff) for e in parsed_entities):
+            root_entities = cast(List[state_entities.StateStaff], parsed_entities)
         else:
             raise ValueError(
                 f"Found unexpected top-level root entity types: "

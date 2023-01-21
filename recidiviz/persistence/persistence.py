@@ -36,6 +36,8 @@ from recidiviz.persistence.ingest_info_converter import ingest_info_converter
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import (
     EntityDeserializationResult,
+    RootEntityT,
+    SchemaRootEntityT,
     should_persist,
 )
 from recidiviz.utils import metadata, monitoring, trace
@@ -118,7 +120,7 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
 
 def _should_abort(
     total_root_entities: int,
-    conversion_result: EntityDeserializationResult,
+    conversion_result: EntityDeserializationResult[RootEntityT, SchemaRootEntityT],
     region_code: str,
     entity_matching_errors: int = 0,
     database_invariant_errors: int = 0,
@@ -188,7 +190,7 @@ def _should_abort(
 
 
 def _calculate_overall_error_ratio(
-    conversion_result: EntityDeserializationResult,
+    conversion_result: EntityDeserializationResult[RootEntityT, SchemaRootEntityT],
     entity_matching_errors: int,
     total_root_entities: int,
 ) -> float:
@@ -333,7 +335,7 @@ def write_ingest_info(
 
 @trace.span
 def write_entities(
-    conversion_result: EntityDeserializationResult,
+    conversion_result: EntityDeserializationResult[RootEntityT, SchemaRootEntityT],
     ingest_metadata: IngestMetadata,
     total_root_entities: int,
     run_txn_fn: Callable[
@@ -386,10 +388,12 @@ def write_entities(
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
-                session,
-                ingest_metadata.region,
-                conversion_result.root_entities,
-                ingest_metadata,
+                session=session,
+                region=ingest_metadata.region,
+                root_entity_cls=conversion_result.root_entity_cls,
+                schema_root_entity_cls=conversion_result.schema_root_entity_cls,
+                ingested_root_entities=conversion_result.root_entities,
+                ingest_metadata=ingest_metadata,
             )
             output_root_entities = entity_matching_output.root_entities
             total_root_entities = entity_matching_output.total_root_entities
@@ -417,7 +421,8 @@ def write_entities(
                 database_invariant_validator.validate_invariants(
                     session,
                     ingest_metadata.region,
-                    output_root_entities,
+                    schema_root_entity_cls=conversion_result.schema_root_entity_cls,
+                    output_root_entities=output_root_entities,
                 )
             )
 

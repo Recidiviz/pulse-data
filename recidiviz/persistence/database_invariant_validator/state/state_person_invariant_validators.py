@@ -14,12 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""State schema validator functions to be run before session commit to ensure there is no bad database state."""
+"""StatePerson schema validator functions to be run before session commit to ensure
+there is no bad database state.
+"""
 
 import logging
 from typing import Callable, List
 
-from more_itertools import one
+from more_itertools import first
 from sqlalchemy import func
 
 from recidiviz.persistence.database.schema.state import schema
@@ -43,7 +45,7 @@ def state_allows_multiple_ids_same_type(state_code: str) -> bool:
 def check_people_do_not_have_multiple_ids_same_type(
     session: Session, region_code: str, output_people: List[schema.StatePerson]
 ) -> bool:
-    """Validates that person has two ids of the same type (for states configured to enforce this invariant)."""
+    """Validates that no person has two ids of the same type (for states configured to enforce this invariant)."""
 
     check_not_dirty(session)
 
@@ -101,7 +103,7 @@ def check_people_do_not_have_multiple_ids_same_type(
     results = query.all()
 
     if results:
-        _state_code, person_id, id_type, count = one(results)
+        _state_code, person_id, id_type, count = first(results)
         logging.error(
             "[Invariant validation] Found people with multiple ids of the same type. First example: "
             "person_id=[%s], id_type=[%s] is used [%s] times.",
@@ -117,9 +119,7 @@ def check_people_do_not_have_multiple_ids_same_type(
     return True
 
 
-# TODO(#17471): Adapt logic to allow for List[schema.StateStaff] and add similar id_type
-# validation for StateStaff.
-def get_state_database_invariant_validators() -> List[
+def get_state_person_database_invariant_validators() -> List[
     Callable[[Session, str, List[schema.StatePerson]], bool]
 ]:
     return [check_people_do_not_have_multiple_ids_same_type]

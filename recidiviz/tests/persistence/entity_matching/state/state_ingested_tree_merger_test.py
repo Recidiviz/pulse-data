@@ -148,8 +148,8 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
         self.assertCountEqual([expected_person], merge_result)
 
-    # TODO(#17471): Add analogous test for StateStaff once StateStaff has child
-    #  entities other than external_id.
+    # TODO(#17855): Add analogous test for StateStaff once StateStaff has child
+    #  entities other than external_id (i.e. StateStaffRolePeriod).
     def test_merge_people_exact_match_with_child(self) -> None:
         ingested_persons = [
             make_person(
@@ -177,7 +177,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
         self.assertCountEqual([expected_person], merge_result)
 
-    # TODO(#17471): Add analogous test for StateStaff once StateStaff has child
+    # TODO(#17855): Add analogous test for StateStaff once StateStaff has child
     #  entities other than external_id.
     def test_merge_people_with_different_children(self) -> None:
         ingested_persons = [
@@ -714,7 +714,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(  # type: ignore
             ingested_root_entities
         )
         self.assertCountEqual(
