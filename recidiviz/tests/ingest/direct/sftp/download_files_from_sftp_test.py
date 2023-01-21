@@ -23,13 +23,14 @@ import unittest
 from base64 import decodebytes
 from typing import Dict, List, Optional
 
+import pytest
 import pytz
 from mock import MagicMock, Mock, patch
 from paramiko import RSAKey, SFTPAttributes
 from paramiko.hostkeys import HostKeyEntry
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
@@ -46,7 +47,12 @@ from recidiviz.ingest.direct.sftp.download_files_from_sftp import (
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
+from recidiviz.persistence.database.schema.operations import schema
+from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tools.postgres import local_postgres_helpers
 
 TODAY = datetime.datetime.fromtimestamp(int(datetime.datetime.today().timestamp()))
 YESTERDAY = TODAY - datetime.timedelta(1)
@@ -61,26 +67,6 @@ TEST_SSH_RSA_KEY = (
 FIXTURE_PATH = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "../controllers/fixtures", "sftp_test"
 )
-
-
-def create_files(
-    download_dir: str, remotedir: str, gcsfs: FakeGCSFileSystem
-) -> FakeGCSFileSystem:
-    gcsfs.test_add_path(
-        path=GcsfsDirectoryPath.from_absolute_path(f"{download_dir}/{remotedir}"),
-        local_path=None,
-    )
-    for item in os.listdir(os.path.join(FIXTURE_PATH, remotedir)):
-        path_to_add = f"{download_dir}/{remotedir}/{item}"
-        if os.path.isdir(item):
-            gcsfs.test_add_path(
-                path=GcsfsDirectoryPath.from_absolute_path(path_to_add), local_path=None
-            )
-        else:
-            gcsfs.test_add_path(
-                path=GcsfsFilePath.from_absolute_path(path_to_add), local_path=None
-            )
-    return gcsfs
 
 
 def create_sftp_attrs() -> List[SFTPAttributes]:
@@ -239,6 +225,7 @@ class TestSftpAuth(unittest.TestCase):
         self.assertEqual(result.port, 22)
 
 
+@pytest.mark.uses_db
 @patch.object(
     # pylint: disable=abstract-class-instantiated
     SftpDownloadDelegateFactory,
@@ -279,6 +266,13 @@ class TestSftpAuth(unittest.TestCase):
 class TestDownloadFilesFromSftpController(unittest.TestCase):
     """Tests for DownloadFilesFromSftpController."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
         self.lower_bound_date = YESTERDAY
         self.project_id = "recidiviz-456"
@@ -287,8 +281,18 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = self.project_id
 
+        self.operations_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        local_postgres_helpers.use_on_disk_postgresql_database(self.operations_key)
+
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.operations_key)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
 
     @patch.object(
         RecidivizSftpConnection,
@@ -315,9 +319,12 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
 
         files_with_timestamps = controller.get_paths_to_download(mock_connection)
         expected = [
-            ("./testToday/file1.txt", TODAY.astimezone(pytz.UTC)),
-            ("./testToday/already_processed.csv", TODAY.astimezone(pytz.UTC)),
-            ("./testToday/discovered.csv", TODAY.astimezone(pytz.UTC)),
+            ("./testToday/file1.txt", TODAY.astimezone(pytz.UTC).timestamp()),
+            (
+                "./testToday/already_processed.csv",
+                TODAY.astimezone(pytz.UTC).timestamp(),
+            ),
+            ("./testToday/discovered.csv", TODAY.astimezone(pytz.UTC).timestamp()),
         ]
         self.assertCountEqual(files_with_timestamps, expected)
 
@@ -345,7 +352,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             self.project_id, self.region, self.lower_bound_date
         )
 
-        result = controller.do_fetch()
+        result, remote_files = controller.do_fetch()
         self.assertCountEqual(
             result.successes,
             [
@@ -361,6 +368,25 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                 )
             ],
         )
+        self.assertDictEqual(
+            remote_files,
+            {
+                os.path.join(
+                    "recidiviz-456-direct-ingest-state-us-xx-sftp",
+                    RAW_INGEST_DIRECTORY,
+                    TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
+                    "testToday",
+                    "file1.txt",
+                ): "./testToday/file1.txt"
+            },
+        )
+        with SessionFactory.using_database(
+            self.operations_key, autocommit=False
+        ) as session:
+            db_results = session.query(schema.DirectIngestSftpRemoteFileMetadata).all()
+            for db_result in db_results:
+                if db_result.remote_file_path == "./testToday/file1.txt":
+                    self.assertIsNotNone(db_result.file_download_time)
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
@@ -388,7 +414,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
             self.project_id, self.region, lower_bound_with_tz
         )
 
-        result = controller.do_fetch()
+        result, _ = controller.do_fetch()
         self.assertCountEqual(
             result.successes,
             [
@@ -453,7 +479,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         mock_fs_factory.return_value = mock_fs
 
         controller = DownloadFilesFromSftpController(self.project_id, self.region, None)
-        result = controller.do_fetch()
+        result, remote_files = controller.do_fetch()
         self.assertSetEqual(
             set(result.successes),
             set(
@@ -489,6 +515,32 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
                 )
             ),
         )
+        self.assertDictEqual(
+            remote_files,
+            {
+                os.path.join(
+                    "recidiviz-456-direct-ingest-state-us-xx-sftp",
+                    RAW_INGEST_DIRECTORY,
+                    TODAY.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
+                    "testToday",
+                    "file1.txt",
+                ): "./testToday/file1.txt",
+                os.path.join(
+                    "recidiviz-456-direct-ingest-state-us-xx-sftp",
+                    RAW_INGEST_DIRECTORY,
+                    TWO_DAYS_AGO.astimezone(pytz.UTC).strftime("%Y-%m-%dT%H:%M:%S:%f"),
+                    "testTwoDaysAgo",
+                    "file1.txt",
+                ): "./testTwoDaysAgo/file1.txt",
+            },
+        )
+        with SessionFactory.using_database(
+            self.operations_key, autocommit=False
+        ) as session:
+            db_results = session.query(schema.DirectIngestSftpRemoteFileMetadata).all()
+            for db_result in db_results:
+                if "file1.txt" in db_result.remote_file_path:
+                    self.assertIsNotNone(db_result.file_download_time)
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
     @patch.object(
@@ -513,7 +565,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         controller = DownloadFilesFromSftpController(
             self.project_id, self.region, self.lower_bound_date
         )
-        result = controller.do_fetch()
+        result, _ = controller.do_fetch()
         self.assertEqual(result.failures, ["./testToday/file1.txt"])
         self.assertEqual(len(mock_fs.files), len(result.successes))
 
@@ -540,7 +592,7 @@ class TestDownloadFilesFromSftpController(unittest.TestCase):
         controller = DownloadFilesFromSftpController(
             self.project_id, self.region, self.lower_bound_date
         )
-        result = controller.do_fetch()
+        result, _ = controller.do_fetch()
         self.assertCountEqual(
             result.skipped,
             ["./testToday/already_processed.csv", "./testToday/discovered.csv"],

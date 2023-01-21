@@ -1080,12 +1080,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
-            failures=[],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+                failures=[],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
@@ -1163,12 +1164,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY)],
-            failures=[("test_file2.txt")],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY)],
+                failures=[("test_file2.txt")],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
@@ -1233,12 +1235,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
-            failures=[],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+                failures=[],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
@@ -1304,12 +1307,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY), ("test_file3.txt", TODAY)],
-            failures=[("test_file2.txt")],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY), ("test_file3.txt", TODAY)],
+                failures=[("test_file2.txt")],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
@@ -1374,9 +1378,12 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](successes=[], failures=["test_file1.txt"], skipped=[]),
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[], failures=["test_file1.txt"], skipped=[]
+            ),
+            {},
+        ),
     )
     def test_upload_from_sftp_handles_all_downloads_failing(
         self,
@@ -1441,12 +1448,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
-            failures=[],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+                failures=[],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
@@ -1518,9 +1526,12 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](successes=[], failures=[], skipped=[]),
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[], failures=[], skipped=[]
+            ),
+            {},
+        ),
     )
     def test_upload_from_sftp_handles_missing_downloads(
         self,
@@ -1585,9 +1596,12 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](successes=[], failures=[], skipped=["test_file1.txt", "test_file2.txt"]),
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[], failures=[], skipped=["test_file1.txt", "test_file2.txt"]
+            ),
+            {},
+        ),
     )
     def test_upload_from_sftp_handles_all_downloads_skipped(
         self,
@@ -1652,12 +1666,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
-            failures=[],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+                failures=[],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
@@ -1730,12 +1745,13 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch.object(
         DownloadFilesFromSftpController,
         "do_fetch",
-        lambda _: MultiRequestResultWithSkipped[
-            Tuple[str, datetime.datetime], str, str
-        ](
-            successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
-            failures=[],
-            skipped=[],
+        lambda _: (
+            MultiRequestResultWithSkipped[Tuple[str, datetime.datetime], str, str](
+                successes=[("test_file1.txt", TODAY), ("test_file2.txt", TODAY)],
+                failures=[],
+                skipped=[],
+            ),
+            {},
         ),
     )
     @patch.object(
