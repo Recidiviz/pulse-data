@@ -21,23 +21,25 @@ from unittest.case import TestCase
 import pytest
 
 from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import dao, schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
     print_entity_trees,
 )
-from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
+from recidiviz.persistence.persistence_utils import RootEntityT
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
     clear_db_ids,
 )
-from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -70,36 +72,50 @@ class BaseStateEntityMatcherTest(TestCase):
             schema_obj, populate_back_edges=False
         )
 
-    def assert_no_errors(self, matched_entities):
+    def assert_no_errors(self, matched_entities: MatchedEntities) -> None:
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(0, matched_entities.database_cleanup_error_count)
 
-    def assert_people_match_pre_and_post_commit(
+    def assert_root_entities_match_pre_and_post_commit(
         self,
-        expected_people,
-        matched_people,
-        match_session,
-        expected_unmatched_db_people=None,
-        debug=False,
-    ):
-        self._assert_people_match(expected_people, matched_people, debug)
+        expected_matched_root_entities: Sequence[RootEntityT],
+        matched_root_entities: Sequence[DatabaseEntity],
+        match_session: Session,
+        expected_unmatched_db_root_entities: Optional[Sequence[RootEntityT]] = None,
+        debug: bool = False,
+    ) -> None:
+        self._assert_root_entities_match(
+            expected_matched_root_entities, matched_root_entities, debug
+        )
 
-        # Sanity check that committing and reading the people from the DB
+        # Sanity check that committing and reading the root entities from the DB
         # doesn't break/update any fields (except for DB ids).
         match_session.commit()
         match_session.close()
 
         session = self._session()
-        result_db_people = dao.read_all_people(session)
-        if expected_unmatched_db_people:
-            expected_people.extend(expected_unmatched_db_people)
-        self._assert_people_match(expected_people, result_db_people)
-        assert_no_unexpected_entities_in_db(result_db_people, session)
+        result_db_root_entities: List[DatabaseEntity] = dao.read_all_people(session)
+        result_db_root_entities.extend(dao.read_all_staff(session))
 
-    def _assert_people_match(self, expected_people, matched_people, debug=False):
-        converted_matched = converter.convert_schema_objects_to_entity(matched_people)
+        expected_root_entities: List[RootEntityT] = list(expected_matched_root_entities)
+        if expected_unmatched_db_root_entities:
+            expected_root_entities.extend(expected_unmatched_db_root_entities)
+        self._assert_root_entities_match(
+            expected_root_entities, result_db_root_entities
+        )
+        assert_no_unexpected_entities_in_db(result_db_root_entities, session)
+
+    def _assert_root_entities_match(
+        self,
+        expected_root_entities: Sequence[RootEntityT],
+        matched_root_entities: Sequence[DatabaseEntity],
+        debug: bool = False,
+    ) -> None:
+        converted_matched = converter.convert_schema_objects_to_entity(
+            matched_root_entities
+        )
         db_expected_with_backedges = converter.convert_entities_to_schema(
-            expected_people
+            expected_root_entities
         )
         expected_with_backedges = converter.convert_schema_objects_to_entity(
             db_expected_with_backedges
@@ -115,7 +131,7 @@ class BaseStateEntityMatcherTest(TestCase):
             print_entity_trees(converted_matched)
         self.assertCountEqual(expected_with_backedges, converted_matched)
 
-    def _session(self):
+    def _session(self) -> Session:
         # TODO(#8046): Figure out whether it makes sense to use `using_database` instead
         # and what downstream would have to be refactored.
         return SessionFactory.deprecated__for_database(self.database_key)
@@ -161,7 +177,9 @@ class BaseStateMatchingUtilsTest(TestCase):
             schema_objects, populate_back_edges=False
         )
 
-    def assert_schema_objects_equal(self, expected: StateBase, actual: StateBase):
+    def assert_schema_objects_equal(
+        self, expected: StateBase, actual: StateBase
+    ) -> None:
         self.assertEqual(
             converter.convert_schema_object_to_entity(expected),
             converter.convert_schema_object_to_entity(actual),
@@ -169,28 +187,8 @@ class BaseStateMatchingUtilsTest(TestCase):
 
     def assert_schema_object_lists_equal(
         self, expected: List[StateBase], actual: List[StateBase]
-    ):
+    ) -> None:
         self.assertCountEqual(
             converter.convert_schema_objects_to_entity(expected),
             converter.convert_schema_objects_to_entity(actual),
         )
-
-    def assert_people_match(
-        self,
-        expected_people: List[StatePerson],
-        matched_people: Sequence[schema.StatePerson],
-        debug: bool = False,
-    ):
-        converted_matched = converter.convert_schema_objects_to_entity(matched_people)
-        db_expected_with_backedges = converter.convert_entities_to_schema(
-            expected_people
-        )
-        expected_with_backedges = converter.convert_schema_objects_to_entity(
-            db_expected_with_backedges
-        )
-        if debug:
-            print_visible_header_label("EXPECTED")
-            print_entity_trees(expected_with_backedges)
-            print_visible_header_label("FINAL")
-            print_entity_trees(converted_matched)
-        self.assertEqual(expected_with_backedges, converted_matched)

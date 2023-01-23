@@ -46,7 +46,6 @@ from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
     StateIncarcerationSentence,
@@ -55,11 +54,16 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonExternalId,
     StatePersonRace,
     StateProgramAssignment,
+    StateStaff,
+    StateStaffExternalId,
 )
 from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
 )
-from recidiviz.persistence.persistence_utils import EntityDeserializationResult
+from recidiviz.persistence.persistence_utils import (
+    EntityDeserializationResult,
+    RootEntityT,
+)
 from recidiviz.tools.postgres import local_postgres_helpers
 
 DATE = date(year=2019, day=1, month=2)
@@ -70,8 +74,10 @@ DATETIME_2 = datetime(DATE_2.year, DATE_2.month, DATE_2.day)
 STATE_CODE = StateCode.US_XX.value
 STATE_CODE_2 = StateCode.US_WW.value
 FAKE_PROJECT_ID = "test-project"
-FAKE_ID_TYPE = "US_XX_ID_TYPE"
-FAKE_ID_TYPE_2 = "US_WW_ID_TYPE_2"
+FAKE_PERSON_ID_TYPE = "US_XX_ID_TYPE"
+FAKE_PERSON_ID_TYPE_2 = "US_WW_PERSON_ID_TYPE_2"
+FAKE_STAFF_ID_TYPE = "US_XX_STAFF_PERSON_ID_TYPE"
+FAKE_STAFF_ID_TYPE_2 = "US_WW_STAFF_ID_TYPE_2"
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[
     str, Dict[str, float]
 ] = {
@@ -89,7 +95,7 @@ PERSON_STATE_1_ENTITY = StatePerson(
     gender=StateGender.MALE,
     external_ids=[
         StatePersonExternalId(
-            state_code=STATE_CODE, external_id="39768", id_type=FAKE_ID_TYPE
+            state_code=STATE_CODE, external_id="39768", id_type=FAKE_PERSON_ID_TYPE
         )
     ],
     races=[
@@ -123,7 +129,7 @@ PERSON_STATE_2_ENTITY = StatePerson(
     gender=StateGender.FEMALE,
     external_ids=[
         StatePersonExternalId(
-            state_code=STATE_CODE_2, external_id="52163", id_type=FAKE_ID_TYPE_2
+            state_code=STATE_CODE_2, external_id="52163", id_type=FAKE_PERSON_ID_TYPE_2
         )
     ],
     races=[
@@ -148,6 +154,36 @@ PERSON_STATE_2_ENTITY = StatePerson(
         )
     ],
 )
+
+STAFF_1_FULL_NAME = '{"given_names": "HOMER", "surname": "SIMPSON"}'
+
+STAFF_STATE_1_ENTITY = StateStaff(
+    state_code=STATE_CODE,
+    full_name=STAFF_1_FULL_NAME,
+    email="homer@simpson.com",
+    external_ids=[
+        StateStaffExternalId(
+            state_code=STATE_CODE, external_id="12345", id_type=FAKE_STAFF_ID_TYPE
+        )
+    ],
+    # TODO(#17855): Add StateStaffRolePeriods once that entity exists
+)
+
+STAFF_2_FULL_NAME = '{"given_names": "NED", "surname": "FLANDERS"}'
+STAFF_STATE_2_ENTITY = StateStaff(
+    state_code=STATE_CODE_2,
+    full_name=STAFF_2_FULL_NAME,
+    email="ned@flanders.com",
+    external_ids=[
+        StateStaffExternalId(
+            state_code=STATE_CODE_2, external_id="23456", id_type=FAKE_STAFF_ID_TYPE_2
+        )
+    ],
+    # TODO(#17855): Add StateStaffRolePeriods once that entity exists
+    # TODO(#15049): Add StateStaffSupervisorPeriod (? naming TBD) once that entity exists
+)
+
+
 INGEST_METADATA_STATE_1_INSERT = IngestMetadata(
     region=STATE_CODE,
     ingest_time=DATETIME,
@@ -188,7 +224,6 @@ def mock_build_matching_delegate(
     return StateSpecificEntityMatchingDelegate(region_code, ingest_metadata)
 
 
-# TODO(#17854): Write test for persisting StateStaff
 class MultipleStateTestMixin:
     """Defines the test cases for running multiple state transactions simultaneously.
 
@@ -198,13 +233,13 @@ class MultipleStateTestMixin:
     @abc.abstractmethod
     def run_transactions(
         self,
-        state_1_entities: List[state_entities.StatePerson],
-        state_2_entities: List[state_entities.StatePerson],
+        state_1_entities: List[RootEntityT],
+        state_2_entities: List[RootEntityT],
     ):
         """Writes the given ingest infos in separate transactions"""
 
     def write_entities(
-        self, entities: List[StatePerson], metadata: IngestMetadata
+        self, entities: List[RootEntityT], metadata: IngestMetadata
     ) -> None:
         persistence.write_entities(
             conversion_result=EntityDeserializationResult(
@@ -230,19 +265,30 @@ class MultipleStateTestMixin:
         self.run_transactions(
             [deepcopy(PERSON_STATE_1_ENTITY)], [deepcopy(PERSON_STATE_2_ENTITY)]
         )
+        self.run_transactions(
+            [deepcopy(STAFF_STATE_1_ENTITY)], [deepcopy(STAFF_STATE_2_ENTITY)]
+        )
 
         # Assert
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_all_people(session)
+            people_result = state_dao.read_all_people(session)
+            staff_result = state_dao.read_all_staff(session)
 
-        assert len(result) == 3
-        names = {person.full_name for person in result}
-        assert names == {
+        assert len(people_result) == 3
+        people_names = {person.full_name for person in people_result}
+        assert people_names == {
             None,
             '{"given_names": "JON", "surname": "HOPKINS"}',
             '{"given_names": "SOLANGE", "surname": "KNOWLES"}',
+        }
+
+        assert len(staff_result) == 2
+        staff_names = {staff.full_name for staff in staff_result}
+        assert staff_names == {
+            '{"given_names": "NED", "surname": "FLANDERS"}',
+            '{"given_names": "HOMER", "surname": "SIMPSON"}',
         }
 
     def test_insertOverlappingTypes_succeeds(self):
@@ -254,16 +300,22 @@ class MultipleStateTestMixin:
             )
             session.add(placeholder_person)
 
-        # Write persons to be updated
+        # Write root entities to be updated
         self.write_entities(
             [deepcopy(PERSON_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
         )
         self.write_entities(
             [deepcopy(PERSON_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
         )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
+        )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
+        )
 
         # Act
-        # Add risk assessment to both persons
+        # Add new child entities to each root entity
         person_state_1 = deepcopy(PERSON_STATE_1_ENTITY)
         person_state_1.assessments.append(
             StateAssessment.new_with_defaults(
@@ -282,21 +334,44 @@ class MultipleStateTestMixin:
             )
         )
 
+        staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
+        # TODO(#17855): Add StateStaffRolePeriods once that entity exists
+
         self.run_transactions([person_state_1], [person_state_2])
+        self.run_transactions([staff_state_1], [staff_state_2])
 
         # Assert
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_all_people(session)
+            people_result = state_dao.read_all_people(session)
+            staff_result = state_dao.read_all_staff(session)
 
-        result = sorted(result, key=lambda p: p.person_id)
-        assert len(result) == 3
-        assert result[0].full_name is None
-        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert len(result[1].assessments) == 1
-        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
-        assert len(result[2].assessments) == 1
+        people_result = sorted(people_result, key=lambda p: p.person_id)
+        assert len(people_result) == 3
+        assert people_result[0].full_name is None
+        assert (
+            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        )
+        assert len(people_result[1].assessments) == 1
+        assert (
+            people_result[2].full_name
+            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        )
+        assert len(people_result[2].assessments) == 1
+
+        staff_result = sorted(staff_result, key=lambda s: s.staff_id)
+        assert len(staff_result) == 2
+        assert (
+            staff_result[0].full_name
+            == '{"given_names": "HOMER", "surname": "SIMPSON"}'
+        )
+        # TODO(#17855): Check staff_result[0] role periods length has changed
+        assert (
+            staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
+        )
+        # TODO(#17855): Check staff_result[1] role periods length has changed
 
     def test_insertNonOverlappingTypes_succeeds(self):
         # Arrange
@@ -311,6 +386,13 @@ class MultipleStateTestMixin:
         )
         self.write_entities(
             [deepcopy(PERSON_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
+        )
+
+        self.write_entities(
+            [deepcopy(STAFF_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
+        )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
         )
 
         # Act
@@ -333,21 +415,45 @@ class MultipleStateTestMixin:
             )
         )
 
+        staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
+        # TODO(#17855): Add StateStaffRolePeriod to staff_state_1 once that entity exists
+        # TODO(#15049): Add StateStaffSupervisorPeriod (? naming TBD) to staff_state_2 once that entity exists
+
         self.run_transactions([person_state_1], [person_state_2])
+        self.run_transactions([staff_state_1], [staff_state_2])
 
         # Assert
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_all_people(session)
+            people_result = state_dao.read_all_people(session)
+            staff_result = state_dao.read_all_staff(session)
 
-        result = sorted(result, key=lambda p: p.person_id)
-        assert len(result) == 3
-        assert result[0].full_name is None
-        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert len(result[1].assessments) == 1
-        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
-        assert len(result[2].program_assignments) == 1
+        people_result = sorted(people_result, key=lambda p: p.person_id)
+        assert len(people_result) == 3
+        assert people_result[0].full_name is None
+        assert (
+            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        )
+        assert len(people_result[1].assessments) == 1
+        assert (
+            people_result[2].full_name
+            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        )
+        assert len(people_result[2].program_assignments) == 1
+
+        staff_result = sorted(staff_result, key=lambda s: s.staff_id)
+        assert len(staff_result) == 2
+        assert (
+            staff_result[0].full_name
+            == '{"given_names": "HOMER", "surname": "SIMPSON"}'
+        )
+        # TODO(#17855): Check staff_result[0] role periods length has changed
+        assert (
+            staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
+        )
+        # TODO(#17855): Check staff_result[1] supervisor periods length has changed
 
     def test_updateOverlappingTypes_succeeds(self):
         # Arrange
@@ -365,6 +471,12 @@ class MultipleStateTestMixin:
         self.write_entities(
             [deepcopy(PERSON_STATE_2_ENTITY)], INGEST_METADATA_STATE_2_INSERT
         )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
+        )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
+        )
 
         # Act
         # Update existing sentence on both persons
@@ -374,13 +486,19 @@ class MultipleStateTestMixin:
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
         person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
+        staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
+        # TODO(#17855): Update StateStaffRolePeriods once that entity exists
+
         self.run_transactions([person_state_1], [person_state_2])
+        self.run_transactions([staff_state_1], [staff_state_2])
 
         # Assert
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
             result = state_dao.read_all_people(session)
+            staff_result = state_dao.read_all_staff(session)
 
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
@@ -392,6 +510,18 @@ class MultipleStateTestMixin:
         assert len(result[2].incarceration_sentences) == 1
 
         assert result[2].incarceration_sentences[0].status == "COMPLETED"
+
+        staff_result = sorted(staff_result, key=lambda s: s.staff_id)
+        assert len(staff_result) == 2
+        assert (
+            staff_result[0].full_name
+            == '{"given_names": "HOMER", "surname": "SIMPSON"}'
+        )
+        # TODO(#17855): Check staff_result[0] role periods info has changed
+        assert (
+            staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
+        )
+        # TODO(#17855): Check staff_result[1] role periods info has changed
 
     def test_updateNonOverlappingTypes_succeeds(self):
         # Arrange
@@ -409,6 +539,12 @@ class MultipleStateTestMixin:
         self.write_entities(
             [deepcopy(PERSON_STATE_2_ENTITY)], INGEST_METADATA_STATE_2_INSERT
         )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_1_ENTITY)], metadata=INGEST_METADATA_STATE_1_INSERT
+        )
+        self.write_entities(
+            [deepcopy(STAFF_STATE_2_ENTITY)], metadata=INGEST_METADATA_STATE_2_INSERT
+        )
 
         # Act
         # Update race on person 1 and sentence on person 2
@@ -418,23 +554,47 @@ class MultipleStateTestMixin:
         person_state_2 = deepcopy(PERSON_STATE_2_ENTITY)
         person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
+        staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
+        # TODO(#17855): Update StateStaffRolePeriod on staff_state_1 once that entity exists
+        # TODO(#15049): Update StateStaffSupervisorPeriod (? naming TBD) on staff_state_2 once that entity exists
+
         self.run_transactions([person_state_1], [person_state_2])
+        self.run_transactions([staff_state_1], [staff_state_2])
 
         # Assert
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            result = state_dao.read_all_people(session)
+            people_result = state_dao.read_all_people(session)
+            staff_result = state_dao.read_all_staff(session)
 
-        result = sorted(result, key=lambda p: p.person_id)
-        assert len(result) == 3
-        assert result[0].full_name is None
-        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert len(result[1].races) == 1
-        assert result[1].races[0].race == "WHITE"
-        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
-        assert len(result[2].incarceration_sentences) == 1
-        assert result[2].incarceration_sentences[0].status == "COMPLETED"
+        people_result = sorted(people_result, key=lambda p: p.person_id)
+        assert len(people_result) == 3
+        assert people_result[0].full_name is None
+        assert (
+            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+        )
+        assert len(people_result[1].races) == 1
+        assert people_result[1].races[0].race == "WHITE"
+        assert (
+            people_result[2].full_name
+            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        )
+        assert len(people_result[2].incarceration_sentences) == 1
+        assert people_result[2].incarceration_sentences[0].status == "COMPLETED"
+
+        staff_result = sorted(staff_result, key=lambda s: s.staff_id)
+        assert len(staff_result) == 2
+        assert (
+            staff_result[0].full_name
+            == '{"given_names": "HOMER", "surname": "SIMPSON"}'
+        )
+        # TODO(#17855): Check staff_result[0] role periods info has changed
+        assert (
+            staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
+        )
+        # TODO(#15049): Check staff_result[1] supervisor periods info has changed
 
 
 @pytest.mark.uses_db
@@ -500,15 +660,15 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
     def run_transactions(
         self,
-        state_1_entities: List[state_entities.StatePerson],
-        state_2_entities: List[state_entities.StatePerson],
+        state_1_entities: List[RootEntityT],
+        state_2_entities: List[RootEntityT],
     ):
         return _run_transactions_overlapping(state_1_entities, state_2_entities)
 
 
 def _run_transactions_overlapping(
-    state_1_entities: List[state_entities.StatePerson],
-    state_2_entities: List[state_entities.StatePerson],
+    state_1_entities: List[RootEntityT],
+    state_2_entities: List[RootEntityT],
 ):
     """This coordinates two transactions such that they overlap
 
@@ -693,8 +853,8 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
     def run_transactions(
         self,
-        state_1_entities: List[state_entities.StatePerson],
-        state_2_entities: List[state_entities.StatePerson],
+        state_1_entities: List[RootEntityT],
+        state_2_entities: List[RootEntityT],
     ):
         return _run_transactions_interleaved(state_1_entities, state_2_entities)
 
@@ -703,8 +863,8 @@ DELAY = 0.1
 
 
 def _run_transactions_interleaved(
-    state_1_entities: List[state_entities.StatePerson],
-    state_2_entities: List[state_entities.StatePerson],
+    state_1_entities: List[RootEntityT],
+    state_2_entities: List[RootEntityT],
 ):
     """Offset transactions and delay writes slightly so that transactions are interleaved
 
