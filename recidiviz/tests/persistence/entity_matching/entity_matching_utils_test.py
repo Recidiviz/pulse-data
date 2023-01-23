@@ -32,9 +32,9 @@ class TestEntityMatchingUtils(TestCase):
 
     def test_get_only_match_duplicates(self) -> None:
         def match(
-            db_entity,
-            ingested_entity,
-            field_index,  # pylint: disable=unused-argument
+            db_entity: state_entities.StatePerson,
+            ingested_entity: state_entities.StatePerson,
+            field_index: CoreEntityFieldIndex,  # pylint: disable=unused-argument
         ) -> bool:
             return db_entity.birthdate == ingested_entity.birthdate
 
