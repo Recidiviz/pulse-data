@@ -696,14 +696,14 @@ def incarceration_period_admission_reason_mapper(
 
 
 def supervision_period_supervision_type_mapper(
-    supervision_types_str: str,
+    raw_text: str,
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
     """Maps a list of supervision type codes to a supervision type. If both probation and parole types are present, this
     will return StateSupervisionPeriodSupervisionType.DUAL."""
-    if not supervision_types_str:
+    if not raw_text:
         return None
 
-    supervision_type_strs = supervision_types_str.split(",")
+    supervision_type_strs = raw_text.split(",")
 
     supervision_types = set()
     for supervision_type_str in supervision_type_strs:
