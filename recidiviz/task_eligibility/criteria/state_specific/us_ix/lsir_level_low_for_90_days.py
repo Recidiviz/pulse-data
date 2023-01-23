@@ -54,10 +54,9 @@ WITH LSIR_level_gender AS(
       score.person_id,
       score.state_code,
       score.assessment_date AS score_start_date,
-      --convert null score end dates to exclusive and null dates to far future dates
-      {nonnull_end_date_clause('''DATE_ADD(score.score_end_date, INTERVAL 1 DAY)''')} AS score_end_date,
+      {nonnull_end_date_clause('score.score_end_date_exclusive')} AS score_end_date,
       ses.start_date AS supervision_start_date,
-      ses.end_date AS supervision_end_date,
+      ses.end_date_exclusive AS supervision_end_date,
       CASE
           WHEN ((gender != "MALE" OR gender IS NULL) AND assessment_score <=22) THEN "LOW"
           WHEN ((gender != "MALE" OR gender IS NULL)
