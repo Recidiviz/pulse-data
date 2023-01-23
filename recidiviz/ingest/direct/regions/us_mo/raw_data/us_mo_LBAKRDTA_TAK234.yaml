@@ -7,6 +7,7 @@ primary_key_cols:
   - IR_DOC
   - IR_CYC
   - IRCSEQ
+  - IRPSEQ
 columns:
   - name: IR_DOC
     description: |-
