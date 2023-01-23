@@ -1562,30 +1562,22 @@ The following views have less restrictive projects_to_deploy than their parents:
                 DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0:-1]
             )
 
-    def test_related_ancestor_keys(self) -> None:
+    def test_related_ancestor_addresses(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
         all_views_dag_walker.populate_node_view_builders(
             DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
         )
         all_views_dag_walker.populate_ancestor_sub_dags()
         view_1, view_2, view_3, *_ = self.diamond_shaped_dag_views_list
-        assert all_views_dag_walker.related_ancestor_keys(
-            dag_key=DagKey.for_view(view_3)
+        assert all_views_dag_walker.related_ancestor_addresses(
+            address=view_3.address
         ) == set(
             [
-                DagKey.for_view(view_1),
-                DagKey.for_view(view_2),
-                DagKey.for_view(view_3),
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="source_dataset", table_id="source_table"
-                    )
-                ),
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="source_dataset", table_id="source_table_2"
-                    )
-                ),
+                view_1.address,
+                view_2.address,
+                view_3.address,
+                BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
+                BigQueryAddress(dataset_id="source_dataset", table_id="source_table_2"),
             ]
         )
 

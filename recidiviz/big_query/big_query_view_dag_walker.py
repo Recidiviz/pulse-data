@@ -1027,17 +1027,17 @@ class BigQueryViewDagWalker:
             ]
         )
 
-    def related_ancestor_keys(
-        self, dag_key: DagKey, terminating_datasets: Optional[Set[str]] = None
-    ) -> Set[DagKey]:
+    def related_ancestor_addresses(
+        self, address: BigQueryAddress, terminating_datasets: Optional[Set[str]] = None
+    ) -> Set[BigQueryAddress]:
         if terminating_datasets is None:
             terminating_datasets = set()
         related_keys = set()
-        node = self.nodes_by_key[dag_key]
+        node = self.nodes_by_key[DagKey(view_address=address)]
         ancestors = set(node.ancestors_sub_dag.nodes_by_key)
         related_keys |= ancestors
         for key in ancestors:
             if not key.dataset_id in terminating_datasets:
                 node = self.nodes_by_key[key]
                 related_keys |= node.parent_keys
-        return related_keys
+        return {key.view_address for key in related_keys}
