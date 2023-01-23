@@ -273,6 +273,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         ],
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # All modules for the Pathways with projected prison and supervision populations
     ExportViewCollectionConfig(
@@ -294,6 +295,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         view_builders_to_export=PATHWAYS_PRISON_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         export_name="PATHWAYS_PRISON",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Pathways event level
     ExportViewCollectionConfig(
@@ -308,6 +310,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         },
         # TODO(#15981): Remove this
         allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Pathways and projections event level. This is a separate export type because our export
     # infrastructure assumes an export type can only belong to one product.
@@ -339,6 +342,7 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         },
         # TODO(#15981): Remove this
         allow_empty=True,
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
     ),
     # Workflows Firestore ETL views
     ExportViewCollectionConfig(
