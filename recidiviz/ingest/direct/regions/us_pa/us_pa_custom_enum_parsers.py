@@ -580,6 +580,12 @@ def incarceration_period_release_reason_mapper(
             end_is_admin_edge,
         ) = raw_text.split("-")
 
+        ## Catches errors before it catches anything else
+        if end_sentence_status_code == "RE":
+            return (
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION
+            )
+
         if end_is_admin_edge == "TRUE":
             return StateIncarcerationPeriodReleaseReason.STATUS_CHANGE
 
@@ -643,15 +649,24 @@ def incarceration_period_admission_reason_mapper(
     raw_text = raw_text.upper()
     if raw_text.startswith("CCIS"):
         (_, start_is_new_revocation, start_movement_code) = raw_text.split("-")
+        end_sentence_status_code = "NONE"
         start_is_admin_edge = "FALSE"
         parole_status_code = "NONE"
     else:
         (
+            end_sentence_status_code,
             parole_status_code,
             start_is_new_revocation,
             start_movement_code,
             start_is_admin_edge,
         ) = raw_text.split("-")
+
+    if end_sentence_status_code == "RE":
+        # TODO(#18047): Adding as a placeholder for removing rows that have been administratively deleted.
+        # These individuals were not actually admitted anywhere - entries with this
+        # end sentence status code are all deleted administratively after the fact.
+        # These are data entry errors, not admission errors.
+        return StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR
 
     if start_is_new_revocation == "TRUE":
         # Note: These are not always legal revocations. We are currently using the
