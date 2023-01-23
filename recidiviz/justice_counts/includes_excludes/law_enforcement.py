@@ -22,9 +22,9 @@ import enum
 # Expenses
 class LawEnforcementExpensesIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Expenses for single fiscal year"
-    BIENNIUM_FUNDING = "Biennium expenses"
+    BIENNIUM_FUNDING = "Biennium funding allocated during the time period"
     MULTI_YEAR_EXPENSES = (
-        "Multi-year expenses that will not be fully spent this fiscal year"
+        "Multi-year appropriations that are allocated in during the time period"
     )
     STAFF_FUNDING = "Expenses for agency staff"
     EQUIPMENT = "Expenses for the purchase of law enforcement equipment"
