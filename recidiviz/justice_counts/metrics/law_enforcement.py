@@ -163,11 +163,10 @@ expenses = MetricDefinition(
     description="The amount spent by the agency for law enforcement activities.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    # TODO(#17577)
     includes_excludes=IncludesExcludesSet(
         members=LawEnforcementExpensesIncludesExcludes,
         excluded_set={
-            LawEnforcementExpensesIncludesExcludes.BIENNIUM_FUNDING,
-            LawEnforcementExpensesIncludesExcludes.MULTI_YEAR_EXPENSES,
             LawEnforcementExpensesIncludesExcludes.JAILS,
             LawEnforcementExpensesIncludesExcludes.SUPERVISION,
         },
