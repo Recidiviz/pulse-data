@@ -34,7 +34,8 @@ from pytablewriter import MarkdownTableWriter
 
 import recidiviz
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.big_query.big_query_view import BigQueryView
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
@@ -204,13 +205,12 @@ class CalculationDocumentationGenerator:
                 for state in states:
                     self.products_by_state[state][environment].append(product_name)
         all_view_builders = all_deployed_view_builders()
-        self.dag_walker = BigQueryViewDagWalker(
-            build_views_to_update(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=all_view_builders,
-                address_overrides=None,
-            ),
+        views_to_update = build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=all_view_builders,
+            address_overrides=None,
         )
+        self.dag_walker = BigQueryViewDagWalker(views_to_update)
         self.dag_walker.populate_node_view_builders(all_view_builders)
         self.dag_walker.populate_ancestor_sub_dags()
         self.dag_walker.populate_descendant_sub_dags()
@@ -246,7 +246,11 @@ class CalculationDocumentationGenerator:
                     DATAFLOW_METRICS_TO_TABLES[metric]
                 ] = generic_type
 
-        self.all_views_to_document = self._get_all_views_to_document()
+        self.all_views_to_document = [
+            v
+            for v in views_to_update
+            if not v.address.dataset_id in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
+        ]
 
     def get_states_by_product(
         self,
@@ -338,14 +342,14 @@ class CalculationDocumentationGenerator:
     def _get_views_summary_str(self) -> str:
         header = "\n- Views"
         bullets = ""
-        for dataset_id, dag_key_list in self._get_keys_by_dataset(
-            self.all_views_to_document
+        for dataset_id, address_list in self._get_addresses_by_dataset(
+            {view.address for view in self.all_views_to_document}
         ).items():
             bullets += f"\n  - {dataset_id}\n"
             bullets += self.bulleted_list(
                 [
-                    f"[{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}](calculation/views/{dataset_id}/{dag_key.table_id}.md)"
-                    for dag_key in dag_key_list
+                    f"[{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}](calculation/views/{dataset_id}/{address.table_id}.md)"
+                    for address in address_list
                 ],
                 tabs=2,
                 escape_underscores=False,
@@ -464,22 +468,28 @@ class CalculationDocumentationGenerator:
         )
 
     @staticmethod
-    def _get_keys_by_dataset(dag_keys: Set[DagKey]) -> Dict[str, List[DagKey]]:
-        """Given a set of DagKeys, returns a sorted dictionary of those keys, organized by dataset."""
+    def _get_addresses_by_dataset(
+        addresses: Set[BigQueryAddress],
+    ) -> Dict[str, List[BigQueryAddress]]:
+        """
+        Given a set of BigQueryAddresses, returns a sorted dictionary of
+        those addresses, organized by dataset.
+        """
         datasets_to_views = defaultdict(list)
-        for key in sorted(
-            dag_keys, key=lambda dag_key: (dag_key.dataset_id, dag_key.table_id)
-        ):
+        for key in sorted(addresses):
             datasets_to_views[key.dataset_id].append(key)
         return datasets_to_views
 
     def _get_dataset_headers_to_views_str(
-        self, dag_keys: Set[DagKey], source_tables_section: bool = False
+        self, addresses: Set[BigQueryAddress], source_tables_section: bool = False
     ) -> str:
-        """Given a set of DagKeys, returns a str list of those views, organized by dataset."""
-        datasets_to_keys = self._get_keys_by_dataset(dag_keys)
+        """
+        Given a set of BigQueryAddresses, returns a str list of
+        those addresses, organized by dataset.
+        """
+        datasets_to_addresses = self._get_addresses_by_dataset(addresses)
         views_str = ""
-        for dataset, keys in datasets_to_keys.items():
+        for dataset, address_list in datasets_to_addresses.items():
             views_str += f"#### {dataset}\n"
             views_str += (
                 f"_{VIEW_SOURCE_TABLE_DATASETS_TO_DESCRIPTIONS[dataset]}_\n"
@@ -490,9 +500,9 @@ class CalculationDocumentationGenerator:
                 self.bulleted_list(
                     [
                         self._dependency_tree_formatter_for_gitbook(
-                            dag_key.view_address, products_section=True
+                            address, products_section=True
                         )
-                        for dag_key in keys
+                        for address in address_list
                     ],
                     escape_underscores=False,
                 )
@@ -500,29 +510,33 @@ class CalculationDocumentationGenerator:
 
         return views_str
 
-    def _get_views_str_for_product(self, view_keys: Set[DagKey]) -> str:
+    def _get_views_str_for_product(self, view_addresses: Set[BigQueryAddress]) -> str:
         """Returns the string containing the VIEWS section of the product markdown."""
         views_header = "## VIEWS\n\n"
-        if not view_keys:
+        if not view_addresses:
             return views_header + "*This product does not use any BigQuery views.*\n\n"
-        return views_header + self._get_dataset_headers_to_views_str(view_keys)
+        return views_header + self._get_dataset_headers_to_views_str(view_addresses)
 
-    def _get_source_tables_str_for_product(self, source_keys: Set[DagKey]) -> str:
+    def _get_source_tables_str_for_product(
+        self, source_table_addresses: Set[BigQueryAddress]
+    ) -> str:
         """Returns the string containing the SOURCE TABLES section of the product markdown."""
         source_tables_header = (
             "## SOURCE TABLES\n"
             "_Reference views that are used by other views. Some need to be updated manually._\n\n"
         )
-        if not source_keys:
+        if not source_table_addresses:
             return (
                 source_tables_header
                 + "*This product does not reference any source tables.*\n\n"
             )
         return source_tables_header + self._get_dataset_headers_to_views_str(
-            source_keys, source_tables_section=True
+            source_table_addresses, source_tables_section=True
         )
 
-    def _get_metrics_str_for_product(self, metric_keys: Set[DagKey]) -> str:
+    def _get_metrics_str_for_product(
+        self, metric_view_addresses: Set[BigQueryAddress]
+    ) -> str:
         """Builds the Metrics string for the product markdown file. Creates a table of
         necessary metric types and whether a state calculates those metrics"""
         metrics_header = (
@@ -533,7 +547,7 @@ class CalculationDocumentationGenerator:
             " launch in that state.\n\n"
         )
 
-        if not metric_keys:
+        if not metric_view_addresses:
             return (
                 metrics_header + "*This product does not rely on Dataflow metrics.*\n"
             )
@@ -547,13 +561,15 @@ class CalculationDocumentationGenerator:
 
         table_matrix = [
             [
-                f"[{DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value}](../../metrics/{self.generic_types_by_metric_name[metric_key.table_id].lower()}/{metric_key.table_id}.md)"
+                f"[{DATAFLOW_TABLES_TO_METRIC_TYPES[metric_view_address.table_id].value}](../../metrics/{self.generic_types_by_metric_name[metric_view_address.table_id].lower()}/{metric_view_address.table_id}.md)"
             ]
             + [
-                self._get_metric_supported_text_per_state(metric_key, state_code)
+                self._get_metric_supported_text_per_state(
+                    metric_view_address, state_code
+                )
                 for state_code in state_codes
             ]
-            for metric_key in sorted(metric_keys, key=lambda dag_key: dag_key.table_id)
+            for metric_view_address in sorted(metric_view_addresses)
         ]
 
         writer = MarkdownTableWriter(
@@ -562,14 +578,14 @@ class CalculationDocumentationGenerator:
         return metrics_header + writer.dumps()
 
     def _get_metric_supported_text_per_state(
-        self, metric_key: DagKey, state_code: StateCode
+        self, metric_view_address: BigQueryAddress, state_code: StateCode
     ) -> str:
         metrics = self.metric_calculations_by_state[str(state_code.get_state())]
         state_metrics = []
         for metric in metrics:
             if (
                 metric.name
-                == DATAFLOW_TABLES_TO_METRIC_TYPES[metric_key.table_id].value
+                == DATAFLOW_TABLES_TO_METRIC_TYPES[metric_view_address.table_id].value
             ):
                 state_metrics.append(metric)
         state_metric_texts = ""
@@ -600,30 +616,31 @@ class CalculationDocumentationGenerator:
 
         return all_config_view_addresses
 
-    def _get_all_parent_keys_for_product(self, product: ProductConfig) -> Set[DagKey]:
-        """Returns a set containing a DagKey for every view that this product relies upon."""
+    def _get_all_parent_addresses_for_product(
+        self, product: ProductConfig
+    ) -> Set[BigQueryAddress]:
+        """Returns a set containing a BigQueryAddress for every view that this product relies upon."""
         all_config_view_addresses = self._get_all_config_view_addresses_for_product(
             product
         )
 
-        all_parent_keys: Set[DagKey] = set()
+        all_parent_addresses: Set[BigQueryAddress] = set()
         for view_address in all_config_view_addresses:
-            dag_key = DagKey(view_address=view_address)
-            all_related_keys = self.dag_walker.related_ancestor_keys(
-                dag_key=dag_key, terminating_datasets=LATEST_VIEW_DATASETS
+            all_related_addresses = self.dag_walker.related_ancestor_addresses(
+                address=view_address, terminating_datasets=LATEST_VIEW_DATASETS
             )
-            all_parent_keys |= all_related_keys
+            all_parent_addresses |= all_related_addresses
 
         # Ignore materialized metric views as relevant metric info can be found in a
         # different dataset (DATAFLOW_METRICS_DATASET).
-        all_parent_keys.difference_update(
+        all_parent_addresses.difference_update(
             {
-                key
-                for key in all_parent_keys
-                if key.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
+                address
+                for address in all_parent_addresses
+                if address.dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET
             }
         )
-        return all_parent_keys
+        return all_parent_addresses
 
     def _get_product_information(self, product: ProductConfig) -> str:
         """Returns a string containing all relevant information for a given product
@@ -634,26 +651,31 @@ class CalculationDocumentationGenerator:
 
         documentation += self._get_shipped_states_str(product)
 
-        all_parent_keys = self._get_all_parent_keys_for_product(product)
+        all_parent_addresses = self._get_all_parent_addresses_for_product(product)
 
-        source_keys = {
-            key
-            for key in all_parent_keys
+        source_table_addresses = {
+            address
+            for address in all_parent_addresses
             # Metric info will be included in the metric-specific section
-            if key.dataset_id in VIEW_SOURCE_TABLE_DATASETS - {DATAFLOW_METRICS_DATASET}
+            if address.dataset_id
+            in VIEW_SOURCE_TABLE_DATASETS - {DATAFLOW_METRICS_DATASET}
         }
 
-        metric_keys = {
-            key for key in all_parent_keys if key.dataset_id == DATAFLOW_METRICS_DATASET
+        metric_view_addresses = {
+            address
+            for address in all_parent_addresses
+            if address.dataset_id == DATAFLOW_METRICS_DATASET
         }
 
-        # Remove metric keys as they are surfaced in a metric-specific section. Remove
-        # source table keys as they are surfaced in a reference-specific section
-        view_keys = all_parent_keys - metric_keys - source_keys
+        # Remove metric addresses as they are surfaced in a metric-specific section. Remove
+        # source table addresses as they are surfaced in a reference-specific section
+        view_addresses = (
+            all_parent_addresses - metric_view_addresses - source_table_addresses
+        )
 
-        documentation += self._get_views_str_for_product(view_keys)
-        documentation += self._get_source_tables_str_for_product(source_keys)
-        documentation += self._get_metrics_str_for_product(metric_keys)
+        documentation += self._get_views_str_for_product(view_addresses)
+        documentation += self._get_source_tables_str_for_product(source_table_addresses)
+        documentation += self._get_metrics_str_for_product(metric_view_addresses)
 
         return documentation
 
@@ -822,60 +844,60 @@ class CalculationDocumentationGenerator:
 
     def _dependency_tree_formatter_for_gitbook(
         self,
-        dag_key: BigQueryAddress,
+        address: BigQueryAddress,
         products_section: bool = False,
     ) -> str:
         """Gitbook-specific formatting for the generated dependency tree."""
-        is_source_table = dag_key.dataset_id in VIEW_SOURCE_TABLE_DATASETS
-        is_raw_data_table = dag_key.dataset_id in RAW_TABLE_DATASETS
-        is_raw_data_view = dag_key.dataset_id in LATEST_VIEW_DATASETS
-        is_metric = dag_key.dataset_id in DATAFLOW_METRICS_DATASET
+        is_source_table = address.dataset_id in VIEW_SOURCE_TABLE_DATASETS
+        is_raw_data_table = address.dataset_id in RAW_TABLE_DATASETS
+        is_raw_data_view = address.dataset_id in LATEST_VIEW_DATASETS
+        is_metric = address.dataset_id in DATAFLOW_METRICS_DATASET
         is_documented_view = not (is_source_table or is_raw_data_view or is_metric)
         if is_raw_data_view and (
-            not dag_key.dataset_id.endswith(
+            not address.dataset_id.endswith(
                 ("_raw_data_up_to_date_views", "_raw_data_up_to_date_views_secondary")
             )
-            or not dag_key.table_id.endswith("_latest")
+            or not address.table_id.endswith("_latest")
         ):
             raise ValueError(
-                f"Unexpected raw data view address: [{dag_key.dataset_id}.{dag_key.table_id}]"
+                f"Unexpected raw data view address: [{address.dataset_id}.{address.table_id}]"
             )
 
         staging_link = StrictStringFormatter().format(
             BQ_LINK_TEMPLATE,
             project="recidiviz-staging",
-            dataset_id=dag_key.dataset_id,
-            table_id=dag_key.table_id,
+            dataset_id=address.dataset_id,
+            table_id=address.table_id,
         )
         prod_link = StrictStringFormatter().format(
             BQ_LINK_TEMPLATE,
             project="recidiviz-123",
-            dataset_id=dag_key.dataset_id,
-            table_id=dag_key.table_id,
+            dataset_id=address.dataset_id,
+            table_id=address.table_id,
         )
 
         table_name_str = (
             # Include brackets if metric or view
-            ("[" if products_section else f"[{dag_key.dataset_id}.")
-            + f"{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
+            ("[" if products_section else f"[{address.dataset_id}.")
+            + f"{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}]"
             if is_documented_view or is_metric
-            else ("" if products_section else f"{dag_key.dataset_id}.")
-            + f"{dag_key.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
+            else ("" if products_section else f"{address.dataset_id}.")
+            + f"{address.table_id.replace('__', ESCAPED_DOUBLE_UNDERSCORE)}"
         )
 
         if is_raw_data_table or is_raw_data_view:
             if is_raw_data_view:
-                region = dag_key.dataset_id[: -len("_raw_data_up_to_date_views")]
-                raw_data_table = dag_key.table_id[: -len("_latest")]
+                region = address.dataset_id[: -len("_raw_data_up_to_date_views")]
+                raw_data_table = address.table_id[: -len("_latest")]
             else:
-                region = dag_key.dataset_id[: -len("_raw_data")]
-                raw_data_table = dag_key.table_id
+                region = address.dataset_id[: -len("_raw_data")]
+                raw_data_table = address.table_id
             table_name_str += f" ([Raw Data Doc](../../../ingest/{region}/raw_data/{raw_data_table}.md))"
 
         if is_metric:
-            table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[dag_key.table_id].lower()}/{dag_key.table_id}.md)"
+            table_name_str += f"(../../metrics/{self.generic_types_by_metric_name[address.table_id].lower()}/{address.table_id}.md)"
         elif is_documented_view:
-            table_name_str += f"(../{'../views/' if products_section else ''}{dag_key.dataset_id}/{dag_key.table_id}.md)"
+            table_name_str += f"(../{'../views/' if products_section else ''}{address.dataset_id}/{address.table_id}.md)"
         else:
             table_name_str += (
                 f" ([BQ Staging]({staging_link})) ([BQ Prod]({prod_link}))"
@@ -885,14 +907,14 @@ class CalculationDocumentationGenerator:
 
     def _get_view_tree_string(
         self,
-        dag_key: DagKey,
+        view: BigQueryView,
         descendants: bool = False,
     ) -> str:
         """Gets the string representation of the view's tree.
 
         If it is too large a command to generate it will be output instead."""
 
-        node = self.dag_walker.nodes_by_key[dag_key]
+        node = self.dag_walker.node_for_view(view)
         if descendants:
             num_tree_edges = node.descendants_tree_num_edges
             sub_dag = node.descendants_sub_dag
@@ -917,12 +939,11 @@ class CalculationDocumentationGenerator:
         if num_tree_edges + 1 >= MAX_DEPENDENCY_TREE_LENGTH:
             return StrictStringFormatter().format(
                 DEPENDENCY_TREE_SCRIPT_TEMPLATE,
-                dataset_id=dag_key.dataset_id,
-                table_id=dag_key.table_id,
+                dataset_id=view.address.dataset_id,
+                table_id=view.address.table_id,
                 descendants=descendants,
             )
 
-        view = self.dag_walker.view_for_key(dag_key)
         if descendants:
             # TODO(#17679): Remove unecessarily complex sorting logic
             return self.dag_walker.descendants_dfs_tree_str(
@@ -954,43 +975,34 @@ class CalculationDocumentationGenerator:
             )
         return output
 
-    def _get_view_information(self, view_key: DagKey) -> str:
+    def _get_view_information(self, view: BigQueryView) -> str:
         """Returns string contents for a view markdown."""
-        view_node = self.dag_walker.nodes_by_key[view_key]
+        address = view.address
+        description = view.description
 
         staging_link = StrictStringFormatter().format(
             BQ_LINK_TEMPLATE,
             project="recidiviz-staging",
-            dataset_id=view_key.dataset_id,
-            table_id=view_key.table_id,
+            dataset_id=address.dataset_id,
+            table_id=address.table_id,
         )
         prod_link = StrictStringFormatter().format(
             BQ_LINK_TEMPLATE,
             project="recidiviz-123",
-            dataset_id=view_key.dataset_id,
-            table_id=view_key.table_id,
+            dataset_id=address.dataset_id,
+            table_id=address.table_id,
         )
         documentation = StrictStringFormatter().format(
             VIEW_DOCS_TEMPLATE,
-            view_dataset_id=view_key.dataset_id,
-            view_table_id=view_key.table_id,
-            description=view_node.view.description,
+            view_dataset_id=address.dataset_id,
+            view_table_id=address.table_id,
+            description=description,
             staging_link=staging_link,
             prod_link=prod_link,
-            parent_tree=self._get_view_tree_string(view_key),
-            child_tree=self._get_view_tree_string(view_key, descendants=True),
+            parent_tree=self._get_view_tree_string(view),
+            child_tree=self._get_view_tree_string(view, descendants=True),
         )
         return documentation
-
-    def _get_all_views_to_document(self) -> Set[DagKey]:
-        """Retrieve all DAG Walker views that we want to document"""
-        all_nodes = self.dag_walker.nodes_by_key.values()
-        all_view_keys = {
-            DagKey(view_address=node.view.address)
-            for node in all_nodes
-            if node.dag_key.dataset_id not in DATASETS_TO_SKIP_VIEW_DOCUMENTATION
-        }
-        return all_view_keys
 
     def generate_view_markdowns(self) -> bool:
         """Generate markdown files for each view."""
@@ -1007,18 +1019,15 @@ class CalculationDocumentationGenerator:
         new_view_files: Set[str] = set()
 
         anything_modified = False
-        for key in self.all_views_to_document:
-            view_address = key.view_address
+        for view in self.all_views_to_document:
             # Generate documentation
-            documentation = self._get_view_information(
-                DagKey(view_address=view_address)
-            )
+            documentation = self._get_view_information(view=view)
 
             # Write to markdown files
             view_markdown_path = os.path.join(
                 views_dir_path,
-                view_address.dataset_id,
-                f"{view_address.table_id}.md",
+                view.address.dataset_id,
+                f"{view.address.table_id}.md",
             )
 
             anything_modified |= persist_file_contents(
