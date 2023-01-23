@@ -6,6 +6,7 @@ data_classification: source
 primary_key_cols:
   - BQ_DOC
   - BQ_CYC
+  - BQ_BSN
 columns:
   - name: BQ_DOC
     is_pii: True

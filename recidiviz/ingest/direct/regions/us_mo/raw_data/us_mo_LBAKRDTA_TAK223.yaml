@@ -7,6 +7,10 @@ primary_key_cols:
   - IE_DOC
   - IE_CYC
   - IE_BDS
+  - IE_BDT
+  - IE_BDX
+  - IE_BDA
+  - IE_BT
 columns:
   - name: IE_DOC
     is_pii: True

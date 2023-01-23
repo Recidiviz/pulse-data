@@ -6,7 +6,10 @@ data_classification: source
 primary_key_cols:
   - CE_DOC
   - CE_CYC
-  - CE_HF
+  - CE_OR0
+  - CE_EH
+  - CE_DCR
+  - CE_TCR
 columns:
   - name: CE_DOC
     is_pii: True
