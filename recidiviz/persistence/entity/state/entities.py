@@ -81,6 +81,10 @@ from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
 )
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -1561,9 +1565,7 @@ class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr)
 
     # Attributes
     #   - When
-    start_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_date
-    )
+    start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
     end_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
@@ -1616,7 +1618,7 @@ class StateDrugScreen(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - When
-    drug_screen_date: Optional[datetime.date] = attr.ib(
+    drug_screen_date: datetime.date = attr.ib(
         default=None, validator=attr_validators.is_date
     )
 
@@ -1660,7 +1662,7 @@ class StateTaskDeadline(Entity, BuildableAttr, DefaultableAttr):
     due_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
     )
-    update_datetime: Optional[datetime.datetime] = attr.ib(
+    update_datetime: datetime.datetime = attr.ib(
         default=None, validator=attr_validators.is_datetime
     )
 
@@ -1741,6 +1743,9 @@ class StateStaff(
     external_ids: List["StateStaffExternalId"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    role_periods: List["StateStaffRolePeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
     def get_external_ids(self) -> List[StateStaffExternalId]:
         return self.external_ids
@@ -1748,3 +1753,46 @@ class StateStaff(
     @classmethod
     def back_edge_field_name(cls) -> str:
         return "staff"
+
+
+@attr.s(eq=False, kw_only=True)
+class StateStaffRolePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Represents information about a staff member’s role in the justice system during a
+    particular period of time.
+    """
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    external_id: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
+    end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    #   - What
+    role_type: StateStaffRoleType = attr.ib(
+        validator=attr.validators.instance_of(StateStaffRoleType)
+    )
+    role_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    role_subtype: Optional[StateStaffRoleSubtype] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateStaffRoleSubtype)
+    )
+    role_subtype_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    staff_role_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    staff: Optional["StateStaff"] = attr.ib(default=None)

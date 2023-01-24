@@ -88,6 +88,7 @@ _STATE_CLASS_HIERARCHY = [
     # StateStaff hierarchy
     state_entities.StateStaff.__name__,
     state_entities.StateStaffExternalId.__name__,
+    state_entities.StateStaffRolePeriod.__name__,
 ]
 
 _state_direction_checker = None

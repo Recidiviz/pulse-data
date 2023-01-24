@@ -37,6 +37,10 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
@@ -56,6 +60,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateProgramAssignment,
     StateStaff,
     StateStaffExternalId,
+    StateStaffRolePeriod,
 )
 from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
@@ -70,6 +75,9 @@ DATE = date(year=2019, day=1, month=2)
 DATETIME = datetime(DATE.year, DATE.month, DATE.day)
 DATE_2 = date(year=2020, day=1, month=2)
 DATETIME_2 = datetime(DATE_2.year, DATE_2.month, DATE_2.day)
+DATE_3 = date(year=2021, day=1, month=2)
+DATETIME_3 = datetime(DATE_3.year, DATE_3.month, DATE_3.day)
+
 
 STATE_CODE = StateCode.US_XX.value
 STATE_CODE_2 = StateCode.US_WW.value
@@ -166,7 +174,14 @@ STAFF_STATE_1_ENTITY = StateStaff(
             state_code=STATE_CODE, external_id="12345", id_type=FAKE_STAFF_ID_TYPE
         )
     ],
-    # TODO(#17855): Add StateStaffRolePeriods once that entity exists
+    role_periods=[
+        StateStaffRolePeriod(
+            state_code=STATE_CODE,
+            external_id="12345-1",
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+            start_date=DATE,
+        )
+    ],
 )
 
 STAFF_2_FULL_NAME = '{"given_names": "NED", "surname": "FLANDERS"}'
@@ -179,7 +194,15 @@ STAFF_STATE_2_ENTITY = StateStaff(
             state_code=STATE_CODE_2, external_id="23456", id_type=FAKE_STAFF_ID_TYPE_2
         )
     ],
-    # TODO(#17855): Add StateStaffRolePeriods once that entity exists
+    role_periods=[
+        StateStaffRolePeriod(
+            state_code=STATE_CODE,
+            external_id="23456-1",
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+            role_subtype=StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER,
+            start_date=DATE,
+        )
+    ]
     # TODO(#15049): Add StateStaffSupervisorPeriod (? naming TBD) once that entity exists
 )
 
@@ -335,8 +358,24 @@ class MultipleStateTestMixin:
         )
 
         staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_1.role_periods.append(
+            StateStaffRolePeriod(
+                state_code=STATE_CODE,
+                external_id="12345-2",
+                role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                start_date=DATE_2,
+            )
+        )
         staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
-        # TODO(#17855): Add StateStaffRolePeriods once that entity exists
+        staff_state_2.role_periods.append(
+            StateStaffRolePeriod(
+                state_code=STATE_CODE,
+                external_id="23456-2",
+                role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                role_subtype=StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER,
+                start_date=DATE_2,
+            )
+        )
 
         self.run_transactions([person_state_1], [person_state_2])
         self.run_transactions([staff_state_1], [staff_state_2])
@@ -367,11 +406,11 @@ class MultipleStateTestMixin:
             staff_result[0].full_name
             == '{"given_names": "HOMER", "surname": "SIMPSON"}'
         )
-        # TODO(#17855): Check staff_result[0] role periods length has changed
+        assert len(staff_result[0].role_periods) == 2
         assert (
             staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
         )
-        # TODO(#17855): Check staff_result[1] role periods length has changed
+        assert len(staff_result[1].role_periods) == 2
 
     def test_insertNonOverlappingTypes_succeeds(self):
         # Arrange
@@ -416,8 +455,15 @@ class MultipleStateTestMixin:
         )
 
         staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_1.role_periods.append(
+            StateStaffRolePeriod(
+                state_code=STATE_CODE,
+                external_id="12345-2",
+                role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                start_date=DATE_2,
+            )
+        )
         staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
-        # TODO(#17855): Add StateStaffRolePeriod to staff_state_1 once that entity exists
         # TODO(#15049): Add StateStaffSupervisorPeriod (? naming TBD) to staff_state_2 once that entity exists
 
         self.run_transactions([person_state_1], [person_state_2])
@@ -449,11 +495,11 @@ class MultipleStateTestMixin:
             staff_result[0].full_name
             == '{"given_names": "HOMER", "surname": "SIMPSON"}'
         )
-        # TODO(#17855): Check staff_result[0] role periods length has changed
+        assert len(staff_result[0].role_periods) == 2
         assert (
             staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
         )
-        # TODO(#17855): Check staff_result[1] supervisor periods length has changed
+        # TODO(#15049): Check staff_result[1] supervisor periods length has changed
 
     def test_updateOverlappingTypes_succeeds(self):
         # Arrange
@@ -487,8 +533,9 @@ class MultipleStateTestMixin:
         person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
         staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_1.role_periods[0].start_date = DATE_2
         staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
-        # TODO(#17855): Update StateStaffRolePeriods once that entity exists
+        staff_state_2.role_periods[0].start_date = DATE_3
 
         self.run_transactions([person_state_1], [person_state_2])
         self.run_transactions([staff_state_1], [staff_state_2])
@@ -517,11 +564,13 @@ class MultipleStateTestMixin:
             staff_result[0].full_name
             == '{"given_names": "HOMER", "surname": "SIMPSON"}'
         )
-        # TODO(#17855): Check staff_result[0] role periods info has changed
+        assert len(staff_result[0].role_periods) == 1
+        assert staff_result[0].role_periods[0].start_date == DATE_2
         assert (
             staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
         )
-        # TODO(#17855): Check staff_result[1] role periods info has changed
+        assert len(staff_result[1].role_periods) == 1
+        assert staff_result[1].role_periods[0].start_date == DATE_3
 
     def test_updateNonOverlappingTypes_succeeds(self):
         # Arrange
@@ -555,8 +604,9 @@ class MultipleStateTestMixin:
         person_state_2.incarceration_sentences[0].status = StateSentenceStatus.COMPLETED
 
         staff_state_1 = deepcopy(STAFF_STATE_1_ENTITY)
+        staff_state_1.role_periods[0].start_date = DATE_2
+
         staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
-        # TODO(#17855): Update StateStaffRolePeriod on staff_state_1 once that entity exists
         # TODO(#15049): Update StateStaffSupervisorPeriod (? naming TBD) on staff_state_2 once that entity exists
 
         self.run_transactions([person_state_1], [person_state_2])
@@ -590,7 +640,8 @@ class MultipleStateTestMixin:
             staff_result[0].full_name
             == '{"given_names": "HOMER", "surname": "SIMPSON"}'
         )
-        # TODO(#17855): Check staff_result[0] role periods info has changed
+        assert len(staff_result[0].role_periods) == 1
+        assert staff_result[0].role_periods[0].start_date == DATE_2
         assert (
             staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
         )

@@ -45,6 +45,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
 )
@@ -249,6 +250,10 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
     ],
     schema.StateStaff: [schema.StateStaff(state_code=StateCode.US_XX.value)],
     schema.StateStaffExternalId: [],
+    schema.StateStaffRolePeriod: [
+        # StateStaffRolePeriod cannot be placeholders - must always have an external_id
+        # and start_date.
+    ],
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
     ],
@@ -401,6 +406,10 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
         )
     ],
     schema.StateStaffExternalId: [],
+    schema.StateStaffRolePeriod: [
+        # StateStaffRolePeriod cannot be reference entities - must always have a
+        # start_date.
+    ],
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
@@ -650,12 +659,50 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         ),
     ],
     schema.StateStaff: [
-        # TODO(#17855): Fill this out once there are other entities
-        #  (i.e. StateStaffRolePeriod) hanging off of StateStaff
+        schema.StateStaff(
+            state_code=StateCode.US_XX.value,
+            email="foo@bar.com",
+            external_ids=[
+                schema.StateStaffExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+        ),
+        schema.StateStaff(
+            state_code=StateCode.US_XX.value,
+            email="foo@bar.com",
+            external_ids=[
+                schema.StateStaffExternalId(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    id_type=_ID_TYPE,
+                )
+            ],
+            role_periods=[
+                schema.StateStaffRolePeriod(
+                    state_code=StateCode.US_XX.value,
+                    external_id=_EXTERNAL_ID,
+                    start_date=datetime.date(2022, 5, 8),
+                    end_date=datetime.date(2022, 5, 10),
+                    role_type=StateStaffRoleType.SUPERVISION_OFFICER.value,
+                )
+            ],
+        ),
     ],
     schema.StateStaffExternalId: [
         schema.StateStaffExternalId(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+    ],
+    schema.StateStaffRolePeriod: [
+        schema.StateStaffRolePeriod(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER.value,
         )
     ],
     schema.StateSupervisionCaseTypeEntry: [
