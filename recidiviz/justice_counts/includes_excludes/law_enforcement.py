@@ -254,3 +254,54 @@ class LawEnforcementReportedCrimeIncludesExcludes(enum.Enum):
         "Incidents originating from reports by other law enforcement agencies"
     )
     REFERRED_TO_OTHER_AGENCY = "Incidents referred to another law enforcement agency"
+
+
+# Use of Force
+class LawEnforcementUseOfForceIncidentsIncludesExcludes(enum.Enum):
+    PHYSICAL = "Incidents involving physical force"
+    RESTRAINTS = "Incidents involving the use of restraints"
+    WEAPONS = "Incidents involving the use of weapons"
+    REASONABLE = "Incidents found to be reasonable uses of force"
+    UNREASONABLE = "Incidents found to be unreasonable uses of force"
+    TRANSITORY_PAIN = "Incidents involving force that causes transitory pain"
+    INJURY = "Incidents involving force that causes physical injury"
+    BODILY_HARM = "Incidents involving force that causes great bodily harm"
+    DEADLY = "Incidents involving deadly force"
+    CANINE = "Incidents involved deployment of a canine"
+    VEHICLE = "Incidents involved vehicle tactics (e.g., ramming, pursuit intervention technique)"
+    NOT_INTENTED_INJURY = "Incidents involving de minimis force that is not intended or reasonably likely to cause any pain or injury"
+
+
+class LawEnforcementPhysicalForceIncludesExcludes(enum.Enum):
+    CONTROLLED_TAKEDOWN = "Controlled placement/takedown that causes pain"
+    STRIKE = "Strike with sufficient force to cause pain"
+    OPEN_HAND = "Open hand technique with sufficient force to cause pain"
+    HEAD_CONTROL = "Head control"
+    NECL_RESTRAINT = "Neck restraint"
+    CAROTID_RESTRAINT = "Carotid restraint"
+    PUNCH_OR_KICK = "Punch or kick"
+    STRIKE_INTO_OBJECT = "Strike of person into a hard or fixed object"
+    WITHOUT_SUFFICIENT_FORCE = "Using hands or equipment to stop, push back, separate, or escort without the use of sufficient force to cause pain"
+
+
+class LawEnforcementRestraintIncludesExcludes(enum.Enum):
+    IMPROPER_HANDCUFFS = "Improper application of handcuffs, causing pain"
+    HOBBLE_RESTRAINT = "Use of hobble restraint"
+    LEG_IRONS = "Use of leg irons"
+
+
+class LawEnforcementFirearmIncludesExcludes(enum.Enum):
+    SHOOTING_FIREARM = "Shooting a firearm"
+    POINTING_FIREARM = "Pointing a firearm at a person"
+    DISPLAYING_FIREARM = "Displaying a firearm not aimed at a person"
+
+
+class LawEnforcementOtherWeaponIncludesExcludes(enum.Enum):
+    NOISE_FLASH_DIVERSION = "Use of a noise flash diversion device"
+    CONDUCTED_ELECTRICAL_WEAPON = "Use of a conducted electrical weapon (e.g., TASER)"
+    PEPPER_SPRAY = "Use of oleoresin capsicum (pepper spray)"
+    LESS_LETHAL_WEAPON = "Use of a less-lethal projectile weapon (e.g., PepperBall, 40mm less-lethal launcher)"
+    BLAST_BALL = "Use of a blast ball"
+    TEAR_GAS = "Use of tear gas"
+    IMPACT_WEAPON = "Use of an impact weapon (e.g., clubs, batons, flashlights)"
+    IMPROVISED_WEAPON = "Use of an improvised weapon"
