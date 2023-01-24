@@ -24,7 +24,7 @@ import werkzeug.wrappers
 from flask import Blueprint, Response, jsonify, make_response, request
 from werkzeug.http import parse_set_header
 
-from recidiviz.case_triage.api_schemas import load_api_schema
+from recidiviz.case_triage.api_schemas_utils import load_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.dimensions.dimension_transformer import (

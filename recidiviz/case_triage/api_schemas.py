@@ -14,14 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Contains Marshmallow schemas for our API """
-from functools import wraps
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, Union
 
-from flask import g, request
-from marshmallow import RAISE, Schema, ValidationError, fields
-from marshmallow.fields import Field
+from marshmallow import ValidationError, fields
 from marshmallow_enum import EnumField
 
+from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.client_info.types import PreferredContactMethod
 from recidiviz.case_triage.opportunities.types import (
@@ -29,22 +26,11 @@ from recidiviz.case_triage.opportunities.types import (
     OpportunityType,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.str_field_utils import snake_to_camel
-from recidiviz.utils.types import assert_type
 
 
 def non_empty_string(data: str) -> None:
     if not data:
         raise ValidationError("Field must be non-empty.")
-
-
-class CamelCaseSchema(Schema):
-    """Schema that uses camel-case for its external representation
-    and snake-case for its internal representation.
-    """
-
-    def on_bind_field(self, field_name: str, field_obj: Field) -> None:
-        field_obj.data_key = snake_to_camel(field_obj.data_key or field_name)
 
 
 class PolicyRequirementsSchema(CamelCaseSchema):
@@ -97,27 +83,3 @@ class UpdateNoteSchema(CamelCaseSchema):
 
 class SetHasSeenOnboardingSchema(CamelCaseSchema):
     has_seen_onboarding = fields.Bool(required=True)
-
-
-def load_api_schema(api_schema: Union[type, Type[Schema]], source_data: Any) -> Dict:
-    data: Union[Mapping[str, Any], Iterable[Mapping[str, Any]]]
-
-    try:
-        data = assert_type(source_data, dict)
-    except ValueError:
-        data = assert_type(source_data, list)
-
-    return api_schema(unknown=RAISE).load(data)
-
-
-def requires_api_schema(api_schema: Type[Schema]) -> Callable:
-    def inner(route: Callable) -> Callable:
-        @wraps(route)
-        def decorated(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
-            g.api_data = load_api_schema(api_schema, request.json)
-
-            return route(*args, **kwargs)
-
-        return decorated
-
-    return inner

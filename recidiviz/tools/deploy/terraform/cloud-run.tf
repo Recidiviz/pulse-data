@@ -40,10 +40,10 @@ locals {
     "roles/secretmanager.secretAccessor",
     "roles/cloudsql.client",
     google_project_iam_custom_role.gcs-object-and-bucket-viewer.name,
-    "roles/logging.logWriter"
+    "roles/logging.logWriter",
+    "roles/cloudtasks.enqueuer",
   ]
   application_import_roles = concat(local.cloud_run_common_roles, [
-    "roles/cloudtasks.enqueuer",
     # Use role_id to get a value known at plan-time so Terraform can calculate the length of
     # toset(application_import_roles) before the custom role has been created.
     "projects/${var.project_id}/roles/${google_project_iam_custom_role.sql-importer.role_id}"

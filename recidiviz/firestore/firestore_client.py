@@ -128,6 +128,9 @@ class FirestoreClientImpl(FirestoreClient):
     def set_document(self, document_path: str, data: Dict) -> None:
         self.client.document(document_path).set(data)
 
+    def update_document(self, document_path: str, data: Dict) -> None:
+        self.client.document(document_path).update(data)
+
     def batch(self) -> firestore.WriteBatch:
         return self.client.batch()
 

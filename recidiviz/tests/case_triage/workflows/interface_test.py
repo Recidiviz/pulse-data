@@ -15,20 +15,26 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements test for interface used to support external requests in Workflows"""
-from http import HTTPStatus
+import datetime
+import json
 from typing import Generator
 from unittest import TestCase
 
+import freezegun
 import pytest
 import responses
 from flask import Flask
 from mock import MagicMock, patch
 
-from recidiviz.case_triage.workflows.interface import WorkflowsExternalRequestInterface
-from recidiviz.tools.workflows.fixtures.tomis_contact_notes import (
-    complete_request_basic_obj,
+from recidiviz.case_triage.workflows.constants import WorkflowsUsTnVotersRightsCode
+from recidiviz.case_triage.workflows.interface import (
+    WorkflowsUsTnExternalRequestInterface,
+    WorkflowsUsTnWriteTEPENoteToTomisRequest,
 )
-from recidiviz.utils.types import assert_type
+
+PERSON_EXTERNAL_ID = "123"
+USER_ID = "456"
+CONTACT_NOTE_DATE_TIME = datetime.datetime.now()
 
 
 @pytest.fixture(autouse=True)
@@ -44,66 +50,107 @@ class TestWorkflowsInterface(TestCase):
     def setUp(self) -> None:
         self.fake_url = "http://fake-url.com"
 
-    @patch("requests.put")
-    def test_insert_contact_note_missing_params(self, mock_put: MagicMock) -> None:
-        data = {"blah": ""}
-        response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
-        mock_put.assert_not_called()
-
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    def test_insert_contact_note_is_test_success(
-        self, mock_get_secret: MagicMock
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_insert_contact_note_success(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock
     ) -> None:
-        data = {"isTest": True, "env": "staging", "fixture": complete_request_basic_obj}
         response_json = {"status": "OK"}
         mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, json=response_json)
-
-            response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-            response_obj = assert_type(response.json, dict)
-            self.assertEqual(response_obj.get("message"), "Successfully called TOMIS")
-            self.assertEqual(response_obj.get("json"), response_json)
-
-    @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    def test_insert_contact_note_is_test_success_text_only(
-        self, mock_get_secret: MagicMock
-    ) -> None:
-        data = {"isTest": True, "env": "staging", "fixture": complete_request_basic_obj}
-        mock_get_secret.return_value = self.fake_url
-        response_text = "response"
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
-            rsps.add(responses.PUT, self.fake_url, body=response_text)
-
-            response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-            self.assertEqual(response.status_code, HTTPStatus.OK)
-            response_obj = assert_type(response.json, dict)
-            self.assertEqual(response_obj.get("message"), "Successfully called TOMIS")
-            self.assertEqual(response_obj.get("text"), response_text)
+            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
+                PERSON_EXTERNAL_ID, USER_ID, CONTACT_NOTE_DATE_TIME, {1: [], 2: []}
+            )
+            # update_document is called 5 times: page 1 in progress, page 1 success, page 2 in progress, page 2 success,
+            # and entire note status success
+            # TODO(#2938): Explore more granular testing for firestore calls
+            assert mock_client.update_document.call_count == 5
 
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    def test_insert_contact_note_is_test_exception_raised(
-        self, mock_get_secret: MagicMock
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_insert_contact_note_exception_raised_during_write(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock
     ) -> None:
-        data = {"isTest": True, "env": "staging", "fixture": complete_request_basic_obj}
         mock_get_secret.return_value = self.fake_url
+        mock_client = mock_client.return_value
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
-            response = WorkflowsExternalRequestInterface.insert_contact_note(data)
-            self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+            with self.assertRaises(ConnectionRefusedError):
+                WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
+                    PERSON_EXTERNAL_ID, USER_ID, CONTACT_NOTE_DATE_TIME, {1: []}
+                )
+            assert mock_client.update_document.call_count == 3
 
     @patch("requests.put")
     @patch("recidiviz.case_triage.workflows.interface.get_secret")
-    def test_insert_contact_note_is_test_no_secret(
-        self, mock_get_secret: MagicMock, mock_put: MagicMock
+    @patch("recidiviz.case_triage.workflows.interface.FirestoreClientImpl")
+    def test_insert_contact_note_no_secret(
+        self, mock_client: MagicMock, mock_get_secret: MagicMock, mock_put: MagicMock
     ) -> None:
-        data = {"isTest": True, "env": "staging"}
         mock_get_secret.return_value = None
-        response = WorkflowsExternalRequestInterface.insert_contact_note(data)
+        mock_client = mock_client.return_value
+        with self.assertRaises(Exception):
+            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
+                PERSON_EXTERNAL_ID, USER_ID, CONTACT_NOTE_DATE_TIME, {}
+            )
 
         mock_put.assert_not_called()
-        response_obj = assert_type(response.json, dict)
-        self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
-        self.assertEqual(response_obj.get("message"), "Unable to get secrets for TOMIS")
+        mock_client.update_document.assert_called_once()
+
+    @freezegun.freeze_time("2000-12-30")
+    def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request(
+        self,
+    ) -> None:
+        request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
+            offender_id=PERSON_EXTERNAL_ID,
+            user_id=USER_ID,
+            contact_note_date_time=datetime.datetime.now(),
+            contact_sequence_number=1,
+            comments=["line 1", "line 2"],
+        )
+
+        actual = request.format_request()
+
+        expected = json.dumps(
+            {
+                "ContactNoteDateTime": "2000-12-30T00:00:00",
+                "OffenderId": PERSON_EXTERNAL_ID,
+                "UserId": USER_ID,
+                "ContactTypeCode1": "TEPE",
+                "ContactSequenceNumber": 1,
+                "Comment1": "line 1",
+                "Comment2": "line 2",
+            }
+        )
+
+        self.assertEqual(actual, expected)
+
+    @freezegun.freeze_time("2000-12-30")
+    def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request_vrc(
+        self,
+    ) -> None:
+        request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
+            offender_id=PERSON_EXTERNAL_ID,
+            user_id=USER_ID,
+            contact_note_date_time=datetime.datetime.now(),
+            contact_sequence_number=1,
+            comments=["line 1", "line 2"],
+            voters_rights_code=WorkflowsUsTnVotersRightsCode.VRRE,
+        )
+
+        actual = json.loads(request.format_request())
+
+        expected = {
+            "ContactNoteDateTime": "2000-12-30T00:00:00",
+            "OffenderId": PERSON_EXTERNAL_ID,
+            "UserId": USER_ID,
+            "ContactTypeCode1": "TEPE",
+            "ContactTypeCode2": "VRRE",
+            "ContactSequenceNumber": 1,
+            "Comment1": "line 1",
+            "Comment2": "line 2",
+        }
+
+        self.assertEqual(actual, expected)
