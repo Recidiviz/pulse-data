@@ -302,10 +302,12 @@ staff = MetricDefinition(
                 StaffType.VACANT: "The number of full-time equivalent positions of any type budgeted to the law enforcement agency but not currently filled.",
             },
         ),
+        # TODO(#17579)
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=False,
         ),
+        # TODO(#17579)
         AggregatedDimension(
             dimension=BiologicalSex,
             required=False,
@@ -318,7 +320,6 @@ staff = MetricDefinition(
                     members=FemaleBiologicalSexIncludesExcludes,
                     excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
                 ),
-                # Unknown Biological Sex has a Y/N Table associated with it.
             },
             dimension_to_description={
                 BiologicalSex.MALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
