@@ -16,16 +16,15 @@
 # =============================================================================
 """Interface for working with the User model."""
 
-from typing import Dict, List, Optional, Set
+from typing import List, Optional, Set
 
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.functions import coalesce
 
-from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
+    Agency,
     AgencyUserAccountAssociation,
     UserAccount,
+    UserAccountInvitationStatus,
 )
 
 
@@ -35,54 +34,66 @@ class UserAccountInterface:
     @staticmethod
     def create_or_update_user(
         session: Session,
-        agencies: Optional[List[schema.Agency]] = None,
+        auth0_user_id: str,
         name: Optional[str] = None,
-        auth0_user_id: Optional[str] = None,
         email: Optional[str] = None,
-        agency_id_to_invitation_status: Optional[
-            Dict[int, schema.UserAccountInvitationStatus]
-        ] = None,
     ) -> UserAccount:
-        """Creates a user or updates an existing user"""
-        insert_statement = insert(UserAccount).values(
+        """If there is an existing user in our DB with this Auth0 ID,
+        then update their name and/or email. Else, create a new user
+        in our DB with this Auth0 ID, name, and email.
+        NOTE: This method does not create or update the user's info in Auth0.
+        That is handled in api.py via a call to auth0_client.update_user.
+        """
+        existing_user = UserAccountInterface.get_user_by_auth0_user_id(
+            session=session, auth0_user_id=auth0_user_id
+        )
+
+        if existing_user is not None:
+            if name is not None:
+                existing_user.name = name
+            if email is not None:
+                existing_user.email = email
+            return existing_user
+
+        user = UserAccount(
             name=name,
             auth0_user_id=auth0_user_id,
             email=email,
         )
 
-        insert_statement = insert_statement.on_conflict_do_update(
-            constraint="unique_auth0_user_id",
-            set_=dict(
-                auth0_user_id=coalesce(  # coalesce chooses the first non-null item on the list
-                    insert_statement.excluded.auth0_user_id,  # excluded refers to the row that failed to insert due to the conflict
-                    UserAccount.auth0_user_id,  # this refers to the existing row to be updated.
-                ),  # Altogether, this statement updates the existing value with the new value if the new value is not null
-                name=coalesce(insert_statement.excluded.name, UserAccount.name),
-                email=coalesce(insert_statement.excluded.email, UserAccount.email),
-            ),
-        )
-        result = session.execute(insert_statement)
-        user = session.query(UserAccount).get(result.inserted_primary_key)
-        if agencies is not None:
-            user.agencies = agencies
-
-        if agency_id_to_invitation_status is not None:
-            user_accounts_associations = (
-                session.query(AgencyUserAccountAssociation)
-                .filter(
-                    AgencyUserAccountAssociation.user_account_id == user.id,
-                    AgencyUserAccountAssociation.agency_id.in_(
-                        list(agency_id_to_invitation_status.keys())
-                    ),
-                )
-                .all()
-            )
-            for association in user_accounts_associations:
-                association.invitation_status = agency_id_to_invitation_status.get(
-                    association.agency_id
-                )
-
+        session.add(user)
         return user
+
+    @staticmethod
+    def add_user_to_agencies(
+        session: Session,
+        user: UserAccount,
+        agencies: List[Agency],
+        invitation_status: Optional[UserAccountInvitationStatus] = None,
+    ) -> None:
+        """If there is an existing assocation between the user and given agency in our DB,
+        then update the invitation status. Else, create a new association.
+        NOTE: This method does not create or update the user's list of agencies in Auth0.
+        That must be done via auth0_client.update_user_app_metadata.
+        """
+        existing_agency_assocs_by_id = {
+            assoc.agency.id: assoc for assoc in user.agency_assocs
+        }
+
+        for agency in agencies:
+            existing_assoc = existing_agency_assocs_by_id.get(agency.id)
+            if existing_assoc is not None:
+                if invitation_status is not None:
+                    existing_assoc.invitation_status = invitation_status
+                continue
+
+            session.add(
+                AgencyUserAccountAssociation(
+                    user_account=user,
+                    agency=agency,
+                    invitation_status=invitation_status,
+                )
+            )
 
     @staticmethod
     def get_users(session: Session) -> List[UserAccount]:
