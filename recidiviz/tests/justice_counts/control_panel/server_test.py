@@ -810,6 +810,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             "name": name,
                             "email": "test@email.com",
                             "auth0_user_id": auth0_user_id,
+                            "invitation_status": None,
+                            "role": None,
                         }
                     ],
                 }
@@ -862,7 +864,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "state_code": agency_A.state_code,
                     "state": agency_A.get_state_name(),
                     "team": [
-                        {"name": None, "email": None, "auth0_user_id": auth0_user_id}
+                        {
+                            "name": None,
+                            "email": None,
+                            "auth0_user_id": auth0_user_id,
+                            "invitation_status": None,
+                            "role": None,
+                        }
                     ],
                 },
                 {
@@ -874,7 +882,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "state_code": agency_B.state_code,
                     "state": agency_B.get_state_name(),
                     "team": [
-                        {"name": None, "email": None, "auth0_user_id": auth0_user_id}
+                        {
+                            "name": None,
+                            "email": None,
+                            "auth0_user_id": auth0_user_id,
+                            "invitation_status": None,
+                            "role": None,
+                        }
                     ],
                 },
                 {
@@ -886,7 +900,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "state_code": agency_C.state_code,
                     "state": agency_C.get_state_name(),
                     "team": [
-                        {"name": None, "email": None, "auth0_user_id": auth0_user_id}
+                        {
+                            "name": None,
+                            "email": None,
+                            "auth0_user_id": auth0_user_id,
+                            "invitation_status": None,
+                            "role": None,
+                        }
                     ],
                 },
             ],

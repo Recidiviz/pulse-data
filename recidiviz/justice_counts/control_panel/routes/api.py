@@ -191,7 +191,7 @@ def get_api_blueprint(
             raise_if_user_is_not_in_agency(agency_id=agency_id)
             if emails is None:
                 return make_response(
-                    "no auth0_user_ids were provided in the request body.",
+                    "no emails were provided in the request body.",
                     500,
                 )
             AgencyUserAccountAssociationInterface.remove_users_from_agency(
