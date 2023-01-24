@@ -268,7 +268,8 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           ei.employer_name AS form_information_employer_name,
           --ei.employer_address AS form_information_employer_address,
           ei.start_date AS form_information_employment_start_date,
-          ed.contact_date AS form_information_employment_date_verified,
+          --only fill out verified employment date if it is after the employment start date
+          IF(ei.start_date <= ed.contact_date, ed.contact_date, NULL) AS form_information_employment_date_verified,
           --only include negative drug screen info if within the past 90 days 
           IF(DATE_ADD(ds.drug_screen_date, INTERVAL 90 DAY) >= CURRENT_DATE('US/Pacific'),
                 ds.drug_screen_date, NULL) AS form_information_latest_negative_drug_screen_date,

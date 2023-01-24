@@ -68,7 +68,7 @@ SELECT
     start_date,
     end_date,
     verified_income AS meets_criteria,
-    TO_JSON(STRUCT(IF(verified_income, start_date, NULL) AS income_verified_date)) AS reason,
+    TO_JSON(STRUCT(IF(verified_income, MAX(income_verified_date), NULL) AS income_verified_date)) AS reason,
 FROM sub_sessions_with_attributes
 GROUP BY 1,2,3,4,5
 """
