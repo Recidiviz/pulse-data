@@ -23,10 +23,10 @@ from functools import wraps
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional, TypedDict, Union
 
-from auth0.v3.authentication import GetToken
-from auth0.v3.exceptions import Auth0Error
-from auth0.v3.management import Auth0
-from auth0.v3.rest import RestClientOptions
+from auth0.authentication import GetToken
+from auth0.exceptions import Auth0Error
+from auth0.management import Auth0
+from auth0.rest import RestClientOptions
 from ratelimit import limits, sleep_and_retry
 
 from recidiviz.utils import secrets
@@ -127,9 +127,11 @@ class Auth0Client:
     def fetch_new_access_token(self) -> str:
         """Makes a request to the Auth0 Management API for an access token using the client credentials
         authorization flow."""
-        token = GetToken(self._domain).client_credentials(
+        token = GetToken(
+            domain=self._domain,
             client_id=self._client_id,
             client_secret=self._client_secret,
+        ).client_credentials(
             audience=self.audience,
         )
         return token["access_token"]

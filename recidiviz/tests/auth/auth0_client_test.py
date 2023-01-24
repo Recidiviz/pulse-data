@@ -46,10 +46,12 @@ class Auth0ClientTest(TestCase):
         self.secrets_patcher.stop()
 
     def test_access_token(self) -> None:
-        self.mock_get_token.assert_called_once_with("fake_api_domain")
-        self.mock_get_token.return_value.client_credentials.assert_called_once_with(
+        self.mock_get_token.assert_called_once_with(
+            domain="fake_api_domain",
             client_id="fake client id",
             client_secret="fake client secret",
+        )
+        self.mock_get_token.return_value.client_credentials.assert_called_once_with(
             audience=f"https://{self.secrets['auth0_api_domain']}/api/v2/",
         )
         self.mock_get_token.return_value.client_credentials.return_value = {

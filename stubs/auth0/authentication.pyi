@@ -14,10 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-from typing import Dict, Optional
+from typing import Dict
 
 class GetToken:
-    def __init__(self, domain: str) -> None: ...
-    def client_credentials(
-        self, client_id: str, client_secret: str, audience: str
-    ) -> Dict[str, str]: ...
+    def __init__(self, domain: str, client_id: str, client_secret: str) -> None: ...
+    def client_credentials(self, audience: str) -> Dict[str, str]: ...
