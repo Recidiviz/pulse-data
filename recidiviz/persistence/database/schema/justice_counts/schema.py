@@ -355,6 +355,12 @@ class Agency(Source):
                     "name": assoc.user_account.name,
                     "auth0_user_id": assoc.user_account.auth0_user_id,
                     "email": assoc.user_account.email,
+                    "invitation_status": assoc.invitation_status.value
+                    if assoc.invitation_status is not None
+                    else None,
+                    "role": assoc.invitation_status.role.value
+                    if assoc.role is not None
+                    else None,
                 }
                 for assoc in self.user_account_assocs
             ],
