@@ -32,6 +32,7 @@ from recidiviz.common.constants.state.state_person import (
     StateRace,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -56,6 +57,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonRace,
     StateStaff,
     StateStaffExternalId,
+    StateStaffRolePeriod,
     StateSupervisionCaseTypeEntry,
     StateSupervisionSentence,
     StateSupervisionViolation,
@@ -119,8 +121,6 @@ _DATE_2 = datetime.date(year=2019, month=2, day=1)
 _DATE_3 = datetime.date(year=2019, month=3, day=1)
 
 
-# TODO(#17855): Write / duplicate more tests for StateStaff once StateStaff has child
-#   entities (i.e. StateStaffRolePeriod)
 class TestStateEntityMatching(BaseStateEntityMatcherTest):
     """Tests for default state entity matching logic."""
 
@@ -395,6 +395,76 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
+    def test_match_twoMatchingIngestedStaff_with_children(self) -> None:
+        # Arrange
+        external_id = StateStaffExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+        external_id_dup = attr.evolve(external_id)
+
+        role_period = StateStaffRolePeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="1",
+            start_date=_DATE_1,
+            end_date=_DATE_2,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+        )
+        role_period_dup = attr.evolve(role_period)
+        role_period2 = StateStaffRolePeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="2",
+            start_date=_DATE_2,
+            end_date=_DATE_3,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+        )
+        role_period3 = StateStaffRolePeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="3",
+            start_date=_DATE_3,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+        )
+
+        staff = StateStaff.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id],
+            role_periods=[role_period, role_period2],
+            state_code=_STATE_CODE,
+        )
+
+        staff_2 = StateStaff.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id_dup],
+            role_periods=[role_period_dup, role_period3],
+            state_code=_STATE_CODE,
+        )
+
+        expected_external_id_1 = attr.evolve(external_id)
+        expected_role_period_1 = attr.evolve(role_period)
+        expected_role_period_2 = attr.evolve(role_period2)
+        expected_role_period_3 = attr.evolve(role_period3)
+        expected_staff = attr.evolve(
+            staff,
+            external_ids=[
+                expected_external_id_1,
+            ],
+            role_periods=[
+                expected_role_period_1,
+                expected_role_period_2,
+                expected_role_period_3,
+            ],
+        )
+
+        # Act
+        session = self._session()
+        matched_entities = self._match(session, [staff, staff_2])
+
+        # Assert
+        self.assert_root_entities_match_pre_and_post_commit(
+            [expected_staff], matched_entities.root_entities, session
+        )
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(1, matched_entities.total_root_entities)
+
     def test_match_MatchingIngestedPersons_with_children_perf(self) -> None:
         # Arrange
         people = []
@@ -543,7 +613,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             [expected_staff], matched_entities.root_entities, session
         )
 
-    def test_match_noPlaceholders_success(self) -> None:
+    def test_match_PersonWithChildren_success(self) -> None:
         # Arrange 1 - Match
         db_person = schema.StatePerson(full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_incarceration_sentence = schema.StateIncarcerationSentence(
@@ -630,6 +700,98 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(2, matched_entities.total_root_entities)
         self.assert_root_entities_match_pre_and_post_commit(
             [expected_person, expected_person_another],
+            matched_entities.root_entities,
+            session,
+        )
+
+    def test_match_StaffWithChildren_success(self) -> None:
+        # Arrange 1 - Match
+        db_staff = schema.StateStaff(full_name=_FULL_NAME, state_code=_STATE_CODE)
+        db_role_period = schema.StateStaffRolePeriod(
+            state_code=_STATE_CODE,
+            external_id="1",
+            start_date=_DATE_1,
+            end_date=_DATE_2,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER.value,
+        )
+        db_external_id = schema.StateStaffExternalId(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID,
+            id_type=_ID_TYPE,
+        )
+
+        db_staff.role_periods = [db_role_period]
+        db_staff.external_ids = [db_external_id]
+
+        db_external_id_another = schema.StateStaffExternalId(
+            state_code=_STATE_CODE,
+            external_id=_EXTERNAL_ID_2,
+            id_type=_ID_TYPE,
+        )
+        db_staff_another = schema.StateStaff(
+            full_name=_FULL_NAME,
+            external_ids=[db_external_id_another],
+            state_code=_STATE_CODE,
+        )
+        self._commit_to_db(db_staff, db_staff_another)
+
+        role_period = StateStaffRolePeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="1",
+            start_date=_DATE_1,
+            end_date=_DATE_2,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+        )
+        new_role_period = StateStaffRolePeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            external_id="2",
+            start_date=_DATE_2,
+            end_date=_DATE_3,
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+        )
+        external_id = StateStaffExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+        staff = StateStaff.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id],
+            role_periods=[role_period, new_role_period],
+            state_code=_STATE_CODE,
+        )
+
+        external_id_another = StateStaffExternalId.new_with_defaults(
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2, id_type=_ID_TYPE
+        )
+        staff_another = StateStaff.new_with_defaults(
+            full_name=_FULL_NAME,
+            external_ids=[external_id_another],
+            state_code=_STATE_CODE,
+        )
+
+        expected_staff = attr.evolve(staff, external_ids=[])
+        expected_role_period_2 = attr.evolve(new_role_period)
+        expected_role_period = attr.evolve(
+            role_period,
+        )
+        expected_external_id = attr.evolve(
+            external_id,
+        )
+        expected_staff.role_periods = [expected_role_period, expected_role_period_2]
+        expected_staff.external_ids = [expected_external_id]
+
+        expected_staff_another = attr.evolve(staff_another)
+        expected_external_id = attr.evolve(external_id_another)
+        expected_staff_another.external_ids = [expected_external_id]
+
+        # Act 1 - Match
+        session = self._session()
+        matched_entities = self._match(session, [staff, staff_another])
+
+        # Assert 1 - Match
+        self.assert_no_errors(matched_entities)
+        self.assertEqual(2, matched_entities.total_root_entities)
+        self.assert_root_entities_match_pre_and_post_commit(
+            [expected_staff, expected_staff_another],
             matched_entities.root_entities,
             session,
         )

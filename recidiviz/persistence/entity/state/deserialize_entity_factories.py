@@ -417,3 +417,16 @@ class StateStaffExternalIdFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateStaffRolePeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateStaffRolePeriod:
+        return entity_deserialize(
+            cls=entities.StateStaffRolePeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

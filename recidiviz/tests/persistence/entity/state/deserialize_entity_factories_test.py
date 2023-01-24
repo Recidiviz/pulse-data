@@ -75,6 +75,10 @@ from recidiviz.common.constants.state.state_shared_enums import (
     StateActingBodyType,
     StateCustodialAuthority,
 )
+from recidiviz.common.constants.state.state_staff_role_period import (
+    StateStaffRoleSubtype,
+    StateStaffRoleType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactReason,
@@ -967,6 +971,32 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             external_id="123A",
             id_type="STATE_ID",
             state_code="US_XX",
+        )
+
+        self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateStaffRolePeriod(self) -> None:
+        result = deserialize_entity_factories.StateStaffRolePeriodFactory.deserialize(
+            external_id="123a",
+            state_code="us_xx",
+            start_date="2022-05-08",
+            end_date="2022-05-10",
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+            role_type_raw_text="Officer",
+            role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR,
+            role_subtype_raw_text="Supervisor",
+        )
+
+        # Assert
+        expected_result = entities.StateStaffRolePeriod(
+            external_id="123A",
+            state_code="US_XX",
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+            role_type_raw_text="OFFICER",
+            role_subtype=StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR,
+            role_subtype_raw_text="SUPERVISOR",
         )
 
         self.assertEqual(expected_result, result)

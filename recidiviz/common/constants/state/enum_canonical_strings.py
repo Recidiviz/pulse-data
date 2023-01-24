@@ -259,6 +259,14 @@ state_sentence_status_serving = "SERVING"
 state_sentence_status_suspended = "SUSPENDED"
 state_sentence_status_vacated = "VACATED"
 
+# state_staff_role_period.py
+state_staff_role_type_supervision_officer = "SUPERVISION_OFFICER"
+state_staff_role_subtype_supervision_officer = "SUPERVISION_OFFICER"
+state_staff_role_subtype_supervision_officer_supervisor = (
+    "SUPERVISION_OFFICER_SUPERVISOR"
+)
+state_staff_role_subtype_supervision_regional_manager = "SUPERVISION_REGIONAL_MANAGER"
+
 # state_supervision_sentence.py
 state_supervision_sentence_supervision_type_community_corrections = (
     "COMMUNITY_CORRECTIONS"

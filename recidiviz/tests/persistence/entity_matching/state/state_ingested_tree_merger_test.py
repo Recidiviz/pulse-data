@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the StateIngestedTreeMerger class."""
+import datetime
 import unittest
 from copy import deepcopy
 from itertools import permutations
@@ -26,6 +27,7 @@ from more_itertools import one
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -39,6 +41,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePersonRace,
     StateStaff,
     StateStaffExternalId,
+    StateStaffRolePeriod,
 )
 from recidiviz.persistence.entity_matching.state.state_ingested_tree_merger import (
     StateIngestedTreeMerger,
@@ -71,6 +74,10 @@ def make_incarceration_incident(**kwargs: Any) -> StateIncarcerationIncident:
     return StateIncarcerationIncident.new_with_defaults(
         state_code=_STATE_CODE, **kwargs
     )
+
+
+def make_staff_role_period(**kwargs: Any) -> StateStaffRolePeriod:
+    return StateStaffRolePeriod.new_with_defaults(state_code=_STATE_CODE, **kwargs)
 
 
 def make_incarceration_sentence(**kwargs: Any) -> StateIncarcerationSentence:
@@ -148,8 +155,6 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
         self.assertCountEqual([expected_person], merge_result)
 
-    # TODO(#17855): Add analogous test for StateStaff once StateStaff has child
-    #  entities other than external_id (i.e. StateStaffRolePeriod).
     def test_merge_people_exact_match_with_child(self) -> None:
         ingested_persons = [
             make_person(
@@ -177,8 +182,41 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
         self.assertCountEqual([expected_person], merge_result)
 
-    # TODO(#17855): Add analogous test for StateStaff once StateStaff has child
-    #  entities other than external_id.
+    def test_merge_staff_exact_match_with_child(self) -> None:
+        ingested_staff = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                role_periods=[
+                    make_staff_role_period(
+                        external_id="ID_1",
+                        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                        start_date=datetime.date(2023, 1, 1),
+                    )
+                ],
+            ),
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                role_periods=[
+                    make_staff_role_period(
+                        external_id="ID_1",
+                        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                        start_date=datetime.date(2023, 1, 1),
+                    )
+                ],
+            ),
+        ]
+        expected_staff = attr.evolve(ingested_staff[0])
+
+        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+
+        merge_result = tree_merger.merge(ingested_staff)
+
+        self.assertCountEqual([expected_staff], merge_result)
+
     def test_merge_people_with_different_children(self) -> None:
         ingested_persons = [
             make_person(
@@ -215,6 +253,59 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         merge_result = tree_merger.merge(ingested_persons)
 
         self.assertCountEqual(expected_people, merge_result)
+
+    def test_merge_staff_with_different_children(self) -> None:
+        ingested_persons = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                role_periods=[
+                    make_staff_role_period(
+                        external_id="ID_1",
+                        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                        start_date=datetime.date(2023, 1, 1),
+                    )
+                ],
+            ),
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                role_periods=[
+                    make_staff_role_period(
+                        external_id="ID_2",
+                        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                        start_date=datetime.date(2023, 1, 1),
+                    )
+                ],
+            ),
+        ]
+        expected_staff = [
+            make_staff(
+                external_ids=[
+                    make_staff_external_id(external_id="ID_1", id_type="ID_TYPE_1")
+                ],
+                role_periods=[
+                    make_staff_role_period(
+                        external_id="ID_1",
+                        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                        start_date=datetime.date(2023, 1, 1),
+                    ),
+                    make_staff_role_period(
+                        external_id="ID_2",
+                        role_type=StateStaffRoleType.SUPERVISION_OFFICER,
+                        start_date=datetime.date(2023, 1, 1),
+                    ),
+                ],
+            ),
+        ]
+
+        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+
+        merge_result = tree_merger.merge(ingested_persons)
+
+        self.assertCountEqual(expected_staff, merge_result)
 
     def test_merge_placeholder_with_different_children(self) -> None:
         ingested_persons = [

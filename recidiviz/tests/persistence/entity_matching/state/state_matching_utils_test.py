@@ -794,6 +794,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                     schema.StateEarlyDischarge,
                     schema.StateIncarcerationSentence,
                     schema.StatePerson,
+                    schema.StateStaff,
                 }:
                     self.assertFalse(can_atomically_merge_entity(entity, field_index))
                 else:

@@ -714,6 +714,22 @@ state_task_type = Enum(
     name="state_task_type",
 )
 
+state_staff_role_type = Enum(
+    state_enum_strings.state_staff_role_type_supervision_officer,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_staff_role_type",
+)
+
+state_staff_role_subtype = Enum(
+    state_enum_strings.state_staff_role_subtype_supervision_officer,
+    state_enum_strings.state_staff_role_subtype_supervision_officer_supervisor,
+    state_enum_strings.state_staff_role_subtype_supervision_regional_manager,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_staff_role_subtype",
+)
+
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
@@ -3025,6 +3041,9 @@ class StateStaff(StateBase):
     external_ids = relationship(
         "StateStaffExternalId", backref="staff", lazy="selectin"
     )
+    role_periods = relationship(
+        "StateStaffRolePeriod", backref="staff", lazy="selectin"
+    )
 
 
 # Shared mixin columns
@@ -3107,4 +3126,76 @@ class StateStaffExternalId(StateBase, _ReferencesStateStaffSharedColumns):
             "multiple identifiers used (e.g. a system user id vs an employee id), this "
             "type will help us differentiate between the different schemes."
         ),
+    )
+
+
+class StateStaffRolePeriod(StateBase, _ReferencesStateStaffSharedColumns):
+    """Represents a StateStaffRolePeriod in the SQL schema"""
+
+    __tablename__ = "state_staff_role_period"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="staff_role_periods_unique_within_region",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "The StateStaffRolePeriod object represents information about a staff "
+                "member’s role in the DOC during a particular period of time. "
+            )
+        },
+    )
+
+    staff_role_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="staff member role period"
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateStaffRolePeriod"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    start_date = Column(
+        Date,
+        nullable=False,
+        comment="The date on which the staff member started serving this role.",
+    )
+    end_date = Column(
+        Date,
+        comment=(
+            "The date on which the staff member stopped serving this role. This is an "
+            "exclusive end date, meaning this staff member is no longer considered to "
+            "have this role on this day."
+        ),
+    )
+    role_type = Column(
+        state_staff_role_type,
+        nullable=False,
+        comment="The general role of this staff member.",
+    )
+    role_type_raw_text = Column(
+        String(255), comment="The raw text value of the role type."
+    )
+    role_subtype = Column(
+        state_staff_role_subtype,
+        comment="The specific role subtype for this staff member.",
+    )
+    role_subtype_raw_text = Column(
+        String(255), comment="The raw text of the role subtype."
     )
