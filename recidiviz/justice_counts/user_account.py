@@ -96,6 +96,18 @@ class UserAccountInterface:
             )
 
     @staticmethod
+    def remove_user_from_agency(
+        session: Session,
+        user: UserAccount,
+        agency_id: int,
+    ) -> None:
+        existing_agency_assocs_by_id = {
+            assoc.agency.id: assoc for assoc in user.agency_assocs
+        }
+        existing_assoc = existing_agency_assocs_by_id.get(agency_id)
+        session.delete(existing_assoc)
+
+    @staticmethod
     def get_users(session: Session) -> List[UserAccount]:
         return session.query(UserAccount).order_by(UserAccount.id).all()
 

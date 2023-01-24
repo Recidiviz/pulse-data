@@ -140,9 +140,9 @@ def get_api_blueprint(
 
     ### Users ###
 
-    @api_blueprint.route("/users/invite", methods=["POST"])
+    @api_blueprint.route("/agencies/<agency_id>/users", methods=["POST"])
     @auth_decorator
-    def invite_user() -> Response:
+    def invite_user_to_agency(agency_id: int) -> Response:
         """
         This endpoint creates a user in Auth0 and in the Justice Counts Database.
         We save the information in both Justice Counts DB and Auth0 because the Justice Counts
@@ -158,22 +158,48 @@ def get_api_blueprint(
             request_json = assert_type(request.json, dict)
             invite_name = request_json.get("invite_name")
             invite_email = request_json.get("invite_email")
-            agency_id = request_json.get("agency_id")
 
-            if agency_id is None:
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            AgencyUserAccountAssociationInterface.invite_user_to_agency(
+                name=assert_type(invite_name, str),
+                email=assert_type(invite_email, str),
+                agency_id=int(agency_id),
+                auth0_client=auth0_client,
+                session=current_session,
+            )
+
+            current_session.commit()
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/agencies/<agency_id>/users", methods=["DELETE"])
+    @auth_decorator
+    def remove_user_from_agency(agency_id: int) -> Response:
+        """
+        This endpoint removes a user from an agency in Auth0 and in the Justice Counts Database.
+        """
+        try:
+            if auth0_client is None:
                 return make_response(
-                    "No agency_id was provided in the api request.",
+                    "auth0_client could not be initialized. Environment is not development or gcp.",
                     500,
                 )
-            if agency_id is not None:
-                raise_if_user_is_not_in_agency(agency_id=agency_id)
-                AgencyUserAccountAssociationInterface.invite_user_to_agency(
-                    name=assert_type(invite_name, str),
-                    email=assert_type(invite_email, str),
-                    agency_id=int(agency_id),
-                    auth0_client=auth0_client,
-                    session=current_session,
+            request_json = assert_type(request.json, dict)
+            emails = request_json.get("emails")
+
+            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            if emails is None:
+                return make_response(
+                    "no auth0_user_ids were provided in the request body.",
+                    500,
                 )
+            AgencyUserAccountAssociationInterface.remove_users_from_agency(
+                emails=emails,
+                agency_id=int(agency_id),
+                auth0_client=auth0_client,
+                session=current_session,
+            )
 
             current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})

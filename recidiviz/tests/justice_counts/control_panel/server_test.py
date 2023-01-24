@@ -930,7 +930,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(db_user.name, new_name)
         self.assertEqual(db_user.email, new_email_address)
 
-    def test_invite_user_to_agency(self) -> None:
+    def test_invite_and_remove_user_from_agency(self) -> None:
         agency_A = self.test_schema_objects.test_agency_A
         agency_B = self.test_schema_objects.test_agency_B
         user_A = self.test_schema_objects.test_user_A
@@ -956,11 +956,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 agency_ids=[agency_A.id, agency_B.id],
             )
             response = self.client.post(
-                "/api/users/invite",
+                f"/api/agencies/{agency_A.id}/users",
                 json={
                     "invite_name": name,
                     "invite_email": email_address,
-                    "agency_id": agency_A.id,
                 },
             )
 
@@ -991,11 +990,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             }
             self.test_auth0_client.create_JC_user.return_value = updated_auth0_user
             response = self.client.post(
-                "/api/users/invite",
+                f"/api/agencies/{agency_B.id}/users",
                 json={
                     "invite_name": name,
                     "invite_email": email_address,
-                    "agency_id": agency_B.id,
                 },
             )
             db_user = self.session.query(UserAccount).one()
@@ -1007,6 +1005,25 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(user_account_associations[1].user_account_id, db_user.id)
             self.assertEqual(
                 user_account_associations[1].invitation_status,
+                UserAccountInvitationStatus.PENDING,
+            )
+            # Remove user from first agency.
+            response = self.client.delete(
+                f"/api/agencies/{agency_A.id}/users",
+                json={
+                    "emails": [email_address],
+                },
+            )
+            db_user = self.session.query(UserAccount).one()
+            self.assertEqual(len(db_user.agency_assocs), 1)
+            self.assertEqual(db_user.agency_assocs[0].agency_id, agency_B.id)
+            user_account_associations = self.session.query(
+                AgencyUserAccountAssociation
+            ).all()
+            self.assertEqual(user_account_associations[0].agency_id, agency_B.id)
+            self.assertEqual(user_account_associations[0].user_account_id, db_user.id)
+            self.assertEqual(
+                user_account_associations[0].invitation_status,
                 UserAccountInvitationStatus.PENDING,
             )
 
