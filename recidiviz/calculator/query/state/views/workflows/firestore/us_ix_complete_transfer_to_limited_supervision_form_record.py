@@ -157,6 +157,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
             v.state_code,
             v.person_id,
             v.violation_date AS event_date,
+            CAST(v.supervision_violation_id AS STRING) AS note_id,
             vt.violation_type AS note_title,
              "--" AS note_body,
             "Violations" AS criteria,
@@ -174,6 +175,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         a.state_code,
         a.person_id,
         a.NoteDate AS event_date,
+        a.OffenderNoteId AS note_id,
         REGEXP_EXTRACT(a.Details, {{note_title_regex}} ) as note_title,
         COALESCE(REGEXP_EXTRACT(a.Details, {{note_body_regex}}), a.Details) as note_body,
         CASE 
@@ -191,6 +193,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         a.state_code,
         a.person_id,
         a.NoteDate AS event_date,
+        a.OffenderNoteId AS note_id,
         REGEXP_EXTRACT(a.Details, {{note_title_regex}} ) as note_title,
         COALESCE(REGEXP_EXTRACT(a.Details, {{note_body_regex}}), a.Details) as note_body,
         CASE 
@@ -219,6 +222,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
         a.state_code,
         a.person_id,
         a.NoteDate AS event_date,
+        a.OffenderNoteId AS note_id,
         REGEXP_EXTRACT(a.Details, {{note_title_regex}} ) as note_title,
         COALESCE(REGEXP_EXTRACT(a.Details, {{note_body_regex}}), a.Details) as note_body,
         "DUI" AS criteria
@@ -228,18 +232,31 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
          --only include DUI notes within the past 12 months 
         AND DATE_ADD(a.NoteDate, INTERVAL 12 MONTH) >= CURRENT_DATE('US/Pacific')
     ),
-    latest_notes AS(
-      SELECT
+    dedup_notes AS(
+    SELECT
         n.state_code,
         n.person_id,
-        TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS)) AS case_notes,
-      FROM notes n
-      --only select notes during the current supervision session
-      INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
+        n.event_date,
+        n.note_id,
+        n.note_title,
+        n.note_body,
+        n.criteria
+     FROM notes n
+    --only select notes during the current supervision session
+    INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` ses
         ON n.person_id = ses.person_id
         AND CURRENT_DATE('US/Pacific') BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
         AND n.event_date BETWEEN ses.start_date AND {nonnull_end_date_clause('ses.end_date')}
-      GROUP BY 1,2
+    -- only select each unique note_id once, even if it matches multiple headers (i.e. community service and case plan)
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY n.person_id, n.note_id ORDER BY n.criteria)=1
+    ),
+     latest_notes AS(
+    SELECT
+        n.state_code,
+        n.person_id,
+        TO_JSON(ARRAY_AGG(IF(n.note_title IS NOT NULL, STRUCT(n.note_title, n.note_body, n.event_date, n.criteria),NULL) IGNORE NULLS ORDER BY n.event_date)) AS case_notes,
+    FROM dedup_notes n
+    GROUP BY 1,2
     ),
     latest_alcohol_drug_lsir AS (
       SELECT 

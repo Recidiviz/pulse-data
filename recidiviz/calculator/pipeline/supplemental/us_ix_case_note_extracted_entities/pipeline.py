@@ -34,6 +34,7 @@ from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeli
 )
 from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_content_text_analysis_configuration import (
     NOTE_CONTENT_TEXT_ANALYZER,
+    UsIxNoteContentTextEntity,
 )
 from recidiviz.calculator.pipeline.supplemental.us_ix_case_note_extracted_entities.us_ix_note_title_text_analysis_configuration import (
     NOTE_TITLE_TEXT_ANALYZER,
@@ -103,31 +104,60 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
         for row in rows:
             entity_mapping = deepcopy(self.default_entity_mapping())
             note = row["Details"]
-            if note and (
-                match := re.match(
+            if note:
+                # Old notes that were converted to Atlas are in this JSON-like form
+                # {note_title: xxxx} {note: yyyy}
+                # We pull the title out of these and run them through the matcher we
+                # used for the old ID system.
+                if match := re.match(
                     r"\{note_title: (?P<note_title>.*)\} \{note: (?P<note>.*)\}", note
-                )
-            ):
-                matched_entities = self.note_title_text_analyzer.extract_entities(
-                    match.group("note_title")
-                )
-                for entity in matched_entities:
-                    entity_mapping_key = entity.name.lower()
-                    if (
-                        entity == UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
-                        or (
-                            entity == UsIxNoteTitleTextEntity.REVOCATION
-                            and UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
-                            in matched_entities
-                        )
-                        or (
-                            entity == UsIxNoteTitleTextEntity.TREATMENT_COMPLETE
-                            and UsIxNoteTitleTextEntity.ANY_TREATMENT
-                            not in matched_entities
-                        )
-                    ):
-                        continue
-                    entity_mapping[entity_mapping_key] = True
+                ):
+                    matched_entities = self.note_title_text_analyzer.extract_entities(
+                        match.group("note_title")
+                    )
+                    for entity in matched_entities:
+                        entity_mapping_key = entity.name.lower()
+                        if (
+                            entity == UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
+                            or (
+                                entity == UsIxNoteTitleTextEntity.REVOCATION
+                                and UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
+                                in matched_entities
+                            )
+                            or (
+                                entity == UsIxNoteTitleTextEntity.TREATMENT_COMPLETE
+                                and UsIxNoteTitleTextEntity.ANY_TREATMENT
+                                not in matched_entities
+                            )
+                        ):
+                            continue
+                        entity_mapping[entity_mapping_key] = True
+
+                # Notes entered directly into Atlas do not have this form or a title at
+                # all. We just have the note body, so we run that through a separate
+                # analyzer.
+                else:
+                    matched_entities = self.note_content_text_analyzer.extract_entities(
+                        note
+                    )
+                    for entity in matched_entities:
+                        entity_mapping_key = entity.name.lower()
+                        if (
+                            entity == UsIxNoteContentTextEntity.REVOCATION_INCLUDE
+                            or (
+                                entity == UsIxNoteContentTextEntity.REVOCATION
+                                and UsIxNoteContentTextEntity.REVOCATION_INCLUDE
+                                in matched_entities
+                            )
+                            or (
+                                entity == UsIxNoteContentTextEntity.TREATMENT_COMPLETE
+                                and UsIxNoteContentTextEntity.ANY_TREATMENT
+                                not in matched_entities
+                            )
+                        ):
+                            continue
+                        entity_mapping[entity_mapping_key] = True
+
             final_row: Dict[str, Any] = {**row, **entity_mapping}
             if final_row["NoteDate"]:
                 final_row["NoteDate"] = datetime.datetime.strptime(
@@ -143,6 +173,10 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
             entity.name.lower(): False
             for entity in UsIxNoteTitleTextEntity
             if entity != UsIxNoteTitleTextEntity.REVOCATION_INCLUDE
+        } | {
+            entity.name.lower(): False
+            for entity in UsIxNoteContentTextEntity
+            if entity != UsIxNoteContentTextEntity.REVOCATION_INCLUDE
         }
 
     @classmethod
