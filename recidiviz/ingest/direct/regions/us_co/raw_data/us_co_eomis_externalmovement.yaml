@@ -283,6 +283,8 @@ columns:
         description: Possible Parole Violator (PPV)
       - value: "AB"
         description: YOS Offender
+      - value: "AC"
+        description: ICC - Inmate
       - value: "AE"
         description: Adult Offender Commitment
       - value: "AF"
