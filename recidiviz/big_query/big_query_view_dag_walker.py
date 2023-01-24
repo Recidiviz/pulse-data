@@ -505,7 +505,8 @@ class BigQueryViewDagWalker:
             key = current_path_edges[key]
             yield key
 
-    def view_for_key(self, dag_key: DagKey) -> BigQueryView:
+    def view_for_address(self, view_address: BigQueryAddress) -> BigQueryView:
+        dag_key = DagKey(view_address=view_address)
         return self.nodes_by_key[dag_key].view
 
     def node_for_view(self, view: BigQueryView) -> BigQueryViewDagNode:

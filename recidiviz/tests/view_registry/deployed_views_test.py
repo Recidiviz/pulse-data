@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.utils import metadata
@@ -148,7 +148,7 @@ class ViewDagInvariantTests(unittest.TestCase):
             *other_valid_descendants,
         }
 
-        view = self.dag_walker.view_for_key(DagKey(view_address=original_address))
+        view = self.dag_walker.view_for_address(original_address)
         sub_dag = self.dag_walker.get_descendants_sub_dag([view])
 
         descendant_addresses: Set[BigQueryAddress] = {

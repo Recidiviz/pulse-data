@@ -233,7 +233,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                                 ) from e
                         else:
                             self.assertIn(
-                                walker.view_for_key(parent_key), parent_results
+                                walker.view_for_address(parent_key.view_address),
+                                parent_results,
                             )
 
             time.sleep(
@@ -444,7 +445,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                 if parent_key not in walker.nodes_by_key:
                     # We assume this is a source data table (checked in other tests)
                     continue
-                parent_view: BigQueryView = walker.view_for_key(parent_key)
+                parent_view: BigQueryView = walker.view_for_address(
+                    parent_key.view_address
+                )
                 if parent_view.materialized_address is not None:
                     should_be_materialized_addresses.add(
                         parent_view.materialized_address

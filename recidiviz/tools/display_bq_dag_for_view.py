@@ -24,7 +24,7 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -57,8 +57,8 @@ def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
     dag_walker = build_dag_walker(dataset_id, view_id)
-    view = dag_walker.view_for_key(
-        DagKey(view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id))
+    view = dag_walker.view_for_address(
+        view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
     )
     print(
         dag_walker.descendants_dfs_tree_str(view=view)
