@@ -24,6 +24,10 @@ from airflow.decorators import dag
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
+from airflow.providers.google.cloud.operators.tasks import (
+    CloudTasksQueuePauseOperator,
+    CloudTasksQueueResumeOperator,
+)
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 
@@ -55,6 +59,8 @@ project_id = os.environ.get("GCP_PROJECT")
 # TODO(#17283): Remove test buckets once SFTP is switched over
 GCS_LOCK_BUCKET = f"{project_id}-test-gcslock"
 GCS_CONFIG_BUCKET = f"{project_id}-test-configs"
+
+QUEUE_LOCATION = "us-east1"
 
 
 def sftp_enabled_states() -> List[str]:
@@ -155,10 +161,27 @@ def sftp_dag() -> None:
             ).expand(op_kwargs=find_sftp_files_from_server.output)
 
             # TODO(#17334): Implement download flow
-
+            scheduler_queue = (
+                f"direct-ingest-state-{state_code.lower().replace('_', '-')}-scheduler"
+            )
+            pause_scheduler_queue = CloudTasksQueuePauseOperator(
+                task_id="pause_scheduler_queue",
+                location=QUEUE_LOCATION,
+                queue_name=scheduler_queue,
+                project_id=project_id,
+                retry=None,
+            )
             # TODO(#17335): Implement upload flow
-
-            # TODO(#17387): Add ability to pause scheduler queue when upload operation starts
+            resume_scheduler_queue = CloudTasksQueueResumeOperator(
+                task_id="resume_scheduler_queue",
+                location=QUEUE_LOCATION,
+                queue_name=scheduler_queue,
+                project_id=project_id,
+                # This will trigger the task regardless of the failure or success of the
+                # upstream uploads/downloads.
+                trigger_rule=TriggerRule.ALL_DONE,
+                retry=None,
+            )
 
             release_locks = [
                 PythonOperator(
@@ -177,6 +200,8 @@ def sftp_dag() -> None:
                 >> set_locks
                 >> find_sftp_files_from_server
                 >> verify_files
+                >> pause_scheduler_queue
+                >> resume_scheduler_queue
                 >> release_locks
             )
 
