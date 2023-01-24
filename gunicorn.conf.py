@@ -16,6 +16,7 @@
 # =============================================================================
 """Configures gunicorn"""
 import multiprocessing
+
 import gevent_config
 
 # Note: if we adjust the number of gunicorn workers per cpu upwards,
