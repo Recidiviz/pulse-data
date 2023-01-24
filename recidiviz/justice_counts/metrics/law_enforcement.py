@@ -416,10 +416,26 @@ arrests = MetricDefinition(
                 ),
             },
         ),
+        # TODO(#17579)
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        # TODO(#17579)
         AggregatedDimension(
             dimension=BiologicalSex,
             required=True,
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={
+                        MaleBiologicalSexIncludesExcludes.UNKNOWN,
+                    },
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={
+                        FemaleBiologicalSexIncludesExcludes.UNKNOWN,
+                    },
+                ),
+            },
             dimension_to_description={
                 BiologicalSex.MALE: "The number of arrests, citations, and summonses by the agency of people whose biological sex is male.",
                 BiologicalSex.FEMALE: "The number of arrests, citations, and summonses by the agency of people whose biological sex is female.",
