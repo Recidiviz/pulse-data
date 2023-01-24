@@ -41,15 +41,20 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     LawEnforcementCountyOrMunicipalAppropriation,
     LawEnforcementExpensesIncludesExcludes,
     LawEnforcementFacilitiesIncludesExcludes,
+    LawEnforcementFirearmIncludesExcludes,
     LawEnforcementFundingIncludesExcludes,
     LawEnforcementGrantsIncludesExcludes,
     LawEnforcementMentalHealthStaffIncludesExcludes,
+    LawEnforcementOtherWeaponIncludesExcludes,
     LawEnforcementPersonnelIncludesExcludes,
+    LawEnforcementPhysicalForceIncludesExcludes,
     LawEnforcementPoliceOfficersIncludesExcludes,
     LawEnforcementReportedCrimeIncludesExcludes,
+    LawEnforcementRestraintIncludesExcludes,
     LawEnforcementStaffIncludesExcludes,
     LawEnforcementStateAppropriationIncludesExcludes,
     LawEnforcementTrainingIncludesExcludes,
+    LawEnforcementUseOfForceIncidentsIncludesExcludes,
     LawEnforcementVacantStaffIncludesExcludes,
     LawEnforcementVictimAdvocateStaffIncludesExcludes,
 )
@@ -432,9 +437,35 @@ use_of_force_incidents = MetricDefinition(
     description="The number of incidents in which agency staff used physical coercion to gain compliance from a person.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementUseOfForceIncidentsIncludesExcludes,
+        excluded_set={
+            LawEnforcementUseOfForceIncidentsIncludesExcludes.NOT_INTENTED_INJURY,
+        },
+    ),
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ForceType,
+            dimension_to_includes_excludes={
+                ForceType.PHYSICAL: IncludesExcludesSet(
+                    members=LawEnforcementPhysicalForceIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementPhysicalForceIncludesExcludes.WITHOUT_SUFFICIENT_FORCE,
+                    },
+                ),
+                ForceType.RESTRAINT: IncludesExcludesSet(
+                    members=LawEnforcementRestraintIncludesExcludes,
+                ),
+                ForceType.FIREARM: IncludesExcludesSet(
+                    members=LawEnforcementFirearmIncludesExcludes,
+                    excluded_set={
+                        LawEnforcementFirearmIncludesExcludes.DISPLAYING_FIREARM,
+                    },
+                ),
+                ForceType.OTHER_WEAPON: IncludesExcludesSet(
+                    members=LawEnforcementOtherWeaponIncludesExcludes,
+                ),
+            },
             dimension_to_description={
                 ForceType.PHYSICAL: "The number of incidents in which agency staff used physical force to gain compliance from a person.",
                 ForceType.FIREARM: "The number of incidents in which agency staff used a firearm to gain compliance from a person.",
