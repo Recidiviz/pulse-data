@@ -39,8 +39,8 @@ from recidiviz.case_triage.api_schemas import (
     ResolveNoteSchema,
     SetHasSeenOnboardingSchema,
     UpdateNoteSchema,
-    requires_api_schema,
 )
+from recidiviz.case_triage.api_schemas_utils import requires_api_schema
 from recidiviz.case_triage.case_updates.interface import (
     CaseUpdateDoesNotExistError,
     CaseUpdatesInterface,

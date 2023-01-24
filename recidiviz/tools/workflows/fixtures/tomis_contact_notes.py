@@ -21,6 +21,77 @@ Predefined request bodies to use in test requests to TOMIS via recidiviz.tools.w
 from datetime import datetime
 from typing import Any, List, Optional
 
+ten_lines_page = [
+    "Line 1",
+    "Line 2",
+    "Line 3",
+    "Line 4",
+    "Line 5",
+    "Line 6",
+    "Line 7",
+    "Line 8",
+    "Line 9",
+    "Line 10",
+]
+
+one_line_page = ["Line 1"]
+
+empty_line_page = [""]
+
+empty_page: List[str] = []
+
+partial_empty_lines_page = ["Line 1", ""]
+
+full_lines_page = [
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+]
+
+too_many_lines_page = [
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+    "TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 70 CHARACTERS. TEXT TO FILL 7",
+]
+
+line_too_long_page = [
+    "Line 1 is good.",
+    "TEXT TO FILL 71 CHARACTERS. TEXT TO FILL 71 CHARACTERS. TEXT TO FILL 71",
+    "Line 3 is good.",
+]
+
+invalid_characters_page = [
+    "`Line 1~",
+]
+
+page_name_to_page = {
+    "ten_lines": ten_lines_page,
+    "one_line": one_line_page,
+    "empty_line": empty_line_page,
+    "empty_page": empty_page,
+    "partial_empty_lines": partial_empty_lines_page,
+    "full_lines": full_lines_page,
+    "too_many_lines": too_many_lines_page,
+    "invalid_characters_page_2_request": line_too_long_page,
+    "line_too_long": line_too_long_page,
+    "invalid_characters": invalid_characters_page,
+}
+
 complete_request_basic_obj = {
     "ContactTypeCode1": "TEPE",
     "ContactTypeCode2": "",

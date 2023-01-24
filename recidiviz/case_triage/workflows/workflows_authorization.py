@@ -16,21 +16,61 @@
 # =============================================================================
 """Implements user validations for workflows APIs. """
 import os
-from typing import Any, Dict
+from http import HTTPStatus
+from typing import Any, Dict, List
 
+from flask import request
+
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.auth0 import AuthorizationError
+from recidiviz.utils.flask_exception import FlaskException
 
 
 def on_successful_authorization(claims: Dict[str, Any]) -> None:
-    """No-ops if:
+    """
+    No-ops if:
     1. A recidiviz user is requesting a workflows enabled state
+    2. A state user is making an external system request for their own state
     Otherwise, raises an AuthorizationError
     """
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["state_code"].upper()
 
-    # Currently, workflows routes should only be accessed by Recidiviz users
     if user_state_code == "RECIDIVIZ":
         return
 
+    if not request.view_args or "state" not in request.view_args:
+        raise FlaskException(
+            code="state_required",
+            description="A state must be passed to the route",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+
+    requested_state = request.view_args["state"]
+    enabled_states = get_workflows_external_request_enabled_states()
+
+    if not StateCode.is_state_code(requested_state):
+        raise FlaskException(
+            code="valid_state_required",
+            description="A valid state must be passed to the route",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+
+    if requested_state not in enabled_states:
+        raise FlaskException(
+            code="external_requests_not_enabled",
+            description="Workflows external system requests are not enabled for this state",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+
+    if user_state_code == requested_state and user_state_code in enabled_states:
+        return
+
     raise AuthorizationError(code="not_authorized", description="Access denied")
+
+
+def get_workflows_external_request_enabled_states() -> List[str]:
+    """
+    List of states in which we will make external system requests for Workflows
+    """
+    return [StateCode.US_TN.value]

@@ -348,6 +348,7 @@ def main() -> int:
                 "recidiviz.cloud_memorystore",
                 "recidiviz.cloud_storage",
                 "recidiviz.common",
+                "recidiviz.firestore",
                 "recidiviz.persistence",
                 "recidiviz.tools.utils.fixture_helpers",
                 "recidiviz.utils",

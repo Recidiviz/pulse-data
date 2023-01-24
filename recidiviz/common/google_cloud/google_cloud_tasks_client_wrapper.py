@@ -127,7 +127,8 @@ class GoogleCloudTasksClientWrapper:
         body: Optional[Dict[str, Any]] = None,
         schedule_delay_seconds: int = 0,
         http_method: HttpMethod = HttpMethod.POST,
-        service_account_email: Optional[str] = None
+        service_account_email: Optional[str] = None,
+        headers: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Creates a task with the given details.
 
@@ -146,6 +147,7 @@ class GoogleCloudTasksClientWrapper:
             included in the request.
             http_method: The method for this request (i.e. GET or POST)
             service_account_email: A service account email to be used to generate an OIDC token for the endpoint.
+            headers: Dictionary representing HTTP request headers
         """
 
         if (not absolute_uri and not relative_uri) or (absolute_uri and relative_uri):
@@ -188,6 +190,9 @@ class GoogleCloudTasksClientWrapper:
             http_request["oidc_token"] = {
                 "service_account_email": service_account_email
             }
+
+        if headers is not None:
+            http_request["headers"] = headers
 
         if relative_uri:
             task_builder.update_args(

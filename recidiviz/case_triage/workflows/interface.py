@@ -19,121 +19,190 @@ import base64
 import json
 import logging
 import time
-from http import HTTPStatus
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
+import attr
 import requests
-from flask import Response, jsonify, make_response
 
+from recidiviz.case_triage.workflows.constants import (
+    ExternalSystemRequestStatus,
+    WorkflowsUsTnVotersRightsCode,
+)
+from recidiviz.common.constants.states import StateCode
+from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.secrets import get_secret
 
 
-class WorkflowsExternalRequestInterface:
-    """Implements interface for Workflows-related external requests."""
+@attr.s(frozen=True)
+class WorkflowsUsTnWriteTEPENoteToTomisRequest:
+    """Models the required parameters needed for writing a TEPE note to TOMIS"""
+
+    # The justice-impacted individual that the note is relevant for
+    offender_id: str = attr.ib(default=None)
+
+    # The state user who authored the note
+    user_id: str = attr.ib(default=None)
+
+    # The time that the request was submitted for the full note
+    # All pages from the same note should have the same contact_note_date_time
+    contact_note_date_time: datetime = attr.ib(default=None)
+
+    # The page number
+    contact_sequence_number: int = attr.ib(default=None)
+
+    # The page text
+    comments: List[str] = attr.ib(default=None)
+
+    # Voter's rights code
+    voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = attr.ib(default=None)
+
+    def format_request(self) -> str:
+        request = {
+            "ContactNoteDateTime": self.contact_note_date_time.isoformat(),
+            "OffenderId": self.offender_id,
+            "UserId": self.user_id,
+            "ContactTypeCode1": "TEPE",
+            "ContactSequenceNumber": self.contact_sequence_number,
+        }
+
+        for idx, line_text in enumerate(self.comments):
+            request[f"Comment{idx+1}"] = line_text
+
+        if self.voters_rights_code:
+            request["ContactTypeCode2"] = self.voters_rights_code.value
+
+        return json.dumps(request)
+
+
+class WorkflowsUsTnExternalRequestInterface:
+    """Implements interface for Workflows-related external requests for Tennessee."""
+
+    def insert_tepe_contact_note(
+        self,
+        person_external_id: str,
+        user_id: str,
+        contact_note_date_time: datetime,
+        contact_note: Dict[int, List[str]],
+        voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = None,
+    ) -> None:
+        """
+        Formats a request and sends the request to insert a TEPE contact note to TOMIS.
+        """
+        firestore_client = FirestoreClientImpl()
+        firestore_doc_path = self.get_contact_note_updates_firestore_path(
+            person_external_id
+        )
+
+        tomis_url = get_secret("workflows_us_tn_insert_contact_note_url")
+        tomis_key = get_secret("workflows_us_tn_insert_contact_note_key")
+
+        if tomis_url is None or tomis_key is None:
+            firestore_client.update_document(
+                firestore_doc_path,
+                {"status": ExternalSystemRequestStatus.FAILURE},
+            )
+            logging.error("Unable to get secrets for TOMIS")
+            raise Exception("Unable to get secrets for TOMIS")
+
+        base64_encoded = base64.b64encode(tomis_key.encode())
+
+        headers = {
+            "Authorization": f"Basic {base64_encoded.decode()}",
+            "Content-Type": "application/json",
+        }
+
+        for page_number, page_by_line in contact_note.items():
+            firestore_client.update_document(
+                firestore_doc_path,
+                {f"noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS},
+            )
+            request_body = WorkflowsUsTnWriteTEPENoteToTomisRequest(
+                offender_id=person_external_id,
+                user_id=user_id,
+                contact_note_date_time=contact_note_date_time,
+                contact_sequence_number=page_number,
+                comments=page_by_line,
+                voters_rights_code=voters_rights_code,
+            )
+
+            try:
+                self._write_to_tomis(
+                    tomis_url,
+                    headers,
+                    request_body,
+                )
+
+                firestore_client.update_document(
+                    firestore_doc_path,
+                    {f"noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS},
+                )
+            except Exception:
+                # Exception should be logged in the _write_to_tomis function
+                firestore_client.update_document(
+                    firestore_doc_path,
+                    {f"noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE},
+                )
+                firestore_client.update_document(
+                    firestore_doc_path,
+                    {"status": ExternalSystemRequestStatus.FAILURE},
+                )
+                raise
+
+        firestore_client.update_document(
+            firestore_doc_path,
+            {"status": ExternalSystemRequestStatus.SUCCESS},
+        )
 
     @staticmethod
-    def insert_contact_note(data: Dict[str, Any]) -> Response:
+    def _write_to_tomis(
+        tomis_url: str,
+        headers: Dict[str, Any],
+        request: WorkflowsUsTnWriteTEPENoteToTomisRequest,
+    ) -> None:
         """
-        Currently, this only implements the logic to send a test request to TOMIS.
+        Makes a request to the provided TOMIS url with the given headers and request body.
         """
+        page_number = request.contact_sequence_number
+        start_time = time.perf_counter()
+        request_body = request.format_request()
 
-        def _handle_tomis_test_request() -> Response:
-            """
-            Used to make a test request to TOMIS with a provided fixture.
-            """
-            tomis_url = get_secret("workflows_us_tn_insert_contact_note_url")
-            tomis_key = get_secret("workflows_us_tn_insert_contact_note_key")
+        logging.info("Sending request to TOMIS")
 
-            if tomis_url is None or tomis_key is None:
-                return make_response(
-                    jsonify(
-                        message="Unable to get secrets for TOMIS",
-                    ),
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                )
+        try:
+            tomis_response = requests.put(
+                tomis_url,
+                headers=headers,
+                data=request_body,
+                timeout=360,
+            )
+            if tomis_response.status_code != requests.codes.ok:
+                tomis_response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            duration = round(time.perf_counter() - start_time, 2)
+            logging.error(
+                f"Error response from TOMIS for page %s in % seconds: {e.response.text}",
+                page_number,
+                duration,
+            )
+            raise e
+        except Exception as e:
+            duration = round(time.perf_counter() - start_time, 2)
+            logging.error(
+                f"Request to TOMIS failed in %s seconds with error: {e}", duration
+            )
+            raise e
 
-            base64_encoded = base64.b64encode(tomis_key.encode())
+        duration = round(time.perf_counter() - start_time, 2)
+        logging.info(
+            "Request to TOMIS for page %s completed with status code %s in %s seconds",
+            page_number,
+            tomis_response.status_code,
+            duration,
+        )
 
-            headers = {
-                "Authorization": f"Basic {base64_encoded.decode()}",
-                "Content-Type": "application/json",
-            }
-
-            tomis_request_fixture = data.get("fixture")
-            if tomis_request_fixture is None:
-                return make_response(
-                    jsonify(
-                        message="Does not have test fixture defined",
-                    ),
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                )
-
-            timeout_secs = data.get("timeoutSecs", 5)
-            tomis_request_body = json.dumps(tomis_request_fixture)
-            start_time = time.perf_counter()
-            try:
-                logging.info("Sending request to TOMIS")
-                tomis_response = requests.put(
-                    tomis_url,
-                    headers=headers,
-                    data=tomis_request_body,
-                    timeout=timeout_secs,
-                )
-                logging.info(
-                    "Request to TOMIS completed with status code %s",
-                    tomis_response.status_code,
-                )
-                if tomis_response.status_code != requests.codes.ok:
-                    tomis_response.raise_for_status()
-                duration = round(time.perf_counter() - start_time, 2)
-                logging.info("Request to TOMIS completed in %s seconds", duration)
-                text_data = tomis_response.text
-                json_data = ""
-                try:
-                    json_data = tomis_response.json()
-                except Exception as e:
-                    logging.info("Error parsing response JSON, ignoring: %s", e)
-                return make_response(
-                    jsonify(
-                        message="Successfully called TOMIS",
-                        text=text_data,
-                        json=json_data,
-                        duration=duration,
-                    ),
-                    HTTPStatus.OK,
-                )
-            except requests.exceptions.HTTPError as e:
-                duration = round(time.perf_counter() - start_time, 2)
-                logging.info("Request to TOMIS failed in %s seconds", duration)
-                text_data = e.response.text
-                json_data = ""
-                try:
-                    json_data = e.response.json()
-                except Exception as ex:
-                    logging.info("Error parsing response JSON, ignoring: %s", ex)
-                return make_response(
-                    jsonify(
-                        message=f"An error occurred while calling TOMIS: {e}",
-                        text=text_data,
-                        json=json_data,
-                        duration=duration,
-                    ),
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                )
-            except Exception as e:
-                duration = round(time.perf_counter() - start_time, 2)
-                logging.info("Request to TOMIS failed in %s seconds", duration)
-                return make_response(
-                    jsonify(
-                        message=f"An unknown error occurred while calling TOMIS: {e}",
-                        duration=duration,
-                    ),
-                    HTTPStatus.INTERNAL_SERVER_ERROR,
-                )
-
-        if data.get("isTest") and data.get("env") == "staging":
-            return _handle_tomis_test_request()
-
-        # Currently request should be made with specific shape for test purposes.
-        # Return a bad request if it does not have necessary fields.
-        return make_response(jsonify(), HTTPStatus.BAD_REQUEST)
+    @staticmethod
+    def get_contact_note_updates_firestore_path(person_external_id: str) -> str:
+        record_id = f"{StateCode.US_TN.value.lower()}_{person_external_id}"
+        doc_path = f"clientUpdatesV2/{record_id}/usTnExpiration/contactNote"
+        return doc_path
