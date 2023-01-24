@@ -164,6 +164,8 @@ output:
                         - Release Clemency/Pardon
                         - Release to Parole
                         - Release to Supervision
+                      StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
+                        - Return from Escape
                       StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
                         - Contract Out
                         - Deported
@@ -213,77 +215,147 @@ output:
                       StateCustodialAuthority.OTHER_STATE:
                         - State
           supervision_level:
-            $enum_mapping:
-              $raw_text: RequestedSupervisionAssignmentLevel
-              $mappings:
-                # TODO(#16848): We should review all of these
-                StateSupervisionLevel.INTERNAL_UNKNOWN:
-                  - Administrative
-                  - Blended Sentence
-                  - Dosage Eligible
-                  - Sex Offense
-                  - Close Comm Supervision
-                  - Special Needs
-                  - Deported
-                  - Electronic Monitor
-                  - Gold Seal Pending
-                  - Dosage
-                  - DUI Override Level 2
-                  - Transition
-                  - Expanded CRC
-                  - Parole Violator
-                  - Bench Warrant
-                  - Probation Violator
-                  - DUI Court
-                  - Out ST Custody
-                StateSupervisionLevel.ABSCONSION:
-                  # TODO(#16848): This should probably actually come from physical
-                  # location or somewhere else. In ID "Absconder" was mapped to internal
-                  # unknown.
-                  - Absconder
-                StateSupervisionLevel.DIVERSION:
-                  - Drug Court
-                  - Drug Court Div
-                  - Family Court
-                  - Veterans Court
-                  - Veterans Court Div
-                  - Mental Health Court
-                  - Mental Hlth Crt Div
-                  - Substance Abuse
-                StateSupervisionLevel.UNASSIGNED:
-                  - Unclassified
-                StateSupervisionLevel.UNSUPERVISED:
-                  - Unsupv/Court Prob
-                StateSupervisionLevel.IN_CUSTODY:
-                  - ICE Detainer
-                  - Federal Custody
-                StateSupervisionLevel.LIMITED:
-                  - Limited Supervision
-                StateSupervisionLevel.MINIMUM:
-                  - Level 1
-                  - Low
-                  - SO Low
-                  - SO To General Low
-                  - Minimum
-                StateSupervisionLevel.MEDIUM:
-                  - O/R Moderate
-                  - Moderate
-                  - Level 2
-                  - Level 3
-                  - Medium
-                  - SO Moderate
-                  - Moderate-Old
-                  - SO To General Mod
-                StateSupervisionLevel.HIGH:
-                  - High
-                  - SO High
-                  - SO To General High
-                  - O/R High
-                StateSupervisionLevel.MAXIMUM:
-                  - Level 4
-                  - Maximum
-                StateSupervisionLevel.INTERSTATE_COMPACT:
-                  - Interstate
+            $conditional:
+              - $if:
+                  $equal:
+                    - DOCLocationToName
+                    - $literal("Low Supervsn Unit")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - DOCLocationToName
+                          - RequestedSupervisionAssignmentLevel
+                        $separator: "##"
+                    # using an enum mapping so that the RequestedSupervisionAssignmentLevel is still accessible in the raw text
+                    $mappings:
+                      StateSupervisionLevel.LIMITED:
+                        - Low Supervsn Unit##Level 1
+                        - Low Supervsn Unit##Medium
+                        - Low Supervsn Unit##Parole Violator
+                        - Low Supervsn Unit##ICE Detainer
+                        - Low Supervsn Unit##Mental Health Court
+                        - Low Supervsn Unit##SO Low
+                        - Low Supervsn Unit##Bench Warrant
+                        - Low Supervsn Unit##SO Moderate
+                        - Low Supervsn Unit##Unclassified
+                        - Low Supervsn Unit##Drug Court
+                        - Low Supervsn Unit##Dosage
+                        - Low Supervsn Unit##Level 2
+                        - Low Supervsn Unit##Sex Offense
+                        - Low Supervsn Unit##Maximum
+                        - Low Supervsn Unit##Moderate-Old
+                        - Low Supervsn Unit##O/R Moderate
+                        - Low Supervsn Unit##SO To General Mod
+                        - Low Supervsn Unit##DUI Court
+                        - Low Supervsn Unit##Drug Court Div
+                        - Low Supervsn Unit##Special Needs
+                        - Low Supervsn Unit##Electronic Monitor
+                        - Low Supervsn Unit##Blended Sentence
+                        - Low Supervsn Unit##Transition
+                        - Low Supervsn Unit##Gold Seal Pending
+                        - Low Supervsn Unit##Moderate
+                        - Low Supervsn Unit##Limited Supervision
+                        - Low Supervsn Unit##Absconder
+                        - Low Supervsn Unit##Deported
+                        - Low Supervsn Unit##SO High
+                        - Low Supervsn Unit##Administrative
+                        - Low Supervsn Unit##Expanded CRC
+                        - Low Supervsn Unit##Family Court
+                        - Low Supervsn Unit##Close Comm Supervision
+                        - Low Supervsn Unit##Dosage Eligible
+                        - Low Supervsn Unit##Out ST Custody
+                        - Low Supervsn Unit##DUI Override Level 2
+                        - Low Supervsn Unit##SO To General High
+                        - Low Supervsn Unit##Mental Hlth Crt Div
+                        - Low Supervsn Unit##Level 3
+                        - Low Supervsn Unit##High
+                        - Low Supervsn Unit##Interstate
+                        - Low Supervsn Unit##Low
+                        - Low Supervsn Unit##Probation Violator
+                        - Low Supervsn Unit##Unsupv/Court Prob
+                        - Low Supervsn Unit##Level 4
+                        - Low Supervsn Unit##Federal Custody
+                        - Low Supervsn Unit##O/R High
+                        - Low Supervsn Unit##Minimum
+                        - Low Supervsn Unit##Veterans Court
+                        - Low Supervsn Unit##Veterans Court Div
+                        - Low Supervsn Unit##SO To General Low
+                        - Low Supervsn Unit##Substance Abuse
+                        - Low Supervsn Unit##NONE
+              - $else:
+                  $enum_mapping:
+                    $raw_text: RequestedSupervisionAssignmentLevel
+                    $mappings:
+                      # TODO(#16848): We should review all of these
+                      StateSupervisionLevel.INTERNAL_UNKNOWN:
+                        - Administrative
+                        - Blended Sentence
+                        - Dosage Eligible
+                        - Sex Offense
+                        - Close Comm Supervision
+                        - Special Needs
+                        - Deported
+                        - Electronic Monitor
+                        - Gold Seal Pending
+                        - Dosage
+                        - DUI Override Level 2
+                        - Transition
+                        - Expanded CRC
+                        - Parole Violator
+                        - Bench Warrant
+                        - Probation Violator
+                        - DUI Court
+                        - Out ST Custody
+                      StateSupervisionLevel.ABSCONSION:
+                        # TODO(#16848): This should probably actually come from physical
+                        # location or somewhere else. In ID "Absconder" was mapped to internal
+                        # unknown.
+                        - Absconder
+                      StateSupervisionLevel.DIVERSION:
+                        - Drug Court
+                        - Drug Court Div
+                        - Family Court
+                        - Veterans Court
+                        - Veterans Court Div
+                        - Mental Health Court
+                        - Mental Hlth Crt Div
+                        - Substance Abuse
+                      StateSupervisionLevel.UNASSIGNED:
+                        - Unclassified
+                      StateSupervisionLevel.UNSUPERVISED:
+                        - Unsupv/Court Prob
+                      StateSupervisionLevel.IN_CUSTODY:
+                        - ICE Detainer
+                        - Federal Custody
+                      StateSupervisionLevel.LIMITED:
+                        - Limited Supervision
+                      StateSupervisionLevel.MINIMUM:
+                        - Level 1
+                        - Low
+                        - SO Low
+                        - SO To General Low
+                        - Minimum
+                      StateSupervisionLevel.MEDIUM:
+                        - O/R Moderate
+                        - Moderate
+                        - Level 2
+                        - Level 3
+                        - Medium
+                        - SO Moderate
+                        - Moderate-Old
+                        - SO To General Mod
+                      StateSupervisionLevel.HIGH:
+                        - High
+                        - SO High
+                        - SO To General High
+                        - O/R High
+                      StateSupervisionLevel.MAXIMUM:
+                        - Level 4
+                        - Maximum
+                      StateSupervisionLevel.INTERSTATE_COMPACT:
+                        - Interstate
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
                 case_type:
