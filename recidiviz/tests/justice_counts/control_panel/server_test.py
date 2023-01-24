@@ -821,8 +821,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(db_item.name, name)
         self.assertEqual(db_item.email, email)
         self.assertEqual(db_item.auth0_user_id, auth0_user_id)
-        self.assertEqual(len(db_item.agencies), 1)
-        self.assertEqual(db_item.agencies[0].id, agency.id)
+        self.assertEqual(len(db_item.agency_assocs), 1)
+        self.assertEqual(db_item.agency_assocs[0].agency.id, agency.id)
 
     def test_get_all_agencies_for_recidiviz_staff(self) -> None:
         auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id

@@ -74,25 +74,20 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id="auth0|user2",
                 name="Test User 2",
             )
-
             agency = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Gamma"
             )
+            UserAccountInterface.add_user_to_agencies(
+                session=session,
+                user=user,
+                agencies=[agency],
+            )
+
             # Can update name
             UserAccountInterface.create_or_update_user(
                 session=session,
                 auth0_user_id=user.auth0_user_id,
                 name="Test User 3",
-                agencies=[agency],
-            )
-
-            # Can update invitation status
-            UserAccountInterface.create_or_update_user(
-                session=session,
-                auth0_user_id=user.auth0_user_id,
-                agency_id_to_invitation_status={
-                    agency.id: schema.UserAccountInvitationStatus.PENDING
-                },
             )
 
             user_account_association = (
@@ -105,7 +100,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 user_account_association.invitation_status,
-                schema.UserAccountInvitationStatus.PENDING,
+                None,
             )
 
     def get_user_by_auth0_user_id(self) -> None:
@@ -116,7 +111,8 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
             self.assertEqual(user.name, "User")
             self.assertEqual(user.email, "test@email.com")
             self.assertEqual(
-                {a.name for a in user.agencies}, {"Agency Alpha", "Agency Beta"}
+                {assoc.agency.name for assoc in user.agency_assocs},
+                {"Agency Alpha", "Agency Beta"},
             )
 
             # Raise error if no user found

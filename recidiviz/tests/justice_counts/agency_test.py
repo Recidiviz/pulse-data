@@ -108,10 +108,8 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 fips_county_code="us_ak_anchorage",
                 user_account_id=user.id,
             )
-            UserAccountInterface.create_or_update_user(
-                session=session,
-                auth0_user_id="test_auth0_user",
-                agencies=[gamma_agency, delta_agency],
+            UserAccountInterface.add_user_to_agencies(
+                session=session, user=user, agencies=[delta_agency, gamma_agency]
             )
         session.add_all([user, gamma_agency, delta_agency])
         session.flush()

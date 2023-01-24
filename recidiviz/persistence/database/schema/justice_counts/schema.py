@@ -263,6 +263,9 @@ class AgencyUserAccountAssociation(JusticeCountsBase):
     invitation_status = Column(Enum(UserAccountInvitationStatus), nullable=True)
     role = Column(Enum(UserAccountRole), nullable=True)
 
+    agency = relationship("Agency", back_populates="user_account_assocs")
+    user_account = relationship("UserAccount", back_populates="agency_assocs")
+
 
 class Source(JusticeCountsBase):
     """A website or organization that publishes reports.
@@ -323,10 +326,9 @@ class Agency(Source):
             state_name = StateCode(self.state_code.upper()).get_state().name
         return state_name
 
-    user_accounts = relationship(
-        "UserAccount",
-        secondary="agency_user_account_association",
-        back_populates="agencies",
+    user_account_assocs = relationship(
+        "AgencyUserAccountAssociation",
+        back_populates="agency",
     )
 
     agency_settings = relationship("AgencySetting")
@@ -350,11 +352,11 @@ class Agency(Source):
             "state": self.get_state_name(),
             "team": [
                 {
-                    "name": user_account.name,
-                    "auth0_user_id": user_account.auth0_user_id,
-                    "email": user_account.email,
+                    "name": assoc.user_account.name,
+                    "auth0_user_id": assoc.user_account.auth0_user_id,
+                    "email": assoc.user_account.email,
                 }
-                for user_account in self.user_accounts
+                for assoc in self.user_account_assocs
             ],
             "settings": [setting.to_json() for setting in self.agency_settings],
         }
@@ -405,10 +407,9 @@ class UserAccount(JusticeCountsBase):
     # after they sign in for the first time
     auth0_user_id = Column(String(255), nullable=True)
 
-    agencies = relationship(
-        "Agency",
-        secondary="agency_user_account_association",
-        back_populates="user_accounts",
+    agency_assocs = relationship(
+        "AgencyUserAccountAssociation",
+        back_populates="user_account",
     )
 
     __table_args__ = tuple(

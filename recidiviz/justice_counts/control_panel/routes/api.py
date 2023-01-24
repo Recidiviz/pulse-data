@@ -209,15 +209,12 @@ def get_api_blueprint(
                     email=email,
                     email_verified=email is None,
                 )
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=current_session, agency_ids=get_agency_ids_from_session()
-            )
+
             if name is not None:
                 UserAccountInterface.create_or_update_user(
                     session=current_session,
                     name=name,
                     auth0_user_id=auth0_user_id,
-                    agencies=agencies,
                     email=email,
                 )
 
@@ -257,15 +254,18 @@ def get_api_blueprint(
                 session=current_session,
                 name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
-                agencies=agencies,
                 email=email,
-                agency_id_to_invitation_status={
-                    agency_id: schema.UserAccountInvitationStatus.ACCEPTED
-                    for agency_id in [agency.id for agency in agencies]
-                }
+            )
+
+            UserAccountInterface.add_user_to_agencies(
+                session=current_session,
+                user=user_account,
+                agencies=agencies,
+                invitation_status=schema.UserAccountInvitationStatus.ACCEPTED
                 if is_email_verified is True
                 else None,
             )
+
             permissions = g.user_context.permissions if "user_context" in g else []
             if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
                 agencies = AgencyInterface.get_agencies(session=current_session)
