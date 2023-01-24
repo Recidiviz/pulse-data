@@ -353,6 +353,32 @@ reported_crime = MetricDefinition(
         AggregatedDimension(
             dimension=OffenseType,
             required=True,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes
+                ),
+            },
             dimension_to_description={
                 OffenseType.DRUG: "The number of reported crime incidents received by the agency in which the most serious offense was a drug offense.",
                 OffenseType.PERSON: "The number of reported crime incidents received by the agency in which the most serious offense was a crime against a person.",
