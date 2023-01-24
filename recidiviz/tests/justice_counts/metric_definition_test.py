@@ -40,6 +40,38 @@ class TestAggregatedDimension(TestCase):
             self.assertEqual(
                 agg_dim.dimension_to_contexts,
                 {
+                    agg_dim.dimension.PERSON: [  # type: ignore[attr-defined]
+                        Context(
+                            key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                            value_type=ValueType.TEXT,
+                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            required=False,
+                        )
+                    ],
+                    agg_dim.dimension.PROPERTY: [  # type: ignore[attr-defined]
+                        Context(
+                            key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                            value_type=ValueType.TEXT,
+                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            required=False,
+                        )
+                    ],
+                    agg_dim.dimension.DRUG: [  # type: ignore[attr-defined]
+                        Context(
+                            key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                            value_type=ValueType.TEXT,
+                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            required=False,
+                        )
+                    ],
+                    agg_dim.dimension.PUBLIC_ORDER: [  # type: ignore[attr-defined]
+                        Context(
+                            key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
+                            value_type=ValueType.TEXT,
+                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            required=False,
+                        )
+                    ],
                     agg_dim.dimension.OTHER: [  # type: ignore[attr-defined]
                         Context(
                             key=ContextKey.ADDITIONAL_CONTEXT,
@@ -47,7 +79,7 @@ class TestAggregatedDimension(TestCase):
                             label="Please describe what data is being included in this breakdown.",
                             required=False,
                         )
-                    ]
+                    ],
                 },
             )
 
