@@ -97,6 +97,10 @@ sample AS (
         CONCAT({aggregation_level.get_original_columns_query_string(prefix="assign")}) IS NOT NULL)
 ,
 {create_sub_sessions_with_attributes("potentially_adjacent_spans")}
+, sub_sessions_with_attributes_distinct AS (
+    SELECT DISTINCT *
+    FROM sub_sessions_with_attributes
+)
 -- Re-sessionize all intersecting spans
 , {level_name}_assignments AS (
     SELECT
@@ -109,18 +113,20 @@ sample AS (
         SELECT
             * EXCEPT(date_gap),
             SUM(IF(date_gap, 1, 0)) OVER (
-                PARTITION BY {aggregation_level.get_index_columns_query_string()}, person_id ORDER BY start_date
+                PARTITION BY {aggregation_level.get_index_columns_query_string()}, person_id 
+                ORDER BY start_date, {nonnull_end_date_clause("end_date")}
             ) AS session_id,
         FROM (
             SELECT
                 *,
                 IFNULL(
                     LAG(end_date) OVER(
-                        PARTITION BY {aggregation_level.get_index_columns_query_string()}, person_id ORDER BY start_date
+                        PARTITION BY {aggregation_level.get_index_columns_query_string()}, person_id 
+                        ORDER BY start_date, {nonnull_end_date_clause("end_date")}
                     ) != start_date, TRUE
                 ) AS date_gap,
             FROM
-                sub_sessions_with_attributes
+                sub_sessions_with_attributes_distinct
         )
     )
     GROUP BY {aggregation_level.get_index_columns_query_string()}, person_id, session_id
