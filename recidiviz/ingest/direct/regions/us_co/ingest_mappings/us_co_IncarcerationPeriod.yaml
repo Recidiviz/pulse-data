@@ -130,6 +130,7 @@ output:
                   - "A8" # New Conviction
                   - "A9" # Possible Parole Violator (PPV)
                   - "AB" # YOS Offender
+                  - "AC" # ICC - Inmate
                   - "AE" # Adult Offender Commitment
                   - "AF" # Court Order Return
                   - "AG" # Dual Commitment
