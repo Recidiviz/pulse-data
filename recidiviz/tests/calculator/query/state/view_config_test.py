@@ -21,7 +21,7 @@ import unittest
 import mock
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, DagKey
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.calculator.query.state import dataset_config, view_config
 from recidiviz.calculator.query.state.view_config import (
     VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
@@ -109,9 +109,7 @@ class ViewExportConfigTest(unittest.TestCase):
                 view_builder.build()
             ).ancestors_sub_dag
             for view in sub_dag.views:
-                node = all_views_dag_walker.nodes_by_key[
-                    DagKey(view_address=view.address)
-                ]
+                node = all_views_dag_walker.node_for_view(view)
                 # check source tables which exist beyond ancestors
                 for key in node.parent_keys:
                     if key.dataset_id == dataset_config.DATAFLOW_METRICS_DATASET:
