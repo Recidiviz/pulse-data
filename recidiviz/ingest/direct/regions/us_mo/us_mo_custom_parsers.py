@@ -56,12 +56,11 @@ def normalize_county_code(county_code: str) -> str:
     return normalized_code
 
 
-def max_length_days_from_ymd(years: str, months: str, days: str) -> str:
-    return str(
-        safe_parse_days_from_duration_pieces(
-            years_str=years, months_str=months, days_str=days
-        )
-    )
+def max_length_days_from_ymd(years: str, months: str, days: str) -> Optional[str]:
+    result = safe_parse_days_from_duration_pieces(years, months, days)
+    if result is None:
+        return None
+    return str(result)
 
 
 def set_parole_eligibility_date(start_date: str, parole_ineligible_years: str) -> str:

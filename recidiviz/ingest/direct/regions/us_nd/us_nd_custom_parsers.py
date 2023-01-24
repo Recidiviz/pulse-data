@@ -108,12 +108,11 @@ def are_new_offenses_violent(
     return any(violent_flags)
 
 
-def max_length_days_from_ymd(years: str, months: str, days: str) -> str:
-    return str(
-        safe_parse_days_from_duration_pieces(
-            years_str=years, months_str=months, days_str=days
-        )
-    )
+def max_length_days_from_ymd(years: str, months: str, days: str) -> Optional[str]:
+    result = safe_parse_days_from_duration_pieces(years, months, days)
+    if result is None:
+        return None
+    return str(result)
 
 
 def classification_type_raw_text_from_raw_text(raw_charge_text: str) -> Optional[str]:
