@@ -337,6 +337,7 @@ new_cases = MetricDefinition(
         AggregatedDimension(
             dimension=OffenseType,
             required=False,
+            # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
                 OffenseType.PERSON: IncludesExcludesSet(
                     members=PersonOffenseIncludesExcludes,
@@ -387,6 +388,7 @@ daily_population = MetricDefinition(
         AggregatedDimension(
             dimension=DailyPopulationType,
             required=True,
+            # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
                 DailyPopulationType.ACTIVE: IncludesExcludesSet(
                     members=PeopleOnActiveSupervisionIncludesExcludes,
@@ -416,6 +418,7 @@ daily_population = MetricDefinition(
                 DailyPopulationType.UNKNOWN: "The number of people who are supervised by the agency in the community and have an unknown supervision status.",
             },
         ),
+        # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),  # TODO(#17579)
         AggregatedDimension(
             # TODO(#17579)
@@ -426,6 +429,7 @@ daily_population = MetricDefinition(
                 BiologicalSex.FEMALE: "The number of people who are supervised under the jurisdiction of the agency whose biological sex is female.",
                 BiologicalSex.UNKNOWN: "The number of people who are supervised under the jurisdiction of the agency whose biological sex is not known.",
             },
+            # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
                 BiologicalSex.MALE: IncludesExcludesSet(
                     members=MaleBiologicalSexIncludesExcludes,
@@ -569,6 +573,7 @@ revocations = MetricDefinition(
         AggregatedDimension(
             dimension=RevocationType,
             required=True,
+            # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
                 ViolationType.TECHNICAL: IncludesExcludesSet(
                     members=SupervisionTechnicalViolationsIncludesExcludes,
