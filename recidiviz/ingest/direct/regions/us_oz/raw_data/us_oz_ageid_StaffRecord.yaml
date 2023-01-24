@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ageid_StaffRecord
+file_description: Contains information about staff members tracked in the ageid data system.
+data_classification: source
+primary_key_cols: [StaffId]
+columns:
+  - name: StaffId
+    description: A staff member's employee id.
+    is_pii: True
+  - name: UserId
+    description: A unique identifier for this staff member in the system.
+    is_pii: True
+  - name: FirstName
+    description: The staff member's first name.
+    is_pii: True
+  - name: LastName
+    description: The staff member's surname.
+    is_pii: True
+  - name: Email
+    description: The staff member's email.
+    is_pii: True

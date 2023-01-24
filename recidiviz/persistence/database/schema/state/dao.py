@@ -45,8 +45,6 @@ def read_root_entities_by_external_ids(
     schema_root_entity_cls: Type[SchemaRootEntityT],
     cls_external_ids: Iterable[str],
 ) -> List[SchemaRootEntityT]:
-    # TODO(#17854): Figure out how to actually generalize the logic in these functions
-    #  to support any HasMultipleExternalIds entity.
     if schema_root_entity_cls is schema.StatePerson:
         return _read_people_by_external_ids(session, state_code, cls_external_ids)
     if schema_root_entity_cls is schema.StateStaff:
@@ -121,8 +119,6 @@ def _read_staff_by_external_ids(
     return schema_staff
 
 
-# TODO(#17854): Consider combining these two functions into a single
-#  read_all_root_entities() function.
 @environment.test_only
 def read_all_people(session: Session) -> List[schema.StatePerson]:
     """Read all StatePerson in the database. For test use only."""

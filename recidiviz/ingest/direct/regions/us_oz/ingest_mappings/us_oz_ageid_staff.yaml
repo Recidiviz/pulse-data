@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_ageid_staff` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - StaffId
+  - UserId
+  - FirstName
+  - LastName
+  - Email
+unused_columns: []
+output:
+  StateStaff:
+    external_ids:
+      - StateStaffExternalId:
+          external_id: StaffId
+          id_type: $literal("US_OZ_AGEID_STAFF_ID")
+      - $conditional:
+          - $if:
+              $not_null: UserId
+            $then:
+              StateStaffExternalId:
+                external_id: UserId
+                id_type: $literal("US_OZ_AGEID_USER_ID")
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $surname: LastName
+    email: Email

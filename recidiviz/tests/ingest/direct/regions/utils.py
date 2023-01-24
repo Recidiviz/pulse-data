@@ -534,3 +534,18 @@ def add_employment_period_to_person(
     )
 
     person.employment_periods.append(employment_period)
+
+
+def add_external_id_to_staff(
+    staff: entities.StateStaff, external_id: str, id_type: str, state_code: str
+) -> None:
+    """Append external id to the person (updates the person entity in place)."""
+    external_id_to_add: entities.StateStaffExternalId = (
+        entities.StateStaffExternalId.new_with_defaults(
+            state_code=state_code,
+            external_id=external_id,
+            id_type=id_type,
+            staff=staff,
+        )
+    )
+    staff.external_ids.append(external_id_to_add)
