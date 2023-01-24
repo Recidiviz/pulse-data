@@ -49,7 +49,7 @@ WITH parole_starts AS (
   FROM `{{project_id}}.{{sessions_dataset}}.compartment_{{sessions_dataset}}_materialized`
   WHERE state_code = "US_IX"
     AND compartment_level_2 IN ("PAROLE", "DUAL")
-    AND inflow_from_level_1 = "INCARCERATION"
+    AND inflow_from_level_2 NOT IN ("PAROLE", "DUAL")
 ),
 sentences AS (
   SELECT
