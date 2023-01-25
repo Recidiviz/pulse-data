@@ -27,20 +27,27 @@ columns:
   - name: issuing_location_id
     description: Reference code for the issuing location. Codes reference ADH_LOCATION table.
   - name: protected_person_last_name
+    description: protected person last name
     is_pii: True
   - name: protected_person_first_name
+    description: protected person first name
     is_pii: True
   - name: protected_person_middle_name
+    description: protected person middle name
     is_pii: True
   - name: protectted_person_suffix
+    description: protected person suffix
     is_pii: True
   - name: court_file_no
     description: Court file number
   - name: notes
+    description: notes
     is_pii: True
   - name: last_update_user
+    description: user who last updated record
     is_pii: True
   - name: last_update_date
+    description: last update date
     is_datetime: True
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %d %Y %I:%M %p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
