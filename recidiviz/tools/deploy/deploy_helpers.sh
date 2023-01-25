@@ -193,7 +193,7 @@ function pre_deploy_configure_infrastructure {
         # Update the table schemas in BigQuery
         echo "Updating the BigQuery table schemas to match the versions being deployed"
         verify_hash "$COMMIT_HASH"
-        run_cmd pipenv run python -m recidiviz.persistence.database.bq_refresh.big_query_table_manager --project_id "${PROJECT}"
+        run_cmd pipenv run python -m recidiviz.tools.deploy.update_big_query_table_schemas --project-id "${PROJECT}"
     fi
 
     # Update the raw data output table schemas.

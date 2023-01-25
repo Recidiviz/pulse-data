@@ -21,11 +21,6 @@ match that of the schema being deployed before the next CloudSqlToBQ export upda
 the schema. Does not perform any migrations, only adds and deletes columns where
 necessary.
 """
-import argparse
-import logging
-import sys
-from typing import List, Tuple
-
 from sqlalchemy import Table
 
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -39,8 +34,6 @@ from recidiviz.persistence.database.schema_utils import (
     schema_has_region_code_query_support,
     schema_type_to_schema_base,
 )
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def update_bq_schema_for_sqlalchemy_table(
@@ -96,30 +89,3 @@ def update_bq_tables_schemas_for_schema_type(schema_type: SchemaType) -> None:
             dataset_id=bq_dataset_id,
             table=table,
         )
-
-
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
-    """Parses the arguments needed to call the desired function."""
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--project_id",
-        dest="project_id",
-        type=str,
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
-    )
-
-    return parser.parse_known_args(argv)
-
-
-if __name__ == "__main__":
-    logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
-
-    with local_project_id_override(known_args.project_id):
-        for schema in SchemaType:
-            if CloudSqlToBQConfig.is_valid_schema_type(schema):
-                update_bq_tables_schemas_for_schema_type(
-                    schema_type=schema,
-                )
