@@ -100,7 +100,7 @@ class WorkflowsUsTnExternalRequestInterface:
         if tomis_url is None or tomis_key is None:
             firestore_client.update_document(
                 firestore_doc_path,
-                {"status": ExternalSystemRequestStatus.FAILURE},
+                {"status": ExternalSystemRequestStatus.FAILURE.value},
             )
             logging.error("Unable to get secrets for TOMIS")
             raise Exception("Unable to get secrets for TOMIS")
@@ -115,7 +115,9 @@ class WorkflowsUsTnExternalRequestInterface:
         for page_number, page_by_line in contact_note.items():
             firestore_client.update_document(
                 firestore_doc_path,
-                {f"noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS},
+                {
+                    f"noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS.value
+                },
             )
             request_body = WorkflowsUsTnWriteTEPENoteToTomisRequest(
                 offender_id=person_external_id,
@@ -135,23 +137,27 @@ class WorkflowsUsTnExternalRequestInterface:
 
                 firestore_client.update_document(
                     firestore_doc_path,
-                    {f"noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS},
+                    {
+                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS.value
+                    },
                 )
             except Exception:
                 # Exception should be logged in the _write_to_tomis function
                 firestore_client.update_document(
                     firestore_doc_path,
-                    {f"noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE},
+                    {
+                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE.value
+                    },
                 )
                 firestore_client.update_document(
                     firestore_doc_path,
-                    {"status": ExternalSystemRequestStatus.FAILURE},
+                    {"status": ExternalSystemRequestStatus.FAILURE.value},
                 )
                 raise
 
         firestore_client.update_document(
             firestore_doc_path,
-            {"status": ExternalSystemRequestStatus.SUCCESS},
+            {"status": ExternalSystemRequestStatus.SUCCESS.value},
         )
 
     @staticmethod
