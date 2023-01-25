@@ -65,10 +65,10 @@ class ReleaseType(DimensionBase, enum.Enum):
 
 
 class FundingType(DimensionBase, enum.Enum):
-    STATE_APPROPRIATION = "State Appropriation"
+    STATE_APPROPRIATION = "State Appropriations"
     GRANTS = "Grants"
     COMMISSARY_AND_FEES = "Commissary and Fees"
-    CONTRACT_BEDS = "Contract Beds"
+    CONTRACT_BEDS = "Contract Beds (Funding)"
     OTHER = "Other Funding"
     UNKNOWN = "Unknown Funding"
 

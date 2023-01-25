@@ -112,11 +112,10 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    # TODO(#17577) Implement multiple includes/excludes tables
     includes_excludes=IncludesExcludesSet(
         members=PrisonFundingIncludesExcludes,
         excluded_set={
-            PrisonFundingIncludesExcludes.BIENNIUM_FUNDING,
-            PrisonFundingIncludesExcludes.MULTI_YEAR_APPROPRIATIONS,
             PrisonFundingIncludesExcludes.JAIL_OPERATIONS,
             PrisonFundingIncludesExcludes.NON_PRISON_ACTIVITIES,
             PrisonFundingIncludesExcludes.JUVENILE_JAILS,
@@ -125,7 +124,6 @@ funding = MetricDefinition(
     ),
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=FundingType,
