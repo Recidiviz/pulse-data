@@ -63,6 +63,9 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 {a.name for a in allAgencies}, {"Agency Alpha", "Beta Initiative"}
             )
 
+            allAgencyIds = AgencyInterface.get_agency_ids(session=session)
+            self.assertEqual(allAgencyIds, [1, 2])
+
             agenciesByName = AgencyInterface.get_agencies_by_name(
                 session=session, names=["Agency Alpha", "Beta Initiative"]
             )

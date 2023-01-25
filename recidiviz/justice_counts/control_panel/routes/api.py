@@ -37,6 +37,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
 )
 from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
+    get_agencies_from_session,
     get_agency_ids_from_session,
     get_auth0_user_id,
     raise_if_user_is_not_agency_admin_or_recidiviz_admin,
@@ -87,11 +88,11 @@ def get_api_blueprint(
             - Updating AgencySettings
         """
         try:
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+
             request_json = assert_type(request.json, dict)
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
-            raise_if_user_is_not_agency_admin_or_recidiviz_admin(
-                auth0_user_id=get_auth0_user_id(request_dict=request_json)
-            )
+            raise_if_user_is_not_agency_admin_or_recidiviz_admin()
 
             systems = request_json.get("systems")
             if systems is not None:
@@ -126,7 +127,8 @@ def get_api_blueprint(
         """
 
         try:
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
 
             agency_settings = AgencySettingInterface.get_agency_settings(
                 session=current_session,
@@ -155,11 +157,14 @@ def get_api_blueprint(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
                     500,
                 )
+
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+
             request_json = assert_type(request.json, dict)
             invite_name = request_json.get("invite_name")
             invite_email = request_json.get("invite_email")
 
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
             AgencyUserAccountAssociationInterface.invite_user_to_agency(
                 name=assert_type(invite_name, str),
                 email=assert_type(invite_email, str),
@@ -180,15 +185,18 @@ def get_api_blueprint(
         This endpoint removes a user from an agency in Auth0 and in the Justice Counts Database.
         """
         try:
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+
             if auth0_client is None:
                 return make_response(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
                     500,
                 )
+
             request_json = assert_type(request.json, dict)
             email = request_json.get("email")
 
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
             if email is None:
                 return make_response(
                     "no email was provided in the request body.",
@@ -270,9 +278,7 @@ def get_api_blueprint(
         try:
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
-            agencies = AgencyInterface.get_agencies_by_id(
-                session=current_session, agency_ids=get_agency_ids_from_session()
-            )
+            agencies = get_agencies_from_session()
             email = request_dict.get("email")
             is_email_verified = request_dict.get("email_verified")
 
@@ -293,13 +299,6 @@ def get_api_blueprint(
             )
 
             permissions = g.user_context.permissions if "user_context" in g else []
-            if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
-                agencies = AgencyInterface.get_agencies(session=current_session)
-            else:
-                agency_ids = g.user_context.agency_ids if "user_context" in g else []
-                agencies = AgencyInterface.get_agencies_by_id(
-                    session=current_session, agency_ids=agency_ids
-                )
             agency_json = [agency.to_json() for agency in agencies or []]
             current_session.commit()
             return jsonify(
@@ -321,7 +320,9 @@ def get_api_blueprint(
         Used for rendering the Reports Overview page.
         """
         try:
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )
@@ -350,11 +351,16 @@ def get_api_blueprint(
         the Data Entry page.
         """
         try:
+
             report_id_int = int(assert_type(report_id, str))
             report = ReportInterface.get_report_by_id(
                 session=current_session, report_id=report_id_int
             )
-            raise_if_user_is_not_in_agency(agency_id=report.source_id)
+
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(
+                agency_id=report.source_id, agency_ids=agency_ids
+            )
 
             report_metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=current_session
@@ -398,7 +404,11 @@ def get_api_blueprint(
                 session=current_session,
                 report_id=report_id_int,
             )
-            raise_if_user_is_not_in_agency(agency_id=report.source_id)
+
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(
+                agency_id=report.source_id, agency_ids=agency_ids
+            )
 
             _check_for_conflicts(
                 report=report,
@@ -460,9 +470,7 @@ def get_api_blueprint(
                 current_session,
                 auth0_user_id=auth0_user_id,
             )
-            raise_if_user_is_not_agency_admin_or_recidiviz_admin(
-                auth0_user_id=auth0_user_id
-            )
+            raise_if_user_is_not_agency_admin_or_recidiviz_admin()
 
             try:
                 report = ReportInterface.create_report(
@@ -525,7 +533,9 @@ def get_api_blueprint(
         Used by the Metric Configuration page in Settings.
         """
         try:
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
@@ -548,9 +558,10 @@ def get_api_blueprint(
         Used by the Metric Configuration page in Settings.
         """
         try:
-            request_json = assert_type(request.json, dict)
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
 
+            request_json = assert_type(request.json, dict)
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
@@ -584,11 +595,8 @@ def get_api_blueprint(
         Used for rendering the Uploaded Files page.
         """
         agency_ids = get_agency_ids_from_session()
-        if int(agency_id) not in agency_ids:
-            raise JusticeCountsServerError(
-                code="bad_user_permissions",
-                description="User does not have the permissions to view this list of spreadsheets because they do not belong to the correct agency.",
-            )
+        raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+
         try:
             spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
                 agency_id=agency_id, session=current_session
@@ -853,7 +861,8 @@ def get_api_blueprint(
     @auth_decorator
     def get_datapoints_by_agency_id(agency_id: int) -> Response:
         try:
-            raise_if_user_is_not_in_agency(agency_id=agency_id)
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
             return get_agency_datapoints(agency_id=agency_id)
         except Exception as e:
             raise _get_error(error=e) from e
