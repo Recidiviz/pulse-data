@@ -26,6 +26,7 @@ from recidiviz.justice_counts.control_panel.constants import ControlPanelPermiss
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.auth.auth0 import (
     AuthorizationError,
     TokenClaims,
@@ -67,34 +68,28 @@ def on_successful_authorization(jwt_claims: TokenClaims) -> None:
     )
 
 
-def raise_if_user_is_not_in_agency(agency_id: int) -> None:
+def raise_if_user_is_not_in_agency(agency_id: int, agency_ids: List[int]) -> None:
     """Use this helper in API routes for which the user making the request
     must have access to the agency indicated in the `agency_id` parameter (or the
     agency connected to the report indicated by the `report_id` parameter), or else
     the request should fail. A user has access to an agency if that agency's name
     is in the user's app_metadata block (which is editable in the Auth0 UI.
     """
-    agency_ids = get_agency_ids_from_session()
     if agency_id is not None and int(agency_id) not in agency_ids:
         raise JusticeCountsServerError(
             code="justice_counts_agency_permission",
             description=(
-                f"User does not have permission to access "
+                "User does not have permission to access "
                 f"reports from agency {agency_id}."
             ),
         )
 
 
-def raise_if_user_is_not_agency_admin_or_recidiviz_admin(auth0_user_id: str) -> None:
+def raise_if_user_is_not_agency_admin_or_recidiviz_admin() -> None:
     """Use this helper in API routes for when the user making the request must have
     either the RECIDIVIZ_ADMIN or AGENCY_ADMIN auth0 permission
     """
-    user_account = UserAccountInterface.get_user_by_auth0_user_id(
-        current_session,
-        auth0_user_id=auth0_user_id,
-    )
     permissions = g.user_context.permissions
-
     if not permissions or (
         ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
         and ControlPanelPermission.AGENCY_ADMIN.value not in permissions
@@ -102,7 +97,7 @@ def raise_if_user_is_not_agency_admin_or_recidiviz_admin(auth0_user_id: str) -> 
         raise JusticeCountsServerError(
             code="justice_counts_admin_permission",
             description=(
-                f"User {user_account.id} is missing recidiviz admin or agency admin permissions."
+                "User is missing recidiviz admin or agency admin permissions."
             ),
         )
 
@@ -159,9 +154,18 @@ def get_agency_ids_from_token(claims: TokenClaims) -> Any:
 def get_agency_ids_from_session() -> List[int]:
     agency_ids = g.user_context.agency_ids if "user_context" in g else []
     permissions = g.user_context.permissions if "user_context" in g else []
-    if (
-        not permissions
-        or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
-    ):
-        return agency_ids
-    return [a.id for a in AgencyInterface.get_agencies(session=current_session)]
+    if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
+        # Admins "belong" to all agencies
+        return AgencyInterface.get_agency_ids(session=current_session)
+    return agency_ids
+
+
+def get_agencies_from_session() -> List[schema.Agency]:
+    agency_ids = g.user_context.agency_ids if "user_context" in g else []
+    permissions = g.user_context.permissions if "user_context" in g else []
+    if ControlPanelPermission.RECIDIVIZ_ADMIN.value in permissions:
+        # Admins "belong" to all agencies
+        return AgencyInterface.get_agencies(session=current_session)
+    return AgencyInterface.get_agencies_by_id(
+        session=current_session, agency_ids=agency_ids
+    )

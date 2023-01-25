@@ -95,6 +95,11 @@ class AgencyInterface:
         return session.query(schema.Agency).all()
 
     @staticmethod
+    def get_agency_ids(session: Session) -> List[int]:
+        # returns a list of one-tuples
+        return [tup[0] for tup in session.query(schema.Agency.id).all()]
+
+    @staticmethod
     def update_agency_systems(
         session: Session, agency_id: int, systems: Set[schema.System]
     ) -> None:
