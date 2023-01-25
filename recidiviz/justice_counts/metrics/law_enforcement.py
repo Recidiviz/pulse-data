@@ -311,11 +311,13 @@ staff = MetricDefinition(
             },
         ),
         # TODO(#17579)
+        # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(
             dimension=RaceAndEthnicity,
             required=False,
         ),
         # TODO(#17579)
+        # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(
             dimension=BiologicalSex,
             required=False,
@@ -352,6 +354,7 @@ reported_crime = MetricDefinition(
     description="The number of criminal incidents made known to the agency.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=OffenseType,
@@ -406,6 +409,7 @@ arrests = MetricDefinition(
         excluded_set={LawEnforcementArrestsIncludesExcludes.OUTSIDE_JURISDICTION},
     ),
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=OffenseType,
@@ -446,8 +450,10 @@ arrests = MetricDefinition(
             },
         ),
         # TODO(#17579)
+        # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
         # TODO(#17579)
+        # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
         AggregatedDimension(
             dimension=BiologicalSex,
             required=True,
