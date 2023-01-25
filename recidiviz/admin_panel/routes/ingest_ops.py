@@ -994,3 +994,19 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify(secondary_raw_data_import_enabled_in_state(state_code)),
             HTTPStatus.OK,
         )
+
+    # Purges the ingest queues for a given state code
+    @bp.route(
+        "/api/ingest_operations/purge_ingest_queues",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _purge_ingest_queues() -> Tuple[str, HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        get_ingest_operations_store().purge_ingest_queues(state_code=state_code)
+        return "", HTTPStatus.OK
