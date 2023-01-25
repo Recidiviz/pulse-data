@@ -533,14 +533,6 @@ staff_use_of_force_incidents = MetricDefinition(
     description="The number of incidents in which agency staff use physical force to gain compliance from or control of a person who is under the agency’s jurisdiction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Incidents represent unique events where force was used, not the number of people or staff involved in those events.",
-    specified_contexts=[],
-    definitions=[
-        Definition(
-            term="Use of force incident",
-            definition="An event in which an officer uses force towards or in the vicinity of an individual incarcerated. The AJA focuses on uses of force resulting in injury or a discharge of a weapon.  Count all uses of force occurring during the same event as one incident.",
-        )
-    ],
     includes_excludes=IncludesExcludesSet(
         members=PrisonUseOfForceIncludesExcludes,
         excluded_set={PrisonUseOfForceIncludesExcludes.ROUTINE},

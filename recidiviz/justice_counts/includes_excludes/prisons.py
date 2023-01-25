@@ -348,7 +348,7 @@ class PrisonUseOfForceIncludesExcludes(Enum):
     PHYSICAL_FORCE = "Incidents involving physical force"
     RESTRAINING_DEVICES = "Incidents involving the use of restraining devices (e.g., handcuffs, leg irons)"
     USE_OF_WEAPONS = "Incidents involving the use of weapons"
-    OTHER_TYPES = "Incidents involving uses of other types of force"
+    OTHER_TYPES = "Incidents involving the use of other types of force"
     JUSTIFIED = "Incidents found to be justified"
     UNJUSTIFIED = "Incidents not found to be justified"
     SPONTANEOUS_INCIDENTS = (
