@@ -46,7 +46,7 @@ from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
 
 if in_gcp():
-    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage")
+    cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
 else:
     cloud_run_metadata = CloudRunMetadata(
         project_id="123",
