@@ -396,10 +396,9 @@ daily_population = MetricDefinition(
     metric_type=MetricType.POPULATION,
     category=MetricCategory.POPULATIONS,
     display_name="Daily Population",
-    description="A single day count of the number of people incarcerated in the agency’s prison jurisdiction.",
+    description="A single day count of the number of people incarcerated under the jurisdiction of the prison agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[],
     includes_excludes=IncludesExcludesSet(
         members=PopulationIncludesExcludes,
         excluded_set={
@@ -407,13 +406,15 @@ daily_population = MetricDefinition(
         },
     ),
     aggregated_dimensions=[
+        # TODO(#18071) Implement repeated/reused global includes/excludes
+        # TODO(#17579) Implement Y/N tables
         AggregatedDimension(
             dimension=BiologicalSex,
             required=True,
             dimension_to_description={
-                BiologicalSex.MALE: "The number of people who are incarcerated under the agency’s prison jurisdiction whose biological sex is male.",
-                BiologicalSex.FEMALE: "The number of people who are incarcerated under the agency’s prison jurisdiction whose biological sex is female.",
-                BiologicalSex.UNKNOWN: "The number of people who are incarcerated under the agency’s prison jurisdiction whose biological sex is not known.",
+                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
             },
             dimension_to_includes_excludes={
                 BiologicalSex.MALE: IncludesExcludesSet(
@@ -426,17 +427,20 @@ daily_population = MetricDefinition(
                 ),
             },
         ),
+        # TODO(#18071) Implement repeated/reused global includes/excludes
+        # TODO(#17579) Implement Y/N tables
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        # TODO(#18071) Implement repeated/reused global includes/excludes
         AggregatedDimension(
             dimension=OffenseType,
             required=True,
             dimension_to_description={
-                OffenseType.PERSON: "A single day count of the number of people incarcerated whose most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
-                OffenseType.PROPERTY: "A single day count of the number of people incarcerated whose most serious offense was a property crime (the definition of property offenses configured in Section 2.3 will be applied to this section).",
-                OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated whose most serious offense was a public order crime (the definition of public order offenses configured in Section 2.4 will be applied to this section).",
-                OffenseType.DRUG: "A single day count of the number of people incarcerated whose most serious offense was a drug crime (the definition of drug offenses configured in Section 2.5 will be applied to this section).",
-                OffenseType.OTHER: "A single day count of the number of people incarcerated whose most serious offense was not a person offense, property offense, public order offense, or drug offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
-                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated whose most serious offense was an unknown crime.",
+                OffenseType.PERSON: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was an offense against a person.",
+                OffenseType.PROPERTY: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was a property offense.",
+                OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was a public order offense.",
+                OffenseType.DRUG: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was a drug offense.",
+                OffenseType.OTHER: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was not a person offense, property offense, public order offense, or drug offense.",
+                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was an unknown.",
             },
             dimension_to_includes_excludes={
                 OffenseType.PERSON: IncludesExcludesSet(
@@ -447,6 +451,7 @@ daily_population = MetricDefinition(
                 ),
                 OffenseType.PROPERTY: IncludesExcludesSet(
                     members=PropertyOffenseIncludesExcludes,
+                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
                 ),
                 OffenseType.DRUG: IncludesExcludesSet(
                     members=DrugOffenseIncludesExcludes,
