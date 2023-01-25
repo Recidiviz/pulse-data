@@ -114,13 +114,19 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
             cloud_task_manager.create_task(
                 absolute_uri=f"{cloud_run_metadata.url}/external_request/US_TN/handle_insert_tepe_contact_note",
-                body=g.api_data,
+                body={
+                    "person_external_id": person_external_id,
+                    "user_id": g.api_data["user_id"],
+                    "contact_note_date_time": str(g.api_data["contact_note_date_time"]),
+                    "contact_note": g.api_data["contact_note"],
+                    "voters_rights_code": g.api_data.get("voters_rights_code", None),
+                },
                 headers=request.headers,
             )
         except Exception as e:
             logging.error(e)
             firestore_client.update_document(
-                doc_path, {"status": ExternalSystemRequestStatus.FAILURE}
+                doc_path, {"status": ExternalSystemRequestStatus.FAILURE.value}
             )
             return make_response(
                 jsonify(
@@ -133,7 +139,7 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         firestore_client.update_document(
             doc_path,
-            {"status": ExternalSystemRequestStatus.IN_PROGRESS},
+            {"status": ExternalSystemRequestStatus.IN_PROGRESS.value},
         )
 
         return make_response(jsonify(), HTTPStatus.OK)
@@ -176,7 +182,8 @@ def create_workflows_api_blueprint() -> Blueprint:
                 person_external_id
             )
             firestore_client.update_document(
-                firestore_doc_path, {"status": ExternalSystemRequestStatus.FAILURE}
+                firestore_doc_path,
+                {"status": ExternalSystemRequestStatus.FAILURE.value},
             )
 
             return make_response(

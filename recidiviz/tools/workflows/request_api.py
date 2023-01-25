@@ -27,10 +27,9 @@ Example usage:
 python -m recidiviz.tools.workflows.request_api --target_env staging --page_names ten_lines one_line --token abc123
 """
 import argparse
-import json
 from datetime import datetime
 from http import HTTPStatus
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -69,7 +68,7 @@ def insert_contact_note(
     headers["X-CSRF-Token"] = response.json()["csrf"]
     headers["Referer"] = "https://app-staging.recidiviz.org"
 
-    data = {
+    data: Dict[str, Any] = {
         "personExternalId": offender_id,
         "userId": user_id,
         "contactNoteDateTime": str(datetime.now()),
@@ -82,7 +81,7 @@ def insert_contact_note(
 
         contact_note[idx + 1] = page_name_to_page[page_name]
 
-    data["contactNote"] = json.dumps(contact_note)
+    data["contactNote"] = contact_note
 
     if should_queue_task is not None:
         data["shouldQueueTask"] = str(should_queue_task)
@@ -90,7 +89,7 @@ def insert_contact_note(
     if voters_rights_code is not None:
         data["votersRightsCode"] = voters_rights_code
 
-    print(f"Sending request with data:\n {json.dumps(data, indent=2)}")
+    print(f"Sending request with data:\n {data}")
     response = s.post(
         url + "workflows/external_request/US_TN/insert_tepe_contact_note",
         headers=headers,
