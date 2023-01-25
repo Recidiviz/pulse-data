@@ -256,6 +256,29 @@ class LawEnforcementReportedCrimeIncludesExcludes(enum.Enum):
     REFERRED_TO_OTHER_AGENCY = "Incidents referred to another law enforcement agency"
 
 
+# Civilian Complaints Sustained
+class LawEnforcementCivilianComplaintsSustainedIncludesExcludes(enum.Enum):
+    SUSTAINED_SUBSTANTIATED = "Complaints sustained or substantiated"
+    NOT_SUSTAINED = "Complaints not sustained"
+    UNFOUNDED = "Complaints unfounded"
+    POLICY_VIOLATION = "Complaints in which there was a violation of policy that does not amount to serious misconduct"
+    LAWFUL = "Complaints in which the incident was found lawful and proper"
+    NOT_RESOLVED = "Complaints filed but not yet resolved"
+    INFORMAL = "Complaints submitted informally or not in writing"
+    DUPLICATE = "Duplicate complaints"
+
+
+class LawEnforcementExcessiveUsesOfForceIncludesExcludes(enum.Enum):
+    VIOLATION_OF_LAW = "Incidents in which a use of force was deemed to be in violation of law or agency policy by an internal affairs unit or conduct review board"
+
+
+class LawEnforcementDiscriminationOrRacialBiasIncludesExcludes(enum.Enum):
+    RACE_OR_ETHNICITY = "Incidents in which an act of discrimination relating to race or ethnicity was deemed to have occurred"
+    RELIGION = "Incidents in which an act of discrimination relating to religion was deemed to have occurred"
+    IMMIGRATION_STATUS = "Incidents in which an act of discrimination relating to immigration status or county of origin was deemed to have occurred"
+    GENDER_IDENTITY = "Incidents in which an act of discrimination relating to gender identity or expression was deemed to have occurred"
+
+
 # Use of Force
 class LawEnforcementUseOfForceIncidentsIncludesExcludes(enum.Enum):
     PHYSICAL = "Incidents involving physical force"

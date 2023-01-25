@@ -37,8 +37,11 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceNonEmergencyCallsIncludesExcludes,
     LawEnforcementArrestsIncludesExcludes,
     LawEnforcementAssetForfeitureIncludesExcludes,
+    LawEnforcementCivilianComplaintsSustainedIncludesExcludes,
     LawEnforcementCivilianStaffIncludesExcludes,
     LawEnforcementCountyOrMunicipalAppropriation,
+    LawEnforcementDiscriminationOrRacialBiasIncludesExcludes,
+    LawEnforcementExcessiveUsesOfForceIncludesExcludes,
     LawEnforcementExpensesIncludesExcludes,
     LawEnforcementFacilitiesIncludesExcludes,
     LawEnforcementFirearmIncludesExcludes,
@@ -529,10 +532,30 @@ civilian_complaints_sustained = MetricDefinition(
     description="The number of allegations of misconduct filed against agency staff that were sustained by an internal affairs unit or review board.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    includes_excludes=IncludesExcludesSet(
+        members=LawEnforcementCivilianComplaintsSustainedIncludesExcludes,
+        excluded_set={
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.NOT_SUSTAINED,
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.UNFOUNDED,
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.POLICY_VIOLATION,
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.LAWFUL,
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.NOT_RESOLVED,
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.INFORMAL,
+            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.DUPLICATE,
+        },
+    ),
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ComplaintType,
             required=False,
+            dimension_to_includes_excludes={
+                ComplaintType.EXCESSIVE_USES_OF_FORCE: IncludesExcludesSet(
+                    members=LawEnforcementExcessiveUsesOfForceIncludesExcludes,
+                ),
+                ComplaintType.DISCRIMINATION: IncludesExcludesSet(
+                    members=LawEnforcementDiscriminationOrRacialBiasIncludesExcludes,
+                ),
+            },
             dimension_to_description={
                 ComplaintType.EXCESSIVE_USES_OF_FORCE: "The number of allegations of misconduct filed against agency staff relating to excessive uses of force that were sustained by an internal affairs unit or conduct review board.",
                 ComplaintType.DISCRIMINATION: "The number of allegations of misconduct filed against agency staff relating to discrimination or racial bias that were sustained by an internal affairs unit or review board.",
