@@ -97,7 +97,8 @@ opencensus-ext-sqlalchemy = "<0.1.3"
 opencensus-ext-stackdriver = "*"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
-sqlalchemy = ">=1.4.25"
+# TODO(#18145): Remove the <2.0.0 pin
+sqlalchemy = ">=1.4.25, <2.0.0"
 flask = ">=2.0.0"
 Flask-Limiter = "*"
 Flask-SQLAlchemy-Session = "*"
