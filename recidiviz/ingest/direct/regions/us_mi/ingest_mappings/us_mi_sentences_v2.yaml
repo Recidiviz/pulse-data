@@ -195,6 +195,32 @@ output:
                 start_date: effective_date
                 projected_completion_date: expiration_date
                 completion_date: closing_date
+                is_life:
+                  # So technically for a sentence, the only possible combinations for a life sentence should be that
+                  # either both flags equal 0, both flags equal 1, or min_life_flag=0 but max_life_flag=1 (which means
+                  # the maximum sentence length possible is a life sentence but it's possible it doesn't end up being
+                  # a life sentence). When the min or max life flags are set as 1, the corresponding days columns
+                  # should be null. However, MI data systems also do a thing where they set these flag not just for
+                  # the sentence it's attached to, but for related sentences as well in the same sentencing. So if
+                  # sentence A for charge A is a life sentence (min_life_flag and max_life_flag are both 1), but
+                  # sentence A came with sentence B for charge B since it was on the same set of charges, then even
+                  # if sentence B is not a life sentence (and has valued days fields), the system will overwrite
+                  # sentence B's min_life_flag and max_life_flag to match sentence A (the controlling sentence).
+                  # Therefore, MI told me that the best way to identify actual life sentences it to look for cases
+                  # where both life flags are set to 1 and all days fields are null.
+                  $and:
+                    - $is_null: min_length_days
+                    - $is_null: min_length_months
+                    - $is_null: min_length_years
+                    - $is_null: max_length_days
+                    - $is_null: max_length_months
+                    - $is_null: max_length_years
+                    - $equal:
+                        - min_life_flag
+                        - $literal("1")
+                    - $equal:
+                        - max_life_flag
+                        - $literal("1")
                 county_code: county
                 min_length_days:
                   $conditional:
