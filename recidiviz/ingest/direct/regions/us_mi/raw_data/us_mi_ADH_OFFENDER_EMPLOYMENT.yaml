@@ -42,12 +42,10 @@ columns:
   - name: employment_status_id
     description: Reference code for employment status (links with ADH_REFERENCE_CODE)
     known_values:
-      # Seems like a data entry error
       - value: "14347"
         description: Proposed
-      # Seems like a data entry error
       - value: "15055"
-        description: Gave victim drugs or alcohol
+        description: Gave victim drugs or alcohol # Seems like a data entry error
       - value: "5105"
         description: Retired
       - value: "627"
