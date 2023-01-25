@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2022 Recidiviz, Inc.
+// Copyright (C) 2023 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,18 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { SearchOutlined } from "@ant-design/icons";
-import {
-  Button,
-  Input,
-  message,
-  PageHeader,
-  Space,
-  Spin,
-  Table,
-  Typography,
-} from "antd";
-import { FilterDropdownProps } from "antd/lib/table/interface";
+import { Button, message, PageHeader, Space, Spin, Table } from "antd";
 import * as React from "react";
 import { useState } from "react";
 import {
@@ -41,14 +30,17 @@ import { useFetchedDataJSON } from "../../hooks";
 import {
   FEATURE_VARIANTS_LABELS,
   ROUTES_PERMISSIONS_LABELS,
-  USER_ROLES,
 } from "../constants";
+import {
+  checkResponse,
+  getPermissionsTableColumns,
+  updatePermissionsObject,
+} from "./utils";
 import { AddUserForm } from "./AddUserForm";
 import { EditUserForm } from "./EditUsersForm";
 import { CreateEnableUserForm } from "./EnableUserForm";
 import { ReasonsLogButton } from "./ReasonsLogButton";
 import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
-import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -232,299 +224,6 @@ const StateUserPermissionsView = (): JSX.Element => {
     setTableKey(() => tableKey + 1);
   };
 
-  const getColumnSearchProps = (dataIndex: string) => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-    }: FilterDropdownProps) => (
-      <div style={{ padding: 8 }}>
-        <Input
-          placeholder="Search..."
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() => confirm()}
-          style={{
-            marginBottom: 8,
-            display: "block",
-          }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => confirm()}
-            icon={<SearchOutlined />}
-            size="small"
-            style={{
-              width: 90,
-            }}
-          >
-            Search
-          </Button>
-          <Button
-            onClick={() => {
-              clearFilters?.();
-              confirm();
-            }}
-            size="small"
-            style={{
-              width: 90,
-            }}
-          >
-            Reset
-          </Button>
-        </Space>
-      </div>
-    ),
-    filterIcon: (filtered: boolean) => (
-      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
-    ),
-    onFilter: (
-      value: string | number | boolean,
-      record: StateUserPermissionsResponse
-    ) =>
-      record[dataIndex as keyof StateUserPermissionsResponse]
-        .toString()
-        .toLowerCase()
-        .includes(value.toString().toLowerCase()),
-  });
-
-  const { Text } = Typography;
-  const formatText = (text: string, record: StateUserPermissionsResponse) => {
-    if (record.blocked === true) {
-      return (
-        <Text type="secondary" italic>
-          {text}
-        </Text>
-      );
-    }
-    return text;
-  };
-  const columns = [
-    {
-      title: "Email",
-      dataIndex: "emailAddress",
-      key: "emailAddress",
-      width: 250,
-      sorter: (
-        a: StateUserPermissionsResponse,
-        b: StateUserPermissionsResponse
-      ) => a.emailAddress.localeCompare(b.emailAddress),
-      ...getColumnSearchProps("emailAddress"),
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "State",
-      dataIndex: "stateCode",
-      key: "stateCode",
-      width: 100,
-      filters: [
-        {
-          text: "CO",
-          value: "US_CO",
-        },
-        {
-          text: "ID",
-          value: "US_ID",
-        },
-        {
-          text: "ME",
-          value: "US_ME",
-        },
-        {
-          text: "MI",
-          value: "US_MI",
-        },
-        {
-          text: "MO",
-          value: "US_MO",
-        },
-        {
-          text: "ND",
-          value: "US_ND",
-        },
-        {
-          text: "TN",
-          value: "US_TN",
-        },
-      ],
-      onFilter: (
-        value: string | number | boolean,
-        record: StateUserPermissionsResponse
-      ) =>
-        record.stateCode.indexOf(
-          value as keyof StateUserPermissionsResponse
-        ) === 0,
-      sorter: (
-        a: StateUserPermissionsResponse,
-        b: StateUserPermissionsResponse
-      ) => a.stateCode.localeCompare(b.stateCode),
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "First Name",
-      dataIndex: "firstName",
-      width: 200,
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "Last Name",
-      dataIndex: "lastName",
-      width: 200,
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "Role",
-      dataIndex: "role",
-      width: 150,
-      filters: USER_ROLES.map((roleName) => {
-        return { text: roleName, value: roleName };
-      }),
-      onFilter: (
-        value: string | number | boolean,
-        record: StateUserPermissionsResponse
-      ) =>
-        record.role.indexOf(value as keyof StateUserPermissionsResponse) === 0,
-      sorter: (
-        a: StateUserPermissionsResponse,
-        b: StateUserPermissionsResponse
-      ) => a.role.localeCompare(b.role),
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "Routes",
-      dataIndex: "routes",
-      width: 300,
-      render: (
-        text: Record<string, unknown>,
-        record: StateUserPermissionsResponse
-      ) => {
-        const role = stateRoleData.find(
-          (d) => d.stateCode === record.stateCode && d.role === record.role
-        );
-        return {
-          props: {
-            style: {
-              background:
-                JSON.stringify(role?.routes) === JSON.stringify(record.routes)
-                  ? "none"
-                  : "yellow",
-            },
-          },
-          children: formatText(
-            JSON.stringify(text, null, "\t").slice(2, -2),
-            record
-          ),
-        };
-      },
-    },
-    {
-      title: "Feature variants",
-      dataIndex: "featureVariants",
-      width: 350,
-      render: (
-        text: Record<string, unknown>,
-        record: StateUserPermissionsResponse
-      ) => {
-        const role = stateRoleData.find(
-          (d) => d.stateCode === record.stateCode && d.role === record.role
-        );
-        return {
-          props: {
-            style: {
-              background:
-                JSON.stringify(role?.featureVariants) ===
-                JSON.stringify(record.featureVariants)
-                  ? "none"
-                  : "yellow",
-            },
-          },
-          children: formatText(
-            JSON.stringify(text, null, "\t").slice(2, -2),
-            record
-          ),
-        };
-      },
-    },
-    {
-      title: "Can Access Leadership Dashboard",
-      dataIndex: "canAccessLeadershipDashboard",
-      width: 150,
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
-        }
-      },
-    },
-    {
-      title: "Can Access Case Triage",
-      dataIndex: "canAccessCaseTriage",
-      width: 150,
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
-        }
-      },
-    },
-    {
-      title: "Should See Beta Charts",
-      dataIndex: "shouldSeeBetaCharts",
-      width: 150,
-      render: (text: boolean, record: StateUserPermissionsResponse) => {
-        if (text != null) {
-          return formatText(text.toString(), record);
-        }
-      },
-    },
-    {
-      title: "Allowed Supervision Location IDs",
-      dataIndex: "allowedSupervisionLocationIds",
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "Allowed Supervision Location Level",
-      dataIndex: "allowedSupervisionLocationLevel",
-      width: 220,
-      render: (text: string, record: StateUserPermissionsResponse) => {
-        return formatText(text, record);
-      },
-    },
-    {
-      title: "Blocked",
-      dataIndex: "blocked",
-      width: 150,
-      render: (isBlocked: boolean, record: StateUserPermissionsResponse) => {
-        if (!isBlocked) {
-          return undefined;
-        }
-        return (
-          <Button
-            onClick={() => {
-              setUserToEnable(record);
-            }}
-          >
-            Enable user
-          </Button>
-        );
-      },
-    },
-  ];
-
   return (
     <>
       <PageHeader title="State User Permissions" />
@@ -592,7 +291,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         rowKey="emailAddress"
         rowSelection={rowSelection}
         dataSource={data}
-        columns={columns}
+        columns={getPermissionsTableColumns(data, setUserToEnable)}
         scroll={{ x: 2000 }}
         key={tableKey}
       />
