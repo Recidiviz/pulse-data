@@ -255,15 +255,30 @@ class PrisonAdmissionsIncludesExcludes(Enum):
 
 # Releases
 class PrisonReleasesIncludesExcludes(Enum):
-    PROBATION = (
-        "Releases to probation supervision following a period of jail incarceration"
+    AFTER_PRISON = "People released to the community after completing a prison incarceration sentence"
+    AFTER_PAROLE_DECISION = (
+        "People released to the community after the decision of a parole board"
     )
-    PAROLE = "Releases to parole supervision following a period of jail incarceration"
-    COMMUNITY_SUPERVISION = (
-        "Releases to other community supervision that is not probation or parole"
+    TRANSFERRED_NOT_WITHIN = (
+        "People transferred to a prison in another jurisdiction (state or federal)"
     )
-    NO_CONTROL = "Releases with no additional correctional control"
-    INPATIENT_TREATMENT = "Releases to inpatient treatment in the community"
+    DIED = "People who died while under the agency’s jurisdiction"
+    ESCAPED = "People who escaped or who are AWOL from the agency’s jurisdiction"
+    TRANSFERRED_WITHIN = (
+        "People who transferred to another facility within the agency’s jurisdiction"
+    )
+    TEMPORARILY_TRANSFERRED = "People who are temporarily transferred out of the agency’s facilities (to court, hospital, etc.)"
+    TEMPORARILY_ABSENT = "People who are temporarily absent from the agency’s facilities for less than 30 days"
+
+
+class PrisonReleasesToProbationIncludesExcludes(Enum):
+    COMPLETED_SENTENCE = "Releases to an additional probation sentence after completing a prison sentence"
+    AFTER_SANCTION = (
+        "Releases back to probation after a prison incarceration probation sanction"
+    )
+    SPLIT_SENTENCE = "Releases to probation to serve a split or on-and-after sentence"
+    SHOCK_PROBATION = "Releases to probation after a shock probation sentence"
+    TRANSFERRED_OUT = "Releases to probation in the jurisdiction of another state"
 
 
 class PrisonReleasesToParoleIncludesExcludes(Enum):
@@ -277,26 +292,14 @@ class PrisonReleasesToParoleIncludesExcludes(Enum):
     )
 
 
-class PrisonReleasesToProbationIncludesExcludes(Enum):
-    COMPLETED_SENTENCE = "Releases to an additional probation sentence after completing a prison sentence"
-    AFTER_SANCTION = (
-        "Releases back to probation after a prison incarceration probation sanction"
-    )
-    SPLIT_SENTENCE = "Releases to probation to serve a split or on-and-after sentence"
-    SHOCK_PROBATION = "Releases to probation after a shock probation sentence"
-    TRANSFERRED_OUT = (
-        "Releases to probation in the jurisdiction of another county or state"
-    )
-
-
 class PrisonReleasesCommunitySupervisionIncludesExcludes(Enum):
     RELEASED_TO_OTHER_AGENCY = "Releases to other community supervision agency"
     DUAL_SUPERVISION = "Releases to dual or concurrent supervision with more than one community supervision agency"
 
 
 class PrisonReleasesNoControlIncludesExcludes(Enum):
-    COMMUNITY_SUPERVISION = "Releases to other community supervision agency"
-    DUAL_SUPERVISION = "Releases to dual or concurrent supervision with more than one community supervision agency"
+    NO_POST_RELEASE = "Releases due to sentence completion, no post-release supervision"
+    EXONERATION = "Releases due to exoneration after conviction"
 
 
 class PrisonReleasesDeathIncludesExcludes(Enum):

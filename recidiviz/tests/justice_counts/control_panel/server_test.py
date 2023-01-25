@@ -436,7 +436,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # disaggregation.
         self.assertEqual(metrics[6]["key"], prisons.releases.key)
         self.assertEqual(
-            metrics[6]["disaggregations"][0]["dimensions"][0]["settings"],
+            metrics[6]["disaggregations"][0]["dimensions"][1]["settings"],
             [
                 {
                     "key": "AFTER_SANCTION",
