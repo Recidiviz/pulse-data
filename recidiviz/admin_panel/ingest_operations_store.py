@@ -33,6 +33,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
+    get_direct_ingest_queues_for_state,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -209,6 +210,17 @@ class IngestOperationsStore(AdminPanelStore):
         self.cloud_task_manager.update_ingest_queue_states_str(
             state_code=state_code, new_queue_state_str=new_queue_state
         )
+
+    def purge_ingest_queues(
+        self,
+        state_code: StateCode,
+    ) -> None:
+        """This function is called through the flash checklist in the admin panel. It purges all tasks in the
+        ingest queues for the specified state."""
+        queues_to_purge = sorted(get_direct_ingest_queues_for_state(state_code))
+
+        for queue in queues_to_purge:
+            self.cloud_task_manager.purge_queue(queue_name=queue)
 
     def get_ingest_queue_states(self, state_code: StateCode) -> List[Dict[str, str]]:
         """Returns a list of dictionaries that contain the name and states of direct ingest queues for a given region"""

@@ -48,6 +48,7 @@ import {
   copyRawDataToBackup,
   transferRawDataMetadataToNewInstance,
   getIngestRawFileProcessingStatus,
+  purgeIngestQueues,
 } from "../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
@@ -864,6 +865,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.PAUSED)
             }
+          />
+          <StyledStep
+            title="Purge All Ingest Related Queues"
+            description={
+              <p>Clear out all ingest-related queues in both instances.</p>
+            }
+            actionButtonTitle="Clear Queue"
+            actionButtonEnabled={isFlashInProgress}
+            onActionButtonClick={async () => purgeIngestQueues(stateCode)}
           />
           <StyledStep
             title="Acquire PRIMARY Ingest Lock"

@@ -425,3 +425,12 @@ export const secondaryRawDataImportEnabledInState = async (
     }
   );
 };
+
+// Purge the ingest queues for a given state
+export const purgeIngestQueues = async (
+  stateCode: string
+): Promise<Response> => {
+  return postWithURLAndBody("/api/ingest_operations/purge_ingest_queues", {
+    stateCode,
+  });
+};
