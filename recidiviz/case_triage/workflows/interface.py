@@ -19,7 +19,7 @@ import base64
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import attr
@@ -100,7 +100,10 @@ class WorkflowsUsTnExternalRequestInterface:
         if tomis_url is None or tomis_key is None:
             firestore_client.update_document(
                 firestore_doc_path,
-                {"status": ExternalSystemRequestStatus.FAILURE.value},
+                {
+                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    firestore_client.timestamp_key: datetime.now(timezone.utc),
+                },
             )
             logging.error("Unable to get secrets for TOMIS")
             raise Exception("Unable to get secrets for TOMIS")
@@ -116,7 +119,8 @@ class WorkflowsUsTnExternalRequestInterface:
             firestore_client.update_document(
                 firestore_doc_path,
                 {
-                    f"noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS.value
+                    f"noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                    firestore_client.timestamp_key: datetime.now(timezone.utc),
                 },
             )
             request_body = WorkflowsUsTnWriteTEPENoteToTomisRequest(
@@ -138,7 +142,8 @@ class WorkflowsUsTnExternalRequestInterface:
                 firestore_client.update_document(
                     firestore_doc_path,
                     {
-                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS.value
+                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS.value,
+                        firestore_client.timestamp_key: datetime.now(timezone.utc),
                     },
                 )
             except Exception:
@@ -146,18 +151,25 @@ class WorkflowsUsTnExternalRequestInterface:
                 firestore_client.update_document(
                     firestore_doc_path,
                     {
-                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE.value
+                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE.value,
+                        firestore_client.timestamp_key: datetime.now(timezone.utc),
                     },
                 )
                 firestore_client.update_document(
                     firestore_doc_path,
-                    {"status": ExternalSystemRequestStatus.FAILURE.value},
+                    {
+                        "status": ExternalSystemRequestStatus.FAILURE.value,
+                        firestore_client.timestamp_key: datetime.now(timezone.utc),
+                    },
                 )
                 raise
 
         firestore_client.update_document(
             firestore_doc_path,
-            {"status": ExternalSystemRequestStatus.SUCCESS.value},
+            {
+                "status": ExternalSystemRequestStatus.SUCCESS.value,
+                firestore_client.timestamp_key: datetime.now(timezone.utc),
+            },
         )
 
     @staticmethod
