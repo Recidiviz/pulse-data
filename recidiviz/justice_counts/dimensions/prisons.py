@@ -39,9 +39,9 @@ class ExpenseType(DimensionBase, enum.Enum):
     TRAINING = "Training"
     FACILITIES_AND_EQUIPMENT = "Facilities and Equipment"
     HEALTH_CARE = "Health Care for People Who Are Incarcerated"
-    CONTRACT_BEDS = "Contract Beds"
-    UNKNOWN = "Unknown Expenses"
+    CONTRACT_BEDS = "Contract Beds (Expenses)"
     OTHER = "Other Expenses"
+    UNKNOWN = "Unknown Expenses"
 
     @classmethod
     def dimension_identifier(cls) -> str:

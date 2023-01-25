@@ -237,14 +237,12 @@ expenses = MetricDefinition(
     description="The amount spent by the agency for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     metric_type=MetricType.EXPENSES,
     display_name="Expenses",
-    specified_contexts=[],
     measurement_type=MeasurementType.DELTA,
     category=MetricCategory.CAPACITY_AND_COST,
+    # TODO(#17577) Implement multiple includes/excludes tables
     includes_excludes=IncludesExcludesSet(
         members=PrisonExpensesIncludesExcludes,
         excluded_set={
-            PrisonExpensesIncludesExcludes.BIENNNIUM_EXPENSES,
-            PrisonExpensesIncludesExcludes.MULTI_YEAR,
             PrisonExpensesIncludesExcludes.JAIL_FACILITY,
             PrisonExpensesIncludesExcludes.JUVENILE_JAIL,
             PrisonExpensesIncludesExcludes.LAW_ENFORCEMENT,
@@ -257,8 +255,8 @@ expenses = MetricDefinition(
             required=False,
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used to support maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency, including any associated expenses, such as registration fees and travel costs.",
+                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant, property owned and operated by the agency, and equipment used to support maintenance of prison facilities and care of people who are incarcerated under the jurisdiction of the agency.",
                 ExpenseType.HEALTH_CARE: "The amount spent by the agency on medical care for people who are incarcerated under the jurisdiction of the agency.",
                 ExpenseType.CONTRACT_BEDS: "The amount spent by the agency on contracts with other agencies to provide custody and care for people who are incarcerated under the jurisdiction of the agency.",
                 ExpenseType.OTHER: "The amount spent by the agency on other costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated that are not personnel, training, facilities and equipment, health care, or contract bed expenses.",
@@ -267,11 +265,13 @@ expenses = MetricDefinition(
             dimension_to_includes_excludes={
                 ExpenseType.PERSONNEL: IncludesExcludesSet(
                     members=PrisonExpensesPersonnelIncludesExcludes,
-                    excluded_set={PrisonExpensesPersonnelIncludesExcludes.CONTRACTORS},
+                    excluded_set={
+                        PrisonExpensesPersonnelIncludesExcludes.COMPANIES_AND_SERVICES
+                    },
                 ),
                 ExpenseType.TRAINING: IncludesExcludesSet(
                     members=PrisonExpensesTrainingIncludesExcludes,
-                    excluded_set={PrisonExpensesTrainingIncludesExcludes.FREE_PROGRAMS},
+                    excluded_set={PrisonExpensesTrainingIncludesExcludes.NO_COST},
                 ),
                 ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
                     members=PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
