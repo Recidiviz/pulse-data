@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_sentences` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_booking_id
+  - sequence_number
+  - employment_date
+  - termination_date
+  - employer_name
+  - position
+  - employment_status_id
+  - termination_reason_code
+  - occupation
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    employment_periods:
+      - StateEmploymentPeriod:
+          external_id:
+            $concat:
+              $values:
+                - offender_booking_id
+                - sequence_number
+          employment_status:
+            $enum_mapping:
+              $raw_text: employment_status_id
+              $mappings:
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME:
+                  - "628" # Full Time
+                StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME:
+                  - "627" # Part Time
+                StateEmploymentPeriodEmploymentStatus.EXTERNAL_UNKNOWN:
+                  - "629" # Unknown
+                StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK:
+                  - "630" # Disability
+                StateEmploymentPeriodEmploymentStatus.UNEMPLOYED:
+                  - "5105" # Retired
+                StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN:
+                  - "14347" # Proposed
+                  - "15055" # Gave victim drugs or alcohol (I think this is a data entry error)
+          start_date: employment_date
+          end_date: termination_date
+          employer_name: employer_name
+          # There is both a position and occupation column in the raw data and sometimes both are valued,
+          # sometimes only one is valued, and sometimes neither are valued. But when they're both valued,
+          # they're mostly the same or closely related. So I'm just arbitrarily choosing to use position if both are valued.
+          job_title:
+            $conditional:
+              - $if:
+                  $not_null: position
+                $then: position
+              - $else: occupation
+          end_reason:
+            $enum_mapping:
+              $raw_text: termination_reason_code
+              $mappings:
+                StateEmploymentPeriodEndReason.EXTERNAL_UNKNOWN:
+                  - "11944" # Unknown
+                StateEmploymentPeriodEndReason.INTERNAL_UNKNOWN:
+                  - "3752" # Other
+                StateEmploymentPeriodEndReason.FIRED:
+                  - "886" # Fired
+                StateEmploymentPeriodEndReason.INCARCERATED:
+                  - "13245" # Committed to Prison
+                  - "3135" # Arrested
+                StateEmploymentPeriodEndReason.LAID_OFF:
+                  - "888" # Laid Off"
+                StateEmploymentPeriodEndReason.MEDICAL:
+                  - "5184" # Disability
+                StateEmploymentPeriodEndReason.NEW_JOB:
+                  - "5183" # New Job
+                StateEmploymentPeriodEndReason.QUIT:
+                  - "887" # Quit
+                StateEmploymentPeriodEndReason.RETIRED:
+                  - "5185" # Retired
