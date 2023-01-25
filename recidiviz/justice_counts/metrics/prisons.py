@@ -336,28 +336,30 @@ admissions = MetricDefinition(
     display_name="Admissions",
     description="The number of admission events to agency’s prison jurisdiction.",
     measurement_type=MeasurementType.DELTA,
-    reporting_note="Admissions are based on the number of events in which a person was incarcerated in a prison facility, not the number of individual people who entered the facility. If the same person was admitted to prison three times in a time period, it would count as three admissions.",
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=IncludesExcludesSet(
         members=PrisonAdmissionsIncludesExcludes,
         excluded_set={
-            PrisonAdmissionsIncludesExcludes.RETURNING_FROM_ABSENCE,
-            PrisonAdmissionsIncludesExcludes.TRANSFERRED_BETWEEN_FACILITIES,
+            PrisonAdmissionsIncludesExcludes.TEMPORARY_ABSENCES,
+            PrisonAdmissionsIncludesExcludes.TRANSER_SAME_STATE,
+            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_US_MARSHALS_SERVICE,
+            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_TRIBAL,
+            PrisonAdmissionsIncludesExcludes.AWAITING_HEARINGS,
+            PrisonAdmissionsIncludesExcludes.FAILURE_TO_PAY,
         },
     ),
-    specified_contexts=[],
+    # TODO(#18071) Implement repeated/reused includes/excludes
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=OffenseType,
             required=False,
-            display_name="Prison Offense Type",
             dimension_to_description={
-                OffenseType.PERSON: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a crime against a person (the definition of person offenses configured in Section 2.2 will be applied to this section).",
-                OffenseType.PROPERTY: "The number of admission events to the agency’s prison jurisdiction for which the most serious offense was a property offense (the definition of property offenses configured in Section 2.3 will be applied to this section).",
-                OffenseType.PUBLIC_ORDER: "The number of post-adjudication admissions to the agency’s jail jurisdiction for which the most serious offense was a public order offense (the definition of drug offenses configured in Section 2.4 will be applied to this section).",
-                OffenseType.DRUG: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was a drug offense (the definition of public order offenses configured in Section 2.5 will be applied to this section).",
-                OffenseType.OTHER: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense was for another type of offense that was not a person offense, a property offense, a drug offense, or a public order offense (the definition of other offenses configured in Section 2.6 will be applied to this section).",
-                OffenseType.UNKNOWN: "The number of admissions to the agency’s prison jurisdiction for which the most serious offense charge type is not known.",
+                OffenseType.PERSON: "The number of admission events to the jurisdiction of the prison agency for which the most serious offense was a crime against a person.",
+                OffenseType.PROPERTY: "The number of admission events to the jurisdiction of the prison agency for which the most serious offense was a property offense.",
+                OffenseType.PUBLIC_ORDER: "The number of admission events to the jurisdiction of the prison agency for which the most serious offense was a public order offense.",
+                OffenseType.DRUG: "The number of admission events to the jurisdiction of the prison agency for which the most serious offense was a drug offense.",
+                OffenseType.OTHER: "The number of admission events to jurisdiction of the prison agency for which the most serious offense was for another type of offense that was not a person offense, a property offense, a drug offense, or a public order offense.",
+                OffenseType.UNKNOWN: "The number of admission events to the jurisdiction of the prison agency for which the most serious offense is not known.",
             },
             dimension_to_includes_excludes={
                 OffenseType.PERSON: IncludesExcludesSet(
@@ -366,6 +368,7 @@ admissions = MetricDefinition(
                 ),
                 OffenseType.PROPERTY: IncludesExcludesSet(
                     members=PropertyOffenseIncludesExcludes,
+                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
                 ),
                 OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
                     members=PublicOrderOffenseIncludesExcludes,
