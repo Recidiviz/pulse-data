@@ -39,14 +39,20 @@ class PopulationIncludesExcludes(Enum):
 # Funding
 class PrisonFundingIncludesExcludes(Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
-    BIENNIUM_FUNDING = "Biennium funding"
+    BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
-        "Multi-year appropriations that will not be fully spent this fiscal year"
+        "Multi-year appropriations that are appropriated in during the time period"
     )
     FACILITY_MAINTENANCE = "Funding for prison facility operations and maintenance"
-    OPERATIONS = "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
-    FACILITY_CONSTRUCTION = "Funding for construction of new prison facilities"
-    TREATMENTS_IN_FACILITIES = "Funding for agency run or contracted treatment and programming within facilities"
+    OPERATIONS = (
+        "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)",
+    )
+    FACILITY_CONSTRUCTION = (
+        "Funding for construction or rental of new prison facilities"
+    )
+    TREATMENTS_IN_FACILITIES = (
+        "Funding for agency-run or contracted treatment and programming"
+    )
     HEALTH_CARE = "Funding for health care for people in prison facilities"
     FACILITY_STAFF = "Funding for prison facility staff"
     ADMIN_AND_SUPPORT_STAFF = "Funding for central administrative and support staff"
