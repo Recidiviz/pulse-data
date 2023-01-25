@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Interface for working with the AgencyUserAccountAssociation model."""
-from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -106,8 +105,8 @@ class AgencyUserAccountAssociationInterface:
             )
 
     @staticmethod
-    def remove_users_from_agency(
-        emails: List[str],
+    def remove_user_from_agency(
+        email: str,
         agency_id: int,
         auth0_client: Auth0Client,
         session: Session,
@@ -115,23 +114,26 @@ class AgencyUserAccountAssociationInterface:
         """This method removes the agency_id from the users metadata in auth0 and
         deletes in the AgencyUserAccountAssociation between the user and the agency
         in the Justice Counts DB."""
-        users = UserAccountInterface.get_users_by_email(
-            session=session, emails=set(emails)
-        )
+        users = UserAccountInterface.get_users_by_email(session=session, emails={email})
         # Remove agency from users list of of agency ids in auth0.
-        for user in users:
-            agency_ids = [
-                agency_assoc.agency_id
-                for agency_assoc in user.agency_assocs
-                if agency_assoc.agency_id != agency_id
-            ]
-            auth0_client.update_user_app_metadata(
-                user_id=user.auth0_user_id, app_metadata={"agency_ids": agency_ids}
+        if len(users) > 1:
+            raise JusticeCountsServerError(
+                code="justice_counts_user_uniqueness",
+                description=f"Multiple users exist with the same email: {email}",
             )
+        user = users[0]
+        agency_ids = [
+            agency_assoc.agency_id
+            for agency_assoc in user.agency_assocs
+            if agency_assoc.agency_id != agency_id
+        ]
+        auth0_client.update_user_app_metadata(
+            user_id=user.auth0_user_id, app_metadata={"agency_ids": agency_ids}
+        )
 
-            # Update user in Justice Counts DB
-            UserAccountInterface.remove_user_from_agency(
-                session=session,
-                user=user,
-                agency_id=agency_id,
-            )
+        # Update user in Justice Counts DB
+        UserAccountInterface.remove_user_from_agency(
+            session=session,
+            user=user,
+            agency_id=agency_id,
+        )

@@ -1031,7 +1031,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response = self.client.delete(
                 f"/api/agencies/{agency_A.id}/users",
                 json={
-                    "emails": [email_address],
+                    "email": email_address,
                 },
             )
             db_user = self.session.query(UserAccount).one()
