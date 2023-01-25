@@ -10,6 +10,7 @@ input_columns:
   - ViolationTypeDesc
   - FelonyFlag
   - MisdemeanorFlag
+  - ReportSubmissionDatetime
 unused_columns:
   - ViolatedConditions # TODO(#17014): Revisit adding in Violated conditions
 output:
@@ -60,6 +61,16 @@ output:
                   $then:
                     StateSupervisionViolationTypeEntry:
                       violation_type: $literal_enum(StateSupervisionViolationType.MISDEMEANOR)
+          # Filling in bare minimum for supervision violation responses in order for the violation with response metrics pipeline to run properly
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderId
+                      - ViolationId
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_date: ReportSubmissionDatetime
 #          supervision_violated_conditions: # TODO(#17014): Revisit adding in Violated conditions
 #            - $foreach:
 #                $iterable:
