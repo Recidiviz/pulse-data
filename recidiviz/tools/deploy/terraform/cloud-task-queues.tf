@@ -107,7 +107,7 @@ module "workflows-external-system-requests-queue" {
   source = "./modules/base-task-queue"
 
   queue_name                = "workflows-external-system-requests-queue"
-  region                    = google_cloud_run_service.case-triage.location
+  region                    = var.app_engine_region
   max_dispatches_per_second = 100
   max_retry_attempts        = 1
 }
