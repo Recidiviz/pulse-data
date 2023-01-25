@@ -186,16 +186,16 @@ def get_api_blueprint(
                     500,
                 )
             request_json = assert_type(request.json, dict)
-            emails = request_json.get("emails")
+            email = request_json.get("email")
 
             raise_if_user_is_not_in_agency(agency_id=agency_id)
-            if emails is None:
+            if email is None:
                 return make_response(
-                    "no emails were provided in the request body.",
+                    "no email was provided in the request body.",
                     500,
                 )
-            AgencyUserAccountAssociationInterface.remove_users_from_agency(
-                emails=emails,
+            AgencyUserAccountAssociationInterface.remove_user_from_agency(
+                email=email,
                 agency_id=int(agency_id),
                 auth0_client=auth0_client,
                 session=current_session,
