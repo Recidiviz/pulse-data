@@ -20,30 +20,32 @@ max_allowed_error_overrides:
     override_reason: Needs investigation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 150000
+    hard_num_allowed_rows_override: 55000
     override_reason:
       In MO we rely on a table where they build incarceration period
       spans for us; some older rows have issues with overlap. Rerun did not improve this number. Error at 411
       rows as of 04/12/2022. Current error at 526 on 9/27/2022. TODO(#2738) - This issue should be resolved when we rewrite MO incarceration periods
       query to derive periods directly from the status codes table. TODO(#15905) - Rework in incarceration periods increased error. View/normalization investigation needed to improve error of 7028 as of 10/5/2022. However, only 335 of these periods (as of 10/05/2022) are from after 2010. Error is ballooning over time to 51304 as of 12/7/2022.
-      Inital investigations into this show entity deletion as the main culprit. TODO(#17629) - A new full historical dump will be needed to correct these.
+      Inital investigations into this show entity deletion as the main culprit. Error improved after refresh. This error should also be helped by continual work in MO
+      for raw data tables and rework in TODO(#15905). When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 3000
+    hard_num_allowed_rows_override: 1000
     override_reason:
       Older raw data from MO contains overlapping period information that we do not correct. TODO(#9848) - In addition,
       we do a lot of preprocessing for supervision periods that is not yet persisted, which corrects almost all supervision periods
       that do follow standard formats. Rerun decreased error significantly, bumping threshold down to 1500 to note if it greatly
       increases again. Current error was at 1121 rows as of 03/01/2022. Error began steadily increasing again and is now
-      at 1699 as of 07/01/2022. 2041 as of 9/27/2022. 2514 as of 1/11/23. Will require more investigation.
+      at 1699 as of 07/01/2022. 2041 as of 9/27/2022. 2514 as of 1/11/23. Error improved after refresh and is now 201.
+      When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: incarceration_admission_after_open_period
     hard_num_allowed_rows_override: 3000
-    override_reason: TODO(#15905). TODO(#16331) - Similar to failing overlapping_incarceration_periods, entity deletion appears to be a major culprit for duplicate periods over time (causing this validation to fail when the duplicate period is an open one. A new full historical dump will be needed to correct these. Error is 1326 as of 12/7/2022. TODO(#17629) - Error is 2500 as of 1/5/2022.
+    override_reason: TODO(#15905). Error is 2500 as of 1/5/2022. Error now at 899 as of 1/25/23. Refresh reduced error. When this errors again and until we rework the view, it means that entity deletion issues have grown greatly and we should do another historical refresh.
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 400
     override_reason: TODO(#10625) - Need to be handled in IP pre-processing. TODO(#15905) - Relatedly from rework, need to handle same day periods more explicitly. Error is 96 as of 12/7/2022. TODO(#17629) - Error is 239 as of 1/5/2022.
   - validation_name: incarceration_release_prior_to_admission
     hard_num_allowed_rows_override: 30
-    override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow. TODO(#17629) - Look into this error after new data ingested.
+    override_reason: TODO(#15706) - Investigate and eventually account for these specific situations from old raw data. After incarceration periods rework to include facility information, there are now a small number of rows from very old data that have a release  happening prior to admission. This is likely due to the multiple date sources we combine in the view and how we handle those periods. Because it is all from data older than 2000, this number should not grow.
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 1500000
     override_reason: Needs investigation.  Current failing level as of 10/21 is 1,335,497 rows #TODO(#16182)
