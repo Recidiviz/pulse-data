@@ -85,8 +85,23 @@ def create_workflows_api_blueprint() -> Blueprint:
         person_external_id = g.api_data["person_external_id"]
 
         interface = WorkflowsUsTnExternalRequestInterface()
+        firestore_client = FirestoreClientImpl()
+        doc_path = interface.get_contact_note_updates_firestore_path(person_external_id)
+
         if not g.api_data.get("should_queue_task", True):
             try:
+                # set_document will create new firestore document if it doesn't exist
+                firestore_client.set_document(
+                    doc_path,
+                    {
+                        "status": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                        firestore_client.timestamp_key: datetime.datetime.now(
+                            datetime.timezone.utc
+                        ),
+                    },
+                    merge=True,
+                )
+
                 interface.insert_tepe_contact_note(
                     person_external_id,
                     g.api_data["user_id"],
@@ -104,16 +119,14 @@ def create_workflows_api_blueprint() -> Blueprint:
                 jsonify("Complete note inserted without queueing task"), HTTPStatus.OK
             )
 
-        firestore_client = FirestoreClientImpl()
-        doc_path = interface.get_contact_note_updates_firestore_path(person_external_id)
-
         try:
             cloud_task_manager = SingleCloudTaskQueueManager(
                 queue_info_cls=CloudTaskQueueInfo,
                 queue_name=WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE,
             )
             cloud_task_manager.create_task(
-                absolute_uri=f"{cloud_run_metadata.url}/external_request/US_TN/handle_insert_tepe_contact_note",
+                absolute_uri=f"{cloud_run_metadata.url}"
+                f"/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
                 body={
                     "person_external_id": person_external_id,
                     "user_id": g.api_data["user_id"],
@@ -125,8 +138,15 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
         except Exception as e:
             logging.error(e)
-            firestore_client.update_document(
-                doc_path, {"status": ExternalSystemRequestStatus.FAILURE.value}
+            firestore_client.set_document(
+                doc_path,
+                {
+                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    firestore_client.timestamp_key: datetime.datetime.now(
+                        datetime.timezone.utc
+                    ),
+                },
+                merge=True,
             )
             return make_response(
                 jsonify(
@@ -137,9 +157,15 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         logging.info("Enqueued handle_insert_tepe_contact_note task")
 
-        firestore_client.update_document(
+        firestore_client.set_document(
             doc_path,
-            {"status": ExternalSystemRequestStatus.IN_PROGRESS.value},
+            {
+                "status": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                firestore_client.timestamp_key: datetime.datetime.now(
+                    datetime.timezone.utc
+                ),
+            },
+            merge=True,
         )
 
         return make_response(jsonify(), HTTPStatus.OK)

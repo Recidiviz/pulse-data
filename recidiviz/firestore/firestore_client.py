@@ -34,6 +34,7 @@ FIRESTORE_STAGING_PROJECT_ID = "recidiviz-dashboard-staging"
 FIRESTORE_PRODUCTION_PROJECT_ID = "recidiviz-dashboard-production"
 
 FIRESTORE_DELETE_BATCH_SIZE = 400
+TIMESTAMP_KEY = "__loadedAt"
 
 
 class FirestoreClient(abc.ABC):
@@ -119,14 +120,20 @@ class FirestoreClientImpl(FirestoreClient):
     def project_id(self) -> str:
         return self._project_id
 
+    @property
+    def timestamp_key(self) -> str:
+        return "__loadedAt"
+
     def get_collection(self, collection_path: str) -> CollectionReference:
         return self.client.collection(collection_path)
 
     def get_document(self, document_path: str) -> DocumentReference:
         return self.client.document(document_path)
 
-    def set_document(self, document_path: str, data: Dict) -> None:
-        self.client.document(document_path).set(data)
+    def set_document(
+        self, document_path: str, data: Dict, merge: Optional[bool] = False
+    ) -> None:
+        self.client.document(document_path).set(data, merge=merge)
 
     def update_document(self, document_path: str, data: Dict) -> None:
         self.client.document(document_path).update(data)
