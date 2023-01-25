@@ -66,7 +66,8 @@ SELECT
   EstimatedViolationDate,
   ViolatedConditions,
   FelonyFlag,
-  MisdemeanorFlag
+  MisdemeanorFlag,
+  ReportSubmissionDatetime
 FROM state_violation
 """
 

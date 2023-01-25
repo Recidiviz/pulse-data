@@ -58,6 +58,17 @@ output:
                             - New Felony
                           StateSupervisionViolationType.MISDEMEANOR:
                             - New Misdemeanor
+          # Filling in bare minimum for supervision violation responses in order for the violation with response metrics pipeline to run properly
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - ofndr_num
+                      - ofndr_tst_id
+                      - $literal("OLD") # appending this to make sure the external ids come out unique
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_date: tst_dt
           is_violent:
             $custom:
               $function: us_ix_custom_parsers.parse_supervision_violation_is_violent
