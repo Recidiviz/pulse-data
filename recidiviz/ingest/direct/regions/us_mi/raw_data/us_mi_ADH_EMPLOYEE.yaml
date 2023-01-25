@@ -10,6 +10,7 @@ columns:
     description: The OMNI-database generated ID for an employee.
     is_pii: True
   - name: social_security_number
+    description: SSN
     is_pii: True
   - name: last_name
     description: Employee last name
@@ -24,37 +25,54 @@ columns:
     description: Employee name suffix
     is_pii: True
   - name: birth_date
+    description: Employee birth date
     is_pii: True
   - name: abbreviation
+    description: TODO(#17944)
   - name: address1
+    description: address line 1
     is_pii: True
   - name: address2
+    description: address line 2
     is_pii: True
   - name: address3
+    description: address line 3
     is_pii: True
   - name: city
+    description: city
     is_pii: True
   - name: state_id
+    description: reference code for state (links with ADH_REFERENCE_CODE)
     is_pii: True
   - name: postal_code
+    description: postal code
     is_pii: True
   - name: country_id
+    description: reference code for state (links with ADH_REFERENCE_CODE)
     is_pii: True
   - name: business_phone_country_code
+    description: business phone number country code
     is_pii: True
   - name: business_phone_area_code
+    description: business phone area code
     is_pii: True
   - name: business_phone_number
+    description: business phone number
     is_pii: True
   - name: business_phone_extension
+    description: business phone extension
     is_pii: True
   - name: home_phone_country_code
+    description: home phone country code
     is_pii: True
   - name: home_phone_area_code
+    description: home phone area code
     is_pii: True
   - name: home_phone_number
+    description: home phone number
     is_pii: True
   - name: home_phone_extension
+    description: home phone extension
     is_pii: True
   - name: position
     description: Title of the employee's position
@@ -69,7 +87,9 @@ columns:
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: service_hours
+    description: TODO(#17944)
   - name: active_flag
+    description: flag for whether this employee record is still active
   - name: default_location_id
     description: Location id of the default location of the employee, as matched by location_id in the ADH_LOCATION table.
     known_values:
@@ -524,9 +544,11 @@ columns:
       - value: "924"
         description: Muskegon County Sheriff's Department
   - name: hearing_officer_cmis_code
+    description: TODO(#17944)
   - name: security_agreement_flag
+    description: TODO(#17944)
   - name: employee_type_id
-    description: Reference code for the employee's position type
+    description: Reference code for the employee's position type (links with ADH_REFERENCE_CODE)
     known_values:
       - value: "0"
         description: TEMP LOCATION TYPE
@@ -1121,24 +1143,48 @@ columns:
       - value: "12391"
         description: Office Assistant
   - name: funding_source_id
+    description: reference code for funding source (links with ADH_REFERENCE_CODE)
   - name: gender_id
+    description: reference code for gender (links with ADH_REFERENCE_CODE)
   - name: racial_appearance_id
+    description: reference code for racial appearance (links with ADH_REFERENCE_CODE)
   - name: eye_color_id
+    description: reference code for eye color (links with ADH_REFERENCE_CODE)
   - name: height_feet
+    description: height (feet)
   - name: height_inches
+    description: height (inches)
   - name: weight
+    description: weight
   - name: hrmn_id
+    description: TODO(#17944)
   - name: work_site_id
+    description: Reference code for work site (links with ADH_REFERENCE_CODE)
   - name: ccw_permit
+    description: TODO(#17944)
   - name: chemical_agent
+    description: TODO(#17944)
   - name: working_title_id
+    description: Reference code for working title (links with ADH_REFERENCE_CODE)
   - name: employee_status_id
+    description: Reference code for employee status (links with ADH_REFERENCE_CODE)
   - name: gun_make_id
+    description: Reference code for gun make (links with ADH_REFERENCE_CODE)
   - name: gun_caliber_id
+    description: Reference code for gun caliber (links with ADH_REFERENCE_CODE)
   - name: gun_serial_number
+    description: gun serial number
   - name: gun_permit_exp_date
+    description: gun permit expiration date
+    is_datetime: True
   - name: gun_permit_number
+    description: gun permit number
   - name: last_update_user
     is_pii: True
+    description: user who last updated this record
   - name: last_update_date
+    is_datetime: True
+    description: date record last updated
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
