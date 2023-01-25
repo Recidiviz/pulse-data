@@ -232,26 +232,25 @@ class PrisonAdmissionsIncludesExcludes(Enum):
     PROBATION_SANCTION = (
         "Admissions to prison to serve a probation supervision incarceration sanction"
     )
-    REVOKED_PROBATION = "Admissions to prison for revocation of probation supervision"
-    PAROLE_SANCTION = (
-        "Admissions to prison to serve a parole supervision incarceration sanction"
-    )
-    REVOKED_PAROLE = (
-        "Admissions to prison to serve a parole supervision incarceration sanction"
-    )
+    REVOCATION_POST_ADJUCATION_SUPERVISION = "Admissions to prison due to a revocation of post-adjudication community supervision sentence (i.e., probation, parole, or other community supervision sentence type)"
+    IMPOSED_SUPERVISION_AGENCY = "Admissions to prison due to a post-adjudication incarceration sanction imposed by a community supervision agency (e.g., a “dip,” “dunk,” or weekend sentence)"
+    IMPOSED_COURT = "Admissions to prison due to a post-adjudication incarceration sanction imposed by a specialty, treatment, or problem-solving court (e.g., a “dip,” “dunk,” or weekend sentence)"
+    REVOKED_PAROLE = "Admissions to prison for revocation of parole supervision"
     AWOL_STATUS = (
         "Admissions to prison from Absent Without Leave (AWOL) status or escape status"
     )
-    TRANSFERRED_JAILS = "Admissions to prison from jail(s) that are under the jurisdiction of the agency"
-    TRANSFERRED_PRIVATE_PRISONS = (
-        "Admissions to prison from private prison facilities contracted with the agency"
+    UNDER_JURISDICTION = "Admissions to prison from jail(s) that are under the jurisdiction of the agency"
+    OUTSIDE_JURISDICTION = "Admissions to prison from jail(s) that are outside of the jurisdiction of the agency"
+    PRIVATE_PRISON = (
+        "Admissions to private prison facilities contracted with the agency"
     )
-    TRANSFERRED_STATE_JURISDICTION = "Admissions to prison from prison facilities in other states that are under the jurisdiction of the agency (e.g., contracted beds)"
-    TRANSFERRED_NO_STATE_JURISDICTION = "Admissions to prison from prison facilities in other states that are not under the jurisdiction of the agency (e.g., interstate transfer)"
-    RETURNING_FROM_ABSENCE = "Admissions to prison from temporary absences (e.g., from court, hospital, furlough, work release)"
-    TRANSFERRED_BETWEEN_FACILITIES = (
-        "Admissions due to transfers between prison facilities in the same state"
-    )
+    INTERSTATE_TRANSFER = "Admissions to prison from prison facilities in other states that are not under the jurisdiction of the agency (e.g., interstate transfer)"
+    TEMPORARY_ABSENCES = "Admissions to prison from temporary absences (e.g., from court, hospital, furlough, work release)"
+    TRANSER_SAME_STATE = "Admissions to prison due to transfers between prison facilities in the same state"
+    FEDERAL_HOLD_US_MARSHALS_SERVICE = "Admissions to prison due to a pre-adjudication federal hold for U.S. Marshals Service, Federal Bureau of Prisons, or U.S. Immigration and Customs Enforcement"
+    FEDERAL_HOLD_TRIBAL = "Admissions to prison due to a pre-adjudication federal hold for a Tribal Nation or the Bureau of Indian Affairs"
+    AWAITING_HEARINGS = "Admissions to prison for people awaiting hearings for failure to appear in court or court-ordered programs"
+    FAILURE_TO_PAY = "Admissions to prison due to failure to pay fines or fees ordered by civil or criminal courts"
 
 
 # Releases
