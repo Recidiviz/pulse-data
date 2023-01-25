@@ -94,8 +94,10 @@ class PrisonsFundingContractBedsIncludesExcludes(Enum):
 # Expenses
 class PrisonExpensesIncludesExcludes(Enum):
     SINGLE_YEAR = "Expenses for single fiscal year"
-    BIENNNIUM_EXPENSES = "Biennium expenses"
-    MULTI_YEAR = "Multi-year expenses that will not be fully spent this fiscal year"
+    BIENNNIUM_EXPENSES = "Biennium funding appropriated during the time period"
+    MULTI_YEAR = (
+        "Multi-year appropriations that are appropriated in during the time period"
+    )
     PRISON_FACILITY = "Expenses for prison facility operations and maintenance"
     OPERATIONS_AND_MAINTENANCE = "Expenses for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
     CONSTRUCTION = "Expenses for construction or rental of new prison facilities"
@@ -122,11 +124,11 @@ class PrisonExpensesPersonnelIncludesExcludes(Enum):
 
 class PrisonExpensesTrainingIncludesExcludes(Enum):
     ANNUAL_TRAINING = "Annual training"
-    CONTINUING_EDUCATION = "Continuing education"
     TRAINING_ACADEMY = "Training academy"
-    EXTERNAL_TRAINING = "External training or professional development opportunities (e.g., conferences, classes, etc.)"
-    FREE_PROGRAMS = (
-        "Courses or programs offered at no cost to individuals or the department"
+    SPECIALIZED = "Specialized training"
+    EXTERNAL = "External training or professional development opportunities (e.g., conferences, classes, etc.)"
+    NO_COST = (
+        "Courses or programs offered at no cost to individuals or the court system"
     )
 
 
