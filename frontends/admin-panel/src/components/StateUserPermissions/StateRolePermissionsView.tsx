@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2022 Recidiviz, Inc.
+// Copyright (C) 2023 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,7 +16,8 @@
 // =============================================================================
 
 import { Button, message, PageHeader, Space, Spin, Table } from "antd";
-import { useState } from "react";
+import React, { useState } from "react";
+import { ColumnType } from "antd/lib/table";
 import {
   createStateRolePermissions,
   deleteStateRole,
@@ -30,8 +31,12 @@ import {
 } from "../constants";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import { CreateEditStateRoleForm } from "./EditStateRoleForm";
+import {
+  checkResponse,
+  getPermissionsTableColumns,
+  updatePermissionsObject,
+} from "./utils";
 import { ReasonsLogButton } from "./ReasonsLogButton";
-import { checkResponse, updatePermissionsObject } from "./utils";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -177,64 +182,21 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     setTableKey(() => tableKey + 1);
   };
 
-  const columns = [
-    {
-      title: "State",
-      dataIndex: "stateCode",
-      key: "stateCode",
-      filters: stateCodeFilters,
-      onFilter: (
-        value: string | number | boolean,
-        record: StateRolePermissionsResponse
-      ) =>
-        record.stateCode.indexOf(
-          value as keyof StateRolePermissionsResponse
-        ) === 0,
-      sorter: (
-        a: StateRolePermissionsResponse,
-        b: StateRolePermissionsResponse
-      ) => a.stateCode.localeCompare(b.stateCode),
-    },
-    {
-      title: "Role",
-      dataIndex: "role",
-    },
-    {
-      title: "Can Access Leadership Dashboard",
-      dataIndex: "canAccessLeadershipDashboard",
-      render: (text?: boolean) => (!!text).toString(),
-    },
-    {
-      title: "Can Access Case Triage",
-      dataIndex: "canAccessCaseTriage",
-      render: (text?: boolean) => (!!text).toString(),
-    },
-    {
-      title: "Should See Beta Charts",
-      dataIndex: "shouldSeeBetaCharts",
-      render: (text?: boolean) => (!!text).toString(),
-    },
-    {
-      title: "Routes",
-      dataIndex: "routes",
-      width: 300,
-      render: (text: Record<string, unknown>) => {
-        if (text) {
-          return JSON.stringify(text, null, 2).slice(2, -2);
-        }
-      },
-    },
-    {
-      title: "Feature variants",
-      dataIndex: "featureVariants",
-      width: 350,
-      render: (text: Record<string, unknown>) => {
-        if (text) {
-          return JSON.stringify(text, null, "\t").slice(2, -2);
-        }
-      },
-    },
+  const enabledColumns = [
+    "stateCode",
+    "role",
+    "canAccessLeadershipDashboard",
+    "canAccessCaseTriage",
+    "shouldSeeBetaCharts",
+    "routes",
+    "featureVariants",
   ];
+
+  const columns = getPermissionsTableColumns(
+    data as StateRolePermissionsResponse[] & StateUserPermissionsResponse[]
+  ).filter((column) => {
+    return enabledColumns.includes(column.dataIndex as string);
+  }) as unknown as ColumnType<StateRolePermissionsResponse>[];
 
   return (
     <>
