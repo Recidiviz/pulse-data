@@ -49,15 +49,13 @@ class ExpenseType(DimensionBase, enum.Enum):
 
 
 class ReleaseType(DimensionBase, enum.Enum):
-    TO_PAROLE_SUPERVISION = "To Parole Supervision"
-    TO_PROBATION_SUPERVISION = "To Probation Supervision"
-    TO_COMMUNITY_SUPERVISION = (
-        "To Other Community Supervision That Is Not Probation or Parole"
-    )
-    NO_CONTROL = "No Additional Correctional Control"
-    DEATH = "Death"
-    UNKNOWN = "Unknown Release"
-    OTHER = "Other Release"
+    TO_PROBATION_SUPERVISION = "Releases from Prison to Probation Supervision"
+    TO_PAROLE_SUPERVISION = "Releases from Prison to Parole Supervision"
+    TO_COMMUNITY_SUPERVISION = "Releases from Prison to Other Community Supervision That Is Not Probation or Parole"
+    NO_CONTROL = "Releases from Prison to no Additional Correctional Control"
+    DEATH = "Releases from Prison due to Death"
+    OTHER = "Other Releases from Prison"
+    UNKNOWN = "Unknown Releases from Prison"
 
     @classmethod
     def dimension_identifier(cls) -> str:

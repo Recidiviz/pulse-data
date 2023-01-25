@@ -479,14 +479,17 @@ releases = MetricDefinition(
     metric_type=MetricType.RELEASES,
     category=MetricCategory.POPULATIONS,
     display_name="Releases",
-    description="The number of release events from the agency’s prison jurisdiction to the community following a period of incarceration.",
+    description="The number of release events from the jurisdiction of the prison agency following a period of incarceration.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Releases are based on the number of events in which a person was released from the jurisdiction of the agency, not the number of individual people released. If the same person was released from prison three times in a time period, it would count as three releases.",
     includes_excludes=IncludesExcludesSet(
         members=PrisonReleasesIncludesExcludes,
+        excluded_set={
+            PrisonReleasesIncludesExcludes.TRANSFERRED_WITHIN,
+            PrisonReleasesIncludesExcludes.TEMPORARILY_TRANSFERRED,
+            PrisonReleasesIncludesExcludes.TEMPORARILY_ABSENT,
+        },
     ),
-    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ReleaseType,
@@ -494,12 +497,13 @@ releases = MetricDefinition(
             dimension_to_description={
                 ReleaseType.TO_PROBATION_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to probation supervision.",
                 ReleaseType.TO_PAROLE_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to parole supervision.",
-                ReleaseType.TO_COMMUNITY_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole or in the agency’s jurisdiction.",
+                ReleaseType.TO_COMMUNITY_SUPERVISION: "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole.",
                 ReleaseType.NO_CONTROL: "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
-                ReleaseType.DEATH: "The number of release events from the agency’s prison jurisdiction due to death of people in custody.",
+                ReleaseType.DEATH: "The number of release events from the agency’s prison jurisdiction due to death of people in its jurisdiction.",
                 ReleaseType.OTHER: "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
                 ReleaseType.UNKNOWN: "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
             },
+            # TODO(#18071) Implement repeated/reused global includes/excludes
             dimension_to_includes_excludes={
                 ReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
                     members=PrisonReleasesToProbationIncludesExcludes,

@@ -2178,20 +2178,20 @@ class TestMetricInterface(TestCase):
             dimension_to_enabled_status={d: True for d in ReleaseType},
             dimension_to_value=None,
             dimension_to_includes_excludes_member_to_setting={
+                ReleaseType.TO_PROBATION_SUPERVISION: {
+                    d: IncludesExcludesSetting.YES
+                    for d in PrisonReleasesToProbationIncludesExcludes
+                },
                 ReleaseType.TO_PAROLE_SUPERVISION: {
                     d: IncludesExcludesSetting.YES
                     for d in PrisonReleasesToParoleIncludesExcludes
-                },
-                ReleaseType.TO_PROBATION_SUPERVISION: {
-                    d: IncludesExcludesSetting.NO
-                    for d in PrisonReleasesToProbationIncludesExcludes
                 },
                 ReleaseType.TO_COMMUNITY_SUPERVISION: {
                     d: IncludesExcludesSetting.YES
                     for d in PrisonReleasesCommunitySupervisionIncludesExcludes
                 },
                 ReleaseType.NO_CONTROL: {
-                    d: IncludesExcludesSetting.NO
+                    d: IncludesExcludesSetting.YES
                     for d in PrisonReleasesNoControlIncludesExcludes
                 },
                 ReleaseType.DEATH: {
@@ -2262,31 +2262,31 @@ class TestMetricInterface(TestCase):
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.value,
-                            "included": "No",
+                            "included": "Yes",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.value,
-                            "included": "No",
+                            "included": "Yes",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.value,
-                            "included": "No",
+                            "included": "Yes",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.value,
-                            "included": "No",
+                            "included": "Yes",
                             "default": "Yes",
                         },
                         {
                             "key": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.name,
                             "label": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.value,
-                            "included": "No",
+                            "included": "Yes",
                             "default": "Yes",
                         },
                     ],
@@ -2320,15 +2320,15 @@ class TestMetricInterface(TestCase):
                     "description": "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
                     "settings": [
                         {
-                            "key": PrisonReleasesNoControlIncludesExcludes.COMMUNITY_SUPERVISION.name,
-                            "label": PrisonReleasesNoControlIncludesExcludes.COMMUNITY_SUPERVISION.value,
-                            "included": "No",
+                            "key": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.name,
+                            "label": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.value,
+                            "included": "Yes",
                             "default": "Yes",
                         },
                         {
-                            "key": PrisonReleasesNoControlIncludesExcludes.DUAL_SUPERVISION.name,
-                            "label": PrisonReleasesNoControlIncludesExcludes.DUAL_SUPERVISION.value,
-                            "included": "No",
+                            "key": PrisonReleasesNoControlIncludesExcludes.EXONERATION.name,
+                            "label": PrisonReleasesNoControlIncludesExcludes.EXONERATION.value,
+                            "included": "Yes",
                             "default": "Yes",
                         },
                     ],
