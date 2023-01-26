@@ -88,6 +88,7 @@ individual_sentence_charges AS (
   sent.date_imposed AS prior_court_date, --need to validate
   sent.completion_date,
   DATE_DIFF(sent.projected_completion_date, sent.date_imposed, YEAR) AS sentence_years,
+  DATE_DIFF(sent.projected_completion_date, sent.date_imposed, MONTH) AS sentence_months,
   sent.projected_completion_date AS probation_expiration_date,
   REGEXP_SUBSTR(charge.county_code, "_ND_(.*)") AS conviction_county,
   offense.court_number AS criminal_number,
@@ -141,6 +142,7 @@ individual_sentence AS (
   prior_court_date,
   completion_date,
   sentence_years,
+  sentence_months,
   probation_expiration_date,
   conviction_county, 
   criminal_number, 
@@ -158,7 +160,7 @@ individual_sentence AS (
                     ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_classifications,
   ARRAY_AGG(crime_name ORDER BY crime_classification, crime_subclassification, charge_external_id) AS crime_names,
   FROM individual_sentence_charges
-  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+  GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 ),
 eligible_population AS (
    -- Pull the individuals that are currently eligible for early discharge
@@ -198,6 +200,7 @@ individual_sentence_ranks AS (
     inds.criminal_number,
     inds.judge,
     inds.prior_court_date,
+    inds.sentence_months,
     inds.sentence_years,
     inds.crime_names,
     inds.crime_subtypes,
@@ -239,6 +242,7 @@ SELECT
     criminal_number AS form_information_criminal_number,
     judge AS form_information_judge_name,
     prior_court_date AS form_information_prior_court_date,
+    sentence_months AS form_information_sentence_length_months,
     sentence_years AS form_information_sentence_length_years,
     crime_names AS form_information_crime_names,
     probation_expiration_date AS form_information_probation_expiration_date,
