@@ -52,7 +52,7 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
             ) AS rn
         FROM `{project_id}.{normalized_state_dataset}.state_assessment`
         WHERE assessment_date IS NOT NULL
-            AND (assessment_type IN ('LSIR','STRONG_R') OR assessment_type LIKE 'ORAS%')
+            AND (assessment_type IN ('LSIR','STRONG_R', 'COMPAS') OR assessment_type LIKE 'ORAS%')
         )
     WHERE rn = 1
     """
