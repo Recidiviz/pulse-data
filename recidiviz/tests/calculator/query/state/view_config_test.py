@@ -111,7 +111,7 @@ class ViewExportConfigTest(unittest.TestCase):
             for view in sub_dag.views:
                 node = all_views_dag_walker.node_for_view(view)
                 # check source tables which exist beyond ancestors
-                for key in node.parent_keys:
+                for key in node.parent_addresses:
                     if key.dataset_id == dataset_config.DATAFLOW_METRICS_DATASET:
                         dataflow_parent = True
             self.assertTrue(

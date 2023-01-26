@@ -17,7 +17,6 @@
 """Defines a type that represents the (dataset_id, table_id) address of a BigQuery view
 or table.
 """
-
 import attr
 from google.cloud import bigquery
 
@@ -34,3 +33,6 @@ class BigQueryAddress:
     @classmethod
     def from_list_item(cls, table: bigquery.table.TableListItem) -> "BigQueryAddress":
         return cls(dataset_id=table.dataset_id, table_id=table.table_id)
+
+    def to_str(self) -> str:
+        return f"{self.dataset_id}.{self.table_id}"
