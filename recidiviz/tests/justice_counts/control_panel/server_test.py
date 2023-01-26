@@ -1047,6 +1047,45 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 UserAccountInvitationStatus.PENDING,
             )
 
+    def test_update_user_role(self) -> None:
+        agency_A = self.test_schema_objects.test_agency_A
+        user_A = self.test_schema_objects.test_user_A
+        user_A.email = "newuser@fake.com"
+        self.session.add_all([agency_A, user_A])
+        self.session.commit()
+        self.session.refresh(agency_A)
+        self.session.refresh(user_A)
+        user_agency_association = AgencyUserAccountAssociation(
+            user_account_id=user_A.id,
+            agency_id=agency_A.id,
+        )
+        self.session.add(user_agency_association)
+        self.session.commit()
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user_A.auth0_user_id, agency_ids=[agency_A.id]
+            )
+            response = self.client.patch(
+                f"/api/agencies/{agency_A.id}/users",
+                json={
+                    "role": schema.UserAccountRole.AGENCY_ADMIN.value,
+                    "email": user_A.email,
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            # Updates the AgencyUserAccountAssociation with the new invitation status
+            db_user = self.session.query(UserAccount).one()
+            user_account_association = self.session.query(
+                AgencyUserAccountAssociation
+            ).one()
+            self.assertEqual(user_account_association.user_account_id, db_user.id)
+            self.assertEqual(user_account_association.agency_id, agency_A.id)
+            self.assertEqual(
+                user_account_association.role,
+                schema.UserAccountRole.AGENCY_ADMIN,
+            )
+
     def test_update_invitation_status(self) -> None:
         agency_A = self.test_schema_objects.test_agency_A
         user_A = self.test_schema_objects.test_user_A

@@ -25,6 +25,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     AgencyUserAccountAssociation,
     UserAccount,
     UserAccountInvitationStatus,
+    UserAccountRole,
 )
 
 
@@ -65,14 +66,15 @@ class UserAccountInterface:
         return user
 
     @staticmethod
-    def add_user_to_agencies(
+    def add_or_update_user_agency_association(
         session: Session,
         user: UserAccount,
         agencies: List[Agency],
         invitation_status: Optional[UserAccountInvitationStatus] = None,
+        role: Optional[UserAccountRole] = None,
     ) -> None:
-        """If there is an existing assocation between the user and given agency in our DB,
-        then update the invitation status. Else, create a new association.
+        """If there is an existing association between the user and given agency in our DB,
+        then update the invitation status and role. Else, create a new association.
         NOTE: This method does not create or update the user's list of agencies in Auth0.
         That must be done via auth0_client.update_user_app_metadata.
         """
@@ -85,6 +87,8 @@ class UserAccountInterface:
             if existing_assoc is not None:
                 if invitation_status is not None:
                     existing_assoc.invitation_status = invitation_status
+                if role is not None:
+                    existing_assoc.role = role
                 continue
 
             session.add(
