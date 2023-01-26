@@ -376,6 +376,8 @@ class PrisonGrievancesIncludesExcludes(Enum):
     PENDING_RESOLUTION = "Grievances pending resolution"
     INFORMAL = "Grievances submitted informally or not in writing"
     DUPLICATE = "Duplicate grievances"
+    FILED_BY_VISITOR = "Grievances filed by other people who are not incarcerated in the agency’s facilities (e.g., visitors)"
+    FILED_BY_STAFF = "Grievances filed by staff employed by the agency"
 
 
 class PrisonGrievancesLivingConditionsIncludesExcludes(Enum):
@@ -419,7 +421,7 @@ class PrisonGrievancesHealthCareIncludesExcludes(Enum):
         "Grievances related to denial of care by medical or correctional personnel"
     )
     LACK_OF_TIMELY_CARE = "Grievances related to lack of timely health care"
-    MEDICAL_STAFF = "Grievances against medical staff"
+    MEDICAL_STAFF = "Grievances against clinical and medical staff"
     REPRODUCTIVE_HEALTH_CARE = "Grievances related to reproductive health care"
     PRIVACY = "Grievances related to confidentiality or privacy issues"
     MEDICATION = "Grievances related to medication"
