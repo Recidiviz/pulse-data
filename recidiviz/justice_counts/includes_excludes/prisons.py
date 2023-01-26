@@ -195,7 +195,7 @@ class PrisonClinicalStaffIncludesExcludes(Enum):
     CLINICIANS = "Clinicians (e.g., substance use treatment specialists)"
     THERAPISTS = "Therapists (e.g., mental health counselors)"
     PSYCHIATRISTS = "Psychiatrists"
-    VACANT = "Clinical or medical staff positions budgeted but currently vacant"
+    VACANT = "Clinical and medical staff positions budgeted but currently vacant"
 
 
 class PrisonProgrammaticStaffIncludesExcludes(Enum):
@@ -204,15 +204,16 @@ class PrisonProgrammaticStaffIncludesExcludes(Enum):
     THERAPEUTIC = "Therapeutic and support program staff"
     RELIGIOUS = "Religious or cultural program staff"
     RESTORATIVE_JUSTICE = "Restorative Justice staff"
-    VACANT = "Programmatic staff positions budgeted but currently vacant"
     VOLUNTEER = "Programmatic staff volunteer positions"
+    VACANT = "Programmatic staff positions budgeted but currently vacant"
 
 
 class VacantPrisonStaffIncludesExcludes(Enum):
     SUPERVISION = "Vacant supervision staff positions"
-    NON_SUPERVISION = "Vacant non-supervision administrative staff positions"
-    CLINICAL_OR_MEDICAL = "Vacant clinical or medical staff positions"
+    MANAGEMENT_OPERATIONS = "Vacant management and operations staff positions"
+    CLINICAL_OR_MEDICAL = "Vacant clinical and medical staff positions"
     PROGRAMMATIC = "Vacant programmatic staff positions"
+    UNKNOWN = "Vacant staff positions of unknown type"
     FILLED = "Filled positions"
 
 

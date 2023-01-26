@@ -1396,7 +1396,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(response.status_code, 200)
             # Check that the we can get the previoulsy stored additional context
             if response.json is not None:
-                contexts = response.json[2]["disaggregations"][0]["dimensions"][5][
+                contexts = response.json[2]["disaggregations"][0]["dimensions"][4][
                     "contexts"
                 ]
             self.assertEqual(
