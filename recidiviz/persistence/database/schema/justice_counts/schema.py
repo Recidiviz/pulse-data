@@ -76,7 +76,9 @@ class UserAccountInvitationStatus(enum.Enum):
 
 
 class UserAccountRole(enum.Enum):
-    ADMIN = "ADMIN"
+    AGENCY_ADMIN = "AGENCY_ADMIN"
+    JUSTICE_COUNTS_ADMIN = "JUSTICE_COUNTS_ADMIN"
+    CONTRIBUTOR = "CONTRIBUTOR"
 
 
 class AcquisitionMethod(enum.Enum):
@@ -254,7 +256,7 @@ class ReportStatus(enum.Enum):
 
 
 class AgencyUserAccountAssociation(JusticeCountsBase):
-    """his table maintains the many-to-many relationship between UserAccount and Agency."""
+    """This table maintains the many-to-many relationship between UserAccount and Agency."""
 
     __tablename__ = "agency_user_account_association"
 

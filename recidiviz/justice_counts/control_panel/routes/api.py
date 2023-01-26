@@ -214,6 +214,47 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/agencies/<agency_id>/users", methods=["PATCH"])
+    @auth_decorator
+    def update_user_role(agency_id: int) -> Response:
+        """
+        This endpoint updates a user's role in an agency in Auth0.
+        """
+        try:
+            request_json = assert_type(request.json, dict)
+            role = request_json.get("role")
+            email = request_json.get("email")
+
+            raise_if_user_is_not_in_agency(agency_id=int(agency_id))
+            if role is None:
+                return make_response(
+                    "no role was provided in the request body.",
+                    500,
+                )
+            users = UserAccountInterface.get_users_by_email(
+                session=current_session, emails={assert_type(email, str)}
+            )
+            if len(users) != 1:
+                return make_response(
+                    "Multiple users were found with the same email.",
+                    500,
+                )
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=int(agency_id)
+            )
+
+            AgencyUserAccountAssociationInterface.update_user_role(
+                role=role,
+                user=users[0],
+                agency=agency,
+                session=current_session,
+            )
+
+            current_session.commit()
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/users", methods=["PATCH"])
     @auth_decorator
     def update_user_in_auth0() -> Response:
@@ -289,7 +330,7 @@ def get_api_blueprint(
                 email=email,
             )
 
-            UserAccountInterface.add_user_to_agencies(
+            UserAccountInterface.add_or_update_user_agency_association(
                 session=current_session,
                 user=user_account,
                 agencies=agencies,

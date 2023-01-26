@@ -77,7 +77,7 @@ class TestUserAccountInterface(JusticeCountsDatabaseTestCase):
             agency = AgencyInterface.get_agency_by_name(
                 session=session, name="Agency Gamma"
             )
-            UserAccountInterface.add_user_to_agencies(
+            UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
                 user=user,
                 agencies=[agency],

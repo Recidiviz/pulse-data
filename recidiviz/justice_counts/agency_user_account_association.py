@@ -74,7 +74,7 @@ class AgencyUserAccountAssociationInterface:
             )
 
             # Update our DB
-            UserAccountInterface.add_user_to_agencies(
+            UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
                 user=existing_users[0],
                 agencies=[new_agency],
@@ -97,7 +97,7 @@ class AgencyUserAccountAssociationInterface:
             )
 
             # Add the user to the agency
-            UserAccountInterface.add_user_to_agencies(
+            UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
                 user=user,
                 agencies=[new_agency],
@@ -136,4 +136,13 @@ class AgencyUserAccountAssociationInterface:
             session=session,
             user=user,
             agency_id=agency_id,
+        )
+
+    @staticmethod
+    def update_user_role(
+        session: Session, role: str, agency: schema.Agency, user: schema.UserAccount
+    ) -> None:
+        db_role = schema.UserAccountRole(role)
+        UserAccountInterface.add_or_update_user_agency_association(
+            session=session, user=user, agencies=[agency], role=db_role
         )

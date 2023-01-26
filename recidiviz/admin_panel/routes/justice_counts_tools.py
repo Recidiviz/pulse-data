@@ -184,7 +184,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     name=name,
                     auth0_user_id=auth0_user_id,
                 )
-                UserAccountInterface.add_user_to_agencies(
+                UserAccountInterface.add_or_update_user_agency_association(
                     session=session,
                     user=user,
                     agencies=agencies,
