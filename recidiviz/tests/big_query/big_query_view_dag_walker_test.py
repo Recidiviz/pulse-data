@@ -35,7 +35,6 @@ from recidiviz.big_query.big_query_view import (
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
-    DagKey,
     ProcessDagPerfConfig,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -151,14 +150,14 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
     def test_dag_init(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
 
-        self.assertEqual(len(self.all_views), len(walker.nodes_by_key))
+        self.assertEqual(len(self.all_views), len(walker.nodes_by_address))
 
-        for key, node in walker.nodes_by_key.items():
-            if not node.parent_keys:
+        for key, node in walker.nodes_by_address.items():
+            if not node.parent_addresses:
                 self.assertIsValidEmptyParentsView(node)
 
             if node.is_root:
-                for parent_key in node.parent_keys:
+                for parent_key in node.parent_addresses:
                     # Root views should only have source data tables as parents
                     self.assertIsValidSourceDataTable(key, parent_key)
 
@@ -166,18 +165,20 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         walker = BigQueryViewDagWalker(self.all_views)
 
         def process_simple(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]
-        ) -> DagKey:
+            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
+        ) -> BigQueryAddress:
             time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS / 10)
-            return DagKey.for_view(view)
+            return view.address
 
         result = walker.process_dag(process_simple)
 
-        expected_view_keys = set(walker.nodes_by_key)
-        self.assertEqual(expected_view_keys, set(result.view_results.values()))
+        expected_view_addresses = set(walker.nodes_by_address)
+        self.assertEqual(expected_view_addresses, set(result.view_results.values()))
 
-        walked_view_keys_from_process_results = set(result.view_results.values())
-        self.assertEqual(expected_view_keys, walked_view_keys_from_process_results)
+        walked_view_addresses_from_process_results = set(result.view_results.values())
+        self.assertEqual(
+            expected_view_addresses, walked_view_addresses_from_process_results
+        )
 
     def test_dag_process_time(self) -> None:
         num_views = len(self.all_views)
@@ -189,10 +190,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         )
 
         def process_simple(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]
-        ) -> DagKey:
+            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
+        ) -> BigQueryAddress:
             time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
-            return DagKey.for_view(view)
+            return view.address
 
         start = datetime.datetime.now()
         result = walker.process_dag(process_simple)
@@ -218,22 +219,22 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             with mutex:
                 node = walker.node_for_view(view)
                 if not node.is_root:
-                    for parent_key in node.parent_keys:
+                    for parent_key in node.parent_addresses:
                         if parent_key not in all_processed:
                             # The only parents that won't have been fully processed are source data tables
                             try:
                                 self.assertIsValidSourceDataTable(
-                                    child_view_key=node.dag_key,
+                                    child_view_key=node.view.address,
                                     source_table_key=parent_key,
                                 )
                             except ValueError as e:
                                 raise ValueError(
                                     f"Found parent view [{parent_key}] that was not processed before "
-                                    f"child [{node.dag_key}] started processing."
+                                    f"child [{node.view.address}] started processing."
                                 ) from e
                         else:
                             self.assertIn(
-                                walker.view_for_address(parent_key.view_address),
+                                walker.view_for_address(parent_key),
                                 parent_results,
                             )
 
@@ -243,7 +244,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                 )
             )
             with mutex:
-                all_processed.add(node.dag_key)
+                all_processed.add(node.view.address)
 
         result = walker.process_dag(process_check_parents)
         self.assertEqual(len(self.all_views), len(result.view_results))
@@ -416,12 +417,12 @@ The following views have less restrictive projects_to_deploy than their parents:
             _ = walker.process_dag(process_throws)
 
         def process_throws_after_root(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]
-        ) -> DagKey:
+            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
+        ) -> BigQueryAddress:
             node = walker.node_for_view(view)
             if not node.is_root:
                 raise TestDagWalkException()
-            return node.dag_key
+            return node.view.address
 
         with self.assertRaises(TestDagWalkException):
             _ = walker.process_dag(process_throws_after_root)
@@ -441,13 +442,11 @@ The following views have less restrictive projects_to_deploy than their parents:
                 if parent_table_address in walker.materialized_addresss:
                     # We are using materialized version of a table
                     continue
-                parent_key = DagKey(view_address=parent_table_address)
-                if parent_key not in walker.nodes_by_key:
+                parent_key = parent_table_address
+                if parent_key not in walker.nodes_by_address:
                     # We assume this is a source data table (checked in other tests)
                     continue
-                parent_view: BigQueryView = walker.view_for_address(
-                    parent_key.view_address
-                )
+                parent_view: BigQueryView = walker.view_for_address(parent_key)
                 if parent_view.materialized_address is not None:
                     should_be_materialized_addresses.add(
                         parent_view.materialized_address
@@ -508,8 +507,8 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^Detected cycle in graph reachable from \('dataset_1', 'table_1'\): "
-            r"\[\('dataset_2', 'table_2'\)]$",
+            r"^Detected cycle in graph reachable from dataset_1.table_1: "
+            r"\['dataset_2.table_2']$",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -537,8 +536,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         ).build()
         with self.assertRaisesRegex(
             ValueError,
-            r"^Detected cycle in graph reachable from \('dataset_1', 'table_1'\): "
-            r"\[\('dataset_2', 'table_2'\), \('dataset_3', 'table_3'\)\]$",
+            r"^Detected cycle in graph reachable from dataset_1.table_1: "
+            r"\['dataset_2.table_2', 'dataset_3.table_3'\]$",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2, view_3])
 
@@ -574,8 +573,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         all_views_dag_walker.populate_ancestor_sub_dags()
 
         all_sub_dag_views = {
-            key.view_address: sorted(v.address for v in node.ancestors_sub_dag.views)
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: sorted(v.address for v in node.ancestors_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         # Expected ancestor DAG views by view given this diamond structure:
@@ -623,8 +622,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_results, all_sub_dag_views)
 
         ancestor_tree_edges = {
-            key.view_address: node.ancestors_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: node.ancestors_tree_num_edges
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         # Expected ancestor path counts given this diamond structure:
@@ -660,8 +659,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         all_views_dag_walker.populate_descendant_sub_dags()
 
         all_sub_dag_views = {
-            key.view_address: sorted(v.address for v in node.descendants_sub_dag.views)
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: sorted(v.address for v in node.descendants_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         # Expected descendant DAG views by view given this diamond structure:
@@ -710,8 +709,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_results, all_sub_dag_views)
 
         descendants_tree_edges = {
-            key.view_address: node.descendants_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: node.descendants_tree_num_edges
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         expected_descendant_tree_edges = {
@@ -742,8 +741,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         all_views_dag_walker.populate_descendant_sub_dags()
 
         all_sub_dag_views = {
-            key.view_address: sorted(v.address for v in node.descendants_sub_dag.views)
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: sorted(v.address for v in node.descendants_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         expected_results = {
@@ -754,8 +753,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_results, all_sub_dag_views)
 
         descendants_tree_edges = {
-            key.view_address: node.descendants_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: node.descendants_tree_num_edges
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         expected_descendant_tree_edges = {
@@ -774,8 +773,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         all_views_dag_walker.populate_ancestor_sub_dags()
 
         all_sub_dag_views = {
-            key.view_address: sorted(v.address for v in node.ancestors_sub_dag.views)
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: sorted(v.address for v in node.ancestors_sub_dag.views)
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         expected_results = {
@@ -786,8 +785,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         self.assertEqual(expected_results, all_sub_dag_views)
 
         ancestor_tree_edges = {
-            key.view_address: node.ancestors_tree_num_edges
-            for key, node in all_views_dag_walker.nodes_by_key.items()
+            key: node.ancestors_tree_num_edges
+            for key, node in all_views_dag_walker.nodes_by_address.items()
         }
 
         expected_ancestor_tree_edges = {
@@ -1294,8 +1293,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         ).build()
         with self.assertRaisesRegex(
             ValueError,
-            r"^Found materialized view address for view \[\('dataset_2', 'table_2'\)\] that "
-            r"matches the view address of another view \[\('dataset_1', 'table_1'\)\].",
+            r"^Found materialized view address for view \[dataset_2.table_2\] that "
+            r"matches the view address of another view \[dataset_1.table_1\].",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2])
 
@@ -1322,8 +1321,8 @@ The following views have less restrictive projects_to_deploy than their parents:
         ).build()
         with self.assertRaisesRegex(
             ValueError,
-            r"Found materialized view address for view \[\('dataset_2', 'table_2'\)\] "
-            r"that matches materialized_address of another view: \[\('dataset_1', 'table_1'\)\].",
+            r"Found materialized view address for view \[dataset_2.table_2\] "
+            r"that matches materialized_address of another view: \[dataset_1.table_1\].",
         ):
             _ = BigQueryViewDagWalker([view_1, view_2])
 
@@ -1354,7 +1353,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         walker = BigQueryViewDagWalker([view_1, view_2, view_3])
 
         def process_simple(
-            view: BigQueryView, parent_results: Dict[BigQueryView, DagKey]
+            view: BigQueryView, parent_results: Dict[BigQueryView, BigQueryAddress]
         ) -> str:
             if view == view_3:
                 # View 3 should have two parents
@@ -1718,17 +1717,17 @@ The following views have less restrictive projects_to_deploy than their parents:
                 dataset_id="aggregated_metrics", table_id="metric_time_periods"
             ),
         }
-        if node.dag_key.view_address in known_empty_parent_view_addresss:
+        if node.view.address in known_empty_parent_view_addresss:
             return
 
         if "FROM EXTERNAL_QUERY" in node.view.view_query:
             return
 
-        self.fail(node.dag_key)
+        self.fail(node.view.address)
 
     @staticmethod
     def assertIsValidSourceDataTable(
-        child_view_key: DagKey, source_table_key: DagKey
+        child_view_key: BigQueryAddress, source_table_key: BigQueryAddress
     ) -> None:
         if source_table_key.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
             return
@@ -1740,7 +1739,7 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     @staticmethod
     def assertIsValidRawTableViewDependency(
-        child_view_key: DagKey, raw_data_view_key: DagKey
+        child_view_key: BigQueryAddress, raw_data_view_key: BigQueryAddress
     ) -> None:
         """Asserts that the dependency (i.e. edge in the graph) that is being walked is a valid one to walk."""
         up_to_date_view_match = re.match(
@@ -1801,22 +1800,12 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         node.set_materialized_addresss({})
         self.assertEqual(node.is_root, False)
         self.assertEqual(
-            node.dag_key,
-            DagKey(
-                view_address=BigQueryAddress(
-                    dataset_id="my_dataset", table_id="my_view_id"
-                )
-            ),
+            node.view.address,
+            BigQueryAddress(dataset_id="my_dataset", table_id="my_view_id"),
         )
         self.assertEqual(
-            node.parent_keys,
-            {
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="some_dataset", table_id="some_table"
-                    )
-                )
-            },
+            node.parent_addresses,
+            {BigQueryAddress(dataset_id="some_dataset", table_id="some_table")},
         )
         self.assertEqual(node.child_addresses, set())
 
@@ -1847,17 +1836,11 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         if not parent_view.materialized_address:
             raise ValueError("Null materialized_address for view [{parent_view}]")
         node.set_materialized_addresss(
-            {parent_view.materialized_address: DagKey.for_view(parent_view)}
+            {parent_view.materialized_address: parent_view.address}
         )
         self.assertEqual(
-            node.parent_keys,
-            {
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="some_dataset", table_id="some_table"
-                    )
-                )
-            },
+            node.parent_addresses,
+            {BigQueryAddress(dataset_id="some_dataset", table_id="some_table")},
         )
 
     def test_parse_view_multiple_parents(self) -> None:
@@ -1873,17 +1856,9 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         node = BigQueryViewDagNode(view)
         node.set_materialized_addresss({})
         self.assertEqual(
-            node.parent_keys,
+            node.parent_addresses,
             {
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="some_dataset", table_id="some_table"
-                    )
-                ),
-                DagKey(
-                    view_address=BigQueryAddress(
-                        dataset_id="some_dataset", table_id="other_table"
-                    )
-                ),
+                BigQueryAddress(dataset_id="some_dataset", table_id="some_table"),
+                BigQueryAddress(dataset_id="some_dataset", table_id="other_table"),
             },
         )
