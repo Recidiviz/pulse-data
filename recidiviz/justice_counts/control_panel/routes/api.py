@@ -224,8 +224,10 @@ def get_api_blueprint(
             request_json = assert_type(request.json, dict)
             role = request_json.get("role")
             email = request_json.get("email")
-
-            raise_if_user_is_not_in_agency(agency_id=int(agency_id))
+            agency_ids = get_agency_ids_from_session()
+            raise_if_user_is_not_in_agency(
+                agency_id=int(agency_id), agency_ids=agency_ids
+            )
             if role is None:
                 return make_response(
                     "no role was provided in the request body.",

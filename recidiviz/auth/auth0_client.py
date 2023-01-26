@@ -189,16 +189,19 @@ class Auth0Client:
     @_refresh_token_if_needed
     def create_JC_user(self, email: str, name: str, agency_id: int) -> Auth0User:
         """Creates a single Auth0 user in the Justice Counts Auth0 tenant."""
-        random_password = "".join(
-            random.choices(string.ascii_letters + string.digits, k=10)
+        random_password_characters = (
+            random.choices(string.ascii_letters, k=5)
+            + random.choices(string.digits, k=5)
+            + random.choices(string.punctuation, k=5)
         )
+
         body: Dict[str, Any] = {
             "email": email,
             "name": name,
             "email_verified": False,
             "app_metadata": {"agency_ids": [agency_id]},
             "connection": "Username-Password-Authentication",
-            "password": random_password,
+            "password": "".join(random_password_characters),
         }
 
         return self.client.users.create(body=body)
