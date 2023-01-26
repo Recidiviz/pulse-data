@@ -177,7 +177,16 @@ def create_workflows_api_blueprint() -> Blueprint:
         cloud_task_body = get_cloud_task_json_body()
         person_external_id = cloud_task_body.get("person_external_id", None)
 
+        # TODO(#2950): Remove extraneous logs
+        logging.info(
+            ", ".join(
+                f"Key {key} has value of type {type(value).__name__}"
+                for key, value in cloud_task_body.items()
+            )
+        )
+
         if person_external_id is None:
+            logging.error("No person_external_id provided")
             return make_response(
                 jsonify(
                     message=(
@@ -203,6 +212,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 data.get("voters_rights_code", None),
             )
         except Exception as e:
+            logging.error("Write to TOMIS failed due to error: %s", e)
             firestore_client = FirestoreClientImpl()
             firestore_doc_path = WorkflowsUsTnExternalRequestInterface().get_contact_note_updates_firestore_path(
                 person_external_id
