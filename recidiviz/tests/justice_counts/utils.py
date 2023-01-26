@@ -521,7 +521,7 @@ class JusticeCountsSchemaTestObjects:
                                     else [],
                                 },
                                 {
-                                    "key": StaffType.CLINICAL_OR_MEDICAL.value,
+                                    "key": StaffType.CLINICAL_AND_MEDICAL.value,
                                     "enabled": True,
                                     "settings": [
                                         {

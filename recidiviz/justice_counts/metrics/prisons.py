@@ -165,12 +165,6 @@ total_staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the agency for the operation and maintenance of the prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-    definitions=[
-        Definition(
-            term="Full-time staff",
-            definition="Number of people employed in a full-time (0.9+) capacity.",
-        )
-    ],
     includes_excludes=IncludesExcludesSet(
         members=PrisonStaffIncludesExcludes,
         excluded_set={
@@ -180,19 +174,18 @@ total_staff = MetricDefinition(
     ),
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=StaffType,
             required=False,
             dimension_to_description={
                 StaffType.SECURITY: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their custody, supervision, and monitoring.",
-                StaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are incarcerated but support the day-to-day operations of the agency.",
-                StaffType.CLINICAL_OR_MEDICAL: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their health.",
-                StaffType.PROGRAMMATIC: "The number of full-time equivalent positions that are not medical or clinical staff and provide services and programming to people who are incarcerated.",
-                StaffType.OTHER: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are not security staff, management and operations staff, clinical or medical staff, or programmatic staff.",
+                StaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are incarcerated, but support the day-to-day operations of the agency.",
+                StaffType.CLINICAL_AND_MEDICAL: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their health.",
+                StaffType.PROGRAMMATIC: "The number of full-time equivalent positions that are not medical or clinical staff that provide services and programming to people who are incarcerated.",
+                StaffType.OTHER: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are not security staff, management and operations staff, clinical and medical staff, or programmatic staff.",
                 StaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency that are of an unknown type.",
-                StaffType.VACANT: "The number of full-time equivalent positions dedicated to the operation and maintenance of jail facilities under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
+                StaffType.VACANT: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
             },
             dimension_to_includes_excludes={
                 StaffType.SECURITY: IncludesExcludesSet(
@@ -207,7 +200,7 @@ total_staff = MetricDefinition(
                         PrisonManagementAndOperationsStaffIncludesExcludes.VACANT,
                     },
                 ),
-                StaffType.CLINICAL_OR_MEDICAL: IncludesExcludesSet(
+                StaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
                     members=PrisonClinicalStaffIncludesExcludes,
                     excluded_set={
                         PrisonClinicalStaffIncludesExcludes.VACANT,

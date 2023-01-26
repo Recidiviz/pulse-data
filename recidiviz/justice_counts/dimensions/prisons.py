@@ -78,11 +78,11 @@ class FundingType(DimensionBase, enum.Enum):
 class StaffType(DimensionBase, enum.Enum):
     SECURITY = "Security Staff"
     MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
-    CLINICAL_OR_MEDICAL = "Clinical or Medical Staff"
+    CLINICAL_AND_MEDICAL = "Clinical and Medical Staff"
     PROGRAMMATIC = "Programmatic Staff"
-    VACANT = "Vacant Positions (Any Staff Type)"
     OTHER = "Other Staff"
     UNKNOWN = "Unknown Staff"
+    VACANT = "Vacant Positions (Any Staff Type)"
 
     @classmethod
     def dimension_identifier(cls) -> str:
