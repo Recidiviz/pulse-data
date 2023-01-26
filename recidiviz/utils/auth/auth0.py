@@ -17,6 +17,7 @@
 """
 This module contains various pieces related to the Case Triage authentication / authorization flow
 """
+import logging
 from functools import wraps
 from http import HTTPStatus
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -146,47 +147,54 @@ def build_auth0_authorization_handler(
         If it is not valid, raise an exception
         If it is valid, call our `on_successful_authorization` callback before executing the decorated route
         """
-        token = get_token_auth_header()
-        unverified_header = jwt.get_unverified_header(token)
-        rsa_key = authorization_config.get_key(unverified_header["kid"])
+        # TODO(#2950): Remove extraneous logs
+        logging.info("Got headers: %s", request.headers)
 
-        if rsa_key:
-            try:
-                payload = jwt.decode(
-                    token,
-                    # `jwt.decode` specifies this argument as a string, but `RSAAlgorithm.prepare_key` accepts an
-                    # instance of `RSAPublicKey`
-                    rsa_key,  # type: ignore
-                    algorithms=authorization_config.algorithms,
-                    issuer=authorization_config.issuer,
-                    audience=authorization_config.audience,
-                )
-            except jwt.ExpiredSignatureError as e:
-                raise AuthorizationError(
-                    code="token_expired",
-                    description="token is expired",
-                ) from e
-            except (
-                jwt.InvalidIssuerError,
-                jwt.InvalidAudienceError,
-                jwt.MissingRequiredClaimError,
-            ) as e:
-                raise AuthorizationError(
-                    code="invalid_claims",
-                    description="incorrect claims, please check the audience and issuer",
-                ) from e
-            except Exception as e:
+        try:
+            token = get_token_auth_header()
+            unverified_header = jwt.get_unverified_header(token)
+            rsa_key = authorization_config.get_key(unverified_header["kid"])
+
+            if rsa_key:
+                try:
+                    payload = jwt.decode(
+                        token,
+                        # `jwt.decode` specifies this argument as a string, but `RSAAlgorithm.prepare_key` accepts an
+                        # instance of `RSAPublicKey`
+                        rsa_key,  # type: ignore
+                        algorithms=authorization_config.algorithms,
+                        issuer=authorization_config.issuer,
+                        audience=authorization_config.audience,
+                    )
+                except jwt.ExpiredSignatureError as e:
+                    raise AuthorizationError(
+                        code="token_expired",
+                        description="token is expired",
+                    ) from e
+                except (
+                    jwt.InvalidIssuerError,
+                    jwt.InvalidAudienceError,
+                    jwt.MissingRequiredClaimError,
+                ) as e:
+                    raise AuthorizationError(
+                        code="invalid_claims",
+                        description="incorrect claims, please check the audience and issuer",
+                    ) from e
+                except Exception as e:
+                    raise AuthorizationError(
+                        code="invalid_header",
+                        description="Unable to parse authentication token.",
+                    ) from e
+
+                on_successful_authorization(payload)
+            else:
                 raise AuthorizationError(
                     code="invalid_header",
-                    description="Unable to parse authentication token.",
-                ) from e
-
-            on_successful_authorization(payload)
-        else:
-            raise AuthorizationError(
-                code="invalid_header",
-                description="Unable to find appropriate key",
-            )
+                    description="Unable to find appropriate key",
+                )
+        except Exception as e:
+            logging.error("Error in auth handler: %s", e)
+            raise e
 
     return authorization_handler
 
