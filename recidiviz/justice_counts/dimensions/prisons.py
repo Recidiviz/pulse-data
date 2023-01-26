@@ -23,11 +23,12 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class ReadmissionType(DimensionBase, enum.Enum):
-    NEW_CONVICTION = "New Conviction"
-    RETURN_FROM_PROBATION = "Return from Probation"
-    RETURN_FROM_PAROLE = "Return from Parole"
+    NEW_CONVICTION = "Readmissions for a New Conviction"
+    RETURN_FROM_PROBATION = "Readmissions from Probation"
+    RETURN_FROM_PAROLE = "Readmissions from Parole"
+    OTHER_COMMUNITY_SUPERVISION = "Readmissions from Other Community Supervision"
     OTHER = "Other Readmissions"
-    UNKNOWN_READMISSIONS = "Unknown Post-Adjudication Readmission"
+    UNKNOWN = "Unknown Readmissions"
 
     @classmethod
     def dimension_identifier(cls) -> str:

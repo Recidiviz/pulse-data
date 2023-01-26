@@ -58,8 +58,8 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonGrievancesPersonalSafetyIncludesExcludes,
     PrisonManagementAndOperationsStaffIncludesExcludes,
     PrisonProgrammaticStaffIncludesExcludes,
-    PrisonReadmissionsIncludesExcludes,
     PrisonReadmissionsNewConvictionIncludesExcludes,
+    PrisonReadmissionsOtherCommunitySupervisionIncludesExcludes,
     PrisonReadmissionsParoleIncludesExcludes,
     PrisonReadmissionsProbationIncludesExcludes,
     PrisonReleasesCommunitySupervisionIncludesExcludes,
@@ -291,31 +291,46 @@ readmissions = MetricDefinition(
     description="The number of admission events to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within the previous three years (1,096 days).",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="If a person admitted on June 23, 2022, had been incarcerated at any time between June 23, 2019, and June 23, 2022, it would count as a readmission. This metric is based on admission events, so if the same person is readmitted three times in a time period, it would count as three readmissions.",
-    specified_contexts=[],
+    # TODO(#18071) Implement repeated/reused includes/excludes
     includes_excludes=IncludesExcludesSet(
-        members=PrisonReadmissionsIncludesExcludes,
+        members=PrisonAdmissionsIncludesExcludes,
+        excluded_set={
+            PrisonAdmissionsIncludesExcludes.TEMPORARY_ABSENCES,
+            PrisonAdmissionsIncludesExcludes.TRANSER_SAME_STATE,
+            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_US_MARSHALS_SERVICE,
+            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_TRIBAL,
+            PrisonAdmissionsIncludesExcludes.AWAITING_HEARINGS,
+            PrisonAdmissionsIncludesExcludes.FAILURE_TO_PAY,
+        },
     ),
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ReadmissionType,
             required=False,
             dimension_to_description={
-                ReadmissionType.NEW_CONVICTION: "The number of incarceration admissions due to new criminal conviction to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                ReadmissionType.RETURN_FROM_PROBATION: "The number of admissions due to probation hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                ReadmissionType.RETURN_FROM_PAROLE: "The number of incarceration admissions due to parole hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                ReadmissionType.OTHER: "The number of admissions, which were not admissions for a new conviction, admissions for a return from probation, or admissions for a return from parole, but an other admission to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
-                ReadmissionType.UNKNOWN_READMISSIONS: "The number of admissions, for an unknown reason, to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.NEW_CONVICTION: "The number of reincarceration events due to new criminal conviction and sentence to prison of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.RETURN_FROM_PROBATION: "The number of reincarceration events due to probation hold, sanction, or revocation to prison of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.RETURN_FROM_PAROLE: "The number of reincarceration events due to parole hold, sanction, or revocation to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.OTHER_COMMUNITY_SUPERVISION: "The number of reincarceration events due to other community supervision hold, sanction, or revocation to prison of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.OTHER: "The number of reincarceration events which were not admissions for a new conviction, admissions for a return from probation, or admissions for a return from parole, but another admission to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
+                ReadmissionType.UNKNOWN: "The number of reincarceration events for an unknown reason, to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
             },
             dimension_to_includes_excludes={
                 ReadmissionType.NEW_CONVICTION: IncludesExcludesSet(
                     members=PrisonReadmissionsNewConvictionIncludesExcludes,
+                    excluded_set={
+                        PrisonReadmissionsNewConvictionIncludesExcludes.REVOKED_NEW_OFFENSE,
+                        PrisonReadmissionsNewConvictionIncludesExcludes.REVOKED_NEW_CONVICTION,
+                    },
                 ),
                 ReadmissionType.RETURN_FROM_PROBATION: IncludesExcludesSet(
                     members=PrisonReadmissionsProbationIncludesExcludes,
                 ),
                 ReadmissionType.RETURN_FROM_PAROLE: IncludesExcludesSet(
                     members=PrisonReadmissionsParoleIncludesExcludes,
+                ),
+                ReadmissionType.OTHER_COMMUNITY_SUPERVISION: IncludesExcludesSet(
+                    members=PrisonReadmissionsOtherCommunitySupervisionIncludesExcludes,
                 ),
             },
         )
