@@ -2413,6 +2413,8 @@ class TestMetricInterface(TestCase):
                 PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION: IncludesExcludesSetting.YES,
                 PrisonGrievancesIncludesExcludes.INFORMAL: IncludesExcludesSetting.NO,
                 PrisonGrievancesIncludesExcludes.DUPLICATE: IncludesExcludesSetting.NO,
+                PrisonGrievancesIncludesExcludes.FILED_BY_VISITOR: IncludesExcludesSetting.NO,
+                PrisonGrievancesIncludesExcludes.FILED_BY_STAFF: IncludesExcludesSetting.NO,
             },
             aggregated_dimensions=[],
             contexts=[],
@@ -2427,16 +2429,7 @@ class TestMetricInterface(TestCase):
             },
             "display_name": prisons.grievances_upheld.display_name,
             "description": prisons.grievances_upheld.description,
-            "definitions": [
-                {
-                    "definition": "A complaint or question filed with the institution by an "
-                    "individual incarcerated regarding their experience, with procedures, "
-                    "treatment, or interaction with officers.",
-                    "term": "Grievance",
-                }
-            ],
             "disaggregated_by_supervision_subsystems": None,
-            "reporting_note": prisons.grievances_upheld.reporting_note,
             "unit": prisons.grievances_upheld.metric_type.unit,
             "category": prisons.grievances_upheld.category.human_readable_string,
             "label": prisons.grievances_upheld.display_name,
@@ -2448,6 +2441,8 @@ class TestMetricInterface(TestCase):
             "disaggregations": [],
             "datapoints": None,
             "contexts": [],
+            "definitions": [],
+            "reporting_note": None,
             "settings": [
                 {
                     "key": PrisonGrievancesIncludesExcludes.UPHELD.name,
@@ -2482,6 +2477,18 @@ class TestMetricInterface(TestCase):
                 {
                     "key": PrisonGrievancesIncludesExcludes.DUPLICATE.name,
                     "label": PrisonGrievancesIncludesExcludes.DUPLICATE.value,
+                    "included": "No",
+                    "default": "No",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.FILED_BY_VISITOR.name,
+                    "label": PrisonGrievancesIncludesExcludes.FILED_BY_VISITOR.value,
+                    "included": "No",
+                    "default": "No",
+                },
+                {
+                    "key": PrisonGrievancesIncludesExcludes.FILED_BY_STAFF.name,
+                    "label": PrisonGrievancesIncludesExcludes.FILED_BY_STAFF.value,
                     "included": "No",
                     "default": "No",
                 },

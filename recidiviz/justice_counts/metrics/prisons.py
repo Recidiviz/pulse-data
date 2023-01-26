@@ -79,7 +79,6 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -555,21 +554,15 @@ grievances_upheld = MetricDefinition(
     description="The number of complaints from people who are incarcerated under the agency’s prison jurisdiction received via the process described in the institution’s grievance policy, which were resolved in a way that affirmed the complaint.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Count grievances in the time period in which they were resolved, not when they were received or occurred. For instance, if a complaint was received on November 8, 2021, and resolved on January 14, 2022, that grievance would be counted in 2022.",
-    specified_contexts=[],
-    definitions=[
-        Definition(
-            term="Grievance",
-            definition="A complaint or question filed with the institution by an individual incarcerated regarding their experience, with procedures, treatment, or interaction with officers.",
-        )
-    ],
     includes_excludes=IncludesExcludesSet(
         members=PrisonGrievancesIncludesExcludes,
         excluded_set={
             PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED,
-            PrisonGrievancesIncludesExcludes.DUPLICATE,
             PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION,
             PrisonGrievancesIncludesExcludes.INFORMAL,
+            PrisonGrievancesIncludesExcludes.DUPLICATE,
+            PrisonGrievancesIncludesExcludes.FILED_BY_VISITOR,
+            PrisonGrievancesIncludesExcludes.FILED_BY_STAFF,
         },
     ),
     aggregated_dimensions=[
