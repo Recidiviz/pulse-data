@@ -309,39 +309,46 @@ class PrisonReleasesDeathIncludesExcludes(Enum):
 
 
 # Readmissions
-class PrisonReadmissionsIncludesExcludes(Enum):
-    NEW_CONVICTION = "Admission due to a new criminal court conviction resulting in a prison sentence"
-    RETURN_FROM_PROBATION = "Admission due to a return from probation"
-    RETURN_FROM_PAROLE = "Admission due to a return from parole"
-    RETURN_FROM_SUPERVISION = (
-        "Admission due to a return from other community supervision"
-    )
-
-
 class PrisonReadmissionsNewConvictionIncludesExcludes(Enum):
     NEW_SENTENCES = "People with new prison sentences"
     SPLIT_SENTENCE = "People with new split sentences"
+    REVOKED_NEW_OFFENSE = "People revoked from any form of supervision due to a new criminal offense that do not have a new criminal conviction"
+    REVOKED_NEW_CONVICTION = (
+        "People revoked from any form of supervision due to a new criminal conviction"
+    )
 
 
 class PrisonReadmissionsProbationIncludesExcludes(Enum):
-    PROBATION = "Admissions to serve a probation supervision incarceration sanction"
-    PROBATION_REVOCATION = "Admissions due to revocation from probation supervision for technical violation(s)"
-    NEW_VIOLATION = "Admissions due to revocations from probation supervision for new offense violation(s)"
-    TRANSFERRED_IN = "Admissions due to transfers from another jurisdiction of people who were on probation supervision immediately prior to admission"
-    PENDING_HEARING = "Admissions for holds pending a probation hearing decision for people on probation supervision immediately prior to their admission"
+    PENDING_HEARING = "People on a probation hold pending a hearing"
+    SERVING_SANCTION = "People on probation serving an incarceration sanction"
+    TECHNICAL_VIOLATION = "People revoked from probation for technical violation(s)"
+    NEW_OFFENSE = "People revoked from probation for a new criminal offense that do not have a new criminal conviction"
+    NEW_CONVICTION = "People revoked from probation for a new criminal conviction"
 
 
 class PrisonReadmissionsParoleIncludesExcludes(Enum):
-    PAROLE = "Admissions to serve a parole supervision incarceration sanction"
+    PENDING_HEARING = "People on a parole hold pending a hearing"
+    SERVING_SANCTION = "People on parole serving an incarceration sanction"
+    TECHNICAL_VIOLATION = "People revoked from parole for technical violation(s)"
+    NEW_OFFENSE = "People revoked from parole due to a new criminal offense that do not have a new criminal conviction"
+    NEW_CONVICTION = "People revoked from parole due to a new criminal conviction"
+    TRANSFERRED = "People transferred from parole in another jurisdiction"
+
+
+class PrisonReadmissionsOtherCommunitySupervisionIncludesExcludes(Enum):
+    PENDING_HEARING = (
+        "People on a hold pending a hearing for another community supervision type"
+    )
+    SERVING_SANCTION = (
+        "People on other community supervision serving an incarceration sanction"
+    )
     TECHNICAL_VIOLATION = (
-        "Admissions due to revocations from parole for technical violation(s)"
+        "People revoked from other community supervision for technical violation(s)"
     )
-    NEW_VIOLATION = (
-        "Admissions due to revocations from parole for new offense violation(s)"
+    NEW_OFFENSE = "People revoked from other community supervision for a new criminal offense that do not have a new criminal conviction"
+    NEW_CONVICTION = (
+        "People revoked from other community supervision for a new criminal conviction"
     )
-    TRANSFERRED_IN = "Admissions due to transfers from another jurisdiction of people who were on parole supervision immediately prior to admission"
-    PENDING_HEARING = "Admissions for holds pending a parole hearing decision for people on parole supervision immediately prior to their admission"
-    BOARD_HOLD = "Admissions due to a parole board hold"
 
 
 # Use of force incidents
