@@ -73,6 +73,16 @@ def create_workflows_api_blueprint() -> Blueprint:
         if request.method != "OPTIONS":
             handle_authorization()
 
+    # TODO(recidiviz-dashboards#2950): Remove extraneous logs
+    @workflows_api.after_request
+    def log_response(response: Response) -> Response:
+        logging.info(
+            "Returning response with status: %s, body: %s",
+            response.status,
+            response.data,
+        )
+        return response
+
     @workflows_api.route("/<state>/init")
     def init(state: str) -> Response:  # pylint: disable=unused-argument
         return jsonify({"csrf": generate_csrf(current_app.secret_key)})
