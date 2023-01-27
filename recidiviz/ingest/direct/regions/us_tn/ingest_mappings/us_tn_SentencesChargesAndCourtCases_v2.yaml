@@ -138,6 +138,8 @@ variables:
                     - sentence_source
         lifetime_flag: lifetime_flag
         sentence_source: sentence_source
+        case_number: CaseNumber
+        conviction_county: ConvictionCounty
   - is_violent:
       $equal:
         - AssaultiveOffenseFlag
@@ -206,30 +208,9 @@ output:
                         - CC # There are only 41 instances
                 start_date: SentenceEffectiveDate
                 date_imposed: SentenceImposeDate
-                projected_min_release_date:
-                  $conditional:
-                    - $if:
-                        $not_in:
-                          $value: EarliestPossibleReleaseDate
-                          $options:
-                            - $literal("9999-12-31")
-                      $then: EarliestPossibleReleaseDate
-                projected_max_release_date:
-                  $conditional:
-                    - $if:
-                        $not_in:
-                          $value: FullExpirationDate
-                          $options:
-                            - $literal("9999-12-31")
-                      $then: FullExpirationDate
-                completion_date:
-                  $conditional:
-                    - $if:
-                        $not_in:
-                          $value: ExpirationDate
-                          $options:
-                            - $literal("9999-12-31")
-                      $then: ExpirationDate
+                projected_min_release_date: EarliestPossibleReleaseDate
+                projected_max_release_date: FullExpirationDate
+                completion_date: ExpirationDate
                 county_code: ConvictionCounty
                 min_length_days: CalculatedMinimumSentenceDays
                 max_length_days: CalculatedMaximumSentenceDays

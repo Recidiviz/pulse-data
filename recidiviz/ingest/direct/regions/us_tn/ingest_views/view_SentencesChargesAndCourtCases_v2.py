@@ -88,6 +88,7 @@ cleaned_Sentence_view AS (
         OffenderStatute.OffenseDescription as OffenseDescription,
         Sentence.SentenceStatus AS SentenceStatus,
         Sentence.SentenceEffectiveDate AS SentenceEffectiveDate,
+        IF(SentenceMisc.AlternateSentenceImposeDate is not null, SentenceMisc.AlternateSentenceImposeDate, JOCharge.SentenceImposedDate) as SentenceImposeDate,
         Sentence.EarliestPossibleReleaseDate AS EarliestPossibleReleaseDate,
         Sentence.FullExpirationDate AS FullExpirationDate,
         Sentence.ExpirationDate AS ExpirationDate,
@@ -109,6 +110,8 @@ cleaned_Sentence_view AS (
     USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
     LEFT JOIN {{OffenderStatute}} OffenderStatute
     ON JOCharge.ConvictionOffense = OffenderStatute.Offense
+    LEFT JOIN  {{SentenceMiscellaneous}} SentenceMisc
+    USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 ),
 cleaned_Diversion_view AS (
     SELECT 
@@ -122,6 +125,7 @@ cleaned_Diversion_view AS (
         OffenseDescription as OffenseDescription,
         CASE WHEN DiversionStatus = 'C' THEN 'IN' ELSE 'AC' END AS SentenceStatus,
         DiversionGrantedDate as SentenceEffectiveDate,
+        DiversionGrantedDate as SentenceImposeDate,
         ExpirationDate as EarliestPossibleReleaseDate,
         ExpirationDate as FullExpirationDate,
         ExpirationDate as ExpirationDate,
@@ -170,7 +174,8 @@ cleaned_ISCSentence_view AS (
         'SEE OffenseDescription' as ConvictedOffense,
         ISC.ConvictedOffense as OffenseDescription, 
         CASE WHEN CAST(ISC.ExpirationDate AS DATETIME) < @{UPDATE_DATETIME_PARAM_NAME} THEN 'IN' ELSE 'AC' END AS SentenceStatus,
-        ISC.SentenceImposedDate as SentenceEffectiveDate,
+        CAST(NULL as STRING) as SentenceEffectiveDate,
+        ISC.SentenceImposedDate as SentenceImposeDate,
         ISC.ExpirationDate as EarliestPossibleReleaseDate,
         ISC.ExpirationDate as FullExpirationDate,
         ISC.ExpirationDate as ExpirationDate, 
@@ -224,13 +229,13 @@ SELECT
     JOCharge.SentencedTo,
     JOCharge.SuspendedToProbation,
     Sentences.SentenceEffectiveDate,
-    Sentences.EarliestPossibleReleaseDate,
-    Sentences.FullExpirationDate,
-    Sentences.ExpirationDate,
+    CASE WHEN Sentences.EarliestPossibleReleaseDate > '9998-01-01 00:00:00' THEN NULL ELSE Sentences.EarliestPossibleReleaseDate END as EarliestPossibleReleaseDate,
+    CASE WHEN Sentences.FullExpirationDate > '9998-01-01 00:00:00' THEN NULL ELSE Sentences.FullExpirationDate END as FullExpirationDate,
+    CASE WHEN Sentences.ExpirationDate > '9998-01-01 00:00:00' THEN NULL ELSE Sentences.ExpirationDate END as ExpirationDate,
     JOSpecialConditions.Conditions as Conditions,
-    IF(SentenceMisc.AlternateSentenceImposeDate is not null, SentenceMisc.AlternateSentenceImposeDate, JOCharge.SentenceImposedDate) as SentenceImposeDate,
-    DATE_DIFF(CAST(Sentences.EarliestPossibleReleaseDate AS DATETIME), CAST(Sentences.SentenceEffectiveDate AS DATETIME), DAY) as CalculatedMinimumSentenceDays,
-    DATE_DIFF(CAST(Sentences.FullExpirationDate AS DATETIME), CAST(Sentences.SentenceEffectiveDate AS DATETIME), DAY) as CalculatedMaximumSentenceDays,
+    Sentences.SentenceImposeDate as SentenceImposeDate,
+    DATE_DIFF(CAST(Sentences.EarliestPossibleReleaseDate AS DATETIME), CAST(COALESCE(Sentences.SentenceEffectiveDate, Sentences.SentenceImposeDate) as DATETIME), DAY) as CalculatedMinimumSentenceDays,
+    DATE_DIFF(CAST(Sentences.FullExpirationDate AS DATETIME), CAST(COALESCE(Sentences.SentenceEffectiveDate,Sentences.SentenceImposeDate) as DATETIME), DAY) as CalculatedMaximumSentenceDays,
     GREATEST(JOSentence.PretrialJailCredits, JOSentence.CalculatedPretrialCredits) as PretrialJailCredits,
     -- The most accurate consecutive sentence information can be found in the `Sentence` table.
     Sentences.ConsecutiveConvictionCounty,
