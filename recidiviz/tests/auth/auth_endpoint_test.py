@@ -132,7 +132,6 @@ class AuthEndpointTests(TestCase):
             self.upload_roster = lambda state_code, role=None: flask.url_for(
                 "auth_endpoint_blueprint.upload_roster",
                 state_code=state_code,
-                role=role,
             )
             self.update_user = flask.url_for(
                 "auth_endpoint_blueprint.update_user",
@@ -1127,6 +1126,25 @@ class AuthEndpointTests(TestCase):
             data = dict(file=file, reason="test")
 
             with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+                # Create associated default permissions by role
+                leadership_default = generate_fake_default_permissions(
+                    state="US_XX",
+                    role="leadership_role",
+                    can_access_case_triage=True,
+                    can_access_leadership_dashboard=False,
+                    should_see_beta_charts=True,
+                )
+                line_staff_default = generate_fake_default_permissions(
+                    state="US_XX",
+                    role="line_staff_user",
+                    can_access_case_triage=True,
+                    can_access_leadership_dashboard=False,
+                    should_see_beta_charts=True,
+                )
+                add_entity_to_database_session(
+                    self.database_key, [leadership_default, line_staff_default]
+                )
+
                 self.client.put(
                     self.upload_roster("us_xx"),
                     headers=self.headers,
@@ -1136,14 +1154,14 @@ class AuthEndpointTests(TestCase):
                 )
                 self.assertReasonLog(
                     log.output,
-                    "uploading roster for state us_xx, role all with reason: test",
+                    "uploading roster for state us_xx with reason: test",
                 )
                 expected = [
                     {
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": False,
+                        "canAccessCaseTriage": True,
                         "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "leadership@domain.org",
@@ -1152,7 +1170,7 @@ class AuthEndpointTests(TestCase):
                         "lastName": "user",
                         "role": "leadership_role",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
+                        "shouldSeeBetaCharts": True,
                         "routes": None,
                         "featureVariants": None,
                         "userHash": _LEADERSHIP_USER_HASH,
@@ -1161,7 +1179,7 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": False,
+                        "canAccessCaseTriage": True,
                         "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "line_staff@domain.org",
@@ -1170,7 +1188,7 @@ class AuthEndpointTests(TestCase):
                         "lastName": "user",
                         "role": "line_staff_user",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
+                        "shouldSeeBetaCharts": True,
                         "routes": None,
                         "featureVariants": None,
                         "userHash": _LINE_STAFF_USER_HASH,
@@ -1181,23 +1199,6 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
             )
             self.assertEqual(expected, json.loads(response.data))
-
-    def test_upload_roster_with_incorrect_role(self) -> None:
-        with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
-            file = FileStorage(fixture)
-            data = dict(file=file, reason="test")
-
-            with self.app.test_request_context():
-                response = self.client.put(
-                    self.upload_roster("us_xx", "leadership_role"),
-                    headers=self.headers,
-                    data=data,
-                    follow_redirects=True,
-                    content_type="multipart/form-data",
-                )
-                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-                error_message = "User line_staff@domain.org has role 'line_staff_user' in the roster but the specified role is 'leadership_role'"
-                self.assertEqual(error_message, response.data.decode("UTF-8"))
 
     def test_upload_roster_with_missing_email_address(self) -> None:
         roster_leadership_user = generate_fake_rosters(
@@ -1216,7 +1217,7 @@ class AuthEndpointTests(TestCase):
 
             with self.app.test_request_context():
                 response = self.client.put(
-                    self.upload_roster("us_xx", "leadership_role"),
+                    self.upload_roster("us_xx"),
                     headers=self.headers,
                     data=data,
                     follow_redirects=True,
@@ -1255,20 +1256,65 @@ class AuthEndpointTests(TestCase):
                 )
                 self.assertEqual(expected, json.loads(response.data))
 
-    def test_upload_roster_with_role_overwrite(self) -> None:
+    def test_upload_roster_with_missing_associated_role(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should not change because user is not updated
+            district="",
+        )
+
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
+            file = FileStorage(fixture)
+            data = dict(file=file, reason="test")
+
+            with self.app.test_request_context():
+                response = self.client.put(
+                    self.upload_roster("us_xx"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+                error_message = "Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email line_staff@domain.org"
+                self.assertEqual(error_message, response.data.decode("UTF-8"))
+
+                # Existing rows should not have been deleted
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "canAccessCaseTriage": False,
+                        "canAccessLeadershipDashboard": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "0000",
+                        "firstName": None,
+                        "lastName": None,
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "shouldSeeBetaCharts": False,
+                        "routes": None,
+                        "featureVariants": None,
+                        "userHash": _LEADERSHIP_USER_HASH,
+                    },
+                ]
+                response = self.client.get(
+                    self.users,
+                    headers=self.headers,
+                )
+                self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_update_user(self) -> None:
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
             region_code="US_XX",
             role="leadership_role",
             external_id="0000",  # This should change with the new upload
-            district="",
-        )
-        # This user will be deleted because they do not appear in the uploaded data
-        roster_leadership_user = generate_fake_rosters(
-            email="removed@domain.org",
-            region_code="US_XX",
-            role="leadership_role",
-            external_id="0001",  # This should change with the new upload
             district="",
         )
         # This user will not change
@@ -1278,8 +1324,29 @@ class AuthEndpointTests(TestCase):
             role="line_staff_user",
             district="",
         )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+            can_access_case_triage=False,
+            can_access_leadership_dashboard=False,
+            should_see_beta_charts=False,
+        )
+        line_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="line_staff_user",
+            can_access_case_triage=False,
+            can_access_leadership_dashboard=False,
+            should_see_beta_charts=False,
+        )
         add_entity_to_database_session(
-            self.database_key, [roster_leadership_user, roster_line_staff_user]
+            self.database_key,
+            [
+                roster_leadership_user,
+                roster_line_staff_user,
+                leadership_default,
+                line_staff_default,
+            ],
         )
 
         with open(
@@ -1290,7 +1357,7 @@ class AuthEndpointTests(TestCase):
 
             with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
                 self.client.put(
-                    self.upload_roster("us_xx", "leadership_role"),
+                    self.upload_roster("us_xx"),
                     headers=self.headers,
                     data=data,
                     follow_redirects=True,
@@ -1298,7 +1365,7 @@ class AuthEndpointTests(TestCase):
                 )
                 self.assertReasonLog(
                     log.output,
-                    "uploading roster for state us_xx, role leadership_role with reason: test",
+                    "uploading roster for state us_xx with reason: test",
                 )
                 expected = [
                     {

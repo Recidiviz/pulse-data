@@ -26,11 +26,11 @@ type UploadRosterProps = {
   columns: string[];
   setStateCode: (stateCode: string) => void;
   stateCode?: string;
-  setRole?: (role: string) => void;
   stateUserRoster?: boolean;
   setReason: (reason: string) => void;
   reason?: string;
   stateRoleData?: StateRolePermissionsResponse[];
+  warningMessage: string;
 };
 
 // Some states send us their rosters directly, so we don't want to allow them to be uploaded.
@@ -44,15 +44,14 @@ const UploadRoster = ({
   columns,
   setStateCode,
   stateCode,
-  setRole,
   setReason,
   reason,
   stateUserRoster = false,
   stateRoleData = [],
+  warningMessage,
 }: UploadRosterProps): JSX.Element => {
   const [uploading, setUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | void>();
-  const [roles, setRoles] = useState([] as string[]);
 
   const disabled = !stateCode || !reason;
 
@@ -61,14 +60,6 @@ const UploadRoster = ({
     .map((d) => d.stateCode)
     .filter((v, i, a) => a.indexOf(v) === i)
     .filter((sc) => !STATES_WITH_INGESTED_ROSTERS.includes(sc));
-  const handleSelectStateCode = (selectedStateCode: string) => {
-    const permissionsForState = stateRoleData?.filter(
-      (d) => d.stateCode === selectedStateCode
-    );
-    const rolesForState = permissionsForState?.map((p) => p.role);
-    if (rolesForState) setRoles(rolesForState);
-    setStateCode(selectedStateCode);
-  };
 
   return (
     <>
@@ -76,7 +67,7 @@ const UploadRoster = ({
         {stateUserRoster ? (
           <Select
             placeholder="Select a state"
-            onChange={handleSelectStateCode}
+            onChange={(s) => setStateCode(s)}
             options={stateRoleStateCodes.map((c) => {
               return { value: c, label: c };
             })}
@@ -85,20 +76,6 @@ const UploadRoster = ({
           <StateSelector
             fetchStateList={fetchRosterStateCodes}
             onChange={(stateInfo) => setStateCode(stateInfo.code)}
-          />
-        )}
-        {stateUserRoster && (
-          <Select
-            defaultValue={null}
-            placeholder="Select a role"
-            allowClear
-            style={{
-              width: 200,
-            }}
-            options={roles.map((r) => {
-              return { value: r, label: r };
-            })}
-            onChange={setRole}
           />
         )}
         <Input
@@ -115,10 +92,10 @@ const UploadRoster = ({
           message="Instructions"
           description={
             <Space direction="vertical">
+              <div>{warningMessage}</div>
               <div>
-                This form should be used to completely overwrite the existing
-                roster. It requires a CSV to be uploaded according to a precise
-                format in order to ensure that the data is imported correctly.
+                It requires a CSV to be uploaded according to a precise format
+                in order to ensure that the data is imported correctly.
               </div>
               <div>
                 The inputted CSV must have a header row with exactly these five
