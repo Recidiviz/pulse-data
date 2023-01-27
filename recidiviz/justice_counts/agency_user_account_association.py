@@ -16,6 +16,9 @@
 # =============================================================================
 """Interface for working with the AgencyUserAccountAssociation model."""
 
+import itertools
+from typing import Dict, List
+
 from sqlalchemy.orm import Session
 
 from recidiviz.auth.auth0_client import Auth0Client
@@ -146,3 +149,58 @@ class AgencyUserAccountAssociationInterface:
         UserAccountInterface.add_or_update_user_agency_association(
             session=session, user=user, agencies=[agency], role=db_role
         )
+
+    @staticmethod
+    def get_associations_by_ids(
+        user_account_ids: List[int],
+        agency_id: int,
+        session: Session,
+    ) -> List[schema.AgencyUserAccountAssociation]:
+        """This method retrieves an AgencyUserAccountAssociation based
+        upon user_account_ids and agency_id."""
+        return (
+            session.query(schema.AgencyUserAccountAssociation)
+            .filter(
+                schema.AgencyUserAccountAssociation.user_account_id.in_(
+                    user_account_ids
+                ),
+                schema.AgencyUserAccountAssociation.agency_id == agency_id,
+            )
+            .all()
+        )
+
+    @staticmethod
+    def get_editor_id_to_json(
+        session: Session, reports: List[schema.Report]
+    ) -> Dict[str, Dict[str, str]]:
+        """Returns a dictionary mapping an editor's user_account_id to a
+        object with their name and role. All reports will be from the same agency."""
+        editor_ids = list(
+            itertools.chain(*[report.modified_by or [] for report in reports])
+        )
+        assocs = AgencyUserAccountAssociationInterface.get_associations_by_ids(
+            session=session,
+            user_account_ids=editor_ids,
+            agency_id=reports[0].source_id,
+        )
+        editor_ids_to_assocs = {
+            k: list(v)
+            for k, v in itertools.groupby(
+                sorted(assocs, key=lambda x: x.user_account_id),
+                lambda x: x.user_account_id,
+            )
+        }
+        editor_json = {}
+        for editor_id, assocs in editor_ids_to_assocs.items():
+            if len(assocs) > 1:
+                raise JusticeCountsServerError(
+                    code="justice_counts_user_uniqueness",
+                    description="Multiple user account associations exist for one user and one agency.",
+                )
+            assoc = assocs[0]
+            editor_json[editor_id] = {
+                "name": assoc.user_account.name,
+                "role": assoc.role.value if assoc.role is not None else None,
+            }
+
+        return editor_json

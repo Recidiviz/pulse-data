@@ -59,6 +59,8 @@ def reset_justice_counts_fixtures(engine: Engine) -> None:
         schema.Spreadsheet,
         schema.Report,
         schema.Datapoint,
+        schema.AgencyUserAccountAssociation,
+        schema.AgencySetting,
     ]
     session = Session(bind=engine)
     for table in reversed(tables):
