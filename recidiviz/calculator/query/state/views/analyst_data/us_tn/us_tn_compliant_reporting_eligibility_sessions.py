@@ -20,8 +20,8 @@ criteria changes"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -49,7 +49,7 @@ US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
         supervision_date,
         last_day_of_data,
     FROM `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` s
-    JOIN `{project_id}.{base_dataset}.state_person_external_id` ex 
+    JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` ex 
         ON s.person_id = ex.person_id
         AND ex.state_code = s.state_code
     ,
@@ -204,7 +204,7 @@ US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_BUILDER = SimpleBigQueryView
     dataset_id=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE,

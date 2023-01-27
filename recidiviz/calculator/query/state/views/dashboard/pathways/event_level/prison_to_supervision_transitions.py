@@ -92,10 +92,10 @@ PRISON_TO_SUPERVISION_TRANSITIONS_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map_materialized` location
             ON sessions_data.state_code = location.state_code 
             AND level_1_location_external_id = location_id
-        LEFT JOIN `{project_id}.{state_dataset}.state_person` person
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person` person
             ON sessions_data.state_code = person.state_code
             AND sessions_data.person_id = person.person_id
-        LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON sessions_data.person_id = pei.person_id
             AND {state_id_type} = pei.id_type
     )
@@ -133,7 +133,7 @@ PRISON_TO_SUPERVISION_TRANSITIONS_VIEW_BUILDER = WithMetadataQueryBigQueryViewBu
         age_group=add_age_groups("sessions.age_end"),
         enabled_states=str(tuple(get_pathways_enabled_states_for_bigquery())),
         facility_filter=state_specific_query_strings.pathways_state_specific_facility_filter(),
-        state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
         formatted_name=get_person_full_name("person.full_name"),
         state_id_type=state_specific_query_strings.state_specific_external_id_type(
             "sessions_data"

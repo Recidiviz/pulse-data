@@ -74,7 +74,7 @@ WITH
     person_id,
     external_id AS person_external_id
   FROM
-    `{project_id}.{state_dataset}.state_person_external_id`)
+    `{project_id}.{normalized_state_dataset}.state_person_external_id`)
 SELECT
   region_code,
   person_external_id,

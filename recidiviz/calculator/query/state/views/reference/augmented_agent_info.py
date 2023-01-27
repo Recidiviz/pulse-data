@@ -47,7 +47,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
         -- Using CHAR_LENGTH(full_name) generally picks the agent's name rather than shortcode i.e. `Agent One` over `AONE`
         -- Ties go to the latest record. 
         ROW_NUMBER() OVER (PARTITION BY state_code, agent_type, external_id ORDER BY CHAR_LENGTH(full_name) DESC, agent_id DESC NULLS LAST) AS rn
-      FROM `{{project_id}}.{{base_dataset}}.state_agent` agent
+      FROM `{{project_id}}.{{normalized_state_dataset}}.state_agent` agent
     ),
     agent_names AS (
         SELECT
@@ -77,7 +77,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = f"""
         given_names,
         surname,
         agent_names.full_name
-      FROM `{{project_id}}.{{base_dataset}}.state_agent`
+      FROM `{{project_id}}.{{normalized_state_dataset}}.state_agent`
       INNER JOIN agent_names
       USING (state_code, agent_type, external_id)
     )
@@ -92,7 +92,7 @@ AUGMENTED_AGENT_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=AUGMENTED_AGENT_INFO_VIEW_NAME,
     view_query_template=AUGMENTED_AGENT_INFO_QUERY_TEMPLATE,
     description=AUGMENTED_AGENT_INFO_DESCRIPTION,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

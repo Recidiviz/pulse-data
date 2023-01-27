@@ -20,7 +20,7 @@ Compliant Reporting due to sanctions."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
+    NORMALIZED_STATE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -50,7 +50,7 @@ WITH sanction_sessions AS (
     USING
         (TriggerNumber)
     INNER JOIN
-        `{project_id}.{state_base_dataset}.state_person_external_id` pei            
+        `{project_id}.{normalized_state_dataset}.state_person_external_id` pei            
     ON
         pei.external_id = a.OffenderID
         AND id_type = "US_TN_DOC"
@@ -91,7 +91,7 @@ US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewB
     view_id=US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_SANCTION_INELIGIBLE_QUERY_TEMPLATE,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     raw_dataset=US_TN_RAW_DATASET,
     # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products
     should_materialize=False,

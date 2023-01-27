@@ -53,12 +53,12 @@ CURRENT_ACTION_ITEMS_BY_PERSON_QUERY_TEMPLATE = """
       recommended_level,
       current_supervision_level,
     FROM current_mismatches
-    INNER JOIN `{project_id}.{state_dataset}.state_person_external_id` state_person_external_id
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` state_person_external_id
         ON (
             current_mismatches.state_code = state_person_external_id.state_code
             AND current_mismatches.person_external_id = state_person_external_id.external_id
             )
-    INNER JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` person USING (person_id)
 """
 
 CURRENT_ACTION_ITEMS_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -67,7 +67,7 @@ CURRENT_ACTION_ITEMS_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=CURRENT_ACTION_ITEMS_BY_PERSON_QUERY_TEMPLATE,
     description=CURRENT_ACTION_ITEMS_BY_PERSON_DESCRIPTION,
-    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
 )
 

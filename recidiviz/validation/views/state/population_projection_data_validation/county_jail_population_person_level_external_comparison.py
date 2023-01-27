@@ -67,7 +67,7 @@ internal_metrics AS (
     -- UNION ALL
     -- SELECT 'US_IX' AS state_code, person_id, report_month, facility, compartment_level_2
     -- FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population_materialized`
-  ) LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id`
+  ) LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
   USING (state_code, person_id)
   WHERE report_month = '{comparison_date}'
     AND (facility = 'COUNTY JAIL'
@@ -108,7 +108,7 @@ COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUI
     view_id=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_NAME,
     view_query_template=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
     description=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
-    base_dataset=state_dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     population_projection_dataset=state_dataset_config.POPULATION_PROJECTION_DATASET,
     comparison_date=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DATE,
@@ -121,7 +121,7 @@ COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBig
     view_id=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_NAME,
     view_query_template=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
     description=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
-    base_dataset=state_dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     population_projection_dataset=state_dataset_config.POPULATION_PROJECTION_DATASET,
     comparison_date=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DATE,

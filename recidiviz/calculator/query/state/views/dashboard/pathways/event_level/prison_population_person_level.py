@@ -57,7 +57,7 @@ PRISON_POPULATION_PERSON_LEVEL_QUERY_TEMPLATE = """
             `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_span_metrics_materialized`
             WHERE included_in_state_population AND end_date_exclusive IS NULL
         ) pop
-        LEFT JOIN `{project_id}.{state_dataset}.state_person` person USING (person_id)
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person` person USING (person_id)
         LEFT JOIN `{project_id}.{dashboard_views_dataset}.pathways_incarceration_location_name_map_materialized` name_map
                 ON pop.state_code = name_map.state_code
                 AND pop.facility = name_map.location_id
@@ -110,7 +110,7 @@ PRISON_POPULATION_PERSON_LEVEL_VIEW_BUILDER = WithMetadataQueryBigQueryViewBuild
         ),
         dashboard_views_dataset=dataset_config.DASHBOARD_VIEWS_DATASET,
         materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-        state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+        normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
         add_age_groups=add_age_groups(),
         filter_to_enabled_states=filter_to_pathways_states(

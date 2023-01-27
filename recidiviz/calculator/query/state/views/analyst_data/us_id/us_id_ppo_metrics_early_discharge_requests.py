@@ -18,8 +18,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -54,7 +54,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
         ) as supervision_type,
         DATE_TRUNC(request_date, MONTH) AS request_month,
         IF(request_date IS NOT NULL, ed.person_id, NULL) as ed_requested_person,
-      FROM `{project_id}.{base_dataset}.state_early_discharge` ed
+      FROM `{project_id}.{normalized_state_dataset}.state_early_discharge` ed
       /* Join with overlapping session to get supervision type at time of request */
       LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
         ON ed.state_code = sessions.state_code
@@ -74,7 +74,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_id=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_NAME,
     view_query_template=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE,
     description=US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
 )

@@ -40,7 +40,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
         EXTRACT(YEAR FROM termination_date) AS year,
         EXTRACT(MONTH FROM termination_date) AS month,
         agent.agent_external_id AS officer_external_id,
-      FROM `{project_id}.{state_dataset}.state_supervision_period` sp
+      FROM `{project_id}.{normalized_state_dataset}.state_supervision_period` sp
       LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
       -- Only the following supervision types should be included in the PO report
@@ -89,7 +89,7 @@ SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQu
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     # TODO(#12140): Convert to using normalized_state instead of state once there is a
     #  normalized version of supervision_period_to_agent_association
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

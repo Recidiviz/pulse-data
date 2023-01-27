@@ -37,9 +37,9 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
       -- which is ingested into supervision sentence. Using dataflow metrics would mean we are sometimes using PAROLE_TO 
       -- and sometimes the sentence expiration date from state_incarceration_sentence
       # TODO(#9271): Use projected_end_date from dataflow once state specific override is implemented
-      LEFT JOIN `{project_id}.{base_dataset}.state_incarceration_sentence` incarceration_sentence
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` incarceration_sentence
         ON caseload.person_id = incarceration_sentence.person_id
-      LEFT JOIN `{project_id}.{base_dataset}.state_supervision_sentence` supervision_sentence
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_sentence` supervision_sentence
         ON caseload.person_id = supervision_sentence.person_id 
       WHERE caseload.state_code = 'US_ND' AND caseload.included_in_state_population
       GROUP BY 1, 2, 3, 4, 5, 6, 7, 8, 9
@@ -69,7 +69,7 @@ US_ND_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
                         1 AS active_revocation ,
                         pei.person_id
                 FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest`
-                LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+                LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
                     ON SID = pei.external_id
                     AND pei.state_code = "US_ND"
                     AND pei.id_type = 'US_ND_SID'

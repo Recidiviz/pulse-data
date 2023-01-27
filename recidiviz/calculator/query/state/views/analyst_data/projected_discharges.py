@@ -19,9 +19,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    NORMALIZED_STATE_DATASET,
     REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_raw_projected_discharges import (
     US_ID_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE,
@@ -85,7 +85,7 @@ PROJECTED_DISCHARGES_QUERY_TEMPLATE = (
         ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.{reference_dataset}.augmented_agent_info`) agent
         ON unioned.supervising_officer_external_id = agent.external_id
         AND unioned.state_code = agent.state_code
-    INNER JOIN `{project_id}.{base_dataset}.state_person` person
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` person
         ON unioned.person_id = person.person_id
     WHERE TRUE
     -- There are some duplicates at this point because of different last names, supervision_type, supervision levels, and officer/district IDs. We deterministically and arbitrarily choose one here
@@ -99,7 +99,7 @@ PROJECTED_DISCHARGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PROJECTED_DISCHARGES_QUERY_TEMPLATE,
     description=PROJECTED_DISCHARGES_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_dataset=REFERENCE_VIEWS_DATASET,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

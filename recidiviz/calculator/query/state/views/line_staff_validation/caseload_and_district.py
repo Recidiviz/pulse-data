@@ -75,8 +75,8 @@ officers as (
         full_name,
         current_address,
         external_id AS person_external_id,
-    from `{project_id}.{base_dataset}.state_person` state_person
-    JOIN `{project_id}.{base_dataset}.state_person_external_id` state_person_external_id
+    from `{project_id}.{normalized_state_dataset}.state_person` state_person
+    JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` state_person_external_id
         ON state_person_external_id.state_code = state_person.state_code
         AND state_person_external_id.person_id = state_person.person_id
         AND IF(state_person_external_id.state_code = 'US_PA', state_person_external_id.id_type = 'US_PA_PBPP', TRUE)
@@ -120,7 +120,7 @@ CASELOAD_AND_DISTRICT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

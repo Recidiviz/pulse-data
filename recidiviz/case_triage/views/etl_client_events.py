@@ -24,8 +24,8 @@ from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.case_triage.client_event.types import ClientEventType
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
@@ -47,7 +47,7 @@ with clients AS (
         person_external_id,
         etl_clients.projected_end_date
     FROM `{{project_id}}.{{case_triage_dataset}}.etl_clients_materialized` etl_clients
-    JOIN `{{project_id}}.{{base_dataset}}.state_person_external_id` 
+    JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` 
     state_person_external_id
         ON state_person_external_id.state_code = etl_clients.state_code
            AND state_person_external_id.external_id = etl_clients.person_external_id
@@ -87,7 +87,7 @@ contacts AS (
             )
         ) AS event_metadata
     FROM clients
-    JOIN `{{project_id}}.{{base_dataset}}.state_supervision_contact` 
+    JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact` 
     state_supervision_contact
         USING (state_code, person_id)
     WHERE
@@ -122,7 +122,7 @@ CLIENT_EVENTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     ],
     analyst_views_dataset=SESSIONS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

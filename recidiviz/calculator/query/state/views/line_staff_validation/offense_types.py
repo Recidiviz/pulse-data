@@ -37,7 +37,7 @@ OFFENSE_TYPES_QUERY_TEMPLATE = """
         compartment_sessions.person_id,
         MAX(compartment_sessions.session_id) AS session_id
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment_sessions
-    JOIN `{project_id}.{base_dataset}.state_person_external_id` state_person_external_id
+    JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` state_person_external_id
         ON state_person_external_id.state_code = compartment_sessions.state_code
         AND state_person_external_id.person_id = compartment_sessions.person_id
         AND IF(compartment_sessions.state_code = 'US_PA', state_person_external_id.id_type = 'US_PA_PBPP', TRUE)
@@ -73,7 +73,7 @@ OFFENSE_TYPES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=OFFENSE_TYPES_QUERY_TEMPLATE,
     description=OFFENSE_TYPES_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

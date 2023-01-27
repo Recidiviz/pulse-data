@@ -18,7 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
+    NORMALIZED_STATE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -52,7 +52,7 @@ US_ID_RAW_SUPERVISION_CONTACTS_QUERY_TEMPLATE = """
         USING(cntc_typ_cd)
     LEFT JOIN `{project_id}.{raw_dataset}.cntc_title_cd_latest`
         USING(cntc_title_cd)
-    INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON pei.external_id = ofndr_num
         AND pei.state_code = "US_ID"
     """
@@ -63,7 +63,7 @@ US_ID_RAW_SUPERVISION_CONTACTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_RAW_SUPERVISION_CONTACTS_QUERY_TEMPLATE,
     description=US_ID_RAW_SUPERVISION_CONTACTS_VIEW_DESCRIPTION,
     raw_dataset=US_ID_RAW_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

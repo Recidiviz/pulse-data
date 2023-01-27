@@ -43,7 +43,7 @@ WITH external_data AS (
     -- Find the internal person_id for the people in the external data
     SELECT region_code, admission_date, external_data.person_external_id, person_id
     FROM external_data
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` all_state_person_ids
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type
@@ -87,7 +87,7 @@ INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBi
     description=INCARCERATION_ADMISSION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_base_dataset=state_dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

@@ -30,12 +30,12 @@ VIOLATION_REPORTS_QUERY = """
         violation.response_date,
         decision.decision AS response_decision,
         agent.agent_external_id AS officer_external_id
-      FROM `{project_id}.{state_dataset}.state_supervision_violation_response` violation
-      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_violation_response_decision_entry` decision
+      FROM `{project_id}.{normalized_state_dataset}.state_supervision_violation_response` violation
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violation_response_decision_entry` decision
         USING (supervision_violation_response_id, person_id, state_code)
-      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_violation_type_entry` type
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_violation_type_entry` type
         USING (supervision_violation_id, person_id, state_code)
-      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_period` period
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_period` period
         -- Find the overlapping supervision periods for this violation report
         ON period.person_id = violation.person_id
             AND period.state_code = violation.state_code

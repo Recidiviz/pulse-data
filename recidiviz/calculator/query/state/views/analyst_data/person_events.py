@@ -22,9 +22,9 @@ from recidiviz.calculator.query.experiments.dataset_config import EXPERIMENTS_DA
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    NORMALIZED_STATE_DATASET,
     REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.task_eligibility.dataset_config import TASK_COMPLETION_EVENTS_DATASET_ID
 from recidiviz.task_eligibility.task_eligiblity_spans import TASK_ELIGIBILITY_DATASET_ID
@@ -272,7 +272,7 @@ SELECT DISTINCT
     request_date AS event_date,
     CAST(NULL AS STRING) AS event_attributes,
 FROM
-    `{project_id}.{state_base_dataset}.state_early_discharge`
+    `{project_id}.{normalized_state_dataset}.state_early_discharge`
 WHERE
     decision_status != "INVALID"
     AND request_date IS NOT NULL
@@ -290,7 +290,7 @@ SELECT
         decision
     ))[OFFSET(0)]) AS event_attributes,
 FROM
-    `{project_id}.{state_base_dataset}.state_early_discharge`
+    `{project_id}.{normalized_state_dataset}.state_early_discharge`
 WHERE
     decision_status != "INVALID"
     AND decision_date IS NOT NULL
@@ -446,7 +446,7 @@ SELECT
         IFNULL(status, "INTERNAL_UNKNOWN") AS contact_status
     ))[OFFSET(0)]) AS event_attributes,
 FROM
-    `{project_id}.{state_base_dataset}.state_supervision_contact`
+    `{project_id}.{normalized_state_dataset}.state_supervision_contact`
 GROUP BY 1, 2, 3, 4, contact_type, location, status
 
 UNION ALL
@@ -549,7 +549,7 @@ SELECT DISTINCT
 FROM 
     `{project_id}.{us_id_raw_dataset}.geo_cis_participants_latest` c
 LEFT JOIN 
-    `{project_id}.{state_base_dataset}.state_person_external_id` p
+    `{project_id}.{normalized_state_dataset}.state_person_external_id` p
 ON 
     c.person_external_id = p.external_id
     AND p.state_code = "US_ID"
@@ -570,7 +570,7 @@ SELECT DISTINCT
 FROM 
     `{project_id}.{us_id_raw_dataset}.geo_cis_participants_latest` c
 LEFT JOIN 
-    `{project_id}.{state_base_dataset}.state_person_external_id` p
+    `{project_id}.{normalized_state_dataset}.state_person_external_id` p
 ON 
     c.person_external_id = p.external_id
     AND p.state_code = "US_ID"
@@ -772,7 +772,7 @@ SELECT
         participation_status
     ))[OFFSET(0)]) AS event_attributes,
 FROM
-    `{project_id}.{state_base_dataset}.state_program_assignment`
+    `{project_id}.{normalized_state_dataset}.state_program_assignment`
 GROUP BY 1, 2, 3, 4, program_id, referring_agent_id, referral_metadata, participation_status
 """
 
@@ -785,7 +785,7 @@ PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    state_base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_id_raw_dataset=US_ID_RAW_DATASET,
     experiments_dataset=EXPERIMENTS_DATASET,
     task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,

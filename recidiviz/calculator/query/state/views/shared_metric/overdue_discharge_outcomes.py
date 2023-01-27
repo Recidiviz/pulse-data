@@ -47,7 +47,7 @@ SELECT
 FROM `{{project_id}}.{{static_reference_dataset}}.day_zero_reports` day_zero_reports
 # inner join here in case we somehow wind up with an ID in day_zero_reports that isn't actually in our data;
 # those people will be excluded from the final output of this view
-INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON day_zero_reports.state_code = pei.state_code
     AND day_zero_reports.person_external_id = pei.external_id
     AND pei.id_type IN {get_all_primary_supervision_external_id_types()}
@@ -68,7 +68,7 @@ OVERDUE_DISCHARGE_OUTCOMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=OVERDUE_DISCHARGE_OUTCOMES_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

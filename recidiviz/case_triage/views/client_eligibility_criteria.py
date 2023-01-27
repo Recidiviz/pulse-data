@@ -18,8 +18,8 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -74,7 +74,7 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
         ROW_NUMBER() OVER(PARTITION BY p.person_id) rn
         # TODO(#7303): Incorporate data about treatment enrollment or requirements as an additional elgibility criteria
       FROM `{project_id}.{case_triage_dataset}.etl_clients_materialized` clients
-      JOIN `{project_id}.{base_dataset}.state_person_external_id` p
+      JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
       ON clients.person_external_id = p.external_id
         AND clients.state_code = p.state_code
       JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
@@ -84,11 +84,11 @@ CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE = """
       LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized` levels
       ON p.person_id = levels.person_id
         AND levels.end_date IS NULL
-      LEFT JOIN `{project_id}.{base_dataset}.state_early_discharge` ed
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_early_discharge` ed
       ON p.person_id = ed.person_id
         AND ed.request_date >= sessions.start_date
         AND decision_status != 'INVALID'
-      LEFT JOIN `{project_id}.{base_dataset}.state_supervision_contact` contacts
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_contact` contacts
       ON p.person_id = contacts.person_id
         AND contacts.contact_date >= sessions.start_date
       LEFT JOIN `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized` employment
@@ -111,7 +111,7 @@ CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENT_ELIGIBILITY_CRITERIA_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
     case_triage_dataset=CASE_TRIAGE_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

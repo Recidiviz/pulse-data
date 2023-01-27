@@ -43,7 +43,7 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = """
         state_code,
         SUBSTR(current_address, -5) AS zip_code,
       FROM
-        `{project_id}.{base_dataset}.state_person`
+        `{project_id}.{normalized_state_dataset}.state_person`
     )
     SELECT
       state_code,
@@ -63,7 +63,7 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE,
     description=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

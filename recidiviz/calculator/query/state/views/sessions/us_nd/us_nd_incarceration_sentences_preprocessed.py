@@ -58,7 +58,7 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             SAFE_CAST(REGEXP_EXTRACT(PAROLE_DATE, r'^.*/(.*)/.* ') AS INT64)
         ) parole_eligibility_date,
     FROM `{project_id}.{raw_dataset}.elite_offendersentenceaggs_latest` elite
-    INNER JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON elite.OFFENDER_BOOK_ID = pei.external_id
         AND pei.id_type = "US_ND_ELITE_BOOKING"
     )
@@ -84,8 +84,8 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.county_code,
         sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
-    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` AS sis
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
     LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
@@ -108,7 +108,7 @@ US_ND_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuil
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
     sessions_dataset=SESSIONS_DATASET,
-    state_base_dataset=NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     clustering_fields=["state_code", "person_id"],
 )
 

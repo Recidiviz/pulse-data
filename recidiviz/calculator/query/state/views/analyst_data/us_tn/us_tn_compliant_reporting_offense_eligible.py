@@ -20,8 +20,8 @@ Compliant Reporting due to offense types, drug screening results, and other sent
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -46,7 +46,7 @@ US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_QUERY_TEMPLATE = """
             LEAD(CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) 
                 OVER(PARTITION BY OffenderID ORDER BY CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)) AS zero_tolerance_sanction_end_date
         FROM `{project_id}.{raw_dataset}.ContactNoteType_latest` a
-        INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON a.OffenderID = pei.external_id
             AND pei.state_code = 'US_TN' 
         WHERE ContactNoteType IN ('VWAR','PWAR','ZTVR','COHC')
@@ -311,7 +311,7 @@ US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuil
     dataset_id=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     raw_dataset=US_TN_RAW_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_OFFENSE_ELIGIBLE_VIEW_DESCRIPTION,

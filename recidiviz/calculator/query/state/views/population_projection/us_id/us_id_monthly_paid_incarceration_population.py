@@ -52,7 +52,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
         LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.ofndr_loc_hist_latest` ofndr_loc
             ON move.docno = ofndr_loc.ofndr_num
             AND SUBSTR(move.move_dtd, 1, 10) = SUBSTR(ofndr_loc.assgn_dt, 1, 10)
-        LEFT JOIN `{project_id}.{state_base_dataset}.state_person_external_id` pei
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
           ON move.docno = pei.external_id
           AND state_code = 'US_ID'
     ), movement_sessions AS (
@@ -155,7 +155,7 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBui
     description=US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    state_base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     disaggregated_county_jails="', '".join(
         US_ID_INCARCERATION_DISAGGREGATED_COUNTY_JAILS

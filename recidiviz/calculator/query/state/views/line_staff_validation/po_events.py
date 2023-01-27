@@ -39,8 +39,8 @@ WITH synthetic_events AS (
         state_person.full_name,
         supervision_officer_sessions_materialized.start_date AS event_date
     FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` supervision_officer_sessions_materialized
-    JOIN `{project_id}.{state_dataset}.state_person` state_person USING (state_code, person_id)
-    JOIN `{project_id}.{state_dataset}.state_person_external_id` state_person_external_id USING (state_code, person_id)
+    JOIN `{project_id}.{normalized_state_dataset}.state_person` state_person USING (state_code, person_id)
+    JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` state_person_external_id USING (state_code, person_id)
         
 ), 
 source_table AS (
@@ -147,7 +147,7 @@ PO_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

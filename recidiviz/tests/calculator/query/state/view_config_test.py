@@ -35,6 +35,9 @@ from recidiviz.calculator.query.state.views.shared_metric.shared_metric_views im
 from recidiviz.metrics.export import export_config
 
 
+# TODO(#18189): Refactor reference_views dataset so we can write tests here that
+#  enforce that the `normalized_state` / `state` datasets are only used where
+#  appropriate.
 class ViewExportConfigTest(unittest.TestCase):
     """Tests for the export variables in view_config.py."""
 
