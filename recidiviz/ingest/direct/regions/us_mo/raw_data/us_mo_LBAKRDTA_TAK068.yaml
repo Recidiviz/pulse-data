@@ -5,6 +5,9 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - CT_DOC
+  - CT_CYC
+  - CT_CNO
+  - CT_CSD
 columns:
   - name: CT_DOC
     is_pii: True
