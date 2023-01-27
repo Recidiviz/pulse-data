@@ -43,7 +43,7 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate
     ingest_view_manifest_dir,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.ingest.direct.fixture_util import (

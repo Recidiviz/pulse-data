@@ -25,7 +25,7 @@ import pytest
 
 from recidiviz.common.constants.state import external_id_types
 from recidiviz.persistence.database.schema.state import dao, schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.state import entities

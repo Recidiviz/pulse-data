@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_man
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations import schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 
 # TODO(#14198): move operations/dao.py functionality into DirectIngestRawFileMetadataManager and migrate tests

@@ -84,6 +84,7 @@ class TestFindSftpFilesOperator(unittest.TestCase):
         self.mock_sftp_hook.list_directory.side_effect = [
             ["testToday", "testTwoDaysAgo", "nottest.txt"],
             ["file1.txt"],
+            ["file1.txt"],
         ]
         self.mock_sftp_connection.listdir_attr.side_effect = [
             [
@@ -99,7 +100,10 @@ class TestFindSftpFilesOperator(unittest.TestCase):
             ]
         ]
         self.mock_sftp_connection.stat.side_effect = [
-            self.create_sftp_attrs(int(TODAY.timestamp()), "file1.txt", stat.S_IFREG)
+            self.create_sftp_attrs(int(TODAY.timestamp()), "file1.txt", stat.S_IFREG),
+            self.create_sftp_attrs(
+                int(TWO_DAYS_AGO.timestamp()), "file1.txt", stat.S_IFREG
+            ),
         ]
 
         dag = DAG(dag_id="test_dag", start_date=datetime.datetime.now())
@@ -110,7 +114,13 @@ class TestFindSftpFilesOperator(unittest.TestCase):
         result = execute_task(dag, find_files_task)
         self.assertEqual(
             result,
-            [{"file": "./testToday/file1.txt", "timestamp": int(TODAY.timestamp())}],
+            [
+                {"file": "./testToday/file1.txt", "timestamp": int(TODAY.timestamp())},
+                {
+                    "file": "./testTwoDaysAgo/file1.txt",
+                    "timestamp": int(TWO_DAYS_AGO.timestamp()),
+                },
+            ],
         )
 
     def create_sftp_attrs(self, mtime: int, filename: str, mode: int) -> SFTPAttributes:

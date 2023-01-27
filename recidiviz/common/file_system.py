@@ -57,6 +57,9 @@ def is_non_empty_code_directory(dir_path: str) -> bool:
     a directory from one that doesn't, since __pycache__ directories are ignored by git.
     """
     return os.path.isdir(dir_path) and any(
-        path != "__pycache__" and not path.startswith(".")
-        for path in os.listdir(dir_path)
+        is_valid_code_path(path) for path in os.listdir(dir_path)
     )
+
+
+def is_valid_code_path(path: str) -> bool:
+    return path != "__pycache__" and not path.startswith(".")

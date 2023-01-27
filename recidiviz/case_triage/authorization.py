@@ -34,7 +34,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
     ETLOfficer,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.environment import in_gcp

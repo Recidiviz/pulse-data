@@ -46,7 +46,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 )
 
 # from recidiviz.case_triage.views.view_config import ETL_TABLES
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,

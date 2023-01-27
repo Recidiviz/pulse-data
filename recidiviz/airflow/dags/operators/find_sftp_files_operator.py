@@ -15,17 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Operator that reads from SFTP and finds the files to be downloaded."""
-import datetime
 import os
 import stat
 from collections import deque
-from datetime import timedelta
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
-import pytz
 from airflow.models.baseoperator import BaseOperator
 from airflow.utils.context import Context
-from paramiko import SFTPAttributes
 
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -50,7 +46,7 @@ class FindSftpFilesOperator(BaseOperator):
         self.delegate = SftpDownloadDelegateFactory.build(region_code=self.state_code)
 
     # pylint: disable=unused-argument
-    def execute(self, context: Context) -> Any:
+    def execute(self, context: Context) -> List[Dict[str, Union[str, int]]]:
         sftp_hook = RecidivizSFTPHook(
             ssh_conn_id=f"{self.state_code.lower()}_sftp_conn_id"
         )
@@ -59,7 +55,7 @@ class FindSftpFilesOperator(BaseOperator):
 
     def _get_paths_to_download_from_sftp(
         self, sftp_hook: RecidivizSFTPHook
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Dict[str, Union[str, int]]]:
         """Obtains paths to download based on configured root directories and a depth-first
         search through the SFTP server.
 
@@ -72,8 +68,7 @@ class FindSftpFilesOperator(BaseOperator):
         paths = {}
         file_modes_of_paths = {}
         for sftp_attr in dirs_with_attributes:
-            if self._have_not_downloaded_before(sftp_attr):
-                paths[sftp_attr.filename] = sftp_attr.st_mtime
+            paths[sftp_attr.filename] = sftp_attr.st_mtime
             file_modes_of_paths[sftp_attr.filename] = sftp_attr.st_mode
 
         paths_to_download = self.delegate.filter_paths(list(paths.keys()))
@@ -107,18 +102,3 @@ class FindSftpFilesOperator(BaseOperator):
                         )
 
         return files_to_download_with_timestamps
-
-    # TODO(#17333): Replace once Postgres can sufficiently surface files that were missed
-    def _have_not_downloaded_before(self, sftp_attr: SFTPAttributes) -> bool:
-        if sftp_attr.st_mtime is None:
-            raise ValueError("mtime for SFTP file was unexpectedly None")
-        days_to_look_back = 7 if self.state_code == "US_PA" else 1
-        lower_bound_day = datetime.datetime.today().astimezone(pytz.UTC) - timedelta(
-            days=days_to_look_back
-        )
-        return (
-            datetime.datetime.fromtimestamp(float(sftp_attr.st_mtime)).astimezone(
-                pytz.UTC
-            )
-            >= lower_bound_day
-        )

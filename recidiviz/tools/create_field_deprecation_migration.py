@@ -35,8 +35,8 @@ import os
 from typing import List
 
 from recidiviz.persistence.database import migrations
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_table_class_by_name,
     schema_type_to_schema_base,
 )

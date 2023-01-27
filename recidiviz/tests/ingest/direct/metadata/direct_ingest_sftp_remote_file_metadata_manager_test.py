@@ -27,7 +27,7 @@ from freezegun import freeze_time
 from recidiviz.ingest.direct.metadata.direct_ingest_sftp_remote_file_metadata_manager import (
     DirectIngestSftpRemoteFileMetadataManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity, entity_graph_eq
 from recidiviz.persistence.entity.operations.entities import (

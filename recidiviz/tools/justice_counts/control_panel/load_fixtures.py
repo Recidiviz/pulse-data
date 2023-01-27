@@ -34,7 +34,7 @@ from typing import List
 from sqlalchemy.engine import Engine
 
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (

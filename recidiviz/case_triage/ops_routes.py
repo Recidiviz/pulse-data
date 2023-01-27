@@ -39,8 +39,8 @@ from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClientEvent
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_database_entity_by_table_name,
 )
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey

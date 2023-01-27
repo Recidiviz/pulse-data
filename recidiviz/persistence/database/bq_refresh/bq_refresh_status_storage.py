@@ -27,7 +27,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.common import serialization
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import environment
 
 CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS = BigQueryAddress(

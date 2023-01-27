@@ -23,7 +23,7 @@ from pytest_alembic import runner
 from pytest_alembic.config import Config
 
 from recidiviz.case_triage.views.view_config import ETL_TABLES
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (

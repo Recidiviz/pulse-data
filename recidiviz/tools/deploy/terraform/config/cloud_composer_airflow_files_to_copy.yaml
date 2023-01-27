@@ -4,4 +4,5 @@
 - [recidiviz/airflow/dags/operators, "*.py"]
 - [recidiviz/airflow/dags/utils, "*.py"]
 - [recidiviz/airflow/dags/calculation, "*.py"]
+- [recidiviz/airflow/dags/sftp, "*.py"]
 - [recidiviz/airflow/dags/hooks, "*.py"]

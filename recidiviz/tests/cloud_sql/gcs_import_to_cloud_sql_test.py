@@ -38,10 +38,8 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     ETLClient,
     ETLOpportunity,
 )
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-    get_pathways_table_classes,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_pathways_table_classes
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (

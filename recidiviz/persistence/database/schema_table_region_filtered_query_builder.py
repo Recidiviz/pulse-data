@@ -28,8 +28,8 @@ from sqlalchemy import ForeignKeyConstraint, Table
 from sqlalchemy.dialects import postgresql
 
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_foreign_key_constraints,
     get_region_code_col,
     get_table_class_by_name,

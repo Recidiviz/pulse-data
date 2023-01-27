@@ -20,7 +20,7 @@ given region.
 from enum import Enum
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 

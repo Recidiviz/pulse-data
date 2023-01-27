@@ -18,7 +18,7 @@
 import unittest
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.ingest.direct.regions.state_ingest_view_parser_test_base import (
     StateIngestViewParserTestBase,
 )

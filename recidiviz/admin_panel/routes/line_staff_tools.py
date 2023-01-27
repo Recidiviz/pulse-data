@@ -62,8 +62,8 @@ from recidiviz.persistence.database.schema.case_triage import (
     schema as case_triage_schema,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_case_triage_table_classes,
     get_database_entity_by_table_name,
 )

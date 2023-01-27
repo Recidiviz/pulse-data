@@ -27,10 +27,8 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import attr_validators
 from recidiviz.persistence.database import migrations
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-    schema_type_to_schema_base,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import schema_type_to_schema_base
 from recidiviz.utils import environment
 
 DEFAULT_DB_NAME = "postgres"

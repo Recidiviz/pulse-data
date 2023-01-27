@@ -41,7 +41,7 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PrisonToSupervisionTransitions,
     SupervisionPopulationOverTime,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.case_triage.pathways.metrics.base_metrics_test import (

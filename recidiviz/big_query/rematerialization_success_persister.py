@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 
 #  Dataset with metadata about view update operations
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 
 VIEW_UPDATE_METADATA_DATASET = "view_update_metadata"
 

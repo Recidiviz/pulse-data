@@ -26,6 +26,7 @@ from glob import glob
 import yaml
 
 import recidiviz
+from recidiviz.common.file_system import is_valid_code_path
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -59,6 +60,8 @@ def main(dry_run: bool) -> None:
                     gcloud_path = file.replace(path_replacement, path_to_replace_with)
                     gcs_url = f"gs://{EXPERIMENT_CLOUD_COMPOSER_BUCKET}/{DAGS_FOLDER}/{gcloud_path}"
                     message = f"COPY [{file}] to [{gcs_url}]"
+                    if not is_valid_code_path(file):
+                        continue
                     if dry_run:
                         logging.info("%s %s", "[DRY RUN]", message)
                     else:

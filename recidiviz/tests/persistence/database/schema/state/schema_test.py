@@ -59,8 +59,8 @@ from recidiviz.common.constants.state.state_employment_period import (
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_all_database_entities_in_module,
     get_all_table_classes_in_module,
 )

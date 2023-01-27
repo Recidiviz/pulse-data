@@ -23,8 +23,8 @@ from recidiviz.persistence.database.schema.case_triage import (
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_all_database_entities_in_module,
     get_all_table_classes,
     get_database_entity_by_table_name,

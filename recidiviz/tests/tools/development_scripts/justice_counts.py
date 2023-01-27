@@ -24,7 +24,7 @@ python -m recidiviz.tests.tools.development_scripts.justice_counts \
 import argparse
 import logging
 
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.tools.justice_counts import test_utils

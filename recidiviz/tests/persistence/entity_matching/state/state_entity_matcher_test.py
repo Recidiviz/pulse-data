@@ -41,7 +41,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.state.entities import (

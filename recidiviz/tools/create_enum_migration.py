@@ -22,7 +22,7 @@ from pytest_alembic.config import Config
 from sqlalchemy import create_engine
 
 from recidiviz.persistence.database import migrations
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.tools.utils.migration_script_helpers import (

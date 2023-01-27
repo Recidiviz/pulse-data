@@ -64,7 +64,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     StateRolePermissions,
     UserOverride,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.email_reporting_utils import validate_email_address

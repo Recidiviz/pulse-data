@@ -73,8 +73,8 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     MetricMetadata,
     PathwaysBase,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_database_entity_by_table_name,
     get_pathways_table_classes,
 )
