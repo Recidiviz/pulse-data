@@ -29,8 +29,8 @@ from recidiviz.persistence.database.schema.pathways.schema import (
     PrisonToSupervisionTransitions,
     SupervisionPopulationOverTime,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_pathways_database_entities,
     get_pathways_table_classes,
 )

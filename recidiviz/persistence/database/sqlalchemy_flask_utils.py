@@ -22,7 +22,7 @@ from flask_sqlalchemy_session import flask_scoped_session
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,

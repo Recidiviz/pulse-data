@@ -23,7 +23,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
     postgres_to_bq_lock_name_for_schema,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 
 NORMALIZED_STATE_UPDATE_LOCK_NAME = "NORMALIZED_STATE_UPDATE_PROCESS"
 

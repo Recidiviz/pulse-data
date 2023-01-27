@@ -28,8 +28,8 @@ from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     is_association_table,
     schema_has_region_code_query_support,
     schema_type_to_schema_base,

@@ -119,7 +119,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 from recidiviz.persistence.database.schema.operations.dao import (
     stale_secondary_raw_data,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment, trace
 from recidiviz.utils.yaml_dict import YAMLDict

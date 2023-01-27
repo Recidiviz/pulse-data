@@ -28,7 +28,7 @@ import dateutil.parser
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
 LOCK_TIME_KEY = "lock_time"

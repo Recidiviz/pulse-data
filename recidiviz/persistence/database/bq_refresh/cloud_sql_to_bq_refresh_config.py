@@ -57,8 +57,8 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
     BigQuerySchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
     get_table_class_by_name,
     schema_type_to_schema_base,
 )

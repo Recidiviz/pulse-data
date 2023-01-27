@@ -25,7 +25,7 @@ from typing import Generator, List, Optional, Tuple
 from pygit2.repository import Repository
 from sqlalchemy.engine import Engine
 
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,

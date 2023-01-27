@@ -46,7 +46,7 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
 from recidiviz.persistence.database.schema.state import dao as state_dao
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey

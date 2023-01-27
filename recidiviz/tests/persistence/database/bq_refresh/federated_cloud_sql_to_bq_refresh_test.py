@@ -49,7 +49,7 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     UnionedStateSegmentsViewBuilder,
     federated_bq_schema_refresh,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )

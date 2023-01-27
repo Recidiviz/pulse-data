@@ -48,7 +48,7 @@ import attr
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.tools.development_scripts.justice_counts import cleanup_run

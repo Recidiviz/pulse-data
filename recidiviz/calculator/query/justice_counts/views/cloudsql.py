@@ -23,10 +23,8 @@ from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     FederatedSchemaTableRegionFilteredQueryBuilder,
 )
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-    get_justice_counts_table_classes,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_justice_counts_table_classes
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

@@ -29,7 +29,7 @@ import logging
 from recidiviz.admin_panel.routes.justice_counts_tools import _get_auth0_client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control

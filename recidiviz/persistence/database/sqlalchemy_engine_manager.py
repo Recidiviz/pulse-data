@@ -30,7 +30,7 @@ from recidiviz.persistence.database.constants import (
     SQLALCHEMY_DB_PORT,
     SQLALCHEMY_DB_USER,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment, monitoring, secrets
 

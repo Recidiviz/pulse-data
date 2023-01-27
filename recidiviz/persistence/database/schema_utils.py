@@ -16,7 +16,6 @@
 # ============================================================================
 
 """Utilities for working with the database schemas."""
-import enum
 import inspect
 import sys
 from functools import lru_cache
@@ -45,6 +44,7 @@ from recidiviz.persistence.database.schema.justice_counts import (
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.persistence.database.schema_type import SchemaType
 
 _SCHEMA_MODULES: List[ModuleType] = [
     case_triage_schema,
@@ -278,20 +278,6 @@ def historical_table_class_from_obj(
     schema_module = inspect.getmodule(schema_object)
     history_table_class_name = historical_table_class_name_from_obj(schema_object)
     return getattr(schema_module, history_table_class_name, None)
-
-
-@enum.unique
-class SchemaType(enum.Enum):
-    STATE = "STATE"
-    OPERATIONS = "OPERATIONS"
-    JUSTICE_COUNTS = "JUSTICE_COUNTS"
-    CASE_TRIAGE = "CASE_TRIAGE"
-    PATHWAYS = "PATHWAYS"
-
-    @property
-    def is_multi_db_schema(self) -> bool:
-        """Returns True if this schema is segmented into multiple databases"""
-        return self in [SchemaType.STATE, SchemaType.PATHWAYS]
 
 
 DirectIngestSchemaType = Literal[SchemaType.STATE]

@@ -30,7 +30,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
     STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 
 
 class CloudSqlToBQLockManager:

@@ -34,7 +34,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
     Roster,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,

@@ -23,7 +23,7 @@ from typing import Generator, Optional
 
 import attr
 
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     CLOUDSQL_PROXY_MIGRATION_PORT,
     SQLAlchemyEngineManager,

@@ -32,7 +32,7 @@ import sys
 
 import alembic.config
 
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tools.migrations.migration_helpers import (
     EngineIteratorDelegate,
     confirm_correct_db_instance,

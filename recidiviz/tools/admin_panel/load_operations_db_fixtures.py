@@ -36,10 +36,8 @@ import os
 
 from sqlalchemy.engine import Engine
 
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-    get_operations_table_classes,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_operations_table_classes
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,

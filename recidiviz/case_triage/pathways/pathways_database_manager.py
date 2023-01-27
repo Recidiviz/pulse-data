@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_
     get_pathways_enabled_states,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,

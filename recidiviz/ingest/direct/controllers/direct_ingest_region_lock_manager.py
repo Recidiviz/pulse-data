@@ -27,10 +27,8 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_utils import (
-    DirectIngestSchemaType,
-    SchemaType,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import DirectIngestSchemaType
 
 GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = "INGEST_PROCESS_RUNNING_"
 STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX = (

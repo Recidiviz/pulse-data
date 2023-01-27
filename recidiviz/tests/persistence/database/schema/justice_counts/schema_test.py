@@ -24,7 +24,7 @@ from unittest.case import TestCase
 import pytest
 
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers

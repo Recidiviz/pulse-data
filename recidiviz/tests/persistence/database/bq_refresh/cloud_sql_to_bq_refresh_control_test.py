@@ -39,7 +39,7 @@ from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_co
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 REFRESH_CONTROL_PACKAGE_NAME = cloud_sql_to_bq_refresh_control.__name__

@@ -42,7 +42,7 @@ from recidiviz.persistence.database.bq_refresh.bq_refresh_status_storage import 
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
 

@@ -25,7 +25,7 @@ from recidiviz.persistence.database.schema_entity_converter.state.schema_entity_
     StateEntityToSchemaConverter,
     StateSchemaToEntityConverter,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees

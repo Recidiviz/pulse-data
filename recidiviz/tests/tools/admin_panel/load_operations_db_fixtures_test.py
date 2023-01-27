@@ -28,10 +28,8 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.persistence.database.schema.operations.schema import (
     DirectIngestInstanceStatus,
 )
-from recidiviz.persistence.database.schema_utils import (
-    SchemaType,
-    get_operations_table_classes,
-)
+from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.schema_utils import get_operations_table_classes
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.admin_panel.load_operations_db_fixtures import (

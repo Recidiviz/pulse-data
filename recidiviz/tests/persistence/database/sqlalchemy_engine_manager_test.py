@@ -28,7 +28,7 @@ from recidiviz import server_config
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.persistence.database import schema_utils
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,

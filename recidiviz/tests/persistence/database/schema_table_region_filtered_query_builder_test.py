@@ -31,7 +31,7 @@ from recidiviz.persistence.database.schema_table_region_filtered_query_builder i
     FederatedSchemaTableRegionFilteredQueryBuilder,
     SchemaTableRegionFilteredQueryBuilder,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 
 
 class SchemaTableRegionFilteredQueryBuilderTest(unittest.TestCase):

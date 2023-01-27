@@ -47,7 +47,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh import (
     federated_bq_schema_refresh,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

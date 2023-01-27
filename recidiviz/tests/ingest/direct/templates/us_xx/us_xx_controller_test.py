@@ -21,7 +21,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.templates.us_xx.us_xx_controller import UsXxController
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.region_direct_ingest_controller_test_case import (
     RegionDirectIngestControllerTestCase,

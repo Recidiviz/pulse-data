@@ -29,7 +29,7 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_que
     FederatedCloudSQLTableBigQueryView,
     FederatedCloudSQLTableBigQueryViewBuilder,
 )
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,

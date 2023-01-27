@@ -35,6 +35,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.yaml_dict import YAMLDict
 
 # Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
@@ -42,12 +43,24 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # import the recidiviz-top-level.
 # pylint: disable=ungrouped-imports
 try:
+    from operators.cloud_sql_query_operator import CloudSqlQueryOperator  # type: ignore
     from operators.find_sftp_files_operator import FindSftpFilesOperator  # type: ignore
+    from sftp.filter_downloaded_files_sql_query_generator import (  # type: ignore
+        FilterDownloadedFilesSqlQueryGenerator,
+    )
+    from utils.cloud_sql import cloud_sql_conn_id_for_schema_type  # type: ignore
     from utils.default_args import DEFAULT_ARGS  # type: ignore
 except ImportError:
+    from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
+        CloudSqlQueryOperator,
+    )
     from recidiviz.airflow.dags.operators.find_sftp_files_operator import (
         FindSftpFilesOperator,
     )
+    from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
+        FilterDownloadedFilesSqlQueryGenerator,
+    )
+    from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
@@ -152,13 +165,23 @@ def sftp_dag() -> None:
                 task_id="find_sftp_files_to_download",
                 state_code=state_code,
             )
-            # TODO(#17333): Replace with a proper database check in Postgres
+            operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
+                SchemaType.OPERATIONS
+            )
+            filter_downloaded_files = CloudSqlQueryOperator(
+                task_id="filter_downloaded_files",
+                cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                query_generator=FilterDownloadedFilesSqlQueryGenerator(
+                    find_sftp_files_task_id=find_sftp_files_from_server.task_id
+                ),
+            )
             verify_files = PythonOperator.partial(
                 task_id="file_print_out",
-                python_callable=lambda file, timestamp: logging.info(
-                    "%s %d", file, timestamp
+                python_callable=lambda remote_file_path, sftp_timestamp: logging.info(
+                    "%s %d", remote_file_path, sftp_timestamp
                 ),
-            ).expand(op_kwargs=find_sftp_files_from_server.output)
+            ).expand(op_kwargs=filter_downloaded_files.output)
+            # TODO(#17333): Mark files discovered
 
             # TODO(#17334): Implement download flow
             scheduler_queue = (
@@ -199,6 +222,7 @@ def sftp_dag() -> None:
                 check_config
                 >> set_locks
                 >> find_sftp_files_from_server
+                >> filter_downloaded_files
                 >> verify_files
                 >> pause_scheduler_queue
                 >> resume_scheduler_queue

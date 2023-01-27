@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.persistence.database.schema_utils import SchemaType
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tools.postgres import local_postgres_helpers
 
