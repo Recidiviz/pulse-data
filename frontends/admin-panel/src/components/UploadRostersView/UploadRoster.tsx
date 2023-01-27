@@ -33,6 +33,11 @@ type UploadRosterProps = {
   stateRoleData?: StateRolePermissionsResponse[];
 };
 
+// Some states send us their rosters directly, so we don't want to allow them to be uploaded.
+// We _could_ derive this list from products.yaml, but it's going to change so rarely (and
+// hopefully be obsoleted soon with StateStaff) that hardcoding it is fine.
+const STATES_WITH_INGESTED_ROSTERS = ["US_MO", "US_ND"];
+
 const UploadRoster = ({
   action,
   method,
@@ -54,7 +59,8 @@ const UploadRoster = ({
   // Determine state codes and role data for state user roster upload
   const stateRoleStateCodes = stateRoleData
     .map((d) => d.stateCode)
-    .filter((v, i, a) => a.indexOf(v) === i);
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .filter((sc) => !STATES_WITH_INGESTED_ROSTERS.includes(sc));
   const handleSelectStateCode = (selectedStateCode: string) => {
     const permissionsForState = stateRoleData?.filter(
       (d) => d.stateCode === selectedStateCode

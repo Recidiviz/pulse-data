@@ -39,6 +39,9 @@ from recidiviz.auth.helpers import format_user_info, generate_user_hash, log_rea
 from recidiviz.calculator.query.state.views.reference.dashboard_user_restrictions import (
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
+    INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+)
 from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -52,6 +55,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_USER_RESTRICTIONS_OUTPUT_DIRECTORY_URI,
+    PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
 )
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
@@ -131,7 +135,7 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
             return "Missing region_code param", HTTPStatus.BAD_REQUEST
 
         try:
-            _validate_region_code(region_code)
+            _validate_state_code(region_code)
         except ValueError as error:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
@@ -202,7 +206,7 @@ def dashboard_user_restrictions_by_email() -> Tuple[
             return "Missing email_address param", HTTPStatus.BAD_REQUEST
         if not region_code:
             return "Missing region_code param", HTTPStatus.BAD_REQUEST
-        _validate_region_code(region_code)
+        _validate_state_code(region_code)
         validate_email_address(email_address)
     except ValueError as error:
         logging.error(error)
@@ -308,10 +312,10 @@ def _format_allowed_supervision_location_ids(
     ]
 
 
-def _validate_region_code(region_code: str) -> None:
-    if not StateCode.is_state_code(region_code.upper()):
+def _validate_state_code(state_code: str) -> None:
+    if not StateCode.is_state_code(state_code.upper()):
         raise ValueError(
-            f"Unknown region_code [{region_code}] received, must be a valid state code."
+            f"Unknown state_code [{state_code}] received, must be a valid state code."
         )
 
 
@@ -1141,3 +1145,101 @@ def delete_user(email: str) -> tuple[str, int]:
             f"{error}",
             HTTPStatus.BAD_REQUEST,
         )
+
+
+@auth_endpoint_blueprint.route("/import_ingested_users_async", methods=["POST"])
+@requires_gae_auth
+def import_ingested_users_async() -> Tuple[str, HTTPStatus]:
+    """Called from a Cloud Storage Notification when a new file is created in the product user import
+    bucket. It enqueues a task to import the file into Cloud SQL."""
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    if not message.attributes:
+        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+
+    attributes = message.attributes
+    state_code, filename = os.path.split(attributes[OBJECT_ID])
+
+    if not state_code:
+        logging.info("Missing state code, ignoring")
+        return "", HTTPStatus.OK
+
+    # It would be nice if we could do this as a filter in the GCS notification instead of as logic
+    # here, but as of Jan 2023, the available filters are not expressive enough for our needs:
+    # https://cloud.google.com/pubsub/docs/filtering#filtering_syntax
+    if filename != "ingested_product_users.csv":
+        logging.info("Unknown filename %s, ignoring", filename)
+        # We want to ignore these instead of erroring because Pub/Sub will retry the request if it
+        # doesn't return a successful status code, and this is a permanent failure instead of a
+        # temporary blip (https://cloud.google.com/pubsub/docs/push#receive_push).
+        return "", HTTPStatus.OK
+
+    cloud_task_manager = SingleCloudTaskQueueManager(
+        queue_info_cls=CloudTaskQueueInfo, queue_name=CASE_TRIAGE_DB_OPERATIONS_QUEUE
+    )
+    cloud_task_manager.create_task(
+        relative_uri="/auth/import_ingested_users",
+        body={"state_code": state_code},
+    )
+    logging.info(
+        "Enqueued import_ingested_users task to %s",
+        CASE_TRIAGE_DB_OPERATIONS_QUEUE,
+    )
+    return "", HTTPStatus.OK
+
+
+@auth_endpoint_blueprint.route("/import_ingested_users", methods=["POST"])
+@requires_gae_auth
+def import_ingested_users() -> Tuple[str, HTTPStatus]:
+    """This endpoint triggers the import of the ingested product users file to Cloud SQL. It is
+    requested by a Cloud Task that is triggered by the import_ingested_users_async
+    endpoint when a new file is created in the ingested product users bucket."""
+    try:
+        body = get_cloud_task_json_body()
+        state_code = body.get("state_code")
+        if not state_code:
+            return "Missing state_code param", HTTPStatus.BAD_REQUEST
+
+        try:
+            _validate_state_code(state_code)
+        except ValueError as error:
+            logging.error(error)
+            return str(error), HTTPStatus.BAD_REQUEST
+
+        view_builder = INGESTED_PRODUCT_USERS_VIEW_BUILDER
+        csv_path = GcsfsFilePath.from_absolute_path(
+            os.path.join(
+                StrictStringFormatter().format(
+                    PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI,
+                    project_id=metadata.project_id(),
+                ),
+                state_code,
+                f"{view_builder.view_id}.csv",
+            )
+        )
+
+        import_gcs_csv_to_cloud_sql(
+            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
+            model=Roster,
+            gcs_uri=csv_path,
+            columns=view_builder.columns,
+            region_code=state_code.upper(),
+        )
+        logging.info(
+            "CSV (%s) successfully imported to Cloud SQL schema %s for region code %s",
+            csv_path.blob_name,
+            SchemaType.CASE_TRIAGE,
+            state_code,
+        )
+
+        return (
+            f"CSV {csv_path.blob_name} successfully "
+            f"imported to Cloud SQL schema {SchemaType.CASE_TRIAGE} for region code {state_code}",
+            HTTPStatus.OK,
+        )
+    except Exception as error:
+        logging.error(error)
+        return (str(error), HTTPStatus.INTERNAL_SERVER_ERROR)

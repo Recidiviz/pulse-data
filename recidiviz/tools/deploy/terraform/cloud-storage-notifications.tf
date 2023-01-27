@@ -48,6 +48,17 @@ module "handle_state_dashboard_user_restrictions_file" {
   filter        = "NOT hasPrefix(attributes.objectId, \"staging/\")"
 }
 
+module "import_ingested_product_users" {
+  source = "./modules/cloud-storage-notification"
+
+  bucket_name           = module.product-user-import-bucket.name
+  push_endpoint         = "${local.app_engine_url}/auth/import_ingested_users_async"
+  service_account_email = data.google_app_engine_default_service_account.default.email
+  # https://cloud.google.com/pubsub/docs/push#configure_for_push_authentication
+  oidc_audience = local.app_engine_iap_client
+  filter        = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+}
+
 module "handle_new_case_triage_etl" {
   source = "./modules/cloud-storage-notification"
 
