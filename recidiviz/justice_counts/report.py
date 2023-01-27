@@ -16,6 +16,7 @@
 # =============================================================================
 """Interface for working with the Reports model."""
 import datetime
+import itertools
 import json
 from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
@@ -37,6 +38,7 @@ from recidiviz.justice_counts.metrics.metric_definition import (
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 from .utils.datetime_utils import convert_date_range_to_year_month
@@ -283,16 +285,24 @@ class ReportInterface:
 
     @staticmethod
     def to_json_response(
+        session: Session,
         report: schema.Report,
-        editor_id_to_json: Dict[str, Dict[str, str]],
+        editor_ids_to_names: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         # Editor names will be displayed in reverse chronological order in
         # an agency's reports table.
         editors_reverse_chron = (
             reversed(report.modified_by) if report.modified_by is not None else []
         )
-        editor_json = [editor_id_to_json[id] for id in editors_reverse_chron]
-
+        if editor_ids_to_names is None:
+            editor_names = [
+                UserAccountInterface.get_user_by_id(
+                    session=session, user_account_id=id
+                ).name
+                for id in editors_reverse_chron
+            ]
+        else:
+            editor_names = [editor_ids_to_names[id] for id in editors_reverse_chron]
         reporting_frequency = ReportInterface.get_reporting_frequency(report=report)
         return {
             "id": report.id,
@@ -304,7 +314,7 @@ class ReportInterface:
             "last_modified_at_timestamp": report.last_modified_at.timestamp()
             if report.last_modified_at is not None
             else None,
-            "editors": editor_json,
+            "editors": editor_names,
             "status": report.status.value,
             "is_recurring": report.is_recurring,
         }
@@ -576,6 +586,20 @@ class ReportInterface:
                 "from the report date range."
             )
         return inferred_frequency
+
+    @staticmethod
+    def get_editor_ids_to_names(
+        session: Session, reports: List[schema.Report]
+    ) -> Dict[str, str]:
+        editor_ids = set(
+            itertools.chain(*[report.modified_by or [] for report in reports])
+        )
+        return {
+            user.id: user.name
+            for user in UserAccountInterface.get_users_by_id(
+                session=session, user_account_ids=editor_ids
+            )
+        }
 
     ### Misc ###
 
