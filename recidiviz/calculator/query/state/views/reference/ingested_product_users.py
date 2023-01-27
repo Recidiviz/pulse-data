@@ -76,7 +76,13 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
         UNION ALL
         SELECT * FROM nd_users
     )
-    SELECT {columns} FROM all_users
+    , all_users_hashed_emails AS (
+        SELECT
+            *,
+            TO_BASE64(SHA256(LOWER(email_address))) AS user_hash,
+        FROM all_users
+    )
+    SELECT {columns} FROM all_users_hashed_emails
 """
 
 
@@ -94,11 +100,12 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
         "state_code",
         "email_address",
+        "external_id",
         "role",
         "district",
-        "external_id",
         "first_name",
         "last_name",
+        "user_hash",
     ],
 )
 

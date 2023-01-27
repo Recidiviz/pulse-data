@@ -32,6 +32,7 @@ from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
+    Roster,
 )
 from recidiviz.persistence.database.schema_utils import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -90,11 +91,16 @@ class AuthEndpointTests(TestCase):
         self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
         self.region_code = "US_MO"
         self.bucket = "test-project-dashboard-user-restrictions"
+        self.ingested_users_bucket = "test-project-product-user-import"
         self.filename = "dashboard_user_restrictions.json"
         self.gcs_csv_uri = GcsfsFilePath.from_absolute_path(
             f"{self.bucket}/{self.region_code}/dashboard_user_restrictions.csv"
         )
+        self.ingested_users_gcs_csv_uri = GcsfsFilePath.from_absolute_path(
+            f"{self.ingested_users_bucket}/{self.region_code}/ingested_product_users.csv"
+        )
         self.columns = [col.name for col in DashboardUserRestrictions.__table__.columns]
+        self.roster_columns = [col.name for col in Roster.__table__.columns]
         self.maxDiff = None
 
         # Setup database
@@ -159,6 +165,12 @@ class AuthEndpointTests(TestCase):
                 "auth_endpoint_blueprint.delete_state_role",
                 state_code=state_code,
                 role=role,
+            )
+            self.import_ingested_users_async = flask.url_for(
+                "auth_endpoint_blueprint.import_ingested_users_async"
+            )
+            self.import_ingested_users = flask.url_for(
+                "auth_endpoint_blueprint.import_ingested_users"
             )
 
     def tearDown(self) -> None:
@@ -303,7 +315,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
             self.assertEqual(
-                b"Unknown region_code [MO] received, must be a valid state code.",
+                b"Unknown state_code [MO] received, must be a valid state code.",
                 response.data,
             )
 
@@ -369,7 +381,7 @@ class AuthEndpointTests(TestCase):
                 self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
                 self.assertEqual(
                     bytes(
-                        f"Unknown region_code [{region_code}] received, must be a valid state code.",
+                        f"Unknown state_code [{region_code}] received, must be a valid state code.",
                         encoding="utf-8",
                     ),
                     response.data,
@@ -2285,3 +2297,156 @@ class AuthEndpointTests(TestCase):
                 for user in json.loads(response.data)
             ]
             self.assertCountEqual(expected_users, actual_users)
+
+    @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
+    def test_import_ingested_users_async(self, mock_task_manager: MagicMock) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users_async,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"{self.region_code}/ingested_product_users.csv",
+                        },
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_called_with(
+                relative_uri=f"/auth{self.import_ingested_users}",
+                body={"state_code": self.region_code},
+            )
+
+    def test_import_ingested_users_async_invalid_pubsub(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users_async,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {},
+                    }
+                },
+            )
+            self.assertEqual(b"Invalid Pub/Sub message", response.data)
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
+    def test_import_ingested_users_async_missing_region(
+        self, mock_task_manager: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users_async,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": "ingested_product_users.csv",
+                        },
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_not_called()
+
+    @patch("recidiviz.auth.auth_endpoint.SingleCloudTaskQueueManager")
+    def test_import_ingested_users_async_invalid_file(
+        self, mock_task_manager: MagicMock
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users_async,
+                headers=self.headers,
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"{self.region_code}/invalid_file.csv",
+                        },
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            # We return OK from these so that if someone does drop an invalid file in the bucket, we
+            # don't end up in a situation where pub/sub keeps retrying the request because we keep
+            # returning an error code.
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_not_called()
+
+    @patch("recidiviz.auth.auth_endpoint.import_gcs_csv_to_cloud_sql")
+    def test_import_ingested_users_successful(self, mock_import_csv: MagicMock) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": self.region_code,
+                },
+            )
+            mock_import_csv.assert_called_with(
+                database_key=self.database_key,
+                model=Roster,
+                gcs_uri=self.ingested_users_gcs_csv_uri,
+                columns=self.roster_columns,
+                region_code=self.region_code,
+            )
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(
+                b"CSV US_MO/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_MO",
+                response.data,
+            )
+
+    def test_import_ingested_users_missing_region_code(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={},
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Missing state_code param",
+                response.data,
+            )
+
+    def test_import_ingested_users_invalid_state_code(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "MO",
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Unknown state_code [MO] received, must be a valid state code.",
+                response.data,
+            )
+
+    @patch("recidiviz.auth.auth_endpoint.import_gcs_csv_to_cloud_sql")
+    def test_import_ingested_users_exception(self, mock_import_csv: MagicMock) -> None:
+        mock_import_csv.side_effect = Exception("Error while importing CSV")
+        with self.app.test_request_context():
+            response = self.client.post(
+                self.import_ingested_users,
+                headers=self.headers,
+                json={
+                    "state_code": "US_MO",
+                },
+            )
+            self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
+            self.assertEqual(
+                b"Error while importing CSV",
+                response.data,
+            )
