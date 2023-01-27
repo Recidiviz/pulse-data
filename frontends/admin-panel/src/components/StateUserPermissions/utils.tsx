@@ -115,7 +115,10 @@ const getColumnSearchProps = (dataIndex: string) => ({
           Search
         </Button>
         <Button
-          onClick={clearFilters}
+          onClick={() => {
+            clearFilters?.();
+            confirm();
+          }}
           size="small"
           style={{
             width: 90,
@@ -212,6 +215,15 @@ export const getPermissionsTableColumns = (
       key: "lastName",
       width: 200,
       render: (text, record) => {
+        return formatText(text, record);
+      },
+    },
+    {
+      title: "External ID",
+      dataIndex: "externalId",
+      width: 200,
+      ...getColumnSearchProps("externalId"),
+      render: (text: string, record) => {
         return formatText(text, record);
       },
     },
