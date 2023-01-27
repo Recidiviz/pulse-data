@@ -369,15 +369,14 @@ def get_api_blueprint(
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )
-            editor_id_to_json = (
-                AgencyUserAccountAssociationInterface.get_editor_id_to_json(
-                    session=current_session, reports=reports
-                )
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=reports
             )
             report_json = [
                 ReportInterface.to_json_response(
+                    session=current_session,
                     report=r,
-                    editor_id_to_json=editor_id_to_json,
+                    editor_ids_to_names=editor_ids_to_names,
                 )
                 for r in reports
             ]
@@ -409,15 +408,14 @@ def get_api_blueprint(
             report_metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=current_session
             )
-            editor_id_to_json = (
-                AgencyUserAccountAssociationInterface.get_editor_id_to_json(
-                    session=current_session, reports=[report]
-                )
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=[report]
             )
 
             report_definition_json = ReportInterface.to_json_response(
+                session=current_session,
                 report=report,
-                editor_id_to_json=editor_id_to_json,
+                editor_ids_to_names=editor_ids_to_names,
             )
             metrics_json = [
                 report_metric.to_json(
@@ -484,14 +482,13 @@ def get_api_blueprint(
                     existing_datapoints_dict=existing_datapoints_dict,
                 )
 
-            editor_id_to_json = (
-                AgencyUserAccountAssociationInterface.get_editor_id_to_json(
-                    session=current_session, reports=[report]
-                )
+            editor_ids_to_names = ReportInterface.get_editor_ids_to_names(
+                session=current_session, reports=[report]
             )
             report_json = ReportInterface.to_json_response(
+                session=current_session,
                 report=report,
-                editor_id_to_json=editor_id_to_json,
+                editor_ids_to_names=editor_ids_to_names,
             )
 
             current_session.commit()
@@ -535,18 +532,8 @@ def get_api_blueprint(
                         description="A report of that date range has already been created.",
                     ) from e
                 raise e
-            assocs = [a for a in user_account.agency_assocs if a.agency_id == agency_id]
-            editor_id_to_json = {
-                user_account.id: {
-                    "name": user_account.name,
-                    "role": assocs[0].role.value
-                    if assocs[0].role is not None
-                    else None,
-                }
-            }
             report_response = ReportInterface.to_json_response(
-                report=report,
-                editor_id_to_json=editor_id_to_json,
+                session=current_session, report=report
             )
 
             return jsonify(report_response)

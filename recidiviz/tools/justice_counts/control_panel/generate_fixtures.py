@@ -171,19 +171,19 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
     # Objects that depend on another object already being present in the db should
     # be added in a subsequent object group.
     object_groups = []
-    users = []
 
     # First add a group of Users
     num_users = 5
-    users = [
-        schema.UserAccount(
-            id=i,
-            auth0_user_id=f"auth0|{i}",
-            name=f"User {i}",
-        )
-        for i in range(num_users)
-    ]
-    object_groups.append(users)
+    object_groups.append(
+        [
+            schema.UserAccount(
+                id=i,
+                auth0_user_id=f"auth0|{i}",
+                name=f"User {i}",
+            )
+            for i in range(num_users)
+        ]
+    )
 
     # Next add a group of Agencies
     # Use the id that the Agency has on staging, so that users have access
@@ -261,23 +261,5 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
                 monthly_report.datapoints = monthly_report_datapoints
                 reports.append(monthly_report)
     object_groups.append(reports)
-    # Add AgencyUserAccountAssociation for every user in every agency
-    assocs = []
-    for user in users:
-        for agency in agencies:
-            assocs.append(
-                schema.AgencyUserAccountAssociation(
-                    user_account=user,
-                    agency=agency,
-                    role=random.choice(
-                        [
-                            schema.UserAccountRole.AGENCY_ADMIN,
-                            schema.UserAccountRole.CONTRIBUTOR,
-                            schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
-                        ]
-                    ),
-                )
-            )
-    object_groups.append(assocs)
 
     return object_groups
