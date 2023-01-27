@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unittests for helpers in pipeline_args_utils.py."""
+"""Unittests for helpers in legacy_pipeline_args_utils.py."""
 import unittest
 from typing import Dict, List
 
@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
 from recidiviz.calculator.pipeline.metrics.incarceration.pipeline import (
     IncarcerationMetricsPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
+from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
     derive_apache_beam_pipeline_args,
 )
 
@@ -37,7 +37,7 @@ STATE_CODE = "US_XX"
 
 
 class TestPipelineArgsUtils(unittest.TestCase):
-    """Unittests for helpers in pipeline_args_utils.py."""
+    """Unittests for helpers in legacy_pipeline_args_utils.py."""
 
     default_incarceration_pipeline_args: MetricPipelineJobArgs
     default_apache_beam_options_dict: Dict

@@ -31,7 +31,7 @@ import recidiviz
 
 RECIDIVIZ_ROOT = os.path.abspath(os.path.join(recidiviz.__file__, "../.."))
 DEPLOY_ROOT = os.path.join(RECIDIVIZ_ROOT, "recidiviz/tools/deploy")
-SETUP_FILE_SRC_PATH = os.path.join(DEPLOY_ROOT, "dataflow_setup.py")
+SETUP_FILE_SRC_PATH = os.path.join(DEPLOY_ROOT, "legacy_dataflow_setup.py")
 SETUP_FILE_DEST_PATH = os.path.join(RECIDIVIZ_ROOT, "setup.py")
 SOURCE_DISTRIBUTION_PATH = os.path.join(DEPLOY_ROOT, "dist")
 

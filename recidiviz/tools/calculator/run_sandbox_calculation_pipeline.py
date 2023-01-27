@@ -20,7 +20,7 @@ sandbox dataflow datasets.
 All of the code needed to execute the jobs is in the recidiviz/ package. It is organized in this way so that it can be
 packaged as a Python package and later installed in the VM workers executing the job on Dataflow.
 
-See recidiviz/calculator/pipeline/utils/pipeline_args_utils.py for more details on each of the arguments.
+See recidiviz/calculator/pipeline/utils/legacy_pipeline_args_utils.py for more details on each of the arguments.
 
 See http://go/run-dataflow/ for more information on running Dataflow pipelines.
 
@@ -57,14 +57,14 @@ import logging
 import sys
 from typing import List, Optional, Tuple
 
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-from recidiviz.tools.deploy.build_dataflow_source_distribution import (
-    build_source_distribution,
-)
-from recidiviz.tools.pipeline_launch_util import (
+from recidiviz.calculator.pipeline.pipeline_runner import (
     collect_all_pipeline_names,
     load_all_pipelines,
     run_pipeline,
+)
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.tools.deploy.build_dataflow_source_distribution import (
+    build_source_distribution,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 

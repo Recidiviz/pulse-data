@@ -49,13 +49,13 @@ from recidiviz.calculator.pipeline.normalization.utils import normalized_entitie
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
 )
+from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
+    derive_apache_beam_pipeline_args,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
-)
-from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    derive_apache_beam_pipeline_args,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_person import (

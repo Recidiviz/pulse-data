@@ -218,12 +218,12 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
 
     @classmethod
     def _build_pipeline_job_args(
-        cls,
-        parser: argparse.ArgumentParser,
-        argv: List[str],
+        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
     ) -> MetricPipelineJobArgs:
         """Builds the MetricPipelineJobArgs object from the provided args."""
-        base_pipeline_args = cls._get_base_pipeline_job_args(parser, argv)
+        base_pipeline_args = cls._get_base_pipeline_job_args(
+            parser, argv, use_flex_templates=use_flex_templates
+        )
 
         # Re-parse the args to get the ones relevant to the CalculationPipelineJobArgs
         (

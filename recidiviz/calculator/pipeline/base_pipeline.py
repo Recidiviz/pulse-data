@@ -18,11 +18,11 @@
 import abc
 import argparse
 import logging
-from typing import Dict, Generic, List, Optional, Set, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
 
 import apache_beam as beam
 import attr
-from apache_beam.options.pipeline_options import PipelineOptions
+from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pvalue import PBegin
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
@@ -31,8 +31,8 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
 )
-from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    get_apache_beam_pipeline_options_from_args,
+from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
+    derive_apache_beam_pipeline_args,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -132,12 +132,20 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
     def build_from_args(
         cls: Type[PipelineRunDelegateT],
         argv: List[str],
+        # TODO(#17989): Remove use_flex_templates flag everywhere and default to True
+        #  once Flex migration is complete.
+        use_flex_templates: bool = False,
     ) -> PipelineRunDelegateT:
         """Builds a PipelineRunDelegate from the provided arguments."""
-        parser = argparse.ArgumentParser()
+        if use_flex_templates:
+            parser: argparse.ArgumentParser = SplitSpacesArgumentParser()
+        else:
+            parser = argparse.ArgumentParser()
         cls.add_pipeline_job_args_to_parser(parser)
 
-        pipeline_job_args = cls._build_pipeline_job_args(parser, argv)
+        pipeline_job_args = cls._build_pipeline_job_args(
+            parser, argv, use_flex_templates=use_flex_templates
+        )
 
         return cls(
             pipeline_job_args=pipeline_job_args,
@@ -194,25 +202,27 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
     @classmethod
     @abc.abstractmethod
     def _build_pipeline_job_args(
-        cls,
-        parser: argparse.ArgumentParser,
-        argv: List[str],
+        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
     ) -> PipelineJobArgsT:
         """Builds the PipelineJobArgs object from the provided args."""
 
     @classmethod
     def _get_base_pipeline_job_args(
-        cls,
-        parser: argparse.ArgumentParser,
-        argv: List[str],
+        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
     ) -> PipelineJobArgs:
         (
             known_args,
             remaining_args,
         ) = parser.parse_known_args(argv)
-        apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(
-            remaining_args
-        )
+
+        if not use_flex_templates:
+            # For pipelines run with legacy templates only, we derive a slightly
+            # different list of arguments given the provided command-line args
+            # TODO(#17989): Delete this logic when we have fully switched to Flex
+            remaining_args = derive_apache_beam_pipeline_args(remaining_args)
+
+        apache_beam_pipeline_options = PipelineOptions(remaining_args)
+        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
 
         if person_filter_ids := known_args.person_filter_ids:
             person_id_filter_set = {int(person_id) for person_id in person_filter_ids}
@@ -324,3 +334,26 @@ class BasePipeline:
                 return
 
             self.pipeline_run_delegate.write_output(pipeline_output)
+
+
+class SplitSpacesArgumentParser(argparse.ArgumentParser):
+    """
+    If there are spaces in an argument, and that argument is for a list, this splits the spaces.
+    For example, if the argument was "ARG1 ARG2 ARG3", the SplitSpaces parser would parse
+    it to ["ARG1", "ARG2", "ARG3"]. The regular ArgumentParser would parse it incorrectly to a single
+    argument "ARG1 ARG2 ARG3".
+
+    This parser is needed because while a yaml config file (job-flags.yaml) can parse a list,
+    the metadata file for flex template jobs (template_metadat.json) must follow the format in
+    com.google.api.services.dataflow.model.TemplateMetadata, which only takes strings
+    (https://cloud.google.com/dataflow/docs/guides/templates/configuring-flex-templates).
+    """
+
+    def _get_values(self, action: argparse.Action, arg_strings: List[str]) -> Any:
+        if action.nargs not in [None, argparse.OPTIONAL]:
+            new_arg_strings = []
+            for arg_string in arg_strings:
+                new_arg_strings.extend(arg_string.split(" "))
+            arg_strings = new_arg_strings
+
+        return super()._get_values(action, arg_strings)

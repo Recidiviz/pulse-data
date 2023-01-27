@@ -26,6 +26,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
 
+from recidiviz.calculator.pipeline.base_pipeline import SplitSpacesArgumentParser
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     ClassifyResults,
     MetricPipelineJobArgs,
@@ -51,13 +52,13 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
 )
+from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
+    derive_apache_beam_pipeline_args,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
-)
-from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    derive_apache_beam_pipeline_args,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (
     StateSpecificIncarcerationMetricsProducerDelegate,
@@ -1028,3 +1029,59 @@ class AssertMatchers:
                 )
 
         return _validate_pipeline_test
+
+
+class TestSplitSpacesArgumentParser(unittest.TestCase):
+    """Tests code that"""
+
+    def test_argument_contains_spaces_multiple(self) -> None:
+        parser = SplitSpacesArgumentParser()
+
+        parser.add_argument(
+            "--contains_spaces",
+            type=str,
+            nargs="+",
+            help="A list of the types of metric to calculate.",
+            default={"ALL"},
+        )
+
+        (known_args, _) = parser.parse_known_args(
+            ["--contains_spaces", "ARG1 ARG2 ARG3 ARG4"]
+        )
+
+        self.assertEqual(len(known_args.contains_spaces), 4)
+
+    def test_single_argument_no_spaces(self) -> None:
+        parser = SplitSpacesArgumentParser()
+
+        parser.add_argument(
+            "--contains_spaces",
+            type=str,
+            nargs="+",
+            help="A list of the types of metric to calculate.",
+            default={"ALL"},
+        )
+
+        (known_args, _) = parser.parse_known_args(["--contains_spaces", "ARG1"])
+
+        self.assertEqual(len(known_args.contains_spaces), 1)
+
+    def test_arguments_variety_multiple(self) -> None:
+        parser = SplitSpacesArgumentParser()
+
+        parser.add_argument(
+            "--contains_spaces",
+            type=str,
+            nargs="+",
+            help="A list of the types of metric to calculate.",
+            default={"ALL"},
+        )
+
+        parser.add_argument("--contains_no_spaces")
+
+        (known_args, _) = parser.parse_known_args(
+            ["--contains_spaces", "ARG1 ARG2", "--contains_no_spaces", "ARG3"]
+        )
+
+        self.assertEqual(len(known_args.contains_spaces), 2)
+        self.assertEqual(known_args.contains_no_spaces, "ARG3")

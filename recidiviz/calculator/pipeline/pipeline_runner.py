@@ -15,15 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Util for launching Dataflow pipelines."""
+
+# TODO(#17989): this should likely be all deleted once the flex template migration is fully complete
+#  (both sandbox and regular deploy)
 from __future__ import absolute_import
 
 import importlib
 import pkgutil
-from typing import List, Type
+from typing import List
 
-from recidiviz.calculator.pipeline.base_pipeline import (
-    BasePipeline,
-    PipelineRunDelegate,
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
+from recidiviz.calculator.pipeline.flex_pipeline_runner import (
+    delegate_cls_for_pipeline_name,
 )
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
     TOP_LEVEL_PIPELINE_MODULES,
@@ -54,27 +57,8 @@ def collect_all_pipeline_names() -> List[str]:
     ]
 
 
-def _delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelegate]:
-    """Finds the PipelineRunDelegate class corresponding to the pipeline with the
-    given |pipeline_name|."""
-    all_run_delegates = collect_all_pipeline_run_delegate_classes()
-    delegates_with_pipeline_name = [
-        delegate
-        for delegate in all_run_delegates
-        if delegate.pipeline_config().pipeline_name.lower() == pipeline_name
-    ]
-
-    if len(delegates_with_pipeline_name) != 1:
-        raise ValueError(
-            "Expected exactly one PipelineRunDelegate with the "
-            f"pipeline_name: {pipeline_name}. Found: {delegates_with_pipeline_name}."
-        )
-
-    return delegates_with_pipeline_name[0]
-
-
 def run_pipeline(pipeline_name: str, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
-    delegate_cls = _delegate_cls_for_pipeline_name(pipeline_name)
+    delegate_cls = delegate_cls_for_pipeline_name(pipeline_name)
     pipeline = BasePipeline(pipeline_run_delegate=delegate_cls.build_from_args(argv))
     pipeline.run()

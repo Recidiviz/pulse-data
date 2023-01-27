@@ -151,6 +151,7 @@ ENDPOINTS_DOCS_KEY = "endpoints_docs"
 IGNORE_KEY = "ignore"
 BUILD_INFRA_KEY = "build_infra"
 US_IX_KEY = "us_ix"
+FLEX_KEY = "dataflow_env"
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # admin panel files
@@ -291,6 +292,18 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                     "recidiviz/ingest/direct/regions/us_id/ingest_views/view_ofndr_tst_tst_qstn_rspns_violation_reports_old.py",
                     "recidiviz/ingest/direct/regions/us_id/ingest_views/templates_test_questions.py",
                 }
+            ),
+        ),
+    ],
+    # flex template migration keep setup.py in sync
+    # TODO(#17989): delete once migration is complete and legacy_dataflow_setup.py is deleted
+    FLEX_KEY: [
+        RequiredModificationSets(
+            if_modified_files=frozenset(
+                {"recidiviz/calculator/pipeline/legacy_dataflow_setup.py"}
+            ),
+            then_modified_files=frozenset(
+                {"recidiviz/calculator/pipeline/dataflow_flex_setup.py"}
             ),
         ),
     ],
