@@ -68,8 +68,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.county_code,
         sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
-    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` AS sis
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
     LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
@@ -115,8 +115,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.county_code,
         sss.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, county_code)
-    FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence` AS sss
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
         AND assoc.supervision_sentence_id = sss.supervision_sentence_id
     LEFT JOIN `{project_id}.{sessions_dataset}.charges_preprocessed` charge
@@ -265,7 +265,7 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SENTENCES_PREPROCESSED_VIEW_NAME,
     view_query_template=SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
-    state_base_dataset=NORMALIZED_STATE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     special_states="', '".join(SENTENCES_PREPROCESSED_SPECIAL_STATES),
     incarceration_special_states="', '".join(

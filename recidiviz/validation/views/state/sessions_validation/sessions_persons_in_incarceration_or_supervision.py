@@ -43,12 +43,12 @@ SESSIONS_IN_INCARCERATION_OR_SUPERVISION_QUERY_TEMPLATE = """
         SELECT DISTINCT
             person_id,
             state_code,
-        FROM `{project_id}.{state_dataset}.state_incarceration_period`
+        FROM `{project_id}.{normalized_state_dataset}.state_incarceration_period`
         UNION ALL
         SELECT DISTINCT
             person_id,
             state_code,
-        FROM `{project_id}.{state_dataset}.state_supervision_period`
+        FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
     ) state_tables
     USING (state_code, person_id)
     WHERE state_tables.person_id IS NULL
@@ -61,7 +61,7 @@ SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_query_template=SESSIONS_IN_INCARCERATION_OR_SUPERVISION_QUERY_TEMPLATE,
     description=SESSIONS_IN_INCARCERATION_OR_SUPERVISION_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

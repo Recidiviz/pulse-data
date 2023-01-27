@@ -20,8 +20,8 @@ Compliant Reporting due to offense types, drug screening results, and other sent
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -264,7 +264,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
         SELECT *
         FROM isc_sent
     ) a
-    INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON a.Offender_ID = pei.external_id
         AND pei.state_code = 'US_TN' 
      
@@ -273,7 +273,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
 US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),

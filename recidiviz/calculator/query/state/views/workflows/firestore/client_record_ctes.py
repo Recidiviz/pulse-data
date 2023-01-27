@@ -37,7 +37,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           locations.level_2_supervision_location_name AS district,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code
             AND {{state_id_type}} = pei.id_type
@@ -123,7 +123,7 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
             pei.external_id AS person_external_id, 
             doc.PHONE AS phone_number
         FROM `{{project_id}}.{{us_nd_raw_data}}.docstars_offenders_latest` doc
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON doc.SID = pei.external_id
         AND pei.id_type = "US_ND_SID"
 
@@ -133,8 +133,8 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
             sp.state_code,
             pei.external_id AS person_external_id,
             sp.current_phone_number
-        FROM `{{project_id}}.{{state_dataset}}.state_person` sp
-        INNER JOIN `{{project_id}}.{{state_dataset}}.state_person_external_id` pei
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             USING (person_id)
         WHERE
             sp.state_code IN ({{workflows_supervision_states}})
@@ -164,7 +164,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         FROM supervision_cases sc 
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
-        INNER JOIN `{project_id}.{state_dataset}.state_person` sp USING(person_id)
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
         LEFT JOIN phone_numbers ph
             -- join on state_code / person_external_id instead of person_id alone because state data
             -- may have multiple external_ids for a given person_id, and by this point in the

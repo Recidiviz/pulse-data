@@ -21,7 +21,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
@@ -195,7 +194,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN DATE_DIFF(current_date('US/Eastern'),Last_ARR_Note,MONTH)<12 THEN Last_ARR_Type
                     ELSE NULL END AS arrests_past_year,
             FROM `{project_id}.{static_reference_dataset}.us_tn_standards_due` standards
-            LEFT JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+            LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
                 ON pei.external_id = LPAD(CAST(Offender_ID AS string), 8, '0')
                 AND pei.state_code = 'US_TN'
             LEFT JOIN calc_dates
@@ -572,7 +571,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         SELECT person_id, ARRAY_AGG(conditions IGNORE NULLS) AS special_conditions_on_current_sentences
         FROM (
             SELECT person_id, conditions
-            FROM `{project_id}.{base_dataset}.state_supervision_sentence`
+            FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
             WHERE state_code ='US_TN'
                 AND completion_date >= CURRENT_DATE('US/Eastern')
                 /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
@@ -583,7 +582,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             UNION ALL
             
             SELECT person_id, conditions
-            FROM `{project_id}.{base_dataset}.state_incarceration_sentence`
+            FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
             WHERE state_code ='US_TN'
                 AND completion_date >= CURRENT_DATE('US/Eastern')
                 /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
@@ -810,7 +809,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)    
         LEFT JOIN special_conditions
             USING(person_id)
-        LEFT JOIN `{project_id}.{base_dataset}.state_person` sp
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person` sp
             ON sp.person_id = sentences_join.person_id
             AND sp.state_code = 'US_TN'
         LEFT JOIN person_status_cte
@@ -903,7 +902,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
 US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_DESCRIPTION,

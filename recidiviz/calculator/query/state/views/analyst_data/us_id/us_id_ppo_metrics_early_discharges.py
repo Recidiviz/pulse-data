@@ -18,7 +18,6 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -33,7 +32,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE = """
         state_code, 
         person_id, 
         request_date
-      FROM `{project_id}.{base_dataset}.state_early_discharge`
+      FROM `{project_id}.{normalized_state_dataset}.state_early_discharge`
       WHERE decision_status != 'INVALID'
     ),
     all_discharges AS 
@@ -44,7 +43,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE = """
         person_id, 
         termination_date as end_date, 
         supervision_type  
-      FROM `{project_id}.{base_dataset}.state_supervision_period`
+      FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
       WHERE termination_reason = 'DISCHARGE'
       
       UNION DISTINCT 
@@ -55,7 +54,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE = """
         person_id, 
         completion_date as end_date, 
         'PAROLE' AS supervision_type,
-      FROM `{project_id}.{base_dataset}.state_incarceration_sentence`
+      FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
       WHERE status = 'COMPLETED' AND status_raw_text = 'F'
     )
     /* Subset of all_discharges associated with a valid early discharge request within a 2-year window */
@@ -87,7 +86,7 @@ US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_NAME,
     view_query_template=US_ID_PPO_METRICS_EARLY_DISCHARGES_QUERY_TEMPLATE,
     description=US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_DESCRIPTION,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=False,
 )
 

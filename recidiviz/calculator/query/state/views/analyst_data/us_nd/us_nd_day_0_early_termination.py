@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -55,7 +55,7 @@ sessions AS (
         person_id,
         external_id AS person_external_id,
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-    INNER JOIN `{project_id}.{state_dataset}.state_person_external_id`
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id`
         USING (state_code, person_id)
     WHERE state_code = 'US_ND'
         AND id_type = "US_ND_SID" 
@@ -86,7 +86,7 @@ US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     description=US_ND_DAY_0_EARLY_TERMINATION_VIEW_DESCRIPTION,
     view_query_template=US_ND_DAY_0_EARLY_TERMINATION_QUERY_TEMPLATE,
-    state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

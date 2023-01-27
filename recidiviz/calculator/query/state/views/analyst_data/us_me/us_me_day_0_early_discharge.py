@@ -21,7 +21,6 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -57,7 +56,7 @@ supervision_violations AS (
   SELECT DISTINCT
     person_id,
     violation_date,
-  FROM `{project_id}.{state_dataset}.state_supervision_violation`
+  FROM `{project_id}.{normalized_state_dataset}.state_supervision_violation`
   WHERE state_code = "US_ME"
 )
 
@@ -75,7 +74,6 @@ US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     description=US_ME_DAY_0_EARLY_DISCHARGE_VIEW_DESCRIPTION,
     view_query_template=US_ME_DAY_0_EARLY_DISCHARGE_QUERY_TEMPLATE,
-    state_dataset=STATE_BASE_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,

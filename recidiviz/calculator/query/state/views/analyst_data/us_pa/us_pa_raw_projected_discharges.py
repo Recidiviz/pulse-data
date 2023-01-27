@@ -30,7 +30,7 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
         supervision_level,
         incarceration_sentence.is_life,
       FROM `{project_id}.{dataflow_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` caseload
-      LEFT JOIN `{project_id}.{base_dataset}.state_incarceration_sentence` incarceration_sentence
+      LEFT JOIN `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` incarceration_sentence
         ON caseload.person_id = incarceration_sentence.person_id 
       WHERE caseload.state_code = 'US_PA' AND caseload.included_in_state_population
     ),
@@ -39,7 +39,7 @@ US_PA_RAW_PROJECTED_DISCHARGES_SUBQUERY_TEMPLATE = """
     SELECT DISTINCT
         person_id,
         external_id,
-    FROM `{project_id}.{base_dataset}.state_person_external_id`
+    FROM `{project_id}.{normalized_state_dataset}.state_person_external_id`
     INNER JOIN us_pa_caseload
         USING (person_id)
     WHERE id_type = 'US_PA_INMATE' 

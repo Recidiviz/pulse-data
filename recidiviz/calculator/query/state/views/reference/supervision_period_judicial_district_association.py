@@ -46,7 +46,7 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         judicial_district_code,
         is_controlling
       FROM 
-         `{project_id}.{base_dataset}.state_supervision_period` period
+         `{project_id}.{normalized_state_dataset}.state_supervision_period` period
       LEFT JOIN
          # We need a set external_id to match to IPs
         (SELECT * FROM `{project_id}.{reference_views_dataset}.sentence_judicial_district_association` WHERE sentence_type = 'SUPERVISION') sent
@@ -86,7 +86,7 @@ SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryVi
     view_id=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
     view_query_template=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 

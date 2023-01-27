@@ -25,8 +25,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -55,7 +55,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
                 EXTRACT(date FROM PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S%p', term_date)) AS term_date_clean,
                 projected_completion_date
             FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_offendercasestable_latest` offendercases
-            LEFT JOIN `{project_id}.{state_dataset}.state_supervision_sentence` supervision_sentence
+            LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_sentence` supervision_sentence
                 ON offendercases.CASE_NUMBER = supervision_sentence.external_id
             WHERE TA_type = '1'
         )
@@ -104,7 +104,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
             ABS(DATE_DIFF(us_nd_ed_all_dedup.term_date_clean, sessions.end_date, DAY)) AS discharge_to_session_end_days,
             sessions.outflow_to_level_1,
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
-        LEFT JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code
         LEFT JOIN us_nd_ed_all_dedup
@@ -134,7 +134,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     view_id=US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_NAME,
     description=US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION,
     view_query_template=US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE,
-    state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(

@@ -50,7 +50,7 @@ external_data_with_ids AS (
       external_data.person_external_id,
       COALESCE(CAST(person_id AS STRING), 'UNKNOWN_PERSON') as person_id
     FROM external_data
-    LEFT JOIN `{{project_id}}.{{state_base_dataset}}.state_person_external_id` all_state_person_ids
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` all_state_person_ids
     ON region_code = all_state_person_ids.state_code AND external_data.person_external_id = all_state_person_ids.external_id
     -- Limit to the correct ID type in states that have multiple
     AND external_data.external_id_type = all_state_person_ids.id_type

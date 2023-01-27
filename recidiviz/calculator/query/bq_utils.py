@@ -136,7 +136,7 @@ def filter_out_absconsions(
             person_id,
             state_code
           FROM
-            `{{project_id}}.{{state_base_dataset}}.state_supervision_period`
+            `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
           WHERE
             termination_date IS NULL
             AND IFNULL(admission_reason, '') != 'ABSCONSION'

@@ -32,7 +32,7 @@ def us_id_latest_phone_number() -> str:
         ON a.id = d.id
       LEFT JOIN `{project_id}.{us_id_raw_data}.cis_offender_latest` e
         ON a.personid = e.id
-      INNER JOIN `{project_id}.{state_dataset}.state_person_external_id` pei
+      INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON e.offendernumber = pei.external_id
       WHERE b.active = 'T'
         AND a.primaryphone = 'T'

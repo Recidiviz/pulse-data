@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -47,7 +47,7 @@ US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
             END AS end_date,
             (Sentence NOT LIKE "%LIFE%") AS isc_sentence_eligible,
         FROM `{project_id}.{raw_dataset}.ISCSentence_latest` isc
-        LEFT JOIN `{project_id}.{base_state_dataset}.state_person_external_id` pei
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON isc.OffenderID = pei.external_id
             AND pei.state_code = "US_TN"
         -- Limit to 1 row per person/sentence group
@@ -96,7 +96,7 @@ US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
             (in_state_sentence.person_id IS NOT NULL) AS in_state_sentence_flag
         FROM isc_supervision_level
         -- Known issue: need to determine when the TN sentence ends and the eligibility can start
-        LEFT JOIN `{project_id}.{base_state_dataset}.state_supervision_sentence` in_state_sentence
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_supervision_sentence` in_state_sentence
             ON isc_supervision_level.state_code = in_state_sentence.state_code
             AND isc_supervision_level.person_id = in_state_sentence.person_id
             AND isc_supervision_level.start_date < COALESCE(in_state_sentence.completion_date, CURRENT_DATE)
@@ -121,7 +121,7 @@ US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_BUILDER = SimpleBigQu
     view_id=US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE,
-    base_state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     raw_dataset=US_TN_RAW_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     # This view is too expensive to deploy via our regular view deploy and it is unused by an downstream products

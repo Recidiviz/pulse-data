@@ -23,8 +23,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -77,7 +77,7 @@ sentence_count AS (
     SELECT
         person_id,
         COUNT(*) AS sentence_count,
-    FROM `{project_id}.{state_dataset}.state_supervision_sentence`
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
     WHERE state_code = 'US_ND'
         AND CURRENT_DATE('US/Central') >= start_date
         AND completion_date IS NULL
@@ -108,7 +108,7 @@ US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_DESCRIPTION,
     view_query_template=US_ND_DAY_0_OVERDUE_DISCHARGE_QUERY_TEMPLATE,
     sessions_dataset=SESSIONS_DATASET,
-    state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=False,
 )

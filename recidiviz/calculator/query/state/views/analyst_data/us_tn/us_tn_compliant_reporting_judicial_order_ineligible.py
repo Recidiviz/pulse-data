@@ -20,7 +20,7 @@ Compliant Reporting due to judge/court order."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
+    NORMALIZED_STATE_DATASET,
     US_TN_RAW_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -40,7 +40,7 @@ US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_QUERY_TEMPLATE = """
         CAST(NULL AS DATE) AS end_date,
         FALSE AS judicial_order_eligible,
     FROM `{project_id}.{raw_dataset}.ContactNoteType_latest` a
-    INNER JOIN `{project_id}.{base_dataset}.state_person_external_id` pei
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
             ON a.OffenderID = pei.external_id
             AND pei.state_code = 'US_TN'
     WHERE ContactNoteType IN ('DEIJ','DECR')
@@ -49,7 +49,7 @@ US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_QUERY_TEMPLATE = """
 
 US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_JUDICIAL_ORDER_INELIGIBLE_QUERY_TEMPLATE,

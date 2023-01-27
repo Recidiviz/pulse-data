@@ -44,12 +44,12 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
-        `{project_id}.{base_dataset}.state_supervision_sentence` ss
+        `{project_id}.{normalized_state_dataset}.state_supervision_sentence` ss
       LEFT JOIN
-        `{project_id}.{base_dataset}.state_charge_supervision_sentence_association`  
+        `{project_id}.{normalized_state_dataset}.state_charge_supervision_sentence_association`  
       USING (supervision_sentence_id)
       LEFT JOIN
-        `{project_id}.{base_dataset}.state_charge` charge
+        `{project_id}.{normalized_state_dataset}.state_charge` charge
       USING (charge_id)
     ), incarceration AS (
       SELECT
@@ -66,12 +66,12 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE = """
         charge.judicial_district_code,
         IFNULL(is_controlling, false) AS is_controlling
       FROM
-        `{project_id}.{base_dataset}.state_incarceration_sentence` inc
+        `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` inc
       LEFT JOIN
-        `{project_id}.{base_dataset}.state_charge_incarceration_sentence_association`  
+        `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association`  
       USING (incarceration_sentence_id)
       LEFT JOIN
-        `{project_id}.{base_dataset}.state_charge` charge
+        `{project_id}.{normalized_state_dataset}.state_charge` charge
       USING (charge_id)
     ), sentences AS (
       SELECT * FROM supervision
@@ -105,7 +105,7 @@ SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
     view_query_template=SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_QUERY_TEMPLATE,
     description=SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_DESCRIPTION,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 

@@ -20,9 +20,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    NORMALIZED_STATE_DATASET,
     REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -224,7 +224,7 @@ US_PA_RAW_REQUIRED_TREATMENT_QUERY_TEMPLATE = """
         ( SELECT DISTINCT * EXCEPT(agent_id, agent_type) FROM `{project_id}.{reference_dataset}.augmented_agent_info`) agent
         ON df_and_board_actions.supervising_officer_external_id = agent.external_id
         AND df_and_board_actions.state_code = agent.state_code
-    INNER JOIN `{project_id}.{base_dataset}.state_person` person
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` person
         ON df_and_board_actions.person_id = person.person_id
     LEFT JOIN `{project_id}.{analyst_dataset}.projected_discharges_materialized` disch
         ON df_and_board_actions.person_id = disch.person_id
@@ -238,7 +238,7 @@ US_PA_RAW_REQUIRED_TREATMENT_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_PA_RAW_REQUIRED_TREATMENT_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     raw_dataset=US_PA_RAW_DATASET,
     reference_dataset=REFERENCE_VIEWS_DATASET,
     dataflow_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,

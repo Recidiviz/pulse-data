@@ -90,8 +90,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
-    FROM `{project_id}.{state_base_dataset}.state_incarceration_sentence` AS sis
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_incarceration_sentence_association` assoc
+    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` AS sis
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` charge
@@ -134,8 +134,8 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sss.sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
-    FROM `{project_id}.{state_base_dataset}.state_supervision_sentence` AS sss
-    LEFT JOIN `{project_id}.{state_base_dataset}.state_charge_supervision_sentence_association` assoc
+    FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence` AS sss
+    LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
         AND assoc.supervision_sentence_id = sss.supervision_sentence_id
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge` charge
@@ -264,9 +264,8 @@ US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE,
     description=US_TN_SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
     raw_dataset=US_TN_RAW_DATASET,
-    state_base_dataset=NORMALIZED_STATE_DATASET,
-    sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )

@@ -34,7 +34,7 @@ INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_DESCRIPTION = (
 INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_QUERY_TEMPLATE = """
     WITH non_placeholder_unterminated_incarceration_periods AS (
       SELECT state_code, release_date, release_reason, release_reason_raw_text
-      FROM `{project_id}.{state_dataset}.state_incarceration_period`
+      FROM `{project_id}.{normalized_state_dataset}.state_incarceration_period`
       WHERE external_id IS NOT NULL AND release_date IS NULL
     )
     SELECT
@@ -50,7 +50,7 @@ INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER = SimpleBigQueryViewBu
     view_id=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_NAME,
     view_query_template=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_QUERY_TEMPLATE,
     description=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_DESCRIPTION,
-    state_dataset=state_dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=state_dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
 )
 

@@ -39,8 +39,8 @@ SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = """
       agent.agent_external_id AS officer_external_id,
       -- Take the most recent request date
       MAX(discharge.request_date) AS earned_discharge_date
-    FROM `{project_id}.{state_dataset}.state_early_discharge` discharge
-    JOIN `{project_id}.{state_dataset}.state_supervision_period` period
+    FROM `{project_id}.{normalized_state_dataset}.state_early_discharge` discharge
+    JOIN `{project_id}.{normalized_state_dataset}.state_supervision_period` period
         USING (state_code, person_id)
     LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
@@ -62,7 +62,7 @@ SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBi
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     # TODO(#12140): Convert to using normalized_state instead of state once there is a
     #  normalized version of supervision_period_to_agent_association
-    state_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
 )
 
 if __name__ == "__main__":

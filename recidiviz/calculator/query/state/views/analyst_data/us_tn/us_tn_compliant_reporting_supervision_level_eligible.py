@@ -20,8 +20,8 @@ Compliant Reporting due to supervision level."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -112,7 +112,7 @@ US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_QUERY_TEMPLATE = """
         MIN(LEAST(COALESCE(min_session_start_eligibility_date,'9999-01-01'),super_session_start_eligibility_date)) AS start_date,
         CASE WHEN LOGICAL_AND(end_date IS NOT NULL) THEN MAX(end_date) END AS end_date,
     FROM cte3
-    JOIN `{project_id}.{base_dataset}.state_person_external_id` ex
+    JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` ex
         on ex.person_id = cte3.person_id
         AND ex.state_code = cte3.state_code
     GROUP BY person_id, offender_id, state_code, min_max_session_id
@@ -124,7 +124,7 @@ US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_QUERY_TEMPLATE = """
 US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    base_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     view_id=US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_VIEW_NAME,
     description=US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_VIEW_DESCRIPTION,
     view_query_template=US_TN_COMPLIANT_REPORTING_SUPERVISION_LEVEL_ELIGIBLE_QUERY_TEMPLATE,

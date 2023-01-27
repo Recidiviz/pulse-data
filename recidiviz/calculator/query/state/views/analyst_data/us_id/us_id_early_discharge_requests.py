@@ -18,7 +18,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
-    STATE_BASE_DATASET,
+    NORMALIZED_STATE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -53,7 +53,7 @@ US_ID_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE = """
             decision_status AS decision_status_raw,
             decision AS decision_raw,
             decision_raw_text AS decision_reason_raw,
-        FROM `{project_id}.{state_dataset}.state_early_discharge`
+        FROM `{project_id}.{normalized_state_dataset}.state_early_discharge`
         WHERE state_code = 'US_ID'
             -- Invalid decision_status indicates that row has been deleted in raw data
             AND decision_status != 'INVALID'
@@ -219,7 +219,7 @@ US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_NAME,
     view_query_template=US_ID_EARLY_DISCHARGE_REQUESTS_QUERY_TEMPLATE,
     description=US_ID_EARLY_DISCHARGE_REQUESTS_VIEW_DESCRIPTION,
-    state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     us_id_raw_dataset=US_ID_RAW_DATASET,
     parole_ed_months=PAROLE_ED_MONTHS,
     probation_ed_months=PROBATION_ED_MONTHS,

@@ -19,8 +19,8 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
+    NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
-    STATE_BASE_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -39,7 +39,7 @@ US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
         SELECT DISTINCT
             person_id,
             termination_date AS discharge_date,
-        FROM `{project_id}.{state_dataset}.state_supervision_period`
+        FROM `{project_id}.{normalized_state_dataset}.state_supervision_period`
         WHERE state_code = 'US_ID'
             AND termination_reason = 'DISCHARGE'
     ),
@@ -49,7 +49,7 @@ US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
         SELECT DISTINCT
             person_id,
             completion_date AS discharge_date,
-        FROM `{project_id}.{state_dataset}.state_incarceration_sentence`
+        FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
         WHERE state_code = 'US_ID'
             AND status = 'COMPLETED'
             AND status_raw_text = 'F'
@@ -91,7 +91,7 @@ US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     view_id=US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_NAME,
     description=US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION,
     view_query_template=US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE,
-    state_dataset=STATE_BASE_DATASET,
+    normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
 )
