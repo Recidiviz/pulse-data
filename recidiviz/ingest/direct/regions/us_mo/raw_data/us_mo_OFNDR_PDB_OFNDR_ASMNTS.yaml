@@ -58,6 +58,10 @@ columns:
   - name: NEXT_REVIEW_DT
     description: |-
       XXX
+  - name: CREATE_TS
+    is_pii: True
+    description: |-
+      XXX
   # TODO(#17289): fill in once we have documentation
   - name: CREATE_USER_REF_ID
     is_pii: True
