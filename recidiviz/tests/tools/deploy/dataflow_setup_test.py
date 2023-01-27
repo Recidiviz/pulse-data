@@ -31,7 +31,7 @@ PIPFILE_LOCK_PATH = os.path.join(
 
 SETUP_PATH = os.path.join(
     os.path.dirname(recidiviz.__file__),
-    "calculator/pipeline/legacy_dataflow_setup.py",
+    "tools/deploy/legacy_dataflow_setup.py",
 )
 
 

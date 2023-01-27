@@ -300,7 +300,7 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     FLEX_KEY: [
         RequiredModificationSets(
             if_modified_files=frozenset(
-                {"recidiviz/calculator/pipeline/legacy_dataflow_setup.py"}
+                {"recidiviz/tools/deploy/legacy_dataflow_setup.py"}
             ),
             then_modified_files=frozenset(
                 {"recidiviz/calculator/pipeline/dataflow_flex_setup.py"}
