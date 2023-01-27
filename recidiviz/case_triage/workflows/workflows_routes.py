@@ -134,6 +134,10 @@ def create_workflows_api_blueprint() -> Blueprint:
                 queue_info_cls=CloudTaskQueueInfo,
                 queue_name=WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE,
             )
+
+            headers_copy = dict(request.headers)
+            headers_copy["Referer"] = cloud_run_metadata.url
+
             cloud_task_manager.create_task(
                 absolute_uri=f"{cloud_run_metadata.url}"
                 f"/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
@@ -144,7 +148,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                     "contact_note": g.api_data["contact_note"],
                     "voters_rights_code": g.api_data.get("voters_rights_code", None),
                 },
-                headers=request.headers,
+                headers=headers_copy,
             )
         except Exception as e:
             logging.error(e)
