@@ -50,13 +50,13 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
 )
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
+    derive_apache_beam_pipeline_args,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
     ExtractPersonEventsMetadata,
-)
-from recidiviz.calculator.pipeline.utils.beam_utils.pipeline_args_utils import (
-    derive_apache_beam_pipeline_args,
 )
 from recidiviz.calculator.pipeline.utils.identifier_models import Span
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_metrics_producer_delegate import (

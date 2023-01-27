@@ -1,0 +1,36 @@
+{
+  "name": "Streaming beam Python flex template",
+  "description": "Streaming beam example for python flex template.",
+  "parameters": [
+    {
+      "name": "pipeline_name",
+      "label": "xxx",
+      "helpText": "xxx",
+      "regexes": [".*"]
+    },
+    {
+      "name": "output",
+      "label": "xxx",
+      "helpText": "xxx",
+      "regexes": [".*"]
+    },
+    {
+      "name": "state_code",
+      "label": "xxx",
+      "helpText": "xxx",
+      "regexes": [".*"]
+    },
+    {
+      "name": "metric_types",
+      "label": "xxx",
+      "helpText": "xxx",
+      "regexes": [".*"]
+    },
+    {
+      "name": "calculation_month_count",
+      "label": "xxx",
+      "helpText": "xxx",
+      "regexes": [".*"]
+    }
+  ]
+}

@@ -24,6 +24,7 @@ pipeline code touches.
 """
 import setuptools
 
+# TODO(#17989): This file will be deleted and replaced with dataflow_flex_setup.py when the migration is complete
 # Packages required by the pipeline. Dataflow workers have a list of packages already installed. To see this list, and
 # which version of each package is installed, visit
 # https://cloud.google.com/dataflow/docs/concepts/sdk-worker-dependencies

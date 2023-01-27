@@ -71,12 +71,12 @@ class SupplementalDatasetPipelineRunDelegate(PipelineRunDelegate):
 
     @classmethod
     def _build_pipeline_job_args(
-        cls,
-        parser: argparse.ArgumentParser,
-        argv: List[str],
+        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
     ) -> PipelineJobArgs:
         """Builds the PipelineJobArgs object from the provided args."""
-        return cls._get_base_pipeline_job_args(parser, argv)
+        return cls._get_base_pipeline_job_args(
+            parser, argv, use_flex_templates=use_flex_templates
+        )
 
     @classmethod
     def default_output_dataset(cls, state_code: str) -> str:

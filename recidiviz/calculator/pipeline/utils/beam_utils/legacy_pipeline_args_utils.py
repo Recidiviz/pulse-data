@@ -15,10 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for parsing command-line arguments shared between multiple pipelines."""
+# TODO(#17989): Helpers in this file will become unused once we have fully migrated to
+#  Flex templates. Delete this file when that migration is done.
 import argparse
 from typing import List, Optional
-
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 
 
 def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
@@ -301,12 +301,3 @@ def derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
             raise ValueError(f"Unknown type [{type(value)}] for key [{key}]")
 
     return args
-
-
-def get_apache_beam_pipeline_options_from_args(argv: List[str]) -> PipelineOptions:
-    """Generates a PipelineOptions object from a list of command-line args, adding any missing args that can be derived
-    from those passed in."""
-    pipeline_options = PipelineOptions(derive_apache_beam_pipeline_args(argv))
-    pipeline_options.view_as(SetupOptions).save_main_session = True
-
-    return pipeline_options

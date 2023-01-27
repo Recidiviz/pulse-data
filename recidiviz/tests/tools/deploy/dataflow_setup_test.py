@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the pulse-data/recidiviz/tools/deploy/dataflow_setup.py file that specifies required packages
+"""Tests the pulse-data/recidiviz/tools/deploy/legacy_dataflow_setup.py file that specifies required packages
 for the Dataflow VM workers. """
 import json
 import os
@@ -31,7 +31,7 @@ PIPFILE_LOCK_PATH = os.path.join(
 
 SETUP_PATH = os.path.join(
     os.path.dirname(recidiviz.__file__),
-    "tools/deploy/dataflow_setup.py",
+    "calculator/pipeline/legacy_dataflow_setup.py",
 )
 
 
@@ -62,7 +62,7 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                         self.assertEqual(
                             pipfile_dependency,
                             dependency_with_version,
-                            "Try verifying the package's version in dataflow_setup.py or running pipenv sync "
+                            "Try verifying the package's version in legacy_dataflow_setup.py or running pipenv sync "
                             "--dev before running this test again.",
                         )
 

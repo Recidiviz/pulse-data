@@ -34,6 +34,10 @@ import sys
 from typing import List, Optional, Tuple
 
 from recidiviz.calculator.dataflow_config import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.calculator.pipeline.pipeline_runner import (
+    load_all_pipelines,
+    run_pipeline,
+)
 from recidiviz.tools.deploy.build_dataflow_source_distribution import (
     build_source_distribution,
 )
@@ -41,7 +45,6 @@ from recidiviz.tools.deploy.dataflow_template_helpers import (
     PipelineConfig,
     load_pipeline_config_yaml,
 )
-from recidiviz.tools.pipeline_launch_util import load_all_pipelines, run_pipeline
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
