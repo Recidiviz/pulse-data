@@ -28,14 +28,11 @@ export const UploadStateUserRosterModal = ({
   stateRoleData: StateRolePermissionsResponse[];
 }): JSX.Element => {
   const [stateCode, setStateCode] = useState<string | undefined>();
-  const [role, setRole] = useState<string | undefined>();
   const [reason, setReason] = useState<string | undefined>();
 
   const handleCancel = () => {
     onCancel();
   };
-
-  const roleParam = role ? `&role=${role}` : "";
 
   return (
     <DraggableModal
@@ -47,7 +44,7 @@ export const UploadStateUserRosterModal = ({
       footer={null}
     >
       <UploadRoster
-        action={`/auth/users?state_code=${stateCode}${roleParam}`}
+        action={`/auth/users?state_code=${stateCode}`}
         method="PUT"
         columns={[
           "email_address",
@@ -59,11 +56,11 @@ export const UploadStateUserRosterModal = ({
         ]}
         setStateCode={setStateCode}
         stateCode={stateCode}
-        setRole={setRole}
         stateUserRoster
         setReason={setReason}
         reason={reason}
         stateRoleData={stateRoleData}
+        warningMessage="This form should be used to update users in the roster. If an existing user is found with a matching email address and state_code, the remaining fields will be updated to the value listed in the CSV. A corresponding State Role Default Permission entry must exist for each role in the CSV otherwise the roster upload will fail."
       />
     </DraggableModal>
   );

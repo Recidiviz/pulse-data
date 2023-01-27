@@ -39,6 +39,7 @@ const UploadLineStaffRostersView = (): JSX.Element => {
         stateCode={stateCode}
         setReason={setReason}
         reason={reason}
+        warningMessage="This form should be used to completely overwrite the existing roster."
       />
     </>
   );
