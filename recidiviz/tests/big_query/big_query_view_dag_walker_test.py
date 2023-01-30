@@ -153,13 +153,14 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         self.assertEqual(len(self.all_views), len(walker.nodes_by_address))
 
         for key, node in walker.nodes_by_address.items():
-            if not node.parent_addresses:
+            if not node.parent_tables:
                 self.assertIsValidEmptyParentsView(node)
 
             if node.is_root:
-                for parent_key in node.parent_addresses:
-                    # Root views should only have source data tables as parents
-                    self.assertIsValidSourceDataTable(key, parent_key)
+                # Root views should only have source data tables as parents
+                self.assertEqual(set(), node.parent_node_addresses)
+                for parent_address in node.parent_tables:
+                    self.assertIsValidSourceDataTable(key, parent_address)
 
     def test_dag_touches_all_views(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
@@ -219,7 +220,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
             with mutex:
                 node = walker.node_for_view(view)
                 if not node.is_root:
-                    for parent_key in node.parent_addresses:
+                    for parent_key in node.parent_node_addresses:
                         if parent_key not in all_processed:
                             # The only parents that won't have been fully processed are source data tables
                             try:
@@ -334,7 +335,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         if not max_depth_view:
             self.fail("Found no max_depth_view")
         max_depth_node = walker.node_for_view(max_depth_view)
-        self.assertEqual(set(), max_depth_node.child_addresses)
+        self.assertEqual(set(), max_depth_node.child_node_addresses)
 
     def test_dag_processing_can_be_reversed(self) -> None:
         #  We would like to be able to traverse our DAG both top
@@ -439,9 +440,6 @@ The following views have less restrictive projects_to_deploy than their parents:
             node = walker.node_for_view(view)
             should_be_materialized_addresses = set()
             for parent_table_address in node.parent_tables:
-                if parent_table_address in walker.materialized_addresss:
-                    # We are using materialized version of a table
-                    continue
                 parent_key = parent_table_address
                 if parent_key not in walker.nodes_by_address:
                     # We assume this is a source data table (checked in other tests)
@@ -1797,26 +1795,25 @@ class TestBigQueryViewDagNode(unittest.TestCase):
         ).build()
         node = BigQueryViewDagNode(view)
         self.assertIsNone(view.materialized_address)
-        node.set_materialized_addresss({})
         self.assertEqual(node.is_root, False)
         self.assertEqual(
             node.view.address,
             BigQueryAddress(dataset_id="my_dataset", table_id="my_view_id"),
         )
         self.assertEqual(
-            node.parent_addresses,
+            node.parent_tables,
             {BigQueryAddress(dataset_id="some_dataset", table_id="some_table")},
         )
-        self.assertEqual(node.child_addresses, set())
+        self.assertEqual(node.child_node_addresses, set())
 
         node.is_root = True
         child_address = BigQueryAddress(
             dataset_id="other_dataset", table_id="other_table"
         )
-        node.add_child_address(child_address)
+        node.add_child_node_address(child_address)
 
         self.assertEqual(node.is_root, True)
-        self.assertEqual(node.child_addresses, {child_address})
+        self.assertEqual(node.child_node_addresses, {child_address})
 
     def test_parse_view_materialized_parent(self) -> None:
         view = SimpleBigQueryViewBuilder(
@@ -1832,14 +1829,10 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             view_query_template="SELECT * FROM UNNEST([])",
             should_materialize=True,
         ).build()
-        node = BigQueryViewDagNode(view)
-        if not parent_view.materialized_address:
-            raise ValueError("Null materialized_address for view [{parent_view}]")
-        node.set_materialized_addresss(
-            {parent_view.materialized_address: parent_view.address}
-        )
+        dag_walker = BigQueryViewDagWalker([view, parent_view])
+        node = dag_walker.node_for_view(view)
         self.assertEqual(
-            node.parent_addresses,
+            node.parent_node_addresses,
             {BigQueryAddress(dataset_id="some_dataset", table_id="some_table")},
         )
 
@@ -1854,9 +1847,8 @@ class TestBigQueryViewDagNode(unittest.TestCase):
             """,
         ).build()
         node = BigQueryViewDagNode(view)
-        node.set_materialized_addresss({})
         self.assertEqual(
-            node.parent_addresses,
+            node.parent_tables,
             {
                 BigQueryAddress(dataset_id="some_dataset", table_id="some_table"),
                 BigQueryAddress(dataset_id="some_dataset", table_id="other_table"),
