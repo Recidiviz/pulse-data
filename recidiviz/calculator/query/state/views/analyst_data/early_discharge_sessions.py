@@ -30,10 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 DISCHARGE_SESSION_DIFF_DAYS = "7"
 
 # States currently supported
-SUPPORTED_STATES = (
-    "US_ID",
-    "US_ND",
-)
+SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN")
 
 EARLY_DISCHARGE_SESSIONS_VIEW_NAME = "early_discharge_sessions"
 
