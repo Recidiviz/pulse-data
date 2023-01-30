@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import attr
+import dateutil.parser
 import requests
 
 from recidiviz.case_triage.workflows.constants import (
@@ -46,7 +47,7 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
 
     # The time that the request was submitted for the full note
     # All pages from the same note should have the same contact_note_date_time
-    contact_note_date_time: datetime = attr.ib(default=None)
+    contact_note_date_time: str = attr.ib(default=None)
 
     # The page number
     contact_sequence_number: int = attr.ib(default=None)
@@ -58,8 +59,15 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
     voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = attr.ib(default=None)
 
     def format_request(self) -> str:
+        try:
+            dateutil.parser.parse(self.contact_note_date_time).date()
+        except Exception as exc:
+            raise ValueError(
+                f"{self.contact_note_date_time} is not a valid datetime str"
+            ) from exc
+
         request = {
-            "ContactNoteDateTime": self.contact_note_date_time.isoformat(),
+            "ContactNoteDateTime": self.contact_note_date_time,
             "OffenderId": self.offender_id,
             "UserId": self.user_id,
             "ContactTypeCode1": "TEPE",
@@ -82,7 +90,7 @@ class WorkflowsUsTnExternalRequestInterface:
         self,
         person_external_id: str,
         user_id: str,
-        contact_note_date_time: datetime,
+        contact_note_date_time: str,
         contact_note: Dict[int, List[str]],
         voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = None,
     ) -> None:
