@@ -34,7 +34,7 @@ from recidiviz.case_triage.workflows.interface import (
 
 PERSON_EXTERNAL_ID = "123"
 USER_ID = "456"
-CONTACT_NOTE_DATE_TIME = datetime.datetime.now()
+CONTACT_NOTE_DATE_TIME = datetime.datetime.now().isoformat()
 
 
 @pytest.fixture(autouse=True)
@@ -106,7 +106,7 @@ class TestWorkflowsInterface(TestCase):
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
             user_id=USER_ID,
-            contact_note_date_time=datetime.datetime.now(),
+            contact_note_date_time=datetime.datetime.now().isoformat(),
             contact_sequence_number=1,
             comments=["line 1", "line 2"],
         )
@@ -134,7 +134,7 @@ class TestWorkflowsInterface(TestCase):
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
             user_id=USER_ID,
-            contact_note_date_time=datetime.datetime.now(),
+            contact_note_date_time=datetime.datetime.now().isoformat(),
             contact_sequence_number=1,
             comments=["line 1", "line 2"],
             voters_rights_code=WorkflowsUsTnVotersRightsCode.VRRE,
