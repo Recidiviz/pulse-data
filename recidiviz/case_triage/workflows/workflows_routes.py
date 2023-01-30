@@ -111,7 +111,8 @@ def create_workflows_api_blueprint() -> Blueprint:
                     merge=True,
                 )
 
-                interface.insert_tepe_contact_note(**g.api_data)
+                data = WorkflowsUsTnInsertTEPEContactNoteSchema().dump(g.api_data)
+                interface.insert_tepe_contact_note(**data)
             except Exception:
                 make_response(
                     jsonify("Error in inserting contact note without queueing task"),
@@ -199,12 +200,14 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
 
         try:
+            # Validate schema
             data = load_api_schema(
                 WorkflowsUsTnInsertTEPEContactNoteSchema, cloud_task_body
             )
-            logging.info("Handling contact note: %s", data)
-
+            # Dump to remove load_only fields from body
+            data = WorkflowsUsTnInsertTEPEContactNoteSchema().dump(data)
             WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(**data)
+            logging.info("Handling contact note: %s", data)
         except Exception as e:
             logging.error("Write to TOMIS failed due to error: %s", e)
             firestore_client = FirestoreClientImpl()
