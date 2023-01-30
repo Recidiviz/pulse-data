@@ -48,6 +48,9 @@ try:
     from sftp.filter_downloaded_files_sql_query_generator import (  # type: ignore
         FilterDownloadedFilesSqlQueryGenerator,
     )
+    from sftp.mark_files_discovered_sql_query_generator import (  # type: ignore
+        MarkFilesDiscoveredSqlQueryGenerator,
+    )
     from utils.cloud_sql import cloud_sql_conn_id_for_schema_type  # type: ignore
     from utils.default_args import DEFAULT_ARGS  # type: ignore
 except ImportError:
@@ -59,6 +62,9 @@ except ImportError:
     )
     from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
         FilterDownloadedFilesSqlQueryGenerator,
+    )
+    from recidiviz.airflow.dags.sftp.mark_files_discovered_sql_query_generator import (
+        MarkFilesDiscoveredSqlQueryGenerator,
     )
     from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
@@ -175,14 +181,14 @@ def sftp_dag() -> None:
                     find_sftp_files_task_id=find_sftp_files_from_server.task_id
                 ),
             )
-            verify_files = PythonOperator.partial(
-                task_id="file_print_out",
-                python_callable=lambda remote_file_path, sftp_timestamp: logging.info(
-                    "%s %d", remote_file_path, sftp_timestamp
+            mark_files_discovered = CloudSqlQueryOperator(
+                task_id="mark_files_discovered",
+                cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                query_generator=MarkFilesDiscoveredSqlQueryGenerator(
+                    region_code=state_code,
+                    filter_downloaded_files_task_id=filter_downloaded_files.task_id,
                 ),
-            ).expand(op_kwargs=filter_downloaded_files.output)
-            # TODO(#17333): Mark files discovered
-
+            )
             # TODO(#17334): Implement download flow
             scheduler_queue = (
                 f"direct-ingest-state-{state_code.lower().replace('_', '-')}-scheduler"
@@ -223,7 +229,7 @@ def sftp_dag() -> None:
                 >> set_locks
                 >> find_sftp_files_from_server
                 >> filter_downloaded_files
-                >> verify_files
+                >> mark_files_discovered
                 >> pause_scheduler_queue
                 >> resume_scheduler_queue
                 >> release_locks

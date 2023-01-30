@@ -10,6 +10,7 @@ pylint="*"
 more-itertools = "*"
 mypy="*"
 black = "*"
+freezegun = "*"
 
 [packages]
 # We pin all dependencies to make sure they remain on versions supported by our current 
