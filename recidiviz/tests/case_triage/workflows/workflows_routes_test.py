@@ -160,6 +160,51 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         mock_firestore.return_value.set_document.assert_called_once()
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsTnExternalRequestInterface."
+        "insert_tepe_contact_note"
+    )
+    @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
+    @patch(
+        "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
+    )
+    @freeze_time("2023-01-01 01:23:45")
+    def test_insert_tepe_contact_note_no_queue_success(
+        self,
+        mock_task_manager: MagicMock,
+        mock_firestore: MagicMock,
+        mock_insert: MagicMock,
+    ) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect("us_tn")
+
+        request_body = {
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "userId": USER_ID,
+            "contactNoteDateTime": str(datetime.datetime.now()),
+            "contactNote": {1: ["Line 1", "Line 2"]},
+            "shouldQueueTask": False,
+        }
+
+        with self.test_app.test_request_context():
+            response = self.test_client.post(
+                "/workflows/external_request/US_TN/insert_tepe_contact_note",
+                json=request_body,
+            )
+
+        expected_body = {
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "user_id": USER_ID,
+            "contact_note_date_time": "2023-01-01T01:23:45",
+            "contact_note": {1: ["Line 1", "Line 2"]},
+        }
+        mock_task_manager.return_value.create_task.assert_not_called()
+        self.assertEqual(
+            mock_insert.call_args.kwargs,
+            expected_body,
+        )
+        mock_firestore.return_value.set_document.assert_called_once()
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
@@ -256,6 +301,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         "recidiviz.case_triage.workflows.workflows_routes.WorkflowsUsTnExternalRequestInterface."
         "insert_tepe_contact_note"
     )
+    @freeze_time("2023-01-01 01:23:45")
     def test_handle_insert_tepe_contact_note_success(
         self, mock_insert: MagicMock
     ) -> None:
@@ -273,6 +319,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 "/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
                 json=request_body,
             )
+
+        expected_body = {
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "user_id": USER_ID,
+            "contact_note_date_time": "2023-01-01T01:23:45",
+            "contact_note": {1: ["Line 1", "Line 2"]},
+        }
+        self.assertEqual(
+            mock_insert.call_args.kwargs,
+            expected_body,
+        )
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(

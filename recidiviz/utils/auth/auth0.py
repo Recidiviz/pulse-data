@@ -147,9 +147,6 @@ def build_auth0_authorization_handler(
         If it is not valid, raise an exception
         If it is valid, call our `on_successful_authorization` callback before executing the decorated route
         """
-        # TODO(#2950): Remove extraneous logs
-        logging.info("Got headers: %s", request.headers)
-
         try:
             token = get_token_auth_header()
             unverified_header = jwt.get_unverified_header(token)
