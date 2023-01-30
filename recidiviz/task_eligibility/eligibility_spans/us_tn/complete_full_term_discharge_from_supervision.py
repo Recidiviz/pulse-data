@@ -19,7 +19,7 @@ someone in TN is eligible for full term discharge from supervision or is 60 days
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    supervision_population_active_levels,
+    supervision_population_all_eligible_levels,
 )
 from recidiviz.task_eligibility.completion_events import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -43,7 +43,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
     description=_DESCRIPTION,
-    candidate_population_view_builder=supervision_population_active_levels.VIEW_BUILDER,
+    candidate_population_view_builder=supervision_population_all_eligible_levels.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date_or_upcoming_60_day.VIEW_BUILDER,
         not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,

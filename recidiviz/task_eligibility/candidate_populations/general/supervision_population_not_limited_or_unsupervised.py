@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are actively
-supervised at any point in time.
+"""Defines a candidate population view containing all people who are on supervision,
+ whose compartment_level_2 does not include Absconsion or Bench Warrant, and whose
+ supervision level does not include Limited or Unsupervised.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -26,11 +27,11 @@ from recidiviz.task_eligibility.utils.candidate_population_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "ACTIVE_SUPERVISION_POPULATION"
+_POPULATION_NAME = "SUPERVISION_POPULATION_NOT_LIMITED_OR_UNSUPERVISED"
 
-_DESCRIPTION = """Selects all spans of time in which a person is actively supervised,
-as tracked by data in our `sessions` dataset. "Actively supervised" indicates the client
-has a supervision type that requires a supervision officer.
+_DESCRIPTION = """Selects all spans of time in which a person is supervised,
+their compartment_level_2 does not include Absconsion or Bench Warrant, and their
+ supervision level does not include Limited or Unsupervised, as tracked by data in our `sessions` dataset.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_agnostic_candidate_population_view_builder(
@@ -38,6 +39,9 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
     description=_DESCRIPTION,
     additional_filters=[
         'attr.compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")',
+        # exclude invidiuals already on LSU as well as individuals on UNSUPERVISED supervision
+        # since that is a lower level of supervision
+        'attr.correctional_level NOT IN ("LIMITED", "UNSUPERVISED")',
     ],
     compartment_level_1="SUPERVISION",
 )

@@ -19,7 +19,7 @@ someone in ID is eligible to complete the form for transfer to limited unit supe
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    active_supervision_population_not_limited,
+    supervision_population_not_limited_or_unsupervised,
 )
 from recidiviz.task_eligibility.completion_events import transfer_to_limited_supervision
 from recidiviz.task_eligibility.criteria.general import (
@@ -49,7 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM",
     description=_DESCRIPTION,
-    candidate_population_view_builder=active_supervision_population_not_limited.VIEW_BUILDER,
+    candidate_population_view_builder=supervision_population_not_limited_or_unsupervised.VIEW_BUILDER,
     criteria_spans_view_builders=[
         negative_ua_within_90_days.VIEW_BUILDER,
         lsir_level_low_for_90_days.VIEW_BUILDER,
