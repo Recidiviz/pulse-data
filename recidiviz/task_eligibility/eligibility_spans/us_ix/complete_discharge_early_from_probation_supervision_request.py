@@ -19,7 +19,7 @@ someone in ID is eligible to request early discharge from probation supervision.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_supervision_population,
+    probation_supervision_population_not_unsupervised,
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -47,7 +47,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_IX,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=probation_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=probation_supervision_population_not_unsupervised.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_probation_at_least_one_year.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,

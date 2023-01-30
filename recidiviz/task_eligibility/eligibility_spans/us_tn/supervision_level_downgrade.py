@@ -19,7 +19,7 @@ someone in TN is eligible to have supervision level downgrade.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    supervision_population_active_levels,
+    supervision_population_all_eligible_levels,
 )
 from recidiviz.task_eligibility.completion_events import supervision_level_downgrade
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
@@ -39,7 +39,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="SUPERVISION_LEVEL_DOWNGRADE",
     description=_DESCRIPTION,
-    candidate_population_view_builder=supervision_population_active_levels.VIEW_BUILDER,
+    candidate_population_view_builder=supervision_population_all_eligible_levels.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
     ],

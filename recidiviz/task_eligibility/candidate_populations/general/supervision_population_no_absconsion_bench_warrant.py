@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are actively
-supervised on parole/probation at any point in time, and whose supervision levels are not Unassigned, In Custody, or Interstate Compact.
+"""Defines a candidate population view containing all people who are
+supervised at any point in time and their compartment_level_2 is not Absconsion or Bench Warrant.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -23,25 +23,22 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 from recidiviz.task_eligibility.utils.candidate_population_builders import (
     state_agnostic_candidate_population_view_builder,
 )
-from recidiviz.task_eligibility.utils.candidate_population_query_fragments import (
-    supervision_population_active_levels_additional_filters,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "SUPERVISION_POPULATION_ACTIVE_LEVELS"
+_POPULATION_NAME = "SUPERVISION_POPULATION_NO_ABSCONSION_BENCH_WARRANT"
 
-_DESCRIPTION = """Selects all spans of time in which a person is actively supervised on parole/probation/dual and
-whose supervision levels are not Unassigned, In Custody, or Interstate Compact, as tracked by data in our `sessions` dataset.
+_DESCRIPTION = """Selects all spans of time in which a person is supervised and their compartment_level_2
+is not Absconsion or Bench Warrant, as tracked by data in our `sessions` dataset
 """
 
-VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
-    state_agnostic_candidate_population_view_builder(
-        population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
-        additional_filters=supervision_population_active_levels_additional_filters(),
-        compartment_level_1="SUPERVISION",
-    )
+VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_agnostic_candidate_population_view_builder(
+    population_name=_POPULATION_NAME,
+    description=_DESCRIPTION,
+    additional_filters=[
+        'attr.compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")',
+    ],
+    compartment_level_1="SUPERVISION",
 )
 
 if __name__ == "__main__":
