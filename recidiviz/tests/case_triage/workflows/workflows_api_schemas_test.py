@@ -16,7 +16,6 @@
 #  =============================================================================
 """Implements tests for the Workflows API schemas."""
 from recidiviz.case_triage.workflows.api_schemas import (
-    WorkflowsUsTnHandleInsertTEPEContactNoteSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.tests.case_triage.api_schemas_test import (
@@ -33,6 +32,7 @@ CONTACT_NOTE_DATE_TIME = "2000-12-30T00:00:00"
 class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     """Tests for WorkflowsUsTnInsertTEPEContactNoteSchema"""
 
+    camel_case = False
     schema = WorkflowsUsTnInsertTEPEContactNoteSchema
 
     test_valid_data = valid_schema_test(
@@ -42,6 +42,34 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {1: ["line 1", "line 2"]},
             "votersRightsCode": "VRRE",
+        }
+    )
+
+    test_valid_data_missing_voters_rights_code = valid_schema_test(
+        {
+            "personExternalId": PERSON_EXTERNAL_ID,
+            "userId": USER_ID,
+            "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
+            "contactNote": {1: ["line 1", "line 2"]},
+        }
+    )
+
+    test_valid_data_snake_case = valid_schema_test(
+        {
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "user_id": USER_ID,
+            "contact_note_date_time": CONTACT_NOTE_DATE_TIME,
+            "contact_note": {1: ["line 1", "line 2"]},
+            "voters_rights_code": "VRRE",
+        }
+    )
+
+    test_valid_data_snake_case_missing_voters_rights_code = valid_schema_test(
+        {
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "user_id": USER_ID,
+            "contact_note_date_time": CONTACT_NOTE_DATE_TIME,
+            "contact_note": {1: ["line 1", "line 2"]},
         }
     )
 
@@ -141,35 +169,4 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
             },
         },
         ["contact_note"],
-    )
-
-
-class WorkflowsUsTnHandleInsertTEPEContactNoteSchemaTest(SchemaTestCase):
-    """
-    Tests for WorkflowsUsTnHandleInsertTEPEContactNoteSchema.
-    Similar to the WorkflowsUsTnInsertTEPEContactNoteSchema, however, the handlers data is not in camel case.
-    """
-
-    camel_case = False
-    schema = WorkflowsUsTnHandleInsertTEPEContactNoteSchema
-
-    test_valid_data = valid_schema_test(
-        {
-            "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
-            "contact_note_date_time": CONTACT_NOTE_DATE_TIME,
-            "contact_note": {1: ["line 1", "line 2"]},
-            "voters_rights_code": "VRRE",
-        }
-    )
-
-    test_incorrect_voters_rights_code = invalid_schema_test(
-        {
-            "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
-            "contact_note_date_time": CONTACT_NOTE_DATE_TIME,
-            "contact_note": {1: ["line 1", "line 2"]},
-            "voters_rights_code": "VVVV",
-        },
-        ["voters_rights_code"],
     )

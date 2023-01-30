@@ -24,6 +24,7 @@ from unittest.mock import MagicMock, patch
 
 from flask import Flask
 from flask.testing import FlaskClient
+from freezegun import freeze_time
 
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.workflows.workflows_authorization import (
@@ -124,6 +125,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     @patch(
         "recidiviz.case_triage.workflows.workflows_routes.SingleCloudTaskQueueManager"
     )
+    @freeze_time("2023-01-01 01:23:45")
     def test_insert_tepe_contact_note_success(
         self,
         mock_task_manager: MagicMock,
@@ -144,7 +146,17 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json=request_body,
             )
 
+        expected_task_body = {
+            "person_external_id": PERSON_EXTERNAL_ID,
+            "user_id": USER_ID,
+            "contact_note_date_time": "2023-01-01T01:23:45",
+            "contact_note": {1: ["Line 1", "Line 2"]},
+        }
         mock_task_manager.return_value.create_task.assert_called_once()
+        self.assertEqual(
+            mock_task_manager.return_value.create_task.call_args.kwargs["body"],
+            expected_task_body,
+        )
         mock_firestore.return_value.set_document.assert_called_once()
         self.assertEqual(response.status_code, HTTPStatus.OK)
 

@@ -19,10 +19,10 @@ from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Type, Union
 
 from flask import g, request
-from marshmallow import RAISE, Schema
+from marshmallow import RAISE, Schema, pre_load
 from marshmallow.fields import Field
 
-from recidiviz.common.str_field_utils import snake_to_camel
+from recidiviz.common.str_field_utils import snake_to_camel, to_snake_case
 from recidiviz.utils.types import assert_type
 
 
@@ -34,6 +34,18 @@ class CamelCaseSchema(Schema):
 
     def on_bind_field(self, field_name: str, field_obj: Field) -> None:
         field_obj.data_key = snake_to_camel(field_obj.data_key or field_name)
+
+
+class CamelOrSnakeCaseSchema(Schema):
+    """
+    Schema that deserializes top-level keys from camel or snake-case and serializes to snake case.
+    """
+
+    @pre_load
+    def preprocess_keys(
+        self, data: Dict[str, Any], **_kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        return {to_snake_case(k): v for k, v in data.items()}
 
 
 def load_api_schema(api_schema: Union[type, Type[Schema]], source_data: Any) -> Dict:

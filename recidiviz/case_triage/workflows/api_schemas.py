@@ -17,10 +17,10 @@
 """ Contains Marshmallow schemas for Workflows API """
 from typing import Dict, List
 
-from marshmallow import Schema, ValidationError, fields
+from marshmallow import ValidationError, fields
 from marshmallow_enum import EnumField
 
-from recidiviz.case_triage.api_schemas import CamelCaseSchema
+from recidiviz.case_triage.api_schemas_utils import CamelOrSnakeCaseSchema
 from recidiviz.case_triage.workflows.constants import WorkflowsUsTnVotersRightsCode
 
 
@@ -60,7 +60,7 @@ def valid_us_tn_contact_note(data: Dict[int, List[str]]) -> None:
             )
 
 
-class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelCaseSchema):
+class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelOrSnakeCaseSchema):
     """
     The schema expected by the /workflows/US_TN/insert_tepe_contact_note.
     Camel-cased keys are expected since the request is coming from the dashboards app
@@ -75,27 +75,5 @@ class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelCaseSchema):
         validate=valid_us_tn_contact_note,
         required=True,
     )
-    voters_rights_code = EnumField(
-        WorkflowsUsTnVotersRightsCode, by_value=True, default=None
-    )
-    should_queue_task = fields.Boolean(default=True)
-
-
-class WorkflowsUsTnHandleInsertTEPEContactNoteSchema(Schema):
-    """
-    The schema expected by the /workflows/US_TN/handle_insert_tepe_contact_note.
-    Snake-cased keys are expected because this endpoint handles a task from our Task Queue.
-    """
-
-    person_external_id = fields.Str(required=True)
-    user_id = fields.Str(required=True)
-    contact_note_date_time = fields.DateTime(required=True)
-    contact_note = fields.Dict(
-        keys=fields.Integer(),
-        values=fields.List(fields.Str),
-        validate=valid_us_tn_contact_note,
-        required=True,
-    )
-    voters_rights_code = EnumField(
-        WorkflowsUsTnVotersRightsCode, by_value=True, default=None
-    )
+    voters_rights_code = EnumField(WorkflowsUsTnVotersRightsCode, by_value=True)
+    should_queue_task = fields.Boolean(load_default=True, load_only=True)
