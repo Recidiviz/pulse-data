@@ -79,6 +79,7 @@ module "pathways_database" {
   base_secret_name  = "pathways"
   region            = var.region
   zone              = var.zone
+  secondary_zone    = "us-central1-b"
   tier              = coalesce(var.default_sql_tier, "db-custom-4-16384") # 4 vCPUs, 16GB Memory
   has_readonly_user = true
 
@@ -99,7 +100,7 @@ locals {
   pathways_enabled_states = concat(yamldecode(file("${path.module}/config/pathways_enabled_states.yaml")), var.project_id == "recidiviz-staging" ? ["US_OZ"] : [])
 
   joined_connection_string = join(
-    ", ",
+    ",",
     [
       module.case_triage_database.connection_name,
       module.justice_counts_database.connection_name,

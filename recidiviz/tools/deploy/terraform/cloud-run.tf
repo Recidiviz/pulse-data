@@ -169,7 +169,7 @@ resource "google_cloud_run_service" "case-triage" {
         "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
         # Note: this access connector is called "redis", but it actually connects to all resources
         # in the default network (Redis, Cloud NAT, etc.)
-        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.id
         "run.googleapis.com/vpc-access-egress"    = "all-traffic"
       }
 
@@ -184,8 +184,7 @@ resource "google_cloud_run_service" "case-triage" {
 
   metadata {
     annotations = {
-      "run.googleapis.com/ingress"        = "internal-and-cloud-load-balancing"
-      "run.googleapis.com/ingress-status" = "all"
+      "run.googleapis.com/ingress" = "internal-and-cloud-load-balancing"
     }
   }
 
