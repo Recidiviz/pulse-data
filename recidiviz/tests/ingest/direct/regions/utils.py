@@ -549,3 +549,60 @@ def add_external_id_to_staff(
         )
     )
     staff.external_ids.append(external_id_to_add)
+
+
+def add_supervision_violation_to_person(
+    person: entities.StatePerson,
+    state_code: str,
+    external_id: str,
+    ## EG Note: When these default to None instead of [], and the field has no values,
+    ## the controller test throws an error because the type is None instead of a list.
+    ## Shouldn't using Optional[] make None an acceptable type for these fields?
+    supervision_violation_responses: Optional[
+        List[entities.StateSupervisionViolationResponse]
+    ] = None,
+    supervision_violation_types: Optional[
+        List[entities.StateSupervisionViolationTypeEntry]
+    ] = None,
+    supervision_violated_conditions: Optional[
+        List[entities.StateSupervisionViolatedConditionEntry]
+    ] = None,
+    violation_date: Optional[datetime.date] = None,
+) -> None:
+    """Append a supervision violation to the person (updates the person entity in place)."""
+
+    supervision_violation = entities.StateSupervisionViolation.new_with_defaults(
+        state_code=state_code,
+        external_id=external_id,
+        supervision_violation_responses=supervision_violation_responses or [],
+        supervision_violation_types=supervision_violation_types or [],
+        supervision_violated_conditions=supervision_violated_conditions or [],
+        violation_date=violation_date,
+        person=person,
+    )
+
+    if supervision_violation_types:
+        for supervision_violation_type in supervision_violation_types:
+            supervision_violation_type.supervision_violation = supervision_violation
+            supervision_violation_type.person = person
+
+    if supervision_violated_conditions:
+        for supervision_violated_condition in supervision_violated_conditions:
+            supervision_violated_condition.supervision_violation = supervision_violation
+            supervision_violated_condition.person = person
+
+    if supervision_violation_responses:
+        for supervision_violation_response in supervision_violation_responses:
+            supervision_violation_response.supervision_violation = supervision_violation
+            supervision_violation_response.person = person
+            for (
+                supervision_violation_response_decision
+            ) in (
+                supervision_violation_response.supervision_violation_response_decisions
+            ):
+                supervision_violation_response_decision.supervision_violation_response = (
+                    supervision_violation_response
+                )
+                supervision_violation_response_decision.person = person
+
+    person.supervision_violations.append(supervision_violation)

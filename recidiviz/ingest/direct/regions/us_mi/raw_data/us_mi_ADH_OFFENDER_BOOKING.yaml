@@ -19,7 +19,6 @@ columns:
     description: |-
       The sequence number associated with the latest booking for a person (since
       there may be multiple jurisdictions for someone).
-    is_pii: True
   - name: location_id
     description: The location ID of the booking (referenced by LOCATION table).
   - name: begin_date

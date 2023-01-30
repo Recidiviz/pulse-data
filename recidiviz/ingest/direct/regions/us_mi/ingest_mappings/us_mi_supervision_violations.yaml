@@ -1,0 +1,293 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_state_persons` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - offender_booking_id
+  - supervision_violation_id
+  - supv_violation_incident_id
+  - violation_date
+  - incident_summary_notes
+  - violation_type_id
+  - violation_invest_begin_date
+  - decision_info
+  - violated_conditions
+unused_columns:
+  - incident_summary_notes
+  # BL NOTE: should we use this for is_drug and is_sex_offense? We could try searching for key terms to
+  #          determine these fields since this notes field is usually fairly descriptive, but it's not
+  #          standardized so not sure how much we'd miscategorize
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: offender_booking_id
+          id_type: $literal("US_MI_DOC_BOOK")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id:
+            $concat:
+              $values:
+                - supervision_violation_id
+                - supv_violation_incident_id
+              $separator: "##"
+              $include_nulls: true
+          violation_date: violation_date
+          supervision_violation_types:
+            - StateSupervisionViolationTypeEntry:
+                violation_type:
+                  $enum_mapping:
+                    $raw_text: violation_type_id
+                    $mappings:
+                      StateSupervisionViolationType.FELONY:
+                        - "1914" # Felony
+                      StateSupervisionViolationType.LAW:
+                        - "708" # New Offense
+                      StateSupervisionViolationType.TECHNICAL:
+                        - "709" # Technical
+                      StateSupervisionViolationType.INTERNAL_UNKNOWN:
+                        - "1913" # Incident
+                        - "1915" # Supplemental
+                        - "1916" # Investigation
+                        - "7311" # Multiple Order Violation
+          supervision_violated_conditions:
+            - $foreach:
+                $iterable:
+                  $split_json: violated_conditions
+                $result:
+                  StateSupervisionViolatedConditionEntry:
+                    condition:
+                      $enum_mapping:
+                        $raw_text:
+                          $concat:
+                            $separator: "@@"
+                            $values:
+                              - $json_extract:
+                                  $key: special_condition_id
+                                  $json: $iter_item
+                              - $json_extract:
+                                  $key: short_description
+                                  $json: $iter_item
+                              - $json_extract:
+                                  $key: description
+                                  $json: $iter_item
+                            $include_nulls: True
+                        $custom_parser: us_mi_custom_enum_parsers.parse_condition
+          supervision_violation_responses:
+            # There's always at least one violation response associated with the supervision violation record, and then there are
+            # 1 violation responses associated with each associated management decision or sanction (if they exist)
+            - StateSupervisionViolationResponse:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("REPORT")
+                      - supervision_violation_id
+                      - supv_violation_incident_id
+                    $separator: "##"
+                    $include_nulls: true
+                response_type: $literal_enum(StateSupervisionViolationResponseType.VIOLATION_REPORT)
+                response_date: violation_invest_begin_date
+            - $foreach:
+                $iterable:
+                  $split_json: decision_info
+                $result:
+                  StateSupervisionViolationResponse:
+                    external_id:
+                      $concat:
+                        $values:
+                          - $json_extract:
+                              $key: _response_type
+                              $json: $iter_item
+                          - $json_extract:
+                              $key: _response_external_id
+                              $json: $iter_item
+                          - supv_violation_incident_id
+                        $separator: "##"
+                        $include_nulls: true
+                    response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
+                    response_date:
+                      $json_extract:
+                        $key: _response_date
+                        $json: $iter_item
+                    deciding_body_type:
+                      $conditional:
+                        - $if:
+                            $equal:
+                              - $json_extract:
+                                  $key: _response_type
+                                  $json: $iter_item
+                              - $literal("DECISION")
+                          $then: $literal_enum(StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER)
+                        - $else:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: _deciding_body_role
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecidingBodyType.COURT:
+                                  - "1795" # Circuit Court
+                                StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD:
+                                  - "1791" # Parole Board
+                                StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER:
+                                  - "1793" # Program Manager
+                                  - "7177" # Agent
+                                  - "1792" # Area Manager
+                                  - "1794" # Supervisor
+                                StateSupervisionViolationResponseDecidingBodyType.INTERNAL_UNKNOWN:
+                                  - "1790" # Parole Violation Unit
+                                  - "1789" # Other State (Compact)
+                    supervision_violation_response_decisions:
+                      - StateSupervisionViolationResponseDecisionEntry:
+                          decision:
+                            $enum_mapping:
+                              $raw_text:
+                                $json_extract:
+                                  $key: _decision
+                                  $json: $iter_item
+                              $mappings:
+                                StateSupervisionViolationResponseDecision.CONTINUANCE:
+                                  - "1847" # Reinstate
+                                  - "1843" # Continue
+                                  - "1786" # Probation Continued
+                                  - "1782" # No Change
+                                  - "1774" # Delayed Sentence Continued
+                                  - "1772" # Parole Continued
+                                  - "1767" # Parole Reinstated
+                                  - "1776" # HYTA Continued
+                                StateSupervisionViolationResponseDecision.DELAYED_ACTION:
+                                  - "1844" # Refer to Program Manager
+                                  - "1845" # Refer to Area Manager
+                                  - "1848" # Return to Agent for Further Investigation
+                                  - "1836" # Defer to Court
+                                  - "1765" # Parole Violation Decision Deferred
+                                StateSupervisionViolationResponseDecision.EXTENSION:
+                                  - "1839" # Extend Term
+                                  - "1784" # Extend Term
+                                StateSupervisionViolationResponseDecision.NEW_CONDITIONS:
+                                  - "1838" # Add Special Condition
+                                  - "1828" # Substance Abuse Testing
+                                  - "1842" # Electronic Monitoring
+                                  - "1770" # Electronic Monitoring
+                                  - "1850" # Return/Divert to Electronic Monitoring
+                                  - "1837" # Increase Supervision Level
+                                  - "1783" # Add/Change Conditions
+                                  - "7224" # Increase Supervision Level
+                                StateSupervisionViolationResponseDecision.OTHER:
+                                  - "1833" # Other
+                                  - "8097" # Other
+                                  - "1781" # Other Action
+                                StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED:
+                                  - "1777" # HYTA Revoked
+                                StateSupervisionViolationResponseDecision.REVOCATION:
+                                  - "1853" # Return to Prison
+                                  - "9995" # Return to Prison PVNS
+                                  - "1849" # Return/Divert to Corrections Center
+                                  - "11786" # Returned for Parole Revocation with New Sentence
+                                  - "1787" # Probation Revoked  Jail
+                                  - "1788" # Probation Revoked  Prison
+                                  - "1775" # Delayed Sentenced Revoked
+                                  - "1766" # Returned for Parole Revocation Process
+                                StateSupervisionViolationResponseDecision.SERVICE_TERMINATION:
+                                  - "1846" # Reinstate and Discharge
+                                  - "1834" # Discharge
+                                  - "1773" # Discharged by Court
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD:
+                                  - "1827" # Day Treatment
+                                  - "1835" # Outpatient Treatment
+                                StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON:
+                                  - "1851" # Return/Divert to Residential Treatment
+                                  - "1779" # Residential Treatment
+                                StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED:
+                                  - "7627" # Dismissed by Court
+                                StateSupervisionViolationResponseDecision.WARNING:
+                                  - "7178" # Verbal Warning
+                                StateSupervisionViolationResponseDecision.WARRANT_ISSUED:
+                                  - "1840" # Issue Warrant #2
+                                  - "1841" # Issue Warrant #1
+                                StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  # BL NOTE: Not sure if these two are just some jail/prison time or complete revocation
+                                  - "1785" # Additional Jail
+                                  - "1769" # Corrections Center
+                                  # BL NOTE: Not sure if mandated programming should be counted as "treatment"?
+                                  - "1768" # Other Programming
+                                  - "1852" # Return/Divert to TRV
+                                  - "9937" # Residential Programming Center
+                                  - "1778" # Residential Programming Center
+                                  - "13815" # Residential ReEntry Program
+                                  - "13817" # Residential ReEntry Program
+                                  - "1780" # SAI Commitment
+                                  - "1771" # TRV
+                    decision_agents:
+                      - $conditional:
+                          # We only have decision agent info for response decisions coming out of ADH_MANAGEMENT_DECISION
+                          #
+                          # Due to the impending implementation of StateStaff, minimally hydrating decision_agents for now to make the future implementation easier
+                          # (since we don't really need decision_agents info for anything right now)
+                          - $if:
+                              $not_null:
+                                $json_extract:
+                                  $key: _decision_agent_id
+                                  $json: $iter_item
+                            $then:
+                              StateAgent:
+                                external_id:
+                                  $json_extract:
+                                    $key: _decision_agent_id
+                                    $json: $iter_item
+                                agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
+                                # agent_type:
+                                #   $enum_mapping:
+                                #     $raw_text:
+                                #       $json_extract:
+                                #         $key: position
+                                #         $json: $iter_item
+                                #     $custom_parser: us_mi_custom_enum_parsers.parse_agent_type
+                                # full_name:
+                                #   $person_name:
+                                #     $given_names:
+                                #       $json_extract:
+                                #         $key: first_name
+                                #         $json: $iter_item
+                                #     $middle_names:
+                                #       $json_extract:
+                                #         $key: middle_name
+                                #         $json: $iter_item
+                                #     $surname:
+                                #       $json_extract:
+                                #         $key: last_name
+                                #         $json: $iter_item
+                                #     $name_suffix:
+                                #       $json_extract:
+                                #         $key: name_suffix
+                                #         $json: $iter_item
+                                # agent_subtype:
+                                #   $conditional:
+                                #     - $if:
+                                #         $in:
+                                #           $value:
+                                #             $json_extract:
+                                #               $key: _deciding_body_role
+                                #               $json: $iter_item
+                                #           $options:
+                                #             # BL NOTE: these four values of _deciding_body_role apply to 99+% of the rows from ADH_MANAGEMENT_DECISION
+                                #             #       there are 100 other random values for _deciding_body_role but I feel like we don't need to categorize
+                                #             #       since they're such a small portion
+                                #             - $literal("SUPERVISOR")
+                                #             - $literal("AREA MANAGER")
+                                #             - $literal("PROGRAM MANAGER")
+                                #             - $literal("AGENT")
+                                #       $then:
+                                #         $enum_mapping:
+                                #           $raw_text:
+                                #             $json_extract:
+                                #               $key: _deciding_body_role
+                                #               $json: $iter_item
+                                #           $mappings:
+                                #             StateAgentSubtype.SUPERVISION_OFFICER:
+                                #               - "AGENT"
+                                #             StateAgentSubtype.SUPERVISION_OFFICER_SUPERVISOR:
+                                #               - "SUPERVISOR"
+                                #               - "PROGRAM MANAGER"
+                                #             StateAgentSubtype.SUPERVISION_REGIONAL_MANAGER:
+                                #               - "AREA MANAGER"

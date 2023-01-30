@@ -49,4 +49,5 @@ class UsMiController(BaseDirectIngestController):
             "assessments_v2",
             "state_drug_screen",
             "employment_period",
+            "supervision_violations",
         ]
