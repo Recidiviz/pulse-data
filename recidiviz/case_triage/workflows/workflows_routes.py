@@ -26,7 +26,6 @@ from flask_wtf.csrf import generate_csrf
 from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.workflows.api_schemas import (
-    WorkflowsUsTnHandleInsertTEPEContactNoteSchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
@@ -98,7 +97,7 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client = FirestoreClientImpl()
         doc_path = interface.get_contact_note_updates_firestore_path(person_external_id)
 
-        if not g.api_data.get("should_queue_task", True):
+        if not g.api_data["should_queue_task"]:
             try:
                 # set_document will create new firestore document if it doesn't exist
                 firestore_client.set_document(
@@ -112,13 +111,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                     merge=True,
                 )
 
-                interface.insert_tepe_contact_note(
-                    person_external_id,
-                    g.api_data["user_id"],
-                    g.api_data["contact_note_date_time"],
-                    g.api_data["contact_note"],
-                    g.api_data.get("voters_rights_code", None),
-                )
+                interface.insert_tepe_contact_note(**g.api_data)
             except Exception:
                 make_response(
                     jsonify("Error in inserting contact note without queueing task"),
@@ -141,13 +134,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             cloud_task_manager.create_task(
                 absolute_uri=f"{cloud_run_metadata.url}"
                 f"/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
-                body={
-                    "person_external_id": person_external_id,
-                    "user_id": g.api_data["user_id"],
-                    "contact_note_date_time": str(g.api_data["contact_note_date_time"]),
-                    "contact_note": g.api_data["contact_note"],
-                    "voters_rights_code": g.api_data.get("voters_rights_code", None),
-                },
+                body=WorkflowsUsTnInsertTEPEContactNoteSchema().dump(g.api_data),  # type: ignore
                 headers=headers_copy,
             )
         except Exception as e:
@@ -213,18 +200,11 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         try:
             data = load_api_schema(
-                WorkflowsUsTnHandleInsertTEPEContactNoteSchema, cloud_task_body
+                WorkflowsUsTnInsertTEPEContactNoteSchema, cloud_task_body
             )
             logging.info("Handling contact note: %s", data)
 
-            # The load_api_schema call will validate the schema request, thus the defaults below exist for mypy
-            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                data.get("person_external_id", ""),
-                data.get("user_id", ""),
-                data.get("contact_note_date_time", datetime.datetime.now()),
-                data.get("contact_note", {}),
-                data.get("voters_rights_code", None),
-            )
+            WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(**data)
         except Exception as e:
             logging.error("Write to TOMIS failed due to error: %s", e)
             firestore_client = FirestoreClientImpl()
