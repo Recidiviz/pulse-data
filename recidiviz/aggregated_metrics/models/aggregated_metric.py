@@ -16,6 +16,7 @@
 # =============================================================================
 """Creates AggregatedMetric objects with properties of spans/events required to calculate a metric"""
 import abc
+import re
 from typing import Dict, List, Sequence, Union
 
 import attr
@@ -46,6 +47,12 @@ class AggregatedMetric:
         Returns a query fragment used to aggregate a metric over multiple time periods,
         e.g. from monthly to quarterly and yearly granularity
         """
+
+    @classmethod
+    def pretty_name(cls) -> str:
+        short_cls_name = cls.__mro__[1].__name__.replace("Aggregated", "")
+        # Solution taken from here: https://stackoverflow.com/questions/199059/a-pythonic-way-to-insert-a-space-before-capital-letters
+        return re.sub(r"(\w)([A-Z])", r"\1 \2", short_cls_name)
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -260,8 +267,8 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
                 ) * ( IF(
-                    {self.get_metric_conditions_string()}, 
-                    CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64), 
+                    {self.get_metric_conditions_string()},
+                    CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64),
                     0)
                 ) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY)
             ) / SUM(
@@ -310,7 +317,7 @@ class DailyAvgTimeSinceSpanStartMetric(
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
                 ) * ( IF(
-                    {self.get_metric_conditions_string()}, 
+                    {self.get_metric_conditions_string()},
                     (
                         # Average of LoS on last day (inclusive) of period/span and LoS on first day of period/span
                         (DATE_DIFF(
@@ -320,7 +327,7 @@ class DailyAvgTimeSinceSpanStartMetric(
                             GREATEST({period_start_date_col}, {span_start_date_col}),
                             {span_start_date_col}, DAY
                         )
-                    ) / 2) {"/ 365.25" if self.scale_to_year else ""}, 
+                    ) / 2) {"/ 365.25" if self.scale_to_year else ""},
                     NULL)
                 ) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY)
             ) / SUM(
@@ -457,7 +464,7 @@ class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
         return f"""
             AVG(IF(
                 {self.get_metric_conditions_string()},
-                CAST(JSON_EXTRACT_SCALAR(event_attributes, "$.{self.event_value_numeric}") AS FLOAT64), 
+                CAST(JSON_EXTRACT_SCALAR(event_attributes, "$.{self.event_value_numeric}") AS FLOAT64),
                 NULL
             )) AS {self.name}
         """

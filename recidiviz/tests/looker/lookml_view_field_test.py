@@ -1,0 +1,128 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests functionality of LookMLViewField functions"""
+
+import unittest
+
+from recidiviz.looker.lookml_view_field import (
+    DimensionLookMLViewField,
+    MeasureLookMLViewField,
+    ParameterLookMLViewField,
+)
+from recidiviz.looker.lookml_view_field_parameter import (
+    LookMLFieldParameter,
+    LookMLFieldType,
+)
+
+
+class LookMLViewTest(unittest.TestCase):
+    """Tests correctness of LookML view field generation"""
+
+    def test_view_field_disallowed_parameters_sql_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"The following parameter types are not allowed for "
+            r"\[parameter\] fields: \['sql'\]",
+        ):
+            _ = ParameterLookMLViewField(
+                field_name="my_parameter",
+                parameters=[
+                    LookMLFieldParameter.allowed_value("First Value", "value1"),
+                    LookMLFieldParameter.default_value("value1"),
+                    LookMLFieldParameter.sql("${TABLE}.value1"),
+                ],
+            )
+
+    def test_view_field_disallowed_parameters_precision_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"The following parameter types are not allowed for "
+            r"\[dimension\] fields: \['allowed_value', 'default_value'\]",
+        ):
+            _ = DimensionLookMLViewField(
+                field_name="my_dimension",
+                parameters=[
+                    LookMLFieldParameter.allowed_value("First Value", "value1"),
+                    LookMLFieldParameter.allowed_value("Second Value", "value2"),
+                    LookMLFieldParameter.default_value("value1"),
+                    LookMLFieldParameter.sql("${TABLE}.value1"),
+                ],
+            )
+
+    def test_view_field_repeated_parameters_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Defined field parameters contain repeated key: \['label', 'label', 'sql'\]",
+        ):
+            _ = MeasureLookMLViewField(
+                field_name="my_measure",
+                parameters=[
+                    LookMLFieldParameter.label("my_param"),
+                    LookMLFieldParameter.label("jk_my_param"),
+                    LookMLFieldParameter.sql("${TABLE}.value1"),
+                ],
+            )
+
+    def test_view_field_repeated_parameters_allowed_value(self) -> None:
+        view_field = ParameterLookMLViewField(
+            field_name="my_parameter",
+            parameters=[
+                LookMLFieldParameter.allowed_value("First Value", "value1"),
+                LookMLFieldParameter.allowed_value("Second Value", "value2"),
+                LookMLFieldParameter.default_value("value1"),
+            ],
+        ).build()
+        expected_view_field = """
+  parameter: my_parameter {
+    allowed_value: {
+      label: "First Value"
+      value: "value1"
+    }
+    allowed_value: {
+      label: "Second Value"
+      value: "value2"
+    }
+    default_value: "value1"
+  }"""
+        self.assertEqual(view_field, expected_view_field)
+
+    def test_view_field_date_type_datatype_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Datatype parameter must be supplied when type parameter is `date`.",
+        ):
+            _ = DimensionLookMLViewField(
+                field_name="my_date_dimension",
+                parameters=[
+                    LookMLFieldParameter.label("my_date_dimension"),
+                    LookMLFieldParameter.type(LookMLFieldType.DATE),
+                    LookMLFieldParameter.sql("${TABLE}.value1"),
+                ],
+            )
+
+    def test_view_field_date_type_datatype(self) -> None:
+        view_field = DimensionLookMLViewField.for_column(
+            column_name="date_dim",
+            field_type=LookMLFieldType.DATE,
+        ).build()
+        expected_view_field = """
+  dimension: date_dim {
+    type: date
+    datatype: date
+    sql: ${TABLE}.date_dim ;;
+  }"""
+        self.assertEqual(view_field, expected_view_field)
