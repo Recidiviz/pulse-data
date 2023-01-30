@@ -68,9 +68,13 @@ variable "zone" {
   type = string
 }
 
+variable "secondary_zone" {
+  type    = string
+  default = null
+}
 
 variable "additional_databases" {
-  type = set(string)
+  type    = set(string)
   default = []
 }
 
@@ -127,13 +131,13 @@ resource "google_sql_database_instance" "data" {
   deletion_protection = false
 
   settings {
-    disk_autoresize = true
-    tier            = var.tier
+    disk_autoresize   = true
+    tier              = var.tier
     availability_type = "REGIONAL"
 
     backup_configuration {
-      enabled  = true
-      location = "us"
+      enabled                        = true
+      location                       = "us"
       point_in_time_recovery_enabled = true
     }
 
@@ -186,7 +190,8 @@ resource "google_sql_database_instance" "data" {
     }
 
     location_preference {
-      zone = var.zone
+      zone           = var.zone
+      secondary_zone = var.secondary_zone
     }
 
     maintenance_window {
@@ -194,7 +199,7 @@ resource "google_sql_database_instance" "data" {
       hour = 0
     }
 
-    dynamic insights_config {
+    dynamic "insights_config" {
       # The var.insights_config[*] syntax is a special mode of the splat operator [*]
       # when applied to a non-list value: if var.insights_config is null then it will
       # produce an empty list, and otherwise it will produce a single-element list

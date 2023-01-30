@@ -83,7 +83,7 @@ module "unified-product-load-balancer-v2" {
       }
       log_config = {
         enable      = true
-        sample_rate = null
+        sample_rate = 1
       }
     }
     ae = {
@@ -109,7 +109,7 @@ module "unified-product-load-balancer-v2" {
       }
       log_config = {
         enable      = true
-        sample_rate = null
+        sample_rate = 1
       }
     }
   }

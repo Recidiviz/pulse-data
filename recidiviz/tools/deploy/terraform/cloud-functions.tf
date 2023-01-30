@@ -24,8 +24,10 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
 }
 
 resource "google_cloudfunctions_function" "trigger_calculation_dag" {
-  name    = "trigger_calculation_dag"
-  runtime = "python38"
+  name          = "trigger_calculation_dag"
+  runtime       = "python38"
+  max_instances = 3000
+
   labels = {
     "deployment-tool" = "terraform"
   }
