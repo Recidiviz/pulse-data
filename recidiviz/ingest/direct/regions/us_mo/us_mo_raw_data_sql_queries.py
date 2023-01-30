@@ -35,14 +35,11 @@ from typing import List, Optional, Tuple
 # Y?YYddd e.g. January 1, 2016 --> 116001; November 2, 1982 --> 82306;
 julian_format_lower_bound_update_date = 0
 
-# M?MDDYY e.g. January 1, 2016 --> 10116; November 2, 1982 --> 110282;
-mmddyy_format_lower_bound_update_date = 0
-
 # YYYY-MM-DD e.g. January 1, 2016 --> 2016-01-01; November 2, 1982 --> 1982-11-02;
 iso_format_lower_bound_update_date = 0
 
 
-ORAS_WEEKLY_SUMMARY_UPDATE = f"""
+ORAS_WEEKLY_SUMMARY_UPDATE = """
     SELECT 
         OFFENDER_NAME,
         AGENCY_NAME,
@@ -63,9 +60,7 @@ ORAS_WEEKLY_SUMMARY_UPDATE = f"""
         BIRTH_DATE,
         CREATED_DATE
     FROM
-        ORAS.WEEKLY_SUMMARY_UPDATE
-    WHERE 
-    COALESCE(CREATED_DATE, '1900-01-01') >= '{iso_format_lower_bound_update_date}';
+        ORAS.WEEKLY_SUMMARY_UPDATE;
     """
 
 LANTERN_DA_RA_LIST = """
@@ -412,7 +407,7 @@ LBAKRDTA_TAK025 = f"""
             COALESCE(BV$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK026 = f"""
+LBAKRDTA_TAK026 = """
     SELECT 
         BW$DOC,
         BW$CYC,
@@ -426,10 +421,7 @@ LBAKRDTA_TAK026 = f"""
         BW$DLU,
         BW$TLU
     FROM
-        LBAKRDTA.TAK026
-    WHERE
-        MAX(COALESCE(BW$DLU, 0),
-            COALESCE(BW$DCR, 0)) >= {julian_format_lower_bound_update_date};
+        LBAKRDTA.TAK026;
     """
 
 LBAKRDTA_TAK028 = f"""
@@ -546,7 +538,7 @@ LBAKRDTA_TAK039 = f"""
             COALESCE(DN$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK040 = f"""
+LBAKRDTA_TAK040 = """
     SELECT 
         DQ$DOC
         DQ$CYC,
@@ -582,10 +574,7 @@ LBAKRDTA_TAK040 = f"""
         DQ$DLU,
         DQ$TLU
     FROM
-        LBAKRDTA.TAK040
-    WHERE
-        MAX(COALESCE(DQ$DLU, 0),
-            COALESCE(DQ$DCR, 0)) >= {julian_format_lower_bound_update_date};
+        LBAKRDTA.TAK040;
     """
 
 LBAKRDTA_TAK042 = f"""
@@ -637,7 +626,7 @@ LBAKRDTA_TAK044 = f"""
             COALESCE(CG$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK065 = f"""
+LBAKRDTA_TAK065 = """
     SELECT 
         CS$DOC,
         CS$CYC,
@@ -660,10 +649,7 @@ LBAKRDTA_TAK065 = f"""
         CS$TLU,
         CS$UID
     FROM
-        LBAKRDTA.TAK065
-    WHERE
-        MAX(COALESCE(CS$DLU, 0),
-            COALESCE(CS$DCR, 0)) >= {julian_format_lower_bound_update_date};
+        LBAKRDTA.TAK065;
     """
 
 LBAKRDTA_TAK076 = f"""
@@ -896,6 +882,21 @@ LBAKRDTA_TAK235 = f"""
             COALESCE(IT$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK238 = """
+    SELECT 
+        ISCSQ#,
+        ISCLN#,
+        ISCMNT,
+        ISDCRT,
+        ISTCRT,
+        ISUIDC,
+        ISDUPT,
+        ISTUPT,
+        ISUIDU
+    FROM
+        LBAKRDTA.TAK238;
+    """
+
 LBAKRDTA_TAK291 = f"""
     SELECT 
         JS$DOC,
@@ -1004,7 +1005,7 @@ LBAKRDTA_VAK003 = f"""
             COALESCE(UPDATE_DT, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBCMDATA_APFX90 = f"""
+LBCMDATA_APFX90 = """
     SELECT 
         BDGNO,
         EMPSSN,
@@ -1025,13 +1026,10 @@ LBCMDATA_APFX90 = f"""
         UPDDTE,
         UPDTME
     FROM
-        LBCMDATA.APFX90
-    WHERE
-        MAX(COALESCE(CRTDTE, 0),
-            COALESCE(UPDDTE, 0)) >= {mmddyy_format_lower_bound_update_date};
+        LBCMDATA.APFX90;
     """
 
-LBCMDATA_APFX91 = f"""
+LBCMDATA_APFX91 = """
     SELECT 
         BDGNO,
         EMPSSN,
@@ -1049,9 +1047,7 @@ LBCMDATA_APFX91 = f"""
         CRTDTE,
         CRTTME
     FROM
-        LBCMDATA.APFX91
-    WHERE
-        COALESCE(CRTDTE, 0) >= {mmddyy_format_lower_bound_update_date};
+        LBCMDATA.APFX91;
     """
 
 OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = """
@@ -1235,6 +1231,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK233", LBAKRDTA_TAK233),
         ("LBAKRDTA_TAK234", LBAKRDTA_TAK234),
         ("LBAKRDTA_TAK235", LBAKRDTA_TAK235),
+        ("LBAKRDTA_TAK238", LBAKRDTA_TAK238),
         ("LBAKRDTA_TAK291", LBAKRDTA_TAK291),
         ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
         ("LBAKRDTA_TAK293", LBAKRDTA_TAK293),
