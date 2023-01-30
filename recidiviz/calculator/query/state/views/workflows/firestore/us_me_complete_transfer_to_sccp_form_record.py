@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query for relevant information needed to fill out transfer to SCCP form in ME
+"""Queries information needed to fill out transfer to SCCP form in ME
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
@@ -101,7 +101,7 @@ case_notes_cte AS (
         CONCAT(st.E_STAT_TYPE_DESC ,' - ', pr.NAME_TX) AS note_title,
         ps.Comments_Tx AS note_body,
         -- TODO(#17587) remove LEFT once the YAML file is updated
-        DATE(SAFE_CAST(mp.MODIFIED_ON_DATE AS DATETIME)) AS event_date,
+        SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS event_date,
     FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
     INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
         ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
