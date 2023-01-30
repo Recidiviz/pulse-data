@@ -140,15 +140,21 @@ class BigQueryViewDagNode:
 
     def __init__(self, view: BigQueryView, is_root: bool = False, is_leaf: bool = True):
         self.view = view
-        # Note: Must use add_child_address() to populate this member variable before using.
+
+        # Note: Must use add_child_node_address() to populate this member variable before using.
         self.child_node_addresses: Set[BigQueryAddress] = set()
+
+        # The set of actual addresses to parent DAG nodes for the underlying view.
+        # Note: Must use add_parent_node_address() to populate this member variable before using.
         self.parent_node_addresses: Set[BigQueryAddress] = set()
-        self.source_table_addresses: Set[BigQueryAddress] = set()
-        # A map of all materialized addresses in the DAG
-        # to the address of their associated view
-        self.materialized_addresss: Optional[
-            Dict[BigQueryAddress, BigQueryAddress]
-        ] = None
+
+        # The set of addresses referenced by the underlying
+        # view which are not also nodes in the DAG. When the
+        # DAG contains all existing views, this result
+        # gives the source tables referenced by the underlying
+        # view.
+        self.source_addresses: Set[BigQueryAddress] = set()
+
         self.is_root = is_root
         self.is_leaf = is_leaf
 
@@ -163,52 +169,14 @@ class BigQueryViewDagNode:
         """The set of actual parent tables/addresses referenced by the underlying view."""
         return self.view.parent_tables
 
-    @property
-    def source_addresses(self) -> Set[BigQueryAddress]:
-        """
-        The set of addresses referenced by the underlying
-        view which are not also nodes in the DAG. When the
-        DAG contains all existing views, this result
-        gives the source tables referenced by the underlying
-        view.
-        """
-        return self.source_table_addresses
-
-    @property
-    def parent_addresses(self) -> Set[BigQueryAddress]:
-        """The set of actual addresses to parent DAG nodes for the underlying view."""
-        if self.materialized_addresss is None:
-            raise ValueError(
-                "Must call set_materialized_addresss() before calling parent_addresses()."
-            )
-
-        parent_addresses: Set[BigQueryAddress] = set()
-
-        for parent_table_address in self.parent_tables:
-            if parent_table_address in self.materialized_addresss:
-                parent_addresses.add(self.materialized_addresss[parent_table_address])
-            else:
-                parent_addresses.add(parent_table_address)
-
-        return parent_addresses
-
-    def add_child_address(self, address: BigQueryAddress) -> None:
+    def add_child_node_address(self, address: BigQueryAddress) -> None:
         self.child_node_addresses.add(address)
 
-    def add_parent_address(self, address: BigQueryAddress) -> None:
+    def add_parent_node_address(self, address: BigQueryAddress) -> None:
         self.parent_node_addresses.add(address)
 
     def add_source_address(self, source_address: BigQueryAddress) -> None:
-        self.source_table_addresses.add(source_address)
-
-    def set_materialized_addresss(
-        self, materialized_addresss: Dict[BigQueryAddress, BigQueryAddress]
-    ) -> None:
-        self.materialized_addresss = materialized_addresss
-
-    @property
-    def child_addresses(self) -> Set[BigQueryAddress]:
-        return self.child_node_addresses
+        self.source_addresses.add(source_address)
 
     @property
     def view_builder(self) -> BigQueryViewBuilder:
@@ -331,28 +299,29 @@ class BigQueryViewDagWalker:
         self.nodes_by_address: Dict[BigQueryAddress, BigQueryViewDagNode] = {
             node.view.address: node for node in dag_nodes
         }
-        self.materialized_addresss = self._get_materialized_addresss_map()
-
         self._prepare_dag()
         self.roots = [node for node in self.nodes_by_address.values() if node.is_root]
         self.leaves = [node for node in self.nodes_by_address.values() if node.is_leaf]
 
         self._check_for_cycles()
 
-    def _get_materialized_addresss_map(self) -> Dict[BigQueryAddress, BigQueryAddress]:
-        """For every view, if it has an associated materialized table, returns a
-        dictionary the addresss of those tables to the address for the original view.
-
-        If a view is not materialized, it will not have any entry in this map.
+    def _prepare_dag(self) -> None:
         """
-        materialized_addresss: Dict[BigQueryAddress, BigQueryAddress] = {}
+        Prepares for processing the full DAG by identifying root nodes and
+        associating nodes with their children.
+
+        For every view, if it has an associated materialized table, map
+        the addresss of those (parent) tables to the address for the original view.
+        """
+
+        materialized_addresses: Dict[BigQueryAddress, BigQueryAddress] = {}
         for address, node in self.nodes_by_address.items():
             if node.view.materialized_address:
-                if node.view.materialized_address in materialized_addresss:
+                if node.view.materialized_address in materialized_addresses:
                     raise ValueError(
                         f"Found materialized view address for view [{address.to_str()}] "
                         f"that matches materialized_address of another view: "
-                        f"[{materialized_addresss[node.view.materialized_address].to_str()}]. "
+                        f"[{materialized_addresses[node.view.materialized_address].to_str()}]. "
                         f"Two BigQueryViews cannot share the same "
                         f"materialized_address."
                     )
@@ -366,23 +335,20 @@ class BigQueryViewDagWalker:
                         f"of another BigQueryView."
                     )
 
-                materialized_addresss[node.view.materialized_address] = address
-        return materialized_addresss
+                materialized_addresses[node.view.materialized_address] = address
 
-    def _prepare_dag(self) -> None:
-        """Prepares for processing the full DAG by identifying root nodes and
-        associating nodes with their children.
-        """
         for address, node in self.nodes_by_address.items():
-            node.set_materialized_addresss(self.materialized_addresss)
             node.is_root = True
-            for parent_address in node.parent_addresses:
+            for parent_address in node.parent_tables:
+                parent_address = materialized_addresses.get(
+                    parent_address, parent_address
+                )
                 if parent_address in self.nodes_by_address:
                     parent_node = self.nodes_by_address[parent_address]
                     parent_node.is_leaf = False
-                    parent_node.add_child_address(address)
+                    parent_node.add_child_node_address(address)
                     node.is_root = False
-                    node.add_parent_address(parent_address)
+                    node.add_parent_node_address(parent_address)
                 else:
                     node.add_source_address(parent_address)
 
@@ -598,9 +564,9 @@ class BigQueryViewDagWalker:
                         previous_level_all_processed = True
                         previous_level_results = {}
                         previous_level_addresses = (
-                            adjacent_node.child_addresses
+                            adjacent_node.child_node_addresses
                             if reverse
-                            else adjacent_node.parent_addresses
+                            else adjacent_node.parent_node_addresses
                         )
                         for previous_level_address in previous_level_addresses:
                             if (
@@ -814,8 +780,10 @@ class BigQueryViewDagWalker:
             node.set_ancestors_sub_dag(ancestors_sub_dag)
 
             # Include source tables in parent count in addition to parent views
-            ancestors_tree_num_edges = len(node.parent_addresses) + sum(
-                p.ancestors_tree_num_edges for p in parent_nodes
+            ancestors_tree_num_edges = (
+                len(node.source_addresses)
+                + len(node.parent_node_addresses)
+                + sum(p.ancestors_tree_num_edges for p in parent_nodes)
             )
             node.set_ancestors_tree_num_edges(ancestors_tree_num_edges)
 
@@ -1008,5 +976,5 @@ class BigQueryViewDagWalker:
         for ancestor in ancestors:
             if not ancestor.dataset_id in terminating_datasets:
                 node = self.nodes_by_address[ancestor]
-                related_addresses |= node.parent_addresses
+                related_addresses |= node.parent_node_addresses | node.source_addresses
         return related_addresses
