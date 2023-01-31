@@ -33,10 +33,14 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           sessions.compartment_level_2 AS supervision_type,
             -- Pull the officer ID from compartment_sessions instead of supervision_officer_sessions
             -- to make sure we choose the officer that aligns with other compartment session attributes.
-          sessions.supervising_officer_external_id_end AS officer_id,
+          #   There are officers with more than one legitimate external id. We are merging these ids and
+          #   so must move all clients to the merged id.
+          IFNULL(ids.external_id_mapped, sessions.supervising_officer_external_id_end) AS officer_id,
           locations.level_2_supervision_location_name AS district,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
+        LEFT JOIN {{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map ids
+            ON sessions.supervising_officer_external_id_end = ids.external_id_to_map AND sessions.state_code = ids.state_code 
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code

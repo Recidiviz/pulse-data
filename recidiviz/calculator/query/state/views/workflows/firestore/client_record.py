@@ -170,6 +170,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     workflows_supervision_states=list_to_query_string(
         ["US_ID", "US_ND", "US_IX"], quoted=True
     ),
+    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 
 if __name__ == "__main__":
