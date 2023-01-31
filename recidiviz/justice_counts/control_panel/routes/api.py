@@ -1023,13 +1023,14 @@ def _check_for_conflicts(
 
 
 def _get_error(error: Exception) -> FlaskException:
+    # Always log the error so it goes to Sentry and GCP Logs
+    logging.exception(error)
+
     # If we already raised a specific FlaskException, re-raise
     if isinstance(error, FlaskException):
         return error
 
-    # Else, if error is unexpected, first log the error, then wrap
-    # in FlaskException and return to frontend
-    logging.exception(error)
+    # Else, wrap in FlaskException and return to frontend
     return JusticeCountsServerError(
         code="server_error",
         description="A server error occurred. See the logs for more information.",

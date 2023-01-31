@@ -227,7 +227,7 @@ class SpreadsheetInterface:
         )
         # If there are ingest-blocking errors, log errors to console and set the spreadsheet status to ERRORED
         if not is_ingest_successful:
-            logging.error(
+            logging.info(
                 "Failed to ingest without errors: agency_id: %i, spreadsheet_id: %i, errors: %s",
                 agency_id,
                 spreadsheet.id,
