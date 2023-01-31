@@ -72,3 +72,4 @@ columns:
     is_pii: True
     description: |-
       User Identification
+always_historical_export: True
