@@ -52,6 +52,7 @@ output:
                   - A6 # Central Office Time & Release
                   - P3 # Dept. of (MH) Institutions
                   - B8 # County Jail Backlog
+                  - Z4 # Fugitive Inmate (State Prison still counts them, so is still responsible authority)
                 StateCustodialAuthority.OTHER_STATE:
                   - I4 # Other State Law Enforcement Agency
           admission_date: start_datetime
