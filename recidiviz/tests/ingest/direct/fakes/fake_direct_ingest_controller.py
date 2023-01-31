@@ -29,6 +29,10 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
     DirectIngestStatus,
 )
+from recidiviz.fakes.fake_gcs_file_system import (
+    FakeGCSFileSystem,
+    FakeGCSFileSystemDelegate,
+)
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
@@ -67,10 +71,6 @@ from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
     FakeDirectIngestInstanceStatusManager,
-)
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import (
-    FakeGCSFileSystem,
-    FakeGCSFileSystemDelegate,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 from recidiviz.tests.ingest.direct.fakes.fake_async_direct_ingest_cloud_task_manager import (

@@ -20,13 +20,11 @@ import unittest
 from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.types.direct_ingest_instance import (
-    DirectIngestInstance,
-)
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class DirectIngestRegionLockManagerTest(unittest.TestCase):

@@ -34,6 +34,7 @@ from recidiviz.auth.auth0_client import JusticeCountsAuth0AppMetadata
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
@@ -71,7 +72,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     UserAccountInvitationStatus,
 )
 from recidiviz.tests.auth.utils import get_test_auth0_config
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,

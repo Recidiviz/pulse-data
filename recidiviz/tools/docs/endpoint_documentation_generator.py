@@ -32,7 +32,7 @@ from flask import Flask
 from werkzeug.routing import Rule
 
 from recidiviz.common.file_system import delete_files, get_all_files_recursive
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import DOCS_ROOT_PATH
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

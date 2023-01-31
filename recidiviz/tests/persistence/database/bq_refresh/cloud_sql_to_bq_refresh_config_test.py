@@ -26,12 +26,12 @@ import sqlalchemy
 
 from recidiviz.big_query.big_query_utils import schema_for_sqlalchemy_table
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
     CloudSqlToBQConfig,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 
 

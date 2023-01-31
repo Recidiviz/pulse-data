@@ -42,7 +42,7 @@ from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view_collector_test import (
     NO_PAUSED_REGIONS_CLOUD_SQL_CONFIG_YAML,
 )

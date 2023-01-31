@@ -29,7 +29,7 @@ from recidiviz.admin_panel.dataset_metadata_store import (
     DatasetMetadataResult,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class TestDatasetMetadataStore(TestCase):

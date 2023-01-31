@@ -30,6 +30,7 @@ from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
     PIPELINE_RUN_TYPE_REQUEST_ARG,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
@@ -40,7 +41,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager impo
     CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 REFRESH_CONTROL_PACKAGE_NAME = cloud_sql_to_bq_refresh_control.__name__
 INGEST_CONTROL_PACKAGE_NAME = direct_ingest_control.__name__

@@ -24,6 +24,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import templates
 from recidiviz.ingest.direct.controllers import direct_ingest_controller_factory
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
@@ -43,7 +44,6 @@ from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
     FakeDirectIngestInstanceStatusManager,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 
 CONTROLLER_FACTORY_PACKAGE_NAME = direct_ingest_controller_factory.__name__
