@@ -37,6 +37,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -80,7 +81,6 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
 

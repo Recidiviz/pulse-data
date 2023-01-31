@@ -39,6 +39,7 @@ import sys
 from typing import List, Optional, Tuple
 from unittest import mock
 
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_config
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import (
@@ -48,7 +49,6 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
     federated_bq_schema_refresh,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

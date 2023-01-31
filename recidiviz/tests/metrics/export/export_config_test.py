@@ -25,6 +25,7 @@ from recidiviz.big_query.export.export_query_config import (
     ExportValidationType,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.metrics.export.export_config import (
     _VIEW_COLLECTION_EXPORT_CONFIGS,
     VIEW_COLLECTION_EXPORT_INDEX,
@@ -34,7 +35,6 @@ from recidiviz.metrics.export.export_config import (
 from recidiviz.metrics.export.products.product_configs import ProductConfigs
 from recidiviz.metrics.export.view_export_manager import get_delegate_export_map
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.utils.string import StrictStringFormatter
 
 

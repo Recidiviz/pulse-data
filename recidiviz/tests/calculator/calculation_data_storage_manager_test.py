@@ -47,7 +47,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_convers
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockAlreadyExists
 from recidiviz.common.constants.states import StateCode
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.calculator.update_sandbox_normalized_state_dataset import (
     build_address_overrides_for_update,
 )

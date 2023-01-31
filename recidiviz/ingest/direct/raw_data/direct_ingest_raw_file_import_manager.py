@@ -37,6 +37,7 @@ from recidiviz.cloud_storage.gcsfs_csv_reader import (
     COMMON_RAW_FILE_ENCODINGS,
     UTF_8_ENCODING,
     GcsfsCsvReader,
+    GcsfsCsvReaderDelegate,
 )
 from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
     ReadOneGcsfsCsvReaderDelegate,
@@ -566,6 +567,189 @@ class DirectIngestRegionRawFileConfig:
         return set(self.raw_file_configs.keys())
 
 
+class DirectIngestRawFileReader:
+    """Reads a raw CSV using the defined file config."""
+
+    def __init__(
+        self,
+        *,
+        csv_reader: GcsfsCsvReader,
+        region_raw_file_config: DirectIngestRegionRawFileConfig,
+        allow_incomplete_configs: bool = False,
+    ) -> None:
+        self.csv_reader = csv_reader
+        self.region_raw_file_config = region_raw_file_config
+        self.allow_incomplete_configs = allow_incomplete_configs
+
+    def read_raw_file_from_gcs(
+        self,
+        path: GcsfsFilePath,
+        delegate: GcsfsCsvReaderDelegate,
+        chunk_size_override: Optional[int] = None,
+    ) -> None:
+        parts = filename_parts_from_path(path)
+        file_config = self.region_raw_file_config.raw_file_configs[parts.file_tag]
+
+        columns = self._get_validated_columns(path, file_config)
+
+        self.csv_reader.streaming_read(
+            path,
+            delegate=delegate,
+            chunk_size=chunk_size_override or file_config.import_chunk_size_rows,
+            encodings_to_try=file_config.encodings_to_try(),
+            index_col=False,
+            header=0 if not file_config.infer_columns_from_config else None,
+            names=columns,
+            keep_default_na=False,
+            **self._common_read_csv_kwargs(file_config),
+        )
+
+    def _get_validated_columns(
+        self, path: GcsfsFilePath, file_config: DirectIngestRawFileConfig
+    ) -> List[str]:
+        """Returns a list of normalized column names for the raw data file at the given path."""
+
+        delegate = ReadOneGcsfsCsvReaderDelegate()
+        self.csv_reader.streaming_read(
+            path,
+            delegate=delegate,
+            chunk_size=1,
+            encodings_to_try=file_config.encodings_to_try(),
+            nrows=1,
+            **self._common_read_csv_kwargs(file_config),
+        )
+        df = delegate.df
+
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
+
+        columns_from_file_config = [column.name for column in file_config.columns]
+
+        if file_config.infer_columns_from_config:
+            if len(columns_from_file_config) != len(df.columns):
+                raise ValueError(
+                    f"Found {len(columns_from_file_config)} columns defined in {file_config.file_tag} "
+                    f"but found {len(df.columns)} in the DataFrame from the CSV. Make sure "
+                    f"all expected columns are defined in the raw data configuration."
+                )
+            try:
+                csv_columns = [
+                    normalize_column_name_for_bq(column_name)
+                    for column_name in df.columns
+                ]
+            except IndexError:
+                # This indicates that there are empty column values in the DF, which highly
+                # suggests that we are working with a file that does not have header rows.
+                return columns_from_file_config
+
+            if set(csv_columns).intersection(set(columns_from_file_config)):
+                raise ValueError(
+                    "Found an unexpected header in the CSV. Please remove the header row from the CSV."
+                )
+            return columns_from_file_config
+
+        csv_columns = [
+            normalize_column_name_for_bq(column_name) for column_name in df.columns
+        ]
+        normalized_csv_columns = set()
+        for i, column_name in enumerate(csv_columns):
+            if not column_name:
+                raise ValueError(f"Found empty column name in [{file_config.file_tag}]")
+
+            # If the capitalization of the column name doesn't match the capitalization
+            # listed in the file config, update the capitalization.
+            if column_name not in file_config.columns:
+                caps_normalized_col = file_config.caps_normalized_col(column_name)
+                if caps_normalized_col:
+                    column_name = caps_normalized_col
+
+            if column_name in normalized_csv_columns:
+                raise ValueError(
+                    f"Multiple columns with name [{column_name}] after normalization."
+                )
+            normalized_csv_columns.add(column_name)
+            csv_columns[i] = column_name
+
+        if len(normalized_csv_columns) == 1:
+            # A single-column file is almost always indicative of a parsing error. If
+            # this column name is not registered in the file config, we throw.
+            column = one(normalized_csv_columns)
+            if column not in file_config.columns:
+                raise ValueError(
+                    f"Found only one column: [{column}]. Columns likely did not "
+                    f"parse properly. Are you using the correct separator and encoding "
+                    f"for this file? If this file really has just one column, the "
+                    f"column name must be registered in the raw file config before "
+                    f"upload."
+                )
+
+        if not self.allow_incomplete_configs:
+            check_found_columns_are_subset_of_config(
+                raw_file_config=file_config, found_columns=normalized_csv_columns
+            )
+
+        return csv_columns
+
+    @staticmethod
+    def _common_read_csv_kwargs(
+        file_config: DirectIngestRawFileConfig,
+    ) -> Dict[str, Any]:
+        """Returns a set of arguments to be passed to the pandas.read_csv() call, based
+        on the provided raw file config.
+        """
+        kwargs = {
+            "sep": file_config.separator,
+            "quoting": (
+                csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL
+            ),
+        }
+
+        if file_config.custom_line_terminator:
+            kwargs["lineterminator"] = file_config.custom_line_terminator
+
+        # We get the following warning if we do not override the
+        # engine in this case: "ParserWarning: Falling back to the 'python'
+        # engine because the separator encoded in utf-8 is > 1 char
+        # long, and the 'c' engine does not support such separators;
+        # you can avoid this warning by specifying engine='python'.
+        if len(file_config.separator.encode(UTF_8_ENCODING)) > 1:
+            # The python engine is slower but more feature-complete.
+            kwargs["engine"] = "python"
+
+        return kwargs
+
+
+def check_found_columns_are_subset_of_config(
+    raw_file_config: DirectIngestRawFileConfig, found_columns: Iterable[str]
+) -> None:
+    """Check that all of the columns that are in the raw data config are also in
+    the columns found in the CSV. If there are columns that are not in the raw data
+    configuration but found in the CSV, then we throw an error to have both match
+    (unless we are in a state where we allow incomplete configurations, like
+    testing).
+    """
+
+    # BQ is case-agnostic when evaluating column names so we can be as well.
+    columns_from_file_config_lower = {
+        column.name.lower() for column in raw_file_config.columns
+    }
+    found_columns_lower = set(c.lower() for c in found_columns)
+
+    if len(found_columns_lower) != len(list(found_columns)):
+        raise ValueError(
+            f"Found duplicate columns in found_columns list: {list(found_columns)}"
+        )
+
+    if not found_columns_lower.issubset(columns_from_file_config_lower):
+        extra_columns = found_columns_lower.difference(columns_from_file_config_lower)
+        raise ValueError(
+            f"Found columns in raw file {sorted(extra_columns)} that are not "
+            f"defined in the raw data configuration for "
+            f"[{raw_file_config.file_tag}]. Make sure that all columns from CSV "
+            f"are defined in the raw data configuration."
+        )
+
+
 class DirectIngestRawFileImportManager:
     """Class that stores raw data import configs for a region, with functionality for
     executing an import of a specific file.
@@ -597,8 +781,11 @@ class DirectIngestRawFileImportManager:
                 region_module=self.region.region_module,
             )
         )
-        self.allow_incomplete_configs = allow_incomplete_configs
-        self.csv_reader = csv_reader
+        self.raw_file_reader = DirectIngestRawFileReader(
+            csv_reader=csv_reader,
+            region_raw_file_config=self.region_raw_file_config,
+            allow_incomplete_configs=allow_incomplete_configs,
+        )
         self.instance = instance
         self.raw_table_migrations = DirectIngestRawTableMigrationCollector(
             region_code=self.region.region_code,
@@ -612,7 +799,9 @@ class DirectIngestRawFileImportManager:
         )
 
     def import_raw_file_to_big_query(
-        self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
+        self,
+        path: GcsfsFilePath,
+        file_metadata: DirectIngestRawFileMetadata,
     ) -> None:
         """Import a raw data file at the given path to the appropriate raw data table in BigQuery."""
         parts = filename_parts_from_path(path)
@@ -658,7 +847,9 @@ class DirectIngestRawFileImportManager:
         logging.info("Completed BigQuery import of [%s]", path.abs_path())
 
     def _upload_contents_to_temp_gcs_paths(
-        self, path: GcsfsFilePath, file_metadata: DirectIngestRawFileMetadata
+        self,
+        path: GcsfsFilePath,
+        file_metadata: DirectIngestRawFileMetadata,
     ) -> Tuple[List[GcsfsFilePath], Optional[List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
@@ -667,26 +858,11 @@ class DirectIngestRawFileImportManager:
 
         logging.info("Starting chunked upload of contents to GCS")
 
-        parts = filename_parts_from_path(path)
-        file_config = self.region_raw_file_config.raw_file_configs[parts.file_tag]
-
-        columns = self._get_validated_columns(path, file_config)
-
         delegate = DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
             path, self.fs, file_metadata, self.temp_output_directory_path
         )
 
-        self.csv_reader.streaming_read(
-            path,
-            delegate=delegate,
-            chunk_size=file_config.import_chunk_size_rows,
-            encodings_to_try=file_config.encodings_to_try(),
-            index_col=False,
-            header=0 if not file_config.infer_columns_from_config else None,
-            names=columns,
-            keep_default_na=False,
-            **self._common_read_csv_kwargs(file_config),
-        )
+        self.raw_file_reader.read_raw_file_from_gcs(path, delegate)
 
         return delegate.output_paths, delegate.output_columns
 
@@ -771,125 +947,6 @@ class DirectIngestRawFileImportManager:
             logging.info("Deleting temp file [%s].", temp_output_path.abs_path())
             self.fs.delete(temp_output_path)
 
-    def _get_validated_columns(
-        self, path: GcsfsFilePath, file_config: DirectIngestRawFileConfig
-    ) -> List[str]:
-        """Returns a list of normalized column names for the raw data file at the given path."""
-
-        delegate = ReadOneGcsfsCsvReaderDelegate()
-        self.csv_reader.streaming_read(
-            path,
-            delegate=delegate,
-            chunk_size=1,
-            encodings_to_try=file_config.encodings_to_try(),
-            nrows=1,
-            **self._common_read_csv_kwargs(file_config),
-        )
-        df = delegate.df
-
-        if not isinstance(df, pd.DataFrame):
-            raise ValueError(f"Unexpected type for DataFrame: [{type(df)}]")
-
-        columns_from_file_config = [column.name for column in file_config.columns]
-
-        if file_config.infer_columns_from_config:
-            if len(columns_from_file_config) != len(df.columns):
-                raise ValueError(
-                    f"Found {len(columns_from_file_config)} columns defined in {file_config.file_tag} "
-                    f"but found {len(df.columns)} in the DataFrame from the CSV. Make sure "
-                    f"all expected columns are defined in the raw data configuration."
-                )
-            try:
-                csv_columns = [
-                    normalize_column_name_for_bq(column_name)
-                    for column_name in df.columns
-                ]
-            except IndexError:
-                # This indicates that there are empty column values in the DF, which highly
-                # suggests that we are working with a file that does not have header rows.
-                return columns_from_file_config
-
-            if set(csv_columns).intersection(set(columns_from_file_config)):
-                raise ValueError(
-                    "Found an unexpected header in the CSV. Please remove the header row from the CSV."
-                )
-            return columns_from_file_config
-
-        csv_columns = [
-            normalize_column_name_for_bq(column_name) for column_name in df.columns
-        ]
-        normalized_csv_columns = set()
-        for i, column_name in enumerate(csv_columns):
-            if not column_name:
-                raise ValueError(f"Found empty column name in [{file_config.file_tag}]")
-
-            # If the capitalization of the column name doesn't match the capitalization
-            # listed in the file config, update the capitalization.
-            if column_name not in file_config.columns:
-                caps_normalized_col = file_config.caps_normalized_col(column_name)
-                if caps_normalized_col:
-                    column_name = caps_normalized_col
-
-            if column_name in normalized_csv_columns:
-                raise ValueError(
-                    f"Multiple columns with name [{column_name}] after normalization."
-                )
-            normalized_csv_columns.add(column_name)
-            csv_columns[i] = column_name
-
-        if len(normalized_csv_columns) == 1:
-            # A single-column file is almost always indicative of a parsing error. If
-            # this column name is not registered in the file config, we throw.
-            column = one(normalized_csv_columns)
-            if column not in file_config.columns:
-                raise ValueError(
-                    f"Found only one column: [{column}]. Columns likely did not "
-                    f"parse properly. Are you using the correct separator and encoding "
-                    f"for this file? If this file really has just one column, the "
-                    f"column name must be registered in the raw file config before "
-                    f"upload."
-                )
-
-        if not self.allow_incomplete_configs:
-            self.check_found_columns_are_subset_of_config(
-                raw_file_config=file_config, found_columns=normalized_csv_columns
-            )
-
-        return csv_columns
-
-    @staticmethod
-    def check_found_columns_are_subset_of_config(
-        raw_file_config: DirectIngestRawFileConfig, found_columns: Iterable[str]
-    ) -> None:
-        """Check that all of the columns that are in the raw data config are also in
-        the columns found in the CSV. If there are columns that are not in the raw data
-        configuration but found in the CSV, then we throw an error to have both match
-        (unless we are in a state where we allow incomplete configurations, like
-        testing).
-        """
-
-        # BQ is case-agnostic when evaluating column names so we can be as well.
-        columns_from_file_config_lower = {
-            column.name.lower() for column in raw_file_config.columns
-        }
-        found_columns_lower = set(c.lower() for c in found_columns)
-
-        if len(found_columns_lower) != len(list(found_columns)):
-            raise ValueError(
-                f"Found duplicate columns in found_columns list: {list(found_columns)}"
-            )
-
-        if not found_columns_lower.issubset(columns_from_file_config_lower):
-            extra_columns = found_columns_lower.difference(
-                columns_from_file_config_lower
-            )
-            raise ValueError(
-                f"Found columns in raw file {sorted(extra_columns)} that are not "
-                f"defined in the raw data configuration for "
-                f"[{raw_file_config.file_tag}]. Make sure that all columns from CSV "
-                f"are defined in the raw data configuration."
-            )
-
     @staticmethod
     def create_raw_table_schema_from_columns(
         columns: List[str],
@@ -909,34 +966,6 @@ class DirectIngestRawFileImportManager:
                 bigquery.SchemaField(name=name, field_type=typ_str, mode=mode)
             )
         return schema
-
-    @staticmethod
-    def _common_read_csv_kwargs(
-        file_config: DirectIngestRawFileConfig,
-    ) -> Dict[str, Any]:
-        """Returns a set of arguments to be passed to the pandas.read_csv() call, based
-        on the provided raw file config.
-        """
-        kwargs = {
-            "sep": file_config.separator,
-            "quoting": (
-                csv.QUOTE_NONE if file_config.ignore_quotes else csv.QUOTE_MINIMAL
-            ),
-        }
-
-        if file_config.custom_line_terminator:
-            kwargs["lineterminator"] = file_config.custom_line_terminator
-
-        # We get the following warning if we do not override the
-        # engine in this case: "ParserWarning: Falling back to the 'python'
-        # engine because the separator encoded in utf-8 is > 1 char
-        # long, and the 'c' engine does not support such separators;
-        # you can avoid this warning by specifying engine='python'.
-        if len(file_config.separator.encode(UTF_8_ENCODING)) > 1:
-            # The python engine is slower but more feature-complete.
-            kwargs["engine"] = "python"
-
-        return kwargs
 
 
 class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(

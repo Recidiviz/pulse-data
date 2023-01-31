@@ -33,6 +33,7 @@ from recidiviz.big_query.view_update_manager import (
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
 from recidiviz.persistence.database.bq_refresh import (
@@ -53,7 +54,6 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FEDERATED_REFRESH_PACKAGE_NAME = federated_cloud_sql_to_bq_refresh.__name__
 FEDERATED_REFRESH_COLLECTOR_PACKAGE_NAME = (

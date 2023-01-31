@@ -25,6 +25,7 @@ from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.reporting.context.overdue_discharge_alert.context import (
     OverdueDischargeAlertContext,
 )
@@ -37,7 +38,6 @@ from recidiviz.reporting.context.top_opportunities.context import (
 from recidiviz.reporting.email_generation import generate
 from recidiviz.reporting.email_reporting_utils import Batch
 from recidiviz.reporting.recipient import Recipient
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class EmailGenerationTests(TestCase):

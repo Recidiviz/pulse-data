@@ -33,8 +33,8 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
-    DirectIngestRawFileImportManager,
     augment_raw_data_df_with_metadata_columns,
+    check_found_columns_are_subset_of_config,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -117,7 +117,7 @@ class IngestViewQueryTestCase(BigQueryViewTestCase):
     ) -> None:
         fixture_columns = csv.get_csv_columns(fixture_file)
 
-        DirectIngestRawFileImportManager.check_found_columns_are_subset_of_config(
+        check_found_columns_are_subset_of_config(
             raw_file_config=raw_file_config, found_columns=fixture_columns
         )
 

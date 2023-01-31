@@ -28,6 +28,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     DirectIngestRegionLockManager,
 )
@@ -36,7 +37,6 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager impo
     CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class CloudSqlToBQLockManagerTest(unittest.TestCase):

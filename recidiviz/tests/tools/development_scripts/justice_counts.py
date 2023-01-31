@@ -24,9 +24,9 @@ python -m recidiviz.tests.tools.development_scripts.justice_counts \
 import argparse
 import logging
 
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -52,9 +52,8 @@ def _create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--clean-up-db",
-        required=False,
+        action="store_true",
         default=False,
-        type=bool,
         help="Automatically cleans up tmp-pgsql-db at end of run",
     )
     return parser

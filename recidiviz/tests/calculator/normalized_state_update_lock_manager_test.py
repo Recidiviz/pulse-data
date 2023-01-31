@@ -28,11 +28,11 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockDoesNotExist,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class NormalizedStateUpdateLockManagerTest(unittest.TestCase):

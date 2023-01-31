@@ -29,6 +29,7 @@ from flask import Blueprint, Flask
 from recidiviz.admin_panel.routes.line_staff_tools import add_line_staff_tools_routes
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
@@ -37,7 +38,6 @@ from recidiviz.reporting.email_reporting_utils import (
     get_data_filename,
     get_data_storage_bucket_name,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.reporting.email_generation_test import EmailGenerationTests
 from recidiviz.tests.utils.with_secrets import with_secrets
 from recidiviz.tools.postgres import local_postgres_helpers

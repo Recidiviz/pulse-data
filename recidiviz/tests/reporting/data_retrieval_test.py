@@ -32,6 +32,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -50,7 +51,6 @@ from recidiviz.tests.case_triage.case_triage_helpers import (
     generate_fake_etl_opportunity,
     generate_fake_officer,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tools.postgres import local_postgres_helpers
 
 FIXTURE_FILE = "po_monthly_report_data_fixture.json"

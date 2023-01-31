@@ -20,13 +20,13 @@ import os
 from unittest import TestCase
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_processed_raw_file_name,
     to_normalized_unprocessed_file_path_from_normalized_path,
     to_normalized_unprocessed_raw_file_name,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class TestDirectIngestGcsFileSystem(TestCase):

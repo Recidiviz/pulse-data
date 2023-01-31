@@ -22,6 +22,7 @@ from typing import Optional
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
 )
@@ -30,7 +31,6 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 
 

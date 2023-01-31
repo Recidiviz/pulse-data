@@ -25,7 +25,7 @@ from flask import Flask
 from freezegun import freeze_time
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.workflows.etl.routes import get_workflows_etl_blueprint
 
 

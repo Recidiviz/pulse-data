@@ -32,6 +32,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
@@ -71,7 +72,6 @@ from recidiviz.persistence.persistence import (
     ENUM_THRESHOLD,
     OVERALL_THRESHOLD,
 )
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.direct_ingest_test_util import (
     run_task_queues_to_empty,
 )
