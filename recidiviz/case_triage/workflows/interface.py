@@ -32,6 +32,7 @@ from recidiviz.case_triage.workflows.constants import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
+from recidiviz.utils.environment import in_gcp_production
 from recidiviz.utils.secrets import get_secret
 
 
@@ -59,6 +60,10 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
     voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = attr.ib(default=None)
 
     def format_request(self) -> str:
+        """
+        Format the request body for the request to TOMIS.
+        If not in production, override the requested id for the JII and user with acceptable test ids.
+        """
         try:
             dateutil.parser.parse(self.contact_note_date_time).date()
         except Exception as exc:
@@ -66,10 +71,21 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
                 f"{self.contact_note_date_time} is not a valid datetime str"
             ) from exc
 
+        if not in_gcp_production():
+            # If we are not in production, ensure we do not submit notes to TOMIS with real ids
+            offender_id = get_secret("workflows_us_tn_test_offender_id")
+            user_id = get_secret("workflows_us_tn_test_user_id")
+
+            if offender_id is None or user_id is None:
+                raise Exception("Missing OffenderId and/or UserId secret")
+        else:
+            offender_id = self.offender_id
+            user_id = self.user_id
+
         request = {
             "ContactNoteDateTime": self.contact_note_date_time,
-            "OffenderId": self.offender_id,
-            "UserId": self.user_id,
+            "OffenderId": offender_id,
+            "UserId": user_id,
             "ContactTypeCode1": "TEPE",
             "ContactSequenceNumber": self.contact_sequence_number,
         }
