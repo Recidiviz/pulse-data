@@ -152,6 +152,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             ON sen.state_code = comp.state_code
             AND sen.person_id = comp.person_id
             AND sen.effective_date < comp.completion_date
+            AND COALESCE(sen.date_imposed, sen.effective_date) < comp.completion_date
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY sen.state_code, sen.person_id, sen.sentence_id, sen.charge_id
             ORDER BY comp.completion_date ASC
