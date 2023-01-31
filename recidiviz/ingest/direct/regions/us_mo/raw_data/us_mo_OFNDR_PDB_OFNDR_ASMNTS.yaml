@@ -5,7 +5,7 @@ file_description: |-
 # TODO(#17289): fill in once we have documentation
 data_classification: source
 primary_key_cols:
-  - CREATE_USER_REF_ID # TODO(#17289): check once we have documentation
+  - OFNDR_ASMNT_REF_ID
 columns:
   # TODO(#17289): fill in once we have documentation
   - name: OFNDR_ASMNT_REF_ID

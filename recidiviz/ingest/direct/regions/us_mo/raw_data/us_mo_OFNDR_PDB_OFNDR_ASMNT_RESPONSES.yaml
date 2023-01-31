@@ -5,10 +5,7 @@ file_description: |-
 # TODO(#17289): fill in once we have documentation
 data_classification: source
 primary_key_cols:
-  - OFNDR_ASMNT_REF_ID
-  - RESPONSE_REF_ID
-  - DELETE_IND
-  - CREATE_TS
+  - OFNDR_RESPONSE_REF_ID
 columns:
   # TODO(#17289): fill in once we have documentation
   - name: OFNDR_RESPONSE_REF_ID
