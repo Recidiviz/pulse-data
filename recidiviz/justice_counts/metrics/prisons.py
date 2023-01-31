@@ -158,7 +158,7 @@ funding = MetricDefinition(
     ],
 )
 
-total_staff = MetricDefinition(
+staff = MetricDefinition(
     system=System.PRISONS,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
