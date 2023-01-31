@@ -479,7 +479,7 @@ class JusticeCountsSchemaTestObjects:
                     "enabled": False,
                 },
                 {
-                    "key": prisons.total_staff.key,
+                    "key": prisons.staff.key,
                     "enabled": True,
                     "settings": [
                         {
@@ -615,13 +615,13 @@ class JusticeCountsSchemaTestObjects:
         )
         excluded_metric_settings_datapoints = [
             schema.Datapoint(
-                metric_definition_key=prisons.total_staff.key,
+                metric_definition_key=prisons.staff.key,
                 includes_excludes_key="VOLUNTEER",
                 value="Yes",
                 source_id=agency_id,
             ),
             schema.Datapoint(
-                metric_definition_key=prisons.total_staff.key,
+                metric_definition_key=prisons.staff.key,
                 includes_excludes_key="INTERN",
                 value="No",
                 source_id=agency_id,

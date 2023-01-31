@@ -70,7 +70,7 @@ METRICS = [
     law_enforcement.civilian_complaints_sustained,
     prisons.funding,
     prisons.expenses,
-    prisons.total_staff,
+    prisons.staff,
     prisons.residents,
     prisons.admissions,
     prisons.daily_population,

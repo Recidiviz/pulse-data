@@ -212,7 +212,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[1]["key"], prisons.expenses.key)
         # Total Staff metric has two includes/excludes settings that
         # are different from the default.
-        self.assertEqual(metrics[2]["key"], prisons.total_staff.key)
+        self.assertEqual(metrics[2]["key"], prisons.staff.key)
         self.assertEqual(
             metrics[2]["settings"],
             [
@@ -469,9 +469,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         # test filenames
         self.assertEqual(metrics[0]["filenames"], ["funding", "funding_by_type"])
-        self.assertEqual(
-            metrics[2]["filenames"], ["total_staff", "total_staff_by_type"]
-        )
+        self.assertEqual(metrics[2]["filenames"], ["staff", "staff_by_type"])
         self.assertEqual(metrics[3]["filenames"], ["admissions", "admissions_by_type"])
         self.assertEqual(
             metrics[4]["filenames"],
@@ -1508,7 +1506,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             # All includes/excludes that were set to YES should have a datapoint
             # with a dimension_identifier_to_member.
             for dimension, includes_excludes in assert_type(
-                prisons.total_staff.aggregated_dimensions, list
+                prisons.staff.aggregated_dimensions, list
             )[0].dimension_to_includes_excludes.items():
                 for (
                     member,

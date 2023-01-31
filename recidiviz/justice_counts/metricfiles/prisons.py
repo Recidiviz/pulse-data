@@ -51,12 +51,12 @@ PRISON_METRIC_FILES = [
         disaggregation_column_name="expense_type",
     ),
     MetricFile(
-        canonical_filename="total_staff",
-        definition=prisons.total_staff,
+        canonical_filename="staff",
+        definition=prisons.staff,
     ),
     MetricFile(
-        canonical_filename="total_staff_by_type",
-        definition=prisons.total_staff,
+        canonical_filename="staff_by_type",
+        definition=prisons.staff,
         disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),
