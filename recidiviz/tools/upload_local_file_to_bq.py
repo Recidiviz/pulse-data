@@ -56,7 +56,12 @@ def main(
 
     quoting = csv.QUOTE_NONE if ignore_quotes else csv.QUOTE_MINIMAL
 
-    dfcolumns = pd.read_csv(local_filepath, nrows=1, sep=separator)
+    dfcolumns = pd.read_csv(
+        local_filepath,
+        nrows=1,
+        sep=separator,
+        encoding=encoding,
+    )
     df = pd.read_csv(
         local_filepath,
         sep=separator,
