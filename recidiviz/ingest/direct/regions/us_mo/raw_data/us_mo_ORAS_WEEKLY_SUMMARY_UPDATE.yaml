@@ -62,3 +62,4 @@ columns:
   - name: CREATED_DATE
     description: |-
       Date that entry was created in system
+always_historical_export: True
