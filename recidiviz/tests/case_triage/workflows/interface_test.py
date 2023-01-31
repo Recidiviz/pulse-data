@@ -99,10 +99,14 @@ class TestWorkflowsInterface(TestCase):
         mock_put.assert_not_called()
         mock_client.update_document.assert_called_once()
 
+    @patch("recidiviz.case_triage.workflows.interface.get_secret")
+    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
     @freezegun.freeze_time("2000-12-30")
     def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request(
-        self,
+        self, mock_in_prod: MagicMock, mock_secret: MagicMock
     ) -> None:
+        mock_in_prod.return_value = False
+        mock_secret.return_value = "test-id"
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
             user_id=USER_ID,
@@ -116,8 +120,8 @@ class TestWorkflowsInterface(TestCase):
         expected = json.dumps(
             {
                 "ContactNoteDateTime": "2000-12-30T00:00:00",
-                "OffenderId": PERSON_EXTERNAL_ID,
-                "UserId": USER_ID,
+                "OffenderId": "test-id",
+                "UserId": "test-id",
                 "ContactTypeCode1": "TEPE",
                 "ContactSequenceNumber": 1,
                 "Comment1": "line 1",
@@ -127,10 +131,12 @@ class TestWorkflowsInterface(TestCase):
 
         self.assertEqual(actual, expected)
 
+    @patch("recidiviz.case_triage.workflows.interface.in_gcp_production")
     @freezegun.freeze_time("2000-12-30")
     def test_workflows_us_tn_write_tepe_note_to_tomis_request_format_request_vrc(
-        self,
+        self, mock_in_prod: MagicMock
     ) -> None:
+        mock_in_prod.return_value = True
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
             user_id=USER_ID,
