@@ -49,6 +49,11 @@ columns:
   - name: BN_HPT
     description: |-
       Housing Permanent / Temporary
+    known_values:
+      - value: P
+        description: Permanent
+      - value: T
+        description: Temporary
   - name: BN_LOC
     description: |-
       Building Number
@@ -64,6 +69,21 @@ columns:
   - name: BN_LRU
     description: |-
       Use
+    known_values:
+      - value: ADS
+        description: Administrative Segregation
+      - value: DIS
+        description: Disciplinary Segregation
+      - value: GNP
+        description: General Population
+      - value: HOS
+        description: Hospitalized
+      - value: NOC
+        description: Ad Seg No Contact
+      - value: PRC
+        description: Protective Custody
+      - value: TAS
+        description: Temporary Administrative Segregation
   - name: BN_HDS
     description: |-
       Reason
