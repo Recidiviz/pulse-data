@@ -55,21 +55,16 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
         SELECT
             'US_ND' AS state_code,
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
-            'line_staff_user' as role,
-            -- one ND user has two external IDs. We aren't using the external IDs or district from
-            -- the product_roster view for ND at this time, so don't include any to avoid confusion.
-            -- (both rows have the same district, but NULL it out for now in case this changes in
-            -- the future)
-            -- TODO(#17763): Add this information back in.
-            CAST(NULL AS STRING) as district,
-            CAST(NULL AS STRING) as external_id,
-            -- The same user has two names. Pick one so they have a name in the admin panel. Use the
-            -- ID to order them so we pick a first/last name from the same row.
-            ARRAY_AGG(fname ORDER BY officer)[SAFE_OFFSET(0)] AS first_name,
-            ARRAY_AGG(lname ORDER BY officer)[SAFE_OFFSET(0)] AS last_name,
+            'line_staff_user' AS role,
+            IFNULL(STRING_AGG(DISTINCT SITEID, ','), '') AS district,
+            IFNULL(ids.external_id_mapped, OFFICER) AS id,
+            FNAME AS first_name,
+            LNAME AS last_name,
         FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest`
+        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
+            ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code 
         WHERE CAST(status AS STRING) = "(1)"
-        GROUP BY email_address
+        GROUP BY email_address, id, first_name, last_name
     ),
     all_users AS (
         SELECT * FROM mo_users
@@ -97,6 +92,7 @@ INGESTED_PRODUCT_USERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),
+    static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     columns=[
         "state_code",
         "email_address",

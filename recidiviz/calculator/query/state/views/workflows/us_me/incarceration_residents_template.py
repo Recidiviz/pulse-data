@@ -100,10 +100,12 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
     )
     , officer_assignments AS (
         SELECT DISTINCT
-            Cis_900_Employee_Id as officer_id,
+            IFNULL(ids.external_id_mapped, Cis_900_Employee_Id) AS officer_id,
             Cis_100_Client_Id as person_external_id,
             row_number() OVER (PARTITION BY Cis_100_Client_Id ORDER BY Assignment_Date DESC) rn
         FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_124_SUPERVISION_HISTORY_latest` sp
+        LEFT JOIN {{project_id}}.{{static_reference_dataset}}.agent_multiple_ids_map ids
+            ON Cis_900_Employee_Id = ids.external_id_to_map AND 'US_ME' = ids.state_code 
         WHERE Supervision_End_Date IS NULL
         QUALIFY rn = 1
     )

@@ -23,7 +23,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         FROM `{project_id}.{analyst_views_dataset}.us_tn_compliant_reporting_logic_materialized`
     ), leadership_users AS (
         SELECT
-            COALESCE(staff.StaffID, external_id, email_address) AS id,
+            COALESCE(ids.external_id_mapped, staff.StaffID, external_id, email_address) AS id,
             "US_TN" AS state_code,
             first_name || " " || last_name AS name,
             CAST(null AS STRING) AS district,
@@ -35,6 +35,8 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         ON UPPER(leadership.first_name) = staff.FirstName
             AND UPPER(leadership.last_name) = staff.LastName
             AND staff.Status = 'A'
+        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
+            ON staff.StaffID = ids.external_id_to_map AND "US_TN" = ids.state_code 
     ), staff_users AS (
         SELECT
             StaffID as id,

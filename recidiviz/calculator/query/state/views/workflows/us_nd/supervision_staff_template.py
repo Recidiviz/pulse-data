@@ -20,14 +20,17 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
     WITH 
     caseload_staff_ids AS (
         SELECT DISTINCT
-            officer_id AS id,
-            state_code,
+            # There is one US_ND staff who has multiple ids, which are mapped here to a single id for user management
+            IFNULL(ids.external_id_mapped, officer_id) AS id,
+            client.state_code,
             CAST(officers.status AS STRING) = "(1)" AS is_active,
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
-        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
+        FROM `{project_id}.{workflows_dataset}.client_record_materialized` client
         LEFT JOIN `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest` officers
             ON officer_id = officers.OFFICER
-        WHERE state_code = "US_ND"
+        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
+            ON officer_id = ids.external_id_to_map AND client.state_code = ids.state_code 
+        WHERE client.state_code = "US_ND"
     )
     , leadership_staff AS (
         SELECT

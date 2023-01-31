@@ -20,10 +20,12 @@ US_IX_SUPERVISION_STAFF_TEMPLATE = """
     WITH 
     caseload_staff_ids AS (
         SELECT DISTINCT
-            officer_id AS id,
-            state_code,
-        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
-        WHERE state_code = "US_IX"
+            IFNULL(ids.external_id_mapped, officer_id) AS id,
+            client.state_code,
+        FROM `{project_id}.{workflows_dataset}.client_record_materialized` client
+        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
+            ON officer_id = ids.external_id_to_map AND client.state_code = ids.state_code 
+        WHERE client.state_code = "US_IX"
     )
     , caseload_staff AS (
         SELECT
