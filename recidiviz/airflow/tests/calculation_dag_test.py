@@ -53,6 +53,10 @@ _ACQUIRE_LOCK_TASK_ID = "acquire_lock_STATE"
 _WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID = "wait_for_acquire_lock_success_STATE"
 _TRIGGER_REFRESH_BQ_DATASET_TASK_ID = "trigger_refresh_bq_dataset_task_STATE"
 _WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = "wait_for_refresh_bq_dataset_success_STATE"
+_SUPPLEMENTAL_PIPELINE_IDS = [
+    "us-id-case-note-extracted-entities",
+    "us-ix-case-note-extracted-entities",
+]
 
 
 def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
@@ -91,7 +95,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
             normalized_state_downstream_dag.task_ids,
         )
 
-    def test_update_normalized_state_upstream_of_normalization_pipelines(self) -> None:
+    def test_update_normalized_state_downstream_of_normalization_pipelines(
+        self,
+    ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
         normalization pipelines are run.
         """
@@ -118,6 +124,36 @@ class TestCalculationPipelineDag(unittest.TestCase):
             upstream_tasks.update(task.upstream_task_ids)
 
         pipeline_tasks_not_upstream = normalization_pipeline_task_ids - upstream_tasks
+        self.assertEqual(set(), pipeline_tasks_not_upstream)
+
+    def test_update_normalized_state_upstream_of_metric_pipelines(self) -> None:
+        """Tests that the `normalized_state` dataset update happens after all
+        normalization pipelines are run.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        metric_pipeline_task_ids: Set[str] = {
+            task.task_id
+            for task in dag.tasks
+            if isinstance(task, RecidivizDataflowTemplateOperator)
+            and "normalization" not in task.task_id
+            and task.task_id not in _SUPPLEMENTAL_PIPELINE_IDS
+        }
+
+        normalized_state_upstream_dag = dag.partial_subset(
+            task_ids_or_regex=["update_normalized_state"],
+            include_downstream=True,
+            include_upstream=False,
+        )
+        self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
+
+        upstream_tasks = set()
+        for task in normalized_state_upstream_dag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
+
+        pipeline_tasks_not_upstream = metric_pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
     def test_rematerialization_upstream_of_all_exports(

@@ -62,4 +62,4 @@ def is_non_empty_code_directory(dir_path: str) -> bool:
 
 
 def is_valid_code_path(path: str) -> bool:
-    return path != "__pycache__" and not path.startswith(".")
+    return "__pycache__" not in path and not path.startswith(".")
