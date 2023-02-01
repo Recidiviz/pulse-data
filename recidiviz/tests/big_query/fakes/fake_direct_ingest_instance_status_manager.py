@@ -64,13 +64,14 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             if status.status == DirectIngestStatus.STANDARD_RERUN_STARTED:
                 return DirectIngestInstance.PRIMARY
 
-        raise ValueError("Did not find a valid start rerun status")
+        return None
 
     def change_status_to(self, new_status: DirectIngestStatus) -> None:
         """Change status to the passed in status."""
+        previous_status = self.statuses[-1].status
         self.validate_transition(
             self.ingest_instance,
-            current_status=self.statuses[-1].status,
+            current_status=previous_status,
             new_status=new_status,
         )
 
@@ -85,6 +86,10 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             self.change_listener.on_raw_data_source_instance_change(
                 self.get_raw_data_source_instance()
             )
+            if previous_status != new_status:
+                self.change_listener.on_ingest_instance_status_change(
+                    previous_status=previous_status, new_status=new_status
+                )
 
     def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""

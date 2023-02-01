@@ -95,7 +95,12 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
         self.can_start_ingest = can_start_ingest
 
     def on_file_added(self, path: GcsfsFilePath) -> None:
-        if path.bucket_path == self.controller.instance_bucket_path:
+        # We can only handle a file if there is a rerun currently in progress, as indicated by there being a
+        # raw data source instance.
+        if (
+            self.controller.ingest_instance_status_manager.get_raw_data_source_instance()
+            and path.bucket_path == self.controller.raw_data_bucket_path
+        ):
             self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 
 

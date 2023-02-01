@@ -126,7 +126,7 @@ class FakeInstanceIngestViewContents(InstanceIngestViewContents):
 
     @property
     def ingest_instance(self) -> DirectIngestInstance:
-        return DirectIngestInstance.PRIMARY
+        return self._ingest_instance
 
     def results_dataset(self) -> str:
         raise ValueError("Unexpected call to results_dataset().")

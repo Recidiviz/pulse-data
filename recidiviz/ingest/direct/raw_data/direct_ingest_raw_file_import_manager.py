@@ -1069,7 +1069,5 @@ def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileCon
 
 
 # TODO(#15450): Delete once secondary raw data import is live.
-def secondary_raw_data_import_enabled_in_state(
-    state_code: StateCode,  # pylint: disable=unused-argument
-) -> bool:
-    return state_code == StateCode.US_OZ
+def secondary_raw_data_import_enabled_in_state(state_code: StateCode) -> bool:
+    return state_code in [StateCode.US_OZ, StateCode.US_XX]

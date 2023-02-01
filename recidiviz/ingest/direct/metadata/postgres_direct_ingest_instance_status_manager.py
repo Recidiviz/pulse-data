@@ -135,8 +135,8 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
             self._direct_ingest_instance_status_as_entity(result) for result in results
         ]
 
-    def _add_new_status_row(self, status: DirectIngestStatus) -> None:
-        """Add new row with the passed in status."""
+    def _add_new_status_row(self, status: DirectIngestStatus) -> DirectIngestStatus:
+        """Add new row with the passed in status. Returns the previous status."""
         with SessionFactory.using_database(self.db_key) as session:
             current_status = self._get_current_status_row(session)
             if current_status.status != status:
@@ -147,6 +147,7 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
                     status=status.value,
                 )
                 session.add(new_row)
+        return current_status.status
 
     def _validate_status_transition_from_current_status(
         self, new_status: DirectIngestStatus
@@ -258,13 +259,18 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         """Change status to the passed in status."""
         prev_raw_data_source_instance = self.get_raw_data_source_instance()
         self._validate_status_transition_from_current_status(new_status=new_status)
-        self._add_new_status_row(status=new_status)
-        if self.change_listener is not None and prev_raw_data_source_instance != (
-            raw_data_source_instance := self.get_raw_data_source_instance()
-        ):
-            self.change_listener.on_raw_data_source_instance_change(
-                raw_data_source_instance
-            )
+        previous_status = self._add_new_status_row(status=new_status)
+        if self.change_listener is not None:
+            if prev_raw_data_source_instance != (
+                raw_data_source_instance := self.get_raw_data_source_instance()
+            ):
+                self.change_listener.on_raw_data_source_instance_change(
+                    raw_data_source_instance
+                )
+            if previous_status != new_status:
+                self.change_listener.on_ingest_instance_status_change(
+                    previous_status=previous_status, new_status=new_status
+                )
 
     @environment.test_only
     def add_instance_status(
