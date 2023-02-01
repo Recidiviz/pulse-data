@@ -18,7 +18,7 @@
 
 from typing import List, Optional, Set
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -79,7 +79,7 @@ class UserAccountInterface:
         That must be done via auth0_client.update_user_app_metadata.
         """
         existing_agency_assocs_by_id = {
-            assoc.agency.id: assoc for assoc in user.agency_assocs
+            assoc.agency_id: assoc for assoc in user.agency_assocs
         }
 
         for agency in agencies:
@@ -116,12 +116,17 @@ class UserAccountInterface:
         return session.query(UserAccount).order_by(UserAccount.id).all()
 
     @staticmethod
-    def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> UserAccount:
-        return (
-            session.query(UserAccount)
-            .filter(UserAccount.auth0_user_id == auth0_user_id)
-            .one_or_none()
+    def get_user_by_auth0_user_id(
+        session: Session, auth0_user_id: str, include_agencies: bool = True
+    ) -> UserAccount:
+        q = session.query(UserAccount).filter(
+            UserAccount.auth0_user_id == auth0_user_id
         )
+
+        if include_agencies:
+            q.options(joinedload(UserAccount.agency_assocs))
+
+        return q.one_or_none()
 
     @staticmethod
     def get_user_by_id(session: Session, user_account_id: int) -> UserAccount:

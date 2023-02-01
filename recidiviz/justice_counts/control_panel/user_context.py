@@ -14,10 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class to sotre information about the currently logged in user of the Justice Counts Control Panel."""
-
-
-from typing import List
+"""Class to store information about the currently logged in user of the Justice Counts Control Panel."""
 
 import attr
 
@@ -27,5 +24,3 @@ class UserContext:
     """Stores information about the currently logged in user."""
 
     auth0_user_id: str
-    agency_ids: List[int] = attr.field(factory=list)
-    permissions: List[str] = attr.field(factory=list)
