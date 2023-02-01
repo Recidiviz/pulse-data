@@ -261,6 +261,23 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             ingest_instance=self._raw_data_source_instance,
         )
 
+    def on_ingest_instance_status_change(
+        self, previous_status: DirectIngestStatus, new_status: DirectIngestStatus
+    ) -> None:
+        """Listener method called by the PostgresDirectIngestInstanceStatusManager every time a status changes."""
+        if DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS in (
+            previous_status,
+            new_status,
+        ):
+            if self.ingest_instance == DirectIngestInstance.PRIMARY:
+                # Any time we transition to/from importing raw data in PRIMARY, we notify SECONDARY
+                # so that its status can change appropriately.
+                self.cloud_task_manager.create_direct_ingest_handle_new_files_task(
+                    region=self.region,
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                    can_start_ingest=True,
+                )
+
     def on_raw_data_source_instance_change(
         self, raw_data_source_instance: Optional[DirectIngestInstance]
     ) -> None:
@@ -428,6 +445,8 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             return
 
         if self._schedule_raw_data_import_tasks():
+            # TODO(#18083) Change to conditionally be BLOCKED_BY_PRIMARY_RAW_DATA_IMPORT if the ingest_instance is
+            #  SECONDARY and the raw_data_source_instance is PRIMARY.
             self.ingest_instance_status_manager.change_status_to(
                 DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
             )

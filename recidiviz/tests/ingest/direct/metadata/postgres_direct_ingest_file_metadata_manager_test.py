@@ -471,20 +471,26 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # Assert
         self.assertEqual([], self.raw_metadata_manager.get_non_invalidated_files())
 
+    # TODO(#15450): Delete when secondary raw data import is enabled for all states.
     def test_get_unprocessed_raw_files_when_secondary_db(self) -> None:
+        non_enabled_secondary_import_manager = (
+            PostgresDirectIngestRawFileMetadataManager(
+                region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
+            )
+        )
         # Arrange
         raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
             "bucket/file_tag.csv",
         )
 
         # Act
-        self.raw_metadata_manager_secondary.mark_raw_file_as_discovered(
+        non_enabled_secondary_import_manager.mark_raw_file_as_discovered(
             raw_unprocessed_path_1
         )
 
         # Assert
         with self.assertRaises(DirectIngestInstanceError):
-            self.raw_metadata_manager_secondary.get_unprocessed_raw_files()
+            non_enabled_secondary_import_manager.get_unprocessed_raw_files()
 
     @freeze_time(datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC))
     def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:

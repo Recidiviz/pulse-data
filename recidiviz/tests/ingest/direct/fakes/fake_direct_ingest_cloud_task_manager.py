@@ -17,21 +17,38 @@
 """Base class for fake implementations of DirectIngestCloudTaskManager."""
 
 import abc
-from typing import Optional
+from typing import Dict, Optional
 
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManager,
+    DirectIngestQueueType,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class FakeDirectIngestCloudTaskQueueManager(DirectIngestCloudTaskQueueManager, abc.ABC):
     """Base class for fake implementations of DirectIngestCloudTaskManager."""
+
+    _queue_type_to_name: Dict[DirectIngestQueueType, str] = {
+        DirectIngestQueueType.SFTP_QUEUE: "sftp_download",
+        DirectIngestQueueType.MATERIALIZE_INGEST_VIEW: "ingest_view_materialization",
+        DirectIngestQueueType.RAW_DATA_IMPORT: "raw_data_import",
+        DirectIngestQueueType.SCHEDULER: "schedule",
+        DirectIngestQueueType.EXTRACT_AND_MERGE: "process",
+    }
 
     def __init__(self) -> None:
         self.controller: Optional[BaseDirectIngestController] = None
 
     def set_controller(self, controller: BaseDirectIngestController) -> None:
         self.controller = controller
+
+    def queue_name_for_type(
+        self, queue_type: DirectIngestQueueType, instance: DirectIngestInstance
+    ) -> str:
+        return self._queue_type_to_name[queue_type] + (
+            "_secondary" if instance == DirectIngestInstance.SECONDARY else ""
+        )

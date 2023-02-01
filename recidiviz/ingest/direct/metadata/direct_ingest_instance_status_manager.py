@@ -198,6 +198,12 @@ class DirectIngestInstanceStatusChangeListener:
     ) -> None:
         """Reacts to raw data source instance change."""
 
+    @abc.abstractmethod
+    def on_ingest_instance_status_change(
+        self, previous_status: DirectIngestStatus, new_status: DirectIngestStatus
+    ) -> None:
+        """Called whenever a status changes for this instance."""
+
 
 class DirectIngestInstanceStatusManager:
     """An interface for reading and updating DirectIngestInstanceStatuses. For a

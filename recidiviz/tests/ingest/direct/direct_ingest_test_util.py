@@ -28,8 +28,14 @@ from recidiviz.tests.ingest.direct.fakes.fake_synchronous_direct_ingest_cloud_ta
 
 def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
     """Runs task queues until they are all empty."""
+    # If there isn't a rerun in progress, as indicated by there not being a raw data source instance, there are no
+    # tasks to run.
+    if not controller.ingest_instance_status_manager.get_raw_data_source_instance():
+        return
     if isinstance(controller.cloud_task_manager, FakeAsyncDirectIngestCloudTaskManager):
-        controller.cloud_task_manager.wait_for_all_tasks_to_run()
+        controller.cloud_task_manager.wait_for_all_tasks_to_run(
+            controller.ingest_instance, controller.raw_data_source_instance
+        )
     elif isinstance(
         controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager
     ):
@@ -54,21 +60,29 @@ def run_task_queues_to_empty(controller: BaseDirectIngestController) -> None:
                 region=controller.region,
                 ingest_instance=controller.raw_data_source_instance,
             ).size():
-                tm.test_run_next_raw_data_import_task()
-                tm.test_pop_finished_raw_data_import_task()
+                tm.test_run_next_raw_data_import_task(
+                    controller.raw_data_source_instance
+                )
+                tm.test_pop_finished_raw_data_import_task(
+                    controller.raw_data_source_instance
+                )
             if tm.get_ingest_view_materialization_queue_info(
                 *queue_args,
             ).size():
-                tm.test_run_next_ingest_view_materialization_task()
-                tm.test_pop_finished_ingest_view_materialization_task()
+                tm.test_run_next_ingest_view_materialization_task(
+                    controller.ingest_instance
+                )
+                tm.test_pop_finished_ingest_view_materialization_task(
+                    controller.ingest_instance
+                )
             if tm.get_scheduler_queue_info(*queue_args).size():
-                tm.test_run_next_scheduler_task()
-                tm.test_pop_finished_scheduler_task()
+                tm.test_run_next_scheduler_task(controller.ingest_instance)
+                tm.test_pop_finished_scheduler_task(controller.ingest_instance)
             if tm.get_extract_and_merge_queue_info(
                 *queue_args,
             ).size():
-                tm.test_run_next_extract_and_merge_task()
-                tm.test_pop_finished_extract_and_merge_task()
+                tm.test_run_next_extract_and_merge_task(controller.ingest_instance)
+                tm.test_pop_finished_extract_and_merge_task(controller.ingest_instance)
     else:
         raise ValueError(
             f"Unexpected type for cloud task manager: "
