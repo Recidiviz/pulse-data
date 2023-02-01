@@ -356,8 +356,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(new_monthly_report_A, None)
             self.assertEqual(new_yearly_report_A, None)
-            self.assertEqual(monthly_metric_defs_A, None)
-            self.assertEqual(annual_metric_defs_A, None)
+            self.assertEqual(monthly_metric_defs_A, [])
+            self.assertEqual(annual_metric_defs_A, [])
 
     def test_report_dates(self) -> None:
         # November, Monthly
