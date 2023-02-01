@@ -22,7 +22,7 @@ from itertools import groupby
 from typing import Callable, DefaultDict, List, Optional
 
 import pandas as pd
-from flask import Blueprint, Response, g, jsonify, make_response, request, send_file
+from flask import Blueprint, Response, jsonify, make_response, request, send_file
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import generate_csrf
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
@@ -35,14 +35,10 @@ from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
-from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.utils import (
-    get_agencies_from_session,
-    get_agency_ids_from_session,
     get_auth0_user_id,
-    raise_if_user_is_not_agency_admin_or_recidiviz_admin,
     raise_if_user_is_not_in_agency,
-    raise_if_user_is_not_recidiviz_admin,
+    raise_if_user_is_wrong_role,
 )
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
@@ -88,11 +84,20 @@ def get_api_blueprint(
             - Updating AgencySettings
         """
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
-
             request_json = assert_type(request.json, dict)
-            raise_if_user_is_not_agency_admin_or_recidiviz_admin()
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=agency_id,
+                allowed_roles={
+                    schema.UserAccountRole.AGENCY_ADMIN,
+                    schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                },
+            )
 
             systems = request_json.get("systems")
             if systems is not None:
@@ -125,10 +130,14 @@ def get_api_blueprint(
         """
         This endpoint gets the settings for a Agency record.
         """
-
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
 
             agency_settings = AgencySettingInterface.get_agency_settings(
                 session=current_session,
@@ -158,8 +167,20 @@ def get_api_blueprint(
                     500,
                 )
 
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+            request_json = assert_type(request.json, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=agency_id,
+                allowed_roles={
+                    schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                    schema.UserAccountRole.AGENCY_ADMIN,
+                },
+            )
 
             request_json = assert_type(request.json, dict)
             invite_name = request_json.get("invite_name")
@@ -185,9 +206,6 @@ def get_api_blueprint(
         This endpoint removes a user from an agency in Auth0 and in the Justice Counts Database.
         """
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
-
             if auth0_client is None:
                 return make_response(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
@@ -195,8 +213,21 @@ def get_api_blueprint(
                 )
 
             request_json = assert_type(request.json, dict)
-            email = request_json.get("email")
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
 
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=agency_id,
+                allowed_roles={
+                    schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                    schema.UserAccountRole.AGENCY_ADMIN,
+                },
+            )
+
+            email = request_json.get("email")
             if email is None:
                 return make_response(
                     "no email was provided in the request body.",
@@ -222,17 +253,28 @@ def get_api_blueprint(
         """
         try:
             request_json = assert_type(request.json, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=agency_id,
+                allowed_roles={
+                    schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                    schema.UserAccountRole.AGENCY_ADMIN,
+                },
+            )
+
             role = request_json.get("role")
             email = request_json.get("email")
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(
-                agency_id=int(agency_id), agency_ids=agency_ids
-            )
             if role is None:
                 return make_response(
                     "no role was provided in the request body.",
                     500,
                 )
+
             users = UserAccountInterface.get_users_by_email(
                 session=current_session, emails={assert_type(email, str)}
             )
@@ -271,6 +313,7 @@ def get_api_blueprint(
                     "auth0_client could not be initialized. Environment is not development or gcp.",
                     500,
                 )
+
             request_json = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict=request_json)
             name = request_json.get("name")
@@ -321,34 +364,36 @@ def get_api_blueprint(
         try:
             request_dict = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict)
-            agencies = get_agencies_from_session()
             email = request_dict.get("email")
             is_email_verified = request_dict.get("email_verified")
 
-            user_account = UserAccountInterface.create_or_update_user(
+            user = UserAccountInterface.create_or_update_user(
                 session=current_session,
                 name=request_dict.get("name"),
                 auth0_user_id=auth0_user_id,
                 email=email,
             )
+            agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+            agencies = AgencyInterface.get_agencies_by_id(
+                session=current_session, agency_ids=agency_ids
+            )
 
             UserAccountInterface.add_or_update_user_agency_association(
                 session=current_session,
-                user=user_account,
+                user=user,
                 agencies=agencies,
                 invitation_status=schema.UserAccountInvitationStatus.ACCEPTED
                 if is_email_verified is True
                 else None,
             )
 
-            permissions = g.user_context.permissions if "user_context" in g else []
             agency_json = [agency.to_json() for agency in agencies or []]
             current_session.commit()
             return jsonify(
                 {
-                    "id": user_account.id,
+                    "id": user.id,
                     "agencies": agency_json,
-                    "permissions": permissions or [],
+                    "permissions": [],
                 }
             )
         except Exception as e:
@@ -363,8 +408,13 @@ def get_api_blueprint(
         Used for rendering the Reports Overview page.
         """
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
@@ -390,21 +440,21 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports/<report_id>", methods=["GET"])
     @auth_decorator
-    def get_report_by_id(report_id: Optional[str] = None) -> Response:
+    def get_report_by_id(report_id: int) -> Response:
         """Get the details for a specified report. Used for rendering
         the Data Entry page.
         """
         try:
-
-            report_id_int = int(assert_type(report_id, str))
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
             report = ReportInterface.get_report_by_id(
-                session=current_session, report_id=report_id_int
+                session=current_session, report_id=int(report_id)
             )
 
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(
-                agency_id=report.source_id, agency_ids=agency_ids
-            )
+            raise_if_user_is_not_in_agency(user=user, agency_id=report.source_id)
 
             report_metrics = ReportInterface.get_metrics_by_report(
                 report=report, session=current_session
@@ -433,45 +483,33 @@ def get_api_blueprint(
 
     @api_blueprint.route("/reports/<report_id>", methods=["PATCH"])
     @auth_decorator
-    def update_report(report_id: Optional[str] = None) -> Response:
+    def update_report(report_id: str) -> Response:
         """Update a report's metadata and/or the metrics on the report.
         Used by the Data Entry page.
         """
         try:
-            report_id_int = int(assert_type(report_id, str))
-            request_dict = assert_type(request.json, dict)
-            time_loaded_by_client = request_dict["time_loaded"]
-            user_account = UserAccountInterface.get_user_by_auth0_user_id(
-                current_session,
-                auth0_user_id=get_auth0_user_id(request_dict=request_dict),
+            request_json = assert_type(request.json, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
             )
             report = ReportInterface.get_report_by_id(
-                session=current_session,
-                report_id=report_id_int,
+                session=current_session, report_id=int(report_id)
             )
 
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(
-                agency_id=report.source_id, agency_ids=agency_ids
-            )
-
-            _check_for_conflicts(
-                report=report,
-                user_account_id=user_account.id,
-                time_loaded_by_client=time_loaded_by_client,
-            )
+            raise_if_user_is_not_in_agency(user=user, agency_id=report.source_id)
 
             ReportInterface.update_report_metadata(
                 report=report,
-                editor_id=user_account.id,
-                status=request_dict["status"],
+                editor_id=user.id,
+                status=request_json["status"],
             )
 
             existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
                 reports=[report]
             )
 
-            for metric_json in request_dict.get("metrics", []):
+            for metric_json in request_json.get("metrics", []):
                 report_metric = MetricInterface.from_json(
                     json=metric_json,
                     entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
@@ -480,7 +518,7 @@ def get_api_blueprint(
                     session=current_session,
                     report=report,
                     report_metric=report_metric,
-                    user_account=user_account,
+                    user_account=user,
                     existing_datapoints_dict=existing_datapoints_dict,
                 )
 
@@ -508,21 +546,29 @@ def get_api_blueprint(
         try:
             request_json = assert_type(request.json, dict)
             agency_id = assert_type(request_json.get("agency_id"), int)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=agency_id,
+                allowed_roles={
+                    schema.UserAccountRole.AGENCY_ADMIN,
+                    schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                },
+            )
+
             month = assert_type(request_json.get("month"), int)
             year = assert_type(request_json.get("year"), int)
             frequency = assert_type(request_json.get("frequency"), str)
-            auth0_user_id = get_auth0_user_id(request_dict=request_json)
-            user_account = UserAccountInterface.get_user_by_auth0_user_id(
-                current_session,
-                auth0_user_id=auth0_user_id,
-            )
-            raise_if_user_is_not_agency_admin_or_recidiviz_admin()
 
             try:
                 report = ReportInterface.create_report(
                     session=current_session,
                     agency_id=agency_id,
-                    user_account_id=user_account.id,
+                    user_account_id=user.id,
                     month=month,
                     year=year,
                     frequency=frequency,
@@ -535,10 +581,11 @@ def get_api_blueprint(
                         description="A report of that date range has already been created.",
                     ) from e
                 raise e
-            assocs = [a for a in user_account.agency_assocs if a.agency_id == agency_id]
+
+            assocs = [a for a in user.agency_assocs if a.agency_id == agency_id]
             editor_id_to_json = {
-                user_account.id: {
-                    "name": user_account.name,
+                user.id: {
+                    "name": user.name,
                     "role": assocs[0].role.value
                     if assocs[0].role is not None
                     else None,
@@ -561,11 +608,19 @@ def get_api_blueprint(
         """
         try:
             request_json = assert_type(request.json, dict)
-            report_ids = request_json.get("report_ids")
-            raise_if_user_is_not_recidiviz_admin(
-                auth0_user_id=get_auth0_user_id(request_dict=request_json)
+            agency_id = assert_type(request_json.get("agency_id"), int)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
             )
 
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=agency_id,
+                allowed_roles={schema.UserAccountRole.JUSTICE_COUNTS_ADMIN},
+            )
+
+            report_ids = request_json.get("report_ids")
             if report_ids is None or len(report_ids) == 0:
                 raise JusticeCountsServerError(
                     code="justice_counts_bad_request",
@@ -589,8 +644,13 @@ def get_api_blueprint(
         Used by the Metric Configuration page in Settings.
         """
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=int(agency_id))
 
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
@@ -614,10 +674,14 @@ def get_api_blueprint(
         Used by the Metric Configuration page in Settings.
         """
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
-
             request_json = assert_type(request.json, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=int(agency_id))
+
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
@@ -626,15 +690,11 @@ def get_api_blueprint(
                     json=metric_json,
                     entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
                 )
-                user_account = UserAccountInterface.get_user_by_auth0_user_id(
-                    current_session,
-                    auth0_user_id=get_auth0_user_id(request_dict=request_json),
-                )
                 DatapointInterface.add_or_update_agency_datapoints(
                     session=current_session,
                     agency_metric=agency_metric,
                     agency=agency,
-                    user_account=user_account,
+                    user_account=user,
                 )
 
             current_session.commit()
@@ -650,8 +710,13 @@ def get_api_blueprint(
         """Get a list of spreadsheets uploaded by an agency.
         Used for rendering the Uploaded Files page.
         """
-        agency_ids = get_agency_ids_from_session()
-        raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+        request_json = assert_type(request.values, dict)
+        user = UserAccountInterface.get_user_by_auth0_user_id(
+            session=current_session,
+            auth0_user_id=get_auth0_user_id(request_dict=request_json),
+        )
+
+        raise_if_user_is_not_in_agency(user=user, agency_id=int(agency_id))
 
         try:
             spreadsheets = SpreadsheetInterface.get_agency_spreadsheets(
@@ -676,7 +741,13 @@ def get_api_blueprint(
         """Download a spreadsheet from GCP and return the file.
         Used by the Uploaded Files page.
         """
-        agency_ids = get_agency_ids_from_session()
+        request_json = assert_type(request.values, dict)
+        user = UserAccountInterface.get_user_by_auth0_user_id(
+            session=current_session,
+            auth0_user_id=get_auth0_user_id(request_dict=request_json),
+        )
+        agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+
         file = SpreadsheetInterface.download_spreadsheet(
             spreadsheet_id=int(spreadsheet_id),
             agency_ids=agency_ids,
@@ -781,24 +852,25 @@ def get_api_blueprint(
         Used by the Uploaded Files page.
         """
         try:
-            permissions = g.user_context.permissions if "user_context" in g else []
             request_json = assert_type(request.json, dict)
             auth0_user_id = get_auth0_user_id(request_dict=request_json)
-            if (
-                not permissions
-                or ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
-            ):
-                raise JusticeCountsServerError(
-                    code="justice_counts_create_report_permission",
-                    description=(
-                        f"User {auth0_user_id} does not have permission to "
-                        "update a spreadsheet status."
-                    ),
-                )
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=auth0_user_id,
+            )
+            spreadsheet = SpreadsheetInterface.get_spreadsheet_by_id(
+                session=current_session, spreadsheet_id=int(spreadsheet_id)
+            )
+
+            raise_if_user_is_wrong_role(
+                user=user,
+                agency_id=spreadsheet.agency_id,
+                allowed_roles={schema.UserAccountRole.JUSTICE_COUNTS_ADMIN},
+            )
+
             status = assert_type(request_json.get("status"), str)
             spreadsheet = SpreadsheetInterface.update_spreadsheet(
-                session=current_session,
-                spreadsheet_id=int(spreadsheet_id),
+                spreadsheet=spreadsheet,
                 status=status,
                 auth0_user_id=auth0_user_id,
             )
@@ -839,20 +911,6 @@ def get_api_blueprint(
     ### Dashboards ###
 
     def get_agency_datapoints(agency_id: int) -> Response:
-        permissions = g.user_context.permissions if "user_context" in g else []
-        if agency_id is None:
-            # If no agency_id is specified, pick one of the agencies
-            # that the user belongs to as a default for the home page
-            if (
-                len(g.user_context.agency_ids) == 0
-                and ControlPanelPermission.RECIDIVIZ_ADMIN.value not in permissions
-            ):
-                raise JusticeCountsServerError(
-                    code="justice_counts_agency_permission",
-                    description="User does not belong to any agencies.",
-                )
-            agency_id = g.user_context.agency_ids[0]
-
         reports = ReportInterface.get_reports_by_agency_id(
             session=current_session,
             agency_id=agency_id,
@@ -917,8 +975,14 @@ def get_api_blueprint(
     @auth_decorator
     def get_datapoints_by_agency_id(agency_id: int) -> Response:
         try:
-            agency_ids = get_agency_ids_from_session()
-            raise_if_user_is_not_in_agency(agency_id=agency_id, agency_ids=agency_ids)
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=int(agency_id))
+
             return get_agency_datapoints(agency_id=agency_id)
         except Exception as e:
             raise _get_error(error=e) from e
@@ -1006,33 +1070,6 @@ def get_api_blueprint(
             raise _get_error(error=e) from e
 
     return api_blueprint
-
-
-def _check_for_conflicts(
-    report: schema.Report, user_account_id: int, time_loaded_by_client: float
-) -> None:
-    last_modified_at = (
-        report.last_modified_at.timestamp()
-        if report.last_modified_at is not None
-        else None
-    )
-    last_modified_by = (
-        report.modified_by[-1]
-        if report.modified_by is not None and len(report.modified_by) > 0
-        else None
-    )
-
-    if (
-        last_modified_at is not None
-        and last_modified_by is not None
-        and last_modified_at > time_loaded_by_client
-        and last_modified_by != user_account_id
-    ):
-        logging.warning(
-            "Version conflict: last_modified_at: %s and time_loaded_by_client: %s",
-            last_modified_at,
-            time_loaded_by_client,
-        )
 
 
 def _get_error(error: Exception) -> FlaskException:

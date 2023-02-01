@@ -54,11 +54,10 @@ class SpreadsheetInterface:
 
     @staticmethod
     def update_spreadsheet(
-        session: Session, spreadsheet_id: int, status: str, auth0_user_id: str
+        spreadsheet: schema.Spreadsheet,
+        status: str,
+        auth0_user_id: str,
     ) -> schema.Spreadsheet:
-        spreadsheet = SpreadsheetInterface.get_spreadsheet_by_id(
-            session=session, spreadsheet_id=spreadsheet_id
-        )
         spreadsheet.status = schema.SpreadsheetStatus[status]
         if status == schema.SpreadsheetStatus.INGESTED.value:
             spreadsheet.ingested_by = auth0_user_id

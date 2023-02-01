@@ -17,7 +17,6 @@
 """Implements tests for the Justice Counts Control Panel backend API."""
 import datetime
 import os
-from http import HTTPStatus
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from unittest import mock
@@ -38,7 +37,6 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
-from recidiviz.justice_counts.control_panel.constants import ControlPanelPermission
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
 from recidiviz.justice_counts.dimensions.dimension_registry import (
@@ -153,13 +151,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_get_all_reports(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
-        self.session.add_all([report, user_A])
+        self.session.add_all(
+            [
+                report,
+                user_A,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
         self.session.commit()
 
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_A.auth0_user_id, agency_ids=[report.source_id]
-            )
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.get(f"/api/agencies/{report.source_id}/reports")
 
         self.assertEqual(response.status_code, 200)
@@ -176,13 +181,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_get_report_metrics(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
-        self.session.add_all([report, user_A])
+        self.session.add_all(
+            [
+                report,
+                user_A,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
         self.session.commit()
 
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_A.auth0_user_id, agency_ids=[report.source_id]
-            )
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.get(f"/api/reports/{report.id}")
 
         self.assertEqual(response.status_code, 200)
@@ -494,6 +506,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_G,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_G,
+                ),
             ]
         )
         self.session.commit()
@@ -506,7 +522,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
             response = self.client.get(f"/api/agencies/{agency.id}/metrics")
 
@@ -602,7 +617,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
             response = self.client.get(f"/api/agencies/{agency.id}/published_data")
 
@@ -695,7 +709,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_A
-        self.session.add_all([agency, user])
+        self.session.add_all(
+            [
+                agency,
+                user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
         self.session.commit()
         month = 3
         year = 2022
@@ -715,10 +738,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_create_report(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_A
-        agency_user_association = AgencyUserAccountAssociation(
-            agency=agency, user_account=user, role=schema.UserAccountRole.AGENCY_ADMIN
+        self.session.add_all(
+            [
+                agency,
+                user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                ),
+            ]
         )
-        self.session.add_all([agency, user, agency_user_association])
         self.session.commit()
         self.session.refresh(user)
         month = 3
@@ -726,7 +756,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
             )
 
             response = self.client.post(
@@ -750,41 +779,36 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["year"], 2022)
 
     def test_cannot_get_another_users_reports(self) -> None:
-        user_B = self.test_schema_objects.test_user_B
+        user_C = self.test_schema_objects.test_user_C
         report = self.test_schema_objects.test_report_monthly
-        self.session.add_all([report, user_B])
-        self.session.commit()
 
         # user belongs to the wrong agency
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_B.auth0_user_id, agency_ids=[report.source_id + 1]
-            )
+            g.user_context = UserContext(auth0_user_id=user_C.auth0_user_id)
             response = self.client.get(f"/api/agencies/{report.source_id}/reports")
 
         self.assertEqual(response.status_code, 500)
-
-        # user makes a request with no agencies, but belongs to an agency
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_B.auth0_user_id, agency_ids=[report.source_id]
-            )
-            response = self.client.get(f"/api/agencies/{report.source_id}/reports")
-
-        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_create_user_if_necessary(self) -> None:
         name = self.test_schema_objects.test_user_A.name
         email = "test@email.com"
         auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id
         agency = self.test_schema_objects.test_agency_A
-        self.session.add(agency)
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
         self.session.commit()
 
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=auth0_user_id,
-                agency_ids=[agency.id],
             )
             user_response = self.client.put(
                 "/api/users",
@@ -794,125 +818,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             )
 
-        agency = self.session.query(Agency).one_or_none()
-
         self.assertEqual(user_response.status_code, 200)
         response_json = assert_type(user_response.json, dict)
         self.assertEqual(
-            response_json["agencies"],
+            response_json["agencies"][0]["team"],
             [
                 {
-                    "fips_county_code": agency.fips_county_code,
-                    "id": agency.id,
-                    "name": agency.name,
-                    "settings": [],
-                    "systems": agency.systems,
-                    "state_code": agency.state_code,
-                    "state": agency.get_state_name(),
-                    "team": [
-                        {
-                            "name": name,
-                            "email": "test@email.com",
-                            "auth0_user_id": auth0_user_id,
-                            "invitation_status": None,
-                            "role": None,
-                        }
-                    ],
+                    "name": name,
+                    "email": "test@email.com",  # email set
+                    "auth0_user_id": auth0_user_id,
+                    "invitation_status": None,
+                    "role": None,
                 }
-            ],
-        )
-        self.assertEqual(response_json["permissions"], [])
-        # New user is added to the database
-        db_item = self.session.query(UserAccount).one()
-        self.assertEqual(db_item.name, name)
-        self.assertEqual(db_item.email, email)
-        self.assertEqual(db_item.auth0_user_id, auth0_user_id)
-        self.assertEqual(len(db_item.agency_assocs), 1)
-        self.assertEqual(db_item.agency_assocs[0].agency.id, agency.id)
-
-    def test_get_all_agencies_for_recidiviz_staff(self) -> None:
-        auth0_user_id = self.test_schema_objects.test_user_A.auth0_user_id
-        agency_A = self.test_schema_objects.test_agency_A
-        agency_B = self.test_schema_objects.test_agency_B
-        agency_C = self.test_schema_objects.test_agency_C
-        self.session.add_all([agency_A, agency_B, agency_C])
-        self.session.commit()
-        self.session.flush()
-        agency_A_id = agency_A.id
-        agency_B_id = agency_B.id
-        agency_C_id = agency_C.id
-
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=auth0_user_id,
-                agency_ids=[agency_A.id],
-                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
-            )
-            user_response = self.client.put("/api/users", json={})
-
-        agency_A = self.session.query(Agency).get(agency_A_id)
-        agency_B = self.session.query(Agency).get(agency_B_id)
-        agency_C = self.session.query(Agency).get(agency_C_id)
-
-        self.assertEqual(user_response.status_code, 200)
-        response_json = assert_type(user_response.json, dict)
-        self.assertEqual(
-            response_json["agencies"],
-            [
-                {
-                    "fips_county_code": agency_A.fips_county_code,
-                    "id": agency_A.id,
-                    "name": agency_A.name,
-                    "settings": [],
-                    "systems": agency_A.systems,
-                    "state_code": agency_A.state_code,
-                    "state": agency_A.get_state_name(),
-                    "team": [
-                        {
-                            "name": None,
-                            "email": None,
-                            "auth0_user_id": auth0_user_id,
-                            "invitation_status": None,
-                            "role": None,
-                        }
-                    ],
-                },
-                {
-                    "fips_county_code": agency_B.fips_county_code,
-                    "id": agency_B.id,
-                    "name": agency_B.name,
-                    "settings": [],
-                    "systems": agency_B.systems,
-                    "state_code": agency_B.state_code,
-                    "state": agency_B.get_state_name(),
-                    "team": [
-                        {
-                            "name": None,
-                            "email": None,
-                            "auth0_user_id": auth0_user_id,
-                            "invitation_status": None,
-                            "role": None,
-                        }
-                    ],
-                },
-                {
-                    "fips_county_code": agency_C.fips_county_code,
-                    "id": agency_C.id,
-                    "name": agency_C.name,
-                    "settings": [],
-                    "systems": agency_C.systems,
-                    "state_code": agency_C.state_code,
-                    "state": agency_C.get_state_name(),
-                    "team": [
-                        {
-                            "name": None,
-                            "email": None,
-                            "auth0_user_id": auth0_user_id,
-                            "invitation_status": None,
-                            "role": None,
-                        }
-                    ],
-                },
             ],
         )
 
@@ -921,8 +838,18 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         new_name = "NEW NAME"
         auth0_user = self.test_schema_objects.test_auth0_user
         db_user = self.test_schema_objects.test_user_A
-        self.session.add_all([self.test_schema_objects.test_agency_A, db_user])
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_agency_A,
+                db_user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
         self.session.commit()
+
         agency = self.session.query(Agency).one_or_none()
         auth0_user["name"] = new_name
         auth0_user["email"] = new_email_address
@@ -958,13 +885,31 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         agency_A = self.test_schema_objects.test_agency_A
         agency_B = self.test_schema_objects.test_agency_B
         user_A = self.test_schema_objects.test_user_A
-        self.session.add_all([agency_A, agency_B, user_A])
+        self.session.add_all(
+            [
+                agency_A,
+                agency_B,
+                user_A,
+                # Put user A in both agencies A and B, that way they have
+                # permission to invite a new user to both of those agencies
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                ),
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_B,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(agency_A)
         self.session.refresh(agency_B)
         email_address = "newuser@fake.com"
         name = "NAME"
-        auth0_id = "auth0_id_A"
+        auth0_id = "auth0_id_B"
         auth0_user = {
             "email": email_address,
             "user_id": auth0_id,
@@ -977,7 +922,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user_A.auth0_user_id,
-                agency_ids=[agency_A.id, agency_B.id],
             )
             response = self.client.post(
                 f"/api/agencies/{agency_A.id}/users",
@@ -988,15 +932,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
 
             self.assertEqual(response.status_code, 200)
+
             # Creates new user in DB with auth0_id
-            db_user = self.session.query(UserAccount).one()
+            db_user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=auth0_id
+            )
             self.assertEqual(db_user.name, name)
             self.assertEqual(db_user.email, email_address)
             self.assertEqual(db_user.auth0_user_id, auth0_id)
-            user_account_association = self.session.query(
-                AgencyUserAccountAssociation
-            ).one()
-            self.assertEqual(user_account_association.user_account_id, db_user.id)
+            user_account_association = (
+                self.session.query(AgencyUserAccountAssociation)
+                .filter(AgencyUserAccountAssociation.user_account_id == db_user.id)
+                .one()
+            )
             self.assertEqual(user_account_association.agency_id, agency_A.id)
             self.assertEqual(
                 user_account_association.invitation_status,
@@ -1020,10 +968,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "invite_email": email_address,
                 },
             )
-            db_user = self.session.query(UserAccount).one()
-            user_account_associations = self.session.query(
-                AgencyUserAccountAssociation
-            ).all()
+
+            db_user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=auth0_id
+            )
+            user_account_associations = (
+                self.session.query(AgencyUserAccountAssociation)
+                .filter(AgencyUserAccountAssociation.user_account_id == db_user.id)
+                .all()
+            )
             self.assertEqual(len(user_account_associations), 2)
             self.assertEqual(user_account_associations[1].agency_id, agency_B.id)
             self.assertEqual(user_account_associations[1].user_account_id, db_user.id)
@@ -1031,6 +984,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 user_account_associations[1].invitation_status,
                 UserAccountInvitationStatus.PENDING,
             )
+
             # Remove user from first agency.
             response = self.client.delete(
                 f"/api/agencies/{agency_A.id}/users",
@@ -1038,12 +992,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "email": email_address,
                 },
             )
-            db_user = self.session.query(UserAccount).one()
+
+            db_user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=auth0_id
+            )
+            user_account_associations = (
+                self.session.query(AgencyUserAccountAssociation)
+                .filter(AgencyUserAccountAssociation.user_account_id == db_user.id)
+                .all()
+            )
             self.assertEqual(len(db_user.agency_assocs), 1)
             self.assertEqual(db_user.agency_assocs[0].agency_id, agency_B.id)
-            user_account_associations = self.session.query(
-                AgencyUserAccountAssociation
-            ).all()
             self.assertEqual(user_account_associations[0].agency_id, agency_B.id)
             self.assertEqual(user_account_associations[0].user_account_id, db_user.id)
             self.assertEqual(
@@ -1055,20 +1014,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         agency_A = self.test_schema_objects.test_agency_A
         user_A = self.test_schema_objects.test_user_A
         user_A.email = "newuser@fake.com"
-        self.session.add_all([agency_A, user_A])
+        self.session.add_all(
+            [
+                agency_A,
+                user_A,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(agency_A)
         self.session.refresh(user_A)
-        user_agency_association = AgencyUserAccountAssociation(
-            user_account_id=user_A.id,
-            agency_id=agency_A.id,
-        )
-        self.session.add(user_agency_association)
-        self.session.commit()
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_A.auth0_user_id, agency_ids=[agency_A.id]
-            )
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.patch(
                 f"/api/agencies/{agency_A.id}/users",
                 json={
@@ -1105,9 +1066,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.add(user_agency_association)
         self.session.commit()
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_A.auth0_user_id, agency_ids=[agency_A.id]
-            )
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.put(
                 "/api/users",
                 json={
@@ -1132,12 +1091,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_update_report(self) -> None:
         report = self.test_schema_objects.test_report_monthly
         user = self.test_schema_objects.test_user_A
-        agency_user_association = AgencyUserAccountAssociation(
-            agency=report.source,
-            user_account=user,
-            role=schema.UserAccountRole.AGENCY_ADMIN,
+        self.session.add_all(
+            [
+                user,
+                report,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
         )
-        self.session.add_all([user, report, agency_user_association])
         self.session.commit()
         with self.app.test_request_context():
             user_account = UserAccountInterface.get_user_by_auth0_user_id(
@@ -1145,7 +1108,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                agency_ids=[report.source_id],
             )
             value = 100
             endpoint = f"/api/reports/{report.id}"
@@ -1241,85 +1203,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 datapoints[6].get_value(), "our metrics are different because xyz"
             )
 
-    def test_update_report_version_conflict(self) -> None:
-        report = self.test_schema_objects.test_report_monthly
-        user = self.test_schema_objects.test_user_A
-        user2 = self.test_schema_objects.test_user_B
-        agency_user_association_A = AgencyUserAccountAssociation(
-            agency=report.source,
-            user_account=user,
-            role=schema.UserAccountRole.AGENCY_ADMIN,
-        )
-        agency_user_association_B = AgencyUserAccountAssociation(
-            agency=report.source,
-            user_account=user2,
-            role=schema.UserAccountRole.AGENCY_ADMIN,
-        )
-        self.session.add_all(
-            [user, user2, agency_user_association_A, agency_user_association_B]
-        )
-        self.session.commit()
-        self.session.flush()
-
-        # report was modified on Feb 2 by someone else
-        report.last_modified_at = datetime.datetime(2022, 2, 2, 0, 0, 0)
-        report.modified_by = [user2.id]
-        self.session.add_all([report])
-        self.session.commit()
-
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[report.source_id],
-            )
-            endpoint = f"/api/reports/{report.id}"
-            response = self.client.patch(
-                endpoint,
-                json={
-                    "status": "DRAFT",
-                    # client loaded the report on Feb 1
-                    # so we should reject the update!
-                    "time_loaded": datetime.datetime(2022, 2, 1, 0, 0, 0).timestamp(),
-                    "metrics": [
-                        {
-                            "key": law_enforcement.calls_for_service.key,
-                            "value": 100,
-                        }
-                    ],
-                },
-            )
-            # TODO(#15262) This should actually 500 after logic is fixed
-            self.assertEqual(response.status_code, 200)
-
-    def test_user_permissions(self) -> None:
-        user_account = self.test_schema_objects.test_user_A
-        self.session.add(user_account)
-        self.session.commit()
-
-        with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_account.auth0_user_id,
-                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
-            )
-            user_response = self.client.put(
-                "/api/users",
-                json={
-                    "name": user_account.name,
-                    "auth0_user_id": user_account.auth0_user_id,
-                },
-            )
-        self.assertEqual(user_response.status_code, 200)
-        self.assertIsNotNone(user_response.json)
-        self.assertEqual(
-            user_response.json["permissions"] if user_response.json else [],
-            [ControlPanelPermission.RECIDIVIZ_ADMIN.value],
-        )
-
     def test_get_metric_settings_contexts(self) -> None:
         self.session.add_all(
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_G,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_G,
+                ),
             ]
         )
         self.session.commit()
@@ -1327,7 +1219,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
             # GET request
             response = self.client.get(f"/api/agencies/{agency.id}/metrics")
@@ -1402,6 +1293,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_G,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_G,
+                ),
             ]
         )
         self.session.commit()
@@ -1412,7 +1307,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
 
             # PUT request
@@ -1475,6 +1369,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_G,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_G,
+                ),
             ]
         )
         self.session.commit()
@@ -1485,7 +1383,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
             response = self.client.put(
                 f"/api/agencies/{agency.id}/metrics",
@@ -1602,6 +1499,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_A,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
             ]
         )
         self.session.commit()
@@ -1609,7 +1510,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
 
             response = self.client.post(
@@ -1629,6 +1529,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_A,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
             ]
         )
         self.session.commit()
@@ -1636,7 +1540,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency.id],
             )
 
             response = self.client.post(
@@ -1702,8 +1605,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     #     with self.app.test_request_context():
     #         g.user_context = UserContext(
     #             auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-    #             agency_ids=[agency.id],
-    #             permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
     #         )
 
     #         response = self.client.post(
@@ -1777,7 +1678,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         user_agency = self.test_schema_objects.test_agency_E
         not_user_agency = self.test_schema_objects.test_agency_A
         user = self.test_schema_objects.test_user_A
-        self.session.add_all([user_agency, user, not_user_agency])
+        self.session.add_all(
+            [
+                user_agency,
+                user,
+                not_user_agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_E,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(user_agency)
         self.session.refresh(not_user_agency)
@@ -1811,7 +1722,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                agency_ids=[user_agency.id],
             )
 
             response = self.client.get(
@@ -1888,7 +1798,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
-                agency_ids=[agency_B.id],
             )
 
             response = self.client.get(f"/api/spreadsheets/{spreadsheet.id}")
@@ -1897,7 +1806,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_download_spreadsheet(self) -> None:
         agency = self.test_schema_objects.test_agency_A
         user = self.test_schema_objects.test_user_A
-        self.session.add_all([user, agency])
+        self.session.add_all(
+            [
+                user,
+                agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(agency)
         spreadsheet = self.test_schema_objects.get_test_spreadsheet(
@@ -1911,7 +1829,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency.id],
             )
             # Upload spreadsheet
             upload_response = self.client.post(
@@ -1935,7 +1852,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_update_spreadsheet(self) -> None:
         agency = self.test_schema_objects.test_agency_E
         user = self.test_schema_objects.test_user_A
-        self.session.add_all([agency, user])
+        self.session.add_all(
+            [
+                agency,
+                user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_E,
+                    role=schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(agency)
         self.session.refresh(user)
@@ -1951,8 +1878,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency.id],
-                permissions=[ControlPanelPermission.RECIDIVIZ_ADMIN.value],
             )
 
             response = self.client.patch(
@@ -1980,7 +1905,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         with self.app.test_request_context():
             g.user_context = UserContext(
                 auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency.id],
             )
             upload_response = self.client.post(
                 "/api/spreadsheets",
@@ -2012,7 +1936,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_get_datapoints_by_agency_id(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
-        self.session.add_all([report, user_A])
+        self.session.add_all(
+            [
+                report,
+                user_A,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
 
         report_metric = self.test_schema_objects.reported_residents_metric
         ReportInterface.add_or_update_metric(
@@ -2024,9 +1957,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.commit()
 
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user_A.auth0_user_id, agency_ids=[report.source_id]
-            )
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
             response = self.client.get(f"/api/agencies/{report.source_id}/datapoints")
 
         self.assertEqual(response.status_code, 200)
@@ -2275,17 +2206,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_update_agency_systems(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_C
-        self.session.add_all([user, agency])
+        self.session.add_all(
+            [
+                user,
+                agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_C,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(agency)
         agency_id = agency.id
 
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency_id],
-                permissions=[],  # no permissions should throw an unauthorized error
-            )
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
             response = self.client.patch(
                 f"/api/agencies/{agency_id}",
                 json={"systems": [schema.System.PAROLE.value]},
@@ -2293,11 +2229,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(response.status_code, 500)
 
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency_id],
-                permissions=["agency_admin"],
-            )
+            # Now give the user permission
+            assoc = self.session.query(AgencyUserAccountAssociation).one()
+            assoc.role = schema.UserAccountRole.AGENCY_ADMIN
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
             response = self.client.patch(
                 f"/api/agencies/{agency_id}",
                 json={"systems": [schema.System.PAROLE.value]},
@@ -2305,11 +2240,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
             self.assertEqual(response.status_code, 200)
 
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency_id],
-                permissions=["recidiviz_admin"],
-            )
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
             response = self.client.patch(
                 f"/api/agencies/{agency_id}",
                 json={"systems": [schema.System.PAROLE.value]},
@@ -2328,7 +2259,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_update_and_get_agency_settings(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_C
-        self.session.add_all([user, agency])
+        self.session.add_all(
+            [
+                user,
+                agency,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_C,
+                ),
+            ]
+        )
         self.session.commit()
         self.session.refresh(agency)
         agency_id = agency.id
@@ -2351,29 +2291,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
 
         with self.app.test_request_context():
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency_id],
-                permissions=[],  # no permissions should throw an unauthorized error
-            )
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
             update_response = update_agency_settings()
             self.assertEqual(update_response.status_code, 500)
 
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency_id],
-                permissions=["recidiviz_admin"],
-            )
+            # Now give the user permission
+            assoc = self.session.query(AgencyUserAccountAssociation).one()
+            assoc.role = schema.UserAccountRole.AGENCY_ADMIN
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
             update_response = update_agency_settings()
             self.assertEqual(update_response.status_code, 200)
 
             # First, update agency settings
             update_response = update_agency_settings()
-            g.user_context = UserContext(
-                auth0_user_id=user.auth0_user_id,
-                agency_ids=[agency_id],
-                permissions=["agency_admin"],
-            )
+            g.user_context = UserContext(auth0_user_id=user.auth0_user_id)
 
             # First, update agency settings
             update_response = update_agency_settings()
