@@ -29,7 +29,7 @@ COPY ./frontends/case-triage/public /usr/case-triage/public
 
 RUN yarn build
 
-FROM ubuntu:focal
+FROM ubuntu:focal-20221130
 
 ENV DEBIAN_FRONTEND noninteractive
 
