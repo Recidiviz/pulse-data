@@ -36,6 +36,9 @@ class DirectIngestStatus(OperationsEnum):
     RAW_DATA_IMPORT_IN_PROGRESS = (
         operations_enum_strings.direct_ingest_status_raw_data_import_in_progress
     )
+    BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT = (
+        operations_enum_strings.direct_ingest_status_blocked_on_primary_raw_data_import
+    )
     INGEST_VIEW_MATERIALIZATION_IN_PROGRESS = (
         operations_enum_strings.direct_ingest_status_ingest_view_materialization_in_progress
     )
@@ -65,16 +68,16 @@ class DirectIngestStatus(OperationsEnum):
 
 
 _DIRECT_INGEST_INSTANCE_STATUS_VALUE_DESCRIPTIONS: Dict[OperationsEnum, str] = {
-    # TODO(#12881): Update comment once endpoint is updated to trigger reruns with raw data imports and ingest views.
     DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED: "Rows are added with this status when the "
     "`/direct/start_rerun` endpoint is triggered from the Admin Panel to kick off a rerun that involves importing a "
     "new (or modified) set of raw data before generating ingest view results and committing that data to Postgres.",
-    # TODO(#12881): Update comment once endpoint is updated to trigger reruns with raw data imports and ingest views.
     DirectIngestStatus.STANDARD_RERUN_STARTED: "Rows are added with this status when the `/direct/start_rerun` "
     "endpoint is triggered from the Admin Panel to kick off a rerun that involves just regenerating ingest view "
     "results and committing that data to Postgres.",
     DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: "Rows are added with this status when raw data import to BQ is in "
     "progress.",
+    DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT: "Rows are added with this status in SECONDARY "
+    "instances when standard reruns are in progress in SECONDARY and raw data import is in progress in PRIMARY.",
     DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: "Rows are added with this status when ingest views are "
     "being run and ingest view output materialization to BQ is in progress.",
     DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: "Rows are added with this status when conversion from "

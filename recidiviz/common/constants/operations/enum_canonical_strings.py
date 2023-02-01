@@ -26,6 +26,9 @@ direct_ingest_status_rerun_with_raw_data_import_started = (
 )
 direct_ingest_status_standard_rerun_started = "STANDARD_RERUN_STARTED"
 direct_ingest_status_raw_data_import_in_progress = "RAW_DATA_IMPORT_IN_PROGRESS"
+direct_ingest_status_blocked_on_primary_raw_data_import = (
+    "BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT"
+)
 direct_ingest_status_ingest_view_materialization_in_progress = (
     "INGEST_VIEW_MATERIALIZATION_IN_PROGRESS"
 )
