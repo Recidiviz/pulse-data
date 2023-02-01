@@ -320,9 +320,4 @@ class MetricInterface:
             metric for metric in metrics if metric.disabled is not True
         ]
 
-        if len(metric_definitions) == 0:
-            raise JusticeCountsServerError(
-                code="invalid_data",
-                description="No metrics found for this report or agency.",
-            )
         return metric_definitions

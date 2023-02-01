@@ -26,7 +26,6 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.dimensions.dimension_registry import (
     DIMENSION_IDENTIFIER_TO_DIMENSION,
 )
-from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.metrics.custom_reporting_frequency import (
     CustomReportingFrequency,
 )
@@ -379,9 +378,4 @@ class DatapointsForMetric:
             ):
                 metric_definitions.append(metric)
 
-        if len(metric_definitions) == 0:
-            raise JusticeCountsServerError(
-                code="invalid_data",
-                description="No metrics found for this report or agency.",
-            )
         return metric_definitions
