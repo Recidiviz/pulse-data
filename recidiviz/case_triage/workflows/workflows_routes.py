@@ -17,11 +17,15 @@
 """Implements routes to support external requests from Workflows."""
 import datetime
 import logging
+import re
 from http import HTTPStatus
+from typing import Optional
 
 import requests
+import werkzeug.wrappers
 from flask import Blueprint, Response, current_app, g, jsonify, make_response, request
 from flask_wtf.csrf import generate_csrf
+from werkzeug.http import parse_set_header
 
 from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
@@ -56,6 +60,17 @@ else:
 
 WORKFLOWS_EXTERNAL_SYSTEM_REQUESTS_QUEUE = "workflows-external-system-requests-queue"
 
+WORKFLOWS_ALLOWED_ORIGINS = [
+    r"http\://localhost:3000",
+    r"http\://localhost:5000",
+    r"https\://dashboard-staging\.recidiviz\.org$",
+    r"https\://dashboard-demo\.recidiviz\.org$",
+    r"https\://dashboard\.recidiviz\.org$",
+    r"https\://recidiviz-dashboard-stag-e1108--[^.]+?\.web\.app$",
+    r"https\://app-staging\.recidiviz\.org$",
+    cloud_run_metadata.url,
+]
+
 
 def create_workflows_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Workflows"""
@@ -65,12 +80,38 @@ def create_workflows_api_blueprint() -> Blueprint:
         on_successful_authorization, "dashboard_auth0"
     )
 
-    # TODO(#18008): Enable CORS such that requests from dashboard are allowed
-
     @workflows_api.before_request
     def validate_request() -> None:
         if request.method != "OPTIONS":
             handle_authorization()
+
+    @workflows_api.before_request
+    def validate_cors() -> Optional[Response]:
+        is_allowed = any(
+            re.match(allowed_origin, request.origin)
+            for allowed_origin in WORKFLOWS_ALLOWED_ORIGINS
+        )
+
+        if not is_allowed:
+            response = make_response()
+            response.status_code = HTTPStatus.FORBIDDEN
+            return response
+
+        return None
+
+    @workflows_api.after_request
+    def add_cors_headers(
+        response: werkzeug.wrappers.Response,
+    ) -> werkzeug.wrappers.Response:
+        # Don't cache access control headers across origins
+        response.vary = "Origin"
+        response.access_control_allow_origin = request.origin
+        response.access_control_allow_headers = parse_set_header(
+            "authorization, sentry-trace"
+        )
+        # Cache preflight responses for 2 hours
+        response.access_control_max_age = 2 * 60 * 60
+        return response
 
     # TODO(recidiviz-dashboards#2950): Remove extraneous logs
     @workflows_api.after_request

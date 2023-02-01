@@ -18,7 +18,7 @@
 import datetime
 import os
 from http import HTTPStatus
-from typing import Callable
+from typing import Callable, Dict, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
@@ -94,7 +94,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
     def test_init(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
 
-        response = self.test_client.get("/workflows/US_TN/init")
+        response = self.test_client.get(
+            "/workflows/US_TN/init", headers={"Origin": "http://localhost:3000"}
+        )
         response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, HTTPStatus.OK, response_json)
 
@@ -108,7 +110,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
 
         response = self.test_client.post(
-            "/workflows/external_request/US_TN/insert_tepe_contact_note", json={}
+            "/workflows/external_request/US_TN/insert_tepe_contact_note",
+            headers={"Origin": "http://localhost:3000"},
+            json={},
         )
         response_json = assert_type(response.get_json(), dict)
         self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST, response_json)
@@ -143,6 +147,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         with self.test_app.test_request_context():
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/insert_tepe_contact_note",
+                headers={"Origin": "http://localhost:3000"},
                 json=request_body,
             )
 
@@ -188,6 +193,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         with self.test_app.test_request_context():
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/insert_tepe_contact_note",
+                headers={"Origin": "http://localhost:3000"},
                 json=request_body,
             )
 
@@ -228,6 +234,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         with self.test_app.test_request_context():
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/insert_tepe_contact_note",
+                headers={"Origin": "http://localhost:3000"},
                 json=request_body,
             )
 
@@ -258,6 +265,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         with self.test_app.test_request_context():
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/insert_tepe_contact_note",
+                headers={"Origin": "http://localhost:3000"},
                 json=request_body,
             )
 
@@ -294,6 +302,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
                 json=request_body,
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
             )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
@@ -317,6 +329,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_insert.return_value = None
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
                 json=request_body,
             )
 
@@ -352,5 +368,99 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             response = self.test_client.post(
                 "/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
                 json=request_body,
+                headers={
+                    "Origin": "http://localhost:3000",
+                    "User-Agent": "Google-Cloud-Tasks",
+                },
             )
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+def make_cors_test(
+    path: str,
+    request_origin: str,
+    request_method: str = "OPTIONS",
+    expected_headers: Optional[Dict[str, str]] = None,
+    expected_status: int = 200,
+) -> Callable:
+    def inner(self: WorkflowsBlueprintTestCase) -> None:
+        response = self.test_client.open(
+            method=request_method,
+            path=path,
+            headers={"Origin": request_origin},
+        )
+
+        self.assertEqual(expected_status, response.status_code, response.get_json())
+
+        for header, value in (expected_headers or {}).items():
+            self.assertEqual(value, response.headers[header])
+
+    return inner
+
+
+class TestWorkflowsCORS(WorkflowsBlueprintTestCase):
+    """Tests various CORS scenarios"""
+
+    test_localhost_is_allowed = make_cors_test(
+        path="/workflows/external_request/US_TN/insert_tepe_contact_note",
+        request_origin="http://localhost:3000",
+        expected_headers={
+            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Max-Age": "7200",
+            "Vary": "Origin",
+        },
+    )
+
+    test_handler_localhost_is_allowed = make_cors_test(
+        path="/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
+        request_origin="http://localhost:3000",
+        expected_headers={
+            "Access-Control-Allow-Origin": "http://localhost:3000",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Access-Control-Max-Age": "7200",
+            "Vary": "Origin",
+        },
+    )
+
+    test_staging_is_allowed = make_cors_test(
+        path="/workflows/external_request/US_TN/insert_tepe_contact_note",
+        request_origin="https://dashboard-staging.recidiviz.org",
+        expected_headers={
+            "Access-Control-Allow-Origin": "https://dashboard-staging.recidiviz.org",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Vary": "Origin",
+        },
+    )
+
+    test_prod_is_allowed = make_cors_test(
+        path="/workflows/external_request/US_TN/insert_tepe_contact_note",
+        request_origin="https://dashboard.recidiviz.org",
+        expected_headers={
+            "Access-Control-Allow-Origin": "https://dashboard.recidiviz.org",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Vary": "Origin",
+        },
+    )
+
+    test_preview_apps_are_allowed = make_cors_test(
+        path="/workflows/external_request/US_TN/insert_tepe_contact_note",
+        request_origin="https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
+        expected_headers={
+            "Access-Control-Allow-Origin": "https://recidiviz-dashboard-stag-e1108--preview-999a999.web.app",
+            "Access-Control-Allow-Headers": "authorization, sentry-trace",
+            "Vary": "Origin",
+        },
+    )
+
+    test_spoof_preview_is_disallowed = make_cors_test(
+        path="/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
+        request_origin="https://recidiviz-dashboard-stag-e1108--officer-7tjx0jmi.fake.web.app",
+        expected_status=HTTPStatus.FORBIDDEN,
+    )
+
+    test_spoof_preview_2_is_disallowed = make_cors_test(
+        path="/workflows/external_request/US_TN/handle_insert_tepe_contact_note",
+        request_origin="https://preview.hacked.com/web.app",
+        expected_status=HTTPStatus.FORBIDDEN,
+    )
