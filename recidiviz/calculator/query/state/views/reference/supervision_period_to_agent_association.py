@@ -37,14 +37,10 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = """
       CAST(agents.external_id AS STRING) as agent_external_id,
       sup.start_date AS agent_start_date,
       sup.termination_date AS agent_end_date
-    FROM (
-        # TODO(#18233): Remove this logic and query just from normalized_state once the
-        # normalization pipelines properly hydrate supervising officer ids.
-        SELECT normalized.* EXCEPT(supervising_officer_id), state.supervising_officer_id
-        FROM `{project_id}.{normalized_state_dataset}.state_supervision_period` normalized
-        LEFT OUTER JOIN `{project_id}.{state_base_dataset}.state_supervision_period` state
-        USING (supervision_period_id)
-    ) sup
+    FROM
+        -- TODO(#18233): Remove this logic and query just from normalized_state once the
+        -- normalization pipelines properly hydrate supervising officer ids.
+        `{project_id}.{state_base_dataset}.state_supervision_period` sup
     LEFT JOIN
       `{project_id}.{reference_views_dataset}.augmented_agent_info` agents
     ON agents.state_code = sup.state_code AND agents.agent_id = sup.supervising_officer_id
@@ -57,7 +53,6 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilder
     view_query_template=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE,
     description=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_DESCRIPTION,
     state_base_dataset=dataset_config.STATE_BASE_DATASET,
-    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
