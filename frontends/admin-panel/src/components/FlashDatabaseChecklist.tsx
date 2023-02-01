@@ -103,21 +103,21 @@ const FlashChecklistStepSection = {
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
   you MUST add it in the relative order to other sections. */
-  PAUSE_OPERATIONS: 1,
-  START_FLASH: 2,
+  PAUSE_OPERATIONS: 0,
+  START_FLASH: 1,
   /* Only present when rerun raw data source instance is SECONDARY */
-  PRIMARY_RAW_DATA_DEPRECATION: 3,
-  PRIMARY_INGEST_VIEW_DEPRECATION: 4,
+  PRIMARY_RAW_DATA_DEPRECATION: 2,
+  PRIMARY_INGEST_VIEW_DEPRECATION: 3,
   /* Only present when rerun raw data source instance is SECONDARY */
-  FLASH_RAW_DATA_TO_PRIMARY: 5,
-  FLASH_INGEST_VIEW_TO_PRIMARY: 6,
+  FLASH_RAW_DATA_TO_PRIMARY: 4,
+  FLASH_INGEST_VIEW_TO_PRIMARY: 5,
   /* Only present when rerun raw data source instance is SECONDARY */
-  SECONDARY_RAW_DATA_CLEANUP: 7,
-  SECONDARY_INGEST_VIEW_CLEANUP: 8,
-  FINALIZE_FLASH: 9,
-  RESUME_OPERATIONS: 10,
-  TRIGGER_PIPELINES: 11,
-  DONE: 12,
+  SECONDARY_RAW_DATA_CLEANUP: 6,
+  SECONDARY_INGEST_VIEW_CLEANUP: 7,
+  FINALIZE_FLASH: 8,
+  RESUME_OPERATIONS: 9,
+  TRIGGER_PIPELINES: 10,
+  DONE: 11,
 };
 
 const CancelFlashChecklistStepSection = {
@@ -125,14 +125,14 @@ const CancelFlashChecklistStepSection = {
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
   you MUST add it in the relative order to other sections. */
-  PAUSE_OPERATIONS: 1,
-  START_CANCELLATION: 2,
+  PAUSE_OPERATIONS: 0,
+  START_CANCELLATION: 1,
   /* Only present when rerun raw data source instance is SECONDARY */
-  SECONDARY_RAW_DATA_CLEANUP: 3,
-  SECONDARY_INGEST_VIEW_CLEANUP: 4,
-  FINALIZE_CANCELLATION: 5,
-  RESUME_OPERATIONS: 6,
-  DONE: 7,
+  SECONDARY_RAW_DATA_CLEANUP: 2,
+  SECONDARY_INGEST_VIEW_CLEANUP: 3,
+  FINALIZE_CANCELLATION: 4,
+  RESUME_OPERATIONS: 5,
+  DONE: 6,
 };
 
 interface ChecklistSectionHeaderProps {
@@ -342,6 +342,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
 
   const setNewState = async (info: StateCodeInfo) => {
     setCurrentStep(0);
+    setCurrentStepSection(0);
     setStateInfo(info);
     setProceedWithFlash(null);
     setSecondaryRawDataSourceInstance(null);
@@ -488,6 +489,11 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             ? "None"
             : currentSecondaryRawDataSourceInstance}
         </h3>
+        <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
+        <ul style={{ color: "green" }}>
+          <li>PRIMARY INSTANCE: {currentPrimaryIngestInstanceStatus}</li>
+          <li>SECONDARY INSTANCE: {currentSecondaryIngestInstanceStatus}</li>
+        </ul>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
@@ -843,11 +849,20 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           Proceeding with Flash of Rerun Results from SECONDARY to PRIMARY
         </h1>
         <h3 style={{ color: "green" }}>
-          Raw data source:{" "}
-          {currentSecondaryRawDataSourceInstance === null
-            ? "None"
-            : currentSecondaryRawDataSourceInstance}
+          Secondary Rerun Raw Data Source Instance:
         </h3>
+        <ul style={{ color: "green" }}>
+          <li>
+            {currentSecondaryRawDataSourceInstance === null
+              ? "None"
+              : currentSecondaryRawDataSourceInstance}
+          </li>
+        </ul>
+        <h3 style={{ color: "green" }}>Current Ingest Instance Statuses:</h3>
+        <ul style={{ color: "green" }}>
+          <li>PRIMARY INSTANCE: {currentPrimaryIngestInstanceStatus}</li>
+          <li>SECONDARY INSTANCE: {currentSecondaryIngestInstanceStatus}</li>
+        </ul>
         <br />
         <ChecklistSection
           currentStep={currentStep}
@@ -872,7 +887,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               <p>Clear out all ingest-related queues in both instances.</p>
             }
             actionButtonTitle="Clear Queue"
-            actionButtonEnabled={isFlashInProgress}
+            actionButtonEnabled={isReadyToFlash}
             onActionButtonClick={async () => purgeIngestQueues(stateCode)}
           />
           <StyledStep
@@ -1651,10 +1666,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       />
     );
   } else if (proceedWithFlash || isFlashInProgress) {
+    /* In the case of a refresh in the middle of a flash, proceedWithFlash
+    will get reset. Set the value back to true, since a flash is already in
+    progress. */
+    if (proceedWithFlash === null) {
+      setProceedWithFlash(true);
+    }
     activeComponent = (
       /* This covers when a decision has been made to
       proceed with a flash from SECONDARY to PRIMARY */
-
       <StateProceedWithFlashChecklist stateCode={stateInfo.code} />
     );
   } else if (!proceedWithFlash || isFlashCancellationInProgress) {
