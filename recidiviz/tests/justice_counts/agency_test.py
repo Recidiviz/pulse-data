@@ -57,14 +57,16 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 session=session, name="Agency Alpha"
             )
             self.assertEqual(agency_1.name, "Agency Alpha")
-
+            agency_2 = AgencyInterface.get_agency_by_name(
+                session=session, name="Beta Initiative"
+            )
             allAgencies = AgencyInterface.get_agencies(session=session)
             self.assertEqual(
                 {a.name for a in allAgencies}, {"Agency Alpha", "Beta Initiative"}
             )
 
             allAgencyIds = AgencyInterface.get_agency_ids(session=session)
-            self.assertEqual(allAgencyIds, [1, 2])
+            self.assertEqual(allAgencyIds, [agency_1.id, agency_2.id])
 
             agenciesByName = AgencyInterface.get_agencies_by_name(
                 session=session, names=["Agency Alpha", "Beta Initiative"]
