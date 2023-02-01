@@ -25,16 +25,17 @@ variable "location" {
 }
 
 variable "dataset_id" {
-  type    = string
+  type = string
 }
 
 variable "description" {
-  type    = string
+  type = string
 }
 
 resource "google_bigquery_dataset" "dataset" {
-  dataset_id  = var.dataset_id
-  location    = var.location
-  labels      = merge(var.labels, {managed_by_terraform = "true"})
-  description = var.description
+  dataset_id            = var.dataset_id
+  location              = var.location
+  labels                = merge(var.labels, { managed_by_terraform = "true" })
+  description           = var.description
+  max_time_travel_hours = "168"
 }
