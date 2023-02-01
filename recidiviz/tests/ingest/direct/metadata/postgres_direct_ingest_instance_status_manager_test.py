@@ -396,11 +396,34 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.STANDARD_RERUN_STARTED,
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
                 # Some raw data could come in that is not used in ingest views
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
+                DirectIngestStatus.READY_TO_FLASH,
+                # Now we get raw data that is used in ingest views
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+                DirectIngestStatus.READY_TO_FLASH,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+        )
+
+    def test_secondary_rerun_receiving_new_raw_data_in_secondary_after_rerun_finishes(
+        self,
+    ) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_secondary_manager,
+            [
+                DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+                DirectIngestStatus.READY_TO_FLASH,
+                # Some raw data could come in SECONDARY that is not used in ingest views
                 DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
                 # Now we get raw data that is used in ingest views
@@ -409,7 +432,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
             ],
-            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+            expected_raw_data_source=DirectIngestInstance.SECONDARY,
         )
 
     def test_primary_new_raw_data_interrupts_processing(self) -> None:
@@ -446,22 +469,22 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.STANDARD_RERUN_STARTED,
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 # New raw data while doing ingest view materialization
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
                 # Return to ingest view materialization
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 # Start processing ingest view results
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
                 # New raw data while doing extract and merge that isn't used in ingest
                 # views.
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
                 # Return to processing ingest view results
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
                 # New raw data while doing extract and merge that IS used in ingest
                 # views
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
                 # Generate more views then continue
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
@@ -528,6 +551,33 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
                 DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
             ],
             expected_raw_data_source=DirectIngestInstance.SECONDARY,
+        )
+
+    def test_happy_path_secondary_rerun_flow_start_new_rerun_raw_data_primary(
+        self,
+    ) -> None:
+        self._run_test_for_status_transitions(
+            self.us_xx_secondary_manager,
+            [
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+                DirectIngestStatus.READY_TO_FLASH,
+                DirectIngestStatus.FLASH_IN_PROGRESS,
+                DirectIngestStatus.FLASH_COMPLETED,
+                DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
+        )
+        self._run_test_for_status_transitions(
+            self.us_xx_secondary_manager,
+            [
+                DirectIngestStatus.STANDARD_RERUN_STARTED,
+            ],
+            expected_raw_data_source=DirectIngestInstance.PRIMARY,
         )
 
     def test_duplicate_statuses_are_not_added_twice(
@@ -614,7 +664,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             self.us_xx_secondary_manager,
             [
                 DirectIngestStatus.STANDARD_RERUN_STARTED,
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+                DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 # A transition to READY_TO_FLASH would be rare here but possible if the
                 # ingest view did not produce any results.

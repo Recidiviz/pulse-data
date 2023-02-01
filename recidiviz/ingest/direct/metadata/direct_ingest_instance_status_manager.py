@@ -37,6 +37,7 @@ INVALID_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
         DirectIngestStatus.STALE_RAW_DATA,
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
         DirectIngestStatus.NO_RERUN_IN_PROGRESS,
+        DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
     ],
     DirectIngestInstance.SECONDARY: [DirectIngestStatus.UP_TO_DATE],
 }
@@ -72,7 +73,6 @@ SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS: Dict[
     DirectIngestStatus, List[DirectIngestStatus]
 ] = {
     DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
-        DirectIngestStatus.STANDARD_RERUN_STARTED,
         DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
         DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
     ],
@@ -99,11 +99,12 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
             DirectIngestStatus.FLASH_COMPLETED,
         ],
         DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
+            *SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+            ],
             DirectIngestStatus.FLASH_COMPLETED,
             DirectIngestStatus.UP_TO_DATE,
-        ]
-        + SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
         ],
         DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
             DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
@@ -142,21 +143,27 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
         # SECONDARY specific check for FLASH_IN_PROGRESS.
         DirectIngestStatus.FLASH_IN_PROGRESS: [DirectIngestStatus.READY_TO_FLASH],
         DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS: [
+            *SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
+                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+            ],
             DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
             DirectIngestStatus.STALE_RAW_DATA,
-            # We would transition from this status if we're doing new raw data import in
-            # PRIMARY.
+            # We would transition from this status if we process new files in SECONDARY
+            # (that were not seen in PRIMARY)
             DirectIngestStatus.READY_TO_FLASH,
-        ]
-        + SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
         ],
-        DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
-        ]
-        + [DirectIngestStatus.READY_TO_FLASH],
+        DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS: [
+            *SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
+                DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS
+            ],
+            DirectIngestStatus.READY_TO_FLASH,
+            DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
+        ],
         DirectIngestStatus.READY_TO_FLASH: [
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            # We would transition from this status if files are processed in PRIMARY that are not in SECONDARY
+            # ingest views
+            DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
             DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         ],
@@ -169,8 +176,11 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
             (set(DirectIngestStatus))
             - set(INVALID_STATUSES[DirectIngestInstance.SECONDARY])
         ),
-        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
-            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+        DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS: [
+            *SHARED_VALID_PREVIOUS_STATUS_TRANSITIONS[
+                DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS
+            ],
+            DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT,
         ],
         DirectIngestStatus.STALE_RAW_DATA: [
             DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
@@ -184,6 +194,14 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
         DirectIngestStatus.NO_RERUN_IN_PROGRESS: [
             DirectIngestStatus.FLASH_CANCELED,
             DirectIngestStatus.FLASH_COMPLETED,
+        ],
+        DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT: [
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+            # We would transition from this status if we are ready to flash and then new raw data is
+            # processed in PRIMARY
+            DirectIngestStatus.READY_TO_FLASH,
         ],
     },
 }

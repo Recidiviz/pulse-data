@@ -72,49 +72,55 @@ const statusFormattingInfo: {
     sortRank: 5,
     message: "Raw data import from GCS to BQ is in progress",
   },
+  BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT: {
+    status: "BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT",
+    color: "ingest-status-cell-grey",
+    sortRank: 6,
+    message: "Raw data import from GCS to BQ is in progress in primary",
+  },
   RERUN_WITH_RAW_DATA_IMPORT_STARTED: {
     status: "RERUN_WITH_RAW_DATA_IMPORT_STARTED",
     color: "ingest-status-cell-grey",
-    sortRank: 6,
+    sortRank: 7,
     message:
       "Rerun with both raw data import and ingest vew materialization has been kicked off",
   },
   STALE_RAW_DATA: {
     status: "STALE_RAW_DATA",
     color: "ingest-status-cell-grey",
-    sortRank: 7,
+    sortRank: 8,
     message:
       "Raw data in PRIMARY is more up to date than raw data in SECONDARY",
   },
   STANDARD_RERUN_STARTED: {
     status: "STANDARD_RERUN_STARTED",
     color: "ingest-status-cell-grey",
-    sortRank: 8,
+    sortRank: 9,
     message:
       "Standard rerun with only ingest view materialization has been kicked off",
   },
   FLASH_CANCELED: {
     status: "FLASH_CANCELED",
     color: "ingest-status-cell-grey",
-    sortRank: 9,
+    sortRank: 10,
     message: "Flash from SECONDARY to PRIMARY has been canceled",
   },
   FLASH_COMPLETED: {
     status: "FLASH_COMPLETED",
     color: "ingest-status-cell-green",
-    sortRank: 10,
+    sortRank: 11,
     message: "Flash of data from SECONDARY to PRIMARY is completed",
   },
   NO_RERUN_IN_PROGRESS: {
     status: "NO_RERUN_IN_PROGRESS",
     color: "ingest-status-cell-green",
-    sortRank: 11,
+    sortRank: 12,
     message: "No rerun is currently in progress in SECONDARY",
   },
   UP_TO_DATE: {
     status: "UP_TO_DATE",
     color: "ingest-status-cell-green",
-    sortRank: 12,
+    sortRank: 13,
     message: "Scheduler in PRIMARY found no more work to do and is up to date",
   },
 };
