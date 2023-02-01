@@ -866,8 +866,6 @@ class AgencySetting(JusticeCountsBase):
         ]
     )
 
-    source = relationship(Source)
-
     def to_json(self) -> Dict[str, Any]:
         return {
             "setting_type": self.setting_type,
