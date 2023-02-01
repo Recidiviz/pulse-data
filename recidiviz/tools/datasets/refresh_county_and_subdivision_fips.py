@@ -71,6 +71,15 @@ def generate_fips_df(path: str = FIPS_2021_URL) -> pd.DataFrame:
             & (fips_df[AREA_NAME_COL] != "United States")
         )
     ]
+
+    # Filter out D.C. county row (only keep D.C. state row)
+    dc_county_index = fips_df[
+        (
+            (fips_df[AREA_NAME_COL] == "District of Columbia")
+            & (fips_df[COUNTY_COL] == "001")
+        )
+    ].index
+    fips_df = fips_df.drop(dc_county_index)
     fips_df = fips_df.reset_index(drop=True)
 
     # Drop unnecessary columns
