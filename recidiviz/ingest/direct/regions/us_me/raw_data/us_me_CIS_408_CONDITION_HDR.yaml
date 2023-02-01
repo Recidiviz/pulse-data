@@ -13,5 +13,3 @@ columns:
   - name: MODIFIED_BY_TX
     is_pii: True
   - name: MODIFIED_ON_DATE
-separator: ","
-custom_line_terminator: "\n"
