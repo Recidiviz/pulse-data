@@ -24,6 +24,7 @@ from unittest import mock
 import pytest
 
 from recidiviz.tools.utils.script_helpers import (
+    interactive_loop_until_tasks_succeed,
     interactive_prompt_retry_on_exception,
     prompt_for_confirmation,
 )
@@ -187,3 +188,189 @@ def test_interactive_prompt_retry_on_exception(
             exit_on_cancel=False,
         )
     ]
+
+
+class TestInteractiveLoopUntilTasksSucceed:
+    """
+    Namespace for verifying behavior of
+    interactive_loop_until_tasks_succeed
+    """
+
+    @staticmethod
+    @pytest.fixture(name="tasks")
+    def tasks_fixture() -> Tuple[
+        Dict[str, int],
+        Dict[str, int],
+        Dict[str, int],
+        Dict[str, int],
+    ]:
+        return ({"one": 1}, {"two": 2}, {"three": 3}, {"four": 4})
+
+    @staticmethod
+    @pytest.fixture(name="caplog_info")
+    def caplog_info_fixture(caplog: Any) -> Any:
+        caplog.set_level(logging.INFO)
+        return caplog
+
+    @staticmethod
+    def test_total_success_first_try(tasks: Tuple, caplog_info: Any) -> None:
+        mock_tasks_fn = mock.MagicMock(return_value=(tuple(tasks), ()))
+        interactive_loop_until_tasks_succeed(
+            tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
+        )
+        assert mock_tasks_fn.mock_calls == [mock.call(tasks_kwargs=list(tasks))]
+        assert caplog_info.record_tuples == [
+            ("root", logging.INFO, "All tasks complete")
+        ]
+
+    @staticmethod
+    @mock.patch("recidiviz.tools.utils.script_helpers.prompt_for_confirmation")
+    def test_hard_fail_and_quit(
+        mock_prompt: mock.MagicMock,
+        tasks: Tuple,
+        caplog_info: Any,
+    ) -> None:
+        mock_prompt.return_value = False
+        mock_tasks_fn = mock.MagicMock(return_value=((), ()))
+        interactive_loop_until_tasks_succeed(
+            tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
+        )
+        assert mock_tasks_fn.mock_calls == [mock.call(tasks_kwargs=list(tasks))]
+        assert mock_prompt.mock_calls == [
+            mock.call(
+                input_text="Should we rerun all tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            )
+        ]
+        assert caplog_info.record_tuples == [
+            ("root", logging.ERROR, "Some results are not accounted for")
+        ]
+
+    @staticmethod
+    @mock.patch("recidiviz.tools.utils.script_helpers.prompt_for_confirmation")
+    def test_some_exceptions_and_quit(
+        mock_prompt: mock.MagicMock,
+        tasks: Tuple,
+        caplog_info: Any,
+    ) -> None:
+        task_one, task_two, task_three, task_four = tasks
+        mock_prompt.return_value = False
+        mock_tasks_fn = mock.MagicMock(
+            return_value=(
+                (task_one, task_two),
+                ((TimeoutError, task_three), (KeyError, task_four)),
+            )
+        )
+        interactive_loop_until_tasks_succeed(
+            tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
+        )
+        assert mock_tasks_fn.mock_calls == [mock.call(tasks_kwargs=list(tasks))]
+        assert mock_prompt.mock_calls == [
+            mock.call(
+                input_text="Should we rerun the failed tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ),
+        ]
+        assert caplog_info.record_tuples == [
+            ("root", logging.WARNING, "These tasks failed with an exception:"),
+            ("root", logging.WARNING, f"{TimeoutError}    {{'three': 3}}"),
+            ("root", logging.WARNING, f"{KeyError}    {{'four': 4}}"),
+        ]
+
+    @staticmethod
+    @mock.patch("recidiviz.tools.utils.script_helpers.prompt_for_confirmation")
+    def test_hard_fail_then_exceptions_then_quit(
+        mock_prompt: mock.MagicMock,
+        tasks: Tuple,
+        caplog_info: Any,
+    ) -> None:
+        task_one, task_two, task_three, task_four = tasks
+        mock_prompt.side_effect = [True, False]
+        mock_tasks_fn = mock.MagicMock(
+            side_effect=[
+                ((), ()),
+                ((task_one, task_two, task_three), ((Exception, task_four),)),
+            ]
+        )
+        interactive_loop_until_tasks_succeed(
+            tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
+        )
+        assert mock_tasks_fn.mock_calls == [
+            mock.call(tasks_kwargs=list(tasks)),
+            mock.call(tasks_kwargs=list(tasks)),
+        ]
+        assert mock_prompt.mock_calls == [
+            mock.call(
+                input_text="Should we rerun all tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ),
+            mock.call(
+                input_text="Should we rerun the failed tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ),
+        ]
+        assert caplog_info.record_tuples == [
+            ("root", logging.ERROR, "Some results are not accounted for"),
+            ("root", logging.WARNING, "These tasks failed with an exception:"),
+            ("root", logging.WARNING, f"{Exception}    {{'four': 4}}"),
+        ]
+
+    @staticmethod
+    @mock.patch("recidiviz.tools.utils.script_helpers.prompt_for_confirmation")
+    def test_hard_fail_then_exceptions_then_go_until_all_succeed(
+        mock_prompt: mock.MagicMock,
+        tasks: Tuple,
+        caplog_info: Any,
+    ) -> None:
+        task_one, task_two, task_three, task_four = tasks
+        mock_prompt.return_value = True
+        mock_tasks_fn = mock.MagicMock(
+            side_effect=[
+                ((), ()),
+                (
+                    (task_one, task_three),
+                    ((ValueError, task_two), (Exception, task_four)),
+                ),
+                ((task_two,), ((TimeoutError, task_four),)),
+                ((task_four,), ()),
+            ]
+        )
+        interactive_loop_until_tasks_succeed(
+            tasks_fn=mock_tasks_fn, tasks_kwargs=list(tasks)
+        )
+        assert mock_tasks_fn.mock_calls == [
+            mock.call(tasks_kwargs=list(tasks)),
+            mock.call(tasks_kwargs=list(tasks)),
+            mock.call(tasks_kwargs=[task_two, task_four]),
+            mock.call(tasks_kwargs=[task_four]),
+        ]
+        assert mock_prompt.mock_calls == [
+            mock.call(
+                input_text="Should we rerun all tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ),
+            mock.call(
+                input_text="Should we rerun the failed tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ),
+            mock.call(
+                input_text="Should we rerun the failed tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ),
+        ]
+        assert caplog_info.record_tuples == [
+            ("root", logging.ERROR, "Some results are not accounted for"),
+            ("root", logging.WARNING, "These tasks failed with an exception:"),
+            ("root", logging.WARNING, f"{ValueError}    {{'two': 2}}"),
+            ("root", logging.WARNING, f"{Exception}    {{'four': 4}}"),
+            ("root", logging.WARNING, "These tasks failed with an exception:"),
+            ("root", logging.WARNING, f"{TimeoutError}    {{'four': 4}}"),
+            ("root", logging.INFO, "All tasks complete"),
+        ]
