@@ -23,7 +23,6 @@ Can be run on-demand using:
 
 import logging
 import os
-import re
 import sys
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Type
@@ -945,18 +944,14 @@ class CalculationDocumentationGenerator:
             )
 
         if descendants:
-            # TODO(#17679): Remove unecessarily complex sorting logic
             return self.dag_walker.descendants_dfs_tree_str(
                 view,
-                parent_sort_fn=lambda s: re.sub(r"^\[", "", s),
                 custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
                 datasets_to_skip=RAW_TABLE_DATASETS,
             )
 
-        # TODO(#17679): Remove unecessarily complex sorting logic
         return self.dag_walker.ancestors_dfs_tree_str(
             view,
-            parent_sort_fn=lambda s: re.sub(r"^\[", "", s),
             custom_node_formatter=self._dependency_tree_formatter_for_gitbook,
             datasets_to_skip=RAW_TABLE_DATASETS,
         )

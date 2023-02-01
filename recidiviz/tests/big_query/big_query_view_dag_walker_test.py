@@ -1145,20 +1145,20 @@ The following views have less restrictive projects_to_deploy than their parents:
         dfs_tree = dag_walker.ancestors_dfs_tree_str(view_builder_5.build())
         expected_tree = """dataset_5.table_5
 |--dataset_3.table_3
-|----dataset_2.table_2
-|------source_dataset.source_table_2
 |----dataset_1.table_1
 |------source_dataset.source_table
+|----dataset_2.table_2
+|------source_dataset.source_table_2
 """
         self.assertEqual(expected_tree, dfs_tree)
 
         # Middle of tree
         dfs_tree = dag_walker.ancestors_dfs_tree_str(view_builder_3.build())
         expected_tree = """dataset_3.table_3
-|--dataset_2.table_2
-|----source_dataset.source_table_2
 |--dataset_1.table_1
 |----source_dataset.source_table
+|--dataset_2.table_2
+|----source_dataset.source_table_2
 """
         self.assertEqual(expected_tree, dfs_tree)
 
@@ -1172,10 +1172,10 @@ The following views have less restrictive projects_to_deploy than their parents:
         )
 
         expected_tree = """custom_formatted_dataset_3_table_3
-|--custom_formatted_dataset_2_table_2
-|----custom_formatted_source_dataset_source_table_2
 |--custom_formatted_dataset_1_table_1
 |----custom_formatted_source_dataset_source_table
+|--custom_formatted_dataset_2_table_2
+|----custom_formatted_source_dataset_source_table_2
 """
         self.assertEqual(expected_tree, dfs_tree)
 
@@ -1187,9 +1187,9 @@ The following views have less restrictive projects_to_deploy than their parents:
             view_builder_3.build(), datasets_to_skip={"dataset_1"}
         )
         expected_tree = """dataset_3.table_3
-|--source_dataset.source_table
 |--dataset_2.table_2
 |----source_dataset.source_table_2
+|--source_dataset.source_table
 """
         self.assertEqual(expected_tree, dfs_tree)
 

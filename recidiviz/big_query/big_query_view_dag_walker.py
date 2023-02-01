@@ -826,7 +826,6 @@ class BigQueryViewDagWalker:
     def ancestors_dfs_tree_str(
         self,
         view: BigQueryView,
-        parent_sort_fn: Callable[[str], str] = lambda s: s,
         custom_node_formatter: Callable[
             [BigQueryAddress], str
         ] = lambda a: f"{a.dataset_id}.{a.table_id}",
@@ -869,9 +868,6 @@ class BigQueryViewDagWalker:
                 v=v,
                 parent_view_dfs_strs=parent_results,
                 parent_source_tables=source_table_addresses,
-                parent_table_sort_fn=lambda *args: sorted(
-                    *args, key=parent_sort_fn, reverse=True
-                ),
                 node_formatter_fn=custom_node_formatter,
                 datasets_to_skip=datasets_to_skip,
             )
@@ -881,7 +877,6 @@ class BigQueryViewDagWalker:
     def descendants_dfs_tree_str(
         self,
         view: BigQueryView,
-        parent_sort_fn: Callable[[str], str] = lambda s: s,
         custom_node_formatter: Callable[
             [BigQueryAddress], str
         ] = lambda a: f"{a.dataset_id}.{a.table_id}",
@@ -919,9 +914,6 @@ class BigQueryViewDagWalker:
                 v=v,
                 parent_view_dfs_strs=parent_results,
                 parent_source_tables=set(),
-                parent_table_sort_fn=lambda *args: sorted(
-                    *args, key=parent_sort_fn, reverse=False
-                ),
                 node_formatter_fn=custom_node_formatter,
                 datasets_to_skip=datasets_to_skip,
             )
@@ -935,7 +927,6 @@ class BigQueryViewDagWalker:
         v: BigQueryView,
         parent_view_dfs_strs: Dict[BigQueryView, str],
         parent_source_tables: Set[BigQueryAddress],
-        parent_table_sort_fn: Callable,
         node_formatter_fn: Callable[[BigQueryAddress], str],
         datasets_to_skip: Optional[Set[str]],
     ) -> str:
@@ -947,8 +938,7 @@ class BigQueryViewDagWalker:
         formatted_source_table_names = [
             node_formatter_fn(a) for a in parent_source_tables
         ]
-        # TODO(#17679): Remove unecessarily complex sorting logic
-        all_parent_results = parent_table_sort_fn(
+        all_parent_results = sorted(
             [
                 *parent_view_dfs_strs.values(),
                 *formatted_source_table_names,
