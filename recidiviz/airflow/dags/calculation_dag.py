@@ -552,8 +552,9 @@ def create_calculation_dag() -> None:
                 pipeline_config_args.state_code
             ]:
                 # This ensures that all of the normalization pipelines for a state will
-                # run before the metric pipelines for the state are triggered.
-                normalization_calculation_pipeline >> metric_pipeline
+                # run and the normalized_state dataset will be updated before the
+                # metric pipelines for the state are triggered.
+                update_normalized_state >> metric_pipeline
 
     supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "supplemental_dataset_pipelines"
