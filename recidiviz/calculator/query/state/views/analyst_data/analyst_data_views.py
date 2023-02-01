@@ -180,6 +180,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_overdue_for
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
+    US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
     [
@@ -234,6 +237,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
         US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
         AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
+        US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS

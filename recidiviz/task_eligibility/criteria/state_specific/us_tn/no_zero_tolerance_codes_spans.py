@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,14 +24,11 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -50,65 +47,95 @@ have missing sentence data issues.
 """
 
 _QUERY_TEMPLATE = f"""
-    WITH zt_codes AS (
-      SELECT pei.person_id, 
-              CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) AS contact_date,
-              ContactNoteType AS contact_type,
-      FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ContactNoteType_latest`
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-              ON pei.external_id = OffenderID
-              AND pei.state_code = 'US_TN'
-      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
-            ON pei.person_id = sp.person_id
-            AND CAST(CAST(ContactNoteDateTime AS datetime) AS DATE)
-                BETWEEN sp.start_date AND {nonnull_end_date_exclusive_clause('sp.termination_date')}
-      WHERE ContactNoteType IN ('VWAR','PWAR','ZTVR','COHC')
-            /* We only want to consider zero tolerance contact codes that occur when someone is serving something
-            other than parole, since we expect sentencing data to be more complete (and discharge dates to be less
-            adjustable) for people on parole */ 
-            AND sp.supervision_type_raw_text != 'PAO'
-    ),
-    critical_date_spans AS (
+    WITH critical_date_spans AS (
         /* This CTE uses sentence spans to get date imposed for each unique sentence being served during each span,
         and brings in zero tolerance codes that occurred after each date imposed. This allows us to create spans
         of time when the critical date (zero tolerance contact code date) has passed */
         SELECT
-            s.person_id,
-            s.state_code,
-            s.start_date AS start_datetime,
-            /* Setting latest sentence span end date to NULL so that if the zero tolerance code occurred after the 
-                latest sentence start, we're still flagging that as critical date has passed since it signals 
+            sentences.person_id,
+            sentences.state_code,
+            sentences.date_imposed AS start_datetime,
+            /* Setting latest sentence span end date to NULL so that if the zero tolerance code occurred after the
+                latest sentence start, we're still flagging that as critical date has passed since it signals
                 potentially missing sentencing data */
             IF(
-                MAX({nonnull_end_date_exclusive_clause('s.end_date')}) OVER(PARTITION BY s.person_id) = {nonnull_end_date_exclusive_clause('s.end_date')},
+                MAX({nonnull_end_date_exclusive_clause('sentences.completion_date')}) 
+                    OVER(PARTITION BY sentences.person_id) = {nonnull_end_date_exclusive_clause('sentences.completion_date')},
                 NULL,
-                s.end_date
+                sentences.completion_date
             ) end_datetime,
-            zt_codes.contact_date AS critical_date, 
-        FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` s,
-        UNNEST(sentences_preprocessed_id_array) as sentences_preprocessed_id
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
-          USING(person_id, state_code, sentences_preprocessed_id)
-        LEFT JOIN zt_codes
-          ON zt_codes.person_id = s.person_id
-          AND zt_codes.contact_date > sentences.date_imposed
+            contact_date AS critical_date,
+        FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
+        LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_tn_zero_tolerance_codes_materialized` contact
+          ON sentences.person_id = contact.person_id
+          AND contact_date > sentences.date_imposed
+        WHERE sentences.state_code = 'US_TN'
     ),
-    /* The critical_date_has_passed_spans_cte() method creates spans of time when the critical date 
+    /* The critical_date_has_passed_spans_cte() method creates spans of time when the critical date
     (zero tolerance contact code date) has passed. The output has overlapping and non-collapsed adjacent spans.
     The create_sub_sessions_with_attributes() helper takes that input and outputs non-overlapping spans (i.e there
     may be multiple rows for a given start/end date which preserve input attributes. The final step is to collapse
     those */
     {critical_date_has_passed_spans_cte()},
-    {create_sub_sessions_with_attributes('critical_date_has_passed_spans')},
+    union_supervision_type AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            critical_date_has_passed,
+            critical_date,
+            NULL AS supervision_type
+        FROM critical_date_has_passed_spans
+
+        UNION ALL
+
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            termination_date AS end_date,
+            NULL AS critical_date_has_passed,
+            NULL AS critical_date,
+            CASE WHEN supervision_type_raw_text LIKE '%PAO%' THEN 'PAROLE'
+                 ELSE supervision_type END AS supervision_type, 
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` sp
+        WHERE sp.state_code = 'US_TN'
+        AND {nonnull_end_date_exclusive_clause('sp.termination_date')} > start_date
+    ),
+    {create_sub_sessions_with_attributes('union_supervision_type')},
     grouped_dates AS (
          SELECT
-            person_id, 
+            DISTINCT
+            person_id,
             state_code,
             start_date,
             end_date,
             -- Someone meets the criteria if there are no zero tolerance contact codes in a given span
-            NOT LOGICAL_OR(critical_date_has_passed) AS meets_criteria,
-            TO_JSON(STRUCT(ARRAY_AGG(critical_date IGNORE NULLS) AS zero_tolerance_code_dates)) AS reason,
+            -- LOGICAL_OR(critical_date_has_passed) AS critical_date_has_passed,
+            FIRST_VALUE(critical_date_has_passed) OVER(critical_date_window) AS critical_date_has_passed,
+            FIRST_VALUE(supervision_type) OVER(sup_type_window) AS supervision_type,
+        FROM sub_sessions_with_attributes
+        WINDOW sup_type_window AS (
+          PARTITION BY state_code, person_id, start_date, end_date
+            ORDER BY CASE WHEN supervision_type = 'PAROLE' THEN 0 ELSE 1 END
+        ),
+        critical_date_window AS (
+          PARTITION BY state_code, person_id, start_date, end_date
+            ORDER BY CASE WHEN critical_date_has_passed THEN 0 ELSE 1 END
+        )
+
+    ),
+    reason_blob AS (
+        SELECT
+            person_id,
+            state_code,
+            start_date,
+            end_date,
+            TO_JSON(STRUCT(
+                    ARRAY_AGG(IF(critical_date >= end_date, NULL, critical_date) IGNORE NULLS) AS zero_tolerance_code_dates
+                        )
+                    ) AS reason,
         FROM sub_sessions_with_attributes
         GROUP BY 1,2,3,4
     )
@@ -118,12 +145,15 @@ _QUERY_TEMPLATE = f"""
         start_date,
         IF(
             MAX({nonnull_end_date_exclusive_clause('end_date')}) OVER(PARTITION BY person_id) = {nonnull_end_date_exclusive_clause('end_date')},
-            NULL, 
+            NULL,
             end_date
         ) AS end_date,
-        meets_criteria,
-        reason
+        -- Someone meets the criteria if there are no zero tolerance contact codes in a given span, unless they are on parole
+        CASE WHEN supervision_type = 'PAROLE' THEN TRUE ELSE NOT critical_date_has_passed END AS meets_criteria,
+        CASE WHEN supervision_type = 'PAROLE' THEN NULL ELSE reason END AS reason,
     FROM grouped_dates
+    LEFT JOIN reason_blob
+        USING(state_code, person_id, start_date, end_date)
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -134,10 +164,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_TN,
-            instance=DirectIngestInstance.PRIMARY,
-        ),
+        analyst_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 

@@ -108,6 +108,7 @@ relevant_codes AS (
            OR ContactNoteType LIKE 'VRR%'
            OR ContactNoteType IN ("FAC1","FAC2")
            OR ContactNoteType LIKE 'FEE%'
+           OR ContactNoteType = 'TEPE'
      )
 ),
 sex_offense_pse_code AS ( #latest PSE code
@@ -167,6 +168,14 @@ fee_code AS ( #latest SPE code
     ) AS latest_fee
   FROM relevant_codes
   WHERE contact_type LIKE 'FEE%'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
+),
+tepe_code AS ( # latest TEPE code
+    SELECT 
+    person_id,
+    contact_date AS latest_tepe,
+  FROM relevant_codes
+  WHERE contact_type = 'TEPE'
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed in sidebar
@@ -260,7 +269,7 @@ sex_offenses AS (
          latest_sentences.docket_numbers AS form_information_docket_numbers,
          latest_sentences.conviction_counties AS form_information_conviction_counties,
          stg.STGID AS form_information_gang_affiliation_id,      
-  FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized`  tes
+  FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized` tes
   LEFT JOIN sidebar_contact_notes_array arr
     USING(person_id)
   LEFT JOIN sex_offense_pse_code pse
@@ -277,6 +286,9 @@ sex_offenses AS (
     USING(person_id)
   LEFT JOIN latest_sentences
     USING(person_id)
+  LEFT JOIN tepe_code
+    ON tes.person_id = tepe_code.person_id
+    AND latest_tepe >= DATE_SUB(CAST(JSON_VALUE(reasons[0].reason.eligible_date) AS DATE), interval 30 day)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.person_id = pei.person_id
     AND pei.state_code = 'US_TN'
@@ -285,6 +297,9 @@ sex_offenses AS (
   WHERE tes.state_code = 'US_TN' 
     AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
+    /* TODO(#18327) - Excluding anyone from being surfaced who has a recent TEPE. Add these folks back in and surface 
+    recent TEPE note in client profile when UX changes can handle this behavior */ 
+    AND latest_tepe IS NULL
 
 """
 

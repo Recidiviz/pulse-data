@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which
 someone is past their supervision full term completion date (projected max completion
-date) or within 60 days of their full term completion date.
+date) or within 1 day of their full term completion date.
 """
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -28,14 +28,14 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_60_DAY"
+_CRITERIA_NAME = "SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_1_DAY"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone is past their supervision full term completion date (projected max completion
-date) or within 60 days of their full term completion date"""
+date) or within 1 day of their full term completion date"""
 
 _QUERY_TEMPLATE = f"""
-{supervision_past_full_term_completion_date(meets_criteria_leading_window_days=60)}
+{supervision_past_full_term_completion_date(meets_criteria_leading_window_days=1)}
 """
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
