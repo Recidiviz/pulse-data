@@ -55,7 +55,7 @@ variables:
                   - $literal("XPT")
                   - $literal("SC")
             - $equal:
-                - $literal("true")
+                - $literal("True")
                 - start_is_new_act_122_admission
 output:
   StatePerson:
