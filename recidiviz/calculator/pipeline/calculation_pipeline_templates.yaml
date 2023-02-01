@@ -290,3 +290,5 @@ supplemental_dataset_pipelines:
     job_name: us-ix-case-note-extracted-entities
     state_code: US_IX
     region: us-central1
+    # TODO(#18319): Remove this once we group by entity.
+    machine_type: n1-standard-8
