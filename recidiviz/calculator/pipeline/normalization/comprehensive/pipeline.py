@@ -55,9 +55,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
     StateSpecificViolationResponseNormalizationDelegate,
     ViolationResponseNormalizationManager,
 )
-from recidiviz.calculator.pipeline.pipeline_type import (
-    COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
-)
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
 )
@@ -75,7 +72,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=COMPREHENSIVE_NORMALIZATION_PIPELINE_NAME,
+            pipeline_name="COMPREHENSIVE_NORMALIZATION",
             # Note: This is a list of all of the entities that are required to
             # perform entity normalization on all entities with normalization
             # processes. This is *not* the list of entities that are normalized by

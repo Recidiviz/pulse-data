@@ -26,9 +26,6 @@ import apache_beam as beam
 from apache_beam.pvalue import PBegin
 
 from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
-from recidiviz.calculator.pipeline.pipeline_type import (
-    US_IX_CASE_NOTE_EXTRACTED_ENTITIES_PIPELINE_NAME,
-)
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )
@@ -182,7 +179,7 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=US_IX_CASE_NOTE_EXTRACTED_ENTITIES_PIPELINE_NAME,
+            pipeline_name="US_IX_CASE_NOTE_EXTRACTED_ENTITIES_SUPPLEMENTAL",
             required_entities=[],
             required_reference_tables=[US_IX_CASE_UPDATE_INFO_VIEW_NAME],
             required_state_based_reference_tables=[],

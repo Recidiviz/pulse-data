@@ -27,7 +27,6 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
 )
 from recidiviz.calculator.pipeline.metrics.program import identifier, metric_producer
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.pipeline_type import PROGRAM_METRICS_PIPELINE_NAME
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -46,7 +45,7 @@ class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=PROGRAM_METRICS_PIPELINE_NAME,
+            pipeline_name="PROGRAM_METRICS",
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

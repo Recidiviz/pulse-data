@@ -32,9 +32,6 @@ from recidiviz.calculator.pipeline.metrics.population_spans import (
     metric_producer,
 )
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.pipeline_type import (
-    POPULATION_SPAN_METRICS_PIPELINE_NAME,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -62,7 +59,7 @@ class PopulationSpanMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=POPULATION_SPAN_METRICS_PIPELINE_NAME,
+            pipeline_name="POPULATION_SPAN_METRICS",
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

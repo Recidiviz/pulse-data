@@ -30,7 +30,6 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
 )
 from recidiviz.calculator.pipeline.metrics.recidivism import identifier, metric_producer
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.pipeline_type import RECIDIVISM_METRICS_PIPELINE_NAME
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -46,7 +45,7 @@ class RecidivismMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=RECIDIVISM_METRICS_PIPELINE_NAME,
+            pipeline_name="RECIDIVISM_METRICS",
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,
