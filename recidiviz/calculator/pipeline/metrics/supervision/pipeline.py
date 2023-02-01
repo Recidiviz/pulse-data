@@ -30,9 +30,6 @@ from recidiviz.calculator.pipeline.metrics.supervision import (
     metric_producer,
 )
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.pipeline_type import (
-    SUPERVISION_METRICS_PIPELINE_NAME,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -64,7 +61,7 @@ class SupervisionMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=SUPERVISION_METRICS_PIPELINE_NAME,
+            pipeline_name="SUPERVISION_METRICS",
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

@@ -25,10 +25,6 @@ from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
     person_characteristics,
 )
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import PersonMetadata
-from recidiviz.calculator.pipeline.pipeline_type import (
-    INCARCERATION_METRICS_PIPELINE_NAME,
-    SUPERVISION_METRICS_PIPELINE_NAME,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_metrics_producer_delegates,
 )
@@ -99,10 +95,10 @@ class TestAgeAtDate(unittest.TestCase):
         )
 
 
-INCLUDED_PIPELINES = {
-    INCARCERATION_METRICS_PIPELINE_NAME: StateSpecificIncarcerationMetricsProducerDelegate,
-    SUPERVISION_METRICS_PIPELINE_NAME: StateSpecificSupervisionMetricsProducerDelegate,
-}
+DELEGATE_CLASSES_TO_TEST = [
+    StateSpecificIncarcerationMetricsProducerDelegate,
+    StateSpecificSupervisionMetricsProducerDelegate,
+]
 
 
 class TestPersonExternalIdToInclude(unittest.TestCase):
@@ -124,7 +120,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        for _, metrics_producer_delegate_class in INCLUDED_PIPELINES.items():
+        for metrics_producer_delegate_class in DELEGATE_CLASSES_TO_TEST:
             external_id = calculator_utils.person_external_id_to_include(
                 person_external_id.state_code,
                 person,
@@ -137,7 +133,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
             self.assertEqual(external_id, person_external_id.external_id)
 
-    def test_person_external_id_to_include_no_results(self) -> None:
+    def test_person_external_id_to_include_no_delegate(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
             person_id=12345,
@@ -151,12 +147,11 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
 
         person.external_ids = [person_external_id]
 
-        for _, _ in INCLUDED_PIPELINES.items():
-            external_id = calculator_utils.person_external_id_to_include(
-                person_external_id.state_code,
-                person,
-            )
-            self.assertIsNone(external_id)
+        external_id = calculator_utils.person_external_id_to_include(
+            person_external_id.state_code,
+            person,
+        )
+        self.assertIsNone(external_id)
 
     def test_person_has_external_ids_from_multiple_states(self) -> None:
         person = StatePerson.new_with_defaults(
@@ -212,13 +207,14 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             person_external_id_exclude_2,
         ]
 
+        delegate_class = StateSpecificIncarcerationMetricsProducerDelegate
         external_id = calculator_utils.person_external_id_to_include(
             person_external_id_include.state_code,
             person,
             metrics_producer_delegate=get_required_state_specific_metrics_producer_delegates(
-                "US_PA", {INCLUDED_PIPELINES[INCARCERATION_METRICS_PIPELINE_NAME]}
+                "US_PA", {delegate_class}
             ).get(
-                INCLUDED_PIPELINES[INCARCERATION_METRICS_PIPELINE_NAME].__name__
+                delegate_class.__name__
             ),
         )
 

@@ -34,9 +34,6 @@ from cloud_function_utils import (  # type: ignore[import]
     make_iap_request,
     trigger_dag,
 )
-from cloudsql_to_bq_refresh_utils import (  # type: ignore[import]
-    PIPELINE_RUN_TYPE_REQUEST_ARG,
-)
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)

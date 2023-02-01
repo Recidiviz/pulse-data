@@ -27,7 +27,6 @@ from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
 )
 from recidiviz.calculator.pipeline.metrics.violation import identifier, metric_producer
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.pipeline_type import VIOLATION_METRICS_PIPELINE_NAME
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
@@ -40,7 +39,7 @@ class ViolationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
     @classmethod
     def pipeline_config(cls) -> PipelineConfig:
         return PipelineConfig(
-            pipeline_name=VIOLATION_METRICS_PIPELINE_NAME,
+            pipeline_name="VIOLATION_METRICS",
             required_entities=[
                 entities.StatePerson,
                 entities.StatePersonRace,

@@ -25,10 +25,6 @@ from unittest import mock
 import flask
 from mock import Mock
 
-from recidiviz.calculator.pipeline.pipeline_type import MetricPipelineRunType
-from recidiviz.cloud_functions.cloudsql_to_bq_refresh_utils import (
-    PIPELINE_RUN_TYPE_REQUEST_ARG,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.ingest.direct import direct_ingest_control
@@ -131,9 +127,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_dataset/{module}"
-        data = json.dumps(
-            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.INCREMENTAL.value}
-        )
+        data = json.dumps({})
 
         response = self.mock_flask_client.post(
             route,
@@ -175,9 +169,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_dataset/{module}"
-        data = json.dumps(
-            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
-        )
+        data = json.dumps({})
 
         headers: Dict[str, Any] = {
             **self.base_headers,
@@ -214,9 +206,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_dataset/{module}?dry_run=True"
-        data = json.dumps(
-            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
-        )
+        data = json.dumps({})
 
         headers: Dict[str, Any] = {
             **self.base_headers,
@@ -264,9 +254,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         module = SchemaType.STATE.value
         route = f"/refresh_bq_dataset/{module}"
-        data = json.dumps(
-            {PIPELINE_RUN_TYPE_REQUEST_ARG: MetricPipelineRunType.HISTORICAL.value}
-        )
+        data = json.dumps({})
 
         headers: Dict[str, Any] = {
             **self.base_headers,
