@@ -51,6 +51,7 @@ from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.utils.environment import in_development
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.types import assert_type
 
@@ -373,7 +374,15 @@ def get_api_blueprint(
                 auth0_user_id=auth0_user_id,
                 email=email,
             )
-            agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+
+            if in_development():
+                # When running locally, our AgencyUserAccountAssociation table
+                # won't be up-to-date (it's hard to do this via fixtures),
+                # so just give access to all agencies.
+                agency_ids = AgencyInterface.get_agency_ids(session=current_session)
+            else:
+                agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+
             agencies = AgencyInterface.get_agencies_by_id(
                 session=current_session, agency_ids=agency_ids
             )
