@@ -14,11 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+
+from types import TracebackType
+from typing import Optional, TextIO
+
 class Infinite:
+    def __enter__(self) -> Infinite: ...
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: TracebackType,
+    ) -> None: ...
     def finish(self) -> None: ...
     def next(self, n: int = 1) -> None: ...
 
 class Progress(Infinite):
-    def __init__(self, message: str, max: int, check_tty: bool = True): ...
+    def __init__(
+        self,
+        message: str,
+        max: int,
+        check_tty: bool = True,
+        file: Optional[TextIO] = None,
+    ): ...
     def start(self) -> None: ...
     def goto(self, index: int) -> None: ...

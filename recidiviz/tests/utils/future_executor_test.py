@@ -15,10 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for FutureExecutor. """
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from unittest import TestCase, mock
 
-from recidiviz.utils.future_executor import FutureExecutor, FutureExecutorProgress
+from recidiviz.utils.future_executor import (
+    FutureExecutor,
+    FutureExecutorProgress,
+    map_fn_with_progress_bar_results,
+)
 
 
 def _mock_future(
@@ -77,3 +81,38 @@ class TestFutureExecutor(TestCase):
 
         with FutureExecutor.build(_mock_future, targets, max_workers=1) as executor:
             self.assertEqual(executor.results(), [1, 2, 999])
+
+
+def test_map_fn_with_progress_bar_results(capfd: Any) -> None:
+    def fake_futures_function(number: int, raises: Any) -> int:
+        if raises:
+            raise raises
+        return number
+
+    ten_minutes = 10 * 60
+    successes, exceptions = map_fn_with_progress_bar_results(
+        fn=fake_futures_function,
+        kwargs_list=[
+            {"number": 1, "raises": False},
+            {"number": 2, "raises": False},
+            {"number": 3, "raises": ValueError},
+        ],
+        max_workers=8,
+        timeout=ten_minutes,
+        progress_bar_message="test progress message",
+    )
+    assert sorted(successes, key=lambda x: x[0]) == [
+        (1, {"number": 1, "raises": False}),
+        (2, {"number": 2, "raises": False}),
+    ]
+    assert exceptions == [(ValueError, {"number": 3, "raises": ValueError})]
+    assert capfd.readouterr().err == (
+        "\x1b[?25l"
+        "\r"
+        "\rtest progress message |                                | 0/3"
+        "\rtest progress message |##########                      | 1/3"
+        "\rtest progress message |#####################           | 2/3"
+        "\rtest progress message |################################| 3/3"
+        "\n"
+        "\x1b[?25h"
+    )

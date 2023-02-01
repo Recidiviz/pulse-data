@@ -16,10 +16,11 @@
 # =============================================================================
 """ Class for awaiting results of futures """
 
+import sys
 from concurrent import futures
 from concurrent.futures import Future
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Generator, List, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple
 
 import attr
 from progress.bar import Bar
@@ -129,3 +130,32 @@ def map_fn_with_progress_bar(
             progress_bar_message,
             timeout=timeout_sec,
         )
+
+
+def map_fn_with_progress_bar_results(
+    fn: Callable,
+    kwargs_list: List[Dict[str, Any]],
+    max_workers: int,
+    timeout: int,
+    progress_bar_message: str,
+) -> Tuple[List[Tuple[Any, Dict[str, Any]]], List[Tuple[Any, Dict[str, Any]]]]:
+    successes = []
+    exceptions = []
+    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with Bar(
+            progress_bar_message, file=sys.stderr, max=len(kwargs_list), check_tty=False
+        ) as progress_bar:
+            future_to_kwargs_map = {
+                executor.submit(structured_logging.with_context(fn), **kwargs): kwargs
+                for kwargs in kwargs_list
+            }
+            for future in futures.as_completed(future_to_kwargs_map, timeout=timeout):
+                task_kwargs = future_to_kwargs_map[future]
+                try:
+                    data = future.result()
+                except Exception as ex:
+                    exceptions.append((type(ex), task_kwargs))
+                else:
+                    successes.append((data, task_kwargs))
+                progress_bar.next()
+    return (successes, exceptions)

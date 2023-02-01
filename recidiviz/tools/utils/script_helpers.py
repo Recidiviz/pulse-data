@@ -20,7 +20,7 @@ import os
 import pwd
 import subprocess
 import sys
-from typing import Any, Callable, Generator, Optional
+from typing import Any, Callable, Dict, Generator, List, Optional
 
 
 def prompt_for_confirmation(
@@ -68,6 +68,35 @@ def interactive_prompt_retry_on_exception(
                 continue
             raise e
         return x
+
+
+def interactive_loop_until_tasks_succeed(
+    tasks_fn: Callable, tasks_kwargs: List[Dict[str, Any]]
+) -> None:
+    while True:
+        successes, exceptions = tasks_fn(tasks_kwargs=tasks_kwargs)
+        if not len(successes) + len(exceptions) == len(tasks_kwargs):
+            logging.error("Some results are not accounted for")
+            if prompt_for_confirmation(
+                input_text="Should we rerun all tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ):
+                continue
+        elif not exceptions:
+            logging.info("All tasks complete")
+        else:
+            logging.warning("These tasks failed with an exception:")
+            for exception, args in exceptions:
+                logging.warning("%s    %s", exception, args)
+            if prompt_for_confirmation(
+                input_text="Should we rerun the failed tasks?",
+                accepted_response_override="yes",
+                exit_on_cancel=True,
+            ):
+                tasks_kwargs = [kwargs for _, kwargs in exceptions]
+                continue
+        break
 
 
 def _get_run_as_user_fn(password_record: pwd.struct_passwd) -> Callable[[], None]:

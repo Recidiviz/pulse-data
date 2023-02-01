@@ -199,7 +199,7 @@ function pre_deploy_configure_infrastructure {
     # Update the raw data output table schemas.
     echo "Updating the BigQuery raw data table schemas to match the raw data configs in source."
     verify_hash "$COMMIT_HASH"
-    run_cmd pipenv run python -m recidiviz.tools.deploy.update_raw_data_table_schemas --project_id "${PROJECT}"
+    run_cmd pipenv run python -m recidiviz.tools.deploy.update_raw_data_table_schemas --project-id "${PROJECT}"
 
     # Update the Dataflow output table schemas and update all BigQuery views.
     echo "Updating the BigQuery Dataflow output table schemas to match the corresponding classes"
