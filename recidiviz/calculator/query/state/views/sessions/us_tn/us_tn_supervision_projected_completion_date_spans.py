@@ -100,7 +100,14 @@ WITH isc_and_diversion_raw AS (
         state_code,
         person_id,
         start_date,
-        -- For the most recent span, make the end_date NULL
+        /* Make the most recent span end_date NULL. end_dates (completion_date in ingested data) in TN are expiration
+        dates, rather than when the sentence was actually completed. So we see people on supervision past this end_date,
+        who should be surfaced as overdue for discharge. If we don't leave the latest span "open", then we won't surface
+        them as eligible in TES since TES will say they were eligible, but that eligibility ended on the span end_date.
+        Leaving spans open may "overcorrect" and leave spans open when someone did get discharged from supervision and 
+        then come back, so we've added a new `has_active_sentence` criteria to check for overlapping spans during
+        supervision sessions.        
+        */
         IF(
             MAX({nonnull_end_date_exclusive_clause('end_date_exclusive')}) OVER(PARTITION BY person_id) = {nonnull_end_date_exclusive_clause('end_date_exclusive')},
             NULL, 
