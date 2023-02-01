@@ -206,6 +206,10 @@ output:
                                   - "1840" # Issue Warrant #2
                                   - "1841" # Issue Warrant #1
                                 StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN:
+                                  - "0" # TEMP <- There are quite a few (7%) management decisions that are designated with this decision type
+                                    # Not sure if this just means the decision hasn't been made yet?  But the decision date is valued for these records
+                                    # In the data, we'll usually see another non-"0" decision made after this "0" decision, but not necessarily by the same person
+                                    # Gonna keep this in the data for now and it can be filtered out later as necessary
                                   # BL NOTE: Not sure if these two are just some jail/prison time or complete revocation
                                   - "1785" # Additional Jail
                                   - "1769" # Corrections Center
