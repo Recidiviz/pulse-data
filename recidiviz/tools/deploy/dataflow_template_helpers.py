@@ -29,6 +29,7 @@ class PipelineConfig(TypedDict):
     region: str
     metric_types: Optional[str]
     staging_only: Optional[bool]
+    machine_type: Optional[str]
 
 
 @attr.s(auto_attribs=True)

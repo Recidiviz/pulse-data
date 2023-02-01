@@ -98,6 +98,13 @@ def _get_parsed_base_apache_beam_args(argv: List[str]) -> argparse.Namespace:
         default=False,
     )
 
+    parser.add_argument(
+        "--machine_type",
+        required=False,
+        help="The machine type for all job workers to use. See"
+        " available machine types here: https://cloud.google.com/compute/docs/machine-types",
+    )
+
     base_args = parser.parse_args(argv)
 
     return base_args
@@ -112,6 +119,7 @@ def _get_parsed_full_apache_beam_args(
     save_as_template: bool,
     profile_memory: bool,
     profile_cpu: bool,
+    machine_type: Optional[str],
 ) -> argparse.Namespace:
     """Parses and returns the full set of args to pass through to Apache Beam, in the
     form of an argparse.Namespace object."""
@@ -175,7 +183,7 @@ def _get_parsed_full_apache_beam_args(
     parser.add_argument(
         "--worker_machine_type",
         type=str,
-        default="n1-standard-4",
+        default=machine_type or "n1-standard-4",
         help="The machine type for all job workers to use. See"
         " available machine types here: https://cloud.google.com/compute/docs/machine-types",
     )
@@ -283,6 +291,7 @@ def derive_apache_beam_pipeline_args(argv: List[str]) -> List[str]:
         save_as_template=base_args.save_as_template,
         profile_memory=base_args.profile_memory,
         profile_cpu=base_args.profile_cpu,
+        machine_type=base_args.machine_type,
     )
 
     # Take the parsed args with all defaults added and transform back to a list of strings
