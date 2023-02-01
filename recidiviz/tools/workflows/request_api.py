@@ -59,7 +59,11 @@ def insert_contact_note(
 
     # Get a valid CSRF token
     s = requests.session()
-    headers = {"Authorization": "Bearer " + token, "Content-Type": "application/json"}
+    headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "Origin": "http://localhost:3000",
+    }
     response = s.get(url + "workflows/US_TN/init", headers=headers)
     if response.status_code != HTTPStatus.OK:
         raise Exception(
