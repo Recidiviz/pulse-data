@@ -715,8 +715,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_create_report(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_A
-        self.session.add_all([agency, user])
+        agency_user_association = AgencyUserAccountAssociation(
+            agency=agency, user_account=user, role=schema.UserAccountRole.AGENCY_ADMIN
+        )
+        self.session.add_all([agency, user, agency_user_association])
         self.session.commit()
+        self.session.refresh(user)
         month = 3
         year = 2022
         with self.app.test_request_context():
@@ -736,7 +740,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
         self.assertEqual(response.status_code, 200)
         response_json = assert_type(response.json, dict)
-        self.assertEqual(response_json["editors"], ["Jane Doe"])
+        self.assertEqual(
+            response_json["editors"], [{"name": "Jane Doe", "role": "AGENCY_ADMIN"}]
+        )
         self.assertEqual(response_json["frequency"], ReportingFrequency.MONTHLY.value)
         self.assertIsNotNone(response_json["last_modified_at"])
         self.assertEqual(response_json["month"], 3)
@@ -1126,7 +1132,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_update_report(self) -> None:
         report = self.test_schema_objects.test_report_monthly
         user = self.test_schema_objects.test_user_A
-        self.session.add_all([user, report])
+        agency_user_association = AgencyUserAccountAssociation(
+            agency=report.source,
+            user_account=user,
+            role=schema.UserAccountRole.AGENCY_ADMIN,
+        )
+        self.session.add_all([user, report, agency_user_association])
         self.session.commit()
         with self.app.test_request_context():
             user_account = UserAccountInterface.get_user_by_auth0_user_id(
@@ -1234,7 +1245,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         report = self.test_schema_objects.test_report_monthly
         user = self.test_schema_objects.test_user_A
         user2 = self.test_schema_objects.test_user_B
-        self.session.add_all([user, user2])
+        agency_user_association_A = AgencyUserAccountAssociation(
+            agency=report.source,
+            user_account=user,
+            role=schema.UserAccountRole.AGENCY_ADMIN,
+        )
+        agency_user_association_B = AgencyUserAccountAssociation(
+            agency=report.source,
+            user_account=user2,
+            role=schema.UserAccountRole.AGENCY_ADMIN,
+        )
+        self.session.add_all(
+            [user, user2, agency_user_association_A, agency_user_association_B]
+        )
         self.session.commit()
         self.session.flush()
 
