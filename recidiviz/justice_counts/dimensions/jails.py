@@ -22,6 +22,20 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
+class FundingType(DimensionBase, enum.Enum):
+    STATE_APPROPRIATION = "State Appropriation"
+    COUNTY_MUNICIPAL = "County or Municipal Appropriation"
+    GRANTS = "Grants"
+    COMMISSARY_FEES = "Commissary and Fees"
+    CONTRACT_BEDS = "Contract Beds (Funding)"
+    OTHER = "Other Funding"
+    UNKNOWN = "Unknown Funding"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/jails/funding/type"
+
+
 class ReadmissionType(DimensionBase, enum.Enum):
     NEW_ADMISSION = "New Admission"
     VIOLATION_OF_CONDITIONS = "Violation of Conditions"

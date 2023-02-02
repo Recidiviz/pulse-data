@@ -18,6 +18,7 @@
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails import (
+    FundingType,
     PopulationType,
     ReadmissionType,
     ReleaseType,
@@ -27,10 +28,19 @@ from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
+from recidiviz.justice_counts.includes_excludes.jails import (
+    CommissaryAndFeesIncludesExcludes,
+    ContractBedsFundingIncludesExcludes,
+    CountyOrMunicipalAppropriationIncludesExcludes,
+    FundingIncludesExcludes,
+    GrantsIncludesExcludes,
+    StateAppropriationIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
     YesNoContext,
@@ -57,28 +67,64 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the annual budget (in dollars) of your jail system.",
-    measurement_type=MeasurementType.INSTANT,
+    display_name="Funding",
+    description="The amount of funding for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.PRETRIAL_SUPERVISION_FUNCTION,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Does the annual budget include the pretrial supervision function?",
-            required=True,
-            multiple_choice_options=YesNoContext,
-        ),
-        Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Please describe the primary funding source.",
+    # TODO(#17577) implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=FundingIncludesExcludes,
+        excluded_set={
+            FundingIncludesExcludes.OPERATIONS_MAINTENANCE,
+            FundingIncludesExcludes.JUVENILE,
+            FundingIncludesExcludes.NON_JAIL_ACTIVITIES,
+            FundingIncludesExcludes.LAW_ENFORCEMENT,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=FundingType,
             required=False,
-        ),
+            dimension_to_description={
+                FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of jail facilities and the care of people who are incarcerated in jail under the jurisdiction of the agency.",
+                FundingType.COUNTY_MUNICIPAL: "The amount of funding counties or municipalities appropriated for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                FundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                FundingType.COMMISSARY_FEES: "The amount of funding the agency collected through sales and/or fees charged to people who are incarcerated under the jurisdiction of the agency or their visitors.",
+                FundingType.CONTRACT_BEDS: "The amount of funding collected by the agency through contracts or per diem payment agreements to provide custody and care for people who are incarcerated under the jurisdiction of another agency.",
+                FundingType.OTHER: "The amount of funding for the operation and maintenance of jail facilities and the care of people who are incarcerated that is not a state appropriation, a county or municipal appropriation, grant funding, commissary and fees, or contracted beds.",
+                FundingType.UNKNOWN: "The amount of funding for the operation and maintenance of jail facilities and the care of people who are incarcerated for which the source is not known.",
+            },
+            dimension_to_includes_excludes={
+                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                    members=StateAppropriationIncludesExcludes,
+                    excluded_set={
+                        StateAppropriationIncludesExcludes.PROPOSED,
+                        StateAppropriationIncludesExcludes.PRELIMINARY,
+                        StateAppropriationIncludesExcludes.GRANTS,
+                    },
+                ),
+                FundingType.COUNTY_MUNICIPAL: IncludesExcludesSet(
+                    members=CountyOrMunicipalAppropriationIncludesExcludes,
+                    excluded_set={
+                        CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
+                        CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                    },
+                ),
+                FundingType.GRANTS: IncludesExcludesSet(
+                    members=GrantsIncludesExcludes,
+                ),
+                FundingType.COMMISSARY_FEES: IncludesExcludesSet(
+                    members=CommissaryAndFeesIncludesExcludes,
+                ),
+                FundingType.CONTRACT_BEDS: IncludesExcludesSet(
+                    members=ContractBedsFundingIncludesExcludes,
+                ),
+            },
+        )
     ],
 )
 

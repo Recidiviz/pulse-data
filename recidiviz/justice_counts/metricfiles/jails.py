@@ -31,8 +31,8 @@ from recidiviz.justice_counts.metrics import jails
 
 JAILS_METRIC_FILES = [
     MetricFile(
-        canonical_filename="annual_budget",
-        definition=jails.annual_budget,
+        canonical_filename="funding",
+        definition=jails.funding,
     ),
     MetricFile(
         canonical_filename="total_staff",
