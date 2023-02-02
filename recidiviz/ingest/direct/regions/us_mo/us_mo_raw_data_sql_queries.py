@@ -41,7 +41,7 @@ iso_format_lower_bound_update_date = 0
 
 ORAS_WEEKLY_SUMMARY_UPDATE = """
     SELECT 
-        OFFENDER_NAME,
+        '"' CONCAT REPLACE(OFFENDER_NAME, '"', '""') CONCAT '"' AS OFFENDER_NAME,
         AGENCY_NAME,
         DATE_OF_BIRTH,
         GENDER,
@@ -55,7 +55,7 @@ ORAS_WEEKLY_SUMMARY_UPDATE = """
         ASSESSMENT_STATUS,
         SCORE,
         DATE_CREATED,
-        USER_CREATED,
+        '"' CONCAT REPLACE(OFFENDER_NAME, '"', '""') CONCAT '"' AS OFFENDER_NAME,
         RACE,
         BIRTH_DATE,
         CREATED_DATE
@@ -540,7 +540,7 @@ LBAKRDTA_TAK039 = f"""
 
 LBAKRDTA_TAK040 = """
     SELECT 
-        DQ$DOC
+        DQ$DOC,
         DQ$CYC,
         DQ$SSR,
         DQ$NRN,
