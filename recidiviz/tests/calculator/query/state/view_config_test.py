@@ -76,9 +76,6 @@ class ViewExportConfigTest(unittest.TestCase):
         all_views_dag_walker = BigQueryViewDagWalker(
             [view_builder.build() for view_builder in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
         )
-        all_views_dag_walker.populate_node_view_builders(
-            VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
-        )
         all_views_dag_walker.populate_ancestor_sub_dags()
 
         for view_builder in REFERENCE_VIEW_BUILDERS:
@@ -100,9 +97,6 @@ class ViewExportConfigTest(unittest.TestCase):
 
         all_views_dag_walker = BigQueryViewDagWalker(
             [view_builder.build() for view_builder in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
-        )
-        all_views_dag_walker.populate_node_view_builders(
-            VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
         )
         all_views_dag_walker.populate_ancestor_sub_dags()
 

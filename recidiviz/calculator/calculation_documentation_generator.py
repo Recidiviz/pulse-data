@@ -210,7 +210,6 @@ class CalculationDocumentationGenerator:
             address_overrides=None,
         )
         self.dag_walker = BigQueryViewDagWalker(views_to_update)
-        self.dag_walker.populate_node_view_builders(all_view_builders)
         self.dag_walker.populate_ancestor_sub_dags()
         self.dag_walker.populate_descendant_sub_dags()
         self.prod_templates_yaml = YAMLDict.from_path(PIPELINE_CONFIG_YAML_PATH)

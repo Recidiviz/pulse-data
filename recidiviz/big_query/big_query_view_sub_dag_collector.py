@@ -76,34 +76,30 @@ class BigQueryViewSubDagCollector(BigQueryViewCollector[BigQueryViewBuilder]):
         self.datasets_to_exclude = datasets_to_exclude
 
     def collect_view_builders(self) -> List[BigQueryViewBuilder]:
-        # Get dag walker for *all* views
-        full_dag_walker = BigQueryViewDagWalker(
-            build_views_to_update(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                candidate_view_builders=self.view_builders_in_full_dag,
-                address_overrides=None,
-            )
+        views_to_builders = build_views_to_update(
+            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
+            candidate_view_builders=self.view_builders_in_full_dag,
+            address_overrides=None,
         )
-        full_dag_walker.populate_node_view_builders(self.view_builders_in_full_dag)
-
+        full_dag_walker = BigQueryViewDagWalker(views_to_builders)
         root_views_in_sub_dag = self._get_root_views_in_sub_dag(
             all_views=full_dag_walker.views,
         )
-
-        # Get the full subgraph
         sub_graph_dag_walker = full_dag_walker.get_sub_dag(
             views=root_views_in_sub_dag,
             include_ancestors=self.include_ancestors,
             include_descendants=self.include_descendants,
         )
-
-        # Return the view builders in the sub-graph that aren't in datasets_to_exclude
-        return [
-            builder
-            for builder in sub_graph_dag_walker.view_builders()
-            if not self.datasets_to_exclude
-            or builder.dataset_id not in self.datasets_to_exclude
-        ]
+        sub_graph_views = sub_graph_dag_walker.views
+        sub_graph_view_builders = []
+        for view in sub_graph_views:
+            builder = views_to_builders[view]
+            if (
+                not self.datasets_to_exclude
+                or builder.dataset_id not in self.datasets_to_exclude
+            ):
+                sub_graph_view_builders.append(builder)
+        return sub_graph_view_builders
 
     def _get_root_views_in_sub_dag(
         self, all_views: Sequence[BigQueryView]

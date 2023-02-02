@@ -27,10 +27,10 @@ from typing import (
     Deque,
     Dict,
     Generic,
+    Iterable,
     Iterator,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     TypeVar,
@@ -40,7 +40,7 @@ import attr
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.utils import environment, structured_logging, trace
 
 ViewResultT = TypeVar("ViewResultT")
@@ -158,7 +158,6 @@ class BigQueryViewDagNode:
         self.is_root = is_root
         self.is_leaf = is_leaf
 
-        self._view_builder: Optional[BigQueryViewBuilder] = None
         self._ancestors_sub_dag: Optional[BigQueryViewDagWalker] = None
         self._ancestors_tree_num_edges: Optional[int] = None
         self._descendants_sub_dag: Optional[BigQueryViewDagWalker] = None
@@ -177,16 +176,6 @@ class BigQueryViewDagNode:
 
     def add_source_address(self, source_address: BigQueryAddress) -> None:
         self.source_addresses.add(source_address)
-
-    @property
-    def view_builder(self) -> BigQueryViewBuilder:
-        """The view builder associated with the underlying view."""
-        if self._view_builder is None:
-            raise ValueError("Must set view_builder via set_view_builder().")
-        return self._view_builder
-
-    def set_view_builder(self, view_builder: BigQueryViewBuilder) -> None:
-        self._view_builder = view_builder
 
     def set_ancestors_sub_dag(self, ancestor_sub_dag: "BigQueryViewDagWalker") -> None:
         self._ancestors_sub_dag = ancestor_sub_dag
@@ -292,9 +281,9 @@ class BigQueryViewDagWalker:
 
     def __init__(
         self,
-        views: List[BigQueryView],
+        views: Iterable[BigQueryView],
     ):
-        self.views = views
+        self.views = list(views)
         dag_nodes = [BigQueryViewDagNode(view) for view in views]
         self.nodes_by_address: Dict[BigQueryAddress, BigQueryViewDagNode] = {
             node.view.address: node for node in dag_nodes
@@ -651,7 +640,6 @@ class BigQueryViewDagWalker:
         self.process_dag(collect_descendants)
         self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
         sub_dag = BigQueryViewDagWalker(list(sub_dag_views))
-        sub_dag.populate_node_view_builders(self.view_builders())
         return sub_dag
 
     def get_ancestors_sub_dag(
@@ -684,23 +672,19 @@ class BigQueryViewDagWalker:
         self.process_dag(collect_ancestors)
         self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
         sub_dag = BigQueryViewDagWalker(list(sub_dag_views))
-        sub_dag.populate_node_view_builders(self.view_builders())
         return sub_dag
 
     @staticmethod
     def union_dags(*dags: "BigQueryViewDagWalker") -> "BigQueryViewDagWalker":
         found_view_addresses = set()
         views: List[BigQueryView] = []
-        view_builders: List[BigQueryViewBuilder] = []
         for dag in dags:
             for view in dag.views:
                 if view.address not in found_view_addresses:
                     views.append(view)
-                    view_builders.append(dag.node_for_view(view).view_builder)
                     found_view_addresses.add(view.address)
 
         unioned_dag = BigQueryViewDagWalker(views=views)
-        unioned_dag.populate_node_view_builders(view_builders)
         return unioned_dag
 
     def get_sub_dag(
@@ -718,7 +702,6 @@ class BigQueryViewDagWalker:
         |views|.
         """
         sub_dag_walker = BigQueryViewDagWalker(views)
-        sub_dag_walker.populate_node_view_builders(self.view_builders())
 
         # If necessary, get descendants of views_in_sub_dag
         if include_descendants:
@@ -735,26 +718,6 @@ class BigQueryViewDagWalker:
 
         return sub_dag_walker
 
-    def populate_node_view_builders(
-        self, all_candidate_view_builders: Sequence[BigQueryViewBuilder]
-    ) -> None:
-        """Populates all view nodes on the DAG with their associated view builder.
-        The provided list of view builders must be a superset of all builders for views
-        in this DAG.
-        """
-        builders_by_address = {b.address: b for b in all_candidate_view_builders}
-        for address, node in self.nodes_by_address.items():
-            if address not in builders_by_address:
-                raise ValueError(f"Builder not found for view [{address}]")
-            builder = builders_by_address[address]
-            node.set_view_builder(builder)
-
-    def view_builders(self) -> Sequence[BigQueryViewBuilder]:
-        """Returns all view builders for the nodes in this views DAG. Can only be
-        called after populate_node_view_builders() is called on this BigQueryDagWalker.
-        """
-        return [node.view_builder for node in self.nodes_by_address.values()]
-
     def populate_ancestor_sub_dags(self) -> None:
         """Builds and caches ancestor sub-DAGs on all nodes in this DAG."""
 
@@ -764,10 +727,6 @@ class BigQueryViewDagWalker:
             """For a given view, calculates the ancestors sub-DAG by unioning together
             the parent ancestor sub-DAGs."""
             this_view_dag = BigQueryViewDagWalker([v])
-            this_view_dag.populate_node_view_builders(
-                [self.node_for_view(v).view_builder]
-            )
-
             parent_nodes = [
                 self.node_for_view(parent_view) for parent_view in parent_results
             ]
@@ -798,10 +757,6 @@ class BigQueryViewDagWalker:
             """For a given view, calculates the descendants sub-DAG by unioning together
             the child descendant sub-DAGs."""
             this_view_dag = BigQueryViewDagWalker([v])
-            this_view_dag.populate_node_view_builders(
-                [self.node_for_view(v).view_builder]
-            )
-
             child_nodes = [
                 self.node_for_view(child_view) for child_view in child_results
             ]
