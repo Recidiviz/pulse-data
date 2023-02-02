@@ -459,6 +459,8 @@ transfer_details_cte AS (
         loc_to.LocationSubTypeName AS DOCLocationToSubTypeName,
         Notes,
         TermId,
+        t.UpdateDate,
+        t.Locking
     FROM {com_Transfer} t
     LEFT JOIN {com_TransferReason} tr
         USING (TransferReasonId)
@@ -492,7 +494,7 @@ transfer_periods_cte AS (
     FROM transfer_details_cte
     WINDOW transfer_window AS (
         PARTITION BY OffenderId
-        ORDER BY TransferDate
+        ORDER BY TransferDate, UpdateDate, Locking
     )
 )"""
 
