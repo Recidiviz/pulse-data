@@ -44,7 +44,7 @@ const UserProvisioningView = (): JSX.Element => {
         return;
       }
       message.success(
-        `${user.auth0_email} moved to ${agenciesData?.agencies
+        `${user.email} moved to ${agenciesData?.agencies
           .filter((agency) => agencyIds.includes(agency.id))
           ?.map((agency) => agency.name)}!`
       );
@@ -61,7 +61,7 @@ const UserProvisioningView = (): JSX.Element => {
         message.error(`An error occured: ${error}`);
         return;
       }
-      message.success(`${user.auth0_email}'s name changed to ${name}!`);
+      message.success(`${user.email}'s name changed to ${name}!`);
     } catch (err) {
       message.error(`An error occured: ${err}`);
     }
@@ -122,30 +122,22 @@ const UserProvisioningView = (): JSX.Element => {
     },
     {
       title: "Email",
-      dataIndex: "auth0_email",
-      key: "auth0_email",
-      ...getColumnSearchProps("auth0_email"),
+      dataIndex: "email",
+      key: "email",
+      ...getColumnSearchProps("email"),
       width: "15%",
       ellipsis: true,
     },
     {
-      title: "Auth0 Name",
-      dataIndex: "auth0_name",
-      key: "auth0_name",
-      ...getColumnSearchProps("auth0_name"),
-      width: "15%",
-      ellipsis: true,
-    },
-    {
-      title: "DB Name",
-      dataIndex: "db_name",
-      key: "db_name",
-      ...getColumnSearchProps("db_name"),
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      ...getColumnSearchProps("name"),
       width: "15%",
       render: (_: string, user: User) => {
         return (
           <Input
-            defaultValue={user.db_name}
+            defaultValue={user.name}
             onBlur={(e) => onNameChange(user, e.target.value)}
           />
         );

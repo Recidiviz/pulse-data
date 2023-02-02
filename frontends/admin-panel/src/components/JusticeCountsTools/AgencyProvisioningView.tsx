@@ -51,7 +51,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
   const { data: usersData } = useFetchedDataJSON<UsersResponse>(getUsers);
-  const usersToShow = usersData?.users.filter((user) => user.db_id != null);
+  const usersToShow = usersData?.users.filter((user) => user.id != null);
   const onFinish = async ({
     name,
     userDbId,
@@ -274,11 +274,9 @@ const AgencyProvisioningView = (): JSX.Element => {
         <Form.Item label="User" name="userDbId" rules={[{ required: true }]}>
           <Select disabled={showSpinner}>
             {usersToShow?.map((user) => (
-              <Select.Option key={user.db_id} value={user.db_id}>
-                {`${user.db_id}: ${
-                  user.auth0_email != null
-                    ? user.auth0_email
-                    : "<no email address>"
+              <Select.Option key={user.id} value={user.id}>
+                {`${user.id}: ${
+                  user.email != null ? user.email : "<no email address>"
                 }`}
               </Select.Option>
             ))}

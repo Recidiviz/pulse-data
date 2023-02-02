@@ -207,12 +207,6 @@ def get_api_blueprint(
         This endpoint removes a user from an agency in Auth0 and in the Justice Counts Database.
         """
         try:
-            if auth0_client is None:
-                return make_response(
-                    "auth0_client could not be initialized. Environment is not development or gcp.",
-                    500,
-                )
-
             request_json = assert_type(request.json, dict)
             user = UserAccountInterface.get_user_by_auth0_user_id(
                 session=current_session,
@@ -237,7 +231,6 @@ def get_api_blueprint(
             AgencyUserAccountAssociationInterface.remove_user_from_agency(
                 email=email,
                 agency_id=int(agency_id),
-                auth0_client=auth0_client,
                 session=current_session,
             )
 

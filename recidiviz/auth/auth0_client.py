@@ -187,7 +187,7 @@ class Auth0Client:
     @sleep_and_retry
     @limits(calls=AUTH0_QPS_LIMIT, period=1)
     @_refresh_token_if_needed
-    def create_JC_user(self, email: str, name: str, agency_id: int) -> Auth0User:
+    def create_JC_user(self, email: str, name: str) -> Auth0User:
         """Creates a single Auth0 user in the Justice Counts Auth0 tenant."""
         random_password_characters = (
             random.choices(string.ascii_letters, k=5)
@@ -199,7 +199,6 @@ class Auth0Client:
             "email": email,
             "name": name,
             "email_verified": False,
-            "app_metadata": {"agency_ids": [agency_id]},
             "connection": "Username-Password-Authentication",
             "password": "".join(random_password_characters),
         }
