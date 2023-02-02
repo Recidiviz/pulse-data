@@ -125,7 +125,7 @@ class WorkflowsUsTnExternalRequestInterface:
             firestore_client.update_document(
                 firestore_doc_path,
                 {
-                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
                     firestore_client.timestamp_key: datetime.now(timezone.utc),
                 },
             )
@@ -143,7 +143,7 @@ class WorkflowsUsTnExternalRequestInterface:
             firestore_client.update_document(
                 firestore_doc_path,
                 {
-                    f"noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                    f"contactNote.noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS.value,
                     firestore_client.timestamp_key: datetime.now(timezone.utc),
                 },
             )
@@ -166,7 +166,7 @@ class WorkflowsUsTnExternalRequestInterface:
                 firestore_client.update_document(
                     firestore_doc_path,
                     {
-                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS.value,
+                        f"contactNote.noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS.value,
                         firestore_client.timestamp_key: datetime.now(timezone.utc),
                     },
                 )
@@ -175,14 +175,14 @@ class WorkflowsUsTnExternalRequestInterface:
                 firestore_client.update_document(
                     firestore_doc_path,
                     {
-                        f"noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE.value,
+                        f"contactNote.noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE.value,
                         firestore_client.timestamp_key: datetime.now(timezone.utc),
                     },
                 )
                 firestore_client.update_document(
                     firestore_doc_path,
                     {
-                        "status": ExternalSystemRequestStatus.FAILURE.value,
+                        "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
                         firestore_client.timestamp_key: datetime.now(timezone.utc),
                     },
                 )
@@ -191,7 +191,7 @@ class WorkflowsUsTnExternalRequestInterface:
         firestore_client.update_document(
             firestore_doc_path,
             {
-                "status": ExternalSystemRequestStatus.SUCCESS.value,
+                "contactNote.status": ExternalSystemRequestStatus.SUCCESS.value,
                 firestore_client.timestamp_key: datetime.now(timezone.utc),
             },
         )
@@ -246,5 +246,7 @@ class WorkflowsUsTnExternalRequestInterface:
     @staticmethod
     def get_contact_note_updates_firestore_path(person_external_id: str) -> str:
         record_id = f"{StateCode.US_TN.value.lower()}_{person_external_id}"
-        doc_path = f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/usTnExpiration/contactNote"
+        doc_path = (
+            f"clientUpdatesV2/{record_id}/clientOpportunityUpdates/usTnExpiration"
+        )
         return doc_path
