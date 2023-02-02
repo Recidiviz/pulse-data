@@ -69,6 +69,7 @@ DIMENSIONS = [
     jails.StaffType,
     jails.ReleaseType,
     jails.GrievancesUpheldType,
+    jails.FundingType,
     prosecution.CaseSeverityType,
     prosecution.DispositionType,
     prosecution.StaffType,
