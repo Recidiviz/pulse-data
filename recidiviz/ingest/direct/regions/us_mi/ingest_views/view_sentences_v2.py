@@ -84,9 +84,8 @@ sentence_records as (
     LEFT JOIN {ADH_REFERENCE_CODE} ref5 on legal.county_code_id = ref5.reference_code_id
     LEFT JOIN {ADH_OFFENDER_CHARGE} charge on sentence.offender_charge_id = charge.offender_charge_id 
     LEFT JOIN {ADH_OFFENSE} offense on charge.offense_id = offense.offense_id    
-  -- only select probation and prison
-  -- we're ignoring parole sentences because that's already captured with the prison sentences
-  where sentence_type_id in ('431', '430')
+  -- select probation, prison, and parole sentences (since parole sentences have different term end dates than their original prison sentence)
+  where sentence_type_id in ('431', '430', '2165')
 ),
 
 sentence_records_grouped as (

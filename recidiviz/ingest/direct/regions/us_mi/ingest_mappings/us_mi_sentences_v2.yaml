@@ -35,12 +35,14 @@ output:
           external_id: offender_booking_id
           id_type: $literal("US_MI_DOC_BOOK")
     supervision_sentences:
-      # Populate supervision sentence if sentence type is probation
+      # Populate supervision sentence if sentence type is probation or parole
       - $conditional:
           - $if:
-              $equal:
-                - sentence_type_id
-                - $literal("431") # Probation
+              $in:
+                $value: sentence_type_id
+                $options:
+                  - $literal("431")
+                  - $literal("2165")
             $then:
               StateSupervisionSentence:
                 external_id: offender_sentence_id
@@ -190,7 +192,12 @@ output:
                             StateSentenceStatus.VACATED:
                               - "7297" # Vacated
                               - "5285" # Reversal on Appeal
-                supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
+                supervision_type:
+                  $enum_mapping:
+                    $raw_text: sentence_type_id
+                    $mappings:
+                      StateSupervisionSentenceSupervisionType.PAROLE: "2165"
+                      StateSupervisionSentenceSupervisionType.PROBATION: "431"
                 date_imposed: sentenced_date
                 start_date: effective_date
                 projected_completion_date: expiration_date
@@ -382,7 +389,7 @@ output:
                 incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
                 date_imposed: sentenced_date
                 start_date: effective_date
-                projected_min_release_date: expiration_date
+                projected_max_release_date: expiration_date
                 completion_date: closing_date
                 parole_eligibility_date:
                   $conditional:
