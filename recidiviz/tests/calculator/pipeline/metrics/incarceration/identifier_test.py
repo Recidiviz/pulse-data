@@ -660,6 +660,106 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             admission_event,
         )
 
+    def test_admission_event_for_temporary_custody_period_returns_commitment_from_supervision(
+        self,
+    ) -> None:
+        incarceration_period_tc = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="ip1",
+            sequence_num=0,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+        incarceration_period_same_date_not_rev = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2,
+            external_id="ip2",
+            sequence_num=1,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        incarceration_period_diff_date_rev = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3,
+            external_id="ip3",
+            sequence_num=2,
+            state_code="US_XX",
+            admission_date=date(2023, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+        incarceration_period_same_date_rev = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=4,
+            external_id="ip4",
+            sequence_num=3,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+        self.assertIsInstance(
+            self._run_admission_event_for_period(
+                incarceration_period=incarceration_period_tc,
+            ),
+            IncarcerationCommitmentFromSupervisionAdmissionEvent,
+        )
+        self.assertIsInstance(
+            self._run_admission_event_for_period(
+                incarceration_period=incarceration_period_same_date_not_rev,
+            ),
+            IncarcerationStandardAdmissionEvent,
+        )
+        incarceration_period_index_no_revocation = (
+            default_normalized_ip_index_for_tests(
+                incarceration_periods=[
+                    incarceration_period_tc,
+                    incarceration_period_same_date_not_rev,
+                ]
+            )
+        )
+        incarceration_period_index_revocation_different_date = (
+            default_normalized_ip_index_for_tests(
+                incarceration_periods=[
+                    incarceration_period_tc,
+                    incarceration_period_same_date_not_rev,
+                    incarceration_period_diff_date_rev,
+                ]
+            )
+        )
+        incarceration_period_index_revocation_same_date = (
+            default_normalized_ip_index_for_tests(
+                incarceration_periods=[
+                    incarceration_period_tc,
+                    incarceration_period_same_date_not_rev,
+                    incarceration_period_diff_date_rev,
+                    incarceration_period_same_date_rev,
+                ]
+            )
+        )
+        self.assertIsInstance(
+            self._run_admission_event_for_period(
+                incarceration_period=incarceration_period_tc,
+                incarceration_period_index=incarceration_period_index_no_revocation,
+            ),
+            IncarcerationCommitmentFromSupervisionAdmissionEvent,
+        )
+        self.assertIsInstance(
+            self._run_admission_event_for_period(
+                incarceration_period=incarceration_period_tc,
+                incarceration_period_index=incarceration_period_index_revocation_different_date,
+            ),
+            IncarcerationCommitmentFromSupervisionAdmissionEvent,
+        )
+        self.assertIsInstance(
+            self._run_admission_event_for_period(
+                incarceration_period=incarceration_period_tc,
+                incarceration_period_index=incarceration_period_index_revocation_same_date,
+            ),
+            IncarcerationStandardAdmissionEvent,
+        )
+
     def test_admission_event_for_period_all_admission_reasons(self) -> None:
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,

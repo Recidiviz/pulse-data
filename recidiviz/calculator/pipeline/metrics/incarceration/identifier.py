@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
     IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
+    count_temporary_custody_as_commitment_from_supervision,
     get_commitment_from_supervision_details,
 )
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
@@ -314,10 +315,12 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             # currently, the use of TEMPORARY_CUSTODY is to support metrics. When the
             # results are more satisfactory, we can revisit whether to add this to
             # normalization results as well.
-            if (
-                is_commitment_from_supervision(admission_reason)
-                or admission_reason
+            if is_commitment_from_supervision(admission_reason) or (
+                admission_reason
                 == StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY
+                and count_temporary_custody_as_commitment_from_supervision(
+                    incarceration_period, incarceration_period_index
+                )
             ):
                 return self._commitment_from_supervision_event_for_period(
                     incarceration_period=incarceration_period,

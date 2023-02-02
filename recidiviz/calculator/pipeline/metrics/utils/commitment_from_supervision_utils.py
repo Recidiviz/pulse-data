@@ -17,7 +17,7 @@
 """Utils for calculations regarding incarceration admissions that are commitments from
 supervision."""
 import datetime
-from typing import List, NamedTuple, Optional
+from typing import Dict, List, NamedTuple, Optional, Tuple
 
 from dateutil.relativedelta import relativedelta
 
@@ -204,8 +204,41 @@ def period_is_commitment_from_supervision_admission_from_parole_board_hold(
         in (
             StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
             StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
         )
     )
+
+
+def count_temporary_custody_as_commitment_from_supervision(
+    incarceration_period: NormalizedStateIncarcerationPeriod,
+    incarceration_period_index: NormalizedIncarcerationPeriodIndex,
+) -> bool:
+    """Determines whether the incarceration_period with a TEMPORARY_CUSTODY admission_reason
+    should be considered a commitment from supervision. TEMPORARY_CUSTODY admissions
+    are not considered commitments from supervision if the individual has another
+    admission on the same day with a admission_reason of REVOCATION or SANCTION_ADMISSION.
+    """
+    period_admission_reasons: Dict[
+        int,
+        Tuple[StateIncarcerationPeriodAdmissionReason, Optional[str], datetime.date],
+    ] = incarceration_period_index.original_admission_reasons_by_period_id
+    date_of_tc_admission = incarceration_period.admission_date
+
+    disqualifying_periods = [
+        id
+        for id, (
+            admission_reason,
+            _,
+            date_of_admission,
+        ) in period_admission_reasons.items()
+        if date_of_admission == date_of_tc_admission
+        and admission_reason
+        in [
+            StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
+        ]
+    ]
+    return not disqualifying_periods
 
 
 def _filter_to_matching_supervision_types(

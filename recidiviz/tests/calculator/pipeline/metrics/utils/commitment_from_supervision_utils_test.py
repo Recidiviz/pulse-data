@@ -24,6 +24,7 @@ from recidiviz.calculator.pipeline.metrics.utils import (
 )
 from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_utils import (
     CommitmentDetails,
+    count_temporary_custody_as_commitment_from_supervision,
     period_is_commitment_from_supervision_admission_from_parole_board_hold,
 )
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
@@ -863,5 +864,77 @@ class TestCommitmentFromBoardHold(unittest.TestCase):
         self.assertFalse(
             period_is_commitment_from_supervision_admission_from_parole_board_hold(
                 incarceration_period=ip_2, most_recent_board_hold_span=ip_1.duration
+            )
+        )
+
+
+class TestCountTemporaryCustodyAsCommitmentFromSupervision(unittest.TestCase):
+    """Tests the
+    count_temporary_custody_as_commitment_from_supervision function."""
+
+    def test_tc_counted_as_commitment_from_supervision(self) -> None:
+        ip1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="ip1",
+            sequence_num=0,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+        ip2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2,
+            external_id="ip2",
+            sequence_num=1,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+        ip3 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=3,
+            external_id="ip3",
+            sequence_num=2,
+            state_code="US_XX",
+            admission_date=date(2023, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        ip_index = default_normalized_ip_index_for_tests(
+            incarceration_periods=[ip1, ip2, ip3]
+        )
+        self.assertTrue(
+            count_temporary_custody_as_commitment_from_supervision(
+                incarceration_period=ip1, incarceration_period_index=ip_index
+            )
+        )
+
+    def test_tc_not_counted_as_commitment_from_supervision(self) -> None:
+        ip1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1,
+            external_id="ip1",
+            sequence_num=0,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
+        )
+        ip2 = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2,
+            external_id="ip2",
+            sequence_num=1,
+            state_code="US_XX",
+            admission_date=date(2020, 1, 1),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+        )
+
+        ip_index = default_normalized_ip_index_for_tests(
+            incarceration_periods=[ip1, ip2]
+        )
+        self.assertFalse(
+            count_temporary_custody_as_commitment_from_supervision(
+                incarceration_period=ip1, incarceration_period_index=ip_index
             )
         )
