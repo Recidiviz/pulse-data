@@ -31,6 +31,9 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.justice_counts.agency_user_account_association import (
+    AgencyUserAccountAssociationInterface,
+)
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
@@ -96,25 +99,34 @@ class SpreadsheetInterface:
         return spreadsheet
 
     @staticmethod
-    def get_spreadsheet_json(
-        spreadsheet: schema.Spreadsheet, session: Session
-    ) -> Dict[str, Any]:
-        uploaded_by_user = (
-            session.query(schema.UserAccount)
-            .filter(schema.UserAccount.auth0_user_id == spreadsheet.uploaded_by)
-            .one()
+    def get_spreadsheets_json(
+        spreadsheets: List[schema.Spreadsheet],
+        session: Session,
+    ) -> List[Dict[str, Any]]:
+        uploader_id_to_json = (
+            AgencyUserAccountAssociationInterface.get_uploader_id_to_json(
+                session=session, spreadsheets=spreadsheets
+            )
         )
-        return {
-            "id": spreadsheet.id,
-            "name": spreadsheet.original_name,
-            "uploaded_at": spreadsheet.uploaded_at.timestamp() * 1000,
-            "uploaded_by": uploaded_by_user.name,
-            "ingested_at": spreadsheet.ingested_at.timestamp() * 1000
-            if spreadsheet.ingested_at is not None
-            else None,
-            "status": spreadsheet.status.value,
-            "system": spreadsheet.system.value,
-        }
+        return [
+            {
+                "id": spreadsheet.id,
+                "name": spreadsheet.original_name,
+                "uploaded_at": spreadsheet.uploaded_at.timestamp() * 1000,
+                "uploaded_by": uploader_id_to_json.get(spreadsheet.uploaded_by).get(  # type: ignore[union-attr]
+                    "name"
+                )
+                if uploader_id_to_json.get(spreadsheet.uploaded_by) is not None
+                else None,
+                "uploaded_by_v2": uploader_id_to_json.get(spreadsheet.uploaded_by),
+                "ingested_at": spreadsheet.ingested_at.timestamp() * 1000
+                if spreadsheet.ingested_at is not None
+                else None,
+                "status": spreadsheet.status.value,
+                "system": spreadsheet.system.value,
+            }
+            for spreadsheet in spreadsheets
+        ]
 
     @staticmethod
     def get_agency_spreadsheets(

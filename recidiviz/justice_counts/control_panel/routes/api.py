@@ -732,12 +732,10 @@ def get_api_blueprint(
                 agency_id=agency_id, session=current_session
             )
             return jsonify(
-                [
-                    SpreadsheetInterface.get_spreadsheet_json(
-                        spreadsheet=spreadsheet, session=current_session
-                    )
-                    for spreadsheet in spreadsheets
-                ]
+                SpreadsheetInterface.get_spreadsheets_json(
+                    spreadsheets=spreadsheets,
+                    session=current_session,
+                )
             )
         except Exception as e:
             raise _get_error(error=e) from e
@@ -849,9 +847,10 @@ def get_api_blueprint(
 
         current_session.commit()
         return jsonify(
-            SpreadsheetInterface.get_spreadsheet_json(
-                spreadsheet=spreadsheet, session=current_session
-            )
+            SpreadsheetInterface.get_spreadsheets_json(
+                spreadsheets=[spreadsheet],
+                session=current_session,
+            ).pop()
         )
 
     @api_blueprint.route("/spreadsheets/<spreadsheet_id>", methods=["PATCH"])
@@ -886,9 +885,10 @@ def get_api_blueprint(
 
             current_session.commit()
             return jsonify(
-                SpreadsheetInterface.get_spreadsheet_json(
-                    spreadsheet=spreadsheet, session=current_session
-                )
+                SpreadsheetInterface.get_spreadsheets_json(
+                    spreadsheets=[spreadsheet],
+                    session=current_session,
+                ).pop()
             )
         except Exception as e:
             raise _get_error(error=e) from e

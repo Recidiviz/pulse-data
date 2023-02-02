@@ -19,7 +19,7 @@
 import itertools
 from typing import Dict, List
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
@@ -197,6 +197,52 @@ class AgencyUserAccountAssociationInterface:
                     code="justice_counts_user_uniqueness",
                     description="Multiple user account associations exist for one user and one agency.",
                 )
+            assoc = assocs[0]
+            editor_json[editor_id] = {
+                "name": assoc.user_account.name,
+                "role": assoc.role.value if assoc.role is not None else None,
+            }
+
+        return editor_json
+
+    @staticmethod
+    def get_uploader_id_to_json(
+        session: Session, spreadsheets: List[schema.Spreadsheet]
+    ) -> Dict[str, Dict[str, str]]:
+        """
+        Returns a dictionary mapping an editor's user_account_id to a
+        object with their name and role. All reports will be from the same agency.
+        """
+        editor_json: Dict[str, Dict[str, str]] = {}
+        if len(spreadsheets) == 0:
+            return editor_json
+
+        source_id = spreadsheets[0].agency_id
+        uploader_ids = [spreadsheet.uploaded_by or [] for spreadsheet in spreadsheets]
+
+        uploaded_by_users = (
+            session.query(schema.UserAccount)
+            .filter(schema.UserAccount.auth0_user_id.in_(uploader_ids))
+            .options(joinedload(schema.UserAccount.agency_assocs))
+            .all()
+        )
+
+        uploader_ids_to_assocs = {
+            user.auth0_user_id: list(
+                filter(lambda a: a.agency_id == source_id, user.agency_assocs)
+            )
+            for user in uploaded_by_users
+        }
+        for editor_id, assocs in uploader_ids_to_assocs.items():
+            if len(assocs) > 1:
+                raise JusticeCountsServerError(
+                    code="justice_counts_user_uniqueness",
+                    description="Multiple user account associations exist for one user and one agency.",
+                )
+
+            if len(assocs) == 0:
+                continue
+
             assoc = assocs[0]
             editor_json[editor_id] = {
                 "name": assoc.user_account.name,
