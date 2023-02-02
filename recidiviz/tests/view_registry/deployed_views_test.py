@@ -101,7 +101,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                 address_overrides=None,
             )
             cls.dag_walker = BigQueryViewDagWalker(views)
-            cls.dag_walker.populate_node_view_builders(view_builders)
 
     @parameterized.expand(
         [

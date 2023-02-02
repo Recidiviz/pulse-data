@@ -21,7 +21,7 @@ from concurrent import futures
 from concurrent.futures import Future
 from enum import Enum
 from http import HTTPStatus
-from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 from flask import Blueprint
 from google.api_core import retry
@@ -341,11 +341,14 @@ def build_views_to_update(
     view_source_table_datasets: Set[str],
     candidate_view_builders: Sequence[BigQueryViewBuilder],
     address_overrides: Optional[BigQueryAddressOverrides],
-) -> List[BigQueryView]:
-    """Returns the list of views that should be updated, built from builders in the |candidate_view_builders| list."""
+) -> Dict[BigQueryView, BigQueryViewBuilder]:
+    """
+    Returns a map associating view builders to the views that should be updated,
+    built from builders in the |candidate_view_builders| list.
+    """
 
     logging.info("Building [%s] views...", len(candidate_view_builders))
-    views_to_update = []
+    views_to_builders = {}
     for view_builder in candidate_view_builders:
         if view_builder.dataset_id in view_source_table_datasets:
             raise ValueError(
@@ -361,8 +364,8 @@ def build_views_to_update(
                 f"Unable to build view at address [{view_builder.address}]"
             ) from e
 
-        views_to_update.append(view)
-    return views_to_update
+        views_to_builders[view] = view_builder
+    return views_to_builders
 
 
 def _create_all_datasets_if_necessary(
@@ -402,7 +405,7 @@ class CreateOrUpdateViewStatus(Enum):
 
 
 def _create_managed_dataset_and_deploy_views(
-    views_to_update: List[BigQueryView],
+    views_to_update: Iterable[BigQueryView],
     bq_region_override: Optional[str],
     force_materialize: bool,
     historically_managed_datasets_to_clean: Optional[Set[str]] = None,

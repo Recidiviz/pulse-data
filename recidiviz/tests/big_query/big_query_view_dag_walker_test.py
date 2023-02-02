@@ -565,9 +565,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_populate_ancestors_sub_dag(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
         all_views_dag_walker.populate_ancestor_sub_dags()
 
         all_sub_dag_views = {
@@ -651,9 +648,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_populate_descendants_sub_dag(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
         all_views_dag_walker.populate_descendant_sub_dags()
 
         all_sub_dag_views = {
@@ -723,17 +717,12 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_populate_sub_dag_empty(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker([])
-        all_views_dag_walker.populate_node_view_builders([])
-        # Should not crash
         all_views_dag_walker.populate_descendant_sub_dags()
         all_views_dag_walker.populate_ancestor_sub_dags()
 
     def test_populate_descendant_sub_dag_one_view(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(
             self.diamond_shaped_dag_views_list[0:1]
-        )
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
         )
 
         all_views_dag_walker.populate_descendant_sub_dags()
@@ -764,9 +753,6 @@ The following views have less restrictive projects_to_deploy than their parents:
         all_views_dag_walker = BigQueryViewDagWalker(
             self.diamond_shaped_dag_views_list[0:1]
         )
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         all_views_dag_walker.populate_ancestor_sub_dags()
 
@@ -795,9 +781,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_root_node(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         # Get descendants sub-dag
         sub_dag = all_views_dag_walker.get_descendants_sub_dag(
@@ -825,9 +808,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_middle_node(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         # Get descendants sub-dag
         descendants_sub_dag = all_views_dag_walker.get_descendants_sub_dag(
@@ -866,9 +846,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_leaf_node(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         # Get descendants sub-dag
         sub_dag = all_views_dag_walker.get_descendants_sub_dag(
@@ -896,9 +873,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_multiple_input_views(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         input_views = [
             self.x_shaped_dag_views_list[0],
@@ -930,9 +904,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_multiple_input_views2(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         input_views = [
             self.x_shaped_dag_views_list[2],
@@ -967,9 +938,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_empty_input_views(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         # Get descendants sub-dag
         sub_dag = all_views_dag_walker.get_descendants_sub_dag([])
@@ -983,9 +951,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_get_sub_dag_single_node_input(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list[0:1])
-        all_views_dag_walker.populate_node_view_builders(
-            X_SHAPED_DAG_VIEW_BUILDERS_LIST[0:1]
-        )
 
         # Get descendants sub-dag
         sub_dag = all_views_dag_walker.get_descendants_sub_dag(
@@ -1019,9 +984,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_sub_dag_with_cycle(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
 
         input_views = [
             self.diamond_shaped_dag_views_list[1],
@@ -1057,7 +1019,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_sub_dag_include_ancestors(self) -> None:
         dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        dag_walker.populate_node_view_builders(X_SHAPED_DAG_VIEW_BUILDERS_LIST)
 
         sub_dag_walker = dag_walker.get_sub_dag(
             views=[self.x_shaped_dag_views_list[3]],
@@ -1077,7 +1038,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_sub_dag_include_descendants(self) -> None:
         dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        dag_walker.populate_node_view_builders(X_SHAPED_DAG_VIEW_BUILDERS_LIST)
 
         sub_dag_walker = dag_walker.get_sub_dag(
             views=[self.x_shaped_dag_views_list[2]],
@@ -1138,7 +1098,6 @@ The following views have less restrictive projects_to_deploy than their parents:
             view_builder_5,
         ]
         dag_walker = BigQueryViewDagWalker([b.build() for b in all_view_builders])
-        dag_walker.populate_node_view_builders(all_view_builders)
         dag_walker.populate_ancestor_sub_dags()
 
         # Top level view
@@ -1181,7 +1140,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         # Skip datasets
         dag_walker = BigQueryViewDagWalker([b.build() for b in all_view_builders])
-        dag_walker.populate_node_view_builders(all_view_builders)
         dag_walker.populate_ancestor_sub_dags()
         dfs_tree = dag_walker.ancestors_dfs_tree_str(
             view_builder_3.build(), datasets_to_skip={"dataset_1"}
@@ -1246,7 +1204,6 @@ The following views have less restrictive projects_to_deploy than their parents:
         ]
         all_views = [b.build() for b in all_builders]
         dag_walker = BigQueryViewDagWalker(all_views)
-        dag_walker.populate_node_view_builders(all_builders)
         dag_walker.populate_descendant_sub_dags()
 
         # Top level view
@@ -1427,14 +1384,10 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_union_dags(self) -> None:
         x_shaped_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        x_shaped_dag_walker.populate_node_view_builders(X_SHAPED_DAG_VIEW_BUILDERS_LIST)
 
         # This DAG is a superset of the X-shaped DAG
         diamond_shaped_dag_walker = BigQueryViewDagWalker(
             self.diamond_shaped_dag_views_list
-        )
-        diamond_shaped_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
         )
         unioned_dag = BigQueryViewDagWalker.union_dags(
             x_shaped_dag_walker, diamond_shaped_dag_walker
@@ -1458,11 +1411,9 @@ The following views have less restrictive projects_to_deploy than their parents:
 
     def test_union_dags_more_than_two_dags(self) -> None:
         dag_1 = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-        dag_1.populate_node_view_builders(X_SHAPED_DAG_VIEW_BUILDERS_LIST)
 
         # This DAG is a superset of the X-shaped DAG
         dag_2 = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        dag_2.populate_node_view_builders(DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST)
 
         dag_3_builders = [
             SimpleBigQueryViewBuilder(
@@ -1475,7 +1426,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         dag_3_views = [b.build() for b in dag_3_builders]
         dag_3 = BigQueryViewDagWalker([b.build() for b in dag_3_builders])
-        dag_3.populate_node_view_builders(dag_3_builders)
 
         unioned_dag = BigQueryViewDagWalker.union_dags(dag_1, dag_2, dag_3)
 
@@ -1496,7 +1446,6 @@ The following views have less restrictive projects_to_deploy than their parents:
         )
 
         dag_1 = BigQueryViewDagWalker([view_builder_1.build()])
-        dag_1.populate_node_view_builders([view_builder_1])
 
         view_builder_2 = SimpleBigQueryViewBuilder(
             dataset_id="dataset_1",
@@ -1510,7 +1459,6 @@ The following views have less restrictive projects_to_deploy than their parents:
         )
 
         dag_2 = BigQueryViewDagWalker([view_builder_2.build()])
-        dag_2.populate_node_view_builders([view_builder_2])
         unioned_dag = BigQueryViewDagWalker.union_dags(
             dag_1,
             dag_2,
@@ -1518,55 +1466,8 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         self.assertCountEqual([view_builder_1.build()], unioned_dag.views)
 
-    def test_set_view_builders(self) -> None:
-        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
-
-        self.assertCountEqual(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST, all_views_dag_walker.view_builders()
-        )
-
-        input_views = [
-            self.diamond_shaped_dag_views_list[3],
-            self.diamond_shaped_dag_views_list[4],
-        ]
-
-        # Get descendants sub-dag
-        sub_dag = all_views_dag_walker.get_descendants_sub_dag(input_views)
-
-        expected_views = [
-            self.diamond_shaped_dag_views_list[3],
-            self.diamond_shaped_dag_views_list[4],
-            self.diamond_shaped_dag_views_list[5],
-        ]
-        self.assertCountEqual(sub_dag.views, expected_views)
-
-        expected_builders = [
-            b
-            for b in DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-            if b.address in {v.address for v in expected_views}
-        ]
-        self.assertCountEqual(expected_builders, sub_dag.view_builders())
-
-    def test_set_view_builders_missing_builder_throws(self) -> None:
-        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Builder not found for view "
-            r"\[BigQueryAddress\(dataset_id='dataset_6', table_id='table_6'\)\]",
-        ):
-            # Populate with all but last builder
-            all_views_dag_walker.populate_node_view_builders(
-                DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST[0:-1]
-            )
-
     def test_related_ancestor_addresses(self) -> None:
         all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        all_views_dag_walker.populate_node_view_builders(
-            DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST
-        )
         all_views_dag_walker.populate_ancestor_sub_dags()
         view_1, view_2, view_3, *_ = self.diamond_shaped_dag_views_list
         assert all_views_dag_walker.related_ancestor_addresses(
