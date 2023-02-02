@@ -75,8 +75,6 @@ class UserAccountInterface:
     ) -> None:
         """If there is an existing association between the user and given agency in our DB,
         then update the invitation status and role. Else, create a new association.
-        NOTE: This method does not create or update the user's list of agencies in Auth0.
-        That must be done via auth0_client.update_user_app_metadata.
         """
         existing_agency_assocs_by_id = {
             assoc.agency_id: assoc for assoc in user.agency_assocs
@@ -112,8 +110,13 @@ class UserAccountInterface:
         session.delete(existing_assoc)
 
     @staticmethod
-    def get_users(session: Session) -> List[UserAccount]:
-        return session.query(UserAccount).order_by(UserAccount.id).all()
+    def get_users(session: Session, include_agencies: bool = True) -> List[UserAccount]:
+        q = session.query(UserAccount)
+
+        if include_agencies:
+            q.options(joinedload(UserAccount.agency_assocs))
+
+        return q.order_by(UserAccount.id).all()
 
     @staticmethod
     def get_user_by_auth0_user_id(

@@ -16,47 +16,22 @@
 # =============================================================================
 """Defines routes for the Justice Counts API endpoints in the admin panel."""
 
-import itertools
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Tuple
 
-import attr
 from flask import Blueprint, Response, jsonify, request
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
 
-from recidiviz.auth.auth0_client import Auth0Client, Auth0User
+from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.types import assert_type, non_optional
-
-
-@attr.define()
-class JusticeCountsUser:
-    auth0_user_id: str
-    auth0_email: str
-    auth0_name: str
-    db_name: Optional[str] = None
-    db_id: Optional[int] = None
-    agency_ids: List[int] = attr.field(factory=list)
-    agencies: List[Dict[str, Any]] = attr.field(factory=list)
-
-    def to_json(self) -> Dict[str, Any]:
-        return {
-            "auth0_user_id": self.auth0_user_id,
-            "auth0_email": self.auth0_email,
-            "auth0_name": self.auth0_name,
-            "db_name": self.db_name,
-            "db_id": self.db_id,
-            "agencies": self.agencies,
-        }
-
 
 _auth0_client = None
 
@@ -139,23 +114,44 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
     @bp.route("/api/justice_counts_tools/users", methods=["GET"])
     @requires_gae_auth
     def get_all_users() -> Tuple[Response, HTTPStatus]:
-        """Returns all UserAccount records. Joins the records in our database with the
-        records obtained by the Auth0 management API.
-        """
-        auth0_users = _get_auth0_client().get_all_users()
+        """Returns all UserAccount records."""
 
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             db_users = UserAccountInterface.get_users(session=session)
-            all_users = _merge_auth0_and_db_users(
-                session=session, auth0_users=auth0_users, db_users=db_users
-            )
+            agency_ids_to_fetch = set()
+            for user in db_users:
+                for assoc in user.agency_assocs:
+                    agency_ids_to_fetch.add(assoc.agency_id)
 
-        return (
-            jsonify({"users": [user.to_json() for user in all_users]}),
-            HTTPStatus.OK,
-        )
+            agencies_by_id = {
+                agency.id: agency
+                for agency in AgencyInterface.get_agencies_by_id(
+                    session=session, agency_ids=list(agency_ids_to_fetch)
+                )
+            }
+
+            user_json = []
+            for user in db_users:
+                user_agency_ids = [assoc.agency_id for assoc in user.agency_assocs]
+                user_json.append(
+                    user.to_json(
+                        agencies=list(
+                            filter(
+                                None,
+                                [
+                                    agencies_by_id.get(agency_id)
+                                    for agency_id in user_agency_ids
+                                ],
+                            )
+                        )
+                    )
+                )
+            return (
+                jsonify({"users": user_json}),
+                HTTPStatus.OK,
+            )
 
     @bp.route("/api/justice_counts_tools/users", methods=["PUT"])
     @requires_gae_auth
@@ -190,79 +186,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     agencies=agencies,
                 )
 
-            if name is not None or agency_ids is not None:
-                app_metadata = (
-                    {"agency_ids": agency_ids} if agency_ids is not None else None
-                )
-                _get_auth0_client().update_user(
-                    user_id=auth0_user_id,
-                    name=name,
-                    app_metadata=app_metadata,
-                )
-
             return (
                 jsonify({"status": "ok"}),
                 HTTPStatus.OK,
             )
-
-
-def _merge_auth0_and_db_users(
-    session: Session, auth0_users: List[Auth0User], db_users: List[schema.UserAccount]
-) -> List[JusticeCountsUser]:
-    """Given a list of users who have signed up via Auth0, and a list of
-    users whom we have registered in our DB, perform a union and merge based on
-    auth0 user id. Users who have the same auth0 user id will be considered
-    the same user, and their Auth0 + DB metadata will be merged into one
-    object. Users who only appear in one place will have their own object.
-    """
-    agency_ids_to_fetch = set()
-    auth0_users_by_id = {user["user_id"]: user for user in auth0_users}
-    all_users_by_auth0_id = {}
-
-    for db_user in db_users:
-        auth0_user_id = db_user.auth0_user_id
-        matching_auth0_user = auth0_users_by_id.get(auth0_user_id)
-        if not matching_auth0_user:
-            # User just appears in our DB
-            # This should actually never happen anymore!
-            # (except when using fixture data)
-            continue
-
-        # User appears in both Auth0 and our DB
-        all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
-            auth0_user_id=matching_auth0_user["user_id"],
-            auth0_name=matching_auth0_user["name"],
-            auth0_email=matching_auth0_user["email"],
-            db_name=db_user.name,
-            db_id=db_user.id,
-            agency_ids=matching_auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
-        )
-
-    for auth0_user_id, auth0_user in auth0_users_by_id.items():
-        if auth0_user_id not in all_users_by_auth0_id:
-            # User just appears in Auth0
-            all_users_by_auth0_id[auth0_user_id] = JusticeCountsUser(
-                auth0_user_id=auth0_user["user_id"],
-                auth0_name=auth0_user["name"],
-                auth0_email=auth0_user["email"],
-                agency_ids=auth0_user.get("app_metadata", {}).get("agency_ids", []),  # type: ignore[arg-type]
-            )
-
-    # Now fetch the Agencies that were referenced in any users metadata
-    agency_ids_to_fetch = set(
-        itertools.chain(*[user.agency_ids for user in all_users_by_auth0_id.values()])
-    )
-    agencies_by_id = {
-        agency.id: agency
-        for agency in AgencyInterface.get_agencies_by_id(
-            session=session, agency_ids=list(agency_ids_to_fetch)
-        )
-    }
-    for _, user in all_users_by_auth0_id.items():
-        user.agencies = [
-            agencies_by_id[agency_id].to_json()
-            for agency_id in user.agency_ids
-            if agency_id in agencies_by_id
-        ]
-
-    return list(all_users_by_auth0_id.values())

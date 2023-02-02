@@ -69,13 +69,6 @@ class AgencyUserAccountAssociationInterface:
                 # User already belongs to this agency
                 pass
 
-            # Update Auth0
-            agency_ids = list(existing_agency_ids) + [agency_id]
-            auth0_client.update_user_app_metadata(
-                user_id=existing_user.auth0_user_id,
-                app_metadata={"agency_ids": agency_ids},
-            )
-
             # Update our DB
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
@@ -86,9 +79,7 @@ class AgencyUserAccountAssociationInterface:
 
         elif len(existing_users) == 0:
             # If there is no existing user, create one in Auth0.
-            auth0_user = auth0_client.create_JC_user(
-                name=name, email=email, agency_id=agency_id
-            )
+            auth0_user = auth0_client.create_JC_user(name=name, email=email)
             auth0_user_id = auth0_user["user_id"]
 
             # Create user in our DB
@@ -111,7 +102,6 @@ class AgencyUserAccountAssociationInterface:
     def remove_user_from_agency(
         email: str,
         agency_id: int,
-        auth0_client: Auth0Client,
         session: Session,
     ) -> None:
         """This method removes the agency_id from the users metadata in auth0 and
@@ -125,14 +115,6 @@ class AgencyUserAccountAssociationInterface:
                 description=f"Multiple users exist with the same email: {email}",
             )
         user = users[0]
-        agency_ids = [
-            agency_assoc.agency_id
-            for agency_assoc in user.agency_assocs
-            if agency_assoc.agency_id != agency_id
-        ]
-        auth0_client.update_user_app_metadata(
-            user_id=user.auth0_user_id, app_metadata={"agency_ids": agency_ids}
-        )
 
         # Update user in Justice Counts DB
         UserAccountInterface.remove_user_from_agency(

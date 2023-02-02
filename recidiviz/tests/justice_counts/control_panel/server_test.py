@@ -914,9 +914,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             "email": email_address,
             "user_id": auth0_id,
             "name": name,
-            "app_metadata": JusticeCountsAuth0AppMetadata(
-                agency_ids=[agency_A.id], has_seen_onboarding={}
-            ),
         }
         self.test_auth0_client.create_JC_user.return_value = auth0_user
         with self.app.test_request_context():
@@ -956,9 +953,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "email": email_address,
                 "user_id": auth0_id,
                 "name": name,
-                "app_metadata": JusticeCountsAuth0AppMetadata(
-                    agency_ids=[agency_A.id, agency_B.id], has_seen_onboarding={}
-                ),
             }
             self.test_auth0_client.create_JC_user.return_value = updated_auth0_user
             response = self.client.post(
