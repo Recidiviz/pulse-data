@@ -237,18 +237,16 @@ def supervision_contact_type_mapper(raw_text: str) -> StateSupervisionContactTyp
     """Parses the contact type from a string containing the contact codes."""
 
     codes = raw_text.split("-")
+    # ND confirmed that "HV", "OV", and "OO" are placeholders for the “face to face” code,
+    # and that we should not prioritize the collateral contact code over others.
 
-    # If collateral or face-to-face is explicitly set in the contact codes, we will use the
-    # direct mapping.
+    if any(code in ["FF", "HV", "OO", "OV"] for code in codes):
+        if "CC" in codes:
+            return StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT
+        return StateSupervisionContactType.DIRECT
+
     if "CC" in codes:
         return StateSupervisionContactType.COLLATERAL
-
-    if "FF" in codes:
-        return StateSupervisionContactType.DIRECT
-
-    # Otherwise, we assume that any home visit, office visit, or employment visit counts as a direct contact.
-    if any(code in ["HV", "OO", "OV"] for code in codes):
-        return StateSupervisionContactType.DIRECT
 
     return StateSupervisionContactType.INTERNAL_UNKNOWN
 
@@ -289,7 +287,7 @@ def supervision_contact_method_mapper(raw_text: str) -> StateSupervisionContactM
 
     # We assume that a visit is done in person. Otherwise, if we find a notion of communication, then
     # we assume virtual.
-    if any(code in ["HV", "OO", "OV"] for code in codes):
+    if any(code in ["FF", "HV", "OO", "OV"] for code in codes):
         return StateSupervisionContactMethod.IN_PERSON
     if "OC" in codes:  # Offender Communication
         return StateSupervisionContactMethod.VIRTUAL
