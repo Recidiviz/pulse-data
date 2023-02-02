@@ -144,7 +144,7 @@ def create_workflows_api_blueprint() -> Blueprint:
                 firestore_client.set_document(
                     doc_path,
                     {
-                        "status": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                        "contactNote.status": ExternalSystemRequestStatus.IN_PROGRESS.value,
                         firestore_client.timestamp_key: datetime.datetime.now(
                             datetime.timezone.utc
                         ),
@@ -184,7 +184,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             firestore_client.set_document(
                 doc_path,
                 {
-                    "status": ExternalSystemRequestStatus.FAILURE.value,
+                    "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
                     firestore_client.timestamp_key: datetime.datetime.now(
                         datetime.timezone.utc
                     ),
@@ -203,7 +203,7 @@ def create_workflows_api_blueprint() -> Blueprint:
         firestore_client.set_document(
             doc_path,
             {
-                "status": ExternalSystemRequestStatus.IN_PROGRESS.value,
+                "contactNote.status": ExternalSystemRequestStatus.IN_PROGRESS.value,
                 firestore_client.timestamp_key: datetime.datetime.now(
                     datetime.timezone.utc
                 ),
@@ -219,14 +219,6 @@ def create_workflows_api_blueprint() -> Blueprint:
     ) -> Response:
         cloud_task_body = get_cloud_task_json_body()
         person_external_id = cloud_task_body.get("person_external_id", None)
-
-        # TODO(#2950): Remove extraneous logs
-        logging.info(
-            ", ".join(
-                f"Key {key} has value of type {type(value).__name__}"
-                for key, value in cloud_task_body.items()
-            )
-        )
 
         if person_external_id is None:
             logging.error("No person_external_id provided")
@@ -257,7 +249,7 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
             firestore_client.update_document(
                 firestore_doc_path,
-                {"status": ExternalSystemRequestStatus.FAILURE.value},
+                {"contactNote.status": ExternalSystemRequestStatus.FAILURE.value},
             )
 
             return make_response(
