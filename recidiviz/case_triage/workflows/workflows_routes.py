@@ -107,7 +107,7 @@ def create_workflows_api_blueprint() -> Blueprint:
         response.vary = "Origin"
         response.access_control_allow_origin = request.origin
         response.access_control_allow_headers = parse_set_header(
-            "authorization, sentry-trace"
+            "authorization, sentry-trace, x-csrf-token, content-type"
         )
         # Cache preflight responses for 2 hours
         response.access_control_max_age = 2 * 60 * 60
