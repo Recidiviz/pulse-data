@@ -69,7 +69,13 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     update_session_with_user_info,
 )
-from recidiviz.utils.environment import in_development, in_gcp, in_offline_mode, in_test
+from recidiviz.utils.environment import (
+    in_development,
+    in_gcp,
+    in_gcp_staging,
+    in_offline_mode,
+    in_test,
+)
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.timer import RepeatedTimer
 
@@ -123,6 +129,9 @@ if not in_development():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
+
+if in_gcp_staging():
+    app.config["WTF_CSRF_STRICT_SSL"] = False
 
 
 setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
