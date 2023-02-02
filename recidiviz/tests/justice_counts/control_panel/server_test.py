@@ -1529,7 +1529,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             [
                 self.test_schema_objects.test_user_A,
                 self.test_schema_objects.test_agency_A,
-                schema.AgencyUserAccountAssociation(
+                AgencyUserAccountAssociation(
                     user_account=self.test_schema_objects.test_user_A,
                     agency=self.test_schema_objects.test_agency_A,
                 ),
@@ -1562,7 +1562,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 response_dict.get("uploaded_by"),
-                self.test_schema_objects.test_user_A.name,
+                "Jane Doe",
+            )
+            self.assertEqual(
+                response_dict.get("uploaded_by_v2"),
+                {"name": self.test_schema_objects.test_user_A.name, "role": None},
             )
             self.assertEqual(response_dict.get("ingested_at"), None)
             self.assertEqual(response_dict.get("status"), "UPLOADED")
@@ -1678,17 +1682,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         user_agency = self.test_schema_objects.test_agency_E
         not_user_agency = self.test_schema_objects.test_agency_A
         user = self.test_schema_objects.test_user_A
-        self.session.add_all(
-            [
-                user_agency,
-                user,
-                not_user_agency,
-                schema.AgencyUserAccountAssociation(
-                    user_account=self.test_schema_objects.test_user_A,
-                    agency=self.test_schema_objects.test_agency_E,
-                ),
-            ]
+        association = AgencyUserAccountAssociation(
+            user_account=user, agency=user_agency
         )
+        self.session.add_all([user_agency, user, not_user_agency, association])
         self.session.commit()
         self.session.refresh(user_agency)
         self.session.refresh(not_user_agency)
@@ -1740,7 +1737,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(
                 probation_spreadsheet.get("uploaded_by"),
-                self.test_schema_objects.test_user_A.name,
+                "Jane Doe",
+            )
+            self.assertEqual(
+                probation_spreadsheet.get("uploaded_by_v2"),
+                {"name": self.test_schema_objects.test_user_A.name, "role": None},
             )
 
             self.assertEqual(
@@ -1898,7 +1899,12 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
     def test_delete_spreadsheet(self) -> None:
         agency = self.test_schema_objects.test_agency_A
         user = self.test_schema_objects.test_user_A
-        self.session.add_all([agency, user])
+        user_agency_association = AgencyUserAccountAssociation(
+            user_account=user,
+            agency=agency,
+            invitation_status=UserAccountInvitationStatus.PENDING,
+        )
+        self.session.add_all([agency, user, user_agency_association])
         self.session.commit()
         self.session.refresh(agency)
         self.session.refresh(user)
