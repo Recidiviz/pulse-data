@@ -46,7 +46,7 @@ parole_count_id_level_info_base AS (
       *, 
       -- If there is a row in the history table about this parole_count_id, that means this parole stint has been
       -- terminated and this is the most up to date information about this parole_count_id.
-      ROW_NUMBER() OVER (PARTITION BY parole_number, parole_count_id ORDER BY is_history_row DESC) AS entry_priority
+      ROW_NUMBER() OVER (PARTITION BY parole_number, parole_count_id, parole_count_id_start_date ORDER BY is_history_row DESC, release_id DESC) AS entry_priority
     FROM (
       -- These are rows with information on active supervision stints at the time of raw data upload, collected from multiple Release* tables.
       SELECT
@@ -61,7 +61,9 @@ parole_count_id_level_info_base AS (
         ri.RelCountyResidence as county_of_residence,
         ri.RelFinalRiskGrade as supervision_level,
         ri.RelDO as most_recent_district_office,
-        0 AS is_history_row
+        0 AS is_history_row,
+         -- the entry_priority partition will only grab one active period at a time, so release_id won't be relevant
+        0 as release_id
       FROM {dbo_Release} r
       JOIN {dbo_ReleaseInfo} ri USING (ParoleNumber, ParoleCountID)
       JOIN {dbo_RelStatus} rs USING (ParoleNumber, ParoleCountID)
@@ -82,7 +84,8 @@ parole_count_id_level_info_base AS (
         hr.HReCntyRes as county_of_residence,
         hr.HReGradeSup as supervision_level,
         hr.HReDo as most_recent_district_office,
-        1 AS is_history_row
+        1 AS is_history_row,
+        CAST(HReleaseId AS INT) as release_id
       FROM {dbo_Hist_Release} hr
     ) as releases
   ) as releases_with_priority
@@ -197,8 +200,9 @@ agent_history_base AS (
         ParoleNumber,
         ParoleCountID,
         AgentName AS supervising_officer_name,
+        -- If there are multiple Agent_EmpNum for this AgentName in agent_history table, pick one arbitrarily
         -- If there isn't an employee num associated with this row, pick look at the mapping of name to employee num
-        COALESCE(agent_history.Agent_EmpNum, agent_employee_numbers.Agent_EmpNum) AS supervising_officer_id,
+        IF(agent_history.Agent_EmpNum IS NULL, agent_employee_numbers.Agent_EmpNum, MAX(agent_history.Agent_EmpNum) OVER (PARTITION BY AgentName)) AS supervising_officer_id,
         CAST(LastModifiedDateTime AS DATETIME) AS po_modified_time,
         SupervisorName,
         SPLIT(SupervisorName, ' ') AS supervisor_info
@@ -383,7 +387,11 @@ hydrated_edges AS (
       -- This is a nested start to a new parole count - treat it as a transfer
       WHEN edge_type = '1-START' AND open_count > 1 THEN 'TRANSFER_WITHIN_STATE'
       -- This is a nested end to a parole count when other counts are still ongoing - treat it as a transfer.
-      WHEN edge_type = '3-END' AND open_count > 0 THEN 'TRANSFER_WITHIN_STATE'
+      WHEN edge_type = '3-END' 
+        AND open_count > 0 
+        AND edge_date IS NOT NULL 
+        AND open_block_did_change = 0 
+      THEN 'TRANSFER_WITHIN_STATE'
       ELSE edge_reason
     END AS edge_reason,
     edge_date,
@@ -471,8 +479,9 @@ filtered_edges AS (
     )]) AS supervision_types
   WHERE open_count > 0 OR open_block_did_change = 1
 ),
-supervision_periods AS (
+supervision_periods AS 
   -- Turns the edges into a set of date span periods.
+  (SELECT * FROM (
   SELECT
     parole_number,
     sequence_number,
@@ -493,7 +502,9 @@ supervision_periods AS (
     open_count
   FROM 
     filtered_edges
-  WINDOW parole_number_window AS (PARTITION BY parole_number ORDER BY sequence_number) 
+    WINDOW parole_number_window 
+      AS (PARTITION BY parole_number ORDER BY sequence_number)) periods
+    WHERE NOT (admission_date IS NULL AND termination_date IS NULL) 
 )
 
 SELECT 
