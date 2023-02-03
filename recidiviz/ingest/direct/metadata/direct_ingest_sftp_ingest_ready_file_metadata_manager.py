@@ -95,7 +95,7 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
             session.add(
                 schema.DirectIngestSftpIngestReadyFileMetadata(
                     region_code=self.region_code,
-                    post_processed_normalized_file_path=post_processed_normalized_file.file_name,
+                    post_processed_normalized_file_path=post_processed_normalized_file.blob_name,
                     remote_file_path=remote_file_path,
                     file_discovery_time=datetime.datetime.now(tz=pytz.UTC),
                 )
@@ -111,7 +111,7 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
                 session.query(schema.DirectIngestSftpIngestReadyFileMetadata)
                 .filter_by(
                     region_code=self.region_code,
-                    post_processed_normalized_file_path=post_processed_normalized_file.file_name,
+                    post_processed_normalized_file_path=post_processed_normalized_file.blob_name,
                     remote_file_path=remote_file_path,
                 )
                 .one()
@@ -129,7 +129,7 @@ class DirectIngestSftpIngestReadyFileMetadataManager:
                 session.query(schema.DirectIngestSftpIngestReadyFileMetadata)
                 .filter_by(
                     region_code=self.region_code,
-                    post_processed_normalized_file_path=post_processed_normalized_file.file_name,
+                    post_processed_normalized_file_path=post_processed_normalized_file.blob_name,
                     remote_file_path=remote_file_path,
                 )
                 .one()
