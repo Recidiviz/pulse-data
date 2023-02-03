@@ -45,7 +45,8 @@ PROSECUTION_AGENCY_ID = 149
 COURTS_AND_PRETRIAL_AGENCY_ID = 150
 JAILS_AGENCY_ID = 151
 PRISONS_AGENCY_ID = 152
-SUPERVISION_AGENCY_ID = 153
+SUPERVISION_PAROLE_PROBATION_PRISONS_AGENCY_ID = 153
+SUPERVISION_AGENCY_ID = 154
 
 
 def _create_aggregate_datapoint(
@@ -200,7 +201,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
         (JAILS_AGENCY_ID, (schema.System.JAILS,), "Jails"),
         (PRISONS_AGENCY_ID, (schema.System.PRISONS,), "Prisons"),
         (
-            SUPERVISION_AGENCY_ID,
+            SUPERVISION_PAROLE_PROBATION_PRISONS_AGENCY_ID,
             (
                 schema.System.SUPERVISION,
                 schema.System.PAROLE,
@@ -210,6 +211,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
             # Add Prisons so that this agency resembles NCDPS
             "Supervision & Prison",
         ),
+        (SUPERVISION_AGENCY_ID, (schema.System.SUPERVISION,), "Supervision"),
     ]
     agencies = []
     for agency_id, agency_systems, agency_name in agency_tuples:
