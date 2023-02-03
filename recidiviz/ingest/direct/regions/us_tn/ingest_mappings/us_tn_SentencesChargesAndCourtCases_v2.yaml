@@ -280,3 +280,34 @@ output:
                 sentence_metadata: $variable(sentence_metadata)
                 charges:
                   - $variable(charge)
+    task_deadlines:
+      - $conditional:
+          - $if:
+              $and:
+                - $variable(is_incarceration_sentence)
+                - $not_null: ExpirationDate
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+                eligible_date: ExpirationDate
+                update_datetime:
+                  $env: results_update_datetime
+                task_metadata:
+                  $json_dict:
+                    external_id: $variable(sentence_external_id)
+                    sentence_type: $literal("INCARCERATION")
+      - $conditional:
+          - $if:
+              $and:
+                - $variable(is_supervision_sentence)
+                - $not_null: ExpirationDate
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+                eligible_date: ExpirationDate
+                update_datetime:
+                  $env: results_update_datetime
+                task_metadata:
+                  $json_dict:
+                    external_id: $variable(sentence_external_id)
+                    sentence_type: $literal("SUPERVISION")
