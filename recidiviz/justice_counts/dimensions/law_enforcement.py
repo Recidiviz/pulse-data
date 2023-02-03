@@ -62,8 +62,8 @@ class ForceType(DimensionBase, enum.Enum):
     RESTRAINT = "Restraint"
     FIREARM = "Firearm"
     OTHER_WEAPON = "Other Weapon"
-    OTHER_FORCE = "Other Force"
-    UNKNOWN_FORCE = "Unknown Force"
+    OTHER = "Other Force"
+    UNKNOWN = "Unknown Force"
 
     @classmethod
     def dimension_identifier(cls) -> str:
