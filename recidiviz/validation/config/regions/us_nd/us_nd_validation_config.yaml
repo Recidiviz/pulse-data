@@ -24,6 +24,16 @@ max_allowed_error_overrides:
     override_reason:
       TODO(#15057) - Known issue where additional deduping is required. It affects
       literally one person so even this threshold is pretty generous
+  - validation_name: most_recent_face_to_face_contact_date_by_person_by_state_comparison
+    hard_max_allowed_error_override: 0.20
+    override_reason: |
+      TODO(#16865): Our supervision case compliance logic only includes contacts since
+      the start of supervision, so if someone has not had a face to face contact since
+      they started this most recent stint of supervision then `etl_clients` will have a
+      `NULL` date. The other side of this comparison just pulls the most recent face to
+      face contact from `normalized_state`, so if they have had one on a prior stint of
+      supervision this will fail. We are going to delete this validation in the future
+      so ignoring this failure for now.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 550
