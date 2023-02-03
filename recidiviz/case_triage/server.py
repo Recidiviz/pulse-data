@@ -69,13 +69,7 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     update_session_with_user_info,
 )
-from recidiviz.utils.environment import (
-    in_development,
-    in_gcp,
-    in_gcp_staging,
-    in_offline_mode,
-    in_test,
-)
+from recidiviz.utils.environment import in_development, in_gcp, in_offline_mode, in_test
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.timer import RepeatedTimer
 
@@ -111,6 +105,12 @@ if sessions_redis:
 
 # Again, need to silence mypy error `Cannot assign to a method`
 app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
+workflows_blueprint = create_workflows_api_blueprint()
+# Disable CSRF protection for workflows routes because the session id changes between
+# requests to get the CSRF token and subsequent POST requests, with no successful workarounds.
+# Since we use a JWT (the Bearer token in the Auth header), we should be protected from CSRF.
+# https://security.stackexchange.com/questions/170388/do-i-need-csrf-token-if-im-using-bearer-jwt
+CSRFProtect(app).exempt(workflows_blueprint)
 CSRFProtect(app).exempt(e2e_blueprint)
 register_error_handlers(app)
 
@@ -129,10 +129,6 @@ if not in_development():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
-
-if in_gcp_staging():
-    app.config["WTF_CSRF_SSL_STRICT"] = False
-
 
 setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
 
@@ -226,7 +222,6 @@ segment_client = CaseTriageSegmentClient(write_key)
 # Routes & Blueprints
 pathways_api_blueprint = create_pathways_api_blueprint()
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
-workflows_blueprint = create_workflows_api_blueprint()
 # Only the pathways endpoints are accessible in offline mode
 if not in_offline_mode():
     auth0_configuration = get_secret("case_triage_auth0")
