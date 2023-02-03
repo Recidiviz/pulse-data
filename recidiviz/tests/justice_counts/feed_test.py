@@ -73,11 +73,11 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
                 ],
                 [
                     "FIREARM",
-                    "OTHER_FORCE",
+                    "OTHER",
                     "OTHER_WEAPON",
                     "PHYSICAL",
                     "RESTRAINT",
-                    "UNKNOWN_FORCE",
+                    "UNKNOWN",
                 ],
             )
             self.assertEqual(

@@ -522,8 +522,8 @@ use_of_force_incidents = MetricDefinition(
                 ForceType.FIREARM: "The number of incidents in which agency staff used a firearm to gain compliance from a person.",
                 ForceType.RESTRAINT: "The number of incidents in which agency staff used a restraint to gain compliance from a person.",
                 ForceType.OTHER_WEAPON: "The number of incidents in which agency staff used a non-firearm weapon to gain compliance from a person.",
-                ForceType.OTHER_FORCE: "The number of incidents in which agency staff used another type of force to gain compliance from a person.",
-                ForceType.UNKNOWN_FORCE: "The number of incidents in which agency staff used an unknown type of force to gain compliance from a person.",
+                ForceType.OTHER: "The number of incidents in which agency staff used another type of force to gain compliance from a person.",
+                ForceType.UNKNOWN: "The number of incidents in which agency staff used an unknown type of force to gain compliance from a person.",
             },
             required=True,
         )
