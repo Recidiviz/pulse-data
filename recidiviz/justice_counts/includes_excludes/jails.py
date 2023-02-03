@@ -75,3 +75,81 @@ class ContractBedsFundingIncludesExcludes(Enum):
     SUPERVISION = "Funding collected from beds contracted by supervision agencies"
     STATE = "Funding collected from beds contracted by state agencies"
     FEDERAL = "Funding collected from beds contracted by federal agencies"
+
+
+# Expenses
+# TODO(#17577) Implement multiple includes/excludes tables
+class ExpensesIncludesExcludes(Enum):
+    SINGLE_YEAR = "Expenses for single fiscal year"
+    BIENNIUM = "Biennium funding appropriated during the time period"
+    MULTI_YEAR = (
+        "Multi-year appropriations that are appropriated in during the time period"
+    )
+    FACILITY_OPERATIONS = "Expenses for jail facility operations and maintenance"
+    OTHER_FACILITIES = "Expenses for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
+    CONSTRUCTION = "Expenses for construction or rental of new jail facilities"
+    PROGRAMMING = "Expenses for agency-run or contracted treatment and programming"
+    HEALTH_CARE = "Expenses for health care for people in jail facilities"
+    FACILITY_STAFF = "Expenses for jail facility staff"
+    SUPPORT_STAFF = "Expenses for central administrative and support staff"
+    BEDS_CONTRACTED = (
+        "Expenses for the operation of private jail beds contracted by the agency"
+    )
+    CASE_MANAGEMENT_SYSTEMS = "Expenses for electronic case management systems"
+    OPERATIONS_MAINTENANCE = "Expenses for prison facility operations and maintenance"
+    JUVENILE = "Expenses for juvenile jail facilities"
+    NON_JAIL_ACTIVITIES = "Expenses for non-jail activities such as pre- or post-adjudication community supervision"
+    LAW_ENFORCEMENT = "Expenses for law enforcement functions"
+
+
+class PersonnelIncludesExcludes(Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT = "Retirement contributions"
+    INDIVIDUALS_CONTRACTED = (
+        "Costs for individuals contracted to work in or for the jail agency"
+    )
+    COMPANIES_CONTRACTED = (
+        "Costs for companies contracted to work in or for the jail agency"
+    )
+
+
+class TrainingIncludesExcludes(Enum):
+    ANNUAL = "Annual training"
+    CONTINUING = "Continuing education"
+    ACADEMY = "Training academy"
+    SPECIALIZED = "Specialized training"
+    EXTERNAL = "External training or professional development opportunities (conferences, classes, etc.)"
+    NO_COST_PROGRAMS = (
+        "Courses or programs offered at no cost to individuals or the department"
+    )
+
+
+class FacilitiesAndEquipmentIncludesExcludes(Enum):
+    OPERATIONS = "Jail facility operations"
+    MAINTENANCE = "Jail facility maintenance"
+    RENOVATION = "Jail facility renovation"
+    CONSTRUCTION = "Jail facility construction"
+    EQUIPMENT = "Equipment (e.g., computers, communication, and information technology infrastructure)"
+
+
+class HealthCareForPeopleWhoAreIncarceratedIncludesExcludes(Enum):
+    FACILITY_OPERATION = (
+        "Expenses related to the operation of jail facility infirmaries and hospitals"
+    )
+    SALARIES_PROVIDERS = (
+        "Salaries and benefits for medical providers employed by the jail agency"
+    )
+    CONTRACT_PROVIDERS = "Contracts with providers of medical care"
+    EXPENSES_PHYSICAL = "Expenses related to physical medical care"
+    EXPENSES_MENTAL = "Expenses related to mental health care"
+    TRANSPORT_COSTS = "Costs related to transporting people who are incarcerated to and from hospitals or other health care facilities"
+
+
+class ContractBedsExpensesIncludesExcludes(Enum):
+    OTHER_AGENCIES = "Expenses for beds contracted with other jail agencies"
+    STATE = "Expenses for beds contracted with state agencies (i.e., in state prisons)"
+    FEDERAL = (
+        "Expenses for beds contracted with federal agencies (i.e., in federal prisons)"
+    )
+    PRIVATE = "Expenses for beds contracted with private prison companies"

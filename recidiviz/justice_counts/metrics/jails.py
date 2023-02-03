@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines all Justice Counts metrics for the Jail system."""
-
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails import (
+    ExpenseType,
     FundingType,
     PopulationType,
     ReadmissionType,
@@ -30,11 +30,17 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.includes_excludes.jails import (
     CommissaryAndFeesIncludesExcludes,
+    ContractBedsExpensesIncludesExcludes,
     ContractBedsFundingIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
+    ExpensesIncludesExcludes,
+    FacilitiesAndEquipmentIncludesExcludes,
     FundingIncludesExcludes,
     GrantsIncludesExcludes,
+    HealthCareForPeopleWhoAreIncarceratedIncludesExcludes,
+    PersonnelIncludesExcludes,
     StateAppropriationIncludesExcludes,
+    TrainingIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -122,6 +128,67 @@ funding = MetricDefinition(
                 ),
                 FundingType.CONTRACT_BEDS: IncludesExcludesSet(
                     members=ContractBedsFundingIncludesExcludes,
+                ),
+            },
+        )
+    ],
+)
+
+expenses = MetricDefinition(
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    system=System.JAILS,
+    description="The amount the agency spent for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+    metric_type=MetricType.EXPENSES,
+    display_name="Expenses",
+    measurement_type=MeasurementType.DELTA,
+    category=MetricCategory.CAPACITY_AND_COST,
+    # TODO(#17577) Implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=ExpensesIncludesExcludes,
+        excluded_set={
+            ExpensesIncludesExcludes.OPERATIONS_MAINTENANCE,
+            ExpensesIncludesExcludes.JUVENILE,
+            ExpensesIncludesExcludes.NON_JAIL_ACTIVITIES,
+            ExpensesIncludesExcludes.LAW_ENFORCEMENT,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ExpenseType,
+            required=False,
+            dimension_to_description={
+                ExpenseType.PERSONNEL: "The amount the agency spent to employ personnel involved in the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.TRAINING: "The amount spent by the agency on training personnel involved in the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.FACILITIES: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used to support maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.HEALTH_CARE: "The amount spent by the agency on medical care for people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.CONTRACT_BEDS: "The amount spent by the agency on contracts with other agencies to provide custody and care for people who are incarcerated under the jurisdiction of the agency.",
+                ExpenseType.OTHER: "The amount spent by the agency on other costs relating to the operation and maintenance of jail facilities and the care of people who are incarcerated that are not personnel, training, facilities and equipment, health care for people who are incarcerated, or contract beds.",
+                ExpenseType.UNKNOWN: "The amount spent by the agency on other costs relating to the operation and maintenance of jail facilities and the care of people who are incarcerated for a purpose that is not known.",
+            },
+            dimension_to_includes_excludes={
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=PersonnelIncludesExcludes,
+                    excluded_set={
+                        PersonnelIncludesExcludes.COMPANIES_CONTRACTED,
+                    },
+                ),
+                ExpenseType.TRAINING: IncludesExcludesSet(
+                    members=TrainingIncludesExcludes,
+                    excluded_set={
+                        TrainingIncludesExcludes.NO_COST_PROGRAMS,
+                    },
+                ),
+                ExpenseType.FACILITIES: IncludesExcludesSet(
+                    members=FacilitiesAndEquipmentIncludesExcludes,
+                ),
+                ExpenseType.HEALTH_CARE: IncludesExcludesSet(
+                    members=HealthCareForPeopleWhoAreIncarceratedIncludesExcludes,
+                    excluded_set={
+                        HealthCareForPeopleWhoAreIncarceratedIncludesExcludes.TRANSPORT_COSTS,
+                    },
+                ),
+                ExpenseType.CONTRACT_BEDS: IncludesExcludesSet(
+                    members=ContractBedsExpensesIncludesExcludes,
                 ),
             },
         )

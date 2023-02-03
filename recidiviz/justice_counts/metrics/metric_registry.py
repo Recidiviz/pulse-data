@@ -51,6 +51,7 @@ METRICS = [
     defense.cases_disposed,
     defense.complaints,
     jails.funding,
+    jails.expenses,
     jails.total_staff,
     jails.residents,
     jails.admissions,
