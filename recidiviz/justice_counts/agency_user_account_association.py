@@ -157,6 +157,10 @@ class AgencyUserAccountAssociationInterface:
     ) -> Dict[str, Dict[str, str]]:
         """Returns a dictionary mapping an editor's user_account_id to a
         object with their name and role. All reports will be from the same agency."""
+        editor_json: Dict[str, Dict[str, str]] = {}
+        if len(reports) == 0:
+            return editor_json
+
         editor_ids = list(
             itertools.chain(*[report.modified_by or [] for report in reports])
         )
@@ -172,7 +176,7 @@ class AgencyUserAccountAssociationInterface:
                 lambda x: x.user_account_id,
             )
         }
-        editor_json = {}
+
         for editor_id, assocs in editor_ids_to_assocs.items():
             if len(assocs) > 1:
                 raise JusticeCountsServerError(
