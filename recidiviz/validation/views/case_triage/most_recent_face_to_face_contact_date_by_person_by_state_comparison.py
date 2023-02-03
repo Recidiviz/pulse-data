@@ -20,6 +20,9 @@ the state table vs. the etl_clients tables"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    get_all_primary_supervision_external_id_types,
+)
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -33,41 +36,43 @@ MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_DESCRIPTION 
 
 # TODO(#8579): Remove the group by clauses once confirmed that there is one row per person.
 # TODO(#8646): Update the view to import ingest view and compare values against ingest view.
-MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_QUERY_TEMPLATE = """
-WITH
-  etl_clients AS (
+MOST_RECENT_FACE_TO_FACE_CONTACT_DATE_BY_PERSON_BY_STATE_COMPARISON_QUERY_TEMPLATE = f"""
+WITH etl_clients AS (
   SELECT
     state_code AS region_code,
     person_external_id,
     supervising_officer_external_id AS officer_external_id,
     MAX(most_recent_face_to_face_date) AS most_recent_etl_face_to_face_contact_date
   FROM
-    `{project_id}.{case_triage_dataset}.etl_clients_materialized`
+    `{{project_id}}.{{case_triage_dataset}}.etl_clients_materialized`
   GROUP BY
     state_code,
     person_external_id,
-    supervising_officer_external_id ),
-  state_contacts AS (
+    supervising_officer_external_id
+), state_contacts AS (
   SELECT
     state_code AS region_code,
     person_id,
     MAX(contact_date) AS most_recent_state_face_to_face_contact_date
   FROM
-    `{project_id}.{normalized_state_dataset}.state_supervision_contact`
+    `{{project_id}}.{{normalized_state_dataset}}.state_supervision_contact`
   WHERE
     contact_date IS NOT NULL
     AND status = 'COMPLETED'
     AND contact_type IN ('DIRECT', 'BOTH_DIRECT_AND_COLLATERAL')
   GROUP BY
     state_code,
-    person_id),
-  person_to_external_ids AS (
+    person_id
+), person_to_external_ids AS (
   SELECT
     state_code AS region_code,
     person_id,
     external_id AS person_external_id
   FROM
-    `{project_id}.{normalized_state_dataset}.state_person_external_id`)
+    `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id`
+  WHERE
+    id_type IN {get_all_primary_supervision_external_id_types()}
+)
 SELECT
   region_code,
   person_external_id,
