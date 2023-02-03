@@ -25,6 +25,7 @@ from flask import Flask, Response, g, send_from_directory, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
+from google.cloud.logging import handlers
 from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -71,6 +72,7 @@ from recidiviz.utils.auth.auth0 import (
 )
 from recidiviz.utils.environment import in_development, in_gcp, in_offline_mode, in_test
 from recidiviz.utils.secrets import get_secret
+from recidiviz.utils.structured_logging import StructuredCloudLoggingHandler
 from recidiviz.utils.timer import RepeatedTimer
 
 # Sentry setup
@@ -165,7 +167,8 @@ if not in_test():
 # Logging setup
 if in_gcp():
     logging_client = google.cloud.logging.Client()
-    logging_client.setup_logging()
+    structured_handler = StructuredCloudLoggingHandler(logging_client)
+    handlers.setup_logging(structured_handler, log_level=logging.INFO)
 else:
     # Python logs at the warning level by default
     logging.basicConfig(level=logging.INFO)

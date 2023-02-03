@@ -21,6 +21,7 @@ import sys
 from types import TracebackType
 from typing import Any, Dict, Optional, Tuple, Type, Union
 
+from flask import request
 from google.cloud.logging import Client, handlers
 from opencensus.common.runtime_context import RuntimeContext
 from opencensus.trace import execution_context
@@ -153,6 +154,34 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
             _truncate_if_needed(super().format(record)),
             resource=self.resource,
             labels=labels,
+            trace=trace_id,
+        )
+
+
+class StructuredCloudLoggingHandler(handlers.CloudLoggingHandler):
+    """
+    Customized CloudLoggingHandler to add trace context to log messages
+    """
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Overrides the emit method for CloudLoggingHandler to include the trace id"""
+        trace_id = None
+        # Inspired by https://cloud.google.com/run/docs/logging#writing_structured_logs
+        request_is_defined = "request" in globals() or "request" in locals()
+        if request_is_defined and request:
+            trace_header = request.headers.get("X-Cloud-Trace-Context")
+
+            if trace_header:
+                trace = trace_header.split("/")
+                trace_id = f"projects/{self.client.project}/traces/{trace[0]}"
+
+        # No longer following the example above- it seems like it would be nicer to call this
+        # function than to print() a JSON string.
+        self.transport.send(
+            record,
+            super().format(record),
+            resource=self.resource,
+            labels=self.labels,
             trace=trace_id,
         )
 
