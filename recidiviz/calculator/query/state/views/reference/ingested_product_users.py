@@ -57,14 +57,16 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
             'line_staff_user' AS role,
             IFNULL(STRING_AGG(DISTINCT SITEID, ','), '') AS district,
-            IFNULL(ids.external_id_mapped, OFFICER) AS id,
+            OFFICER as external_id,
             FNAME AS first_name,
             LNAME AS last_name,
         FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest`
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
-            ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code 
-        WHERE CAST(status AS STRING) = "(1)"
-        GROUP BY email_address, id, first_name, last_name
+            ON OFFICER = ids.external_id_to_map AND 'US_ND' = ids.state_code
+        WHERE
+            CAST(status AS STRING) = "(1)"
+            AND ids.external_id_to_map IS NULL
+        GROUP BY email_address, external_id, first_name, last_name
     ),
     all_users AS (
         SELECT * FROM mo_users
