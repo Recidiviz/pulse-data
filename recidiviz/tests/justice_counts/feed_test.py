@@ -25,7 +25,7 @@ from recidiviz.tests.justice_counts.utils import (
 )
 from recidiviz.tools.justice_counts.control_panel.generate_fixtures import (
     LAW_ENFORCEMENT_AGENCY_ID,
-    SUPERVISION_AGENCY_ID,
+    SUPERVISION_PAROLE_PROBATION_PRISONS_AGENCY_ID,
 )
 from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
     reset_justice_counts_fixtures,
@@ -107,7 +107,7 @@ class TestFeedInterface(JusticeCountsDatabaseTestCase):
             session.commit()
 
             system_to_filename_to_rows = FeedInterface.get_feed_for_agency_id(
-                session, agency_id=SUPERVISION_AGENCY_ID
+                session, agency_id=SUPERVISION_PAROLE_PROBATION_PRISONS_AGENCY_ID
             )
 
             self.assertEqual(
