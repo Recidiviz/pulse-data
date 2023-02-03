@@ -131,7 +131,7 @@ if not in_development():
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
 
 if in_gcp_staging():
-    app.config["WTF_CSRF_STRICT_SSL"] = False
+    app.config["WTF_CSRF_SSL_STRICT"] = False
 
 
 setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
