@@ -80,7 +80,7 @@ class TestDirectIngestSftpIngestReadyFileMetadataManager(unittest.TestCase):
 
         expected_metadata = DirectIngestSftpIngestReadyFileMetadata.new_with_defaults(
             region_code=self.metadata_manager.region_code,
-            post_processed_normalized_file_path=processed_file.file_name,
+            post_processed_normalized_file_path=processed_file.blob_name,
             remote_file_path="remote_file",
             file_discovery_time=datetime.datetime(2020, 1, 1, 1, 1, 1),
             file_upload_time=None,
@@ -185,7 +185,7 @@ class TestDirectIngestSftpIngestReadyFileMetadataManager(unittest.TestCase):
             [
                 DirectIngestSftpIngestReadyFileMetadata.new_with_defaults(
                     region_code=self.metadata_manager.region_code,
-                    post_processed_normalized_file_path=discovered_not_uploaded.file_name,
+                    post_processed_normalized_file_path=discovered_not_uploaded.blob_name,
                     remote_file_path="remote_file",
                     file_discovery_time=datetime.datetime(2020, 1, 1, 1, 1, 1),
                     file_upload_time=None,
