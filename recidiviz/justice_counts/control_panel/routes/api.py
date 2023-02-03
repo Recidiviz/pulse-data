@@ -352,7 +352,7 @@ def get_api_blueprint(
     @auth_decorator
     def create_user_if_necessary() -> Response:
         """
-        Returns user agencies and permissions. If email_verified is passed in,
+        Returns user id and agencies. If email_verified is passed in,
         we will update the user's invitation_status.
         """
         try:
@@ -395,7 +395,6 @@ def get_api_blueprint(
                 {
                     "id": user.id,
                     "agencies": agency_json,
-                    "permissions": [],
                 }
             )
         except Exception as e:
