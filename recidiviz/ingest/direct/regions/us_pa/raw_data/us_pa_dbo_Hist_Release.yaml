@@ -11,8 +11,11 @@ file_description: |-
   consolidated together into a row in this table.
 data_classification: source
 primary_key_cols:
+  # Due to a presumed data entry error, sometimes there are multiple ParoleCountIDs per
+  # ParoleNumber, so multiple HReleaseIDs per ParoleCountID. We don't expect this, but
+  # it does happen in rare cases. This PK gets a unique row.
   - ParoleNumber
-  - ParoleCountID
+  - HReleaseID
 columns:
   - name: ParoleNumber
     is_pii: True
