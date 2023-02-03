@@ -427,7 +427,6 @@ class UserAccount(JusticeCountsBase):
 
     def to_json(
         self,
-        permissions: Optional[List[str]] = None,
         agencies: Optional[List[Agency]] = None,
     ) -> Dict[str, Any]:
         return {
@@ -436,7 +435,6 @@ class UserAccount(JusticeCountsBase):
             "name": self.name,
             "email": self.email,
             "agencies": [agency.to_json() for agency in agencies or []],
-            "permissions": permissions or [],
         }
 
 
