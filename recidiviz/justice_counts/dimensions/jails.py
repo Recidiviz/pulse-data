@@ -36,6 +36,20 @@ class FundingType(DimensionBase, enum.Enum):
         return "metric/jails/funding/type"
 
 
+class ExpenseType(DimensionBase, enum.Enum):
+    PERSONNEL = "Personnel"
+    TRAINING = "Training"
+    FACILITIES = "Facilities and Equipment"
+    HEALTH_CARE = "Health Care for People Who Are Incarcerated"
+    CONTRACT_BEDS = "Contract Beds (Expenses)"
+    OTHER = "Other Expenses"
+    UNKNOWN = "Unknown Expenses"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/jails/expense/type"
+
+
 class ReadmissionType(DimensionBase, enum.Enum):
     NEW_ADMISSION = "New Admission"
     VIOLATION_OF_CONDITIONS = "Violation of Conditions"

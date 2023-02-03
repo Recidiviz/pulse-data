@@ -17,6 +17,8 @@
 """Metricfile objects used for Jails metrics."""
 
 from recidiviz.justice_counts.dimensions.jails import (
+    ExpenseType,
+    FundingType,
     PopulationType,
     ReadmissionType,
     ReleaseType,
@@ -33,6 +35,22 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="funding",
         definition=jails.funding,
+    ),
+    MetricFile(
+        canonical_filename="funding_by_type",
+        definition=jails.funding,
+        disaggregation=FundingType,
+        disaggregation_column_name="funding_type",
+    ),
+    MetricFile(
+        canonical_filename="expenses",
+        definition=jails.expenses,
+    ),
+    MetricFile(
+        canonical_filename="expense_by_type",
+        definition=jails.expenses,
+        disaggregation=ExpenseType,
+        disaggregation_column_name="expense_type",
     ),
     MetricFile(
         canonical_filename="total_staff",
