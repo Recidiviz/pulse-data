@@ -142,15 +142,14 @@ def create_workflows_api_blueprint() -> Blueprint:
         if not g.api_data["should_queue_task"]:
             try:
                 # set_document will create new firestore document if it doesn't exist
-                firestore_client.set_document(
+                firestore_client.update_document(
                     doc_path,
                     {
                         "contactNote.status": ExternalSystemRequestStatus.IN_PROGRESS.value,
-                        firestore_client.timestamp_key: datetime.datetime.now(
+                        f"contactNote.{firestore_client.timestamp_key}": datetime.datetime.now(
                             datetime.timezone.utc
                         ),
                     },
-                    merge=True,
                 )
 
                 data = WorkflowsUsTnInsertTEPEContactNoteSchema().dump(g.api_data)
@@ -182,15 +181,14 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
         except Exception as e:
             logging.error(e)
-            firestore_client.set_document(
+            firestore_client.update_document(
                 doc_path,
                 {
                     "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
-                    firestore_client.timestamp_key: datetime.datetime.now(
+                    f"contactNote.{firestore_client.timestamp_key}": datetime.datetime.now(
                         datetime.timezone.utc
                     ),
                 },
-                merge=True,
             )
             return make_response(
                 jsonify(
@@ -201,15 +199,14 @@ def create_workflows_api_blueprint() -> Blueprint:
 
         logging.info("Enqueued handle_insert_tepe_contact_note task")
 
-        firestore_client.set_document(
+        firestore_client.update_document(
             doc_path,
             {
                 "contactNote.status": ExternalSystemRequestStatus.IN_PROGRESS.value,
-                firestore_client.timestamp_key: datetime.datetime.now(
+                f"contactNote.{firestore_client.timestamp_key}": datetime.datetime.now(
                     datetime.timezone.utc
                 ),
             },
-            merge=True,
         )
 
         return make_response(jsonify(), HTTPStatus.OK)
@@ -250,7 +247,12 @@ def create_workflows_api_blueprint() -> Blueprint:
             )
             firestore_client.update_document(
                 firestore_doc_path,
-                {"contactNote.status": ExternalSystemRequestStatus.FAILURE.value},
+                {
+                    "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
+                    f"contactNote.{firestore_client.timestamp_key}": datetime.datetime.now(
+                        datetime.timezone.utc
+                    ),
+                },
             )
 
             return make_response(

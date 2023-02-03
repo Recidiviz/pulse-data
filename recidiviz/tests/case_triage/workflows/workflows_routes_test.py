@@ -162,7 +162,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_task_manager.return_value.create_task.call_args.kwargs["body"],
             expected_task_body,
         )
-        mock_firestore.return_value.set_document.assert_called_once()
+        mock_firestore.return_value.update_document.assert_called_once()
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch(
@@ -208,7 +208,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             mock_insert.call_args.kwargs,
             expected_body,
         )
-        mock_firestore.return_value.set_document.assert_called_once()
+        mock_firestore.return_value.update_document.assert_called_once()
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")
@@ -239,7 +239,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
             )
 
         mock_task_manager.return_value.create_task.assert_called_once()
-        mock_firestore.return_value.set_document.assert_called_once()
+        mock_firestore.return_value.update_document.assert_called_once()
         self.assertEqual(response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.FirestoreClientImpl")

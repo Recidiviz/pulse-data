@@ -126,7 +126,9 @@ class WorkflowsUsTnExternalRequestInterface:
                 firestore_doc_path,
                 {
                     "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
-                    firestore_client.timestamp_key: datetime.now(timezone.utc),
+                    f"contactNote.{firestore_client.timestamp_key}": datetime.now(
+                        timezone.utc
+                    ),
                 },
             )
             logging.error("Unable to get secrets for TOMIS")
@@ -144,7 +146,9 @@ class WorkflowsUsTnExternalRequestInterface:
                 firestore_doc_path,
                 {
                     f"contactNote.noteStatus.{page_number}": ExternalSystemRequestStatus.IN_PROGRESS.value,
-                    firestore_client.timestamp_key: datetime.now(timezone.utc),
+                    f"contactNote.{firestore_client.timestamp_key}": datetime.now(
+                        timezone.utc
+                    ),
                 },
             )
             request_body = WorkflowsUsTnWriteTEPENoteToTomisRequest(
@@ -167,7 +171,9 @@ class WorkflowsUsTnExternalRequestInterface:
                     firestore_doc_path,
                     {
                         f"contactNote.noteStatus.{page_number}": ExternalSystemRequestStatus.SUCCESS.value,
-                        firestore_client.timestamp_key: datetime.now(timezone.utc),
+                        f"contactNote.{firestore_client.timestamp_key}": datetime.now(
+                            timezone.utc
+                        ),
                     },
                 )
             except Exception:
@@ -176,14 +182,18 @@ class WorkflowsUsTnExternalRequestInterface:
                     firestore_doc_path,
                     {
                         f"contactNote.noteStatus.{page_number}": ExternalSystemRequestStatus.FAILURE.value,
-                        firestore_client.timestamp_key: datetime.now(timezone.utc),
+                        f"contactNote.{firestore_client.timestamp_key}": datetime.now(
+                            timezone.utc
+                        ),
                     },
                 )
                 firestore_client.update_document(
                     firestore_doc_path,
                     {
                         "contactNote.status": ExternalSystemRequestStatus.FAILURE.value,
-                        firestore_client.timestamp_key: datetime.now(timezone.utc),
+                        f"contactNote.{firestore_client.timestamp_key}": datetime.now(
+                            timezone.utc
+                        ),
                     },
                 )
                 raise
@@ -192,7 +202,9 @@ class WorkflowsUsTnExternalRequestInterface:
             firestore_doc_path,
             {
                 "contactNote.status": ExternalSystemRequestStatus.SUCCESS.value,
-                firestore_client.timestamp_key: datetime.now(timezone.utc),
+                f"contactNote.{firestore_client.timestamp_key}": datetime.now(
+                    timezone.utc
+                ),
             },
         )
 
