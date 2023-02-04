@@ -26,6 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
+    raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
@@ -253,6 +254,24 @@ sex_offenses AS (
         )
       )
   GROUP BY 1
+), 
+latest_people AS (
+    SELECT DISTINCT OffenderID AS external_id
+    FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
+    WHERE update_datetime = (
+        SELECT MAX(update_datetime)
+        FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
+    )
+),
+tes_cte AS (
+    SELECT *,
+      CAST(JSON_EXTRACT_SCALAR(single_reason.reason.eligible_date) AS DATE) AS expiration_date,
+    FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized` tes,
+    UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason
+    WHERE tes.state_code = 'US_TN' 
+        AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
+        AND tes.is_eligible
+        AND STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_1_DAY'
 )
   SELECT  
          tes.state_code,
@@ -268,8 +287,9 @@ sex_offenses AS (
          latest_sentences.offenses AS form_information_offenses,
          latest_sentences.docket_numbers AS form_information_docket_numbers,
          latest_sentences.conviction_counties AS form_information_conviction_counties,
-         stg.STGID AS form_information_gang_affiliation_id,      
-  FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized` tes
+         stg.STGID AS form_information_gang_affiliation_id,
+         latest_tepe,
+  FROM tes_cte tes
   LEFT JOIN sidebar_contact_notes_array arr
     USING(person_id)
   LEFT JOIN sex_offense_pse_code pse
@@ -286,20 +306,19 @@ sex_offenses AS (
     USING(person_id)
   LEFT JOIN latest_sentences
     USING(person_id)
-  LEFT JOIN tepe_code
-    ON tes.person_id = tepe_code.person_id
-    AND latest_tepe >= DATE_SUB(CAST(JSON_VALUE(reasons[0].reason.eligible_date) AS DATE), interval 30 day)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.person_id = pei.person_id
     AND pei.state_code = 'US_TN'
+  LEFT JOIN tepe_code
+    ON tes.person_id = tepe_code.person_id
+    AND latest_tepe >= DATE_SUB(tes.expiration_date, INTERVAL 30 day)
   LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.STGOffender_latest` stg 
     ON pei.external_id = stg.OffenderID
-  WHERE tes.state_code = 'US_TN' 
-    AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
-    AND tes.is_eligible
+  INNER JOIN latest_people 
+    ON pei.external_id = latest_people.external_id
     /* TODO(#18327) - Excluding anyone from being surfaced who has a recent TEPE. Add these folks back in and surface 
     recent TEPE note in client profile when UX changes can handle this behavior */ 
-    AND latest_tepe IS NULL
+  WHERE latest_tepe IS NULL
 
 """
 
@@ -315,6 +334,9 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBu
     ),
     should_materialize=True,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_tn_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
 )
