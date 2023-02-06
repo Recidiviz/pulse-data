@@ -70,6 +70,7 @@ _QUERY_TEMPLATE = f"""
           ON sentences.person_id = contact.person_id
           AND contact_date > sentences.date_imposed
         WHERE sentences.state_code = 'US_TN'
+          AND completion_date > date_imposed
     ),
     /* The critical_date_has_passed_spans_cte() method creates spans of time when the critical date
     (zero tolerance contact code date) has passed. The output has overlapping and non-collapsed adjacent spans.
