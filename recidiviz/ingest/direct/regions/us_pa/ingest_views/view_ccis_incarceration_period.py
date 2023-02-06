@@ -25,9 +25,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 # The ordering here advantage of the fact that 'ADM' sorts alphabetically before 'REL', so we are placing 'REL'
 # statuses first when both 'ADM' and 'REL' appear for the same movement_sequence number (e.g. when it's a transfer).
-# We order by movement_date first since movement_sequences does not guarantee correct date sequence, and has lead to
-# release dates prior to the admission dates in some periods.
-MOVEMENT_PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY movement_date, movement_sequence, movement_type DESC)"
+# We order by movement_date first since movement_sequence does not guarantee correct date sequence, and has lead to
+# release dates prior to the admission dates in some periods. We include movement_id to deterministically select between
+# movements that are otherwise identical.
+MOVEMENT_PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY movement_date, movement_sequence, movement_type DESC, movement_id)"
 PERIOD_PARTITION_CLAUSE = "OVER (PARTITION BY inmate_number ORDER BY start_date, movement_sequence, movement_type DESC)"
 
 VIEW_QUERY_TEMPLATE = f"""
