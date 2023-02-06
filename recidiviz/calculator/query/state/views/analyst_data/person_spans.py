@@ -21,6 +21,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     NORMALIZED_STATE_DATASET,
+    REFERENCE_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
 from recidiviz.task_eligibility.dataset_config import TASK_ELIGIBILITY_DATASET_ID
@@ -203,11 +204,16 @@ SELECT
     end_date,
     TO_JSON_STRING(ARRAY_AGG(STRUCT(
         task_name,
+        completion_event_type AS task_type,
         is_eligible,
         ineligible_criteria
     ))[OFFSET(0)]) AS span_attributes
 FROM
     `{project_id}.{task_eligibility_dataset}.all_tasks_materialized`
+INNER JOIN
+    `{project_id}.{reference_views_dataset}.task_to_completion_event`
+USING
+    (task_name)
 GROUP BY 1, 2, 3, 4, 5, task_name
 
 """
@@ -219,6 +225,7 @@ PERSON_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=PERSON_SPANS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     task_eligibility_dataset=TASK_ELIGIBILITY_DATASET_ID,
     should_materialize=True,
     clustering_fields=["state_code", "span"],

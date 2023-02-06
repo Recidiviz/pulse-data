@@ -16,12 +16,15 @@
 # =============================================================================
 """Defines AggregatedMetric objects"""
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AssignmentAvgSpanValueMetric,
     AssignmentDaysToFirstEventMetric,
     AssignmentSpanDaysMetric,
     DailyAvgSpanCountMetric,
     DailyAvgSpanValueMetric,
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
+    EventValueMetric,
+    SumSpanDaysMetric,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
@@ -287,6 +290,19 @@ AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
         "assessment_type": ["LSIR"],
     },
     span_value_numeric="assessment_score",
+)
+
+# TODO(#18420): Replace metric type with AssignmentSpanValueAtStart once new metric class is supported
+AVG_LSIR_SCORE_AT_ASSIGNMENT = AssignmentAvgSpanValueMetric(
+    name="avg_lsir_score_at_assignment",
+    display_name="Average LSI-R Score At Assignment",
+    description="Average LSI-R score of clients on date of assignment",
+    span_types=["ASSESSMENT_SCORE_SESSION"],
+    span_attribute_filters={
+        "assessment_type": ["LSIR"],
+    },
+    span_value_numeric="assessment_score",
+    window_length_days=1,
 )
 
 CONTACTS_ATTEMPTED = EventCountMetric(
@@ -590,69 +606,19 @@ INCARCERATIONS_UNKNOWN_VIOLATION = EventCountMetric(
     },
 )
 
-LATE_OPPORTUNITY_EARLY_DISCHARGE_30_DAYS = EventCountMetric(
-    name="late_opportunity_early_discharge_30_days",
-    display_name="Instances Of Surpassing 30 Days of Eligibility For Early Discharge",
-    description="Number of times clients surpass 30 days of being eligible for early discharge",
-    event_types=["TASK_ELIGIBLE_30_DAYS"],
-    event_attribute_filters={
-        "task_name": [
-            "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
-            "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-            "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM",
-        ]
-    },
-)
-
-LATE_OPPORTUNITY_EARLY_DISCHARGE_7_DAYS = EventCountMetric(
-    name="late_opportunity_early_discharge_7_days",
-    display_name="Instances Of Surpassing 7 Days of Eligibility For Early Discharge",
-    description="Number of times clients surpass 7 days of being eligible for early discharge",
-    event_types=["TASK_ELIGIBLE_7_DAYS"],
-    event_attribute_filters={
-        "task_name": [
-            "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
-            "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-            "COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM",
-        ]
-    },
-)
-
-LATE_OPPORTUNITY_FULL_TERM_DISCHARGE_30_DAYS = EventCountMetric(
-    name="late_opportunity_full_term_discharge_30_days",
-    display_name="Instances Of Surpassing 30 Days of Eligibility For Full Term Discharge",
-    description="Number of times clients surpass 30 days of being eligible for full-term discharge",
-    event_types=["TASK_ELIGIBLE_30_DAYS"],
-    event_attribute_filters={
-        "task_name": ["COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION"]
-    },
-)
-
-LATE_OPPORTUNITY_FULL_TERM_DISCHARGE_7_DAYS = EventCountMetric(
-    name="late_opportunity_full_term_discharge_7_days",
-    display_name="Instances Of Surpassing 7 Days of Eligibility For Full Term Discharge",
-    description="Number of times clients surpass 7 days of being eligible for full-term discharge",
-    event_types=["TASK_ELIGIBLE_7_DAYS"],
-    event_attribute_filters={
-        "task_name": ["COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION"]
-    },
-)
-
-LATE_OPPORTUNITY_SUPERVISION_LEVEL_DOWNGRADE_30_DAYS = EventCountMetric(
-    name="late_opportunity_supervision_level_downgrade_30_days",
-    display_name="Instances Of Surpassing 30 Days of Eligibility For Supervision Level Downgrade",
-    description="Number of times clients surpass 30 days of being eligible for a supervision level downgrade",
-    event_types=["TASK_ELIGIBLE_30_DAYS"],
-    event_attribute_filters={"task_name": ["SUPERVISION_LEVEL_DOWNGRADE"]},
-)
-
-LATE_OPPORTUNITY_SUPERVISION_LEVEL_DOWNGRADE_7_DAYS = EventCountMetric(
-    name="late_opportunity_supervision_level_downgrade_7_days",
-    display_name="Instances Of Surpassing 7 Days of Eligibility For Supervision Level Downgrade",
-    description="Number of times clients surpass 7 days of being eligible for a supervision level downgrade",
-    event_types=["TASK_ELIGIBLE_7_DAYS"],
-    event_attribute_filters={"task_name": ["SUPERVISION_LEVEL_DOWNGRADE"]},
-)
+LATE_OPPORTUNITY_METRICS = [
+    EventCountMetric(
+        name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
+        display_name=f"{num_days} Days Late: {b.task_title}",
+        description=f"Number of times clients surpass {num_days} days of being eligible for opportunities of type: {b.task_title.lower()}",
+        event_types=[f"TASK_ELIGIBLE_{num_days}_DAYS"],
+        event_attribute_filters={
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+    for num_days in [7, 30]
+]
 
 LIBERTY_STARTS = EventCountMetric(
     name="transitions_to_liberty",
@@ -668,6 +634,18 @@ LSIR_ASSESSMENTS = EventCountMetric(
     description="Number of LSI-R assessments administered",
     event_types=["RISK_SCORE_ASSESSMENT"],
     event_attribute_filters={"assessment_type": ["LSIR"]},
+)
+
+LSIR_ASSESSMENTS_AVG_SCORE = EventValueMetric(
+    name="lsir_assessments_avg_score",
+    display_name="Average LSI-R Score Of Assessments",
+    description="Average LSI-R score across all completed assessments",
+    event_types=["RISK_SCORE_ASSESSMENT"],
+    event_attribute_filters={
+        "assessment_type": ["LSIR"],
+    },
+    event_value_numeric="assessment_score",
+    event_count_metric=LSIR_ASSESSMENTS,
 )
 
 LSIR_ASSESSMENTS_RISK_DECREASE = EventCountMetric(
@@ -699,6 +677,21 @@ PENDING_CUSTODY_STARTS = EventCountMetric(
     event_types=["PENDING_CUSTODY_START"],
     event_attribute_filters={},
 )
+
+# get days in eligibility span metrics for all task types
+PERSON_DAYS_TASK_ELIGIBLE_METRICS = [
+    SumSpanDaysMetric(
+        name=f"person_days_task_eligible_{b.task_type_name.lower()}",
+        display_name=f"Person-Days Eligible: {b.task_title}",
+        description=f"Total number of person-days spent eligible for opportunities of type: {b.task_title.lower()}",
+        span_types=["TASK_ELIGIBILITY_SESSION"],
+        span_attribute_filters={
+            "is_eligible": ["true"],
+            "task_type": [b.task_type_name],
+        },
+    )
+    for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
+]
 
 SUPERVISION_LEVEL_DOWNGRADES = EventCountMetric(
     name="supervision_level_downgrades",

@@ -49,6 +49,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgSpanValueMetric,
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
+    EventValueMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
@@ -104,8 +105,12 @@ def _generate_lookml_measure_fragment(metric: AggregatedMetric) -> Optional[str]
             f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.assignments) / "
             f"SUM(${{TABLE}}.assignments)"
         )
-    return "NULL"
-    # TODO(#17996): Add an event_count_metric param to the EventValueMetric
+    if isinstance(metric, EventValueMetric):
+        return (
+            f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.{metric.event_count_metric.name}) / "
+            f"SUM(${{TABLE}}.{metric.event_count_metric.name})"
+        )
+    return None
 
 
 def _generate_lookml_measure_fragment_normalized(
@@ -134,7 +139,6 @@ def _generate_lookml_measure_fragment_normalized(
             f"SUM(${{TABLE}}.{metric.name}) / "
             f"SUM(${{TABLE}}.avg_daily_population * ${{days_in_period}})"
         )
-    # TODO(#17996): Add an event_count_metric param to the EventValueMetric
     return "NULL"
 
 
