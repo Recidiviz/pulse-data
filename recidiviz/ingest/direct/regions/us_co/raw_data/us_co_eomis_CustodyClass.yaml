@@ -48,9 +48,33 @@ columns:
   - name: DISCIPLINERPTLEVEL
     description: |-
       Type of Most Serious Disciplinary Report in past 12 Months - decode dataname CIDRLEVL.
+    known_values:
+      - value: A
+        description: None
+      - value: U
+        description: Unknown (conversion)
+      - value: C
+        description: Class II a
+      - value: D
+        description: Class I (past 18 months)
+      - value: B
+        description: Class II b
   - name: DISCIPLINERPTHIST
     description: |-
-      Frequency of Disciplinary Reports (Cls I and II Only) in Past 12 Months - decode dataname CIDRHIST. #TODO(#12372) Cls?
+      Frequency of Disciplinary Reports (Class I and II Only) in Past 12 Months - decode dataname CIDRHIST.
+    known_values:
+      - value: A
+        description: None
+      - value: U
+        description: Unknown (conversion)
+      - value: C
+        description: Two (2)
+      - value: D
+        description: Three (3)
+      - value: B
+        description: One (1)
+      - value: E
+        description: Four (4) or more
   - name: DISCIPLINARYREPORTPOINTS
     description: |-
       Disciplinary Report Points.
