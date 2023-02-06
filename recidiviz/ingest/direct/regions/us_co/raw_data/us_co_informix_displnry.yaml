@@ -14,16 +14,16 @@ columns:
       TODO(#17904): Fill in with context from CO
   - name: dispno
     description: |-
-      TODO(#17904): Fill in with context from CO
+      Disciplinary number. Can get more than one sanction for a given charge.
   - name: docno
     description: |-
       Unique identifier for each incarcerated individual.
   - name: incrno
     description: |-
-      TODO(#17904): Fill in with context from CO
+      Incarceration number
   - name: sanct_flg
     description: |-
-      TODO(#17904): Fill in with context from CO
+      Flag if there is a sanction or not, not always reliable - check for sanc_cd.
   - name: disp_loc
     description: |-
       TODO(#17904): Fill in with context from CO
@@ -41,7 +41,7 @@ columns:
       TODO(#17904): Fill in with context from CO
   - name: init_emp
     description: |-
-      TODO(#17904): Fill in with context from CO
+      Initiating employee that wrote the code. (will confirm)
   - name: empl_cd
     description: |-
       TODO(#17904): Fill in with context from CO
@@ -68,10 +68,10 @@ columns:
       Disciplinary hearing date.
   - name: adjud_dtd
     description: |-
-      TODO(#17904): Fill in with context from CO
+      Adjucation date - date they are actually charged with COPD. Good indicator if they were actually charged with COPD
   - name: served_disp_dtd
     description: |-
-      TODO(#17904): Fill in with context from CO
+      Served disciplinary date - when served with papers for COPD to show up for hearing
   - name: incident_num
     description: |-
       TODO(#17904): Fill in with context from CO
