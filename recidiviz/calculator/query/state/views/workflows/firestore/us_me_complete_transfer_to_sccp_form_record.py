@@ -169,7 +169,7 @@ case_notes_cte AS (
         DATE(SAFE.PARSE_DATETIME("%m/%d/%Y %I:%M:%S %p", Open_Date)) AS event_date,
     FROM (SELECT 
                 *
-            -- TODO(#17535) Change references to normalized_state_dataset once necessary tables ingested 
+            -- TODO(#18437) Change references to imported tables once necessary tables are imported
             FROM `{{project_id}}.{{static_reference_tables_dataset}}.CIS_201_GOALS` gl
             INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2012_GOAL_STATUS` gs
                 ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
