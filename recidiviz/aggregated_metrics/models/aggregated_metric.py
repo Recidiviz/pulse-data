@@ -127,7 +127,7 @@ class MetricConditionsMixin:
 
     def get_metric_conditions_string(self) -> str:
         """Returns a query fragment string that joins SQL conditional statements with `AND`."""
-        return "\nAND\n".join(self.get_metric_conditions())
+        return "\n\t\t\t\tAND\n".join(self.get_metric_conditions())
 
     @abc.abstractmethod
     def get_metric_conditions(self) -> List[str]:
@@ -214,6 +214,8 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
     """
     Class that stores information about a metric that calculates average daily population
     for a specified set of `person_span` rows. All end_date_cols should be end date exclusive.
+
+    Example metric: Average daily female population.
     """
 
     def generate_aggregation_query_fragment(
@@ -247,6 +249,8 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
     Class that stores information about a metric that calculates average daily value
     for a specified set of `person_span` rows intersecting with the analysis period.
     All end_date_cols should be end date exclusive.
+
+    Example: Average daily LSI-R score.
     """
 
     # Name of the field in span_attributes JSON containing the numeric attribute of the span.
@@ -260,26 +264,26 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
         period_end_date_col: str,
     ) -> str:
         return f"""
-            SUM(
-            (
-                DATE_DIFF(
-                    LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
-                    GREATEST({period_start_date_col}, {span_start_date_col}),
-                    DAY)
-                ) * ( IF(
-                    {self.get_metric_conditions_string()},
-                    CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64),
-                    0)
-                ) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY)
-            ) / SUM(
-                NULLIF(
-                    (
+            SAFE_DIVIDE(
+                SUM(
                     DATE_DIFF(
                         LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
-                        DAY)
-                    ) * IF({self.get_metric_conditions_string()}, 1, 0) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY), 0)
-            )  AS {self.name}
+                        DAY
+                    ) * IF(
+                        {self.get_metric_conditions_string()},
+                        CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64),
+                        0
+                    )
+                ),
+                SUM(
+                    DATE_DIFF(
+                        LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                        GREATEST({period_start_date_col}, {span_start_date_col}),
+                        DAY
+                    ) * IF({self.get_metric_conditions_string()}, 1, 0)
+                )
+            ) AS {self.name}
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
@@ -297,6 +301,8 @@ class DailyAvgTimeSinceSpanStartMetric(
     Class that stores information about a metric that calculates the average days since the start of the span,
     for the daily population over a specified set of `person_span` rows.
     All end_date_cols should be end date exclusive.
+
+    Example metrics: Average age.
     """
 
     # Indicates whether to scale metric by 365.25 to provide year values instead of day values
@@ -310,35 +316,35 @@ class DailyAvgTimeSinceSpanStartMetric(
         period_end_date_col: str,
     ) -> str:
         return f"""
-            SUM(
-            (
-                DATE_DIFF(
-                    LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
-                    GREATEST({period_start_date_col}, {span_start_date_col}),
-                    DAY)
-                ) * ( IF(
-                    {self.get_metric_conditions_string()},
-                    (
-                        # Average of LoS on last day (inclusive) of period/span and LoS on first day of period/span
-                        (DATE_DIFF(
-                            DATE_SUB(LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}), INTERVAL 1 DAY),
-                            {span_start_date_col}, DAY
-                        ) + DATE_DIFF(
-                            GREATEST({period_start_date_col}, {span_start_date_col}),
-                            {span_start_date_col}, DAY
-                        )
-                    ) / 2) {"/ 365.25" if self.scale_to_year else ""},
-                    NULL)
-                ) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY)
-            ) / SUM(
-                NULLIF(
-                    (
+            SAFE_DIVIDE(
+                SUM(
                     DATE_DIFF(
                         LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                         GREATEST({period_start_date_col}, {span_start_date_col}),
-                        DAY)
-                    ) * IF({self.get_metric_conditions_string()}, 1, 0) / DATE_DIFF({period_end_date_col}, {period_start_date_col}, DAY), 0)
-            )  AS {self.name}
+                        DAY
+                    ) * IF(
+                        {self.get_metric_conditions_string()},
+                        (
+                            # Average of LoS on last day (inclusive) of period/span and LoS on first day of period/span
+                            (DATE_DIFF(
+                                DATE_SUB(LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}), INTERVAL 1 DAY),
+                                {span_start_date_col}, DAY
+                            ) + DATE_DIFF(
+                                GREATEST({period_start_date_col}, {span_start_date_col}),
+                                {span_start_date_col}, DAY
+                            )
+                        ) / 2) {"/ 365.25" if self.scale_to_year else ""},
+                        NULL
+                    )
+                ),
+                SUM(
+                    DATE_DIFF(
+                        LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                        GREATEST({period_start_date_col}, {span_start_date_col}),
+                        DAY
+                    ) * IF({self.get_metric_conditions_string()}, 1, 0)
+                )  
+            ) AS {self.name}
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
@@ -354,6 +360,8 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
     Class that stores information about a metric that calculates the average days spent in span
     for the daily population over a specified set of `person_span` rows over the analysis period.
     All end_date_cols should be end date exclusive.
+
+    Example metrics: Person days eligible for early discharge opportunity.
     """
 
     span_types: List[str] = attr.field(validator=attr_validators.is_list)
@@ -365,12 +373,19 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
         period_start_date_col: str,
         period_end_date_col: str,
     ) -> str:
-        # TODO(#16824): Add query fragment function
-        return ""
+        return f"""
+            SUM(
+            (
+                DATE_DIFF(
+                    LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
+                    GREATEST({period_start_date_col}, {span_start_date_col}),
+                    DAY)
+                ) * (IF({self.get_metric_conditions_string()}, 1, 0))
+            ) AS {self.name}
+        """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        # TODO(#16824): Add query fragment function
-        return ""
+        return f"SUM({self.name}) AS {self.name}"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -382,6 +397,7 @@ class AssignmentSpanDaysMetric(
     between span and {window_length_days} window following assignment date
     (includes when person has left the eligible population).
 
+    Example metric: Days incarcerated within 365 days of assignment.
     """
 
     def generate_aggregation_query_fragment(
@@ -414,6 +430,8 @@ class AssignmentAvgSpanValueMetric(
     """
     Class that stores information about a metric that calculates average value
     for a specified set of `person_span` rows intersecting with a window following assignment.
+
+    Example metric: Average LSI-R score within one year of assignment.
     """
 
     # Name of the field in span_attributes JSON containing the numeric attribute of the span.
@@ -422,12 +440,48 @@ class AssignmentAvgSpanValueMetric(
     def generate_aggregation_query_fragment(
         self, span_start_date_col: str, span_end_date_col: str, assignment_date_col: str
     ) -> str:
-        # TODO(#16824): Add query fragment function
-        return ""
+        return f"""
+            SAFE_DIVIDE(
+                SUM(
+                    DATE_DIFF(
+                        LEAST(
+                            DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
+                            {nonnull_current_date_exclusive_clause(span_end_date_col)}
+                        ),
+                        GREATEST(
+                            {assignment_date_col},
+                            IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
+                        ),
+                        DAY
+                    ) * IF(
+                        {self.get_metric_conditions_string()}, 
+                        CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64), 
+                        0
+                    )
+                ),
+                SUM(
+                    DATE_DIFF(
+                        LEAST(
+                            DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
+                            {nonnull_current_date_exclusive_clause(span_end_date_col)}
+                        ),
+                        GREATEST(
+                            {assignment_date_col},
+                            IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
+                        ),
+                        DAY
+                    ) * IF({self.get_metric_conditions_string()}, 1, 0)
+                )
+            ) AS {self.name}
+        """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        # TODO(#16824): Add query fragment function
-        return ""
+        return (
+            f"SAFE_DIVIDE("
+            f"SUM(assignments * {self.window_length_days} * {self.name}), "
+            f"SUM(assignments * {self.window_length_days})"
+            f")"
+        )
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -436,6 +490,8 @@ class EventCountMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
     Class that stores information about a metric that counts the number of events
     for a specified set of `person_event` rows occurring during the analysis period.
     Events are deduplicated to one person-event per day.
+
+    Example metric: Number of technical violations.
     """
 
     def generate_aggregation_query_fragment(self, event_date_col: str) -> str:
@@ -455,10 +511,15 @@ class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
     """
     Class that stores information about a metric that takes the average value over events
     for a specified set of `person_event` rows occurring during the analysis period.
+
+    Example metric: Average LSI-R score across all assessments.
     """
 
     # Name of the field in event_attributes JSON containing the numeric attribute of the event.
     event_value_numeric: str
+
+    # EventCount metric counting the number of events contributing to the event value metric
+    event_count_metric: EventCountMetric
 
     def generate_aggregation_query_fragment(self, event_date_col: str) -> str:
         return f"""
@@ -470,18 +531,7 @@ class EventValueMetric(PeriodEventAggregatedMetric, EventMetricConditionsMixin):
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        """
-        To aggregate monthly avg_lsir_score_change_any_officer to yearly, we need to
-        know how many lsir assessments there were over the month and then use:
-
-            SUM(assessment_count * avg_lsir_score_change_any_officer) /
-                SUM(assessment_count)
-
-        Since this metric type is not implemented in aggregated metrics, we'll skip for
-        now.
-        """
-        # TODO(#16824): Add query fragment function
-        return ""
+        return f"SAFE_DIVIDE(SUM({self.event_count_metric.name} * {self.name}), SUM({self.event_count_metric.name}))"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -492,6 +542,8 @@ class AssignmentDaysToFirstEventMetric(
     Class that stores information about a metric that calculates the number of days from
     assignment to the first instance of the event specified in `person_events` occurring within
     {window_length_days} of assignment, for all assignments occurring during the analysis period.
+
+    Example metric: Days to first absconsion within 365 days of assignment.
     """
 
     def generate_aggregation_query_fragment(
@@ -509,6 +561,9 @@ class AssignmentDaysToFirstEventMetric(
             )) AS {self.name}
         """
 
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}) AS {self.name}"
+
 
 @attr.define(frozen=True, kw_only=True)
 class AssignmentEventCountMetric(
@@ -518,10 +573,23 @@ class AssignmentEventCountMetric(
     Class that stores information about a metric that counts the number of events
     specified in `person_events` occurring within {window_length_days} of assignment,
     for all assignments occurring during the analysis period.
+
+    Example metric: Number of contacts within 30 days of assignment.
     """
 
     def generate_aggregation_query_fragment(
         self, event_date_col: str, assignment_date_col: str
     ) -> str:
-        # TODO(#16824): Add query fragment function
-        return ""
+        return f"""
+            COUNT( 
+                DISTINCT IF(
+                    {self.get_metric_conditions_string()}
+                    AND {event_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
+                    CONCAT(events.person_id, {event_date_col}), 
+                    NULL
+                )
+            )
+        """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SUM({self.name}) AS {self.name}"
