@@ -291,7 +291,11 @@ const StateUserPermissionsView = (): JSX.Element => {
         rowKey="emailAddress"
         rowSelection={rowSelection}
         dataSource={data}
-        columns={getPermissionsTableColumns(data, setUserToEnable)}
+        columns={getPermissionsTableColumns(
+          data,
+          stateRoleData,
+          setUserToEnable
+        )}
         scroll={{ x: 2000 }}
         key={tableKey}
       />
