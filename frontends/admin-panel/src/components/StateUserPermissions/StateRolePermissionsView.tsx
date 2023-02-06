@@ -193,7 +193,8 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
   ];
 
   const columns = getPermissionsTableColumns(
-    data as StateRolePermissionsResponse[] & StateUserPermissionsResponse[]
+    data as StateRolePermissionsResponse[] & StateUserPermissionsResponse[],
+    data
   ).filter((column) => {
     return enabledColumns.includes(column.dataIndex as string);
   }) as unknown as ColumnType<StateRolePermissionsResponse>[];

@@ -159,6 +159,7 @@ export const filterData =
 
 export const getPermissionsTableColumns = (
   data: StateUserPermissionsResponse[],
+  stateRoleData: StateRolePermissionsResponse[],
   setUserToEnable?: (user: StateUserPermissionsResponse) => void
 ): ColumnType<StateUserPermissionsResponse>[] => {
   return [
@@ -256,13 +257,27 @@ export const getPermissionsTableColumns = (
       key: "routes",
       width: 300,
       ...getColumnSearchProps("routes"),
-      render: (text, record) => {
-        if (text) {
-          return formatText(
+      render: (
+        text: Record<string, unknown>,
+        record: StateUserPermissionsResponse
+      ) => {
+        const role = stateRoleData.find(
+          (d) => d.stateCode === record.stateCode && d.role === record.role
+        );
+        return {
+          props: {
+            style: {
+              background:
+                JSON.stringify(role?.routes) === JSON.stringify(record.routes)
+                  ? "none"
+                  : "yellow",
+            },
+          },
+          children: formatText(
             JSON.stringify(text, null, "\t").slice(2, -2),
             record
-          );
-        }
+          ),
+        };
       },
     },
     {
@@ -271,13 +286,28 @@ export const getPermissionsTableColumns = (
       key: "featureVariants",
       width: 350,
       ...getColumnSearchProps("featureVariants"),
-      render: (text, record) => {
-        if (text) {
-          return formatText(
+      render: (
+        text: Record<string, unknown>,
+        record: StateUserPermissionsResponse
+      ) => {
+        const role = stateRoleData.find(
+          (d) => d.stateCode === record.stateCode && d.role === record.role
+        );
+        return {
+          props: {
+            style: {
+              background:
+                JSON.stringify(role?.featureVariants) ===
+                JSON.stringify(record.featureVariants)
+                  ? "none"
+                  : "yellow",
+            },
+          },
+          children: formatText(
             JSON.stringify(text, null, "\t").slice(2, -2),
             record
-          );
-        }
+          ),
+        };
       },
     },
     {
