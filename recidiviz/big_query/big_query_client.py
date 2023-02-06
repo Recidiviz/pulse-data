@@ -919,20 +919,18 @@ class BigQueryClientImpl(BigQueryClient):
         bq_view.description = view.description
 
         try:
-            table = self.get_table(
-                self.dataset_ref_for_id(view.dataset_id), view.view_id
-            )
+            logging.info("Optimistically updating view [%s]", str(bq_view))
+            return self.client.update_table(bq_view, ["view_query", "description"])
         except exceptions.NotFound:
-            logging.info("Creating view %s", str(bq_view))
-            return self.client.create_table(bq_view)
-
-        if table.table_type == "TABLE":
-            raise ValueError(
-                f"Cannot call create_or_update_view on table {view.view_id} in dataset {view.dataset_id}."
+            logging.info(
+                "Creating view [%s] as it was not found while attempting to update",
+                str(bq_view),
             )
-
-        logging.info("Updating existing view [%s]", str(bq_view))
-        return self.client.update_table(bq_view, ["view_query", "description"])
+            return self.client.create_table(bq_view)
+        except exceptions.BadRequest as e:
+            raise ValueError(
+                f"Cannot update view query for [{view.address.to_str()}]"
+            ) from e
 
     def load_table_from_cloud_storage_async(
         self,

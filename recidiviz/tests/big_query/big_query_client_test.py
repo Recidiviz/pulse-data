@@ -159,10 +159,9 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_create_or_update_view_creates_view(self) -> None:
         """create_or_update_view creates a View if it does not exist."""
-        self.mock_client.get_table.side_effect = exceptions.NotFound("!")
+        self.mock_client.update_table.side_effect = exceptions.NotFound("!")
         self.bq_client.create_or_update_view(self.mock_view)
         self.mock_client.create_table.assert_called()
-        self.mock_client.update_table.assert_not_called()
 
     def test_create_or_update_view_updates_view(self) -> None:
         """create_or_update_view updates a View if it already exist."""
