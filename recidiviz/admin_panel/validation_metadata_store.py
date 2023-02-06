@@ -105,6 +105,8 @@ def results_query(
         results_filter_join_clause = f"""INNER JOIN (
         SELECT *
         FROM `{project_id}.{validation_result_address.dataset_id}.{validation_result_address.table_id}`
+        -- Don't include a state if the most recent run is more than 14 days ago.
+        WHERE run_datetime >= DATETIME_SUB(CURRENT_DATE('US/Eastern'), INTERVAL 14 DAY)
         QUALIFY ROW_NUMBER() OVER (PARTITION BY region_code ORDER BY run_datetime DESC) = 1
      )
     USING (run_id, region_code)"""
