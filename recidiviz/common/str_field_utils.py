@@ -25,7 +25,7 @@ import locale
 import re
 import string
 from distutils.util import strtobool  # pylint: disable=no-name-in-module
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import dateparser
 from dateutil.relativedelta import relativedelta
@@ -424,27 +424,30 @@ def sorted_list_from_str(value: str, delimiter: str = ",") -> List[str]:
     return sorted(unsorted)
 
 
-def normalize_flat_json(json_str: str) -> str:
-    """Parses a JSON string and returns a JSON string where the values are normalized, but their keys remain intact.
+class NormalizedJSON:
+    """A wrapper object around a dictionary that can be serialized as normalized JSON."""
 
-    NOTE: This only supports un-nested JSON where all values are optional strings. Throws if values have a
-    non-string type.
-    """
+    def __init__(self, **kwargs: Optional[str]):
+        self.json: Dict[str, Optional[str]] = kwargs
 
-    normalized_values_dict = {}
-    loaded_json = json.loads(json_str)
-    if not isinstance(loaded_json, dict):
-        raise ValueError(
-            f"JSON must have top-level type dict, found [{type(loaded_json)}]."
-        )
-    for k, v in loaded_json.items():
-        normalized_value = None
-        if v:
-            if not isinstance(v, str):
-                raise ValueError(
-                    f"Unexpected value type [{type(v)}] for field [{k}]. Expected value type str."
-                )
-            normalized_value = normalize(v)
-        normalized_values_dict[k] = normalized_value or ""
+    @property
+    def normalized_value(self) -> str:
+        """Returns a JSON string where the values are normalized, but their keys remain intact.
 
-    return json.dumps(normalized_values_dict, sort_keys=True)
+        NOTE: This only supports un-nested JSON where all values are optional strings. Throws if values have a
+        non-string type.
+        """
+
+        normalized_values_dict = {}
+        for k, v in self.json.items():
+            normalized_value = None
+            if v is not None:
+                if not isinstance(v, str):
+                    raise ValueError(
+                        f"Unexpected value type [{type(v)}] for field [{k}]. Expected value type str."
+                    )
+                if v:
+                    normalized_value = normalize(v)
+            normalized_values_dict[k] = normalized_value or ""
+
+        return json.dumps(normalized_values_dict, sort_keys=True)

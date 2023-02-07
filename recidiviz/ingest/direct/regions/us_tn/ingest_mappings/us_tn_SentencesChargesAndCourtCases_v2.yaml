@@ -111,7 +111,7 @@ variables:
   - sentence_metadata:
       $json_dict:
         # The id of the sentence that this sentence is consecutive to, if applicable.
-        consecutive_sentence_id:
+        CONSECUTIVE_SENTENCE_ID:
           $conditional:
             - $if:
                 # We only want to pull in a consecutive sentence id if there is a consecutive case
@@ -136,10 +136,10 @@ variables:
                     - ConsecutiveCaseNumber
                     - ConsecutiveCountNumber
                     - sentence_source
-        lifetime_flag: lifetime_flag
-        sentence_source: sentence_source
-        case_number: CaseNumber
-        conviction_county: ConvictionCounty
+        LIFETIME_FLAG: lifetime_flag
+        SENTENCE_SOURCE: sentence_source
+        CASE_NUMBER: CaseNumber
+        CONVICTION_COUNTY: ConvictionCounty
   - is_violent:
       $equal:
         - AssaultiveOffenseFlag

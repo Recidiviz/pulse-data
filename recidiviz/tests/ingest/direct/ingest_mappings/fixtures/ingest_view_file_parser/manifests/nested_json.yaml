@@ -18,9 +18,8 @@ output:
             $json_dict:
               GivenNames: FIRSTNAME
               MiddleNames:
-                $concat:
-                  $values:
-                    - MIDDLE1
-                    - MIDDLE2
+                $json_dict:
+                  Middle1: MIDDLE1
+                  Middle2: MIDDLE2
               Surname: LASTNAME
               Suffix: $literal("SR")

@@ -14,5 +14,5 @@ output:
       - FakePersonAlias:
           full_name:
             $json_dict:
-              GIVEN_NAMES: FIRSTNAME
-              SURNAME: LASTNAME
+              GivenNames: FIRSTNAME
+              Surname: LASTNAME

@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Factories for deserializing entities in state/entities.py from ingested values."""
+import json
+
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -22,7 +24,7 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.str_field_utils import normalize_flat_json, parse_days
+from recidiviz.common.str_field_utils import NormalizedJSON, normalize, parse_days
 from recidiviz.persistence.entity.entity_deserialize import (
     DeserializableEntityFieldValue,
     EntityFactory,
@@ -50,9 +52,7 @@ class StatePersonFactory(EntityFactory):
     def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StatePerson:
         return entity_deserialize(
             cls=entities.StatePerson,
-            converter_overrides={
-                "full_name": EntityFieldConverter(str, normalize_flat_json),
-            },
+            converter_overrides={},
             defaults={},
             **kwargs,
         )
@@ -87,7 +87,16 @@ class StateAssessmentFactory(EntityFactory):
         **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateAssessment:
         return entity_deserialize(
-            cls=entities.StateAssessment, converter_overrides={}, defaults={}, **kwargs
+            cls=entities.StateAssessment,
+            converter_overrides={
+                # TODO(#18203): Remove once we can parse all assessment_metadata JSON properly
+                "assessment_metadata": EntityFieldConverter(
+                    NormalizedJSON,
+                    lambda x: normalize(json.dumps(x.json, sort_keys=True)),
+                ),
+            },
+            defaults={},
+            **kwargs,
         )
 
 
@@ -98,9 +107,7 @@ class StatePersonAliasFactory(EntityFactory):
     ) -> entities.StatePersonAlias:
         return entity_deserialize(
             cls=entities.StatePersonAlias,
-            converter_overrides={
-                "full_name": EntityFieldConverter(str, normalize_flat_json),
-            },
+            converter_overrides={},
             defaults={},
             **kwargs,
         )
@@ -111,9 +118,7 @@ class StateAgentFactory(EntityFactory):
     def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateAgent:
         return entity_deserialize(
             cls=entities.StateAgent,
-            converter_overrides={
-                "full_name": EntityFieldConverter(str, normalize_flat_json),
-            },
+            converter_overrides={},
             defaults={"agent_type": StateAgentType.PRESENT_WITHOUT_INFO},
             **kwargs,
         )
@@ -124,9 +129,7 @@ class StateChargeFactory(EntityFactory):
     def deserialize(**kwargs: DeserializableEntityFieldValue) -> entities.StateCharge:
         return entity_deserialize(
             cls=entities.StateCharge,
-            converter_overrides={
-                "judge_full_name": EntityFieldConverter(str, normalize_flat_json)
-            },
+            converter_overrides={},
             defaults={"status": StateChargeStatus.PRESENT_WITHOUT_INFO},
             **kwargs,
         )
@@ -219,7 +222,13 @@ class StateProgramAssignmentFactory(EntityFactory):
     ) -> entities.StateProgramAssignment:
         return entity_deserialize(
             cls=entities.StateProgramAssignment,
-            converter_overrides={},
+            converter_overrides={
+                # TODO(#18208): Remove once we can parse all referral_metadata JSON properly
+                "referral_metadata": EntityFieldConverter(
+                    NormalizedJSON,
+                    lambda x: normalize(json.dumps(x.json, sort_keys=True)),
+                ),
+            },
             defaults={
                 "participation_status": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
             },
@@ -234,7 +243,7 @@ class StateIncarcerationPeriodFactory(EntityFactory):
     def deserialize(
         **kwargs: DeserializableEntityFieldValue,
     ) -> entities.StateIncarcerationPeriod:
-        ip = entity_deserialize(
+        return entity_deserialize(
             cls=entities.StateIncarcerationPeriod,
             converter_overrides={},
             defaults={
@@ -242,8 +251,6 @@ class StateIncarcerationPeriodFactory(EntityFactory):
             },
             **kwargs,
         )
-
-        return ip
 
 
 class StateSupervisionPeriodFactory(EntityFactory):
@@ -383,9 +390,7 @@ class StateTaskDeadlineFactory(EntityFactory):
     ) -> entities.StateTaskDeadline:
         return entity_deserialize(
             cls=entities.StateTaskDeadline,
-            converter_overrides={
-                "task_metadata": EntityFieldConverter(str, normalize_flat_json),
-            },
+            converter_overrides={},
             defaults={},
             **kwargs,
         )
@@ -397,7 +402,6 @@ class StateStaffFactory(EntityFactory):
         return entity_deserialize(
             cls=entities.StateStaff,
             converter_overrides={
-                "full_name": EntityFieldConverter(str, normalize_flat_json),
                 # Do not normalize emails - retain input capitalization.
                 "email": EntityFieldConverter(str, lambda x: x),
             },

@@ -50,7 +50,6 @@ class StateAssessmentConverterTest(unittest.TestCase):
             state_code="US_ND",
             assessment_score="17",
             assessment_level="MEDIUM",
-            assessment_metadata='{"high_score_domains": ["a", "c", "q"]}',
         )
 
         # Act
@@ -74,7 +73,6 @@ class StateAssessmentConverterTest(unittest.TestCase):
             assessment_date=date(year=2111, month=1, day=2),
             state_code="US_ND",
             assessment_score=17,
-            assessment_metadata='{"HIGH_SCORE_DOMAINS": ["A", "C", "Q"]}',
         )
 
         self.assertEqual(result, expected_result)

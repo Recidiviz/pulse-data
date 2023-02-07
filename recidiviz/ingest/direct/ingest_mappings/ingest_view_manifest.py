@@ -50,6 +50,7 @@ from recidiviz.common.attr_mixins import (
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
+from recidiviz.common.str_field_utils import NormalizedJSON
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegate,
 )
@@ -316,16 +317,24 @@ class EntityTreeManifestFactory:
                 BuildableAttrFieldType.STRING,
                 BuildableAttrFieldType.INTEGER,
             ):
+                if (
+                    field_type == BuildableAttrFieldType.STRING
+                    and delegate.is_json_field(entity_cls, field_name)
+                ):
+                    expected_result_type: Type = NormalizedJSON
+                else:
+                    expected_result_type = str
                 if field_name.endswith(EnumEntity.RAW_TEXT_FIELD_SUFFIX):
                     raise ValueError(
                         f"Enum raw text fields should not be mapped independently "
                         f"of their corresponding enum fields. Found direct mapping "
                         f"for field [{field_name}]."
                     )
-                field_manifest = build_str_manifest_from_raw(
+                field_manifest = build_manifest_from_raw_typed(
                     pop_raw_flat_field_manifest(field_name, raw_fields_manifest),
                     delegate,
                     variable_manifests=variable_manifests,
+                    expected_result_type=expected_result_type,
                 )
             elif field_type is BuildableAttrFieldType.BOOLEAN:
                 field_manifest = build_manifest_from_raw_typed(
@@ -1067,7 +1076,7 @@ class CustomFunctionManifest(ManifestNode[ManifestNodeT]):
 
 
 @attr.s(kw_only=True)
-class SerializedJSONDictFieldManifest(ManifestNode[str]):
+class SerializedJSONDictFieldManifest(ManifestNode[NormalizedJSON]):
     """Manifest describing the value for a flat field that will be hydrated with
     serialized JSON, derived from the values in 1 or more columns.
     """
@@ -1082,13 +1091,13 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
     drop_all_empty: bool = attr.ib(default=False)
 
     @property
-    def result_type(self) -> Type[str]:
-        return str
+    def result_type(self) -> Type[NormalizedJSON]:
+        return NormalizedJSON
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         return {}
 
-    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[NormalizedJSON]:
         result_dict = {
             key: manifest.build_from_row(row)
             for key, manifest in self.key_to_manifest_map.items()
@@ -1097,7 +1106,7 @@ class SerializedJSONDictFieldManifest(ManifestNode[str]):
             has_non_empty_value = any(value for value in result_dict.values())
             if not has_non_empty_value:
                 return None
-        return json.dumps(result_dict, sort_keys=True)
+        return NormalizedJSON(**result_dict)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return list(self.key_to_manifest_map.values())
@@ -1343,7 +1352,7 @@ class PhysicalAddressManifest(ManifestNode[str]):
 
 
 @attr.s(kw_only=True)
-class PersonNameManifest(ManifestNode[str]):
+class PersonNameManifest(ManifestNode[NormalizedJSON]):
     """Manifest node for building a JSON-serialized person name."""
 
     PERSON_NAME_KEY = "$person_name"
@@ -1380,13 +1389,13 @@ class PersonNameManifest(ManifestNode[str]):
     }
 
     @property
-    def result_type(self) -> Type[str]:
-        return str
+    def result_type(self) -> Type[NormalizedJSON]:
+        return NormalizedJSON
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         return {}
 
-    def build_from_row(self, row: Dict[str, str]) -> Optional[str]:
+    def build_from_row(self, row: Dict[str, str]) -> Optional[NormalizedJSON]:
         return self.name_json_manifest.build_from_row(row)
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
@@ -2008,6 +2017,7 @@ def build_manifest_from_raw_typed(
         variable_manifests=variable_manifests,
         expected_result_type=expected_result_type,
     )
+
     if not issubclass(manifest.result_type, expected_result_type):
         raise ValueError(
             f"Unexpected manifest node type: [{manifest.result_type}]. "
