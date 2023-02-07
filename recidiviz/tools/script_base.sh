@@ -11,7 +11,7 @@ RESET_OUTPUT_COLOR_ESCAPE_CODE=$(tput -T ansi sgr0)
 # In order to use this function, append `2>&1 | indent_output` to all commands so that all output goes to stdout and
 # gets run through this function.
 function indent_output {
-    sed "s/^/$BLUE_OUTPUT_ESCAPE_CODE> $RESET_OUTPUT_COLOR_ESCAPE_CODE /"
+    sed -u "s/^/$BLUE_OUTPUT_ESCAPE_CODE> $RESET_OUTPUT_COLOR_ESCAPE_CODE /"
 }
 
 # Fails the command if any command in a pipeline fails. For example: `a | b | c` will fail if any of commands a, b
