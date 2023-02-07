@@ -445,22 +445,15 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             return
 
         if self._schedule_raw_data_import_tasks():
-            # TODO(#18083) Change to conditionally be BLOCKED_BY_PRIMARY_RAW_DATA_IMPORT if the ingest_instance is
-            #  SECONDARY and the raw_data_source_instance is PRIMARY.
-            self.ingest_instance_status_manager.change_status_to(
-                DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
-            )
-
-            if self._schedule_raw_data_import_tasks():
-                # If raw data source instance is different from the ingest instance, update the status accordingly.
-                if self.ingest_instance != self.raw_data_source_instance:
-                    self.ingest_instance_status_manager.change_status_to(
-                        DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT
-                    )
-                else:
-                    self.ingest_instance_status_manager.change_status_to(
-                        DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
-                    )
+            # If raw data source instance is different from the ingest instance, update the status accordingly.
+            if self.ingest_instance != self.raw_data_source_instance:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT
+                )
+            else:
+                self.ingest_instance_status_manager.change_status_to(
+                    DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS
+                )
             logging.info(
                 "Found pre-ingest raw data import tasks to schedule - returning."
             )
