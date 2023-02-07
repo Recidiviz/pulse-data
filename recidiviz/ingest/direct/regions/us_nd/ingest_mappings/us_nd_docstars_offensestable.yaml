@@ -31,7 +31,6 @@ unused_columns:
   - CREATED_BY # No apparent use for these
   - MASTER_OFFENSE_IND # Not in consistent use within source
   - REQUIRES_REGISTRATION
-  - Common_Statute_NCIC_Code
   - Common_Statute_Number
 output:
   StatePerson:
@@ -60,8 +59,16 @@ output:
                     $function: us_nd_custom_parsers.classification_subtype_from_raw_text
                     $args:
                       raw_charge_text: LEVEL
-                ncic_code: CODE
+                ncic_code:
+                  $conditional:
+                    - $if:
+                        $not_null: Common_Statute_NCIC_Code
+                      $then: Common_Statute_NCIC_Code
+                    - $else: CODE
                 description:
+                  # TODO(#18210): When we get this data, pull descriptions of
+                  # Common_Statute_NCIC_Code from Tbl_CST_NCIC_CODES, and
+                  # CODE from Tbl_NcicCodes
                   $custom:
                     $function: us_nd_custom_parsers.extract_description_from_ncic_code
                     $args:
