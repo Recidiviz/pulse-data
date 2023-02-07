@@ -1034,6 +1034,9 @@ class StateIncarcerationIncident(HasExternalIdEntity, BuildableAttr, Defaultable
     incident_details: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    incident_metadata: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     #   - Who
     #  No fields
