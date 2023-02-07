@@ -21,7 +21,7 @@ columns:
   - name: LineNumber
     description: |-
       A sequential number that indexes the position of multiple occurrence lines on a select screen.
-  - name: Comment
+  - name: OffenderEducationComment
     is_pii: True
     description: |-
       The freeform text for comments.
