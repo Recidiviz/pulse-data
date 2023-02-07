@@ -1297,9 +1297,8 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
     )
     assessment_metadata = Column(
         Text,
-        comment="This includes whichever fields and values are relevant to a fine "
-        "understanding of a particular assessment. It can be provided in any "
-        "format, but will be transformed into JSON prior to persistence.",
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular assessment.",
     )
 
     @declared_attr
@@ -1401,9 +1400,8 @@ class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
     )
     sentence_metadata = Column(
         Text,
-        comment="Arbitrary JSON-formatted metadata relevant to a fine"
-        " understanding of a particular sentence. It can be provided in any "
-        "format, but will be transformed into JSON prior to persistence.",
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular sentence.",
     )
     # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
     # we do for most other String fields.
@@ -1546,9 +1544,8 @@ class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns)
     )
     sentence_metadata = Column(
         Text,
-        comment="Arbitrary JSON-formatted metadata relevant to a fine"
-        " understanding of a particular sentence. It can be provided in any "
-        "format, but will be transformed into JSON prior to persistence.",
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular sentence.",
     )
     # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the string like
     # we do for most other String fields.
@@ -1956,7 +1953,12 @@ class StateIncarcerationIncident(StateBase, _ReferencesStatePersonSharedColumns)
         String(255), comment="The more specific location where the incident took place."
     )
     incident_details = Column(
-        Text, comment="Descriptive notes describing the incident."
+        Text, comment="Free-text notes about / description of the incident."
+    )
+    incident_metadata = Column(
+        Text,
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular incident.",
     )
 
     incarceration_incident_outcomes = relationship(
@@ -2490,9 +2492,8 @@ class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
     )
     referral_metadata = Column(
         Text,
-        comment="This includes whichever fields and values are relevant to a fine"
-        " understanding of a particular referral. It can be provided in any "
-        "format, but will be transformed into JSON prior to persistence.",
+        comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
+        "a particular referral.",
     )
 
     @declared_attr
