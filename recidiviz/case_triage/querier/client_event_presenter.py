@@ -55,8 +55,8 @@ class ClientEventPresenter:
             contact_type = self.etl_client_event.event_metadata["contact_type"]
         except KeyError:
             return None
-        else:
-            return contact_type
+
+        return contact_type
 
     @property
     def contact_method(self) -> Optional[str]:
@@ -66,8 +66,8 @@ class ClientEventPresenter:
             contact_method = self.etl_client_event.event_metadata["contact_method"]
         except KeyError:
             return None
-        else:
-            return contact_method
+
+        return contact_method
 
     def to_json(self) -> Dict[str, Any]:
         base_dict = {

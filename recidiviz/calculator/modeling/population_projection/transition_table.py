@@ -210,8 +210,8 @@ class TransitionTable:
                     f"'{compartment}' transition has probabilities out of bounds:\n"
                     f"{erroneous_values}"
                 )
-
-        max_sentence = min(max_sentence, min(normalized_df[full_release_times].index))
+        min_of_index = min(normalized_df[full_release_times].index)
+        max_sentence = min(max_sentence, min_of_index)
         normalized_df.loc[max_sentence, "remaining"] = 0
 
         return normalized_df

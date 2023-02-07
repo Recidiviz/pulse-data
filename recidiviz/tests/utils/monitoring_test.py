@@ -48,7 +48,7 @@ def test_measurements_with_exception(mock_mmap: MagicMock) -> None:
         with monitoring.measurements(tags) as mmap:
             tags["bob"] = "bar"
             assert mmap == mock_mmap
-            raise Exception
+            raise ValueError
 
     assert_recorded_tags(mock_mmap, [{"alice": "foo", "bob": "bar"}])
 
@@ -124,7 +124,7 @@ def test_measurements_with_push_tags_and_exception(mock_mmap: MagicMock) -> None
             with monitoring.measurements(tags) as mmap:
                 tags["bob"] = "bar"
                 assert mmap == mock_mmap
-                raise Exception
+                raise ValueError
 
     # outside of pushed tag
     with monitoring.measurements(tags) as mmap:

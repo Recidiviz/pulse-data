@@ -63,13 +63,13 @@ def calc_parole_elibility_date(
         parse_duration_pieces(years_str, months_str, days_str)
     except ValueError:
         return None
-    else:
-        years, months, days = parse_duration_pieces(years_str, months_str, days_str)
-        start_dt = parse_datetime(start_date_str)
-        if start_dt:
-            end_dt = start_dt + relativedelta(years=years, months=months, days=days)
-            return str(end_dt)
-        return None
+
+    years, months, days = parse_duration_pieces(years_str, months_str, days_str)
+    start_dt = parse_datetime(start_date_str)
+    if start_dt:
+        end_dt = start_dt + relativedelta(years=years, months=months, days=days)
+        return str(end_dt)
+    return None
 
 
 def parole_possible(min_life: str, mcl: str, attempt: str) -> bool:

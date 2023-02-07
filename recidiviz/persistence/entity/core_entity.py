@@ -32,7 +32,7 @@ class CoreEntity:
     # Consider CoreEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is CoreEntity:
-            raise Exception("Abstract class cannot be instantiated")
+            raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
     @classmethod

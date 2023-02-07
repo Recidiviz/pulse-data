@@ -93,7 +93,7 @@ class RecidivizSftpConnection(pysftp.Connection):
                 # channel closed errors, we should consider adding algorithms to this list
                 # in order to force preference of the algorithms that our hostkey secrets
                 # contain by our state partners.
-                disabled_algorithms=dict(pubkeys=["rsa-sha2-512", "rsa-sha2-256"]),
+                disabled_algorithms={"pubkeys": ["rsa-sha2-512", "rsa-sha2-256"]},
             )
         except (AttributeError, socket.gaierror) as e:
             # couldn't connect

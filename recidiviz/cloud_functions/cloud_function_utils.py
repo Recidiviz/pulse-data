@@ -78,7 +78,7 @@ def make_iap_request(
     # information about the service account.
     bootstrap_credentials, _ = google.auth.default(scopes=[_IAM_SCOPE])
     if isinstance(bootstrap_credentials, google.oauth2.credentials.Credentials):
-        raise Exception("make_iap_request is only supported for service accounts.")
+        raise TypeError("make_iap_request is only supported for service accounts.")
 
     # For service accounts using the Compute Engine metadata service,
     # service_account_email isn't available until refresh is called.
@@ -122,12 +122,12 @@ def make_iap_request(
         **kwargs,
     )
     if response.status_code == 403:
-        raise Exception(
+        raise EnvironmentError(
             f"Service account {signer_email} does not have permission to "
             "access the IAP-protected application."
         )
     if response.status_code != 200:
-        raise Exception(
+        raise RuntimeError(
             f"Bad response from application: {repr(response.status_code)} / "
             f"{repr(response.headers)} / {repr(response.text)}"
         )
@@ -247,11 +247,11 @@ def cloud_functions_log(severity: str, message: str) -> None:
     # TODO(https://issuetracker.google.com/issues/124403972?pli=1): Workaround until
     #  built-in logging is fixed for Python cloud functions
     # Complete a structured log entry.
-    entry = dict(
-        severity=severity,
-        message=message,
+    entry = {
+        "severity": severity,
+        "message": message,
         # Log viewer accesses 'component' as jsonPayload.component'.
-        component="arbitrary-property",
-    )
+        "component": "arbitrary-property",
+    }
 
     print(json.dumps(entry))

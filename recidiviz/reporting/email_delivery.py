@@ -212,9 +212,9 @@ def load_files_from_storage(bucket_name: str, batch_id_path: str) -> Dict[str, s
                 "Unable to load file %s from bucket %s", path.blob_name, bucket_name
             )
             raise
-        else:
-            email_address = email_from_file_name(path.file_name)
-            files[email_address] = body
+
+        email_address = email_from_file_name(path.file_name)
+        files[email_address] = body
 
     return files
 

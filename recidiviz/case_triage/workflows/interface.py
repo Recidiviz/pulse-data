@@ -77,7 +77,7 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
             user_id = get_secret("workflows_us_tn_test_user_id")
 
             if offender_id is None or user_id is None:
-                raise Exception("Missing OffenderId and/or UserId secret")
+                raise ValueError("Missing OffenderId and/or UserId secret")
         else:
             offender_id = self.offender_id
             user_id = self.user_id
@@ -132,7 +132,7 @@ class WorkflowsUsTnExternalRequestInterface:
                 },
             )
             logging.error("Unable to get secrets for TOMIS")
-            raise Exception("Unable to get secrets for TOMIS")
+            raise EnvironmentError("Unable to get secrets for TOMIS")
 
         base64_encoded = base64.b64encode(tomis_key.encode())
 

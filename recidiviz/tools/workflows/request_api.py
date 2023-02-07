@@ -53,7 +53,7 @@ def insert_contact_note(
     user_id = get_secret("workflows_us_tn_test_user_id")
 
     if offender_id is None or user_id is None:
-        raise Exception("Missing OffenderId and/or UserId secret")
+        raise ValueError("Missing OffenderId and/or UserId secret")
 
     url = STAGING_URL if target_env == "staging" else LOCALHOST_URL
 
@@ -66,7 +66,7 @@ def insert_contact_note(
     }
     response = s.get(url + "workflows/US_TN/init", headers=headers)
     if response.status_code != HTTPStatus.OK:
-        raise Exception(
+        raise EnvironmentError(
             f"Could not generate CSRF token. Got status_code {response.status_code} on /init"
         )
     headers["X-CSRF-Token"] = response.json()["csrf"]

@@ -439,7 +439,7 @@ def create_calculation_dag() -> None:
     3. Trigger BigQuery exports for each state and other datasets."""
 
     if config_file is None:
-        raise Exception("Configuration file not specified")
+        raise ValueError("Configuration file not specified")
 
     state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
     operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")

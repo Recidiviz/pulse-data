@@ -833,7 +833,7 @@ class _ReferencesStatePersonSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_: Any, **__: Any) -> "_ReferencesStatePersonSharedColumns":
         if cls is _ReferencesStatePersonSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
+            raise NotImplementedError(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
     @declared_attr
@@ -3054,7 +3054,7 @@ class _ReferencesStateStaffSharedColumns:
     # Consider this class a mixin and only allow instantiating subclasses
     def __new__(cls, *_: Any, **__: Any) -> "_ReferencesStateStaffSharedColumns":
         if cls is _ReferencesStateStaffSharedColumns:
-            raise Exception(f"[{cls}] cannot be instantiated")
+            raise NotImplementedError(f"[{cls}] cannot be instantiated")
         return super().__new__(cls)  # type: ignore
 
     @declared_attr

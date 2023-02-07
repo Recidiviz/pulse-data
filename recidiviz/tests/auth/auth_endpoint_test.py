@@ -1123,7 +1123,7 @@ class AuthEndpointTests(TestCase):
     def test_upload_roster(self) -> None:
         with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file, reason="test")
+            data = {"file": file, "reason": "test"}
 
             with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
                 # Create associated default permissions by role
@@ -1213,7 +1213,7 @@ class AuthEndpointTests(TestCase):
             os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_email.csv"), "rb"
         ) as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file, reason="test")
+            data = {"file": file, "reason": "test"}
 
             with self.app.test_request_context():
                 response = self.client.put(
@@ -1268,7 +1268,7 @@ class AuthEndpointTests(TestCase):
         add_entity_to_database_session(self.database_key, [roster_leadership_user])
         with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file, reason="test")
+            data = {"file": file, "reason": "test"}
 
             with self.app.test_request_context():
                 response = self.client.put(
@@ -1353,7 +1353,7 @@ class AuthEndpointTests(TestCase):
             os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
         ) as fixture:
             file = FileStorage(fixture)
-            data = dict(file=file, reason="test")
+            data = {"file": file, "reason": "test"}
 
             with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
                 self.client.put(

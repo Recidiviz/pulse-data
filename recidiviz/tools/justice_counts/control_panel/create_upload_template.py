@@ -85,11 +85,11 @@ def generate_bulk_upload_template(system: schema.System) -> None:
                 for (
                     dimension
                 ) in metricfile.disaggregation:  # type: ignore[attr-defined]
-                    new_row: Dict[str, Any] = dict(
+                    new_row: Dict[str, Any] = {
                         **row,
-                        **{metricfile.disaggregation_column_name: dimension.value},
-                        **{"value": ""},
-                    )
+                        metricfile.disaggregation_column_name: dimension.value,  # type: ignore
+                        "value": "",
+                    }
                     new_rows.append(new_row)
         else:
             new_rows = rows

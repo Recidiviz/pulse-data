@@ -81,7 +81,7 @@ class DatapointsForMetric:
     # includes/excludes datapoints that at the dimension level.
     dimension_to_includes_excludes_key_to_datapoint: Dict[
         DimensionBase, Dict[str, schema.Datapoint]
-    ] = attr.field(factory=(lambda: defaultdict(dict)))
+    ] = attr.field(factory=lambda: defaultdict(dict))
 
     # dimension_to_context_key_to_datapoints will hold
     # a mapping of context_keys to datapoints at the dimension level.

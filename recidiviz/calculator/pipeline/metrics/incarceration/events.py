@@ -84,7 +84,7 @@ class IncarcerationAdmissionEvent(IncarcerationEvent):
 
     def __attrs_post_init__(self) -> None:
         if self.__class__ == IncarcerationAdmissionEvent:
-            raise Exception(
+            raise TypeError(
                 "Cannot instantiate IncarcerationAdmissionEvent directly; "
                 "use an applicable subclass instead."
             )
