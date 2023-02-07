@@ -71,8 +71,8 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
                 f"{self.contact_note_date_time} is not a valid datetime str"
             ) from exc
 
-        if not in_gcp_production():
-            # If we are not in production, ensure we do not submit notes to TOMIS with real ids
+        if not in_gcp_production() or self.user_id == "RECIDIVIZ":
+            # If we are not in production or the user is Recidiviz, ensure we do not submit notes to TOMIS with real ids
             offender_id = get_secret("workflows_us_tn_test_offender_id")
             user_id = get_secret("workflows_us_tn_test_user_id")
 
@@ -120,6 +120,9 @@ class WorkflowsUsTnExternalRequestInterface:
 
         tomis_url = get_secret("workflows_us_tn_insert_contact_note_url")
         tomis_key = get_secret("workflows_us_tn_insert_contact_note_key")
+
+        if in_gcp_production() and user_id == "RECIDIVIZ":
+            tomis_url = get_secret("workflows_us_tn_insert_contact_note_test_url")
 
         if tomis_url is None or tomis_key is None:
             firestore_client.update_document(
