@@ -33,7 +33,7 @@ class Entity(CoreEntity):
     # Consider Entity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is Entity:
-            raise Exception("Abstract class cannot be instantiated")
+            raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
     def __eq__(self, other):
@@ -52,7 +52,7 @@ class ExternalIdEntity(Entity):
     # Consider ExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is ExternalIdEntity:
-            raise Exception("Abstract class cannot be instantiated")
+            raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
 
@@ -67,7 +67,7 @@ class HasExternalIdEntity(Entity):
     # Consider HasExternalIdEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is HasExternalIdEntity:
-            raise Exception("Abstract class cannot be instantiated")
+            raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
 
@@ -89,7 +89,7 @@ class HasMultipleExternalIdsEntity(Generic[ExternalIdT], Entity):
     # Consider HasMultipleExternalIdsEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is HasMultipleExternalIdsEntity:
-            raise Exception("Abstract class cannot be instantiated")
+            raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
 
@@ -101,7 +101,7 @@ class EnumEntity(Entity):
     # Consider EnumEntity abstract and only allow instantiating subclasses
     def __new__(cls, *_, **__):
         if cls is HasExternalIdEntity:
-            raise Exception("Abstract class cannot be instantiated")
+            raise NotImplementedError("Abstract class cannot be instantiated")
         return super().__new__(cls)
 
 

@@ -65,9 +65,7 @@ class OfficerMetadataInterface:
                 officer_external_id=officer_external_id,
                 **values,
             )
-            .on_conflict_do_update(
-                constraint="officer_metadata_pkey", set_=dict(**values)
-            )
+            .on_conflict_do_update(constraint="officer_metadata_pkey", set_={**values})
         )
 
         session.execute(insert_statement)

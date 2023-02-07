@@ -258,7 +258,7 @@ class DefaultableAttr:
     # DefaultableAttr can only be mixed in with an attr class
     def __new__(cls: Any, *_args: Any, **_kwargs: Any) -> Any:
         if not attr.has(cls):
-            raise Exception("Parent class must be an attr class")
+            raise TypeError("Parent class must be an attr class")
         return super().__new__(cls)
 
     @classmethod
@@ -301,7 +301,7 @@ class BuildableAttr:
     # BuildableAttr can only be mixed in with an attr class
     def __new__(cls: Any, *_args: Any, **_kwargs: Any) -> Any:
         if not attr.has(cls):
-            raise Exception("Parent class must be an attr class")
+            raise TypeError("Parent class must be an attr class")
         return super().__new__(cls)
 
     class Builder:

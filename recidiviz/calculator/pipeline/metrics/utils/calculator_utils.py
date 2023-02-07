@@ -217,7 +217,7 @@ def get_calculation_month_lower_bound_date(
     first_of_last_month = first_day_of_month(calculation_month_upper_bound)
 
     calculation_month_lower_bound = (
-        (first_of_last_month - relativedelta(months=(calculation_month_count - 1)))
+        first_of_last_month - relativedelta(months=calculation_month_count - 1)
         if calculation_month_count != -1
         else None
     )

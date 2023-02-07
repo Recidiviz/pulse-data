@@ -392,7 +392,7 @@ def split_range_by_birthdate(
         yield (start_date, split_date)
 
         start_date = split_date
-        split_date = safe_year_replace(birthdate, year=(split_date.year + 1))
+        split_date = safe_year_replace(birthdate, year=split_date.year + 1)
 
     yield (start_date, end_date)
 

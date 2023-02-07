@@ -40,7 +40,7 @@ class AgencySettingInterface:
         )
         insert_statement = insert_statement.on_conflict_do_update(
             constraint="unique_agency_setting",
-            set_=dict(value=value),
+            set_={"value": value},
         )
 
         session.execute(insert_statement)

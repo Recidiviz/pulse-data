@@ -83,16 +83,16 @@ class GCSFileSystemImpl(GCSFileSystem):
             raise GCSBlobDoesNotExistError(
                 f"Blob at [{path.uri()}] does not exist"
             ) from error
-        else:
-            if not blob:
-                logging.warning(
-                    "Blob at [%s] does not exist - might have already been deleted",
-                    path.uri(),
-                )
 
-                raise GCSBlobDoesNotExistError(f"Blob at [{path.uri()}] does not exist")
+        if not blob:
+            logging.warning(
+                "Blob at [%s] does not exist - might have already been deleted",
+                path.uri(),
+            )
 
-            return blob
+            raise GCSBlobDoesNotExistError(f"Blob at [{path.uri()}] does not exist")
+
+        return blob
 
     @retry.Retry(predicate=google_api_retry_predicate)
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:

@@ -88,7 +88,7 @@ class UsIdTextEntity(TextEntity):
     NEW_CRIME = [
         ScoringFuzzyMatcher(search_term="psi"),
         RegexFuzzyMatcher(search_regex=".*file.*review.*"),
-        ScoringFuzzyMatcher(search_term=("new crime")),
+        ScoringFuzzyMatcher(search_term="new crime"),
     ]
     ANY_TREATMENT = [
         ScoringFuzzyMatcher(search_term="tx"),
@@ -110,8 +110,8 @@ class UsIdTextEntity(TextEntity):
         ScoringFuzzyMatcher(search_term="case plan outline"),
     ]
     NCIC_ILETS_NCO_CHECK = [
-        RegexFuzzyMatcher(search_regex=(".*ilet.*|.*ncic.*|.*icourts.*")),
-        ScoringFuzzyMatcher(search_term=("new crime")),
+        RegexFuzzyMatcher(search_regex=".*ilet.*|.*ncic.*|.*icourts.*"),
+        ScoringFuzzyMatcher(search_term="new crime"),
     ]
     # community service will have COMMUNITY_SERVICE as TRUE and NOT_CS and AGENTS_WARNING as FALSE
     COMMUNITY_SERVICE = (
@@ -151,46 +151,46 @@ class UsIdTextEntity(TextEntity):
             ScoringFuzzyMatcher(search_term="comm svc"),
             ScoringFuzzyMatcher(search_term="com serv"),
             ScoringFuzzyMatcher(search_term="com svc"),
-            RegexFuzzyMatcher(search_regex=(r".*communityservice.*")),
+            RegexFuzzyMatcher(search_regex=r".*communityservice.*"),
             RegexFuzzyMatcher(search_regex=r".*c/s.*"),
             RegexFuzzyMatcher(search_regex=r".*c\.s\.*"),
         ],
         [n for n in TEXT_NORMALIZERS if n not in {REMOVE_WORDS_WITH_NON_CHARACTERS}],
     )
     NOT_CS = [
-        RegexFuzzyMatcher(search_regex=(r".*koot.*")),
-        RegexFuzzyMatcher(search_regex=(r".*bonner.*")),
-        RegexFuzzyMatcher(search_regex=(r".*history.*")),
-        RegexFuzzyMatcher(search_regex=(r".*shosho.*")),
-        RegexFuzzyMatcher(search_regex=(r".*benewah.*")),
+        RegexFuzzyMatcher(search_regex=r".*koot.*"),
+        RegexFuzzyMatcher(search_regex=r".*bonner.*"),
+        RegexFuzzyMatcher(search_regex=r".*history.*"),
+        RegexFuzzyMatcher(search_regex=r".*shosho.*"),
+        RegexFuzzyMatcher(search_regex=r".*benewah.*"),
         ScoringFuzzyMatcher(search_term="gold seal"),
-        RegexFuzzyMatcher(search_regex=(r".*icots.*")),
+        RegexFuzzyMatcher(search_regex=r".*icots.*"),
     ]
     TRANSFER_CHRONO = [
         RegexFuzzyMatcher(search_regex=r".*transfer chrono.*"),
         ScoringFuzzyMatcher(search_term="chronicle"),
-        RegexFuzzyMatcher(search_regex=(r".*chrono.*")),
+        RegexFuzzyMatcher(search_regex=r".*chrono.*"),
         ScoringFuzzyMatcher(search_term="chronos"),
         ScoringFuzzyMatcher(search_term="crono"),
         ScoringFuzzyMatcher(search_term="cronos"),
     ]
     LSU = [
-        RegexFuzzyMatcher(search_regex=(r".*lsu.*")),
+        RegexFuzzyMatcher(search_regex=r".*lsu.*"),
         ScoringFuzzyMatcher(search_term="lsu"),
     ]
 
     # DUI Misdemenaors will have DUI as TRUE and NOT_M_DUI as FALSE
     DUI = [
-        ScoringFuzzyMatcher(search_term=("dui")),
-        ScoringFuzzyMatcher(search_term=("mdui")),
-        ScoringFuzzyMatcher(search_term=("awdui")),
-        ScoringFuzzyMatcher(search_term=("crimedui")),
-        ScoringFuzzyMatcher(search_term=("duiaw")),
-        ScoringFuzzyMatcher(search_term=("arrestdui")),
-        ScoringFuzzyMatcher(search_term=("duiarrest")),
-        ScoringFuzzyMatcher(search_term=("duiexcessive")),
-        ScoringFuzzyMatcher(search_term=("warrantdui")),
-        ScoringFuzzyMatcher(search_term=("fdui")),
+        ScoringFuzzyMatcher(search_term="dui"),
+        ScoringFuzzyMatcher(search_term="mdui"),
+        ScoringFuzzyMatcher(search_term="awdui"),
+        ScoringFuzzyMatcher(search_term="crimedui"),
+        ScoringFuzzyMatcher(search_term="duiaw"),
+        ScoringFuzzyMatcher(search_term="arrestdui"),
+        ScoringFuzzyMatcher(search_term="duiarrest"),
+        ScoringFuzzyMatcher(search_term="duiexcessive"),
+        ScoringFuzzyMatcher(search_term="warrantdui"),
+        ScoringFuzzyMatcher(search_term="fdui"),
     ]
     NOT_M_DUI = [
         RegexFuzzyMatcher(
@@ -240,7 +240,7 @@ class UsIdTextEntity(TextEntity):
         RegexFuzzyMatcher(search_regex=r".*advancement.*"),
     ]
     COURT = [
-        RegexFuzzyMatcher(search_regex=(r".*court.*")),
+        RegexFuzzyMatcher(search_regex=r".*court.*"),
         ScoringFuzzyMatcher(search_term="crt"),
         ScoringFuzzyMatcher(search_term="ct"),
     ]

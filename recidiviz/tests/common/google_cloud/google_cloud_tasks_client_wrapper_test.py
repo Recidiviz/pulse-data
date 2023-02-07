@@ -243,7 +243,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
                     "relative_uri": "/my_endpoint?region=us_mo",
                     "body": b"{}",
                 },
-                schedule_time=timestamp_pb2.Timestamp(seconds=(now_timestamp_sec + 3)),
+                schedule_time=timestamp_pb2.Timestamp(seconds=now_timestamp_sec + 3),
             ),
         )
 
