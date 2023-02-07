@@ -85,10 +85,13 @@ class ReleaseType(DimensionBase, enum.Enum):
 
 
 class StaffType(DimensionBase, enum.Enum):
-    SECURITY = "Security"
-    SUPPORT = "Support"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    SECURITY = "Security Staff"
+    MANAGEMENT_AND_OPERATIONS = "Management and Operations Staff"
+    CLINICAL_AND_MEDICAL = "Clinical and Medical Staff"
+    PROGRAMMATIC = "Programmatic Staff"
+    OTHER = "Other Staff"
+    UNKNOWN = "Unknown Staff"
+    VACANT = "Vacant Positions (Any Staff Type)"
 
     @classmethod
     def dimension_identifier(cls) -> str:

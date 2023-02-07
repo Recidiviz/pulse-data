@@ -29,6 +29,7 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.includes_excludes.jails import (
+    ClinicalAndMedicalStaffIncludesExcludes,
     CommissaryAndFeesIncludesExcludes,
     ContractBedsExpensesIncludesExcludes,
     ContractBedsFundingIncludesExcludes,
@@ -38,9 +39,14 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     FundingIncludesExcludes,
     GrantsIncludesExcludes,
     HealthCareForPeopleWhoAreIncarceratedIncludesExcludes,
+    ManagementAndOperationsStaffIncludesExcludes,
     PersonnelIncludesExcludes,
+    ProgrammaticStaffIncludesExcludes,
+    SecurityStaffIncludesExcludes,
+    StaffIncludesExcludes,
     StateAppropriationIncludesExcludes,
     TrainingIncludesExcludes,
+    VacantPositionsIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -199,26 +205,64 @@ total_staff = MetricDefinition(
     system=System.JAILS,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Staff",
-    description="Measures the number of full-time staff employed by your jail system.",
+    display_name="Staff",
+    description="The number of full-time equivalent (FTE) positions budgeted and paid for by the agency for the operation and maintenance of the jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    definitions=[
-        Definition(
-            term="Full-time staff",
-            definition="Number of people employed in a full-time (0.9+) capacity.",
+    includes_excludes=IncludesExcludesSet(
+        members=StaffIncludesExcludes,
+        excluded_set={
+            StaffIncludesExcludes.VOLUNTEER,
+            StaffIncludesExcludes.INTERN,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=StaffType,
+            required=False,
+            dimension_to_includes_excludes={
+                StaffType.SECURITY: IncludesExcludesSet(
+                    members=SecurityStaffIncludesExcludes,
+                    excluded_set={
+                        SecurityStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                StaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
+                    members=ManagementAndOperationsStaffIncludesExcludes,
+                    excluded_set={
+                        ManagementAndOperationsStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                StaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
+                    members=ClinicalAndMedicalStaffIncludesExcludes,
+                    excluded_set={
+                        ClinicalAndMedicalStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                StaffType.PROGRAMMATIC: IncludesExcludesSet(
+                    members=ProgrammaticStaffIncludesExcludes,
+                    excluded_set={
+                        ProgrammaticStaffIncludesExcludes.VACANT,
+                    },
+                ),
+                StaffType.VACANT: IncludesExcludesSet(
+                    members=VacantPositionsIncludesExcludes,
+                    excluded_set={
+                        VacantPositionsIncludesExcludes.FILLED,
+                    },
+                ),
+            },
+            dimension_to_description={
+                StaffType.SECURITY: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their custody, supervision, and monitoring.",
+                StaffType.MANAGEMENT_AND_OPERATIONS: "The number of full-time equivalent positions that do not work directly with people who are incarcerated but support the day-to-day operations of the agency.",
+                StaffType.CLINICAL_AND_MEDICAL: "The number of full-time equivalent positions that work directly with people who are incarcerated and are responsible for their health.",
+                StaffType.PROGRAMMATIC: "The number of full-time equivalent positions that provide services and programming to people who are incarcerated but are not medical or clinical staff.",
+                StaffType.OTHER: "The number of full-time equivalent positions dedicated to the operation and maintenance of jail facilities under the jurisdiction of the agency that are not security staff, management and operations staff, clinical and medical staff, or programmatic staff.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions dedicated to the operation and maintenance of jail facilities under the jurisdiction of the agency that are of an unknown type.",
+                StaffType.VACANT: "The number of full-time equivalent positions dedicated to operation and maintenance of the jail facilities and the care of people who are incarcerated under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
+            },
         )
     ],
-    specified_contexts=[
-        Context(
-            key=ContextKey.INCLUDES_PROGRAMMATIC_STAFF,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Does the staff count includes programmatic staff?",
-            required=True,
-            multiple_choice_options=YesNoContext,
-        ),
-    ],
-    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
 )
 
 readmissions = MetricDefinition(

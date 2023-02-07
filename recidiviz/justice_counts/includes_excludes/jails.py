@@ -153,3 +153,56 @@ class ContractBedsExpensesIncludesExcludes(Enum):
         "Expenses for beds contracted with federal agencies (i.e., in federal prisons)"
     )
     PRIVATE = "Expenses for beds contracted with private prison companies"
+
+
+# Staff
+class StaffIncludesExcludes(Enum):
+    FILLED = "Filled positions"
+    VACANT = "Staff positions budgeted but currently vacant"
+    FULL_TIME = "Full-time positions"
+    PART_TIME = "Part-time positions"
+    CONTRACTED = "Contracted positions"
+    TEMPORARY = "Temporary positions"
+    VOLUNTEER = "Volunteer positions"
+    INTERN = "Intern positions"
+
+
+class SecurityStaffIncludesExcludes(Enum):
+    CORRECTIONAL_OFFICERS_ALL = "Correctional officers (all ranks)"
+    CORRECTIONAL_OFFICERS_SUPERVISORS = "Correctional officer supervisors"
+    VACANT = "Security staff budgeted but currently vacant"
+
+
+class ManagementAndOperationsStaffIncludesExcludes(Enum):
+    JAIL_MANAGEMENT = "Jail management (i.e., executive-level staff such as the warden, chiefs, superintendent, etc.)"
+    CLERICAL = "Clerical or administrative staff"
+    RESEARCH = "Research staff"
+    MAINTENANCE = "Maintenance staff"
+    VACANT = "Management and operations staff positions budgeted but currently vacant"
+
+
+class ClinicalAndMedicalStaffIncludesExcludes(Enum):
+    DOCTORS = "Medical doctors"
+    NURSES = "Nurses"
+    DENTISTS = "Dentists"
+    CLINICIANS = "Clinicians (e.g., substance use treatment specialists)"
+    THERAPISTS = "Therapists (e.g., mental health counselors)"
+    PSYCHIATRISTS = "Psychiatrists"
+    VACANT = "Clinical or medical staff positions budgeted but currently vacant"
+
+
+class ProgrammaticStaffIncludesExcludes(Enum):
+    VOCATIONAL = "Vocational staff"
+    EDUCATIONAL = "Educational staff"
+    SUPPORT_PROGRAM = "Therapeutic and support program staff"
+    RELIGIOUS = "Religious or cultural program staff"
+    VACANT = "Programmatic staff positions budgeted but currently vacant"
+
+
+class VacantPositionsIncludesExcludes(Enum):
+    SECURITY = "Vacant security staff positions"
+    MANAGEMENT_AND_OPERATIONS = "Vacant management and operations staff positions"
+    CLINICAL_AND_MEDICAL = "Vacant clinical and medical staff positions"
+    PROGRAMMATIC = "Vacant programmatic staff positions"
+    UNKNOWN = "Vacant staff positions of unknown type"
+    FILLED = "Filled positions"
