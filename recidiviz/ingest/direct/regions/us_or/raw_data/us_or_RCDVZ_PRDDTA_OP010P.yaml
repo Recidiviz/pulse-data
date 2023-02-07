@@ -39,8 +39,12 @@ columns:
     description: |-
       Location transferred in to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_IN_DATE
+    is_datetime: True
     description: |-
       Date transferred in to.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}))"
   - name: TRANSFER_REASON
     description: |-
       Reason for transfer.
@@ -51,5 +55,9 @@ columns:
     description: |-
       Location transferred to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_TO_DATE
+    is_datetime: True
     description: |-
       Date transferred out.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}))"

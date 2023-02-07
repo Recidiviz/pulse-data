@@ -37,8 +37,12 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: MOVE_IN_DATE
+    is_datetime: True
     description: |-
       Date moved in to current facility.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}))"
   - name: PREV_FACILITY
     description: |-
       Previous facility code, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
@@ -52,8 +56,12 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: MOVE_OUT_DATE
+    is_datetime: True
     description: |-
       Date moved out of facility.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}))"
   - name: ENTRY_DATE
     description: |-
       Date entered facility.
