@@ -45,11 +45,11 @@ output:
               - $else: $literal_enum(StateIncarcerationIncidentType.REPORT)
           incident_metadata:
             $json_dict:
-              category_1: ctgory_of_chrgs_1
-              category_2: ctgory_of_chrgs_2
-              category_3: ctgory_of_chrgs_3
-              category_4: ctgory_of_chrgs_4
-              category_5: ctgory_of_chrgs_5
+              CATEGORY_1: ctgory_of_chrgs_1
+              CATEGORY_2: ctgory_of_chrgs_2
+              CATEGORY_3: ctgory_of_chrgs_3
+              CATEGORY_4: ctgory_of_chrgs_4
+              CATEGORY_5: ctgory_of_chrgs_5
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:
                 external_id: misconduct_number

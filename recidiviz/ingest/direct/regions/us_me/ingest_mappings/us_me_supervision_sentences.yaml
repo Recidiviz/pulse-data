@@ -90,12 +90,12 @@ output:
                 start_date: Sentence_Start_Date
           sentence_metadata:
             $json_dict:
-              consecutive_sentence_id: Consecutive_Court_Order_Id
-              term_status: E_Term_Status_Desc
-              term_intake_date: Term_Intake_Date
-              term_early_custody_release_date: Term_Early_Cust_Rel_Date
-              term_max_custody_release_date: Term_Max_Cust_Rel_Date
-              term_community_release_date: Term_Comm_Rel_Date
+              CONSECUTIVE_SENTENCE_ID: Consecutive_Court_Order_Id
+              TERM_STATUS: E_Term_Status_Desc
+              TERM_INTAKE_DATE: Term_Intake_Date
+              TERM_EARLY_CUSTODY_RELEASE_DATE: Term_Early_Cust_Rel_Date
+              TERM_MAX_CUSTODY_RELEASE_DATE: Term_Max_Cust_Rel_Date
+              TERM_COMMUNITY_RELEASE_DATE: Term_Comm_Rel_Date
           conditions: conditions
           charges:
             - StateCharge:

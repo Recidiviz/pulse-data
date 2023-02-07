@@ -259,7 +259,7 @@ output:
                             days_str: max_length_days
                 sentence_metadata:
                   $json_dict:
-                    original_sentence_id: original_offender_sentence_id
+                    ORIGINAL_SENTENCE_ID: original_offender_sentence_id
                 conditions: special_condition_id_list
     incarceration_sentences:
       - $conditional:
@@ -465,5 +465,5 @@ output:
                 # MI doesn't do good time or earned time
                 sentence_metadata:
                   $json_dict:
-                    original_sentence_id: original_offender_sentence_id
+                    ORIGINAL_SENTENCE_ID: original_offender_sentence_id
                 conditions: special_condition_id_list

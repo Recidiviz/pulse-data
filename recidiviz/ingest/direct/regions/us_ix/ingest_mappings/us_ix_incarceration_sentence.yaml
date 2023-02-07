@@ -103,11 +103,11 @@ output:
                       proj_completion_date: $variable(proj_completion_date_var)
           sentence_metadata:
             $json_dict:
-              sentence_event_type: SentenceOrderEventTypeName
-              parent_sentence: _parentsentenceid
-              sentence_sequence:
+              SENTENCE_EVENT_TYPE: SentenceOrderEventTypeName
+              PARENT_SENTENCE: _parentsentenceid
+              SENTENCE_SEQUENCE:
                 $concat:
                   $values:
                     - ChargeId
                     - Sequence
-              relationships: relationships
+              RELATIONSHIPS: relationships

@@ -100,6 +100,13 @@ class IngestViewResultsParserDelegate:
         EntityTreeManifest from the result.
         """
 
+    @abc.abstractmethod
+    def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
+        """Returns whether a string field is expected to contain JSON. Whenever we add
+        a new string field that should hold JSON to the schema associated with this
+        delegate, this function should be updated to return True for that field.
+        """
+
 
 _INGEST_VIEW_MANIFESTS_SUBDIR = "ingest_mappings"
 
@@ -256,3 +263,10 @@ class IngestViewResultsParserDelegateImpl(
 
             return state_person_alias_filter_predicate
         return None
+
+    def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
+        """Returns whether a string field is expected to contain JSON. Whenever we add
+        a new string field that should hold JSON to the STATE schema, this function
+        should be updated to return True for that field (if it does not already).
+        """
+        return field_name.endswith("_metadata") or field_name.endswith("full_name")

@@ -224,6 +224,11 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
             return fake_person_alias_filter_predicate
         return None
 
+    def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
+        # NOTE: The 'name' field is explicitly excluded here - we use that field as a
+        #  normal string field in the fake schema.
+        return field_name == "full_name"
+
 
 class IngestViewFileParserTest(unittest.TestCase):
     """Tests for IngestViewFileParser."""
@@ -601,7 +606,10 @@ class IngestViewFileParserTest(unittest.TestCase):
                     )
                 ],
                 aliases=[
-                    FakePersonAlias(fake_state_code="US_XX", full_name="ELAINE BENES")
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "ELAINE BENES"}',
+                    )
                 ],
             ),
             FakePerson(
@@ -613,7 +621,10 @@ class IngestViewFileParserTest(unittest.TestCase):
                     )
                 ],
                 aliases=[
-                    FakePersonAlias(fake_state_code="US_XX", full_name="JERRY SEINFELD")
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "JERRY SEINFELD"}',
+                    )
                 ],
             ),
             FakePerson(
@@ -625,7 +636,10 @@ class IngestViewFileParserTest(unittest.TestCase):
                     )
                 ],
                 aliases=[
-                    FakePersonAlias(fake_state_code="US_XX", full_name="COSMOS KRAMER")
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "COSMOS KRAMER"}',
+                    )
                 ],
             ),
         ]
@@ -1123,7 +1137,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                 aliases=[
                     FakePersonAlias(
                         fake_state_code="US_XX",
-                        full_name='{"GIVEN_NAMES": "JERRY", "SURNAME": "SEINFELD"}',
+                        full_name='{"GivenNames": "JERRY", "Surname": "SEINFELD"}',
                     )
                 ],
             ),
@@ -1137,7 +1151,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                 aliases=[
                     FakePersonAlias(
                         fake_state_code="US_XX",
-                        full_name='{"GIVEN_NAMES": "ELAINE", "SURNAME": "BENES"}',
+                        full_name='{"GivenNames": "ELAINE", "Surname": "BENES"}',
                     )
                 ],
             ),
@@ -1151,7 +1165,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                 aliases=[
                     FakePersonAlias(
                         fake_state_code="US_XX",
-                        full_name='{"GIVEN_NAMES": "", "SURNAME": "KRAMER"}',
+                        full_name='{"GivenNames": "", "Surname": "KRAMER"}',
                     )
                 ],
             ),
@@ -1179,8 +1193,8 @@ class IngestViewFileParserTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name=(
-                            '{"GIVEN_NAMES": "JERRY", "MIDDLE_NAMES": "JIMMY-JOHN", '
-                            '"SUFFIX": "SR", "SURNAME": "SEINFELD"}'
+                            '{"GivenNames": "JERRY", "MiddleNames": "JIMMY-JOHN", '
+                            '"Suffix": "SR", "Surname": "SEINFELD"}'
                         ),
                     )
                 ],
@@ -1196,8 +1210,8 @@ class IngestViewFileParserTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name=(
-                            '{"GIVEN_NAMES": "ELAINE", "MIDDLE_NAMES": "SALLY-SUE", '
-                            '"SUFFIX": "SR", "SURNAME": "BENES"}'
+                            '{"GivenNames": "ELAINE", "MiddleNames": "SALLY-SUE", '
+                            '"Suffix": "SR", "Surname": "BENES"}'
                         ),
                     )
                 ],
@@ -1213,8 +1227,8 @@ class IngestViewFileParserTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name=(
-                            '{"GIVEN_NAMES": "", "MIDDLE_NAMES": "NONE-NONE", '
-                            '"SUFFIX": "SR", "SURNAME": "KRAMER"}'
+                            '{"GivenNames": "", "MiddleNames": "NONE-NONE", '
+                            '"Suffix": "SR", "Surname": "KRAMER"}'
                         ),
                     )
                 ],
@@ -1226,6 +1240,15 @@ class IngestViewFileParserTest(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected_output, parsed_output)
+
+    def test_nested_json(self) -> None:
+        # Act
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Unexpected manifest node type: \[<class 'recidiviz.common.str_field_utils.NormalizedJSON'>\]\. "
+            r"Expected result_type: \[<class 'str'>\]\.",
+        ):
+            _ = self._run_parse_manifest_for_ingest_view("nested_json")
 
     def test_concatenate_values(self) -> None:
         # Arrange
@@ -1439,15 +1462,30 @@ class IngestViewFileParserTest(unittest.TestCase):
         expected_output = [
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "ELAINE", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "BENES"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"given_names": "ELAINE", "middle_names": "", "name_suffix": "", "surname": "BENES"}',
+                    )
+                ],
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "JERRY", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "SEINFELD"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"given_names": "JERRY", "middle_names": "", "name_suffix": "", "surname": "SEINFELD"}',
+                    )
+                ],
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"given_names": "", "middle_names": "", "name_suffix": "", "surname": "KRAMER"}',
+                    )
+                ],
             ),
         ]
 
@@ -1459,17 +1497,41 @@ class IngestViewFileParserTest(unittest.TestCase):
 
     def test_person_name_full(self) -> None:
         expected_output = [
-            FakePerson(fake_state_code="US_XX", name='{"FULL_NAME": "LAST, FIRST"}'),
             FakePerson(
-                fake_state_code="US_XX", name='{"FULL_NAME": "LAST, FIRST MIDDLE"}'
+                fake_state_code="US_XX",
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "LAST, FIRST"}',
+                    )
+                ],
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"FULL_NAME": "LAST SUFFIX, FIRST MIDDLE"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "LAST, FIRST MIDDLE"}',
+                    )
+                ],
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"FULL_NAME": "LAST SUFFIX SUFFIX, FIRST MIDDLE MIDDLE"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "LAST SUFFIX, FIRST MIDDLE"}',
+                    )
+                ],
+            ),
+            FakePerson(
+                fake_state_code="US_XX",
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"full_name": "LAST SUFFIX SUFFIX, FIRST MIDDLE MIDDLE"}',
+                    )
+                ],
             ),
         ]
 
@@ -1482,18 +1544,33 @@ class IngestViewFileParserTest(unittest.TestCase):
         expected_output = [
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "ELAINE SALLY", "MIDDLE_NAMES": "SUE", "NAME_SUFFIX": "SR", "SURNAME": "BENES"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"given_names": "ELAINE SALLY", "middle_names": "SUE", "name_suffix": "SR", "surname": "BENES"}',
+                    )
+                ],
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "JERRY JIMMY", "MIDDLE_NAMES": "JOHN", "NAME_SUFFIX": "JR", "SURNAME": "SEINFELD"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"given_names": "JERRY JIMMY", "middle_names": "JOHN", "name_suffix": "JR", "surname": "SEINFELD"}',
+                    )
+                ],
             ),
             FakePerson(
                 fake_state_code="US_XX",
             ),
             FakePerson(
                 fake_state_code="US_XX",
-                name='{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}',
+                aliases=[
+                    FakePersonAlias(
+                        fake_state_code="US_XX",
+                        full_name='{"given_names": "", "middle_names": "", "name_suffix": "", "surname": "KRAMER"}',
+                    )
+                ],
             ),
         ]
 
@@ -2152,7 +2229,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name=(
-                            '{"GIVEN_NAMES": "JERRY", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "SEINFELD"}'
+                            '{"given_names": "JERRY", "middle_names": "", "name_suffix": "", "surname": "SEINFELD"}'
                         ),
                     )
                 ],
@@ -2163,7 +2240,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name=(
-                            '{"GIVEN_NAMES": "ELAINE", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "BENES"}'
+                            '{"given_names": "ELAINE", "middle_names": "", "name_suffix": "", "surname": "BENES"}'
                         ),
                     )
                 ],
@@ -2178,7 +2255,7 @@ class IngestViewFileParserTest(unittest.TestCase):
                     FakePersonAlias(
                         fake_state_code="US_XX",
                         full_name=(
-                            '{"GIVEN_NAMES": "", "MIDDLE_NAMES": "", "NAME_SUFFIX": "", "SURNAME": "KRAMER"}'
+                            '{"given_names": "", "middle_names": "", "name_suffix": "", "surname": "KRAMER"}'
                         ),
                     )
                 ],

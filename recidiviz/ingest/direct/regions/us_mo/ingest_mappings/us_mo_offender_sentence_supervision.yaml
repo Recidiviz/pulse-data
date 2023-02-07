@@ -83,9 +83,9 @@ output:
           external_id: $variable(sentence_external_id)
           sentence_metadata:
             $json_dict:
-              bs_cci: BS_CCI # Sentence Concurrent/Consecutive Ind
-              bs_crq: BS_CRQ # Sentence Concurrent/Consecutive Xref
-              sentence_flag: SENT_FLAG # 120 Day Sentence Flag
+              BS_CCI: BS_CCI # Sentence Concurrent/Consecutive Ind
+              BS_CRQ: BS_CRQ # Sentence Concurrent/Consecutive Xref
+              SENTENCE_FLAG: SENT_FLAG # 120 Day Sentence Flag
           supervision_type:
             $enum_mapping:
               $raw_text: SENTENCE_TYPE

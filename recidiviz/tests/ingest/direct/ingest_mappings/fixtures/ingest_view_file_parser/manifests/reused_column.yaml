@@ -12,4 +12,6 @@ output:
           id_type: $literal("ID_TYPE")
     aliases:
       - FakePersonAlias:
-          full_name: PERSONNAME
+          full_name:
+            $person_name:
+              $full_name: PERSONNAME

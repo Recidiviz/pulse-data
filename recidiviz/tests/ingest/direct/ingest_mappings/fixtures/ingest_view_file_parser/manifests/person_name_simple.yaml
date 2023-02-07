@@ -5,7 +5,9 @@ input_columns:
 unused_columns: []
 output:
   FakePerson:
-    name:
-      $person_name:
-        $given_names: FIRST
-        $surname: LAST
+    aliases:
+      - FakePersonAlias:
+          full_name:
+            $person_name:
+              $given_names: FIRST
+              $surname: LAST

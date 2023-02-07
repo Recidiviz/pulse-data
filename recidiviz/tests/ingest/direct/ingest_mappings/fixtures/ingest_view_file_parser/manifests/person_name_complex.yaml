@@ -8,15 +8,17 @@ input_columns:
 unused_columns: []
 output:
   FakePerson:
-    name:
-      $person_name:
-        $given_names:
-          $concat:
-            $separator: " "
-            $values:
-              - FIRST
-              - FIRST_2
-            $include_nulls: False
-        $middle_names: MIDDLE
-        $surname: LAST
-        $name_suffix: SUFFIX
+    aliases:
+      - FakePersonAlias:
+          full_name:
+            $person_name:
+              $given_names:
+                $concat:
+                  $separator: " "
+                  $values:
+                    - FIRST
+                    - FIRST_2
+                  $include_nulls: False
+              $middle_names: MIDDLE
+              $surname: LAST
+              $name_suffix: SUFFIX
