@@ -4,10 +4,23 @@ file_description: |-
   Officer information.
 data_classification: source
 primary_key_cols:
+  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
+  # an approach to handling missing PKs has been established.
   - BDGNO
   - EMPSSN
-  - STRDTE
+  - LNAME
+  - FNAME
+  - MINTL
+  - WRKLOC
+  - DEPCOD
+  - DIVCOD
+  - SECCOD
   - DEPCLS
+  - CLSTTL
+  - STRDTE
+  - DTEORD
+  - CRTDTE
+  - CRTTME
 columns:
   - name: BDGNO
     is_pii: True

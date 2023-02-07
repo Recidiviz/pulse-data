@@ -4,8 +4,17 @@ file_description: |-
   Violations data information (CDV) - Comments. Column prefix: IS.
 data_classification: source
 primary_key_cols:
+  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
+  # an approach to handling missing PKs has been established.
   - ISCSQ_
   - ISCLN_
+  - ISCMNT
+  - ISDCRT
+  - ISTCRT
+  - ISUIDC
+  - ISDUPT
+  - ISTUPT
+  - ISUIDU
 columns:
   - name: ISCSQ_
     description: |-
@@ -37,3 +46,4 @@ columns:
     description: |-
       Updated by User ID
     is_pii: True
+always_historical_export: True

@@ -4,9 +4,26 @@ file_description: |-
   ORAS assessment scores (updated weekly)
 data_classification: source
 primary_key_cols:
+  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
+  # an approach to handling missing PKs has been established.
+  - OFFENDER_NAME
+  - AGENCY_NAME
+  - DATE_OF_BIRTH
+  - GENDER
+  - ETHNICITY
   - DOC_ID
-  - CREATED_DATE
   - ASSESSMENT_TYPE
+  - RISK_LEVEL
+  - OVERRIDE_RISK_LEVEL
+  - OVERRIDE_RISK_REASON
+  - ASSESSMENT_OUTCOME
+  - ASSESSMENT_STATUS
+  - SCORE
+  - DATE_CREATED
+  - USER_CREATED
+  - RACE
+  - BIRTH_DATE
+  - CREATED_DATE
 columns:
   - name: OFFENDER_NAME
     description: |-
