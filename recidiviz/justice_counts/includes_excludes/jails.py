@@ -206,3 +206,21 @@ class VacantPositionsIncludesExcludes(Enum):
     PROGRAMMATIC = "Vacant programmatic staff positions"
     UNKNOWN = "Vacant staff positions of unknown type"
     FILLED = "Filled positions"
+
+
+# Use of Force Incidents
+class UseOfForceIncidentsIncludesExcludes(Enum):
+    PHYSICAL = "Incidents involving physical force"
+    RESTRAINING_DEVICES = "Incidents involving the use of restraining devices (e.g., handcuffs, leg irons)"
+    WEAPONS = "Incidents involving the use of weapons"
+    OTHER_FORCE = "Incidents involving the use of other types of force"
+    JUSTIFIED = "Incidents found to be justified"
+    NOT_JUSTIFIED = "Incidents not found to be justified"
+    SPONTANEOUS = (
+        "Incidents that are spontaneous (e.g., responses to emergent situations)"
+    )
+    PLANNED = (
+        "Incidents that are planned (e.g., controlling a person for search or safety)"
+    )
+    OTHER = "Other incidents not captured by the listed categories"
+    ROUTINE = "Use of restraints during routine operations and movement of people in the agency’s jurisdiction that follows jurisdiction policy and standard operating procedures"
