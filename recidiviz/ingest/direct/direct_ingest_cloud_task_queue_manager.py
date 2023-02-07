@@ -846,7 +846,11 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
         queue_name: str,
     ) -> None:
         """Purges all tasks from the queue with the specified queue_name."""
-        self.cloud_tasks_client.purge_queue(name=queue_name)
+        # Build full queue path
+        full_queue_path = self.cloud_tasks_client.queue_path(
+            metadata.project_id(), _TASK_LOCATION, queue_name
+        )
+        self.cloud_tasks_client.purge_queue(name=full_queue_path)
 
     def update_ingest_queue_states(
         self, state_code: StateCode, new_queue_state: tasks_v2.enums.Queue.State
