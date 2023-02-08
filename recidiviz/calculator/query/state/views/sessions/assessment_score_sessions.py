@@ -35,8 +35,20 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
         assessment_id,
         state_code,
         assessment_date,
-        LEAD(assessment_date) OVER(PARTITION BY person_id ORDER BY assessment_date) AS score_end_date_exclusive,
-        LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER(PARTITION BY person_id ORDER BY assessment_date) AS score_end_date,
+        -- Use a person's subsequent assessment date for a given assessment type as the session end date.
+        -- Combines all ORAS assessment types into a single category.
+        LEAD(assessment_date) OVER(
+            PARTITION BY
+                person_id,
+                CASE WHEN assessment_type LIKE "ORAS%" THEN "ORAS" ELSE assessment_type END
+            ORDER BY assessment_date
+        ) AS score_end_date_exclusive,
+        LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER(
+            PARTITION BY
+                person_id,
+                CASE WHEN assessment_type LIKE "ORAS%" THEN "ORAS" ELSE assessment_type END
+            ORDER BY assessment_date
+        ) AS score_end_date,
         assessment_type,
         assessment_class,
         assessment_score,
