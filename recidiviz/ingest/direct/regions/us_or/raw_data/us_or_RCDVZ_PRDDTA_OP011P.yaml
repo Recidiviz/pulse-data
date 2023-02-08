@@ -41,8 +41,8 @@ columns:
     description: |-
       Date moved in to current facility.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name})))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PREV_FACILITY
     description: |-
       Previous facility code, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
@@ -60,8 +60,8 @@ columns:
     description: |-
       Date moved out of facility.
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name})))"
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ENTRY_DATE
     description: |-
       Date entered facility.
