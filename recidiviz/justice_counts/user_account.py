@@ -150,3 +150,9 @@ class UserAccountInterface:
     @staticmethod
     def get_users_by_email(session: Session, emails: Set[str]) -> List[UserAccount]:
         return session.query(UserAccount).filter(UserAccount.email.in_(emails)).all()
+
+    @staticmethod
+    def get_user_by_email(session: Session, email: str) -> Optional[UserAccount]:
+        return (
+            session.query(UserAccount).filter(UserAccount.email == email).one_or_none()
+        )
