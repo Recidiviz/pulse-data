@@ -872,6 +872,39 @@ class AgencySetting(JusticeCountsBase):
         }
 
 
+class AgencyJurisdictionType(enum.Enum):
+    INCLUDE = "INCLUDE"
+    EXCLUDE = "EXCLUDE"
+
+
+class AgencyJurisdiction(JusticeCountsBase):
+    """A table of Jurisdictions that are included and excluded for a given Agency"""
+
+    __tablename__ = "agency_jurisdictions"
+
+    id = Column(Integer, autoincrement=True)
+
+    # id of the agency
+    source_id = Column(Integer, nullable=False)
+
+    # membership (the jurisdiction is either INCLUDE(d) or EXCLUDE(d) from an agency)
+    membership = Column(String, nullable=False)
+
+    # jurisdiction_id (the unique id that identifies a given jurisdiction)
+    jurisdiction_id = Column(String, nullable=False)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            ForeignKeyConstraint(
+                [source_id], [Source.id], name="source_foreign_key_constraint"
+            ),
+        ]
+    )
+
+    source = relationship(Source)
+
+
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
 # concrete class.
 JusticeCountsDatabaseEntity = TypeVar(
