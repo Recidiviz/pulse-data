@@ -61,7 +61,11 @@ class TestWorkflowsInterface(TestCase):
         with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
             rsps.add(responses.PUT, self.fake_url, json=response_json)
             WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                PERSON_EXTERNAL_ID, USER_ID, CONTACT_NOTE_DATE_TIME, {1: [], 2: []}
+                PERSON_EXTERNAL_ID,
+                USER_ID,
+                CONTACT_NOTE_DATE_TIME,
+                {1: [], 2: []},
+                "VRRE",
             )
             # update_document is called 5 times: page 1 in progress, page 1 success, page 2 in progress, page 2 success,
             # and entire note status success
