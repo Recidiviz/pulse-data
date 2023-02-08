@@ -131,8 +131,12 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         region: DirectIngestRegion,
         task_args: ExtractAndMergeArgs,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(task_args.ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={task_args.ingest_instance} is null - did you call "
+                "set_controller()?"
+            )
 
         task_id = build_extract_and_merge_task_id(region, task_args)
         self._get_queue(
@@ -142,7 +146,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             with_monitoring(
                 region.region_code,
                 task_args.ingest_instance,
-                self.controller.run_extract_and_merge_job_and_kick_scheduler_on_completion,
+                controller.run_extract_and_merge_job_and_kick_scheduler_on_completion,
             ),
             task_args,
         )
@@ -153,12 +157,15 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         ingest_instance: DirectIngestInstance,
         just_finished_job: bool,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
-        if not self.controller.ingest_instance == ingest_instance:
+        controller = self.controllers.get(ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
+        if not controller.ingest_instance == ingest_instance:
             raise ValueError(
                 f"Task request for ingest instance [{ingest_instance}] that does not match "
-                f"registered controller instance [{self.controller.ingest_instance}]."
+                f"registered controller instance [{controller.ingest_instance}]."
             )
 
         task_id = build_scheduler_task_id(region, ingest_instance)
@@ -167,7 +174,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             with_monitoring(
                 region.region_code,
                 ingest_instance,
-                self.controller.schedule_next_ingest_task,
+                controller.schedule_next_ingest_task,
             ),
             current_task_id=task_id,
             just_finished_job=just_finished_job,
@@ -179,15 +186,18 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
         if (
-            self.controller.ingest_instance == DirectIngestInstance.SECONDARY
+            controller.ingest_instance == DirectIngestInstance.SECONDARY
             and ingest_instance == DirectIngestInstance.PRIMARY
         ):
             raise ValueError(
                 f"Task request for instance [{ingest_instance}] that does not match "
-                f"registered controller instance [{self.controller.ingest_instance}]. Only PRIMARY instances can "
+                f"registered controller instance [{controller.ingest_instance}]. Only PRIMARY instances can "
                 "schedule tasks in SECONDARY instances."
             )
 
@@ -198,7 +208,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             with_monitoring(
                 region.region_code,
                 ingest_instance,
-                self.controller.handle_new_files,
+                controller.handle_new_files,
             ),
             current_task_id=task_id,
             can_start_ingest=can_start_ingest,
@@ -210,8 +220,12 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         raw_data_source_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(raw_data_source_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={raw_data_source_instance} is null - did you call "
+                "set_controller()?"
+            )
 
         task_id = build_raw_data_import_task_id(region, data_import_args)
         self._get_queue(
@@ -221,7 +235,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             with_monitoring(
                 region.region_code,
                 data_import_args.ingest_instance(),
-                self.controller.do_raw_data_import,
+                controller.do_raw_data_import,
             ),
             data_import_args,
         )
@@ -231,8 +245,12 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
         region: DirectIngestRegion,
         task_args: IngestViewMaterializationArgs,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(task_args.ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={task_args.ingest_instance} is null - did you call "
+                f"set_controller()?"
+            )
 
         task_id = build_ingest_view_materialization_task_id(region, task_args)
         self._get_queue(
@@ -242,7 +260,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             with_monitoring(
                 region.region_code,
                 task_args.ingest_instance,
-                self.controller.do_ingest_view_materialization,
+                controller.do_ingest_view_materialization,
             ),
             task_args,
         )

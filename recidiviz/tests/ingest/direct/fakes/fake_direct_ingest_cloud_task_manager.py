@@ -41,10 +41,16 @@ class FakeDirectIngestCloudTaskQueueManager(DirectIngestCloudTaskQueueManager, a
     }
 
     def __init__(self) -> None:
-        self.controller: Optional[BaseDirectIngestController] = None
+        self.controllers: Dict[
+            DirectIngestInstance, Optional[BaseDirectIngestController]
+        ] = {}
 
-    def set_controller(self, controller: BaseDirectIngestController) -> None:
-        self.controller = controller
+    def set_controller(
+        self,
+        ingest_instance: DirectIngestInstance,
+        controller: BaseDirectIngestController,
+    ) -> None:
+        self.controllers[ingest_instance] = controller
 
     def queue_name_for_type(
         self, queue_type: DirectIngestQueueType, instance: DirectIngestInstance
