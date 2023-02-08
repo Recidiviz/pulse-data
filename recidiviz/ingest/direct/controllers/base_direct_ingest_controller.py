@@ -90,7 +90,7 @@ from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor
     LegacyIngestViewProcessorDelegate,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
+    DirectIngestViewMaterializationMetadataManagerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -167,7 +167,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         self.job_prioritizer: ExtractAndMergeJobPrioritizer
 
         self.view_materialization_metadata_manager = (
-            DirectIngestViewMaterializationMetadataManager(
+            DirectIngestViewMaterializationMetadataManagerImpl(
                 region_code=self.region_code(),
                 ingest_instance=self.ingest_instance,
             )
@@ -356,10 +356,23 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     def region_code(cls) -> str:
         pass
 
-    @abc.abstractmethod
     def get_ingest_view_rank_list(self) -> List[str]:
         """Returns the list of ingest view names for ingest views that are shipped in
-        the current environment and whose results can be processed and commiteed to
+        the current environment and whose results can be processed and committed to
+        our central data model.
+        """
+        return self._get_ingest_view_rank_list(self.ingest_instance)
+
+    # TODO(#10128): Once we are fully on v2, we should turn the state specific
+    # controllers into delegates that just implement this and region code, instead of
+    # letting them inherit from the base controller.
+    @classmethod
+    @abc.abstractmethod
+    def _get_ingest_view_rank_list(
+        cls, ingest_instance: DirectIngestInstance
+    ) -> List[str]:
+        """Returns the list of ingest view names for ingest views that are shipped in
+        the current environment and whose results can be processed and committed to
         our central data model.
         """
 

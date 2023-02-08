@@ -55,7 +55,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
     InstanceIngestViewContentsImpl,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
+    DirectIngestViewMaterializationMetadataManagerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -617,7 +617,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             ingest_view_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManager(
+                DirectIngestViewMaterializationMetadataManagerImpl(
                     region_code=state_code.value, ingest_instance=ingest_instance
                 )
             )
@@ -652,12 +652,12 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         try:
             ingest_view_metadata_manager = (
-                DirectIngestViewMaterializationMetadataManager(
+                DirectIngestViewMaterializationMetadataManagerImpl(
                     region_code=state_code.value, ingest_instance=src_ingest_instance
                 )
             )
 
-            new_instance_manager = DirectIngestViewMaterializationMetadataManager(
+            new_instance_manager = DirectIngestViewMaterializationMetadataManagerImpl(
                 region_code=state_code.value,
                 ingest_instance=dest_ingest_instance,
             )

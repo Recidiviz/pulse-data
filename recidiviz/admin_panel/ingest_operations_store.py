@@ -51,7 +51,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import
     DirectIngestRawFileMetadataSummary,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
+    DirectIngestViewMaterializationMetadataManagerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -141,7 +141,9 @@ class IngestOperationsStore(AdminPanelStore):
         # Confirm that all metadata about ingest view materialization has been
         # invalidated for this instance.
         ingest_view_materialization_manager = (
-            DirectIngestViewMaterializationMetadataManager(state_code.value, instance)
+            DirectIngestViewMaterializationMetadataManagerImpl(
+                state_code.value, instance
+            )
         )
 
         # If instance summaries is empty, that means that all ingest view
@@ -501,9 +503,11 @@ class IngestOperationsStore(AdminPanelStore):
             "Getting instance [%s] ingest view materialization summaries",
             ingest_instance.value,
         )
-        materialization_job_summaries = DirectIngestViewMaterializationMetadataManager(
-            state_code.value, ingest_instance
-        ).get_instance_summaries()
+        materialization_job_summaries = (
+            DirectIngestViewMaterializationMetadataManagerImpl(
+                state_code.value, ingest_instance
+            ).get_instance_summaries()
+        )
 
         ingest_view_contents = InstanceIngestViewContentsImpl(
             big_query_client=BigQueryClientImpl(),
