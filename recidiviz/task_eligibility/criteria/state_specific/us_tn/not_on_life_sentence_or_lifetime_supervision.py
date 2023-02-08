@@ -42,9 +42,7 @@ _QUERY_TEMPLATE = f"""
         person_id,
         date_imposed AS start_date,
         DATE_ADD(completion_date, INTERVAL 1 DAY) AS end_date,
-        /* TODO(#16709): Once ISC and Diversion data is ingested and validated, ensure one of these flags
-        accounts for LIFE sentences in ISC data */
-        GREATEST(life_sentence, lifetime_supervision) AS lifetime_flag,
+        life_sentence AS lifetime_flag,
       FROM `{{project_id}}.{{sessions_dataset}}.us_tn_sentences_preprocessed_materialized`
       WHERE completion_date > date_imposed
     ),

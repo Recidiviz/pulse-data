@@ -101,10 +101,6 @@ US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_QUERY_TEMPLATE = """
             AND isc_supervision_level.person_id = in_state_sentence.person_id
             AND isc_supervision_level.start_date < COALESCE(in_state_sentence.completion_date, CURRENT_DATE)
             AND in_state_sentence.date_imposed < COALESCE(isc_supervision_level.end_date, CURRENT_DATE)
-            /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
-            and the new sentencing information can be validated, this can be removed */
-            AND in_state_sentence.external_id NOT LIKE '%ISC%'
-            AND in_state_sentence.external_id NOT LIKE '%DIVERSION%'
     )
     SELECT
         state_code,

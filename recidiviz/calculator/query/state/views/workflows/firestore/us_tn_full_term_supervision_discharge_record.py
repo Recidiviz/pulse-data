@@ -56,8 +56,8 @@ WITH latest_sentences AS (
           s.person_id,
           s.state_code,
           s.start_date,
-          SPLIT(sentences.external_id, '-')[OFFSET(1)] AS conviction_county,
-          SPLIT(sentences.external_id, '-')[OFFSET(3)] AS docket_number,
+          sentences.county_code AS conviction_county,
+          JSON_EXTRACT_SCALAR(sentences.sentence_metadata, '$.CASE_NUMBER') AS docket_number,
           sentences.description AS offense
       FROM (
         SELECT *

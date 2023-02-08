@@ -574,10 +574,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
             WHERE state_code ='US_TN'
                 AND completion_date >= CURRENT_DATE('US/Eastern')
-                /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
-                and the new sentencing information can be validated, this can be removed */
-                AND external_id NOT LIKE '%ISC%'
-                AND external_id NOT LIKE '%DIVERSION%'
             
             UNION ALL
             
@@ -585,10 +581,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
             WHERE state_code ='US_TN'
                 AND completion_date >= CURRENT_DATE('US/Eastern')
-                /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
-                and the new sentencing information can be validated, this can be removed */
-                AND external_id NOT LIKE '%ISC%'
-                AND external_id NOT LIKE '%DIVERSION%'
         )
         GROUP BY 1
     ),

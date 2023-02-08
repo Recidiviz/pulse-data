@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT 
         CONCAT(js.OffenderID, '-', js.ConvictionCounty,'-', js.CaseYear, '-', js.CaseNumber, '-', js.CountNumber, '-', 'SENTENCE') AS external_id,
         jo_id.JudicialDistrict AS judicial_district,
-        s.SentenceStatus AS status_raw_text,
         NULLIF(CAST(js.MinimumSentenceYears AS INT64)*365 + CAST(js.MinimumSentenceMonths AS INT64)*30 + CAST(js.MinimumSentenceDays AS INT64),0) AS min_sentence_length_days_calculated,
         NULLIF(CAST(js.MaximumSentenceYears AS INT64)*365 + CAST(js.MaximumSentenceMonths AS INT64)*30 + CAST(js.MaximumSentenceDays AS INT64),0) AS max_sentence_length_days_calculated,
         CAST(s.TotalProgramCredits AS INT64) AS total_program_credits,
@@ -49,7 +48,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         CAST(s.TotalEducationAttendanceCredits AS INT64) total_education_attendance_credits,
         CAST(s.TotalTreatmentCredits AS INT64) total_treatment_credits,
         CAST(s.RangePercent AS FLOAT64) release_eligibility_range_percent,
-        js.LifetimeSupervision = "Y" AS lifetime_supervision,
     FROM `{project_id}.{raw_dataset}.JOSentence_latest` js
     JOIN `{project_id}.{raw_dataset}.Sentence_latest` s
         USING(OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
@@ -72,14 +70,25 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'INCARCERATION' AS sentence_type,
         CASE 
           WHEN sis.county_code = 'OUT_OF_STATE' 
-            THEN 'INCARCERATION_OUT_OF_STATE'
-          WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
-            THEN 'TREATMENT'
+                THEN 'OUT_OF_STATE'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_SOURCE') = 'ISC'
+                THEN 'OUT_OF_STATE'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_SOURCE') = 'DIVERSION'
+                THEN 'DIVERSION'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
+                THEN 'TREATMENT'
           ELSE 'INCARCERATION' END AS sentence_sub_type,
-        sis.start_date AS effective_date,
+        /* 
+        We map DiversionGrantedDate to both effective and imposed dates so this change does not affect those.
+        ~1% of effective dates from the Sentence table are missing, which get over-written. All ISC effective dates are
+        missing because we only get imposed date from that table so all those get over-written.
+        TODO(#18363) - Update effective_date for ISC sentences to use ISCPretrialCredits once ingested 
+        */
+        COALESCE(sis.start_date, sis.date_imposed) AS effective_date,
         sis.date_imposed,
         sis.completion_date,
         sis.status,
+        SPLIT(sis.status_raw_text,'-')[OFFSET(1)] AS status_raw_text,
         sis.parole_eligibility_date,
         --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
         sis.projected_min_release_date AS projected_completion_date_min,
@@ -87,10 +96,18 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.initial_time_served_days,
         COALESCE(sis.is_life, FALSE) AS life_sentence,
         sis.county_code,
-        sis.sentence_metadata,
+        -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
+        TO_JSON_STRING(sis.sentence_metadata) AS sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
-    FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence` AS sis
+    -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
+    FROM (
+        SELECT * EXCEPT(sentence_metadata), 
+            PARSE_JSON(
+                REGEXP_REPLACE(sentence_metadata, '"CONSECUTIVE_SENTENCE_ID": NULL,', '"CONSECUTIVE_SENTENCE_ID": "",') 
+                ) AS sentence_metadata
+        FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
+        ) AS sis
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_incarceration_sentence_association` assoc
         ON assoc.state_code = sis.state_code
         AND assoc.incarceration_sentence_id = sis.incarceration_sentence_id
@@ -101,10 +118,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.statute = statute.Offense
     WHERE sis.external_id IS NOT NULL
         AND sis.state_code = 'US_TN'
-        /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
-        and the new sentencing information can be validated, this can be removed */
-        AND sis.external_id NOT LIKE '%ISC%'
-        AND sis.external_id NOT LIKE '%DIVERSION%'
            
     UNION ALL
      
@@ -116,25 +129,44 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'SUPERVISION' AS sentence_type,
         CASE 
             WHEN sss.county_code = 'OUT_OF_STATE' 
-                THEN 'SUPERVISION_OUT_OF_STATE'
+                THEN 'OUT_OF_STATE'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_SOURCE') = 'ISC'
+                THEN 'OUT_OF_STATE'
+            WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_SOURCE') = 'DIVERSION'
+                THEN 'DIVERSION'
             WHEN JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_FLAG') = 'SENTENCE: 120 DAY' 
                 THEN 'TREATMENT'
             ELSE sss.supervision_type END AS sentence_sub_type,
-        sss.start_date AS effective_date,
+        /* 
+        We map DiversionGrantedDate to both effective and imposed dates so this change does not affect those.
+        ~1% of effective dates from the Sentence table are missing, which get over-written. All ISC effective dates are
+        missing because we only get imposed date from that table so all those get over-written.
+        TODO(#18363) - Update effective_date for ISC sentences to use ISCPretrialCredits once ingested 
+        */
+        COALESCE(sss.start_date, sss.date_imposed) AS effective_date,
         sss.date_imposed,
         sss.completion_date,
         sss.status,
+        SPLIT(sss.status_raw_text,'-')[OFFSET(1)] AS status_raw_text,
         NULL AS parole_eligibility_date,
         --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
         sss.projected_completion_date AS projected_completion_date_min,
         sss.projected_completion_date AS projected_completion_date_max,
         CAST(NULL AS INT64) AS initial_time_served_days,
-        FALSE AS life_sentence,
+        COALESCE(sss.is_life, FALSE) AS life_sentence,
         sss.county_code,
-        sss.sentence_metadata,
+        -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
+        TO_JSON_STRING(sss.sentence_metadata) AS sentence_metadata,
         charge.* EXCEPT(person_id, state_code, external_id, status, status_raw_text, description, county_code),
         COALESCE(charge.description, statute.OffenseDescription) AS description,
-    FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence` AS sss
+    -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
+    FROM (
+        SELECT * EXCEPT(sentence_metadata),
+            PARSE_JSON(
+                REGEXP_REPLACE(sentence_metadata, '"CONSECUTIVE_SENTENCE_ID": NULL,', '"CONSECUTIVE_SENTENCE_ID": "",') 
+                ) AS sentence_metadata
+        FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
+        ) AS sss
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_charge_supervision_sentence_association` assoc
         ON assoc.state_code = sss.state_code
         AND assoc.supervision_sentence_id = sss.supervision_sentence_id
@@ -145,10 +177,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.statute = statute.Offense
     WHERE sss.external_id IS NOT NULL
         AND sss.state_code = 'US_TN'
-        /* TODO(#16709) - Added this for backwards compatibility to unblock merging in #14067. Once that is done 
-        and the new sentencing information can be validated, this can be removed */
-        AND sss.external_id NOT LIKE '%ISC%'
-        AND sss.external_id NOT LIKE '%DIVERSION%'
     )
     ,
     dedup_external_id_fields AS
@@ -186,7 +214,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         dedup.completion_date,
         FALSE AS is_completion_date_inferred,
         sen.status,
-        raw.status_raw_text,
+        sen.status_raw_text,
         dedup.parole_eligibility_date,
         dedup.projected_completion_date_min,
         dedup.projected_completion_date_max,
@@ -231,7 +259,6 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         raw.total_drug_alcohol_credits,
         raw.total_education_attendance_credits,
         raw.total_treatment_credits,
-        raw.lifetime_supervision,
         
         cs.consecutive_sentence_id,
         -- Set the session_id_imposed if the sentence date imposed matches the session start date
