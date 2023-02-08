@@ -2353,8 +2353,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             included_jurisdiction_ids=included_ids,
             excluded_jurisdiction_ids=excluded_ids,
         )
-        db_rows = self.session.query(schema.AgencyJurisdiction).all()
-        self.assertEqual(len(db_rows), 3)
+        jurisdictions = AgencyJurisdictionInterface.to_json(
+            session=self.session, agency_id=agency_id
+        )
+        self.assertEqual(
+            {
+                "agency_id": agency_id,
+                "jurisdictions": {
+                    "included": ["0100000000", "0103100000", "0104700000"],
+                    "excluded": [],
+                },
+            },
+            jurisdictions,
+        )
 
         # add excluded jurisdictions
         excluded_ids = ["0105500000", "0105900000"]
@@ -2364,8 +2375,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             included_jurisdiction_ids=included_ids,
             excluded_jurisdiction_ids=excluded_ids,
         )
-        db_rows = self.session.query(schema.AgencyJurisdiction).all()
-        self.assertEqual(len(db_rows), 5)
+        jurisdictions = AgencyJurisdictionInterface.to_json(
+            session=self.session, agency_id=agency_id
+        )
+        self.assertEqual(
+            {
+                "agency_id": agency_id,
+                "jurisdictions": {
+                    "included": ["0100000000", "0103100000", "0104700000"],
+                    "excluded": ["0105500000", "0105900000"],
+                },
+            },
+            jurisdictions,
+        )
 
         # remove included jurisdictions
         included_ids = []
@@ -2375,8 +2397,19 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             included_jurisdiction_ids=included_ids,
             excluded_jurisdiction_ids=excluded_ids,
         )
-        db_rows = self.session.query(schema.AgencyJurisdiction).all()
-        self.assertEqual(len(db_rows), 2)
+        jurisdictions = AgencyJurisdictionInterface.to_json(
+            session=self.session, agency_id=agency_id
+        )
+        self.assertEqual(
+            {
+                "agency_id": agency_id,
+                "jurisdictions": {
+                    "included": [],
+                    "excluded": ["0105500000", "0105900000"],
+                },
+            },
+            jurisdictions,
+        )
 
         # remove excluded jurisdictions
         excluded_ids = []
@@ -2386,5 +2419,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             included_jurisdiction_ids=included_ids,
             excluded_jurisdiction_ids=excluded_ids,
         )
-        db_rows = self.session.query(schema.AgencyJurisdiction).all()
-        self.assertEqual(len(db_rows), 0)
+        jurisdictions = AgencyJurisdictionInterface.to_json(
+            session=self.session, agency_id=agency_id
+        )
+        self.assertEqual(
+            {
+                "agency_id": agency_id,
+                "jurisdictions": {
+                    "included": [],
+                    "excluded": [],
+                },
+            },
+            jurisdictions,
+        )
