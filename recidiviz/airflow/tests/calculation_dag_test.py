@@ -42,25 +42,43 @@ CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
     "calculation_pipeline_templates.yaml",
 )
 
-_TRIGGER_REMATERIALIZATION_TASK_ID = "trigger_rematerialize_views_task"
-_WAIT_FOR_REMATERIALIZATION_TASK_ID = "wait_for_view_rematerialization_success"
-_UPDATE_ALL_VIEWS_BRANCH_TASK_ID = "update_all_views_branch"
-_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "trigger_update_all_managed_views_task"
-_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = "wait_for_view_update_all_success"
-_TRIGGER_VALIDATIONS_TASK_ID_REGEX = r"trigger_us_[a-z]{2}_validations_task"
-_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = r"wait_for_(us_[a-z]{2})_validations_completion"
-_ACQUIRE_LOCK_TASK_ID = "acquire_lock_STATE"
-_WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID = "wait_for_acquire_lock_success_STATE"
-_TRIGGER_REFRESH_BQ_DATASET_TASK_ID = "trigger_refresh_bq_dataset_task_STATE"
-_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = "wait_for_refresh_bq_dataset_success_STATE"
+_TRIGGER_REMATERIALIZATION_TASK_ID = (
+    "view_materialization.trigger_rematerialize_views_task"
+)
+_WAIT_FOR_REMATERIALIZATION_TASK_ID = (
+    "view_materialization.wait_for_view_rematerialization_success"
+)
+_UPDATE_ALL_VIEWS_BRANCH_TASK_ID = "view_materialization.update_all_views_branch"
+_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
+    "view_materialization.trigger_update_all_managed_views_task"
+)
+_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
+    "view_materialization.wait_for_view_update_all_success"
+)
+_TRIGGER_VALIDATIONS_TASK_ID_REGEX = (
+    r"US_[A-Z]{2}_validations.trigger_us_[a-z]{2}_validations_task"
+)
+_WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = (
+    r"US_[A-Z]{2}_validations.wait_for_(us_[a-z]{2})_validations_completion"
+)
+_ACQUIRE_LOCK_TASK_ID = "state_bq_refresh.acquire_lock_STATE"
+_WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID = (
+    "state_bq_refresh.wait_for_acquire_lock_success_STATE"
+)
+_TRIGGER_REFRESH_BQ_DATASET_TASK_ID = (
+    "state_bq_refresh.trigger_refresh_bq_dataset_task_STATE"
+)
+_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = (
+    "state_bq_refresh.wait_for_refresh_bq_dataset_success_STATE"
+)
 _SUPPLEMENTAL_PIPELINE_IDS = [
-    "us-id-case-note-extracted-entities",
-    "us-ix-case-note-extracted-entities",
+    "US_ID_dataflow_pipelines.us-id-case-note-extracted-entities",
+    "US_IX_dataflow_pipelines.us-ix-case-note-extracted-entities",
 ]
 
 
 def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
-    return f"post_refresh_short_circuit_{schema_type.upper()}"
+    return f"{schema_type.lower()}_bq_refresh.post_refresh_short_circuit_{schema_type.upper()}"
 
 
 @patch(
@@ -231,7 +249,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
             if not match:
                 raise ValueError(f"Found unexpected leaf node: {wait_task.task_id}")
             self.assertEqual(
-                {f"trigger_{match.group(1)}_validations_task"},
+                {
+                    f"{match.group(1).upper()}_validations.trigger_{match.group(1)}_validations_task"
+                },
                 wait_task.upstream_task_ids,
             )
 
@@ -500,7 +520,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
         """Tests that validation triggers the proper endpoint."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        trigger_cloud_task_task = dag.get_task("trigger_us_nd_validations_task")
+        trigger_cloud_task_task = dag.get_task(
+            "US_ND_validations.trigger_us_nd_validations_task"
+        )
 
         if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):
             raise ValueError(

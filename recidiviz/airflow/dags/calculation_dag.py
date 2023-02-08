@@ -29,6 +29,7 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import BranchPythonOperator, ShortCircuitOperator
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.state import State
+from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
 from google.cloud import tasks_v2
@@ -135,7 +136,9 @@ def get_pipeline_config_args(pipeline_config: YAMLDict) -> PipelineConfigArgs:
 
 
 def dataflow_operator_for_pipeline(
-    pipeline_args: PipelineConfigArgs, pipeline_config: YAMLDict
+    pipeline_args: PipelineConfigArgs,
+    pipeline_config: YAMLDict,
+    task_group: Optional[TaskGroup] = None,
 ) -> RecidivizDataflowTemplateOperator:
     dataflow_default_args = get_dataflow_default_args(pipeline_config)
 
@@ -144,10 +147,13 @@ def dataflow_operator_for_pipeline(
         template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_args.pipeline_name}",
         job_name=pipeline_args.pipeline_name,
         dataflow_default_options=dataflow_default_args,
+        task_group=task_group,
     )
 
 
-def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
+def trigger_rematerialize_views_operator(
+    task_group: TaskGroup,
+) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
     if not project_id:
@@ -175,10 +181,13 @@ def trigger_rematerialize_views_operator() -> CloudTasksTaskCreateOperator:
         # This will trigger the task regardless of the failure or success of the
         # upstream pipelines.
         trigger_rule=TriggerRule.ALL_DONE,
+        task_group=task_group,
     )
 
 
-def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
+def trigger_update_all_managed_views_operator(
+    task_group: TaskGroup,
+) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
     if not project_id:
@@ -206,12 +215,12 @@ def trigger_update_all_managed_views_operator() -> CloudTasksTaskCreateOperator:
         # This will trigger the task regardless of the failure or success of the
         # upstream pipelines.
         trigger_rule=TriggerRule.ALL_DONE,
+        task_group=task_group,
     )
 
 
 def trigger_refresh_bq_dataset_operator(
-    schema_type: str,
-    dry_run: bool,
+    schema_type: str, dry_run: bool, task_group: TaskGroup
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
@@ -238,10 +247,13 @@ def trigger_refresh_bq_dataset_operator(
         queue_name=queue_name,
         task=task,
         retry=retry,
+        task_group=task_group,
     )
 
 
-def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperator:
+def trigger_validations_operator(
+    state_code: str, task_group: TaskGroup
+) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "validations"
     if not project_id:
@@ -269,12 +281,12 @@ def trigger_validations_operator(state_code: str) -> CloudTasksTaskCreateOperato
         # This will trigger the task regardless of the failure or success of the
         # upstream pipelines.
         trigger_rule=TriggerRule.ALL_DONE,
+        task_group=task_group,
     )
 
 
 def trigger_metric_view_data_operator(
-    export_job_name: str,
-    state_code: Optional[str],
+    export_job_name: str, state_code: Optional[str], task_group: TaskGroup
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "metric-view-export"
@@ -301,11 +313,12 @@ def trigger_metric_view_data_operator(
         queue_name=queue_name,
         task=task,
         retry=retry,
+        task_group=task_group,
     )
 
 
 def create_metric_view_data_export_nodes(
-    export_job_filter: str,
+    export_job_filter: str, task_group: TaskGroup
 ) -> List[CloudTasksTaskCreateOperator]:
     """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
     relevant_product_exports = ProductConfigs.from_file(
@@ -319,6 +332,7 @@ def create_metric_view_data_export_nodes(
         trigger_metric_view_data = trigger_metric_view_data_operator(
             export_job_name=export_job_name,
             state_code=state_code,
+            task_group=task_group,
         )
 
         wait_for_metric_view_data_export = BQResultSensor(
@@ -330,6 +344,7 @@ def create_metric_view_data_export_nodes(
                 tracker_table_id="metric_view_data_export_tracker",
             ),
             timeout=(60 * 60 * 4),
+            task_group=task_group,
         )
 
         trigger_metric_view_data >> wait_for_metric_view_data_export
@@ -349,21 +364,24 @@ def create_bq_refresh_nodes(
     schema_type: str, dry_run: bool = False
 ) -> ShortCircuitOperator:
     """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
+    task_group = TaskGroup(f"{schema_type.lower()}_bq_refresh")
     acquire_lock = IAPHTTPRequestOperator(
         task_id=f"acquire_lock_{schema_type}",
         url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/acquire_lock/{schema_type}",
         url_method="POST",
         data=json.dumps({"lock_id": str(uuid.uuid4())}).encode(),
+        task_group=task_group,
     )
 
     wait_for_can_refresh_proceed = IAPHTTPRequestSensor(
         task_id=f"wait_for_acquire_lock_success_{schema_type}",
         url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/check_can_refresh_proceed/{schema_type}",
         response_check=response_can_refresh_proceed_check,
+        task_group=task_group,
     )
 
     trigger_refresh_bq_dataset = trigger_refresh_bq_dataset_operator(
-        schema_type, dry_run
+        schema_type, dry_run, task_group
     )
 
     wait_for_refresh_bq_dataset = BQResultSensor(
@@ -375,6 +393,7 @@ def create_bq_refresh_nodes(
             tracker_table_id="refresh_bq_dataset_tracker",
         ),
         timeout=(60 * 60 * 4),
+        task_group=task_group,
     )
 
     release_lock = IAPHTTPRequestOperator(
@@ -382,6 +401,7 @@ def create_bq_refresh_nodes(
         url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/release_lock/{schema_type}",
         trigger_rule=TriggerRule.ALL_DONE,
         retries=1,
+        task_group=task_group,
     )
 
     (
@@ -403,6 +423,7 @@ def create_bq_refresh_nodes(
         task_id=f"post_refresh_short_circuit_{schema_type}",
         python_callable=check_if_bq_refresh_completion_success,
         trigger_rule=TriggerRule.ALL_DONE,
+        task_group=task_group,
     )
 
     wait_for_refresh_bq_dataset >> bq_refresh_completion
@@ -453,7 +474,11 @@ def create_calculation_dag() -> None:
         trigger_rule=TriggerRule.ALL_DONE,
     )
 
-    trigger_view_rematerialize = trigger_rematerialize_views_operator()
+    view_materialize_task_group = TaskGroup("view_materialization")
+
+    trigger_view_rematerialize = trigger_rematerialize_views_operator(
+        view_materialize_task_group
+    )
 
     wait_for_rematerialize = BQResultSensor(
         task_id="wait_for_view_rematerialization_success",
@@ -464,9 +489,12 @@ def create_calculation_dag() -> None:
             tracker_table_id="rematerialization_tracker",
         ),
         timeout=(60 * 45),
+        task_group=view_materialize_task_group,
     )
 
-    trigger_update_all_views = trigger_update_all_managed_views_operator()
+    trigger_update_all_views = trigger_update_all_managed_views_operator(
+        view_materialize_task_group
+    )
 
     update_all_views_branch = BranchPythonOperator(
         task_id="update_all_views_branch",
@@ -477,9 +505,12 @@ def create_calculation_dag() -> None:
             "trigger_source": "{{ dag_run.conf['TRIGGER_SOURCE'] }}",
         },
         retries=0,
+        task_group=view_materialize_task_group,
     )
 
-    do_not_update_all_views = EmptyOperator(task_id="do_not_update_all_views")
+    do_not_update_all_views = EmptyOperator(
+        task_id="do_not_update_all_views", task_group=view_materialize_task_group
+    )
 
     (
         [
@@ -500,6 +531,7 @@ def create_calculation_dag() -> None:
             tracker_table_id="view_update_tracker",
         ),
         timeout=(60 * 60 * 4),
+        task_group=view_materialize_task_group,
     )
 
     trigger_update_all_views >> wait_for_update_all_views >> trigger_view_rematerialize
@@ -512,12 +544,20 @@ def create_calculation_dag() -> None:
         str, List[RecidivizDataflowTemplateOperator]
     ] = defaultdict(list)
 
+    dataflow_pipeline_task_groups: Dict[str, TaskGroup] = {}
+
     for metric_pipeline in metric_pipelines:
         pipeline_config_args = get_pipeline_config_args(metric_pipeline)
+        if pipeline_config_args.state_code not in dataflow_pipeline_task_groups:
+            dataflow_pipeline_task_groups[pipeline_config_args.state_code] = TaskGroup(
+                f"{pipeline_config_args.state_code}_dataflow_pipelines"
+            )
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
             metric_pipeline_operator = dataflow_operator_for_pipeline(
-                pipeline_config_args, metric_pipeline
+                pipeline_config_args,
+                metric_pipeline,
+                dataflow_pipeline_task_groups[pipeline_config_args.state_code],
             )
 
             # Metric pipelines should complete before view rematerialization starts
@@ -561,16 +601,27 @@ def create_calculation_dag() -> None:
     )
     for supplemental_pipeline in supplemental_dataset_pipelines:
         pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
+        if pipeline_config_args.state_code not in dataflow_pipeline_task_groups:
+            dataflow_pipeline_task_groups[pipeline_config_args.state_code] = TaskGroup(
+                f"{pipeline_config_args.state_code}_dataflow_pipelines"
+            )
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
             supplemental_pipeline_operator = dataflow_operator_for_pipeline(
-                pipeline_config_args, supplemental_pipeline
+                pipeline_config_args,
+                supplemental_pipeline,
+                dataflow_pipeline_task_groups[pipeline_config_args.state_code],
             )
 
             supplemental_pipeline_operator >> trigger_view_rematerialize
 
+    validation_task_groups: Dict[str, TaskGroup] = {}
     for state_code in metric_pipelines_by_state:
-        trigger_state_validations = trigger_validations_operator(state_code)
+        if state_code not in validation_task_groups:
+            validation_task_groups[state_code] = TaskGroup(f"{state_code}_validations")
+        trigger_state_validations = trigger_validations_operator(
+            state_code, validation_task_groups[state_code]
+        )
 
         wait_for_state_validations = BQResultSensor(
             task_id=f"wait_for_{state_code.lower()}_validations_completion",
@@ -580,6 +631,7 @@ def create_calculation_dag() -> None:
                 tracker_dataset_id="validation_results",
                 tracker_table_id="validations_completion_tracker",
             ),
+            task_group=validation_task_groups[state_code],
         )
         (
             wait_for_rematerialize
@@ -590,16 +642,24 @@ def create_calculation_dag() -> None:
     states_to_trigger = {
         pipeline.peek("state_code", str) for pipeline in metric_pipelines
     }
+    metric_export_task_groups = {
+        state_code: TaskGroup(f"{state_code}_metric_exports")
+        for state_code in states_to_trigger
+    }
 
     state_create_metric_view_data_export_nodes = {
-        state_code: create_metric_view_data_export_nodes(state_code)
+        state_code: create_metric_view_data_export_nodes(
+            state_code, metric_export_task_groups[state_code]
+        )
         for state_code in states_to_trigger
     }
 
     all_create_metric_view_data_export_nodes = [
         *state_create_metric_view_data_export_nodes.values(),
         *[
-            create_metric_view_data_export_nodes(export)
+            create_metric_view_data_export_nodes(
+                export, TaskGroup(f"{export}_metric_exports")
+            )
             for export in PIPELINE_AGNOSTIC_EXPORTS
         ],
     ]
