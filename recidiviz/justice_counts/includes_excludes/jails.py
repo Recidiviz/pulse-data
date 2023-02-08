@@ -155,6 +155,77 @@ class ContractBedsExpensesIncludesExcludes(Enum):
     PRIVATE = "Expenses for beds contracted with private prison companies"
 
 
+# Grievances Upheld
+class GrievancesUpheldIncludesExcludes(Enum):
+    UPHELD_OR_SUBSTANTIATED = "Grievances upheld or substantiated"
+    REMEDY = "Grievances resulting in a remedy (e.g., apology, policy change)"
+    UNSUBSTANTIATED = "Grievances unsubstantiated"
+    PENDING_RESOLUTION = "Grievances pending resolution"
+    INFORMAL = "Grievances submitted informally or not in accordance with the agency’s grievance policy"
+    DUPLICATE = "Duplicate grievances"
+
+
+class LivingConditionsIncludesExcludes(Enum):
+    CLASSIFICATION = "Grievances related to classification of a person under the agency’s jurisdiction"
+    ADMINISTRATIVE_SEGREGATION = (
+        "Grievances related to the use of administrative segregation"
+    )
+    DISCIPLINARY_SEGREGATION = (
+        "Grievances related to the use of disciplinary segregation"
+    )
+    OVERCROWDING = "Grievances related to overcrowding"
+    UNSANITARY_CONDITIONS = "Grievances related to unsanitary conditions in the facility in general (i.e., not specific to living conditions)"
+    FOOD = "Grievances related to food"
+    FACILITY_MAINTENANCE = "Grievances related to facility maintenance issues"
+    TESTING_BODILY_FLUIDS = "Grievances related to testing bodily fluids"
+    BODY_SEARCHES = "Grievances related to body searches"
+    PERSONAL_PROPERTY = "Grievances related to personal property"
+
+
+class PersonalSafetyIncludesExcludes(Enum):
+    PHYSICAL_HARM_STAFF = (
+        "Grievances related to physical harm or threats of physical harm by staff"
+    )
+    PHYSICAL_HARM_ANOTHER_PERSON = "Grievances related to physical harm or threats of physical harm by another person under the agency’s jurisdiction"
+    EMOTIONAL_HARM_STAFF = (
+        "Grievances related to emotional harm or threats of emotional harm by staff"
+    )
+    EMOTIONAL_HARM_ANOTHER_PERSON = "Grievances related to emotional harm or threats of emotional harm by another person under the agency’s jurisdiction"
+    HARASSMENT_STAFF = "Grievances related to harassment by staff"
+    HARASSMENT_ANOTHER_PERSON = "Grievances related to harassment by another person under the agency’s jurisdiction"
+    PREA = "Grievances related to the Prison Rape Elimination Act (PREA)"
+
+
+class DiscriminationRacialBiasReligiousIncludesExcludes(Enum):
+    DISCRIMINATION_STAFF = (
+        "Grievances related to discrimination or racial bias by staff"
+    )
+    DISCRIMINATION_ANOTHER_PERSON = "Grievances related to discrimination or racial bias by another person incarcerated in the agency's jurisdiction"
+    RELIGIOUS_BELIEFS_STAFF = "Grievances related to the ability of the person under the agency’s jurisdiction to practice or observe their religious beliefs levied at staff"
+    RELIGIOUS_BELIEFS_ANOTHER_PERSON = "Grievances related to the ability of the person under the agency’s jurisdiction to practice or observe their religious beliefs levied at other people incarcerated in the agency’s jurisdiction"
+
+
+class AccessToHealthCareIncludesExcludes(Enum):
+    DENIAL_OF_CARE = (
+        "Grievances related to denial of care by medical or correctional personnel"
+    )
+    LACK_OF_TIMELY_CARE = "Grievances related to lack of timely health care"
+    MEDICAL_STAFF = "Grievances against medical staff"
+    REPRODUCTIVE_CARE = "Grievances related to reproductive health care"
+    GENDER_AFFIRMING_CARE = "Grievance related to access to gender affirming care"
+    CONFIDENTIALITY = "Grievances related to confidentiality or privacy issues"
+    MEDICATION = "Grievances related to medication"
+    MEDICAL_EQUIPMENT = "Grievances related to medical equipment"
+
+
+class LegalIncludesExcludes(Enum):
+    FACILITIES = "Grievances related to access to legal facilities"
+    MATERIALS = "Grievances related to access to legal materials"
+    SERVICES = "Grievances related to access to legal services"
+    PROPERTY = "Grievances related to access to legal property"
+    COMMUNICATION = "Grievances related to access to legal communication"
+
+
 # Staff
 class StaffIncludesExcludes(Enum):
     FILLED = "Filled positions"

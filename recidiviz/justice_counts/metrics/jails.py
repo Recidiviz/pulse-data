@@ -19,6 +19,7 @@ from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
+    GrievancesUpheldType,
     PopulationType,
     ReadmissionType,
     ReleaseType,
@@ -29,17 +30,23 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.includes_excludes.jails import (
+    AccessToHealthCareIncludesExcludes,
     ClinicalAndMedicalStaffIncludesExcludes,
     CommissaryAndFeesIncludesExcludes,
     ContractBedsExpensesIncludesExcludes,
     ContractBedsFundingIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
+    DiscriminationRacialBiasReligiousIncludesExcludes,
     ExpensesIncludesExcludes,
     FacilitiesAndEquipmentIncludesExcludes,
     FundingIncludesExcludes,
     GrantsIncludesExcludes,
+    GrievancesUpheldIncludesExcludes,
     HealthCareForPeopleWhoAreIncarceratedIncludesExcludes,
+    LegalIncludesExcludes,
+    LivingConditionsIncludesExcludes,
     ManagementAndOperationsStaffIncludesExcludes,
+    PersonalSafetyIncludesExcludes,
     PersonnelIncludesExcludes,
     ProgrammaticStaffIncludesExcludes,
     SecurityStaffIncludesExcludes,
@@ -52,7 +59,6 @@ from recidiviz.justice_counts.includes_excludes.jails import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -358,13 +364,48 @@ grievances_upheld = MetricDefinition(
     metric_type=MetricType.GRIEVANCES_UPHELD,
     category=MetricCategory.FAIRNESS,
     display_name="Grievances Upheld",
-    definitions=[
-        Definition(
-            term="Grievance",
-            definition="A complaint or question filed with your institution by an individual incarcerated regarding their experience, with procedures, treatment, or interaction with officers.",
-        )
-    ],
-    description="Measures the number of grievances filed with your institution that were upheld.",
+    description="The number of complaints from people in jail in the agency’s jurisdiction that were received through the official grievance process and upheld or substantiated.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
+    includes_excludes=IncludesExcludesSet(
+        members=GrievancesUpheldIncludesExcludes,
+        excluded_set={
+            GrievancesUpheldIncludesExcludes.UNSUBSTANTIATED,
+            GrievancesUpheldIncludesExcludes.PENDING_RESOLUTION,
+            GrievancesUpheldIncludesExcludes.INFORMAL,
+            GrievancesUpheldIncludesExcludes.DUPLICATE,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=GrievancesUpheldType,
+            required=False,
+            dimension_to_includes_excludes={
+                GrievancesUpheldType.LIVING_CONDITIONS: IncludesExcludesSet(
+                    members=LivingConditionsIncludesExcludes,
+                ),
+                GrievancesUpheldType.PERSONAL_SAFETY: IncludesExcludesSet(
+                    members=PersonalSafetyIncludesExcludes,
+                ),
+                GrievancesUpheldType.DISCRIMINATION: IncludesExcludesSet(
+                    members=DiscriminationRacialBiasReligiousIncludesExcludes,
+                ),
+                GrievancesUpheldType.ACCESS_TO_HEALTH_CARE: IncludesExcludesSet(
+                    members=AccessToHealthCareIncludesExcludes,
+                ),
+                GrievancesUpheldType.LEGAL: IncludesExcludesSet(
+                    members=LegalIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                GrievancesUpheldType.LIVING_CONDITIONS: "The number of grievances upheld that relate to the living conditions of people who are incarcerated under the agency’s jurisdiction.",
+                GrievancesUpheldType.PERSONAL_SAFETY: "The number of grievances upheld that relate to the personal safety of people who are incarcerated.",
+                GrievancesUpheldType.DISCRIMINATION: "The number of grievances upheld that relate to an act of discrimination toward, racial bias against, or interference of religious practices of people who are incarcerated.",
+                GrievancesUpheldType.ACCESS_TO_HEALTH_CARE: "The number of grievances upheld that relate to the accessibility of health care to people who are incarcerated.",
+                GrievancesUpheldType.LEGAL: "The number of grievances upheld that relate to the person under the agency’s jurisdiction having access to the legal process.",
+                GrievancesUpheldType.OTHER: "The number of grievances upheld that relate to another issue or concern that is not related to living conditions, personal safety, discrimination or racial bias, access to health care, or legal concerns.",
+                GrievancesUpheldType.UNKNOWN: "The number of grievances upheld that relate to an issue or concern that is not known.",
+            },
+        )
+    ],
 )
