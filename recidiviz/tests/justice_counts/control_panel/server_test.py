@@ -35,6 +35,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_jurisdictions import AgencyJurisdictionInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
@@ -2331,3 +2332,59 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     ]
                 },
             )
+
+    def test_update_jurisdictions(self) -> None:
+        agency = self.test_schema_objects.test_agency_A
+        self.session.add_all(
+            [
+                agency,
+            ]
+        )
+        self.session.commit()
+        self.session.refresh(agency)
+        agency_id = agency.id
+
+        # add included jurisdictions
+        included_ids = ["0100000000", "0103100000", "0104700000"]
+        excluded_ids: List[str] = []
+        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
+            session=self.session,
+            agency_id=agency_id,
+            included_jurisdiction_ids=included_ids,
+            excluded_jurisdiction_ids=excluded_ids,
+        )
+        db_rows = self.session.query(schema.AgencyJurisdiction).all()
+        self.assertEqual(len(db_rows), 3)
+
+        # add excluded jurisdictions
+        excluded_ids = ["0105500000", "0105900000"]
+        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
+            session=self.session,
+            agency_id=agency_id,
+            included_jurisdiction_ids=included_ids,
+            excluded_jurisdiction_ids=excluded_ids,
+        )
+        db_rows = self.session.query(schema.AgencyJurisdiction).all()
+        self.assertEqual(len(db_rows), 5)
+
+        # remove included jurisdictions
+        included_ids = []
+        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
+            session=self.session,
+            agency_id=agency_id,
+            included_jurisdiction_ids=included_ids,
+            excluded_jurisdiction_ids=excluded_ids,
+        )
+        db_rows = self.session.query(schema.AgencyJurisdiction).all()
+        self.assertEqual(len(db_rows), 2)
+
+        # remove excluded jurisdictions
+        excluded_ids = []
+        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
+            session=self.session,
+            agency_id=agency_id,
+            included_jurisdiction_ids=included_ids,
+            excluded_jurisdiction_ids=excluded_ids,
+        )
+        db_rows = self.session.query(schema.AgencyJurisdiction).all()
+        self.assertEqual(len(db_rows), 0)

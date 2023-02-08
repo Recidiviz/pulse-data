@@ -31,6 +31,7 @@ from werkzeug.wrappers import response
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_jurisdictions import AgencyJurisdictionInterface
 from recidiviz.justice_counts.agency_setting import AgencySettingInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
@@ -83,6 +84,7 @@ def get_api_blueprint(
         Currently, the supported updates are:
             - Changing the set of systems associated with the agency
             - Updating AgencySettings
+            - Updating AgencyJurisdictions
         """
         try:
             request_json = assert_type(request.json, dict)
@@ -120,6 +122,14 @@ def get_api_blueprint(
                         value=setting_value,
                     )
 
+            jurisdictions = request_json.get("jurisdictions")
+            if jurisdictions is not None:
+                AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
+                    session=current_session,
+                    agency_id=agency_id,
+                    included_jurisdiction_ids=jurisdictions["included"],
+                    excluded_jurisdiction_ids=jurisdictions["excluded"],
+                )
             current_session.commit()
             return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
