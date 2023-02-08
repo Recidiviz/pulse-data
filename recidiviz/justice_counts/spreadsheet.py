@@ -45,6 +45,9 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import (
+    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils import metadata
 
@@ -274,13 +277,39 @@ class SpreadsheetInterface:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         metric_definitions: List[MetricDefinition],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
+        metric_key_to_disaggregation_status = {
+            datapoint.metric_definition_key: datapoint.value == str(True)
+            for datapoint in list(
+                itertools.chain(*metric_key_to_agency_datapoints.values())
+            )
+            if datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+        }
         for metric_definition in metric_definitions:
             # Do not add metric to response if the metric definition has
             # been disabled by JC.
             if metric_definition.disabled:
+                continue
+
+            if (
+                metric_definition.system in schema.System.supervision_subsystems()
+                and metric_key_to_disaggregation_status.get(metric_definition.key)
+                is not True
+            ):
+                # If the metric is a supervision subsystem, but the metric is reported as an aggregate,
+                # don't display any messages for that metric.
+                continue
+
+            if (
+                metric_definition.system == schema.System.SUPERVISION
+                and metric_key_to_disaggregation_status.get(metric_definition.key)
+                is True
+            ):
+                # If the metric is part of the supervision system, but the metric is disaggregated by
+                # supervision subsystem, don't display any messages for that metric.
                 continue
 
             sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
