@@ -19,6 +19,7 @@
 import itertools
 from typing import Dict, List
 
+from auth0.exceptions import Auth0Error
 from sqlalchemy.orm import Session, joinedload
 
 from recidiviz.auth.auth0_client import Auth0Client
@@ -60,14 +61,17 @@ class AgencyUserAccountAssociationInterface:
         )
 
         if len(existing_users) == 1:
-            # If there is an existing user, update the users list of agency ids in auth0.
+            # If there is an existing user, update the users list of agency ids.
             existing_user = existing_users[0]
             existing_agency_ids = {
                 assoc.agency.id for assoc in existing_user.agency_assocs
             }
             if agency_id in existing_agency_ids:
                 # User already belongs to this agency
-                pass
+                raise JusticeCountsServerError(
+                    code="user_reinvited_to_agency",
+                    description=f"A user with the email {email} already belongs to this agency.",
+                )
 
             # Update our DB
             UserAccountInterface.add_or_update_user_agency_association(
@@ -79,8 +83,19 @@ class AgencyUserAccountAssociationInterface:
 
         elif len(existing_users) == 0:
             # If there is no existing user, create one in Auth0.
-            auth0_user = auth0_client.create_JC_user(name=name, email=email)
-            auth0_user_id = auth0_user["user_id"]
+            try:
+                auth0_user = auth0_client.create_JC_user(name=name, email=email)
+                auth0_user_id = auth0_user["user_id"]
+
+            except Auth0Error as e:
+                if e.message == "The user already exists.":
+                    auth0_users = auth0_client.get_all_users_by_email_addresses(
+                        email_addresses=[email]
+                    )
+                    auth0_user = auth0_users[0]
+                    auth0_user_id = auth0_user["user_id"]
+                else:
+                    raise e
 
             # Create user in our DB
             user = UserAccountInterface.create_or_update_user(
@@ -89,7 +104,6 @@ class AgencyUserAccountAssociationInterface:
                 auth0_user_id=auth0_user_id,
                 email=email,
             )
-
             # Add the user to the agency
             UserAccountInterface.add_or_update_user_agency_association(
                 session=session,
