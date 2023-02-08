@@ -37,9 +37,9 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_DESCRIPTION = "Creates a view that surf
 
 US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
     /*
-    Sentencing data lives in 4 places: Sentence, Diversion, PriorRecord, and ISCSentence (out of state sentence) 
-    The first three have similar structures, so I union them and then flag ineligible offenses
-    ISC Sentence has a different structure and very different offense type strings since these sentences are from all over the country
+    Sentencing data lives in 4 places: Sentence, Diversion, ISCSentence (out of state sentence), and PriorRecord.
+    The first three are ingested into our state schema, PriorRecord is not. ISCSentences have different Offense Type strings
+    so when flagging ineligible offenses, we do it differently based on sentence source. 
     The general wrangling here is to :
         1) Flag ineligible offenses across all 3 datasets
         2) Flag active and inactive sentences (not applicable for PriorRecord)
@@ -51,156 +51,51 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
             Offense type not crime where victim was under 18. Note, I did not see any OffenseDescriptions referencing a victim aged 
             less than 18, but did see some for people under 13, so that's what I've included 
     */
-    WITH diversion AS (
-        SELECT OffenderID AS offender_id,
-              OffenseDescription AS offense_description,
-              CAST(CAST(ExpirationDate AS DATETIME) AS DATE) AS expiration_date,
-              CAST(CAST(ExpirationDate AS DATETIME) AS DATE) AS full_expiration_date,
-              CAST(CAST(DiversionGrantedDate AS DATETIME) AS DATE) AS sentence_effective_date,
-              CASE WHEN DiversionStatus = 'C' THEN 'IN' ELSE 'AC' END AS sentence_status,
-              CAST(CAST(DiversionGrantedDate AS DATETIME) AS DATE) AS offense_date,
-              CAST(ConvictionCounty AS STRING) AS conviction_county,
-              CaseNumber AS docket_number,
-              'DIVERSION' AS sentence_source,
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Diversion_latest` d
-        LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderStatute_latest`
-            USING(Offense)
-    ),
-    sentences AS (
-        --TODO(#11448): Exclude ISCSentence, Diversion, and PriorRecord sentences when those are ingested
+    -- TODO(#18364): Remove sentence metadata hacky fixes once #18148 merged in
+    WITH sentences AS (
         SELECT
-            SPLIT(external_id, '-')[OFFSET(0)] AS offender_id,
+            person_id,
             description AS offense_description,
             completion_date AS expiration_date,
             projected_completion_date_max AS full_expiration_date,
             effective_date AS sentence_effective_date,
             status_raw_text AS sentence_status,
             offense_date,
-            SPLIT(external_id, '-')[OFFSET(1)] AS conviction_county,
-            SPLIT(external_id, '-')[OFFSET(3)] AS docket_number,
-            'SENTENCE' AS sentence_source
+            life_sentence,
+            is_violent,
+            county_code AS conviction_county,
+            JSON_EXTRACT_SCALAR(sentence_metadata, '$.CASE_NUMBER') AS docket_number,
+            JSON_EXTRACT_SCALAR(sentence_metadata, '$.SENTENCE_SOURCE') AS sentence_source,
         FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
     ),
-    CSL AS (
-       SELECT 
-            OffenderID as Offender_ID, 
-            CAST(CAST(SentenceEffectiveDate AS DATETIME) AS DATE) AS sentence_effective_date,
-            LifetimeSupervision, 
-            LifeDeathHabitual 
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.JOSentence_latest`
-        JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Sentence_latest` s
-        USING(OffenderID, ConvictionCounty,CaseYear,CaseNumber, CountNumber)
-        WHERE TRUE
-        QUALIFY ROW_NUMBER() OVER(
-            PARTITION BY OffenderID 
-            ORDER BY CASE 
-                WHEN LifetimeSupervision = 'Y' THEN 0 ELSE 1 END,
-                CASE WHEN LifeDeathHabitual IS NOT NULL THEN 0 ELSE 1 END
-        ) = 1
-    )
-    ,
     prior_record AS (
-        SELECT OffenderID as offender_id,
+        SELECT pei.person_id,
                 OffenseDescription AS offense_description,
                 CAST(CAST(DispositionDate AS DATETIME) AS DATE) AS expiration_date,
                 CAST(CAST(DispositionDate AS DATETIME) AS DATE) AS full_expiration_date,
                 CAST(CAST(ArrestDate AS DATETIME) AS DATE) AS sentence_effective_date,
                 'Prior' AS sentence_status,
                 CAST(CAST(OffenseDate AS DATETIME) AS DATE) AS offense_date,
+                FALSE AS life_sentence,
+                -- placeholder for union to work, we bring in this info from raw data later
+                FALSE AS is_violent,
                 CourtName AS conviction_county,
                 DocketNumber AS docket_number,
                 'PriorRecord' AS sentence_source,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.PriorRecord_latest` pr
         LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderStatute_latest` ofs
             ON COALESCE(pr.ConvictionOffense, pr.ChargeOffense) = ofs.Offense
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            ON pr.OffenderID = pei.external_id
+            AND pei.state_code = 'US_TN' 
         /* This avoids double counting offenses when surfaced on front end since prior record has ~10% entries autogenerated from TN sentences data
         and we're capturing that with Sentence and Diversion tables */
         WHERE DispositionText NOT LIKE 'PRIOR RECORD AUTO CREATED%'
     ),
-    isc_sent AS (
-        SELECT OffenderID AS Offender_ID,
-                ConvictedOffense AS offense_description,
-                CAST(CAST(ExpirationDate AS DATETIME) AS DATE) AS expiration_date,
-                CAST(CAST(ExpirationDate AS DATETIME) AS DATE) AS full_expiration_date,
-                CAST(CAST(SentenceImposedDate AS DATETIME) AS DATE) AS sentence_effective_date,
-                CASE WHEN CAST(CAST(ExpirationDate AS DATETIME) AS DATE) < current_date('US/Eastern') THEN 'IN' ELSE 'AC' END AS sentence_status,
-                CAST(CAST(OffenseDate AS DATETIME) AS DATE) AS offense_date,
-                Jurisdiction AS conviction_county,
-                CaseNumber AS docket_number,
-                'ISC' AS sentence_source,
-                
-                CASE WHEN SAFE_CAST(ConvictedOffense AS INT) IS NULL THEN 0 ELSE 1 END AS missing_offense,
-                
-                CASE WHEN (ConvictedOffense LIKE '%DRUG%' AND ConvictedOffense NOT LIKE '%ADULTERATION%')
-                    OR ConvictedOffense LIKE '%METH%'
-                    OR ConvictedOffense LIKE '%POSS%CONT%'
-                    OR ConvictedOffense LIKE '%POSS%AMPH%'
-                    OR ConvictedOffense LIKE '%POSS%HEROIN%'
-                    OR ConvictedOffense LIKE '%VGCSA%'
-                    OR ConvictedOffense LIKE '%SIMPLE POSS%'
-                    OR ConvictedOffense LIKE '%COCAINE%'
-                    OR ConvictedOffense LIKE '%HEROIN%'
-                    OR ConvictedOffense LIKE '%CONT. SUBSTANCE%'
-                    OR ConvictedOffense LIKE '%MARIJUANA%'
-                    OR ConvictedOffense LIKE '%NARCOTIC%'
-                    OR ConvictedOffense LIKE '%OPIUM%'
-                        THEN 1 ELSE 0 END AS drug_offense,
-                
-                CASE WHEN ConvictedOffense LIKE '%DOMESTIC%' THEN 1 ELSE 0 END AS domestic_flag,
-                
-                CASE WHEN ConvictedOffense LIKE '%SEX%' OR ConvictedOffense LIKE '%RAPE%' THEN 1 ELSE 0 END AS sex_offense_flag,
-                
-                CASE WHEN ConvictedOffense LIKE '%DUI%' OR ConvictedOffense LIKE '%DWI%' OR ConvictedOffense LIKE '%INFLUENCE%' THEN 1 ELSE 0 END AS dui_flag,
-                
-                #CASE WHEN DATE_DIFF(CURRENT_DATE,CAST(CAST(OffenseDate AS DATETIME) AS DATE),YEAR) <5 AND (ConvictedOffense LIKE '%DUI%' OR ConvictedOffense LIKE '%DWI%' OR ConvictedOffense LIKE '%INFLUENCE%') THEN 1 ELSE 0 END AS dui_last_5_years,
-                
-                CASE WHEN ConvictedOffense LIKE '%BURGLARY%' 
-                        OR ConvictedOffense LIKE '%ROBBERY%'
-                        OR ConvictedOffense LIKE '%ARSON%'
-                    THEN 1 ELSE 0 END AS maybe_assaultive_flag,
-                    
-                CASE WHEN ConvictedOffense LIKE '%MURDER%' 
-                        OR ConvictedOffense LIKE '%HOMICIDE%'
-                        OR ConvictedOffense LIKE '%MANSLAUGHTER%'
-                        OR ConvictedOffense LIKE '%RAPE%'
-                        OR ConvictedOffense LIKE '%MOLEST%'
-                        OR ConvictedOffense LIKE '%BATTERY%'
-                        OR ConvictedOffense LIKE '%ASSAULT%'
-                        OR ConvictedOffense LIKE '%STALKING%'
-                        OR ConvictedOffense LIKE '%CRIMES AGAINST PERSON%'
-                    THEN 1 ELSE 0 END AS assaultive_offense_flag,
-                    
-                CASE WHEN ConvictedOffense LIKE '%THEFT%' 
-                        OR ConvictedOffense LIKE '%LARCENY%'
-                        OR ConvictedOffense LIKE '%FORGERY%'
-                        OR ConvictedOffense LIKE '%FRAUD%'
-                        OR ConvictedOffense LIKE '%STOLE%'
-                        OR ConvictedOffense LIKE '%SHOPLIFTING%'
-                        OR ConvictedOffense LIKE '%EMBEZZLEMENT%'
-                        OR ConvictedOffense LIKE '%FLAGRANT NON-SUPPORT%'
-                        OR ConvictedOffense LIKE '%ESCAPE%'
-                        OR ConvictedOffense LIKE '%BREAKING AND ENTERING%'
-                        OR ConvictedOffense LIKE '%PROPERTY%'
-                        OR ConvictedOffense LIKE '%STEAL%'
-                    THEN 0 ELSE 1 END AS unknown_offense_flag,
-                
-                CASE WHEN (ConvictedOffense LIKE '%13%' AND ConvictedOffense LIKE '%VICT%' ) THEN 1 ELSE 0 END AS young_victim_flag,
-                
-                CASE WHEN (ConvictedOffense LIKE '%HOMICIDE%' AND ConvictedOffense LIKE '%MURDER%' ) THEN 1 ELSE 0 END AS homicide_flag,
-                
-                CASE WHEN sentence LIKE '%LIFE%' THEN 0 ELSE 1 END AS no_lifetime_flag,
-        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.ISCSentence_latest`
-    )
-    ,
     sent_union_diversion AS (
         SELECT *
         FROM sentences
     
-        UNION ALL
-        
-        SELECT *
-        FROM diversion
-        
         UNION ALL
         
         SELECT *
@@ -212,62 +107,90 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
            
            CASE WHEN COALESCE(offense_description,'NOT DEFINED') = 'NOT DEFINED' THEN 1 ELSE 0 END missing_offense,
            
-           CASE WHEN (offense_description LIKE '%DRUG%' AND offense_description NOT LIKE '%ADULTERATION%')
+           CASE WHEN sentence_source != "ISC" THEN (
+                CASE WHEN (offense_description LIKE '%DRUG%' AND offense_description NOT LIKE '%ADULTERATION%')
                         OR offense_description LIKE '%METH%'
+                        OR offense_description LIKE '%POSS%CONT%'
+                        OR offense_description LIKE '%POSS%AMPH%'
+                        OR offense_description LIKE '%POSS%HEROIN%'
+                        OR offense_description LIKE '%VGCSA%'
                         OR offense_description LIKE '%SIMPLE POSS%'
                         OR offense_description LIKE '%COCAINE%'
+                        OR offense_description LIKE '%HEROIN%'
                         OR offense_description LIKE '%CONT. SUBSTANCE%'
                         OR offense_description LIKE '%MARIJUANA%'
-                        OR offense_description LIKE '%HEROIN%'
-                    THEN 1 ELSE 0 END AS drug_offense,
-            
+                        OR offense_description LIKE '%NARCOTIC%'
+                        OR offense_description LIKE '%OPIUM%'
+                            THEN 1 
+                        ELSE 0 
+                        END
+           ) WHEN COALESCE(DrugOffensesFlag,'N') = 'Y' THEN 1 
+           ELSE 0 END AS drug_offense,
+                       
             CASE WHEN offense_description LIKE '%DOMESTIC%' THEN 1 ELSE 0 END AS domestic_flag,
             
-            CASE WHEN (COALESCE(SexOffenderFlag,'N') = 'Y') THEN 1 ELSE 0 END AS sex_offense_flag,
+            -- TODO(#18509): Replace with ingested `is_sex_offense` flag for all but PriorRecord when ingested for ISC/Diversion
+            CASE WHEN sentence_source != 'ISC' AND (COALESCE(SexOffenderFlag,'N') = 'Y') THEN 1 
+                 WHEN sentence_source = 'ISC' AND (offense_description LIKE '%SEX%' OR offense_description LIKE '%RAPE%') THEN 1
+                 ELSE 0 END AS sex_offense_flag,
             
-            CASE WHEN offense_description LIKE '%DUI%' OR offense_description LIKE '%INFLUENCE%' THEN 1 ELSE 0 END AS dui_flag,
+            CASE WHEN offense_description LIKE '%DUI%' OR 
+                      offense_description LIKE '%INFLUENCE%' OR
+                      offense_description LIKE '%DWI%' 
+                      THEN 1 
+                      ELSE 0 END AS dui_flag,
             
-            #CASE WHEN DATE_DIFF(CURRENT_DATE,offense_date,YEAR) <5 AND (offense_description LIKE '%DUI%' OR offense_description LIKE '%INFLUENCE%') THEN 1 ELSE 0 END AS dui_last_5_years,
+             CASE WHEN sentence_source = 'ISC' AND ( 
+                        offense_description LIKE '%BURGLARY%' 
+                        OR offense_description LIKE '%ROBBERY%'
+                        OR offense_description LIKE '%ARSON%')
+                 THEN 1 ELSE 0 END AS maybe_assaultive_flag,
             
-            0 AS maybe_assaultive_flag,
+            CASE WHEN sentence_source != 'PriorRecord' AND is_violent THEN 1
+                 WHEN sentence_source = 'PriorRecord' AND COALESCE(AssaultiveOffenseFlag,'N') = 'Y' THEN 1
+                 ELSE 0 END AS assaultive_offense_flag,
             
-            CASE WHEN (COALESCE(AssaultiveOffenseFlag,'N') = 'Y') THEN 1 ELSE 0 END AS assaultive_offense_flag,
-            
-            0 AS unknown_offense_flag,
+            CASE WHEN sentence_source = 'ISC' THEN (
+                CASE WHEN offense_description LIKE '%THEFT%' 
+                        OR offense_description LIKE '%LARCENY%'
+                        OR offense_description LIKE '%FORGERY%'
+                        OR offense_description LIKE '%FRAUD%'
+                        OR offense_description LIKE '%STOLE%'
+                        OR offense_description LIKE '%SHOPLIFTING%'
+                        OR offense_description LIKE '%EMBEZZLEMENT%'
+                        OR offense_description LIKE '%FLAGRANT NON-SUPPORT%'
+                        OR offense_description LIKE '%ESCAPE%'
+                        OR offense_description LIKE '%BREAKING AND ENTERING%'
+                        OR offense_description LIKE '%PROPERTY%'
+                        OR offense_description LIKE '%STEAL%'
+                    THEN 0 
+                    ELSE 1 
+                    END
+                )
+                ELSE 0 END AS unknown_offense_flag,
             
             CASE WHEN (offense_description LIKE '%13%' AND offense_description LIKE '%VICT%' ) THEN 1 ELSE 0 END AS young_victim_flag,
             
-            CASE WHEN (offense_description LIKE '%HOMICIDE%' AND offense_description LIKE '%MURDER%' ) THEN 1 ELSE 0 END AS homicide_flag,
+            CASE WHEN (offense_description LIKE '%HOMICIDE%' OR offense_description LIKE '%MURDER%' ) THEN 1 ELSE 0 END AS homicide_flag,
             
-            CASE WHEN COALESCE(LifetimeSupervision,'N') != 'Y' AND COALESCE(LifeDeathHabitual,'N') = 'N' THEN 1 ELSE 0 END AS no_lifetime_flag,
+            CASE WHEN life_sentence THEN 0 ELSE 1 END AS no_lifetime_flag,
+            
         FROM sent_union_diversion
         LEFT JOIN 
             (
             SELECT DISTINCT
                    OffenseDescription, 
                    FIRST_VALUE(AssaultiveOffenseFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN AssaultiveOffenseFlag = 'Y' THEN 0 ELSE 1 END) AS AssaultiveOffenseFlag,
-                   FIRST_VALUE(SexOffenderFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN SexOffenderFlag = 'Y' THEN 0 ELSE 1 END) AS SexOffenderFlag 
+                   FIRST_VALUE(SexOffenderFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN SexOffenderFlag = 'Y' THEN 0 ELSE 1 END) AS SexOffenderFlag,
+                   FIRST_VALUE(DrugOffensesFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN DrugOffensesFlag = 'Y' THEN 0 ELSE 1 END) AS DrugOffensesFlag 
             FROM  `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderStatute_latest` 
             ) statute
                 ON offense_description = statute.OffenseDescription 
-        LEFT JOIN CSL
-            USING(offender_id, sentence_effective_date)
     )
     SELECT a.* EXCEPT (sentence_effective_date),
             COALESCE(sentence_effective_date, '1900-01-01') AS sentence_effective_date,
-        MAX(CASE WHEN sentence_status NOT IN ('IN','Prior') THEN 1 ELSE 0 END) OVER(PARTITION BY offender_id) AS has_active_sentence,
-        pei.person_id
-    FROM (
-        SELECT * 
-        FROM sentence_flags
-        UNION ALL 
-        SELECT *
-        FROM isc_sent
-    ) a
-    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-        ON a.Offender_ID = pei.external_id
-        AND pei.state_code = 'US_TN' 
-     
+        MAX(CASE WHEN sentence_status NOT IN ('IN','Prior') THEN 1 ELSE 0 END) OVER(PARTITION BY person_id) AS has_active_sentence,
+    FROM sentence_flags a     
 """
 
 US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(

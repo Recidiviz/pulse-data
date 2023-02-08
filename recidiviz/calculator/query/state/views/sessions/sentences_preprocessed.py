@@ -50,7 +50,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'INCARCERATION' AS sentence_type,
         CASE 
           WHEN sis.county_code = 'OUT_OF_STATE' 
-            THEN 'INCARCERATION_OUT_OF_STATE'
+            THEN 'OUT_OF_STATE'
           -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
           ELSE 'INCARCERATION' END AS sentence_sub_type,
         sis.start_date AS effective_date,
@@ -96,7 +96,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         'SUPERVISION' AS sentence_type,
         CASE 
             WHEN sss.county_code = 'OUT_OF_STATE' 
-                THEN 'SUPERVISION_OUT_OF_STATE'
+                THEN 'OUT_OF_STATE'
             -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
             ELSE sss.supervision_type END AS sentence_sub_type,
         sss.start_date AS effective_date,
@@ -248,8 +248,8 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
                 total_literary_credits,
                 total_drug_alcohol_credits,
                 total_education_attendance_credits,
-                total_treatment_credits,
-                lifetime_supervision)
+                total_treatment_credits
+                )
         FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
     )
     SELECT
