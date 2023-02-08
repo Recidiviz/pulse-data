@@ -44,7 +44,7 @@ columns:
       Date transferred in to.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name})))"
   - name: TRANSFER_REASON
     description: |-
       Reason for transfer.
@@ -60,4 +60,4 @@ columns:
       Date transferred out.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
-      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name}))"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', TRIM(REGEXP_EXTRACT({col_name})))"
