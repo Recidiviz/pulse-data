@@ -108,7 +108,7 @@ class WorkflowsUsTnExternalRequestInterface:
         user_id: str,
         contact_note_date_time: str,
         contact_note: Dict[int, List[str]],
-        voters_rights_code: Optional[WorkflowsUsTnVotersRightsCode] = None,
+        voters_rights_code: Optional[str] = None,
     ) -> None:
         """
         Formats a request and sends the request to insert a TEPE contact note to TOMIS.
@@ -160,7 +160,9 @@ class WorkflowsUsTnExternalRequestInterface:
                 contact_note_date_time=contact_note_date_time,
                 contact_sequence_number=page_number,
                 comments=page_by_line,
-                voters_rights_code=voters_rights_code,
+                voters_rights_code=WorkflowsUsTnVotersRightsCode[voters_rights_code]
+                if voters_rights_code
+                else None,
             )
 
             try:
