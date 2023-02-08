@@ -30,26 +30,14 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 
 ## Running locally
 
-1. First, build the Docker base image (which is shared between all Recidiviz images) if you have not already done so:
-
-```bash
-docker build . -f Dockerfile.recidiviz-base -t us.gcr.io/recidiviz-staging/recidiviz-base:latest
-```
-
-2. Next, build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precendence over the frontend that is bundled in the docker image.)
+1. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precendence over the frontend that is bundled in the docker image.)
 
 ```bash
 pipenv run docker-build-jc-publisher \
   --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
 ```
 
-3. Now run the Justice Counts Docker image using `docker-compose`:
-
-```bash
-pipenv run docker-build
-```
-
-4. Run `docker-compose`:
+2. Now run the Justice Counts Docker image using `docker-compose`:
 
 ```bash
 pipenv run docker-jc
@@ -61,7 +49,7 @@ We use `docker-compose` to run all services that the app depends on. This includ
 - [`postgres`](https://www.postgresql.org/) database
 - `migrations` container, which automatically runs the [`alembic`](https://alembic.sqlalchemy.org/) migrations for the Justice Counts database
 
-5. (Optional) In another tab, while `docker-compose` is running, load fake data into your local database:
+3. (Optional) In another tab, while `docker-compose` is running, load fake data into your local database:
 
 ```bash
 pipenv run fixtures-jc
@@ -73,11 +61,11 @@ If this errors with "No such container", try:
 docker exec <name of your Docker container> pipenv run python -m recidiviz.tools.justice_counts.control_panel.load_fixtures
 ```
 
-6. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
+4. In another tab, clone the [justice-counts](https://github.com/Recidiviz/justice-counts) repo and `cd` into the `publisher` directory.
 
-7. Run `yarn install`, `cp .env.example .env`, and `yarn run dev`.
+5. Run `yarn install`, `cp .env.example .env`, and `yarn run dev`. (Note: the `.env` file determines which backend the frontend will run against. It defaults to your local backend, which you started running via `docker-compose`. If you want the frontend to use a staging backend, adjust the file to point to the corresponding URL.)
 
-8. You should see the application running on `localhost:3000`!
+6. You should see the application running on `localhost:3000`!
 
 ## Connect to the local Postgres database
 
@@ -93,7 +81,23 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 
 ## Deploying
 
-Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_playtesting.sh` scripts in the `pulse-data/recidiviz/tools/deploy/justice_counts` directory.
+Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_playtesting.sh` scripts in the `pulse-data/recidiviz/tools/deploy/justice_counts` directory. Example usages:
+
+```
+./recidiviz/tools/deploy/justice_counts/deploy_for_playtesting.sh -b <name of backend branch> -f <name of frontend branch> -a publisher -t playtesting
+
+./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh -b v1.0.0 -f v1.0.0 -a publisher
+
+./recidiviz/tools/deploy/justice_counts/deploy_to_prod.sh -b v1.0.0 -f v1.0.0 -a publisher
+```
+
+The versions we've deployed to staging or prod are tracked [here](https://paper.dropbox.com/doc/Justice-Counts-Deploy-Log--ByP1W00sWJCrBjelmL9_TVD_Ag-rxYzPkYw2yDQzobnXYM3f).
+
+## Creating Users and Agencies
+
+- To create a new Agency, use the Justice Counts > Agency Provisioning page in the admin panel (go/admin or go/admin-prod).
+- To add or remove an _existing_ user from an agency, you can use the Justice Counts > User Provisioning page in the admin panel.
+- To create a _new_ user, you must create them in both Auth0 and in our database. There is currently no easy way to do the latter. #TODO(#18438): Be able to create new users via the Admin Panel
 
 ## SQLAlchemy Primer
 
