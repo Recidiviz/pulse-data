@@ -453,7 +453,7 @@ def get_api_blueprint(
             )
             editor_id_to_json = (
                 AgencyUserAccountAssociationInterface.get_editor_id_to_json(
-                    session=current_session, reports=reports
+                    session=current_session, reports=reports, user=user
                 )
             )
             report_json = [
@@ -493,7 +493,7 @@ def get_api_blueprint(
             )
             editor_id_to_json = (
                 AgencyUserAccountAssociationInterface.get_editor_id_to_json(
-                    session=current_session, reports=[report]
+                    session=current_session, reports=[report], user=user
                 )
             )
 
@@ -556,7 +556,7 @@ def get_api_blueprint(
 
             editor_id_to_json = (
                 AgencyUserAccountAssociationInterface.get_editor_id_to_json(
-                    session=current_session, reports=[report]
+                    session=current_session, reports=[report], user=user
                 )
             )
             report_json = ReportInterface.to_json_response(
@@ -756,8 +756,7 @@ def get_api_blueprint(
             )
             return jsonify(
                 SpreadsheetInterface.get_spreadsheets_json(
-                    spreadsheets=spreadsheets,
-                    session=current_session,
+                    spreadsheets=spreadsheets, session=current_session, user=user
                 )
             )
         except Exception as e:
@@ -796,6 +795,10 @@ def get_api_blueprint(
         agency_id = int(data["agency_id"])
         system = data["system"]
         auth0_user_id = get_auth0_user_id(request_dict=data)
+        user = UserAccountInterface.get_user_by_auth0_user_id(
+            session=current_session,
+            auth0_user_id=auth0_user_id,
+        )
         file = request.files["file"]
         ingest_on_upload = data.get("ingest_on_upload")
         if file is None:
@@ -871,8 +874,7 @@ def get_api_blueprint(
         current_session.commit()
         return jsonify(
             SpreadsheetInterface.get_spreadsheets_json(
-                spreadsheets=[spreadsheet],
-                session=current_session,
+                spreadsheets=[spreadsheet], session=current_session, user=user
             ).pop()
         )
 
@@ -909,8 +911,7 @@ def get_api_blueprint(
             current_session.commit()
             return jsonify(
                 SpreadsheetInterface.get_spreadsheets_json(
-                    spreadsheets=[spreadsheet],
-                    session=current_session,
+                    spreadsheets=[spreadsheet], session=current_session, user=user
                 ).pop()
             )
         except Exception as e:

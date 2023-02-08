@@ -153,7 +153,7 @@ class AgencyUserAccountAssociationInterface:
 
     @staticmethod
     def get_editor_id_to_json(
-        session: Session, reports: List[schema.Report]
+        session: Session, reports: List[schema.Report], user: schema.UserAccount
     ) -> Dict[str, Dict[str, str]]:
         """Returns a dictionary mapping an editor's user_account_id to a
         object with their name and role. All reports will be from the same agency."""
@@ -161,31 +161,50 @@ class AgencyUserAccountAssociationInterface:
         if len(reports) == 0:
             return editor_json
 
+        agency_id = reports[0].source_id
+
         editor_ids = list(
             itertools.chain(*[report.modified_by or [] for report in reports])
         )
-        assocs = AgencyUserAccountAssociationInterface.get_associations_by_ids(
+        editor_assocs = AgencyUserAccountAssociationInterface.get_associations_by_ids(
             session=session,
             user_account_ids=editor_ids,
-            agency_id=reports[0].source_id,
+            agency_id=agency_id,
         )
         editor_ids_to_assocs = {
             k: list(v)
             for k, v in itertools.groupby(
-                sorted(assocs, key=lambda x: x.user_account_id),
+                sorted(editor_assocs, key=lambda x: x.user_account_id),
                 lambda x: x.user_account_id,
             )
         }
 
-        for editor_id, assocs in editor_ids_to_assocs.items():
-            if len(assocs) > 1:
+        user_assoc = next(
+            (assoc for assoc in user.agency_assocs if assoc.agency_id == agency_id),
+            None,
+        )
+
+        if not user_assoc:
+            raise JusticeCountsServerError(
+                code="justice_counts_agency_permission",
+                description=(
+                    f"User does not have permission to access agency {agency_id}."
+                ),
+            )
+
+        for editor_id, editor_assocs in editor_ids_to_assocs.items():
+            if len(editor_assocs) > 1:
                 raise JusticeCountsServerError(
                     code="justice_counts_user_uniqueness",
                     description="Multiple user account associations exist for one user and one agency.",
                 )
-            assoc = assocs[0]
+            assoc = editor_assocs[0]
             editor_json[editor_id] = {
-                "name": assoc.user_account.name,
+                # currently this logic is duplicated in get_editor_id_to_json and get_uploader_id_to_json
+                "name": "JC Admin"
+                if assoc.role == schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                else assoc.user_account.name,
                 "role": assoc.role.value if assoc.role is not None else None,
             }
 
@@ -193,7 +212,9 @@ class AgencyUserAccountAssociationInterface:
 
     @staticmethod
     def get_uploader_id_to_json(
-        session: Session, spreadsheets: List[schema.Spreadsheet]
+        session: Session,
+        spreadsheets: List[schema.Spreadsheet],
+        user: schema.UserAccount,
     ) -> Dict[str, Dict[str, str]]:
         """
         Returns a dictionary mapping an editor's user_account_id to a
@@ -219,6 +240,20 @@ class AgencyUserAccountAssociationInterface:
             )
             for user in uploaded_by_users
         }
+
+        user_assoc = next(
+            (assoc for assoc in user.agency_assocs if assoc.agency_id == source_id),
+            None,
+        )
+
+        if not user_assoc:
+            raise JusticeCountsServerError(
+                code="justice_counts_agency_permission",
+                description=(
+                    f"User does not have permission to access agency {source_id}."
+                ),
+            )
+
         for editor_id, assocs in uploader_ids_to_assocs.items():
             if len(assocs) > 1:
                 raise JusticeCountsServerError(
@@ -231,7 +266,11 @@ class AgencyUserAccountAssociationInterface:
 
             assoc = assocs[0]
             editor_json[editor_id] = {
-                "name": assoc.user_account.name,
+                # currently this logic is duplicated in get_editor_id_to_json and get_uploader_id_to_json
+                "name": "JC Admin"
+                if assoc.role == schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
+                else assoc.user_account.name,
                 "role": assoc.role.value if assoc.role is not None else None,
             }
 
