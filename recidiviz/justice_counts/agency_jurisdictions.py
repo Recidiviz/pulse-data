@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Interface for working with the AgencyJurisdiction model."""
-from typing import List
+from typing import Dict, List
 
 from sqlalchemy import delete
 from sqlalchemy.dialects.postgresql import insert
@@ -59,3 +59,27 @@ class AgencyJurisdictionInterface:
                 jurisdiction_id=jurisdiction_id,
             )
             session.execute(insert_statement)
+
+    @staticmethod
+    def to_json(
+        session: Session,
+        agency_id: int,
+    ) -> Dict:
+        all_agency_jurisdictions = (
+            session.query(schema.AgencyJurisdiction).filter(
+                schema.AgencyJurisdiction.source_id == agency_id
+            )
+        ).all()
+
+        included_ids = []
+        excluded_ids = []
+        for jurisdiction in all_agency_jurisdictions:
+            if jurisdiction.membership == "INCLUDE":
+                included_ids.append(jurisdiction.jurisdiction_id)
+            else:
+                excluded_ids.append(jurisdiction.jurisdiction_id)
+
+        return {
+            "agency_id": agency_id,
+            "jurisdictions": {"included": included_ids, "excluded": excluded_ids},
+        }
