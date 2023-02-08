@@ -29,7 +29,10 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
         SELECT 
             external_id AS person_external_id,
             "usTnExpiration" AS opportunity_name,
-        FROM `{{project_id}}.{{workflows_dataset}}.us_tn_full_term_supervision_discharge_record_materialized`
+            CAST(JSON_EXTRACT_SCALAR(single_reason.reason.eligible_date) AS DATE) AS expiration_date,
+        FROM `{{project_id}}.{{workflows_dataset}}.us_tn_full_term_supervision_discharge_record_materialized` tes,
+        UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason
+        WHERE STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_1_DAY'        
     ),
     tn_compliant_reporting_eligibility AS (
         SELECT
@@ -50,7 +53,8 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             address,
             phone_number,
             earliest_supervision_start_date_in_latest_system AS supervision_start_date,
-            expiration_date,
+            COALESCE(tn_expiration_eligibility.expiration_date, 
+                     tn_compliant_reporting_eligibility.expiration_date) AS expiration_date,
             current_balance,
             last_payment_amount,
             last_payment_date,
@@ -62,6 +66,6 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
                                "tn_expiration_eligibility.opportunity_name"])} AS all_eligible_opportunities,
         FROM tn_compliant_reporting_eligibility
         LEFT JOIN tn_supervision_level_downgrade_eligibility USING (person_external_id)
-        LEFT JOIN tn_expiration_eligibility USING (person_external_id)
+        FULL OUTER JOIN tn_expiration_eligibility USING (person_external_id)
     )
 """
