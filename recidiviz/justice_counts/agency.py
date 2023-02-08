@@ -74,7 +74,11 @@ class AgencyInterface:
 
     @staticmethod
     def get_agency_by_name(session: Session, name: str) -> schema.Agency:
-        return session.query(schema.Agency).filter(schema.Agency.name == name).one()
+        return (
+            session.query(schema.Agency)
+            .filter(schema.Agency.name == name)
+            .one_or_none()
+        )
 
     @staticmethod
     def get_agencies_by_name(session: Session, names: List[str]) -> List[schema.Agency]:
