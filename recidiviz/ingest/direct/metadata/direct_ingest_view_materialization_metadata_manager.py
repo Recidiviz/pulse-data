@@ -18,6 +18,7 @@
 completed ingest view materialization jobs to disk.
 """
 
+import abc
 import datetime
 from typing import Dict, List, Optional, Union
 
@@ -93,10 +94,96 @@ class DirectIngestViewMaterializationMetadataManager:
     ingest view materialization jobs to disk.
     """
 
+    @property
+    @abc.abstractmethod
+    def region_code(self) -> str:
+        """The region code to manage metadata for."""
+
+    @property
+    @abc.abstractmethod
+    def ingest_instance(self) -> DirectIngestInstance:
+        """The ingest instance to manage metadata for."""
+
+    @abc.abstractmethod
+    def register_ingest_materialization_job(
+        self, job_args: IngestViewMaterializationArgs
+    ) -> DirectIngestViewMaterializationMetadata:
+        """Writes a new row to the ingest view metadata table with the expected path
+        once the export job completes.
+        """
+
+    @abc.abstractmethod
+    def get_job_completion_time_for_args(
+        self, job_args: IngestViewMaterializationArgs
+    ) -> Optional[datetime.datetime]:
+        """Returns the completion time of the materialization job represented by the
+        provided args.
+        """
+
+    @abc.abstractmethod
+    def mark_ingest_view_materialized(
+        self, job_args: IngestViewMaterializationArgs
+    ) -> None:
+        """Commits the current time as the materialization_time for the given ingest
+        view materialization job.
+        """
+
+    @abc.abstractmethod
+    def get_most_recent_registered_job(
+        self, ingest_view_name: str
+    ) -> Optional[DirectIngestViewMaterializationMetadata]:
+        """Returns most recently created materialization metadata row where
+        is_invalidated is False, or None if there are no metadata rows for this ingest
+        view for this manager's region / ingest instance.
+        """
+
+    @abc.abstractmethod
+    def get_jobs_pending_completion(
+        self,
+    ) -> List[DirectIngestViewMaterializationMetadata]:
+        """Returns metadata for all ingest view materialization jobs that have not yet
+        been completed.
+        """
+
+    @abc.abstractmethod
+    def mark_instance_data_invalidated(self) -> None:
+        """Sets the is_invalidated on all rows for the state/instance"""
+
+    @abc.abstractmethod
+    def transfer_metadata_to_new_instance(
+        self,
+        new_instance_manager: "DirectIngestViewMaterializationMetadataManager",
+    ) -> None:
+        """Take all rows where `is_invalidated=False` and transfer to the instance associated with
+        the new_instance_manager
+        """
+
+    @abc.abstractmethod
+    def get_instance_summaries(self) -> Dict[str, IngestViewMaterializationSummary]:
+        """Returns a map with a summary of the status of pending / completed
+        materialization jobs for each ingest view.
+        """
+
+
+class DirectIngestViewMaterializationMetadataManagerImpl(
+    DirectIngestViewMaterializationMetadataManager
+):
+    """Writes metadata about pending and completed ingest view materialization jobs to a
+    postgres database.
+    """
+
     def __init__(self, region_code: str, ingest_instance: DirectIngestInstance):
-        self.region_code = region_code.upper()
-        self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
-        self.ingest_instance = ingest_instance
+        self._region_code = region_code.upper()
+        self._database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
+        self._ingest_instance = ingest_instance
+
+    @property
+    def region_code(self) -> str:
+        return self._region_code
+
+    @property
+    def ingest_instance(self) -> DirectIngestInstance:
+        return self._ingest_instance
 
     @staticmethod
     def _schema_object_to_entity(
@@ -115,7 +202,7 @@ class DirectIngestViewMaterializationMetadataManager:
         """Writes a new row to the ingest view metadata table with the expected path
         once the export job completes.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self._database_key) as session:
             metadata = schema.DirectIngestViewMaterializationMetadata(
                 region_code=self.region_code,
                 instance=self.ingest_instance.value,
@@ -144,7 +231,7 @@ class DirectIngestViewMaterializationMetadataManager:
         """Commits the current time as the materialization_time for the given ingest
         view materialization job.
         """
-        with SessionFactory.using_database(self.database_key) as session:
+        with SessionFactory.using_database(self._database_key) as session:
             metadata = (
                 session.query(schema.DirectIngestViewMaterializationMetadata)
                 .filter_by(
@@ -168,7 +255,7 @@ class DirectIngestViewMaterializationMetadataManager:
         view for this manager's region / ingest instance.
         """
         with SessionFactory.using_database(
-            self.database_key, autocommit=False
+            self._database_key, autocommit=False
         ) as session:
             metadata = (
                 session.query(schema.DirectIngestViewMaterializationMetadata)
@@ -196,7 +283,7 @@ class DirectIngestViewMaterializationMetadataManager:
         been completed.
         """
         with SessionFactory.using_database(
-            self.database_key, autocommit=False
+            self._database_key, autocommit=False
         ) as session:
             results = (
                 session.query(schema.DirectIngestViewMaterializationMetadata)
@@ -214,7 +301,7 @@ class DirectIngestViewMaterializationMetadataManager:
         self, job_args: IngestViewMaterializationArgs
     ) -> DirectIngestViewMaterializationMetadata:
         with SessionFactory.using_database(
-            self.database_key, autocommit=False
+            self._database_key, autocommit=False
         ) as session:
             metadata = (
                 session.query(schema.DirectIngestViewMaterializationMetadata)
@@ -244,7 +331,7 @@ class DirectIngestViewMaterializationMetadataManager:
         instance.
         """
         with SessionFactory.using_database(
-            self.database_key,
+            self._database_key,
         ) as session:
             table_cls = schema.DirectIngestViewMaterializationMetadata
             delete_query = table_cls.__table__.delete().where(
@@ -258,7 +345,7 @@ class DirectIngestViewMaterializationMetadataManager:
     def mark_instance_data_invalidated(self) -> None:
         """Sets the is_invalidated on all rows for the state/instance"""
         with SessionFactory.using_database(
-            self.database_key,
+            self._database_key,
         ) as session:
             table_cls = schema.DirectIngestViewMaterializationMetadata
             update_query = (
@@ -289,7 +376,7 @@ class DirectIngestViewMaterializationMetadataManager:
             )
 
         with SessionFactory.using_database(
-            self.database_key,
+            self._database_key,
         ) as session:
             table_cls = schema.DirectIngestViewMaterializationMetadata
             # check destination instance does not have any valid metadata rows
@@ -328,7 +415,7 @@ class DirectIngestViewMaterializationMetadataManager:
         materialization jobs for each ingest view.
         """
         with SessionFactory.using_database(
-            self.database_key, autocommit=False
+            self._database_key, autocommit=False
         ) as session:
             materialization_time_col = (
                 schema.DirectIngestViewMaterializationMetadata.materialization_time

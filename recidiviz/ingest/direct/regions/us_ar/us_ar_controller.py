@@ -34,7 +34,10 @@ class UsArController(BaseDirectIngestController):
     def __init__(self, ingest_instance: DirectIngestInstance):
         super().__init__(ingest_instance)
 
-    def get_ingest_view_rank_list(self) -> List[str]:
+    @classmethod
+    def _get_ingest_view_rank_list(
+        cls, ingest_instance: DirectIngestInstance
+    ) -> List[str]:
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """

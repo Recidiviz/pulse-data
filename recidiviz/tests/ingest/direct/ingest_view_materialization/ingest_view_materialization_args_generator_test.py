@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializa
     IngestViewMaterializationArgsGenerator,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
+    DirectIngestViewMaterializationMetadataManagerImpl,
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
     PostgresDirectIngestRawFileMetadataManager,
@@ -138,7 +138,7 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         return IngestViewMaterializationArgsGenerator(
             region=region,
             raw_file_metadata_manager=raw_file_metadata_manager,
-            metadata_manager=DirectIngestViewMaterializationMetadataManager(
+            metadata_manager=DirectIngestViewMaterializationMetadataManagerImpl(
                 region.region_code, self.ingest_instance
             ),
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]

@@ -21,6 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
 class UsPaController(BaseDirectIngestController):
@@ -30,7 +31,10 @@ class UsPaController(BaseDirectIngestController):
     def region_code(cls) -> str:
         return StateCode.US_PA.value.lower()
 
-    def get_ingest_view_rank_list(self) -> List[str]:
+    @classmethod
+    def _get_ingest_view_rank_list(
+        cls, ingest_instance: DirectIngestInstance
+    ) -> List[str]:
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """

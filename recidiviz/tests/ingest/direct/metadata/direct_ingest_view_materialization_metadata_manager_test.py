@@ -27,7 +27,7 @@ from freezegun import freeze_time
 from more_itertools import one
 
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
-    DirectIngestViewMaterializationMetadataManager,
+    DirectIngestViewMaterializationMetadataManagerImpl,
     IngestViewMaterializationSummary,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
@@ -53,24 +53,24 @@ def _fake_eq(e1: Entity, e2: Entity) -> bool:
     return entity_graph_eq(e1, e2, _should_ignore_field_cb)
 
 
-class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
-    """Tests for DirectIngestViewMaterializationMetadataManager."""
+class DirectIngestViewMaterializationMetadataManagerImplTest(TestCase):
+    """Tests for DirectIngestViewMaterializationMetadataManagerImpl."""
 
     def setUp(self) -> None:
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
         fakes.use_in_memory_sqlite_database(self.database_key)
-        self.metadata_manager = DirectIngestViewMaterializationMetadataManager(
+        self.metadata_manager = DirectIngestViewMaterializationMetadataManagerImpl(
             region_code="us_xx", ingest_instance=DirectIngestInstance.PRIMARY
         )
 
         self.metadata_manager_secondary = (
-            DirectIngestViewMaterializationMetadataManager(
+            DirectIngestViewMaterializationMetadataManagerImpl(
                 region_code="us_xx", ingest_instance=DirectIngestInstance.SECONDARY
             )
         )
 
         self.metadata_manager_other_region = (
-            DirectIngestViewMaterializationMetadataManager(
+            DirectIngestViewMaterializationMetadataManagerImpl(
                 region_code="us_yy", ingest_instance=DirectIngestInstance.PRIMARY
             )
         )
@@ -317,7 +317,7 @@ class DirectIngestViewMaterializationMetadataManagerTest(TestCase):
     def run_materialization_job_progression(
         self,
         job_args: IngestViewMaterializationArgs,
-        metadata_manager: DirectIngestViewMaterializationMetadataManager,
+        metadata_manager: DirectIngestViewMaterializationMetadataManagerImpl,
         num_previous_jobs_completed_for_view: int = 0,
     ) -> None:
         """Runs through the full progression of operations we expect to run on an
