@@ -839,6 +839,7 @@ def get_api_blueprint(
                     schema.System[system]
                     for system in agency.systems or []
                     if schema.System[system] in schema.System.supervision_subsystems()
+                    or schema.System[system] == schema.System.SUPERVISION
                 }
                 if system == "SUPERVISION"
                 # Only send over metric definitions for the current system unless
@@ -868,6 +869,7 @@ def get_api_blueprint(
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_definitions=metric_definitions,
+                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
             )
 

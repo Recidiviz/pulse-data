@@ -566,6 +566,9 @@ class BulkUploader:
                 "parole": schema.System.PAROLE,
                 "probation": schema.System.PROBATION,
                 "post release": schema.System.POST_RELEASE,
+                "other supervision": schema.System.OTHER_SUPERVISION,
+                "pretrial supervision": schema.System.PRETRIAL_SUPERVISION,
+                "dual supervision": schema.System.DUAL_SUPERVISION,
             }
             for system_value, system_rows in system_value_to_rows.items():
                 normalized_system_value = (

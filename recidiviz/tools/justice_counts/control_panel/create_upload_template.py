@@ -30,7 +30,6 @@ import pandas as pd
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_METRICFILES,
 )
-from recidiviz.justice_counts.metrics.metric_definition import MetricCategory
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -45,30 +44,24 @@ def generate_bulk_upload_template(system: schema.System) -> None:
             metricfile.definition.reporting_frequency
             == schema.ReportingFrequency.ANNUAL
         ):
-            if (
-                metricfile.definition.system == schema.System.SUPERVISION
-                and metricfile.definition.category != MetricCategory.CAPACITY_AND_COST
-            ):
-                for s in ["PAROLE", "PROBATION"]:
+            if metricfile.definition.system == schema.System.SUPERVISION:
+                for s in schema.System.supervision_subsystems():
                     for year in [2021, 2022]:
-                        row = {"year": str(year), "system": s, "value": ""}
+                        row = {"year": str(year), "system": s.name, "value": ""}
                         rows.append(row)
             else:
                 for year in [2021, 2022]:
                     row = {"year": str(year), "value": ""}
                     rows.append(row)
         else:
-            if (
-                metricfile.definition.system == schema.System.SUPERVISION
-                and metricfile.definition.category != MetricCategory.CAPACITY_AND_COST
-            ):
-                for s in ["PAROLE", "PROBATION"]:
+            if metricfile.definition.system == schema.System.SUPERVISION:
+                for s in schema.System.supervision_subsystems():
                     for year in [2021, 2022]:
                         for month in range(1, 13):
                             row = {
                                 "year": str(year),
                                 "month": str(month),
-                                "system": s,
+                                "system": s.name,
                                 "value": "",
                             }
                             rows.append(row)

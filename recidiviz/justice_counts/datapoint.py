@@ -783,7 +783,7 @@ class DatapointInterface:
             # agency datapoint with a context key of DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
             # and a value of True.
             if (
-                datapoint.context_key is DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+                datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
                 and datapoint.value == str(True)
             ):
                 return True
