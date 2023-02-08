@@ -37,6 +37,8 @@ def prompt_for_confirmation(
         )
     else:
         input_prompt += " [y/n]: "
+
+    input_prompt += "\n"
     if dry_run:
         logging.info("[DRY RUN] %s **DRY RUN - SKIPPED CONFIRMATION**", input_prompt)
         return None
@@ -58,7 +60,7 @@ def interactive_prompt_retry_on_exception(
         try:
             x = fn()
         except Exception as e:
-            logging.warning("%s %s", str(type(e)), str(e))
+            logging.exception(e)
             if prompt_for_confirmation(
                 input_text=input_text,
                 accepted_response_override=accepted_response_override,

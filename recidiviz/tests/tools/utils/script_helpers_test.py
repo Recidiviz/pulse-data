@@ -39,7 +39,7 @@ from recidiviz.tools.utils.script_helpers import (
                 "user_input": "y",
                 "logging_results": [],
                 "input_mock_check": lambda m: m.mock_calls
-                == [mock.call("test input [y/n]: ")],
+                == [mock.call("test input [y/n]: \n")],
                 "exit_mock_check": lambda m: not m.called,
             },
             id="yes",
@@ -56,7 +56,7 @@ from recidiviz.tools.utils.script_helpers import (
                     )
                 ],
                 "input_mock_check": lambda m: m.mock_calls
-                == [mock.call("test input [y/n]: ")],
+                == [mock.call("test input [y/n]: \n")],
                 "exit_mock_check": lambda m: m.mock_calls == [mock.call(1)],
             },
             id="no and exit",
@@ -71,7 +71,7 @@ from recidiviz.tools.utils.script_helpers import (
                     mock.call(
                         "test input"
                         '\nPlease type "YES" to confirm. '
-                        "(Anything else exits): "
+                        "(Anything else exits): \n"
                     )
                 ],
                 "exit_mock_check": lambda m: not m.called,
@@ -87,7 +87,7 @@ from recidiviz.tools.utils.script_helpers import (
                         "root",
                         logging.INFO,
                         (
-                            "[DRY RUN] test input [y/n]:  "
+                            "[DRY RUN] test input [y/n]: \n "
                             "**DRY RUN - SKIPPED CONFIRMATION**"
                         ),
                     )
@@ -136,7 +136,7 @@ def test_prompt_for_confirmation_no_exit_boolean(
 ) -> None:
     input_mock.return_value = user_input
     assert rv == prompt_for_confirmation("test input", exit_on_cancel=False)
-    assert input_mock.mock_calls == [mock.call("test input [y/n]: ")]
+    assert input_mock.mock_calls == [mock.call("test input [y/n]: \n")]
     assert caplog.record_tuples == logging_results
 
 
