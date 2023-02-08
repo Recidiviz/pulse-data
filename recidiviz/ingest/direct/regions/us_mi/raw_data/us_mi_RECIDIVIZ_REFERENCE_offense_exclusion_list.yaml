@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RECIDIVIZ_REFERENCE_offense_exclusion_list
+file_description: |-
+  This is a reference table for offense codes that lead to exclusions from opportunities.  This is internally maintained and not automatically updated by MI's data transfers.
+always_historical_export: True
+data_classification: source
+separator: ","
+custom_line_terminator: "\n"
+primary_key_cols:
+  - statute_code
+columns:
+  - name: statute_code
+    description: MCL statute code for the offense
+  - name: is_assaultive_misdemeanor
+    description: Boolean flag for whether this statute code indicates an assaultive misdemeanor
+  - name: requires_so_registration
+    description: Boolean flag for whether this statute code requires sex offender registration
+  - name: is_excluded
+    description: Boolean flag for whether this statute code would indicate that someone should be excluded from the opportunity
