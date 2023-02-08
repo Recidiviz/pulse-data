@@ -145,8 +145,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         task_args: ExtractAndMergeArgs,
     ) -> None:
         """Queues *but does not run* a process job task."""
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controllers.get(task_args.ingest_instance):
+            raise ValueError(
+                f"Controller for instance={task_args.ingest_instance} is null - did you call "
+                f"set_controller()?"
+            )
 
         task_id = build_extract_and_merge_task_id(region, task_args)
         self.extract_and_merge_tasks[task_args.ingest_instance].append(
@@ -160,8 +163,10 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         just_finished_job: bool,
     ) -> None:
         """Queues *but does not run* a scheduler task."""
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controllers.get(ingest_instance):
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
 
         task_id = build_scheduler_task_id(region, ingest_instance)
         self.scheduler_tasks[ingest_instance].append(
@@ -174,8 +179,10 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         ingest_instance: DirectIngestInstance,
         can_start_ingest: bool,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controllers.get(ingest_instance):
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
         task_id = build_handle_new_files_task_id(region, ingest_instance)
         self.scheduler_tasks[ingest_instance].append(
             (
@@ -191,8 +198,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         raw_data_source_instance: DirectIngestInstance,
         data_import_args: GcsfsRawDataBQImportArgs,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controllers.get(raw_data_source_instance):
+            raise ValueError(
+                f"Controller for instance={raw_data_source_instance} is null - did you"
+                f" call set_controller()?"
+            )
         task_id = build_raw_data_import_task_id(region, data_import_args)
         self.raw_data_import_tasks[raw_data_source_instance].append(
             (f"projects/path/to/{task_id}", data_import_args)
@@ -203,8 +213,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         region: DirectIngestRegion,
         task_args: IngestViewMaterializationArgs,
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controllers.get(task_args.ingest_instance):
+            raise ValueError(
+                f"Controller for instance={task_args.ingest_instance} is null - did you call "
+                "set_controller()?"
+            )
         task_id = build_ingest_view_materialization_task_id(region, task_args)
         self.ingest_view_materialization_tasks[task_args.ingest_instance].append(
             (f"projects/path/to/{task_id}", task_args)
@@ -213,8 +226,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(
     def create_direct_ingest_sftp_download_task(
         self, region: DirectIngestRegion
     ) -> None:
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        if not self.controllers.get(DirectIngestInstance.PRIMARY):
+            raise ValueError(
+                "Controller for instance=DirectIngestInstance.PRIMARY is null - did you call "
+                "set_controller()?"
+            )
         task_id = build_sftp_download_task_id(region)
         # SFTP only uses PRIMARY
         self.sftp_tasks[DirectIngestInstance.PRIMARY].append(task_id)
@@ -244,15 +260,19 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         if self.num_finished_extract_and_merge_tasks[ingest_instance]:
             raise ValueError("Must first pop last finished task.")
 
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(ingest_instance)
+        if controller is None:
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
 
         task = self.extract_and_merge_tasks[ingest_instance][0]
 
         with monitoring.push_region_tag(
-            self.controller.region.region_code, self.controller.ingest_instance.value
+            controller.region.region_code,
+            controller.ingest_instance.value,
         ):
-            self.controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
+            controller.run_extract_and_merge_job_and_kick_scheduler_on_completion(
                 task[1]
             )
         self.num_finished_extract_and_merge_tasks[ingest_instance] += 1
@@ -268,45 +288,49 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         if self.num_finished_scheduler_tasks[ingest_instance]:
             raise ValueError("Must first pop last finished task.")
 
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
 
         task = self.scheduler_tasks[ingest_instance][0]
         task_name = task[0]
         _, task_id = os.path.split(task_name)
 
         with monitoring.push_region_tag(
-            self.controller.region.region_code, self.controller.ingest_instance.value
+            controller.region.region_code,
+            controller.ingest_instance.value,
         ):
             ingest_instance = task[1]
             if (
-                self.controller.ingest_instance == DirectIngestInstance.SECONDARY
+                controller.ingest_instance == DirectIngestInstance.SECONDARY
                 and ingest_instance == DirectIngestInstance.PRIMARY
             ):
                 raise ValueError(
                     f"Task request [{task_name}] for instance [{ingest_instance}]"
                     f"that does not match registered controller instance"
-                    f"[{self.controller.ingest_instance}]. Only PRIMARY instances can schedule tasks in SECONDARY "
-                    "instances."
+                    f"[{controller.ingest_instance}]. Only PRIMARY instances can schedule "
+                    f"tasks in SECONDARY instances."
                 )
             if task_id.startswith(
                 build_scheduler_task_id(
-                    self.controller.region,
-                    self.controller.ingest_instance,
+                    controller.region,
+                    controller.ingest_instance,
                     prefix_only=True,
                 )
             ):
-                self.controller.schedule_next_ingest_task(
+                controller.schedule_next_ingest_task(
                     current_task_id=task_id, just_finished_job=task[2]
                 )
             elif task_id.startswith(
                 build_handle_new_files_task_id(
-                    self.controller.region,
-                    self.controller.ingest_instance,
+                    controller.region,
+                    controller.ingest_instance,
                     prefix_only=True,
                 )
             ):
-                self.controller.handle_new_files(
+                controller.handle_new_files(
                     current_task_id=task_id, can_start_ingest=task[2]
                 )
             else:
@@ -324,15 +348,19 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         if self.num_finished_raw_data_import_tasks[ingest_instance]:
             raise ValueError("Must first pop last finished task.")
 
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
 
         _task_id, args = self.raw_data_import_tasks[ingest_instance][0]
 
         with monitoring.push_region_tag(
-            self.controller.region.region_code, self.controller.ingest_instance.value
+            controller.region.region_code,
+            controller.ingest_instance.value,
         ):
-            self.controller.do_raw_data_import(data_import_args=args)
+            controller.do_raw_data_import(data_import_args=args)
 
         self.num_finished_raw_data_import_tasks[ingest_instance] += 1
 
@@ -348,15 +376,19 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         if self.num_finished_ingest_view_materialization_tasks[ingest_instance]:
             raise ValueError("Must first pop last finished task.")
 
-        if not self.controller:
-            raise ValueError("Controller is null - did you call set_controller()?")
+        controller = self.controllers.get(ingest_instance)
+        if not controller:
+            raise ValueError(
+                f"Controller for instance={ingest_instance} is null - did you call set_controller()?"
+            )
 
         _task_id, args = self.ingest_view_materialization_tasks[ingest_instance][0]
 
         with monitoring.push_region_tag(
-            self.controller.region.region_code, self.controller.ingest_instance.value
+            controller.region.region_code,
+            controller.ingest_instance.value,
         ):
-            self.controller.do_ingest_view_materialization(
+            controller.do_ingest_view_materialization(
                 ingest_view_materialization_args=args
             )
 

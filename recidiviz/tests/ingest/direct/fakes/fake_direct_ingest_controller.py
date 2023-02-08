@@ -16,10 +16,10 @@
 # =============================================================================
 """Helpers for building a test-only version of the BaseDirectIngestController."""
 from types import ModuleType
-from typing import Dict, List, Type
+from typing import Dict, List, Optional, Type
 
 import attr
-from mock import Mock, patch
+from mock import Mock, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
@@ -373,6 +373,7 @@ def build_fake_direct_ingest_controller(
     run_async: bool,
     can_start_ingest: bool = True,
     regions_module: ModuleType = fake_regions_module,
+    shared_task_manager: Optional[FakeSynchronousDirectIngestCloudTaskManager] = None,
 ) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal
     classes mocked properly.
@@ -422,9 +423,13 @@ def build_fake_direct_ingest_controller(
         mock_build_status_manager,
     ):
         task_manager = (
-            FakeAsyncDirectIngestCloudTaskManager()
-            if run_async
-            else FakeSynchronousDirectIngestCloudTaskManager()
+            shared_task_manager
+            if shared_task_manager
+            else (
+                FakeAsyncDirectIngestCloudTaskManager()
+                if run_async
+                else FakeSynchronousDirectIngestCloudTaskManager()
+            )
         )
         mock_task_factory_cls.return_value = task_manager
         mock_big_query_client_cls.return_value = _MockBigQueryClientForControllerTests(
@@ -437,7 +442,14 @@ def build_fake_direct_ingest_controller(
         ):
             controller = controller_cls(ingest_instance=ingest_instance)
 
-            task_manager.set_controller(controller)
+            task_manager.set_controller(ingest_instance, controller)
+            if not shared_task_manager:
+                for instance in DirectIngestInstance:
+                    if instance != ingest_instance:
+                        mock_controller = create_autospec(BaseDirectIngestController)
+                        mock_controller.ingest_instance = instance
+                        task_manager.set_controller(instance, mock_controller)
+
             fake_fs.test_set_delegate(
                 DirectIngestFakeGCSFileSystemDelegate(
                     controller, can_start_ingest=can_start_ingest
