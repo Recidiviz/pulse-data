@@ -102,10 +102,11 @@ class SpreadsheetInterface:
     def get_spreadsheets_json(
         spreadsheets: List[schema.Spreadsheet],
         session: Session,
+        user: schema.UserAccount,
     ) -> List[Dict[str, Any]]:
         uploader_id_to_json = (
             AgencyUserAccountAssociationInterface.get_uploader_id_to_json(
-                session=session, spreadsheets=spreadsheets
+                session=session, spreadsheets=spreadsheets, user=user
             )
         )
         return [
