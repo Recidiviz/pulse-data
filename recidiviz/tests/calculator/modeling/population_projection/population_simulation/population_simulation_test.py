@@ -45,7 +45,7 @@ class TestPopulationSimulation(unittest.TestCase):
     test_total_population_data = pd.DataFrame()
     user_inputs: UserInputs = cast(UserInputs, None)
     simulation_architecture: Dict[str, str] = {}
-    macro_population_simulation = Optional[PopulationSimulation]
+    macro_population_simulation: Optional[PopulationSimulation] = None
     macro_projection = pd.DataFrame()
 
     def setUp(self) -> None:
