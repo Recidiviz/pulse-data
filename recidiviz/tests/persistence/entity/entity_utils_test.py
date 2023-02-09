@@ -254,6 +254,10 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
         # StateStaffRolePeriod cannot be placeholders - must always have an external_id
         # and start_date.
     ],
+    schema.StateStaffSupervisorPeriod: [
+        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
+        # external_id and start_date.
+    ],
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(state_code=StateCode.US_XX.value)
     ],
@@ -408,6 +412,10 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
     schema.StateStaffExternalId: [],
     schema.StateStaffRolePeriod: [
         # StateStaffRolePeriod cannot be reference entities - must always have a
+        # start_date.
+    ],
+    schema.StateStaffSupervisorPeriod: [
+        # StateStaffSupervisorPeriod cannot be reference entities - must always have a
         # start_date.
     ],
     schema.StateSupervisionCaseTypeEntry: [
@@ -703,6 +711,16 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             start_date=datetime.date(2022, 5, 8),
             end_date=datetime.date(2022, 5, 10),
             role_type=StateStaffRoleType.SUPERVISION_OFFICER.value,
+        )
+    ],
+    schema.StateStaffSupervisorPeriod: [
+        schema.StateStaffSupervisorPeriod(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            supervisor_staff_external_id="ABC",
+            supervisor_staff_external_id_type="US_XX_STAFF_ID",
         )
     ],
     schema.StateSupervisionCaseTypeEntry: [
