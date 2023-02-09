@@ -22,12 +22,13 @@ from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 class StaffType(DimensionBase, enum.Enum):
-    ATTORNEY = "Attorney"
-    SUPERVISOR = "Supervisor"
-    ADMINISTRATIVE = "Administrative"
-    SUPPORT_OR_EXPERT = "Support or Expert"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    LEGAL_STAFF = "Legal Staff"
+    ADVOCATE_STAFF = "Victim-Witness Advocate Staff"
+    ADMINISTRATIVE = "Administrative Staff"
+    INVESTIGATIVE_STAFF = "Investigative Staff"
+    OTHER = "Other Staff"
+    UNKNOWN = "Unknown Staff"
+    VACANT_POSITIONS = "Vacant Positions (Any Staff Type)"
 
     @classmethod
     def dimension_identifier(cls) -> str:

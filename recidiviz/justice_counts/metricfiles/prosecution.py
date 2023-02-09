@@ -35,11 +35,11 @@ PROSECUTION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="total_staff",
-        definition=prosecution.total_staff,
+        definition=prosecution.staff,
     ),
     MetricFile(
         canonical_filename="total_staff_by_type",
-        definition=prosecution.total_staff,
+        definition=prosecution.staff,
         disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),
