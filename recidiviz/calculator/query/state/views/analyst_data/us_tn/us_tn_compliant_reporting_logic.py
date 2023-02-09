@@ -81,7 +81,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 previous_supervision_level,
                 previous_supervision_level_raw_text,
                 LAG(start_date) OVER(PARTITION BY sl.person_id ORDER BY start_date) AS previous_start_date,
-                MAX(CASE WHEN sl.supervision_level IN ("IN_CUSTODY", "MAXIMUM", "HIGH", "MEDIUM") THEN start_date END) OVER(PARTITION BY sl.person_id) AS latest_start_higher_sup_level,
+                MAX(CASE WHEN sl.supervision_level IN ("IN_CUSTODY", "MAXIMUM", "HIGH", "MEDIUM", "WARRANT", "ABSCONDED") THEN start_date END) OVER(PARTITION BY sl.person_id) AS latest_start_higher_sup_level,
             FROM `{project_id}.{sessions_dataset}.supervision_level_raw_text_sessions_materialized` sl
             WHERE sl.state_code = 'US_TN'
         )
@@ -668,6 +668,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 */
                     WHEN zero_tolerance_codes.Offender_ID IS NOT NULL AND supervision_type NOT LIKE '%PAROLE%' THEN 3
                     WHEN missing_sent_info = 1 THEN 3
+                    WHEN only_prior_sent = 1 THEN 3
+                    WHEN has_active_sentence = 0 THEN 3
                     ELSE 1 END AS zt_discretion_eligibility,
                 -- Counties in JD 17 don't allow CR for probation cases
                 CASE WHEN judicial_district = '17' AND supervision_type LIKE '%PROBATION%' THEN 0 ELSE 1 END AS eligible_counties,
