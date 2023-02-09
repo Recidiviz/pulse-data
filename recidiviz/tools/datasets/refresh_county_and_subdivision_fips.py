@@ -23,6 +23,7 @@ Usage: `python -m recidiviz.tools.datasets.refresh_county_and_subdivision_fips`
 """
 import os
 
+import numpy as np
 import pandas as pd
 from us import states
 
@@ -36,7 +37,6 @@ from recidiviz.tools.datasets.refresh_county_fips import (
     FIPS_2018_PLACE_COL,
     FIPS_2018_STATE_COL,
     FIPS_2018_SUMMARY_COL,
-    FIPS_COL,
     STATE_ABBREV_COL,
     STATE_CODE_COL,
 )
@@ -106,8 +106,90 @@ def generate_fips_df(path: str = FIPS_2021_URL) -> pd.DataFrame:
     # Add column with full state name
     fips_df.insert(loc=0, column="state_name", value=full_state_name_col)
 
-    # Add columns with concatenated fips
-    fips_df[FIPS_COL] = fips_df[STATE_CODE_COL] + fips_df[COUNTY_CODE_COL]
+    # Make new name, county_name, county_subdivision_name, and type columns
+
+    # STATE
+    # State name is just 'state' (same as area_name)
+    fips_df.loc[fips_df["county_code"] == "000", "name"] = fips_df.loc[
+        fips_df["county_code"] == "000", "area_name"
+    ]
+    # State county_name is None
+    fips_df.loc[fips_df["county_code"] == "000", "county_name"] = np.nan
+    # State county_sub_division_name is None
+    fips_df.loc[fips_df["county_code"] == "000", "county_subdivision_name"] = np.nan
+    # State type is 'state'
+    fips_df.loc[fips_df["county_code"] == "000", "type"] = "state"
+
+    # COUNTY
+    # County name is 'county, state' (same as area_name, state_name)
+    fips_df.loc[
+        (fips_df["county_code"] != "000") & (fips_df["county_subdivision"] == "00000"),
+        "name",
+    ] = (
+        fips_df.loc[
+            (fips_df["county_code"] != "000")
+            & (fips_df["county_subdivision"] == "00000"),
+            "area_name",
+        ]
+        + ", "
+        + fips_df.loc[
+            (fips_df["county_code"] != "000")
+            & (fips_df["county_subdivision"] == "00000"),
+            "state_name",
+        ]
+    )
+    # County county_name is the same as area_name
+    fips_df.loc[
+        (fips_df["county_code"] != "000") & (fips_df["county_subdivision"] == "00000"),
+        "county_name",
+    ] = fips_df.loc[
+        (fips_df["county_code"] != "000") & (fips_df["county_subdivision"] == "00000"),
+        "area_name",
+    ]
+    # County county_subdivision_name is None
+    fips_df.loc[
+        (fips_df["county_code"] != "000") & (fips_df["county_subdivision"] == "00000"),
+        "county_subdivision_name",
+    ] = np.nan
+    # County type is 'county'
+    fips_df.loc[
+        (fips_df["county_code"] != "000") & (fips_df["county_subdivision"] == "00000"),
+        "type",
+    ] = "county"
+
+    # COUNTY SUBDIVISIONS
+    # County subdivision name is 'county_subdivision, county, state'
+    # County subdivision county_name is the county
+    # County subdivision county_subdivision_name is the area_name
+    # County subdivision type is 'county_subdivision'
+    for idx, row in fips_df.iterrows():
+        if row[4] != "00000":
+            state_code = row[2]
+            county_code = row[3]
+            county = fips_df[
+                (fips_df["state_code"] == state_code)
+                & (fips_df["county_code"] == county_code)
+                & (fips_df["county_subdivision"] == "00000")
+            ].iloc[0, 5]
+            fips_df.iloc[idx, 6] = f"{row[5]}, {county}, {row[0]}"
+            fips_df.iloc[idx, 7] = county
+            fips_df.iloc[idx, 8] = row[5]
+            fips_df.iloc[idx, 9] = "county_subdivision"
+
+    # D.C. and Puerto Rico are special cases
+    fips_df.loc[fips_df["state_name"] == "District of Columbia", "type"] = "district"
+    fips_df.loc[fips_df["state_name"] == "Puerto Rico", "type"] = "territory"
+
+    # Create unique id (state_code + county_code + county_subdivision)
+    fips_df["id"] = (
+        fips_df["state_code"] + fips_df["county_code"] + fips_df["county_subdivision"]
+    )
+
+    # Drop area_name, state_code, county_code, county_subdivision_code
+    fips_df = fips_df.drop(
+        ["state_code", "county_code", "area_name", "county_subdivision"],
+        axis="columns",
+    )
 
     return fips_df
 

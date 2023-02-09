@@ -30,73 +30,27 @@ def get_all_jurisdictions() -> List[Dict[str, Any]]:
         dtype={
             "state_name": str,
             "state_abbrev": str,
-            "state_code": str,
-            "county_code": str,
-            "county_subdivision": str,
-            "area_name": str,
-            "fips": str,
+            "name": str,
+            "county_name": str,
+            "county_subdivision_name": str,
+            "type": str,
+            "id": str,
         },
     )
     jurisdiction_lst = []
     for _, jurisdiction in jurisdictions_df.iterrows():
-        # unique id is state_code + county_code + county_subdivision
         jurisdiction_json = {
-            "id": jurisdiction[2] + jurisdiction[3] + jurisdiction[4],
-            "area_name": jurisdiction[5],
-            "state_name": jurisdiction[0],
+            "id": jurisdiction[6],
             "state_abbrev": jurisdiction[1],
-            "state_code": jurisdiction[2],
-            "fips": jurisdiction[6],
+            "state_name": jurisdiction[0],
+            "county_name": jurisdiction[3]
+            if pd.isna(jurisdiction[3]) is False
+            else None,
+            "county_subdivision_name": jurisdiction[4]
+            if pd.isna(jurisdiction[4]) is False
+            else None,
+            "name": jurisdiction[2],
+            "type": jurisdiction[5],
         }
-        # D.C. special case (1)
-        if jurisdiction[0] == "District of Columbia":
-            state_json = {
-                "county_name": None,
-                "county_code": None,
-                "county_subdivision": None,
-                "county_subdivision_code": None,
-                "type": "district",
-            }
-            jurisdiction_json.update(state_json)
-        # Puerto Rico special case (1)
-        elif jurisdiction[3] == "000" and jurisdiction[0] == "Puerto Rico":
-            state_json = {
-                "county_name": None,
-                "county_code": None,
-                "county_subdivision": None,
-                "county_subdivision_code": None,
-                "type": "territory",
-            }
-            jurisdiction_json.update(state_json)
-        # states (50)
-        elif jurisdiction[3] == "000":
-            state_json = {
-                "county_name": None,
-                "county_code": None,
-                "county_subdivision": None,
-                "county_subdivision_code": None,
-                "type": "state",
-            }
-            jurisdiction_json.update(state_json)
-        # counties (3220 counties)
-        elif jurisdiction[4] == "00000":
-            county_json = {
-                "county_name": jurisdiction[5],
-                "county_code": jurisdiction[3],
-                "county_subdivision": None,
-                "county_subdivision_code": None,
-                "type": "county",
-            }
-            jurisdiction_json.update(county_json)
-        # county subdivisions (21057 county subdivisions)
-        else:
-            county_subdiv_json = {
-                "county_name": None,
-                "county_code": None,
-                "county_subdivision": jurisdiction[5],
-                "county_subdivision_code": jurisdiction[4],
-                "type": "county_subdivision",
-            }
-            jurisdiction_json.update(county_subdiv_json)
         jurisdiction_lst.append(jurisdiction_json)
     return jurisdiction_lst
