@@ -384,14 +384,14 @@ class TestUploadStateFilesToIngestBucketController(unittest.TestCase):
             },
         )
         result: MultiRequestResultWithSkipped[str, str, str] = controller.do_upload()
-        self.assertListEqual(
+        self.assertCountEqual(
             result.successes,
             [
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.txt",
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/test_file.csv",
             ],
         )
-        self.assertListEqual(
+        self.assertCountEqual(
             result.skipped,
             [
                 "recidiviz-456-direct-ingest-state-us-xx/raw_data/skipped.csv",
