@@ -434,3 +434,16 @@ class StateStaffRolePeriodFactory(EntityFactory):
             defaults={},
             **kwargs,
         )
+
+
+class StateStaffSupervisorPeriodFactory(EntityFactory):
+    @staticmethod
+    def deserialize(
+        **kwargs: DeserializableEntityFieldValue,
+    ) -> entities.StateStaffSupervisorPeriod:
+        return entity_deserialize(
+            cls=entities.StateStaffSupervisorPeriod,
+            converter_overrides={},
+            defaults={},
+            **kwargs,
+        )

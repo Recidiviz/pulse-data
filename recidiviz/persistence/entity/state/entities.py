@@ -1749,6 +1749,9 @@ class StateStaff(
     role_periods: List["StateStaffRolePeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    supervisor_periods: List["StateStaffSupervisorPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
     def get_external_ids(self) -> List[StateStaffExternalId]:
         return self.external_ids
@@ -1794,6 +1797,43 @@ class StateStaffRolePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     staff_role_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    staff: Optional["StateStaff"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Represents information about a staff member’s direct supervisor during a
+    particular period of time.
+    """
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    external_id: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
+    end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    #   - What
+    supervisor_staff_external_id: str = attr.ib(
+        default=None, validator=attr_validators.is_str
+    )
+    supervisor_staff_external_id_type: str = attr.ib(
+        default=None, validator=attr_validators.is_str
+    )
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    staff_supervisor_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 

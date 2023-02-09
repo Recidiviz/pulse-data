@@ -3045,6 +3045,9 @@ class StateStaff(StateBase):
     role_periods = relationship(
         "StateStaffRolePeriod", backref="staff", lazy="selectin"
     )
+    supervisor_periods = relationship(
+        "StateStaffSupervisorPeriod", backref="staff", lazy="selectin"
+    )
 
 
 # Shared mixin columns
@@ -3199,4 +3202,71 @@ class StateStaffRolePeriod(StateBase, _ReferencesStateStaffSharedColumns):
     )
     role_subtype_raw_text = Column(
         String(255), comment="The raw text of the role subtype."
+    )
+
+
+class StateStaffSupervisorPeriod(StateBase, _ReferencesStateStaffSharedColumns):
+    """Represents a StateStaffSupervisorPeriod in the SQL schema"""
+
+    __tablename__ = "state_staff_supervisor_period"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="staff_supervisor_periods_unique_within_region",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "The StateStaffSupervisorPeriod object represents information about a staff "
+                "member’s direct supervisor during a particular period of time. "
+            )
+        },
+    )
+
+    staff_supervisor_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="staff member supervisor period"
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateStaffSupervisorPeriod"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    start_date = Column(
+        Date,
+        nullable=False,
+        comment="The date on which the staff member started serving this role.",
+    )
+    end_date = Column(
+        Date,
+        comment=(
+            "The date on which the staff member stopped serving this role. This is an "
+            "exclusive end date, meaning this staff member is no longer considered to "
+            "have this role on this day."
+        ),
+    )
+    supervisor_staff_external_id = Column(
+        String(255),
+        nullable=False,
+        comment="The external id of this staff member's supervisor.",
+    )
+    supervisor_staff_external_id_type = Column(
+        String(255),
+        nullable=False,
+        comment="The id type associated with the supervisor_staff_external_id field.",
     )
