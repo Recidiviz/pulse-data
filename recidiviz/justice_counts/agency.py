@@ -19,7 +19,7 @@
 import logging
 from typing import List, Optional, Set
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -60,7 +60,17 @@ class AgencyInterface:
         session: Session, agency_ids: List[int], raise_on_missing: bool = False
     ) -> List[schema.Agency]:
         agencies = (
-            session.query(schema.Agency).filter(schema.Agency.id.in_(agency_ids)).all()
+            session.query(schema.Agency)
+            .filter(schema.Agency.id.in_(agency_ids))
+            # eagerly load the users in this agency
+            .options(
+                selectinload(schema.Agency.user_account_assocs).joinedload(
+                    schema.AgencyUserAccountAssociation.user_account
+                )
+            )
+            # eagerly load the agency settings
+            .options(selectinload(schema.Agency.agency_settings))
+            .all()
         )
         found_agency_ids = {a.id for a in agencies}
         if len(agency_ids) != len(found_agency_ids):

@@ -162,6 +162,8 @@ class AgencyUserAccountAssociationInterface:
                 ),
                 schema.AgencyUserAccountAssociation.agency_id == agency_id,
             )
+            # eagerly load the corresponding user accounts since we'll need to lookup the name
+            .options(joinedload(schema.AgencyUserAccountAssociation.user_account))
             .all()
         )
 

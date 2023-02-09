@@ -395,6 +395,7 @@ def get_api_blueprint(
                 auth0_user_id=auth0_user_id,
                 email=email,
             )
+            user_id = user.id
 
             if in_development():
                 # When running locally, our AgencyUserAccountAssociation table
@@ -424,7 +425,7 @@ def get_api_blueprint(
             current_session.commit()
             return jsonify(
                 {
-                    "id": user.id,
+                    "id": user_id,
                     "agencies": agency_json,
                 }
             )
