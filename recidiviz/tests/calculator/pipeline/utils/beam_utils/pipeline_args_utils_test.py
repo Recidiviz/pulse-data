@@ -104,6 +104,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             ],
             "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
             "disk_size_gb": 50,
+            "dataflow_service_options": ["enable_hot_key_logging"],
         }
 
     def _assert_pipeline_args_equal_exclude_beam_options(
@@ -276,6 +277,7 @@ class TestPipelineArgsUtils(unittest.TestCase):
             "extra_packages": ["dist/recidiviz-calculation-pipelines.tar.gz"],
             "disk_size_gb": 50,
             "save_main_session": True,
+            "dataflow_service_options": ["enable_hot_key_logging"],
         }
 
         self.assertEqual(

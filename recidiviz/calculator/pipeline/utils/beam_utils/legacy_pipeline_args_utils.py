@@ -243,6 +243,13 @@ def _get_parsed_full_apache_beam_args(
         default=True,
     )
 
+    parser.add_argument(
+        "--dataflow_service_options=enable_hot_key_logging",
+        action="store_true",
+        help="When set, specifies when a hot key is detected in the pipeline.",
+        default=True,
+    )
+
     if profile_memory:
         parser.add_argument(
             "--profile_memory",
