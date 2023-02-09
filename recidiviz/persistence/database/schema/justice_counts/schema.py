@@ -327,8 +327,7 @@ class Agency(Source):
         return state_name
 
     user_account_assocs = relationship(
-        "AgencyUserAccountAssociation",
-        back_populates="agency",
+        "AgencyUserAccountAssociation", back_populates="agency"
     )
 
     agency_settings = relationship("AgencySetting")
@@ -414,6 +413,7 @@ class UserAccount(JusticeCountsBase):
     agency_assocs = relationship(
         "AgencyUserAccountAssociation",
         back_populates="user_account",
+        lazy="selectin",  # by default, always load agency associations with the user
     )
 
     __table_args__ = tuple(
@@ -530,6 +530,12 @@ class Report(JusticeCountsBase):
     )
 
     source = relationship(Source)
+
+    # All Agencies are Sources, but not all Sources are agencies
+    # report.source will only load the Source columns, not the Agency columns
+    # So we need a separate relationship for reports that belong to Agencies
+    agency = relationship(Agency)
+
     recurring_report = relationship(
         "Report", uselist=False, remote_side=[id], backref=backref("children")
     )
@@ -546,7 +552,7 @@ class Report(JusticeCountsBase):
         "Datapoint",
         back_populates="report",
         cascade="all, delete",
-        lazy="selectin",
+        lazy="selectin",  # by default, always load datapoints with the report
         passive_deletes=True,
     )
 

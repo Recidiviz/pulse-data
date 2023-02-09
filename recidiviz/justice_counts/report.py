@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar
 
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Query, Session, lazyload
+from sqlalchemy.orm import Query, Session, joinedload, lazyload
 
 from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
@@ -56,11 +56,15 @@ class ReportInterface:
         # Always lazily load report table instances -- we never need those for the Control Panel
         q = q.options(lazyload(schema.Report.report_table_instances))
 
+        # Always eagerly load the report source since we'll need to lookup the systems
+        q = q.options(joinedload(schema.Report.agency))
+
         if not include_datapoints:
             # If we don't need the datapoints for a given report in this query
             # (e.g. we're just showing the reports page, so we only need report metadata),
             # then we should lazily load them too
             q = q.options(lazyload(schema.Report.datapoints))
+
         return q
 
     @staticmethod
@@ -333,7 +337,7 @@ class ReportInterface:
            already stored in our database.
         """
         agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=session, agency_id=report.source.id
+            session=session, agency_id=report.source_id
         )
 
         # If data has already been reported for some metrics on this report,
@@ -349,7 +353,7 @@ class ReportInterface:
         #   - Report frequency (e.g. only annual metrics)
         metric_definitions = DatapointsForMetric.get_metric_definitions_for_report(
             report_frequency=report.type,
-            systems={schema.System[system] for system in report.source.systems or []},
+            systems={schema.System[system] for system in report.agency.systems or []},
             starting_month=report.date_range_start.month,
             metric_key_to_datapoints=metric_key_to_datapoints,
         )

@@ -176,7 +176,7 @@ class DatapointInterface:
             if datapoint.context_key is not None:
                 key = datapoint.context_key
                 # Note: Report-level contexts are deprecated!
-                if datapoint.source is not None:
+                if datapoint.source_id is not None:
                     # If a datapoint represents a context, add it into a dictionary
                     # formatted as {context_key: datapoint}
                     if datapoint.context_key == REPORTING_FREQUENCY_CONTEXT_KEY:
@@ -248,23 +248,23 @@ class DatapointInterface:
                 dimension_identifier = list(
                     datapoint.dimension_identifier_to_member.keys()
                 ).pop()
-                if datapoint.report is not None:
+                if datapoint.report_id is not None:
                     metric_datapoints.dimension_id_to_report_datapoints[
                         dimension_identifier
                     ].append(datapoint)
-                elif datapoint.source is not None:
+                elif datapoint.source_id is not None:
                     metric_datapoints.dimension_id_to_agency_datapoints[
                         dimension_identifier
                     ].append(datapoint)
 
             # TOP-LEVEL METRIC
             elif datapoint.dimension_identifier_to_member is None:
-                if datapoint.report is not None:
+                if datapoint.report_id is not None:
                     # If a datapoint has a report attached to it and has no context key or
                     # dimension_identifier_to_member value, it represents the reported aggregate value
                     # of a metric.
                     metric_datapoints.aggregated_value = datapoint.get_value()
-                if datapoint.source is not None:
+                if datapoint.source_id is not None:
                     # If a datapoint has a source attached to it and has no context key or
                     # dimension_identifier_to_member value, it represents the weather or not the
                     # datapoint is enabled. is_metric_enabled defaults to True. If there is no

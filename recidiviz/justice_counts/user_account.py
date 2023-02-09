@@ -18,7 +18,7 @@
 
 from typing import List, Optional, Set
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     Agency,
@@ -110,41 +110,21 @@ class UserAccountInterface:
         session.delete(existing_assoc)
 
     @staticmethod
-    def get_users(session: Session, include_agencies: bool = True) -> List[UserAccount]:
-        q = session.query(UserAccount)
-
-        if include_agencies:
-            q.options(joinedload(UserAccount.agency_assocs))
-
-        return q.order_by(UserAccount.id).all()
+    def get_users(session: Session) -> List[UserAccount]:
+        return session.query(UserAccount).order_by(UserAccount.id).all()
 
     @staticmethod
-    def get_user_by_auth0_user_id(
-        session: Session, auth0_user_id: str, include_agencies: bool = True
-    ) -> UserAccount:
-        q = session.query(UserAccount).filter(
-            UserAccount.auth0_user_id == auth0_user_id
+    def get_user_by_auth0_user_id(session: Session, auth0_user_id: str) -> UserAccount:
+        return (
+            session.query(UserAccount)
+            .filter(UserAccount.auth0_user_id == auth0_user_id)
+            .one_or_none()
         )
-
-        if include_agencies:
-            q.options(joinedload(UserAccount.agency_assocs))
-
-        return q.one_or_none()
 
     @staticmethod
     def get_user_by_id(session: Session, user_account_id: int) -> UserAccount:
         return (
             session.query(UserAccount).filter(UserAccount.id == user_account_id).one()
-        )
-
-    @staticmethod
-    def get_users_by_id(
-        session: Session, user_account_ids: Set[int]
-    ) -> List[UserAccount]:
-        return (
-            session.query(UserAccount)
-            .filter(UserAccount.id.in_(user_account_ids))
-            .all()
         )
 
     @staticmethod
