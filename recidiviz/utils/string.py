@@ -17,7 +17,7 @@
 """General utilities for dealing with strings"""
 import operator
 import string
-from typing import Any, FrozenSet, Iterable, Mapping, Sequence, Union
+from typing import Any, FrozenSet, Iterable, Mapping, Sequence, Set, Union
 
 import attr
 import Levenshtein as lev
@@ -37,7 +37,7 @@ class StrictStringFormatter(string.Formatter):
 
     def check_unused_args(
         self,
-        used_args: Sequence[Union[int, str]],
+        used_args: Set[Union[int, str]],
         args: Sequence[Any],
         kwargs: Mapping[str, Any],
     ) -> None:
