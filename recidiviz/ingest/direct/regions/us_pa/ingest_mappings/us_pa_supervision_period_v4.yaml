@@ -75,9 +75,6 @@ output:
             $enum_mapping:
               $raw_text: termination_reason
               $mappings:
-                StateSupervisionPeriodTerminationReason.ABSCONSION: "45" # Case closed for
-                # client with criminal charges pending that has reached maximum expiration
-                # of sentence on paroled offense - usually applies to absconders or unconvicted violators
                 StateSupervisionPeriodTerminationReason.DEATH:
                   - "47" # Death while under supervision of causes unrelated to crime
                   - "48" # Death while under supervision caused by criminal activity
@@ -86,8 +83,11 @@ output:
                 StateSupervisionPeriodTerminationReason.EXPIRATION:
                   - "43" # Successful completion of sentence at maximum expiration date
                   - "49" # Not an actually closed case - Case reached the Maximum Expiration
-                # Date for a State Sentence but has a county sentence of probation to finish.
-                # Closes the case and reopens it as a county probation case
+                  # Date for a State Sentence but has a county sentence of probation to finish.
+                  # Closes the case and reopens it as a county probation case
+                  - "45" # Case closed for
+                # client with criminal charges pending that has reached maximum expiration
+                # of sentence on paroled offense - usually applies to absconders or unconvicted violators
                 StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                   - "50" # Case Opened in Error
                   - "51" # ?? Not in data dictionary
