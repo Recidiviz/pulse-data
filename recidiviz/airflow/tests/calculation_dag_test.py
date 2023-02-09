@@ -56,29 +56,29 @@ _WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
     "view_materialization.wait_for_view_update_all_success"
 )
 _TRIGGER_VALIDATIONS_TASK_ID_REGEX = (
-    r"US_[A-Z]{2}_validations.trigger_us_[a-z]{2}_validations_task"
+    r"validations.US_[A-Z]{2}_validations.trigger_us_[a-z]{2}_validations_task"
 )
 _WAIT_FOR_VALIDATIONS_TASK_ID_REGEX = (
-    r"US_[A-Z]{2}_validations.wait_for_(us_[a-z]{2})_validations_completion"
+    r"validations.US_[A-Z]{2}_validations.wait_for_(us_[a-z]{2})_validations_completion"
 )
-_ACQUIRE_LOCK_TASK_ID = "state_bq_refresh.acquire_lock_STATE"
+_ACQUIRE_LOCK_TASK_ID = "bq_refresh.state_bq_refresh.acquire_lock_STATE"
 _WAIT_FOR_CAN_REFRESH_PROCEED_TASK_ID = (
-    "state_bq_refresh.wait_for_acquire_lock_success_STATE"
+    "bq_refresh.state_bq_refresh.wait_for_acquire_lock_success_STATE"
 )
 _TRIGGER_REFRESH_BQ_DATASET_TASK_ID = (
-    "state_bq_refresh.trigger_refresh_bq_dataset_task_STATE"
+    "bq_refresh.state_bq_refresh.trigger_refresh_bq_dataset_task_STATE"
 )
 _WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = (
-    "state_bq_refresh.wait_for_refresh_bq_dataset_success_STATE"
+    "bq_refresh.state_bq_refresh.wait_for_refresh_bq_dataset_success_STATE"
 )
 _SUPPLEMENTAL_PIPELINE_IDS = [
-    "US_ID_dataflow_pipelines.us-id-case-note-extracted-entities",
-    "US_IX_dataflow_pipelines.us-ix-case-note-extracted-entities",
+    "dataflow_pipelines.US_ID_dataflow_pipelines.us-id-case-note-extracted-entities",
+    "dataflow_pipelines.US_IX_dataflow_pipelines.us-ix-case-note-extracted-entities",
 ]
 
 
 def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
-    return f"{schema_type.lower()}_bq_refresh.post_refresh_short_circuit_{schema_type.upper()}"
+    return f"bq_refresh.{schema_type.lower()}_bq_refresh.post_refresh_short_circuit_{schema_type.upper()}"
 
 
 @patch(
@@ -250,7 +250,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
                 raise ValueError(f"Found unexpected leaf node: {wait_task.task_id}")
             self.assertEqual(
                 {
-                    f"{match.group(1).upper()}_validations.trigger_{match.group(1)}_validations_task"
+                    f"validations.{match.group(1).upper()}_validations.trigger_{match.group(1)}_validations_task"
                 },
                 wait_task.upstream_task_ids,
             )
@@ -521,7 +521,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         trigger_cloud_task_task = dag.get_task(
-            "US_ND_validations.trigger_us_nd_validations_task"
+            "validations.US_ND_validations.trigger_us_nd_validations_task"
         )
 
         if not isinstance(trigger_cloud_task_task, CloudTasksTaskCreateOperator):

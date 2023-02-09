@@ -461,10 +461,10 @@ def create_calculation_dag() -> None:
 
     if config_file is None:
         raise ValueError("Configuration file not specified")
-
-    state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
-    operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
-    case_triage_bq_refresh_completion = create_bq_refresh_nodes("CASE_TRIAGE")
+    with TaskGroup("bq_refresh") as _:
+        state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
+        operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
+        case_triage_bq_refresh_completion = create_bq_refresh_nodes("CASE_TRIAGE")
 
     update_normalized_state = IAPHTTPRequestOperator(
         task_id="update_normalized_state",
@@ -545,12 +545,14 @@ def create_calculation_dag() -> None:
     ] = defaultdict(list)
 
     dataflow_pipeline_task_groups: Dict[str, TaskGroup] = {}
+    dataflow_pipeline_task_group = TaskGroup("dataflow_pipelines")
 
     for metric_pipeline in metric_pipelines:
         pipeline_config_args = get_pipeline_config_args(metric_pipeline)
         if pipeline_config_args.state_code not in dataflow_pipeline_task_groups:
             dataflow_pipeline_task_groups[pipeline_config_args.state_code] = TaskGroup(
-                f"{pipeline_config_args.state_code}_dataflow_pipelines"
+                f"{pipeline_config_args.state_code}_dataflow_pipelines",
+                parent_group=dataflow_pipeline_task_group,
             )
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
@@ -571,13 +573,13 @@ def create_calculation_dag() -> None:
     normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "normalization_pipelines"
     )
-
+    normalization_task_group = TaskGroup("normalization")
     for normalization_pipeline in normalization_pipelines:
         pipeline_config_args = get_pipeline_config_args(normalization_pipeline)
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
             normalization_calculation_pipeline = dataflow_operator_for_pipeline(
-                pipeline_config_args, normalization_pipeline
+                pipeline_config_args, normalization_pipeline, normalization_task_group
             )
 
             # Normalization pipelines should run after the BQ refresh is complete, but
@@ -603,7 +605,8 @@ def create_calculation_dag() -> None:
         pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
         if pipeline_config_args.state_code not in dataflow_pipeline_task_groups:
             dataflow_pipeline_task_groups[pipeline_config_args.state_code] = TaskGroup(
-                f"{pipeline_config_args.state_code}_dataflow_pipelines"
+                f"{pipeline_config_args.state_code}_dataflow_pipelines",
+                parent_group=dataflow_pipeline_task_group,
             )
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
@@ -616,9 +619,12 @@ def create_calculation_dag() -> None:
             supplemental_pipeline_operator >> trigger_view_rematerialize
 
     validation_task_groups: Dict[str, TaskGroup] = {}
+    validation_task_group = TaskGroup("validations")
     for state_code in metric_pipelines_by_state:
         if state_code not in validation_task_groups:
-            validation_task_groups[state_code] = TaskGroup(f"{state_code}_validations")
+            validation_task_groups[state_code] = TaskGroup(
+                f"{state_code}_validations", parent_group=validation_task_group
+            )
         trigger_state_validations = trigger_validations_operator(
             state_code, validation_task_groups[state_code]
         )
@@ -642,8 +648,11 @@ def create_calculation_dag() -> None:
     states_to_trigger = {
         pipeline.peek("state_code", str) for pipeline in metric_pipelines
     }
+    metric_export_task_group = TaskGroup("metric_exports")
     metric_export_task_groups = {
-        state_code: TaskGroup(f"{state_code}_metric_exports")
+        state_code: TaskGroup(
+            f"{state_code}_metric_exports", parent_group=metric_export_task_group
+        )
         for state_code in states_to_trigger
     }
 
@@ -658,7 +667,10 @@ def create_calculation_dag() -> None:
         *state_create_metric_view_data_export_nodes.values(),
         *[
             create_metric_view_data_export_nodes(
-                export, TaskGroup(f"{export}_metric_exports")
+                export,
+                TaskGroup(
+                    f"{export}_metric_exports", parent_group=metric_export_task_group
+                ),
             )
             for export in PIPELINE_AGNOSTIC_EXPORTS
         ],
