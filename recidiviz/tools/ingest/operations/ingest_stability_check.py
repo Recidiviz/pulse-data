@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Runs various sanity checks to ensure correctness in ingest for a given region.
+"""Runs various checks to ensure stability and correctness of ingest for a given region.
 
 Currently the script does the following:
 * Verifies that raw data files have reasonable primary keys set.
 * Verifies that ingest views are deterministic.
 
 Usage:
-python -m recidiviz.tools.ingest.operations.sanity_check \
+python -m recidiviz.tools.ingest.operations.ingest_stability_check \
     --project-id recidiviz-staging \
     --state-code US_ME
 
@@ -29,7 +29,7 @@ If you have made a change to a raw data config or ingest view and just want to v
 that change, you can filter to only checks that category (either "raw_data" or
 "ingest_view"). For example:
 
-python -m recidiviz.tools.ingest.operations.sanity_check \
+python -m recidiviz.tools.ingest.operations.ingest_stability_check \
     --project-id recidiviz-staging \
     --state-code US_ME \
     --category raw_data
@@ -183,9 +183,9 @@ def verify_ingest_view_determinism(
     ingest_instance: DirectIngestInstance,
     raw_data_source_instance: DirectIngestInstance,
 ) -> IngestViewDeterminismResult:
-    """Verifies that each of this state's ingest views  are deterministic."""
+    """Verifies that each of this state's ingest views are deterministic."""
     region = direct_ingest_regions.get_direct_ingest_region(state_code.value)
-    dataset_prefix = f"sanity_{str(uuid.uuid4())[:6]}"
+    dataset_prefix = f"stability_{str(uuid.uuid4())[:6]}"
 
     # TODO(#10128): We can't instantiate the full controller without patching classes
     # or inventing new fakes, but all we need is the ingest view rank list so we get the
@@ -293,7 +293,7 @@ def main(
     ingest_instance: DirectIngestInstance,
     raw_data_source_instance: DirectIngestInstance,
 ) -> int:
-    """Runs the various ingest sanity checks and reports the results."""
+    """Runs the various ingest stability checks and reports the results."""
     bq_client = BigQueryClientImpl()
 
     bad_key_file_tags = None
@@ -356,7 +356,7 @@ def parse_arguments() -> argparse.Namespace:
 
     parser.add_argument(
         "--state-code",
-        help="The state to run sanity checks for, in the form US_XX.",
+        help="The state to run ingest stability checks for, in the form US_XX.",
         type=str,
         choices=[state.value for state in StateCode],
         required=True,
