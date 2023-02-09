@@ -188,8 +188,6 @@ class System(enum.Enum):
     SUPERVISION = "SUPERVISION"
     PAROLE = "PAROLE"
     PROBATION = "PROBATION"
-    POST_RELEASE = "POST_RELEASE"
-    DUAL_SUPERVISION = "DUAL_SUPERVISION"
     PRETRIAL_SUPERVISION = "PRETRIAL_SUPERVISION"
     OTHER_SUPERVISION = "OTHER_SUPERVISION"
 
@@ -199,6 +197,8 @@ class System(enum.Enum):
     # Unused
     COURT_PROCESSES = "COURT_PROCESSES"
     COMMUNITY_SUPERVISION_AND_REENTRY = "COMMUNITY_SUPERVISION_AND_REENTRY"
+    POST_RELEASE = "POST_RELEASE"
+    DUAL_SUPERVISION = "DUAL_SUPERVISION"
 
     @classmethod
     def sort(cls, systems: List["System"]) -> List["System"]:
@@ -214,8 +214,6 @@ class System(enum.Enum):
         return {
             cls.PAROLE,
             cls.PROBATION,
-            cls.POST_RELEASE,
-            cls.DUAL_SUPERVISION,
             cls.PRETRIAL_SUPERVISION,
             cls.OTHER_SUPERVISION,
         }
