@@ -169,6 +169,12 @@ if [[ -n ${PROMOTE} ]]; then
     echo "App deployed to \`${GAE_VERSION}\`.$PROJECT_ID.appspot.com"
 else
     echo "App deployed (but not promoted) to \`${GAE_VERSION}\`.$PROJECT_ID.appspot.com"
+    echo "Stopping unpromoted version ${VERSION_TAG} now that it is healthy"
+    run_cmd gcloud app versions stop \
+        --project "${PROJECT_ID}"    \
+        --quiet                      \
+        --verbosity debug            \
+        "${GAE_VERSION}"
 fi
 
 if [[ -n ${PROMOTE} ]]; then
