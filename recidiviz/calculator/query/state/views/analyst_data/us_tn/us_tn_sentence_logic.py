@@ -142,7 +142,9 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
     )
     -- Put it all together to get offense type flags for each person, pulls the last known judicial district,
     -- and the last available conviction county for all sentences not marked inactive
-    SELECT all_sentences.*,
+    SELECT COALESCE(all_sentences.person_id, prior_sentences.person_id) AS person_id,
+            CASE WHEN all_sentences.person_id IS NULL AND prior_sentences.person_id IS NOT NULL THEN 1 ELSE 0 END AS only_prior_sent,
+            all_sentences.* EXCEPT(person_id),
             active_sentences.* EXCEPT(person_id),
             prior_sentences.* EXCEPT(person_id),
             union_start_dates.sentence_start_date,
@@ -151,7 +153,14 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             conviction_counties,
             /* If any of these flags are 1, a person isn't eligible at all */ 
             CASE 
-                WHEN GREATEST(domestic_flag, sex_offense_flag, assaultive_offense_flag, young_victim_flag, dui_flag, dui_last_5_years_flag, homicide_flag_ever, COALESCE(homicide_flag_prior,0)) = 1 THEN 0
+                WHEN GREATEST(COALESCE(domestic_flag,0), 
+                             COALESCE(sex_offense_flag,0), 
+                             COALESCE(assaultive_offense_flag,0), 
+                             COALESCE(young_victim_flag,0), 
+                             COALESCE(dui_flag,0), 
+                             COALESCE(dui_last_5_years_flag,0), 
+                             COALESCE(homicide_flag_ever,0), 
+                             COALESCE(homicide_flag_prior,0)) = 1 THEN 0
                 ELSE 1 END AS eligible_offense,
             
             /* These flags determine if there is discretion involved.
@@ -199,10 +208,10 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             CASE WHEN GREATEST(young_victim_flag,young_victim_flag_prior) = 0 AND young_victim_flag_ever = 1 AND all_young_victim_offenses_expired = 1 THEN 'Eligible - Expired'
                  END AS young_victim_flag_eligibility,
     FROM all_sentences 
+    FULL OUTER JOIN prior_sentences 
+        USING(person_id)
     LEFT JOIN active_sentences 
-        USING(person_id)
-    LEFT JOIN prior_sentences 
-        USING(person_id)
+        USING(person_id)    
     LEFT JOIN union_start_dates
         USING(person_id)
     LEFT JOIN (
