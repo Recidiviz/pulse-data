@@ -114,16 +114,6 @@ def create_workflows_api_blueprint() -> Blueprint:
         response.access_control_max_age = 2 * 60 * 60
         return response
 
-    # TODO(recidiviz-dashboards#2950): Remove extraneous logs
-    @workflows_api.after_request
-    def log_response(response: Response) -> Response:
-        logging.info(
-            "Returning response with status: %s, body: %s",
-            response.status,
-            response.data,
-        )
-        return response
-
     @workflows_api.route("/<state>/init")
     def init(state: str) -> Response:  # pylint: disable=unused-argument
         return jsonify({"csrf": generate_csrf(current_app.secret_key)})
