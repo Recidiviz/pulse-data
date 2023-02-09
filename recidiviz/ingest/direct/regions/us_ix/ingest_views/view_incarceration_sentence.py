@@ -33,20 +33,31 @@ VIEW_QUERY_TEMPLATE = f"""
             SentenceId,
             OffenderId, 
             CountyId,
-            EffectiveDate, 
             SentenceDate,
+            EffectiveDate,
             DpedApprovedDate,
             FtrdApprovedDate,
-            TermStatusDesc, 
             SentenceOrderEventTypeName,
-            _parentsentenceid,
             Sequence,
             ChargeId,
             relationships,
-            CorrectionsCompactEndDate
+            CorrectionsCompactEndDate,
+            SegmentMaxYears,
+            SegmentMaxMonths,
+            SegmentMaxDays,
+            SegmentPED,
+            SegmentSatisfactionDate,
+            SegmentStartDate,
+            SegmentEndDate,
+            SegmentYears,
+            SegmentMonths,
+            SegmentDays,
+            OffenseSentenceTypeId,
+            SentenceStatusId,
+            OffenseSortingOrder
         FROM final_sentences
         WHERE SentenceOrderCategoryId = '2'
-        AND SentenceOrderEventTypeId IN ('1', '2') -- keep "Initial" and "Amendment" sentences
+        AND SentenceOrderEventTypeId IN ('1', '2', '3') -- keep "Initial", "Amendment", and "Error Correction" sentences
 """
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_ix",

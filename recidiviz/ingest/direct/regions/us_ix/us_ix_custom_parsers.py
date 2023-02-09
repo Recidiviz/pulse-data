@@ -28,7 +28,10 @@ my_flat_field:
 
 from typing import Optional
 
-from recidiviz.common.str_field_utils import parse_datetime
+from recidiviz.common.str_field_utils import (
+    parse_datetime,
+    safe_parse_days_from_duration_pieces,
+)
 
 
 def parse_duration_from_two_dates(
@@ -66,3 +69,17 @@ def parse_supervision_violation_is_sex_offense(new_crime_types: str) -> bool:
 
 def parse_is_life_from_date(proj_completion_date: str) -> bool:
     return proj_completion_date[:4] == "9999"
+
+
+def max_and_min_lengths_days(
+    years_str: str,
+    months_str: str,
+    days_str: str,
+) -> Optional[str]:
+    """Returns the duration in days from days, months, and years"""
+    result = safe_parse_days_from_duration_pieces(years_str, months_str, days_str)
+    if result:
+        if result == 0:
+            return None
+        return str(result)
+    return None

@@ -4,16 +4,25 @@ input_columns:
   - SentenceId
   - OffenderId
   - CountyId
-  - EffectiveDate
   - SentenceDate
+  - EffectiveDate
   - SentenceOrderTypeCode
   - EndDate
-  - TermStatusDesc
   - SentenceOrderEventTypeName
-  - _parentsentenceid
   - Sequence
   - ChargeId
   - relationships
+  - SegmentMaxYears
+  - SegmentMaxMonths
+  - SegmentMaxDays
+  - SegmentSatisfactionDate
+  - SegmentStartDate
+  - SegmentYears
+  - SegmentMonths
+  - SegmentDays
+  - OffenseSentenceTypeId
+  - SentenceStatusId
+  - OffenseSortingOrder
 unused_columns: []
 output:
   StatePerson:
@@ -30,15 +39,15 @@ output:
                 - SentenceId # Never null in scl_Sentence table
           county_code: CountyId #  County code
           projected_completion_date: EndDate
-          start_date: EffectiveDate
+          completion_date: SegmentSatisfactionDate # UPDATED: field found
+          start_date: # UPDATED: now uses this date from scl_SentenceDetail when available, but nearly always the same as EffectiveDate on the SentenceOrder anyways
+            $conditional:
+              - $if:
+                  $not_null: SegmentStartDate
+                $then: SegmentStartDate
+              - $else: EffectiveDate
           status:
-            # This is not a perfect method for determining status because we're sometimes using
-            # term status instead of sentence specific status, but I can't locate a better system for now
-            #
-            # SentenceOrderStatusId is always equal to 1 = "In Progress"
-            # SentenceDetailStatusId is always null
-            # SentenceStatusId is always null
-            # For some reason, these are the only two that come up for probation sentences
+            # UPDATED: this uses either sentence order type code, or the sentence status (so either on the sentence order level or the offense sentence level)
             $conditional:
               - $if:
                   $equal:
@@ -53,27 +62,74 @@ output:
                       StateSentenceStatus.SUSPENDED:
                         - "B" # Suspended sentence
               - $else:
-                  $enum_mapping:
-                    $raw_text: TermStatusDesc
+                  $enum_mapping: # UPDATE: Now uses SentenceStatusId (which is at the sentence level) instead
+                    $raw_text: SentenceStatusId
                     $mappings:
-                      StateSentenceStatus.COMPLETED:
-                        - Inactive
                       StateSentenceStatus.SERVING:
-                        - Active - Community
-                        - Contract
-                        - Discretionary Parole
-                        - Escape
-                      StateSentenceStatus.REVOKED:
-                        - Active - Incarceration # Doesn't appear too often, only n=549
+                        - "531" # Active
+                      StateSentenceStatus.COMPLETED:
+                        - "535" # Satisfied
           date_imposed: SentenceDate
           supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
+          is_life: # UPDATED: now uses OffenseSentenceTypeId though Idaho warns of data quality issues with life sentences rn
+            $in:
+              $value: OffenseSentenceTypeId
+              $options:
+                - $literal("3")
+                - $literal("2")
+          max_length_days: # UPDATED: now on the sentence level
+            $conditional:
+              - $if:
+                  $or:
+                    - $not_null: SegmentMaxYears
+                    - $not_null: SegmentMaxMonths
+                    - $not_null: SegmentMaxDays
+                $then:
+                  $custom:
+                    $function: us_ix_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: SegmentMaxYears
+                      months_str: SegmentMaxMonths
+                      days_str: SegmentMaxDays
+          min_length_days: # UPDATED: now on the sentence level
+            $conditional:
+              - $if:
+                  $or:
+                    - $not_null: SegmentYears
+                    - $not_null: SegmentMonths
+                    - $not_null: SegmentDays
+                $then:
+                  $custom:
+                    $function: us_ix_custom_parsers.max_and_min_lengths_days
+                    $args:
+                      years_str: SegmentYears
+                      months_str: SegmentMonths
+                      days_str: SegmentDays
           sentence_metadata:
             $json_dict:
-              SENTENCE_EVENT_TYPE: SentenceOrderEventTypeName
-              PARENT_SENTENCE: _parentsentenceid
-              SENTENCE_SEQUENCE:
+              sentence_event_type: SentenceOrderEventTypeName
+              sentence_sequence:
                 $concat:
                   $values:
                     - ChargeId
                     - Sequence
-              RELATIONSHIPS: relationships
+                    - OffenseSortingOrder
+              relationships: relationships
+    task_deadlines:
+      - $conditional:
+          - $if:
+              $not_null: EndDate
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_SUPERVISION)
+                eligible_date: EndDate
+                update_datetime:
+                  $env: results_update_datetime
+                task_metadata:
+                  $json_dict:
+                    external_id:
+                      $concat:
+                        $values:
+                          - OffenderId # Enforced to never be null in query
+                          - SentenceId # Never null in scl_Sentence table
+                    sentence_type: $literal("SUPERVISION")

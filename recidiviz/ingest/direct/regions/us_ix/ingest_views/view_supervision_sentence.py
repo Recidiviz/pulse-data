@@ -41,20 +41,29 @@ VIEW_QUERY_TEMPLATE = f"""
             SentenceId,
             OffenderId, 
             CountyId,
-            EffectiveDate, 
             SentenceDate,
+            EffectiveDate,
             SentenceOrderTypeCode,
             (DATE(EndDate)) as EndDate,
-            TermStatusDesc,
             SentenceOrderEventTypeName,
-            _parentsentenceid,
             Sequence,
             ChargeId,
-            relationships
+            relationships,
+            SegmentMaxYears,
+            SegmentMaxMonths,
+            SegmentMaxDays,
+            SegmentSatisfactionDate,
+            SegmentStartDate,
+            SegmentYears,
+            SegmentMonths,
+            SegmentDays,
+            OffenseSentenceTypeId,
+            SentenceStatusId,
+            OffenseSortingOrder
         FROM final_sentences sent
         LEFT JOIN ProbationSupervision prob_sup ON sent.SentenceOrderId = prob_sup.SentenceOrderId
         WHERE SentenceOrderCategoryId = '1'
-        AND SentenceOrderEventTypeId IN ('1', '2', '5') -- keep "Initial", "Amendment", and "Linked Event" sentences
+        AND SentenceOrderEventTypeId IN ('1', '2', '3', '5') -- keep "Initial", "Amendment", "Error Correction", and "Linked Event" sentences
 """
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_ix",

@@ -4,17 +4,28 @@ input_columns:
   - SentenceId
   - OffenderId
   - CountyId
-  - EffectiveDate
   - SentenceDate
+  - EffectiveDate
   - DpedApprovedDate
   - FtrdApprovedDate
-  - TermStatusDesc
   - SentenceOrderEventTypeName
-  - _parentsentenceid
   - Sequence
   - ChargeId
   - relationships
   - CorrectionsCompactEndDate
+  - SegmentMaxYears
+  - SegmentMaxMonths
+  - SegmentMaxDays
+  - SegmentPED
+  - SegmentSatisfactionDate
+  - SegmentStartDate
+  - SegmentEndDate
+  - SegmentYears
+  - SegmentMonths
+  - SegmentDays
+  - OffenseSentenceTypeId
+  - SentenceStatusId
+  - OffenseSortingOrder
 unused_columns: []
 variables:
   # FtrdApprovedDate is sometimes empty in the case of interstate compact sentences so we'll proxy it using CorrectionsCompactEndDate
@@ -39,75 +50,112 @@ output:
                 - OffenderId # Enforced to never be null in query
                 - SentenceId # Never null in scl_Sentence
           county_code: CountyId
-          # couldn't find information for is_life (though it feels like it should be in OffenseSentenceTypeId, but that's only valued for offense sentences)
-          #TODO(#17187): Revisit pulling in is_life
-          start_date: EffectiveDate
+          start_date: # UPDATED: now uses this date from scl_SentenceDetail when available, but nearly always the same as EffectiveDate on the SentenceOrder anyways
+            $conditional:
+              - $if:
+                  $not_null: SegmentStartDate
+                $then: SegmentStartDate
+              - $else: EffectiveDate
           status:
             $enum_mapping:
-              $raw_text: TermStatusDesc
+              # UPDATE: Now uses SentenceStatusId (which is at the sentence level) instead
+              $raw_text: SentenceStatusId
               $mappings:
-                # This is not a perfect method for determining status because this uses term status instead of sentence specific status
-                # SentenceOrderTypeCode is always I (imposed), O (correctional compact), or R (retained jurisdiction), which would all map to SERVING
-                # SentenceOrderStatusId is always equal to 1 = "In Progress"
-                # SentenceDetailStatusId is always null
-                # SentenceStatusId is always null
                 StateSentenceStatus.SERVING:
-                  - Active - Incarceration
-                  # assuming these active community cases are parole
-                  - Active - Community
-                  - Contract
-                  - Discretionary Parole
-                  - Temporary Release
-                  - Escape
+                  - "531" # Active
                 StateSentenceStatus.COMPLETED:
-                  - Inactive
+                  - "535" # Satisfied
           incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
           date_imposed: SentenceDate
           projected_max_release_date: $variable(proj_completion_date_var) # Depending on which variable is used for projected_max_release_date, this might be on the term or sentence level (see note at Variables section)
-          projected_min_release_date: DpedApprovedDate # I think this is the same date as parole eligibility date? At least true in spotchecking some records
-          parole_eligibility_date: DpedApprovedDate # This is technially the PED for the entire term, so not 100% true in all cases
-          # couldn't find information for completion_date  #TODO(#17196): Revisit pulling this in
-          max_length_days:
-            # Depending on which variable is used for projected_max_release_date, this might be on the term or sentence level (see note at Variables section)
+          projected_min_release_date: SegmentEndDate # UPDATED: this is equal to sentence start date + min number of days
+          parole_eligibility_date: SegmentPED # UPDATED: this is now on the sentence level instead of on the term level
+          completion_date: SegmentSatisfactionDate # UPDATED: found this field so we'll be about to close #TODO(#17196)
+          max_length_days: # UPDATED: now on the sentence level
             $conditional:
               - $if:
-                  $and:
-                    - $not_null: EffectiveDate
-                    - $not_null: $variable(proj_completion_date_var)
+                  $or:
+                    - $not_null: SegmentMaxYears
+                    - $not_null: SegmentMaxMonths
+                    - $not_null: SegmentMaxDays
                 $then:
                   $custom:
-                    $function: us_ix_custom_parsers.parse_duration_from_two_dates
+                    $function: us_ix_custom_parsers.max_and_min_lengths_days
                     $args:
-                      start_date_str: EffectiveDate
-                      end_date_str: $variable(proj_completion_date_var)
-          min_length_days:
+                      years_str: SegmentMaxYears
+                      months_str: SegmentMaxMonths
+                      days_str: SegmentMaxDays
+          min_length_days: # UPDATED: now on the sentence level
             $conditional:
               - $if:
-                  $and:
-                    - $not_null: EffectiveDate
-                    - $not_null: DpedApprovedDate
+                  $or:
+                    - $not_null: SegmentYears
+                    - $not_null: SegmentMonths
+                    - $not_null: SegmentDays
                 $then:
                   $custom:
-                    $function: us_ix_custom_parsers.parse_duration_from_two_dates
+                    $function: us_ix_custom_parsers.max_and_min_lengths_days
                     $args:
-                      start_date_str: EffectiveDate
-                      end_date_str: DpedApprovedDate
-          is_life:
+                      years_str: SegmentYears
+                      months_str: SegmentMonths
+                      days_str: SegmentDays
+          is_life: # UPDATED: now uses OffenseSentenceTypeId as well as looking at the FTRD year.  Though Idaho warns of data quality issues with life sentences rn
             $conditional:
               - $if:
-                  $not_null: $variable(proj_completion_date_var)
-                $then:
+                  $in:
+                    $value: OffenseSentenceTypeId
+                    $options:
+                      - $literal("3")
+                      - $literal("2")
+                $then: $literal_bool(True)
+              - $else:
                   $custom:
                     $function: us_ix_custom_parsers.parse_is_life_from_date
                     $args:
                       proj_completion_date: $variable(proj_completion_date_var)
           sentence_metadata:
             $json_dict:
-              SENTENCE_EVENT_TYPE: SentenceOrderEventTypeName
-              PARENT_SENTENCE: _parentsentenceid
-              SENTENCE_SEQUENCE:
+              sentence_event_type: SentenceOrderEventTypeName
+              sentence_sequence:
                 $concat:
                   $values:
                     - ChargeId
                     - Sequence
-              RELATIONSHIPS: relationships
+                    - OffenseSortingOrder
+              relationships: relationships
+              term_PED: DpedApprovedDate
+    task_deadlines:
+      - $conditional:
+          - $if:
+              $not_null: SegmentPED
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.TRANSFER_TO_SUPERVISION_FROM_INCARCERATION)
+                eligible_date: SegmentPED
+                update_datetime:
+                  $env: results_update_datetime
+                task_metadata:
+                  $json_dict:
+                    external_id:
+                      $concat:
+                        $values:
+                          - OffenderId
+                          - SentenceId
+                    sentence_type: $literal("INCARCERATION")
+      - $conditional:
+          - $if:
+              $not_null: $variable(proj_completion_date_var)
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+                eligible_date: $variable(proj_completion_date_var)
+                update_datetime:
+                  $env: results_update_datetime
+                task_metadata:
+                  $json_dict:
+                    external_id:
+                      $concat:
+                        $values:
+                          - OffenderId
+                          - SentenceId
+                    sentence_type: $literal("INCARCERATION")
