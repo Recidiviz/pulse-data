@@ -45,9 +45,11 @@ def generate_bulk_upload_template(system: schema.System) -> None:
             == schema.ReportingFrequency.ANNUAL
         ):
             if metricfile.definition.system == schema.System.SUPERVISION:
-                for s in schema.System.supervision_subsystems():
+                for s in [s.name for s in schema.System.supervision_subsystems()] + [
+                    "ALL"
+                ]:
                     for year in [2021, 2022]:
-                        row = {"year": str(year), "system": s.name, "value": ""}
+                        row = {"year": str(year), "system": s, "value": ""}
                         rows.append(row)
             else:
                 for year in [2021, 2022]:
@@ -55,13 +57,15 @@ def generate_bulk_upload_template(system: schema.System) -> None:
                     rows.append(row)
         else:
             if metricfile.definition.system == schema.System.SUPERVISION:
-                for s in schema.System.supervision_subsystems():
+                for s in [s.name for s in schema.System.supervision_subsystems()] + [
+                    "ALL"
+                ]:
                     for year in [2021, 2022]:
                         for month in range(1, 13):
                             row = {
                                 "year": str(year),
                                 "month": str(month),
-                                "system": s.name,
+                                "system": s,
                                 "value": "",
                             }
                             rows.append(row)

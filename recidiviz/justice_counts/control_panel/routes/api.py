@@ -844,7 +844,7 @@ def get_api_blueprint(
                 if system == "SUPERVISION"
                 # Only send over metric definitions for the current system unless
                 # the agency is uploading for supervision, which sheets contain
-                # data for many supervision systems such as POST_RELEASE, PAROLE,
+                # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
                 # and PROBATION
                 else {schema.System[system]},
             )
