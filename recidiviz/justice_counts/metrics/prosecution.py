@@ -26,10 +26,19 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DispositionType,
     StaffType,
 )
+from recidiviz.justice_counts.includes_excludes.prosecution import (
+    ProsecutionAdministrativeStaffIncludesExcludes,
+    ProsecutionAdvocateStaffIncludesExcludes,
+    ProsecutionInvestigativeStaffIncludesExcludes,
+    ProsecutionLegalStaffIncludesExcludes,
+    ProsecutionStaffIncludesExcludes,
+    ProsecutionVacantStaffIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
     YesNoContext,
@@ -75,22 +84,57 @@ annual_budget = MetricDefinition(
     ],
 )
 
-total_staff = MetricDefinition(
+staff = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Staff",
-    description="Measures the number of full-time staff employed by your office.",
-    definitions=[
-        Definition(
-            term="Full-time staff",
-            definition="Number of people employed in a full-time (0.9+) capacity.",
-        )
-    ],
+    display_name="Staff",
+    description="The number of full-time equivalent positions budgeted for the office to process criminal cases.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full-time staff position filled.",
-    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
+    includes_excludes=IncludesExcludesSet(
+        ProsecutionStaffIncludesExcludes,
+        excluded_set={
+            ProsecutionStaffIncludesExcludes.VOLUNTEER,
+            ProsecutionStaffIncludesExcludes.INTERN,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=StaffType,
+            required=False,
+            dimension_to_description={
+                StaffType.LEGAL_STAFF: "The number of full-time equivalent positions that are responsible for their own criminal caseload or for performing tasks that have a legal function in support of that caseload.",
+                StaffType.ADVOCATE_STAFF: "The number of full-time equivalent positions that advise, counsel, or assist victims or witnesses of crime.",
+                StaffType.ADMINISTRATIVE: "The number of full-time equivalent positions that support legal and clerical policies and logistics to process criminal cases.",
+                StaffType.INVESTIGATIVE_STAFF: "The number of full-time equivalent positions that are responsible for gathering evidence to support criminal prosecutorial cases, inquiries into the details of a criminal case, and gathering evidence.",
+                StaffType.OTHER: "The number of full-time equivalent positions to process criminal cases that are not legal staff, victim-witness advocate staff, administrative staff, investigative staff, or staff with unknown position types but are another type of staff position.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions to process criminal cases that are of an unknown type.",
+                StaffType.VACANT_POSITIONS: "The number of full-time equivalent positions to process criminal cases of any type that are budgeted but not currently filled.",
+            },
+            dimension_to_includes_excludes={
+                StaffType.LEGAL_STAFF: IncludesExcludesSet(
+                    members=ProsecutionLegalStaffIncludesExcludes
+                ),
+                StaffType.ADVOCATE_STAFF: IncludesExcludesSet(
+                    members=ProsecutionAdvocateStaffIncludesExcludes
+                ),
+                StaffType.ADMINISTRATIVE: IncludesExcludesSet(
+                    members=ProsecutionAdministrativeStaffIncludesExcludes,
+                    excluded_set={
+                        ProsecutionAdministrativeStaffIncludesExcludes.INVESTIGATIVE_STAFF
+                    },
+                ),
+                StaffType.INVESTIGATIVE_STAFF: IncludesExcludesSet(
+                    members=ProsecutionInvestigativeStaffIncludesExcludes,
+                ),
+                StaffType.VACANT_POSITIONS: IncludesExcludesSet(
+                    members=ProsecutionVacantStaffIncludesExcludes,
+                    excluded_set={ProsecutionVacantStaffIncludesExcludes.FILLED},
+                ),
+            },
+        )
+    ],
 )
 
 cases_declined = MetricDefinition(

@@ -80,7 +80,7 @@ METRICS = [
     prisons.staff_use_of_force_incidents,
     prisons.grievances_upheld,
     prosecution.annual_budget,
-    prosecution.total_staff,
+    prosecution.staff,
     prosecution.residents,
     prosecution.caseloads,
     prosecution.cases_disposed,
