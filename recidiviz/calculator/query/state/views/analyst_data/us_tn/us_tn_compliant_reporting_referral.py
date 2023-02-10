@@ -83,6 +83,7 @@ US_TN_COMPLIANT_REPORTING_REFERRAL_QUERY_TEMPLATE = """
             QUALIFY ROW_NUMBER() OVER(PARTITION BY OffenderID ORDER BY contact_date DESC) = 1
         )
         SELECT  compliant_reporting_eligible,
+                offense_type_eligibility,
                 staff_first_name AS po_first_name,
                 staff_last_name AS po_last_name,
                 first_name AS client_first_name,
