@@ -183,6 +183,16 @@ resource "google_bigquery_table" "workflows_client_record_archive" {
         "name": "officer_id",
         "type": "STRING",
         "mode": "NULLABLE"
+    },
+    {
+        "name": "expiration_date",
+        "type": "DATE",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "all_eligible_opportunities",
+        "type": "STRING",
+        "mode": "REPEATED"
     }
 ]
 EOF
