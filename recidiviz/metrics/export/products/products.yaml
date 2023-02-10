@@ -93,9 +93,8 @@ products:
     exports:
       - VITALS
     states:
-      # TODO(#16465): Turn this back on in production
       - state_code: US_IX
-        environment: staging
+        environment: production
       - state_code: US_ND
         environment: production
   - name: Pathways
