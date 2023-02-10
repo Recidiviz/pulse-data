@@ -55,6 +55,9 @@ US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
             ON note.InsertUserId = e.EmployeeId
         WHERE NoteTypeId = '80' -- Case Update
         AND OffenderNoteStatusId = '2' -- Posted
+        -- TODO(#18319) Undo this length condition when the downstream pipeline can handle
+        -- these longer notes
+        AND LENGTH(Details) < 100000
     )
     SELECT * EXCEPT(OffenderId) 
     FROM person_id_with_external_ids 
