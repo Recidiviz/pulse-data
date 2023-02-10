@@ -33,7 +33,6 @@ from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     lsir_level_low_for_90_days,
     no_active_nco,
     not_a_non_idaho_commitment,
-    not_on_low_supervision_unit,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -59,7 +58,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         on_supervision_at_least_one_year.VIEW_BUILDER,
         no_active_nco.VIEW_BUILDER,
         not_a_non_idaho_commitment.VIEW_BUILDER,
-        not_on_low_supervision_unit.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )
