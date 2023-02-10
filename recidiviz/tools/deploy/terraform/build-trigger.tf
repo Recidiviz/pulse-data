@@ -27,6 +27,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     }
   }
 
+  # TODO(#18537): move images from container registry (us.gcr.io) to artifact registry (us-docker.pkg.dev)
   build {
     step {
       name = "gcr.io/kaniko-project/executor:v1.8.1"
