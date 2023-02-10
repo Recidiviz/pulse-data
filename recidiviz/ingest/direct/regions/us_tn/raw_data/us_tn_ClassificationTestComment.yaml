@@ -7,6 +7,8 @@ primary_key_cols:
   - OffenderID
   - TestDate
   - PyschologicalTestCode
+  - LineNumber
+  - SequenceNumber
 columns:
   - name: OffenderID
     is_pii: True

@@ -5,7 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - OffenderID
-  - Course
+  - SequenceNumber
 columns:
   - name: OffenderID
     is_pii: True
