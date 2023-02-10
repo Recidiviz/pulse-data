@@ -159,13 +159,38 @@ columns:
   - name: GOVN_MIN_SENT
   - name: GOVN_MAX_SENT
   - name: MAX_GANG_SRL
+    description: |-
+      TODO(#12372): Fill in with answer from CO.
   - name: MAX_GANG_DTD
+    description: |-
+      TODO(#12372): Fill in with answer from CO.
   - name: CURR_GANG_CD
+    description: |-
+      Code of current gang affiliation.
   - name: CURR_GANG_DESC
+    description: |-
+      Full name of current gang affiliation.
   - name: CURR_GANG_CHAPT_CD
+    description: |-
+      Code of current gang chapter affiliation.
   - name: GANG_CHAPT_DESC
+    description: |-
+      Full name of current gang chapter affiliation.
   - name: CURR_GANG_STAT_CD
+    description: |-
+      Code indicating the status of association with gang.
+    known_values:
+      - value: S
+        description: SUSPECT
+      - value: A
+        description: ASSOCIATE
+      - value: D
+        description: INACTIVE
+      - value: M
+        description: MEMBER
   - name: GANG_STAT_DESC
+    description: |-
+      Description of code indicating the status of association with gang.
   - name: MAX_COPD1_DTD
   - name: COPD1
   - name: MAX_COPD2_DTD
