@@ -44,20 +44,22 @@ class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
             delegate_to=self.delegate_to,
             poll_sleep=self.poll_sleep,
         )
+        # The last element is always the task name we want to name the pipeline
+        job_name = self.task_id.split(".")[-1]
 
         # If the operator is on a retry loop, we ignore the start operation by checking
         # if the job is running.
         region = self.dataflow_default_options["region"]
         if hook.is_job_dataflow_running(
-            name=self.task_id, project_id=self.project_id, location=region
+            name=job_name, project_id=self.project_id, location=region
         ):
             hook.wait_for_done(
-                job_name=self.task_id,
+                job_name=job_name,
                 project_id=self.project_id,
                 location=region,
             )
             return hook.get_job(
-                job_id=self.task_id,
+                job_id=job_name,
                 project_id=self.project_id,
                 location=region,
             )
@@ -65,7 +67,7 @@ class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
         # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
         # so it adds a unique-id to the end of the job name. This overwrites that default argument.
         return hook.start_template_dataflow(
-            job_name=self.task_id,
+            job_name=job_name,
             variables=self.dataflow_default_options,
             parameters=self.parameters,
             dataflow_template=self.template,
