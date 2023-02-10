@@ -22,3 +22,60 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_tn_custom_enum_parsers.<function name>
 """
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+)
+
+
+def supervision_type_from_fields(
+    raw_text: str,
+) -> StateSupervisionPeriodSupervisionType:
+    """Parse supervision type based on ranking of supervision level, supervision type and assignment type"""
+    sup_level, assign_type, sup_type = raw_text.split("-")
+    if sup_level in ("9AB", "ZAB", "ZAC", "ZAP") or sup_type == "ABS":
+        return StateSupervisionPeriodSupervisionType.ABSCONSION
+    if sup_level in ("9WR", "NIA", "WRB", "WRT", "ZWS"):
+        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
+    if sup_level not in (
+        "9AB",
+        "ZAB",
+        "ZAC",
+        "ZAP",
+        "9WR",
+        "NIA",
+        "WRB",
+        "WRT",
+        "ZWS",
+    ) and (
+        sup_type in ("UNP", "DET", "SAI", "DIV", "INA", "MIS", "INT", "PPO")
+        or (sup_type in ("COM", "ISC") and assign_type == "PRO")
+    ):
+        return StateSupervisionPeriodSupervisionType.PROBATION
+    if sup_level not in (
+        "9AB",
+        "ZAB",
+        "ZAC",
+        "ZAP",
+        "9WR",
+        "NIA",
+        "WRB",
+        "WRT",
+        "ZWS",
+    ) and (
+        sup_type in ("MAN", "TNP")
+        or (sup_type in ("COM", "ISC") and assign_type == "PAO")
+    ):
+        return StateSupervisionPeriodSupervisionType.PAROLE
+    if sup_level not in (
+        "9AB",
+        "ZAB",
+        "ZAC",
+        "ZAP",
+        "9WR",
+        "NIA",
+        "WRB",
+        "WRT",
+        "ZWS",
+    ) and (sup_type == "CCO" or (sup_type in ("COM", "ISC") and assign_type == "CCC")):
+        return StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT
+    return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
