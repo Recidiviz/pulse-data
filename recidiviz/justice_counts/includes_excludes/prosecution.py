@@ -19,6 +19,45 @@
 import enum
 
 
+# Funding
+class ProsecutionFundingIncludesExcludes(enum.Enum):
+    # TODO(#17577)
+    FISCAL_YEAR = "Funding for single fiscal year"
+    BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
+    MULTI_YEAR_APPROPRIATIONS = (
+        "Multi-year appropriations that are allocated during the time period"
+    )
+    OFFICE_OPERATIONS = "Funding for office operations and maintenance"
+    SERVICES = (
+        "Funding for services provided through the office, including victim assistance"
+    )
+    TREATMENT_AND_PROGRAMMING = "Funding for office-managed treatment and programming"
+    CONVICTION_INTEGRITY_UNITS = "Funding for conviction integrity units"
+    SPECIALTY_UNIT_OPS = "Funding for specialty unit operations"
+    CASE_MANAGEMENT_SYSTEMS = "Funding for electronic case management systems"
+    NON_CRIMINAL_CASE_PROCESSING = "Funding for non-criminal case processing"
+
+
+class ProsecutionFundingStateAppropriationsIncludesExcludes(enum.Enum):
+    FINALIZED = "Finalized state appropriations"
+    PROPOSED = "Proposed state appropriations"
+    PRELIMINARY = "Preliminary state appropriations"
+    GRANTS = "Grants from state sources that are not budget appropriations approved by the legislature/governor"
+
+
+class ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes(enum.Enum):
+    FINALIZED = "Finalized county or municipal appropriations"
+    PROPOSED = "Finalized county or municipal appropriations"
+    PRELIMINARY = "Preliminary county or municipal appropriations"
+
+
+class ProsecutionFundingGrantsIncludesExcludes(enum.Enum):
+    LOCAL = "Local grants"
+    STATE = "State grants"
+    FEDERAL = "Federal grants"
+    PRIVATE_OR_FOUNDATION = "Private or foundation grants"
+
+
 # Staff
 class ProsecutionStaffIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"
@@ -60,3 +99,49 @@ class ProsecutionVacantStaffIncludesExcludes(enum.Enum):
     ADMINISTRATIVE_STAFF = "Vacant administrative staff positions"
     INVESTIGATIVE_STAFF = "Vacant investigative staff positions"
     FILLED = "Filled positions"
+
+
+# Caseload
+
+
+class ProsecutionCaseloadIncludesExcludes(enum.Enum):
+    # TODO(#17577)
+    OPEN_CASES = "Criminal cases open and active during the sharing period"
+    ASSIGNED_CASES = "Criminal cases assigned to an attorney but inactive"
+    UNASSIGNED_CASES = "Criminal cases not yet assigned to an attorney"
+    LINE_ATTORNEYS = "Line attorneys carrying a caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a caseload"
+
+
+class ProsecutionFelonyCaseloadIncludesExcludes(enum.Enum):
+    # TODO(#17577)
+    OPEN_CASES = "Felony cases open and active during the sharing period"
+    ASSIGNED_CASES = "Felony cases assigned to an attorney but inactive"
+    UNASSIGNED_CASES = "Felony cases not yet assigned to an attorney"
+    LINE_ATTORNEYS = "Line attorneys carrying a felony-only caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a felony-only caseload"
+
+
+class ProsecutionMisdemeanorCaseloadIncludesExcludes(enum.Enum):
+    # TODO(#17577)
+    OPEN_CASES = "Misdemeanor cases open and active during the sharing period"
+    ASSIGNED_CASES = "Misdemeanor cases assigned to an attorney but inactive"
+    UNASSIGNED_CASES = "Misdemeanor cases not yet assigned to an attorney"
+    LINE_ATTORNEYS = "Line attorneys carrying a misdemeanor-only caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a misdemeanor-only caseload"
+
+
+class ProsecutionMixedCaseloadIncludesExcludes(enum.Enum):
+    # TODO(#17577)
+    OPEN_FELONY_CASES = "Felony cases open and active during the sharing period"
+    ASSIGNED_FELONY_CASES = "Felony cases assigned to an attorney but inactive"
+    OPEN_MISDEMEANOR_CASES = (
+        "Misdemeanor cases open and active during the sharing period"
+    )
+    ASSIGNED_MISDEMEANOR_CASES = (
+        "Misdemeanor cases assigned to an attorney but inactive"
+    )
+    UNASSIGNED_FELONY_CASES = "Felony cases not yet assigned to an attorney"
+    UNASSIGNED_MISDEMEANOR_CASES = "Misdemeanor cases not yet assigned to an attorney"
+    LINE_ATTORNEYS = "Line attorneys carrying a mixed caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a mixed caseload"

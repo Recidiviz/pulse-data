@@ -74,6 +74,7 @@ DIMENSIONS = [
     prosecution.CaseSeverityType,
     prosecution.DispositionType,
     prosecution.StaffType,
+    prosecution.FundingType,
     courts.CaseSeverityType,
     courts.CaseType,
     courts.ReleaseType,

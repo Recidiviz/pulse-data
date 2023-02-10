@@ -23,6 +23,7 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     DispositionType,
+    FundingType,
     StaffType,
 )
 from recidiviz.justice_counts.metricfile import MetricFile
@@ -30,8 +31,14 @@ from recidiviz.justice_counts.metrics import prosecution
 
 PROSECUTION_METRIC_FILES = [
     MetricFile(
-        canonical_filename="annual_budget",
-        definition=prosecution.annual_budget,
+        canonical_filename="funding",
+        definition=prosecution.funding,
+    ),
+    MetricFile(
+        canonical_filename="funding_by_type",
+        definition=prosecution.funding,
+        disaggregation=FundingType,
+        disaggregation_column_name="funding_type",
     ),
     MetricFile(
         canonical_filename="total_staff",
@@ -45,11 +52,11 @@ PROSECUTION_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="caseloads",
-        definition=prosecution.caseloads,
+        definition=prosecution.caseload,
     ),
     MetricFile(
         canonical_filename="caseloads_by_severity",
-        definition=prosecution.caseloads,
+        definition=prosecution.caseload,
         disaggregation=CaseSeverityType,
         disaggregation_column_name="case_severity",
     ),

@@ -24,13 +24,22 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     DispositionType,
+    FundingType,
     StaffType,
 )
 from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionAdministrativeStaffIncludesExcludes,
     ProsecutionAdvocateStaffIncludesExcludes,
+    ProsecutionCaseloadIncludesExcludes,
+    ProsecutionFelonyCaseloadIncludesExcludes,
+    ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes,
+    ProsecutionFundingGrantsIncludesExcludes,
+    ProsecutionFundingIncludesExcludes,
+    ProsecutionFundingStateAppropriationsIncludesExcludes,
     ProsecutionInvestigativeStaffIncludesExcludes,
     ProsecutionLegalStaffIncludesExcludes,
+    ProsecutionMisdemeanorCaseloadIncludesExcludes,
+    ProsecutionMixedCaseloadIncludesExcludes,
     ProsecutionStaffIncludesExcludes,
     ProsecutionVacantStaffIncludesExcludes,
 )
@@ -65,21 +74,52 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.PROSECUTION,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of your office.",
+    display_name="Funding",
+    description="The amount of funding for the operation and maintenance of the prosecution office to process criminal cases.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Agencies should report their budget for the criminal services they provide, if it is possible to delineate.",
-    specified_contexts=[
-        Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Please describe the primary funding source.",
+    # TODO(#17577)
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionFundingIncludesExcludes,
+        excluded_set={
+            ProsecutionFundingIncludesExcludes.NON_CRIMINAL_CASE_PROCESSING,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=FundingType,
             required=False,
+            dimension_to_description={
+                FundingType.STATE_APPROPRIATIONS: "The amount of funding appropriated by the state for the operation and maintenance of the prosecutor’s office to process criminal cases.",
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATIONS: "The amount of funding appropriated by counties or municipalities for the operation and maintenance of the prosecutor’s office to process criminal cases.",
+                FundingType.GRANTS: "The amount of funding derived by the office through grants and awards to be used for the operation and maintenance of the prosecutor’s office to process criminal cases.",
+                FundingType.OTHER: "The amount of funding to be used for the operation and maintenance of the prosecutor’s office to process criminal cases that is not appropriations from the state, appropriations from counties or cities, or funding from grants.",
+                FundingType.UNKNOWN: "The amount of funding for the operation and maintenance of the prosecutor’s office to process criminal cases for which the source is not known.",
+            },
+            dimension_to_includes_excludes={
+                FundingType.STATE_APPROPRIATIONS: IncludesExcludesSet(
+                    members=ProsecutionFundingStateAppropriationsIncludesExcludes,
+                    excluded_set={
+                        ProsecutionFundingStateAppropriationsIncludesExcludes.PROPOSED,
+                        ProsecutionFundingStateAppropriationsIncludesExcludes.PRELIMINARY,
+                        ProsecutionFundingStateAppropriationsIncludesExcludes.GRANTS,
+                    },
+                ),
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATIONS: IncludesExcludesSet(
+                    members=ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes,
+                    excluded_set={
+                        ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes.PROPOSED,
+                        ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes.PRELIMINARY,
+                    },
+                ),
+                FundingType.GRANTS: IncludesExcludesSet(
+                    members=ProsecutionFundingGrantsIncludesExcludes,
+                ),
+            },
         ),
     ],
 )
@@ -192,25 +232,52 @@ cases_referred = MetricDefinition(
     ],
 )
 
-caseloads = MetricDefinition(
+caseload = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.CASELOADS,
     category=MetricCategory.POPULATIONS,
-    display_name="Caseloads",
-    description="Measures the average caseload per attorney in your office.",
+    display_name="Caseload",
+    description="The ratio of the number of people with open criminal cases to the number of staff carrying a criminal caseload.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="These elements may not be necessary if your office already calculates their average caseloads by type on a monthly basis. Accept your office's calculation with required context.",
-    specified_contexts=[
-        Context(
-            key=ContextKey.METHOD_OF_CALCULATING_CASELOAD,
-            value_type=ValueType.TEXT,
-            label="Please describe your office's method of calculating caseload.",
-            required=True,
-        ),
-    ],
+    # TODO(#17577)
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCaseloadIncludesExcludes,
+        excluded_set={ProsecutionCaseloadIncludesExcludes.UNASSIGNED_CASES},
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False)
+        AggregatedDimension(
+            dimension=CaseSeverityType,
+            required=False,
+            dimension_to_description={
+                CaseSeverityType.FELONY: "The ratio of the number of people with open felony cases to the number of staff carrying a felony caseload.",
+                CaseSeverityType.MISDEMEANOR: "The ratio of the number of people with open misdemeanor cases to the number of staff carrying a misdemeanor caseload.",
+                CaseSeverityType.MIXED: "The ratio of the number of people with open felony and misdemeanor cases to the number of staff carrying a mixed (felony and misdemeanor) caseload.",
+                CaseSeverityType.OTHER: "The ratio of the number of people with open criminal cases that are not felony or misdemeanor cases to the number of staff carrying a criminal caseload that does not comprise felony or misdemeanor cases.",
+                CaseSeverityType.UNKNOWN: "The ratio of the number of people with open criminal cases of unknown severity to the number of staff carrying a criminal caseload of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                CaseSeverityType.FELONY: IncludesExcludesSet(  # TODO(#18071)
+                    members=ProsecutionFelonyCaseloadIncludesExcludes,
+                    excluded_set={
+                        ProsecutionFelonyCaseloadIncludesExcludes.UNASSIGNED_CASES
+                    },
+                ),
+                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(  # TODO(#18071)
+                    members=ProsecutionMisdemeanorCaseloadIncludesExcludes,
+                    excluded_set={
+                        ProsecutionMisdemeanorCaseloadIncludesExcludes.UNASSIGNED_CASES
+                    },
+                ),
+                CaseSeverityType.MIXED: IncludesExcludesSet(  # TODO(#18071)
+                    members=ProsecutionMixedCaseloadIncludesExcludes,
+                    excluded_set={
+                        ProsecutionMixedCaseloadIncludesExcludes.UNASSIGNED_FELONY_CASES,
+                        ProsecutionMixedCaseloadIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
+                    },
+                ),
+            },
+        )
     ],
 )
 
