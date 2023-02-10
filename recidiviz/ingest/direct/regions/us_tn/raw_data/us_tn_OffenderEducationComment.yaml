@@ -5,7 +5,9 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - OffenderID
-  - PostedDate
+  - SequenceNumber
+  - PageNumber
+  - LineNumber
 columns:
   - name: OffenderID
     is_pii: True
