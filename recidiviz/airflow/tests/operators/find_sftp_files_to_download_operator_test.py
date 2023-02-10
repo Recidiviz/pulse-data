@@ -115,10 +115,13 @@ class TestFindSftpFilesOperator(unittest.TestCase):
         self.assertEqual(
             result,
             [
-                {"file": "./testToday/file1.txt", "timestamp": int(TODAY.timestamp())},
                 {
-                    "file": "./testTwoDaysAgo/file1.txt",
-                    "timestamp": int(TWO_DAYS_AGO.timestamp()),
+                    "remote_file_path": "./testToday/file1.txt",
+                    "sftp_timestamp": int(TODAY.timestamp()),
+                },
+                {
+                    "remote_file_path": "./testTwoDaysAgo/file1.txt",
+                    "sftp_timestamp": int(TWO_DAYS_AGO.timestamp()),
                 },
             ],
         )

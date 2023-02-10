@@ -30,11 +30,9 @@ from google.cloud import exceptions, tasks_v2
 from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
-from recidiviz.common.common_utils import (
-    google_api_retry_predicate,
-    log_retried_google_api_error,
-)
+from recidiviz.common.common_utils import log_retried_google_api_error
 from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
+from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.utils import metadata
 
 
