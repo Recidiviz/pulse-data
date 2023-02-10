@@ -36,10 +36,11 @@ class StaffType(DimensionBase, enum.Enum):
 
 
 class CaseSeverityType(DimensionBase, enum.Enum):
-    FELONY = "Felony"
-    MISDEMEANOR = "Misdemeanor"
-    INFRACTION = "Infraction"
-    UNKNOWN = "Unknown"
+    FELONY = "Felony Caseload"
+    MISDEMEANOR = "Misdemeanor Caseload"
+    MIXED = "Mixed Caseload"
+    OTHER = "Other Caseload"
+    UNKNOWN = "Unknown Caseload"
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -60,3 +61,15 @@ class DispositionType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/disposition/type"
+
+
+class FundingType(DimensionBase, enum.Enum):
+    STATE_APPROPRIATIONS = "State Appropriations"
+    COUNTY_OR_MUNICIPAL_APPROPRIATIONS = "County or Municipal Appropriations"
+    GRANTS = "Grants"
+    OTHER = "Other Funding"
+    UNKNOWN = "Unknown Funding"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/funding/prosecution/type"
