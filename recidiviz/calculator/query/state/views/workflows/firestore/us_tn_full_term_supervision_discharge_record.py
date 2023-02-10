@@ -40,7 +40,7 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_NAME = (
 )
 
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_DESCRIPTION = """
-    Query for relevant metadata needed to support supervision discharge opportunity in Tennessee 
+    Query for relevant metadata needed to support supervision discharge opportunity in Tennessee
     """
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_QUERY_TEMPLATE = f"""
 WITH latest_sentences AS (
@@ -48,9 +48,9 @@ WITH latest_sentences AS (
          ARRAY_AGG(docket_number IGNORE NULLS) AS docket_numbers,
          ARRAY_AGG(offense IGNORE NULLS) AS offenses,
          ARRAY_AGG(DISTINCT
-                CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode) 
+                CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode)
                     ELSE conviction_county END
-                ) AS conviction_counties
+                ) AS conviction_counties,
   FROM (
       SELECT
           s.person_id,
@@ -73,16 +73,26 @@ WITH latest_sentences AS (
             SELECT *
             FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CodesDescription_latest`
             WHERE CodesTableID = 'TDPD130'
-        ) codes 
+        ) codes
   ON conviction_county = codes.Code
   GROUP BY 1
+),
+/* TODO(#11164): Because we're not allowing arbitrarily many sentence levels, some later sentences with updated
+    expiration dates are getting omitted from sentence spans. This is a quick fix, but once #11164 is updated it can
+    be removed */
+latest_sentences_all AS (
+    SELECT person_id,
+           MAX(completion_date) AS max_expiration_date
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
+    WHERE state_code = 'US_TN'
+    GROUP BY 1
 ),
 latest_system_session AS ( # get latest system session date to bring in relevant codes only for this time on supervision
   SELECT person_id,
          start_date AS latest_system_session_start_date
   FROM `{{project_id}}.{{sessions_dataset}}.system_sessions_materialized`
-  WHERE state_code = 'US_TN' 
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY system_session_id DESC) = 1 
+  WHERE state_code = 'US_TN'
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY system_session_id DESC) = 1
 ),
 relevant_codes AS (
   SELECT person_id,
@@ -90,7 +100,7 @@ relevant_codes AS (
          ContactNoteType AS contact_type,
          Comment AS contact_comment
   FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteType_latest` contact
-  LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteComment_latest` 
+  LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.ContactNoteComment_latest`
     USING (OffenderID, ContactNoteDateTime)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON contact.OffenderID = pei.external_id
@@ -100,9 +110,9 @@ relevant_codes AS (
   WHERE CAST(CAST(ContactNoteDateTime AS datetime) AS DATE) >= latest_system_session_start_date
      AND (
            ContactNoteType LIKE '%PSE%'
-           OR ContactNoteType IN ('VRPT','VWAR','COHC','AARP') 
+           OR ContactNoteType IN ('VRPT','VWAR','COHC','AARP')
            OR ContactNoteType LIKE "%ABS%"
-           OR ContactNoteType = 'DRUP' 
+           OR ContactNoteType = 'DRUP'
            OR ContactNoteType LIKE "%FSW%"
            OR ContactNoteType LIKE "%EMP%"
            OR ContactNoteType IN ("SPEC","SPET")
@@ -113,8 +123,8 @@ relevant_codes AS (
      )
 ),
 sex_offense_pse_code AS ( #latest PSE code
-  SELECT 
-    person_id, 
+  SELECT
+    person_id,
     STRUCT(
       contact_date,
       contact_type,
@@ -125,8 +135,8 @@ sex_offense_pse_code AS ( #latest PSE code
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 emp_code AS ( #latest EMP code
-  SELECT 
-    person_id, 
+  SELECT
+    person_id,
     STRUCT(
       contact_date,
       contact_type,
@@ -137,8 +147,8 @@ emp_code AS ( #latest EMP code
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 spe_code AS ( #latest SPE code
-  SELECT 
-    person_id, 
+  SELECT
+    person_id,
     STRUCT(
       contact_date,
       contact_type,
@@ -149,8 +159,8 @@ spe_code AS ( #latest SPE code
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 vrr_code AS ( #latest SPE code
-  SELECT 
-    person_id, 
+  SELECT
+    person_id,
     STRUCT(
       contact_date,
       contact_type
@@ -160,8 +170,8 @@ vrr_code AS ( #latest SPE code
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 fee_code AS ( #latest SPE code
-  SELECT 
-    person_id, 
+  SELECT
+    person_id,
     STRUCT(
       contact_date,
       contact_type,
@@ -172,7 +182,7 @@ fee_code AS ( #latest SPE code
   QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY contact_date DESC) = 1
 ),
 tepe_code AS ( # latest TEPE code
-    SELECT 
+    SELECT
     person_id,
     contact_date AS latest_tepe,
   FROM relevant_codes
@@ -186,22 +196,22 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
           contact_comment AS note_body,
           "REVOCATION HEARINGS" AS criteria,
     FROM relevant_codes
-    WHERE contact_type IN ('VRPT','VWAR','COHC','AARP') 
+    WHERE contact_type IN ('VRPT','VWAR','COHC','AARP')
           OR contact_type LIKE "%ABS%"
-    
+
     UNION ALL
-    
-    SELECT  person_id, 
+
+    SELECT  person_id,
             contact_type AS note_title,
             contact_date AS event_date,
             contact_comment AS note_body,
             "ALCOHOL DRUG HISTORY" AS criteria,
     FROM relevant_codes
     WHERE contact_type = 'DRUP' OR contact_type LIKE "%FSW%"
-    
+
     UNION ALL
-    
-    SELECT  person_id, 
+
+    SELECT  person_id,
             contact_type AS note_title,
             contact_date AS event_date,
             contact_comment AS note_body,
@@ -215,14 +225,14 @@ sidebar_contact_notes_union AS ( #cte to union all contact notes to be displayed
     )
 ),
 sidebar_contact_notes_array AS (
-    SELECT 
+    SELECT
         person_id,
         TO_JSON(
             ARRAY_AGG(
-                IF(note_title IS NOT NULL, 
-                    STRUCT(note_title, note_body, event_date, criteria), 
+                IF(note_title IS NOT NULL,
+                    STRUCT(note_title, note_body, event_date, criteria),
                     NULL
-                ) 
+                )
             IGNORE NULLS
             )
         ) AS case_notes
@@ -236,17 +246,17 @@ sex_offenses AS (
   UNNEST(offenses) as offenses2
   LEFT JOIN (
     SELECT DISTINCT
-          OffenseDescription, 
-          FIRST_VALUE(AssaultiveOffenseFlag) 
-              OVER(PARTITION BY OffenseDescription 
+          OffenseDescription,
+          FIRST_VALUE(AssaultiveOffenseFlag)
+              OVER(PARTITION BY OffenseDescription
                    ORDER BY CASE WHEN AssaultiveOffenseFlag = 'Y' THEN 0 ELSE 1 END) AS AssaultiveOffenseFlag,
-          FIRST_VALUE(SexOffenderFlag) 
-              OVER(PARTITION BY OffenseDescription 
-                   ORDER BY CASE WHEN SexOffenderFlag = 'Y' THEN 0 ELSE 1 END) AS SexOffenderFlag 
+          FIRST_VALUE(SexOffenderFlag)
+              OVER(PARTITION BY OffenseDescription
+                   ORDER BY CASE WHEN SexOffenderFlag = 'Y' THEN 0 ELSE 1 END) AS SexOffenderFlag
             FROM  `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.OffenderStatute_latest`
   ) statute
   ON offenses2 = statute.OffenseDescription
-  WHERE SexOffenderFlag = 'Y' OR 
+  WHERE SexOffenderFlag = 'Y' OR
       (
         SexOffenderFlag IS NULL
         AND (
@@ -254,7 +264,7 @@ sex_offenses AS (
         )
       )
   GROUP BY 1
-), 
+),
 latest_people AS (
     SELECT DISTINCT OffenderID AS external_id
     FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
@@ -268,12 +278,12 @@ tes_cte AS (
       CAST(JSON_EXTRACT_SCALAR(single_reason.reason.eligible_date) AS DATE) AS expiration_date,
     FROM `{{project_id}}.{{task_eligibility_dataset}}.complete_full_term_discharge_from_supervision_materialized` tes,
     UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason
-    WHERE tes.state_code = 'US_TN' 
+    WHERE tes.state_code = 'US_TN'
         AND CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
         AND tes.is_eligible
         AND STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_1_DAY'
 )
-  SELECT  
+  SELECT
          tes.state_code,
          pei.external_id,
          tes.reasons,
@@ -306,19 +316,25 @@ tes_cte AS (
     USING(person_id)
   LEFT JOIN latest_sentences
     USING(person_id)
+  LEFT JOIN latest_sentences_all
+    USING(person_id)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.person_id = pei.person_id
     AND pei.state_code = 'US_TN'
   LEFT JOIN tepe_code
     ON tes.person_id = tepe_code.person_id
     AND latest_tepe >= DATE_SUB(tes.expiration_date, INTERVAL 30 day)
-  LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.STGOffender_latest` stg 
+  LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.STGOffender_latest` stg
     ON pei.external_id = stg.OffenderID
-  INNER JOIN latest_people 
+  INNER JOIN latest_people
     ON pei.external_id = latest_people.external_id
-    /* TODO(#18327) - Excluding anyone from being surfaced who has a recent TEPE. Add these folks back in and surface 
-    recent TEPE note in client profile when UX changes can handle this behavior */ 
+    /* TODO(#18327) - Excluding anyone from being surfaced who has a recent TEPE. Add these folks back in and surface
+    recent TEPE note in client profile when UX changes can handle this behavior */
   WHERE latest_tepe IS NULL
+    /* TODO(#11164): Because we're not allowing arbitrarily many sentence levels, some later sentences with updated
+    expiration dates are getting omitted from sentence spans. This is a quick fix, but once #11164 is updated it can
+    be removed */
+    AND latest_sentences_all.max_expiration_date <= DATE_ADD(CURRENT_DATE('US/Pacific'), INTERVAL 1 DAY)
 
 """
 
