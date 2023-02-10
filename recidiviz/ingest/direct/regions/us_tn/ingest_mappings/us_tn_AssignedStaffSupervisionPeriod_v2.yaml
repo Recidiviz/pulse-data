@@ -17,8 +17,7 @@ input_columns:
   - Site
   - SupervisionPeriodSequenceNumber
   - SupervisionLevel
-unused_columns:
-  - SupervisionType
+unused_columns: []
 output:
   StatePerson:
     external_ids:
@@ -118,51 +117,16 @@ output:
                 StateSupervisionPeriodTerminationReason.VACATED:
                   - RVR # Rescinded
           supervision_type:
-            $conditional:
-              - $if:
-                  $in:
-                    $value: SupervisionLevel
-                    $options:
-                      - $literal("9AB")
-                      - $literal("ZAB")
-                      - $literal("ZAC")
-                      - $literal("ZAP")
-                $then:
-                  $enum_mapping:
-                    $raw_text: AssignmentType
-                    $mappings:
-                      StateSupervisionPeriodSupervisionType.ABSCONSION:
-                        - PRO # Probation
-                        - PAO # Parole
-                        - CCC # Community corrections
-              - $else_if:
-                  $in:
-                    $value: SupervisionLevel
-                    $options:
-                      - $literal("9WR")
-                      - $literal("NIA")
-                      - $literal("WRB")
-                      - $literal("WRT")
-                      - $literal("ZWS")
-                $then:
-                  $enum_mapping:
-                    $raw_text: AssignmentType
-                    $mappings:
-                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
-                        - PRO # Probation
-                        - PAO # Parole
-                        - CCC # Community corrections
-              - $else:
-                  $enum_mapping:
-                    $raw_text: AssignmentType
-                    $mappings:
-                      StateSupervisionPeriodSupervisionType.PROBATION:
-                        - PRO # Probation
-                      StateSupervisionPeriodSupervisionType.PAROLE:
-                        - PAO # Parole
-                      # TODO(#9421): update mapping, when community centers are standardized.
-                      StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT:
-                        - CCC # Community corrections
+            $enum_mapping:
+              $raw_text:
+                $concat:
+                  $values:
+                    - SupervisionLevel
+                    - AssignmentType
+                    - SupervisionType
+                  $separator: "-"
+                  $include_nulls: true
+              $custom_parser: us_tn_custom_enum_parsers.supervision_type_from_fields
           supervision_level:
             # TODO(#10291) - Should be able to map NULL values directly to an enum value.
             $conditional:
