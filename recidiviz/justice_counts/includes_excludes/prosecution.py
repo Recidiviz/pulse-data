@@ -58,6 +58,55 @@ class ProsecutionFundingGrantsIncludesExcludes(enum.Enum):
     PRIVATE_OR_FOUNDATION = "Private or foundation grants"
 
 
+# Expenses
+# TODO(#17577) Implement multiple includes/excludes tables
+class ProsecutionExpensesIncludesExcludes(enum.Enum):
+    FISCAL_YEAR = "Expenses for single fiscal year"
+    BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
+    MULTI_YEAR_APPROPRIATIONS = (
+        "Multi-year appropriations that are allocated during the time period"
+    )
+    OFFICE_OPERATIONS_AND_MAINTENANCE = "Expenses for office operations and maintenance"
+    SERVICES_PROVIDED = (
+        "Expenses for services provided through the office, including victim assistance"
+    )
+    OFFICE_MANAGED_TREATMENT_AND_PROGRAMMING = (
+        "Expenses for office-managed treatment and programming"
+    )
+    CONVICTION_INTEGRITY_UNITS = "Expenses for conviction integrity units"
+    SPECIALTY_UNIT = "Expenses for specialty unit operations"
+    CASE_MANAGEMENT_SYSTEMS = "Expenses for electronic case management systems"
+    NON_CRIMINAL = "Expenses for non-criminal case processing"
+
+
+class ProsecutionPersonnelExpensesIncludesExcludes(enum.Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT_CONTRIBUTIONS = "Retirement contributions"
+    CONTRACTS = (
+        "Contracts for individuals doing work related to criminal public defense"
+    )
+    DEFENSE = "Companies or service providers contracted to support work related to criminal public defense"
+
+
+class ProsecutionTrainingExpensesIncludesExcludes(enum.Enum):
+    ANNUAL = "Annual training"
+    LEGAL_EDUCATION = "Continuing legal education (CLE)"
+    CONTINUING_EDUCATION = "Continuing education – other (not CLE eligible)"
+    TRAINING_ACADEMY = "Training academy"
+    SPECIALIZED_TRAINING = "Specialized training"
+    EXTERNAL_TRAINING = "External training or professional development opportunities (conferences, classes, etc.)"
+    FREE_PROGRAMS = "Courses or programs offered at no cost to individuals or the prosecutor's office"
+
+
+class ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes(enum.Enum):
+    OPERATIONS = "Facility operations"
+    MAINTENANCE = "Facility maintenance"
+    RENOVATION = "Facility renovation"
+    CONSTRUCTION = "Facility construction"
+    TECHNOLOGY = "Equipment (e.g., computers, communication, and information technology infrastructure)"
+
+
 # Staff
 class ProsecutionStaffIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"
