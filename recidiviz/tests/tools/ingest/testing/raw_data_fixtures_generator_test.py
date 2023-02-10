@@ -144,13 +144,13 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
         expected_query = """
 WITH rows_with_recency_rank AS (
     SELECT
-        Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3,
+        *,
         ROW_NUMBER() OVER (PARTITION BY primary
                            ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
     FROM
         `recidiviz-test.us_xx_raw_data.raw_data_table`
 )
-SELECT * EXCEPT (recency_rank)
+SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
 AND External_Id_Col IN ('123');"""
@@ -170,18 +170,18 @@ AND External_Id_Col IN ('123');"""
         expected_query = """
 WITH rows_with_recency_rank AS (
     SELECT
-        Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3,
+        *,
         ROW_NUMBER() OVER (PARTITION BY primary
                            ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
     FROM
         `recidiviz-test.us_xx_raw_data.raw_data_table`
 )
-SELECT * EXCEPT (recency_rank)
+SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
 AND External_Id_Col IN ('123', '456');"""
 
-        self.assertEqual(query, expected_query)
+        self.assertEqual(expected_query, query)
 
     def test_build_query_for_raw_table_multiple_cols_and_values(self) -> None:
         fixtures_generator = self._build_raw_data_fixtures_generator(
@@ -198,18 +198,18 @@ AND External_Id_Col IN ('123', '456');"""
         expected_query = """
 WITH rows_with_recency_rank AS (
     SELECT
-        Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3,
+        *,
         ROW_NUMBER() OVER (PARTITION BY primary
                            ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
     FROM
         `recidiviz-test.us_xx_raw_data.raw_data_table`
 )
-SELECT * EXCEPT (recency_rank)
+SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
 AND External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR External_Id_Col_3 IN ('123', '456');"""
         self.maxDiff = None
-        self.assertEqual(query, expected_query)
+        self.assertEqual(expected_query, query)
 
     def test_build_query_for_raw_table_no_ids(self) -> None:
         fixtures_generator = self._build_raw_data_fixtures_generator(
@@ -222,18 +222,18 @@ AND External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR 
         expected_query = """
 WITH rows_with_recency_rank AS (
     SELECT
-        Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3,
+        *,
         ROW_NUMBER() OVER (PARTITION BY primary
                            ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
     FROM
         `recidiviz-test.us_xx_raw_data.raw_data_table`
 )
-SELECT * EXCEPT (recency_rank)
+SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
 ;"""
 
-        self.assertEqual(query, expected_query)
+        self.assertEqual(expected_query, query)
 
     def test_build_query_for_raw_table_historical_export(self) -> None:
         raw_table_config = attr.evolve(
@@ -267,19 +267,11 @@ max_file_id AS (
         `recidiviz-test.us_xx_raw_data.raw_data_table`
     WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
-),
-rows_with_recency_rank AS (
-    SELECT
-        Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3,
-        ROW_NUMBER() OVER (PARTITION BY primary
-                           ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
-    FROM
-        `recidiviz-test.us_xx_raw_data.raw_data_table`
-    WHERE
-        file_id = (SELECT file_id FROM max_file_id)
 )
-SELECT * EXCEPT (recency_rank)
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
+FROM
+    `recidiviz-test.us_xx_raw_data.raw_data_table`
+WHERE
+    file_id = (SELECT file_id FROM max_file_id)
 AND External_Id_Col IN ('123');"""
-        self.assertEqual(query, expected_query)
+        self.assertEqual(expected_query, query)

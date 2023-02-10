@@ -116,7 +116,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause="col1, col2",
-            normalized_columns="*",
             supplemental_order_by_clause=", CAST(seq_num AS INT64)",
         )
 
@@ -172,12 +171,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         expected_view_query = StrictStringFormatter().format(
             RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
             project_id=self.PROJECT_ID,
-            raw_table_primary_key_str="col1, col2",
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
             columns_clause="col1, col2",
-            normalized_columns="*",
-            supplemental_order_by_clause=", CAST(seq_num AS INT64)",
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -187,6 +183,98 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         )
 
     def test_raw_up_to_date_view(self) -> None:
+        view = DirectIngestRawDataTableUpToDateView(
+            region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            include_undocumented_columns=False,
+            raw_file_config=DirectIngestRawFileConfig(
+                file_tag="table_name",
+                file_path="path/to/file.yaml",
+                file_description="file description",
+                data_classification=RawDataClassification.SOURCE,
+                primary_key_cols=["col1"],
+                columns=[
+                    RawTableColumnInfo(
+                        name="col1",
+                        is_datetime=False,
+                        is_pii=False,
+                        description="col1 description",
+                    ),
+                    RawTableColumnInfo(
+                        name="col2",
+                        is_datetime=True,
+                        is_pii=False,
+                        description="col2 description",
+                    ),
+                    RawTableColumnInfo(
+                        name="col3",
+                        is_datetime=True,
+                        is_pii=False,
+                        description="col3 description",
+                        datetime_sql_parsers=[
+                            "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
+                        ],
+                    ),
+                    RawTableColumnInfo(
+                        name="undocumented_column",
+                        is_datetime=True,
+                        is_pii=False,
+                        description=None,
+                    ),
+                    RawTableColumnInfo(
+                        name="undocumented_column_2",
+                        is_datetime=False,
+                        is_pii=False,
+                        description=None,
+                    ),
+                ],
+                supplemental_order_by_clause="",
+                encoding="any-encoding",
+                separator="@",
+                custom_line_terminator=None,
+                ignore_quotes=False,
+                always_historical_export=False,
+                import_chunk_size_rows=10,
+                infer_columns_from_config=False,
+            ),
+        )
+
+        self.assertEqual(self.PROJECT_ID, view.project)
+        self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
+        self.assertEqual("table_name_by_update_date", view.table_id)
+        self.assertEqual("table_name_by_update_date", view.view_id)
+
+        expected_datetime_cols_clause = """
+        COALESCE(
+            CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            col2
+        ) AS col2, 
+        COALESCE(
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            col3
+        ) AS col3"""
+
+        expected_view_query = StrictStringFormatter().format(
+            RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
+            project_id=self.PROJECT_ID,
+            raw_table_primary_key_str="col1",
+            raw_table_dataset_id="us_xx_raw_data",
+            raw_table_name="table_name",
+            columns_clause=f"col1, {expected_datetime_cols_clause}",
+            supplemental_order_by_clause="",
+        )
+
+        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_by_update_date`",
+            view.select_query,
+        )
+
+    def test_raw_up_to_date_view_include_undocumented(self) -> None:
         view = DirectIngestRawDataTableUpToDateView(
             region_code="us_xx",
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
@@ -222,6 +310,12 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                     RawTableColumnInfo(
                         name="undocumented_column",
                         is_datetime=True,
+                        is_pii=False,
+                        description=None,
+                    ),
+                    RawTableColumnInfo(
+                        name="undocumented_column_2",
+                        is_datetime=False,
                         is_pii=False,
                         description=None,
                     ),
@@ -270,8 +364,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_primary_key_str="col1",
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
-            columns_clause="col1, col2, col3",
-            normalized_columns=f"col1, {expected_datetime_cols_clause}",
+            columns_clause=f"col1, undocumented_column_2, {expected_datetime_cols_clause}",
             supplemental_order_by_clause="",
         )
 
@@ -334,12 +427,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         expected_view_query = StrictStringFormatter().format(
             RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE,
             project_id=self.PROJECT_ID,
-            raw_table_primary_key_str="col1",
             raw_table_dataset_id="us_xx_raw_data",
             raw_table_name="table_name",
-            columns_clause="col1, col2",
-            normalized_columns=f"col1, {expected_datetime_cols_clause}",
-            supplemental_order_by_clause="",
+            columns_clause=f"col1, {expected_datetime_cols_clause}",
         )
 
         self.assertEqual(expected_view_query, view.view_query)
@@ -394,7 +484,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -410,13 +500,13 @@ file_tag_first_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_2a,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -432,7 +522,7 @@ file_tag_second_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_2a
     FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
@@ -607,7 +697,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -623,7 +713,7 @@ file_tag_first_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 ),
 tagFullHistoricalExport_generated_view AS (
@@ -642,27 +732,12 @@ tagFullHistoricalExport_generated_view AS (
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
         WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
-    ),
-    rows_with_recency_rank AS (
-        SELECT
-            COL_1,
-            ROW_NUMBER() OVER (PARTITION BY COL_1
-                               ORDER BY update_datetime DESC) AS recency_rank
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
-    ),
-    normalized_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM
-            rows_with_recency_rank
-        WHERE
-            recency_rank = 1
     )
-    SELECT *
-    FROM normalized_rows
+    SELECT COL_1
+    FROM
+        `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+    WHERE
+        file_id = (SELECT file_id FROM max_file_id)
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN tagFullHistoricalExport_generated_view
@@ -721,7 +796,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -737,7 +812,7 @@ file_tag_first_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
@@ -842,7 +917,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -858,13 +933,13 @@ file_tag_first_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_2a,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -880,7 +955,7 @@ file_tag_second_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_2a
     FROM normalized_rows
 ),
 foo AS (SELECT * FROM bar)
@@ -995,7 +1070,7 @@ ORDER BY col1, col2;"""
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1011,13 +1086,13 @@ ORDER BY col1, col2;"""
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 );
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_2a,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1033,7 +1108,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_2a
     FROM normalized_rows
 );
 SELECT * FROM file_tag_first_generated_view
@@ -1125,7 +1200,7 @@ ORDER BY col1, col2;"""
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1141,13 +1216,13 @@ ORDER BY col1, col2;"""
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 );
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_2a,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1163,7 +1238,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_2a
     FROM normalized_rows
 );
 WITH
@@ -1265,7 +1340,7 @@ ORDER BY col1, col2
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1281,13 +1356,13 @@ ORDER BY col1, col2
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 );
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_2a,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1303,7 +1378,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_2a
     FROM normalized_rows
 );
 CREATE TEMP TABLE my_destination_table AS (
@@ -1399,7 +1474,7 @@ WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1415,13 +1490,13 @@ file_tag_first_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_2a,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1437,7 +1512,7 @@ file_tag_second_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_2a
     FROM normalized_rows
 ),
 foo AS (SELECT * FROM bar)
@@ -1495,7 +1570,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            col_name_1a, col_name_1b,
+            *,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1511,7 +1586,7 @@ file_tag_first_generated_view AS (
         WHERE
             recency_rank = 1
     )
-    SELECT *
+    SELECT col_name_1a, col_name_1b
     FROM normalized_rows
 )
 SELECT * FROM file_tag_first_generated_view
