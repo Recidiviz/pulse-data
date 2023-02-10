@@ -38,9 +38,9 @@ from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsPath,
 )
 from recidiviz.cloud_storage.verifiable_bytes_reader import VerifiableBytesReader
-from recidiviz.common.common_utils import google_api_retry_predicate
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.common.retry_predicate import google_api_retry_predicate
 
 
 def generate_random_temp_path(filename: Optional[str] = None) -> str:

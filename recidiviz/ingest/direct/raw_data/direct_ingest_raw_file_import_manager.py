@@ -45,8 +45,8 @@ from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common import attr_validators
-from recidiviz.common.common_utils import google_api_retry_predicate
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (

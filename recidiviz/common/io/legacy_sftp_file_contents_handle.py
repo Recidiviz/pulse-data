@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,25 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a class that can be used to access contents of a file on an SFTP server."""
+"""Defines a class that can be used to access contents of a file on an SFTP server.
+NOTE: This is soon deprecated for a paramiko-forward version."""
+
 from contextlib import contextmanager
 from typing import Iterator
 
-from paramiko import SFTPClient, SFTPFile
+from paramiko import SFTPFile
 
 from recidiviz.common.io.file_contents_handle import FileContentsHandle
+from recidiviz.common.sftp_connection import RecidivizSftpConnection
 
 
-class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
+# TODO(#17947) Deprecate this LegacySftpFileContentsHandle once AppEngine SFTP is deprecated
+class LegacySftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
     """A class that can be used to access contents of a file on an SFTP server."""
 
     def __init__(
         self,
         sftp_file_path: str,
-        sftp_client: SFTPClient,
+        sftp_connection: RecidivizSftpConnection,
     ):
         self.sftp_file_path = sftp_file_path
-        self.sftp_client = sftp_client
+        self.sftp_connection = sftp_connection
 
     def get_contents_iterator(self) -> Iterator[bytes]:
         with self.open() as f:
@@ -41,5 +45,5 @@ class SftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
 
     @contextmanager
     def open(self, mode: str = "r") -> Iterator[SFTPFile]:  # type: ignore
-        with self.sftp_client.open(filename=self.sftp_file_path, mode=mode) as f:
+        with self.sftp_connection.open(remote_file=self.sftp_file_path, mode=mode) as f:
             yield f

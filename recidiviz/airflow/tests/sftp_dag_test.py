@@ -55,7 +55,7 @@ class TestSftpPipelineDag(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.SFTP_DAG_ID]
         state_specific_tasks_dag = dag.partial_subset(
-            task_ids_or_regex=r"US_[A-Z][A-Z]\.find_sftp_files_to_download",
+            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.find_sftp_files_to_download",
             include_downstream=False,
             include_upstream=True,
         )
@@ -73,7 +73,7 @@ class TestSftpPipelineDag(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.SFTP_DAG_ID]
         state_specific_lock_tasks_dag = dag.partial_subset(
-            task_ids_or_regex=r"US_[A-Z][A-Z]\.find_sftp_files_to_download",
+            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.find_sftp_files_to_download",
             include_downstream=False,
             include_upstream=False,
             include_direct_upstream=True,

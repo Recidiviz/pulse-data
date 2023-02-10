@@ -32,7 +32,9 @@ from pysftp import CnOpts
 from recidiviz.cloud_storage.gcs_file_system import BYTES_CONTENT_TYPE
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
-from recidiviz.common.io.sftp_file_contents_handle import SftpFileContentsHandle
+from recidiviz.common.io.legacy_sftp_file_contents_handle import (
+    LegacySftpFileContentsHandle,
+)
 from recidiviz.common.results import MultiRequestResultWithSkipped
 from recidiviz.common.sftp_connection import RecidivizSftpConnection
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
@@ -228,7 +230,7 @@ class DownloadFilesFromSftpController:
                 )
                 self.gcsfs.upload_from_contents_handle_stream(
                     path=path,
-                    contents_handle=SftpFileContentsHandle(
+                    contents_handle=LegacySftpFileContentsHandle(
                         sftp_connection=connection, sftp_file_path=file_path
                     ),
                     content_type=BYTES_CONTENT_TYPE,

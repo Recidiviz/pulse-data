@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for filtering out already downloaded SFTP files from
-discovered files on the SFTP server."""
+"""The CloudSQLQueryGenerator for marking SFTP files as downloaded."""
+import datetime
 from typing import Dict, List, Optional, Set, Tuple, Union
 
+import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
@@ -41,59 +42,56 @@ except ImportError:
     from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 
 
-class FilterDownloadedFilesSqlQueryGenerator(
+class MarkRemoteFilesDownloadedSqlQueryGenerator(
     CloudSqlQueryGenerator[List[Dict[str, Union[str, int]]]]
 ):
-    """Custom query generator for filtering out already downloaded files from SFTP."""
+    """Custom query generator for marking all files as downloaded."""
 
-    def __init__(self, find_sftp_files_task_id: str) -> None:
-        super().__init__()
-        self.find_sftp_files_task_id = find_sftp_files_task_id
+    def __init__(self, region_code: str, download_sftp_files_task_id: str) -> None:
+        self.region_code = region_code
+        self.download_sftp_files_task_id = download_sftp_files_task_id
 
     def execute_postgres_query(
         self,
-        operator: CloudSqlQueryOperator,
+        operator: "CloudSqlQueryOperator",
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[Dict[str, Union[str, int]]]:
-        """Returns filtered out results from the original SFTP files with the already
-        downloaded files."""
-        files_from_sftp_with_timestamps: Optional[
+        """Returns the list of all files that were downloaded and should be post processed
+        after marking all files as downloaded in the Postgres database."""
+        sftp_files_with_timestamps_and_downloaded_paths: Optional[
             List[Dict[str, Union[str, int]]]
         ] = operator.xcom_pull(
-            context, key="return_value", task_ids=self.find_sftp_files_task_id
+            context, key="return_value", task_ids=self.download_sftp_files_task_id
         )
-        if files_from_sftp_with_timestamps:
-            file_to_timestamp_set: Set[Tuple[str, int]] = {
+        if sftp_files_with_timestamps_and_downloaded_paths:
+            sftp_files_with_timestamp_set: Set[Tuple[str, int]] = {
                 (
                     assert_type(metadata[REMOTE_FILE_PATH], str),
                     assert_type(metadata[SFTP_TIMESTAMP], int),
                 )
-                for metadata in files_from_sftp_with_timestamps
+                for metadata in sftp_files_with_timestamps_and_downloaded_paths
             }
 
-            already_downloaded_df = postgres_hook.get_pandas_df(
-                self.sql_query(file_to_timestamp_set)
-            )
-            downloaded_file_to_timestamp_set: Set[Tuple[str, int]] = {
-                (row[REMOTE_FILE_PATH], int(row[SFTP_TIMESTAMP]))
-                for _, row in already_downloaded_df.iterrows()
-            }
+            postgres_hook.run(self.update_sql_query(sftp_files_with_timestamp_set))
 
-            return [
-                {REMOTE_FILE_PATH: file, SFTP_TIMESTAMP: timestamp}
-                for file, timestamp in file_to_timestamp_set
-                - downloaded_file_to_timestamp_set
-            ]
+            return sftp_files_with_timestamps_and_downloaded_paths
         return []
 
-    def sql_query(self, file_to_timestamp_set: Set[Tuple[str, int]]) -> str:
+    def update_sql_query(
+        self,
+        sftp_files_with_timestamp_set: Set[Tuple[str, int]],
+    ) -> str:
+        current_date = datetime.datetime.now(tz=pytz.UTC).strftime(
+            "%Y-%m-%d %H:%M:%S.%f %Z"
+        )
         sql_tuples = ",".join(
             [
                 f"('{file}', {timestamp})"
-                for file, timestamp in sorted(list(file_to_timestamp_set))
+                for file, timestamp in list(sorted(sftp_files_with_timestamp_set))
             ]
         )
+
         return f"""
-SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
- WHERE file_download_time IS NOT NULL AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""
+UPDATE direct_ingest_sftp_remote_file_metadata SET file_download_time = '{current_date}'
+WHERE region_code = '{self.region_code}' AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""

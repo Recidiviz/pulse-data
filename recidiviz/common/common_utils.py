@@ -23,8 +23,6 @@ import uuid
 from typing import Any, Callable, Iterable, Optional, Set, Tuple, Type, TypeVar
 
 import flask
-from google.api_core import exceptions  # pylint: disable=no-name-in-module
-from google.api_core import retry
 
 from recidiviz.utils.types import T
 
@@ -70,13 +68,6 @@ def get_trace_id_from_flask() -> Optional[str]:
 
 
 ReturnType = TypeVar("ReturnType")
-
-
-def google_api_retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
-    """ "A function that will determine whether we should retry a given Google exception."""
-    return retry.if_transient_error(exception) or retry.if_exception_type(
-        exceptions.GatewayTimeout
-    )(exception)
 
 
 def log_retried_google_api_error(exception: Exception) -> None:

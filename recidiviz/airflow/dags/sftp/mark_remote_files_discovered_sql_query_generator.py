@@ -16,7 +16,7 @@
 # =============================================================================
 """The CloudSQLQueryGenerator for marking all SFTP files as discovered."""
 import datetime
-from typing import Dict, List, Set, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -33,14 +33,16 @@ try:
         CloudSqlQueryGenerator,
         CloudSqlQueryOperator,
     )
+    from sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP  # type: ignore
 except ImportError:
     from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
         CloudSqlQueryGenerator,
         CloudSqlQueryOperator,
     )
+    from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 
 
-class MarkFilesDiscoveredSqlQueryGenerator(
+class MarkRemoteFilesDiscoveredSqlQueryGenerator(
     CloudSqlQueryGenerator[List[Dict[str, Union[str, int]]]]
 ):
     """Custom query generator for marking all files as discovered."""
@@ -58,35 +60,37 @@ class MarkFilesDiscoveredSqlQueryGenerator(
     ) -> List[Dict[str, Union[str, int]]]:
         """Returns the original list of all files to download after marking all new files
         as discovered in the Postgres database."""
-        sftp_files_with_timestamps: List[
-            Dict[str, Union[str, int]]
+        sftp_files_with_timestamps: Optional[
+            List[Dict[str, Union[str, int]]]
         ] = operator.xcom_pull(
             context, key="return_value", task_ids=self.filter_downloaded_files_task_id
         )
-        sftp_file_to_timestamp_set: Set[Tuple[str, int]] = {
-            (
-                assert_type(metadata["remote_file_path"], str),
-                assert_type(metadata["sftp_timestamp"], int),
+        if sftp_files_with_timestamps:
+            sftp_file_to_timestamp_set: Set[Tuple[str, int]] = {
+                (
+                    assert_type(metadata[REMOTE_FILE_PATH], str),
+                    assert_type(metadata[SFTP_TIMESTAMP], int),
+                )
+                for metadata in sftp_files_with_timestamps
+            }
+
+            already_discovered_df = postgres_hook.get_pandas_df(
+                self.exists_sql_query(sftp_file_to_timestamp_set)
             )
-            for metadata in sftp_files_with_timestamps
-        }
+            discovered_file_to_timestamp_set: Set[Tuple[str, int]] = {
+                (row[REMOTE_FILE_PATH], row[SFTP_TIMESTAMP])
+                for _, row in already_discovered_df.iterrows()
+            }
 
-        already_discovered_df = postgres_hook.get_pandas_df(
-            self.exists_sql_query(sftp_file_to_timestamp_set)
-        )
-        discovered_file_to_timestamp_set: Set[Tuple[str, int]] = {
-            (row["remote_file_path"], row["sftp_timestamp"])
-            for _, row in already_discovered_df.iterrows()
-        }
+            files_to_mark_discovered: Set[Tuple[str, int]] = (
+                sftp_file_to_timestamp_set - discovered_file_to_timestamp_set
+            )
 
-        files_to_mark_discovered: Set[Tuple[str, int]] = (
-            sftp_file_to_timestamp_set - discovered_file_to_timestamp_set
-        )
+            if files_to_mark_discovered:
+                postgres_hook.run(self.insert_sql_query(files_to_mark_discovered))
 
-        if files_to_mark_discovered:
-            postgres_hook.run(self.insert_sql_query(files_to_mark_discovered))
-
-        return sftp_files_with_timestamps
+            return sftp_files_with_timestamps
+        return []
 
     def exists_sql_query(self, file_to_timestamp_set: Set[Tuple[str, int]]) -> str:
         sql_tuples = ",".join(

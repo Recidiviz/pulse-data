@@ -51,8 +51,8 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
         mock_context = create_autospec(Context)
 
         mock_operator.xcom_pull.return_value = [
-            {"file": "file1.csv", "timestamp": 1},
-            {"file": "file2.csv", "timestamp": 2},
+            {"remote_file_path": "file1.csv", "sftp_timestamp": 1},
+            {"remote_file_path": "file2.csv", "sftp_timestamp": 2},
         ]
 
         mock_postgres.get_pandas_df.return_value = pd.DataFrame(
@@ -68,3 +68,16 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
         )
 
         self.assertListEqual(results, expected_results)
+
+    def test_filters_files_and_timestamps_no_prior_values(self) -> None:
+        mock_operator = create_autospec(CloudSqlQueryOperator)
+        mock_postgres = create_autospec(PostgresHook)
+        mock_context = create_autospec(Context)
+
+        mock_operator.xcom_pull.return_value = None
+
+        results = self.generator.execute_postgres_query(
+            mock_operator, mock_postgres, mock_context
+        )
+        self.assertEqual(len(results), 0)
+        mock_postgres.get_pandas_df.assert_not_called()

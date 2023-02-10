@@ -33,8 +33,10 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 # pylint: disable=ungrouped-imports
 try:
     from hooks.sftp_hook import RecidivizSFTPHook  # type: ignore
+    from sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP  # type: ignore
 except ImportError:
     from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
+    from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 
 
 class FindSftpFilesOperator(BaseOperator):
@@ -79,7 +81,10 @@ class FindSftpFilesOperator(BaseOperator):
             file_mode = file_modes_of_paths[path]
             if file_mode and stat.S_ISREG(file_mode):
                 files_to_download_with_timestamps.append(
-                    {"file": os.path.join(root, path), "timestamp": file_timestamp}
+                    {
+                        REMOTE_FILE_PATH: os.path.join(root, path),
+                        SFTP_TIMESTAMP: file_timestamp,
+                    }
                 )
             else:
                 inner_paths = deque(
@@ -98,7 +103,10 @@ class FindSftpFilesOperator(BaseOperator):
                             inner_paths.append(os.path.join(current_path, entry))
                     else:
                         files_to_download_with_timestamps.append(
-                            {"file": current_path, "timestamp": file_timestamp}
+                            {
+                                REMOTE_FILE_PATH: current_path,
+                                SFTP_TIMESTAMP: file_timestamp,
+                            }
                         )
 
         return files_to_download_with_timestamps

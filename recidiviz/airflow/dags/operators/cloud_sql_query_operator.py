@@ -20,6 +20,7 @@ from contextlib import contextmanager
 from typing import Any, Generic, Iterator, TypeVar
 
 from airflow.models.baseoperator import BaseOperator
+from airflow.models.connection import Connection
 from airflow.providers.google.cloud.hooks.cloud_sql import CloudSQLDatabaseHook
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
@@ -63,9 +64,9 @@ class CloudSqlQueryOperator(BaseOperator, Generic[Output]):
         cloud_sql_hook.validate_socket_path_length()
 
         results = None
-        with self.cloud_sql_proxy(cloud_sql_hook):
+        with self.cloud_sql_proxy(cloud_sql_hook) as connection:
             postgres_hook = assert_type(
-                cloud_sql_hook.get_database_hook(cloud_sql_hook.create_connection()),
+                cloud_sql_hook.get_database_hook(connection),
                 PostgresHook,
             )
             results = self.query_generator.execute_postgres_query(
@@ -75,18 +76,19 @@ class CloudSqlQueryOperator(BaseOperator, Generic[Output]):
 
     @staticmethod
     @contextmanager
-    def cloud_sql_proxy(cloud_sql_hook: CloudSQLDatabaseHook) -> Iterator[None]:
+    def cloud_sql_proxy(cloud_sql_hook: CloudSQLDatabaseHook) -> Iterator[Connection]:
         """In order to connect to CloudSQL, the recommended way is through the
         Cloud SQL Auth Proxy, which needs to be started and stopped explicitly between
         transactions. https://cloud.google.com/sql/docs/postgres/sql-proxy"""
         cloud_sql_proxy_runner = None
+        connection = cloud_sql_hook.create_connection()
         if cloud_sql_hook.use_proxy:
             cloud_sql_proxy_runner = cloud_sql_hook.get_sqlproxy_runner()
             cloud_sql_hook.free_reserved_port()
             cloud_sql_proxy_runner.start_proxy()
 
         try:
-            yield
+            yield connection
         finally:
             if cloud_sql_proxy_runner:
                 cloud_sql_proxy_runner.stop_proxy()

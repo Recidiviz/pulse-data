@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for MarkFilesDiscoveredSqlQueryGenerator"""
+"""Unit tests for MarkRemoteFilesDiscoveredSqlQueryGeneratorr"""
 import datetime
 import unittest
 from typing import Set, Tuple
@@ -28,16 +28,16 @@ from airflow.utils.context import Context
 from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
     CloudSqlQueryOperator,
 )
-from recidiviz.airflow.dags.sftp.mark_files_discovered_sql_query_generator import (
-    MarkFilesDiscoveredSqlQueryGenerator,
+from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generator import (
+    MarkRemoteFilesDiscoveredSqlQueryGenerator,
 )
 
 
-class TestMarkFilesDiscoveredSqlQueryGenerator(unittest.TestCase):
-    """Unit tests for MarkFilesDiscoveredSqlQueryGenerator"""
+class TestMarkRemoteFilesDiscoveredSqlQueryGeneratorr(unittest.TestCase):
+    """Unit tests for MarkRemoteFilesDiscoveredSqlQueryGeneratorr"""
 
     def setUp(self) -> None:
-        self.generator = MarkFilesDiscoveredSqlQueryGenerator(
+        self.generator = MarkRemoteFilesDiscoveredSqlQueryGenerator(
             region_code="US_XX", filter_downloaded_files_task_id="test_task_id"
         )
 
@@ -113,3 +113,18 @@ VALUES
         mock_postgres.run.assert_not_called()
 
         self.assertListEqual(results, sample_data)
+
+    def test_marks_files_discovered_no_prior_files(self) -> None:
+        mock_operator = create_autospec(CloudSqlQueryOperator)
+        mock_postgres = create_autospec(PostgresHook)
+        mock_context = create_autospec(Context)
+
+        mock_operator.xcom_pull.return_value = None
+
+        results = self.generator.execute_postgres_query(
+            mock_operator, mock_postgres, mock_context
+        )
+
+        self.assertEqual(len(results), 0)
+        mock_postgres.get_pandas_df.assert_not_called()
+        mock_postgres.run.assert_not_called()
