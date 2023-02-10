@@ -79,6 +79,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_QUERY_TEMPLATE = """
         special_conditions_terminated_date,
         remaining_criteria_needed,
         eligible_level_start,
+        offense_type_eligibility,
         -- these fields should all be disregarded if remaining_criteria_needed is zero,
         -- as there is additional override logic baked into that field
         -- (i.e. the fields do not always agree and remaining_criteria_needed wins)

@@ -105,6 +105,7 @@ class CompliantReportingReferralRecordEtlDelegateTest(TestCase):
                     "specialConditionsProgrammingVictimImpactCurrent": False,
                     "specialConditionsProgrammingFsw": False,
                     "specialConditionsProgrammingFswCurrent": False,
+                    "offenseTypeEligibility": 2,
                 },
             )
 
