@@ -56,8 +56,6 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import secrets
 
-RAW_INGEST_DIRECTORY = "raw_data"
-
 
 class SftpAuth:
     """Handles authentication for a given SFTP server."""
@@ -159,9 +157,6 @@ class DownloadFilesFromSftpController:
             if gcs_destination_path is None
             else gcs_destination_path
         )
-        self.download_dir = GcsfsDirectoryPath.from_dir_and_subdir(
-            dir_path=self.bucket, subdir=RAW_INGEST_DIRECTORY
-        )
 
         self.postgres_direct_ingest_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code,
@@ -205,7 +200,7 @@ class DownloadFilesFromSftpController:
         normalized_sftp_path = self._normalize_sftp_path(file_path)
         file_dt = datetime.datetime.fromtimestamp(file_timestamp).astimezone(pytz.UTC)
         normalized_upload_path = GcsfsFilePath.from_directory_and_file_name(
-            dir_path=self.download_dir,
+            dir_path=self.bucket,
             file_name=os.path.basename(
                 to_normalized_unprocessed_raw_file_path(
                     normalized_sftp_path, dt=file_dt
@@ -217,11 +212,11 @@ class DownloadFilesFromSftpController:
         ) and not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
             normalized_upload_path
         ):
-            logging.info("Downloading %s into %s", file_path, self.download_dir)
+            logging.info("Downloading %s into %s", file_path, self.bucket)
             try:
                 path = GcsfsFilePath.from_directory_and_file_name(
                     dir_path=GcsfsDirectoryPath.from_dir_and_subdir(
-                        dir_path=self.download_dir,
+                        dir_path=self.bucket,
                         subdir=datetime.datetime.fromtimestamp(file_timestamp)
                         .astimezone(pytz.UTC)
                         .strftime("%Y-%m-%dT%H:%M:%S:%f"),
@@ -261,7 +256,7 @@ class DownloadFilesFromSftpController:
                 logging.info(
                     "Could not download %s into %s: %s",
                     file_path,
-                    self.download_dir,
+                    self.bucket,
                     e.args,
                 )
                 self.unable_to_download_items.append(file_path)
@@ -388,7 +383,7 @@ class DownloadFilesFromSftpController:
                 "Download complete, successfully downloaded %s files to ingest bucket [%s] "
                 "could not download %s files and skipped %s files",
                 len(self.downloaded_items),
-                self.download_dir.uri(),
+                self.bucket.uri(),
                 len(self.unable_to_download_items),
                 len(self.skipped_files),
             )
