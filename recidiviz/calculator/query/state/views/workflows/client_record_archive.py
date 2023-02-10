@@ -46,8 +46,9 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
     , records_by_state_by_date AS (
         -- dedupes repeat uploads for the same date
         SELECT DISTINCT
-            * EXCEPT (path_parts, remaining_criteria_needed),
+            * EXCEPT (path_parts, remaining_criteria_needed, all_eligible_opportunities),
             CAST(remaining_criteria_needed AS INT64) AS remaining_criteria_needed,
+            ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
             DATE(path_parts[OFFSET(1)]) AS export_date,
             path_parts[OFFSET(2)] AS state_code,
         FROM split_path
