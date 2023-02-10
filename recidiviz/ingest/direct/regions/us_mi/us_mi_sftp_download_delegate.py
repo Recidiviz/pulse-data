@@ -40,7 +40,7 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
 
     def _matches(self, path: str) -> bool:
         """File names must match ADH_{TABLE_NAME}.zip"""
-        matches_overall_path = re.match(r"ADH\_[A-Z_]+.zip", path)
+        matches_overall_path = re.match(r"ADH\_[A-Z_]+(104A)?.zip", path)
         return matches_overall_path is not None
 
     def root_directory(self, _: List[str]) -> str:
