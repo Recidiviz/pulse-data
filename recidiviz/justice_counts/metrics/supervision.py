@@ -575,7 +575,7 @@ revocations = MetricDefinition(
             required=True,
             # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
-                ViolationType.TECHNICAL: IncludesExcludesSet(
+                RevocationType.TECHNICAL: IncludesExcludesSet(
                     members=SupervisionTechnicalViolationsIncludesExcludes,
                     excluded_set={
                         SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
@@ -584,7 +584,7 @@ revocations = MetricDefinition(
                         SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
                     },
                 ),
-                ViolationType.NEW_OFFENSE: IncludesExcludesSet(
+                RevocationType.NEW_OFFENSE: IncludesExcludesSet(
                     members=SupervisionNewOffenseViolationsIncludesExcludes,
                 ),
             },
