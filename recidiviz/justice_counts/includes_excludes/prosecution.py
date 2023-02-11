@@ -206,3 +206,19 @@ class ProsecutionCasesReferredIncludesExcludes(enum.Enum):
     PROSECUTING_OFFICE = "New cases initiated by the prosecuting office itself"
     REOPENED = "Inactive cases reopened"
     INTERNAL_TRANSFER = "Cases transferred internally"
+
+
+# Cases Declined
+
+
+class ProsecutionCasesDeclinedIncludesExcludes(enum.Enum):
+    LACK_OF_EVIDENCE = (
+        "The number of new cases declined by the office for lack of evidence"
+    )
+    LACK_OF_WITNESSES = (
+        "The number of new cases declined by the office for lack of witness cooperation"
+    )
+    LACK_OF_RESOURCES = (
+        "The number of new cases declined by the office for lack of resources"
+    )
+    INTERNAL_TRANSFER = "Cases transferred internally"

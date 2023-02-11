@@ -35,6 +35,17 @@ class StaffType(DimensionBase, enum.Enum):
         return "metric/staff/prosecution_defense/type"
 
 
+class CaseDeclinedSeverityType(DimensionBase, enum.Enum):
+    FELONY = "Felony Cases Declined"
+    MISDEMEANOR = "Misdemeanor Cases Declined"
+    OTHER = "Other Cases Declined"
+    UNKNOWN = "Unknown Cases Declined"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/declined/severity/prosecution/type"
+
+
 class CaseSeverityType(DimensionBase, enum.Enum):
     FELONY = "Felony Caseload"
     MISDEMEANOR = "Misdemeanor Caseload"

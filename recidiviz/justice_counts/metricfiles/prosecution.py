@@ -21,6 +21,7 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.prosecution import (
+    CaseDeclinedSeverityType,
     CaseSeverityType,
     DispositionType,
     FundingType,
@@ -88,7 +89,7 @@ PROSECUTION_METRIC_FILES = [
     MetricFile(
         canonical_filename="cases_declined_by_severity",
         definition=prosecution.cases_declined,
-        disaggregation=CaseSeverityType,
+        disaggregation=CaseDeclinedSeverityType,
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
