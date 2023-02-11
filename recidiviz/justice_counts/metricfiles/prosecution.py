@@ -24,6 +24,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     DispositionType,
     FundingType,
+    ReferredCaseSeverityType,
     StaffType,
 )
 from recidiviz.justice_counts.metricfile import MetricFile
@@ -77,7 +78,7 @@ PROSECUTION_METRIC_FILES = [
     MetricFile(
         canonical_filename="cases_referred_by_severity",
         definition=prosecution.cases_referred,
-        disaggregation=CaseSeverityType,
+        disaggregation=ReferredCaseSeverityType,
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
