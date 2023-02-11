@@ -16,12 +16,13 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Prosecution."""
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.prosecution import (
+    CaseDeclinedSeverityType,
     CaseSeverityType,
     DispositionType,
     ExpenseType,
@@ -33,10 +34,15 @@ from recidiviz.justice_counts.includes_excludes.common import (
     FelonyCasesIncludesExcludes,
     MisdemeanorCasesIncludesExcludes,
 )
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionAdministrativeStaffIncludesExcludes,
     ProsecutionAdvocateStaffIncludesExcludes,
     ProsecutionCaseloadIncludesExcludes,
+    ProsecutionCasesDeclinedIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
     ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes,
@@ -56,12 +62,10 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
-    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -242,33 +246,59 @@ cases_declined = MetricDefinition(
     metric_type=MetricType.CASES_DECLINED,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Cases Declined",
-    description="Measures the number of cases referred to the prosecutor that were declined for prosecution.",
-    definitions=[
-        Definition(
-            term="Declined",
-            definition="A case for which a prosecutor has declined to bring referred charges against an individual. Declined cases are those in which the prosecutor has refused to bring/file any of the referred charges.",
-        )
-    ],
+    description="The number of criminal cases referred to the office.",
     measurement_type=MeasurementType.DELTA,
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCasesDeclinedIncludesExcludes,
+        excluded_set={ProsecutionCasesDeclinedIncludesExcludes.INTERNAL_TRANSFER},
+    ),
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[
-        Context(
-            key=ContextKey.ANOTHER_AGENCY_CAN_FILE_CHARGES,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Does another agency in the jurisdiction have the authority to file charges/cases directly with the court?",
-            required=True,
-            multiple_choice_options=YesNoContext,
-        ),
-        Context(
-            key=ContextKey.ADDITIONAL_PROSECUTION_OUTCOMES,
-            value_type=ValueType.TEXT,
-            label="Please describe any additional outcomes of case review available to attorneys in your agency, other than declined or filed.",
-            required=False,
-        ),
-    ],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False),
-        AggregatedDimension(dimension=GenderRestricted, required=False),
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=CaseDeclinedSeverityType,
+            required=False,
+            dimension_to_description={
+                CaseDeclinedSeverityType.FELONY: "The number of cases referred and declined in which the leading charge was for a felony offense, as defined by the state statute.",
+                CaseDeclinedSeverityType.MISDEMEANOR: "The number of cases referred and declined in which the leading charge was for a misdemeanor offense, as defined by the state statute.",
+                CaseDeclinedSeverityType.OTHER: "The number of criminal cases referred and declined in which the leading charge was for another offense that was not a felony or misdemeanor.",
+                CaseDeclinedSeverityType.UNKNOWN: "The number of criminal cases referred and declined in which the leading charge was for an offense of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                CaseDeclinedSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCasesIncludesExcludes,
+                    excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
+                ),
+                CaseDeclinedSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorCasesIncludesExcludes,
+                    excluded_set={
+                        MisdemeanorCasesIncludesExcludes.INFRACTION,
+                        MisdemeanorCasesIncludesExcludes.FELONY,
+                    },
+                ),
+            },
+        ),
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=BiologicalSex,
+            required=False,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of criminal cases referred to the office for review and declined for prosecution with a defendant whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of criminal cases referred to the office for review and declined for prosecution with a defendant whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of criminal cases referred to the office for review and declined for prosecution with a defendant whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
+        # TODO(#18071)
         AggregatedDimension(dimension=RaceAndEthnicity, required=False),
     ],
 )
