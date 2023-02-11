@@ -151,8 +151,6 @@ class ProsecutionVacantStaffIncludesExcludes(enum.Enum):
 
 
 # Caseload
-
-
 class ProsecutionCaseloadIncludesExcludes(enum.Enum):
     # TODO(#17577)
     OPEN_CASES = "Criminal cases open and active during the sharing period"
@@ -194,3 +192,17 @@ class ProsecutionMixedCaseloadIncludesExcludes(enum.Enum):
     UNASSIGNED_MISDEMEANOR_CASES = "Misdemeanor cases not yet assigned to an attorney"
     LINE_ATTORNEYS = "Line attorneys carrying a mixed caseload"
     SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a mixed caseload"
+
+
+# Cases Referred
+
+
+class ProsecutionCasesReferredIncludesExcludes(enum.Enum):
+    LAW_ENFORCEMENT = "New cases referred by any law enforcement office"
+    SUPERVISION = "New cases referred by any supervision agency"
+    ANOTHER_JURISDICTION = (
+        "New cases transferred from another jurisdiction for prosecution"
+    )
+    PROSECUTING_OFFICE = "New cases initiated by the prosecuting office itself"
+    REOPENED = "Inactive cases reopened"
+    INTERNAL_TRANSFER = "Cases transferred internally"

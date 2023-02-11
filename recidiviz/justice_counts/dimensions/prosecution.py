@@ -47,6 +47,17 @@ class CaseSeverityType(DimensionBase, enum.Enum):
         return "metric/severity/prosecution/type"
 
 
+class ReferredCaseSeverityType(DimensionBase, enum.Enum):
+    FELONY = "Felony Cases Referred"
+    MISDEMEANOR = "Misdemeanor Cases Referred"
+    OTHER = "Other Cases Referred"
+    UNKNOWN = "Unknown Cases Referred"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/severity/referred/prosecution/type"
+
+
 class DispositionType(DimensionBase, enum.Enum):
     ACQUITTAL = "Acquittal"
     CONVICTION_PLEA = "Conviction - Plea"

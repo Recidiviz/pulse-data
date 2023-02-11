@@ -26,12 +26,18 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DispositionType,
     ExpenseType,
     FundingType,
+    ReferredCaseSeverityType,
     StaffType,
+)
+from recidiviz.justice_counts.includes_excludes.common import (
+    FelonyCasesIncludesExcludes,
+    MisdemeanorCasesIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionAdministrativeStaffIncludesExcludes,
     ProsecutionAdvocateStaffIncludesExcludes,
     ProsecutionCaseloadIncludesExcludes,
+    ProsecutionCasesReferredIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
     ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes,
     ProsecutionFelonyCaseloadIncludesExcludes,
@@ -271,18 +277,42 @@ cases_referred = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.CASES_REFERRED,
     category=MetricCategory.POPULATIONS,
-    display_name="Cases Referred (Intake)",
-    definitions=[
-        Definition(
-            term="Referral",
-            definition="A case involving one or more charges brought to the prosecutor for review before being filed against an individual. This may include cases brought by law enforcement or other means for prosecutorial review.",
-        )
-    ],
-    description="Measures the number of cases referred to your office for prosecution (intake).",
+    display_name="Cases Referred",
+    description="The number of criminal cases referred to the office.",
     measurement_type=MeasurementType.DELTA,
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCasesReferredIncludesExcludes,
+        excluded_set={
+            ProsecutionCasesReferredIncludesExcludes.INTERNAL_TRANSFER,
+            ProsecutionCasesReferredIncludesExcludes.REOPENED,
+        },
+    ),
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False)
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=ReferredCaseSeverityType,
+            required=False,
+            dimension_to_description={
+                ReferredCaseSeverityType.FELONY: "The number of criminal cases referred to the office in which the leading charge was for a felony offense.",
+                ReferredCaseSeverityType.MISDEMEANOR: "The number of criminal cases referred to the office in which the leading charge was for a felony offense.",
+                ReferredCaseSeverityType.OTHER: "The number of criminal cases referred to the office in which the leading charge was not for a felony or misdemeanor offense.",
+                ReferredCaseSeverityType.UNKNOWN: "The number of criminal cases referred to the office in which the leading charge was for an offense of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                ReferredCaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCasesIncludesExcludes,
+                    excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
+                ),
+                ReferredCaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorCasesIncludesExcludes,
+                    excluded_set={
+                        MisdemeanorCasesIncludesExcludes.FELONY,
+                        MisdemeanorCasesIncludesExcludes.INFRACTION,
+                    },
+                ),
+            },
+        )
     ],
 )
 
