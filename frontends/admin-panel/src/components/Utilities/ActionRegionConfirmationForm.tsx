@@ -203,9 +203,9 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
           <li>
             If SECONDARY, then you will need to first copy all raw data files
             into the SECONDARY ingest bucket that should be used for this rerun.
-            Then the rerun will import that raw data to the
-            <code>us_xx_raw_data_secondary</code> dataset in BigQuery and
-            generate ingest view results based on that data.
+            Then the rerun will import that raw data to the{" "}
+            <code>{regionCode.toLowerCase()}_raw_data_secondary</code> dataset
+            in BigQuery and generate ingest view results based on that data.
           </li>
         </ul>
         {!secondaryRawDataImportEnabled ? (
@@ -402,9 +402,7 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             <p style={{ color: canStartRerun ? "green" : "red" }}>
               The SECONDARY instance status is&nbsp;
               {currentSecondaryIngestInstanceStatus}.&nbsp;
-              {canStartRerun
-                ? "Can proceed with rerun!"
-                : "Cannot proceed with rerun."}
+              {canStartRerun ? "Rerun can proceed!" : "Rerun cannot proceed."}
             </p>
           </div>
           {canStartRerun ? ingestRerunForm : undefined}
