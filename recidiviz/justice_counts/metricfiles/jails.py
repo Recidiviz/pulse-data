@@ -84,6 +84,16 @@ JAILS_METRIC_FILES = [
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
+        canonical_filename="post_adjudication_admissions",
+        definition=jails.post_adjudication_admissions,
+    ),
+    MetricFile(
+        canonical_filename="post_adjudication_admissions_by_type",
+        definition=jails.post_adjudication_admissions,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
+    ),
+    MetricFile(
         canonical_filename="population",
         definition=jails.average_daily_population,
     ),
