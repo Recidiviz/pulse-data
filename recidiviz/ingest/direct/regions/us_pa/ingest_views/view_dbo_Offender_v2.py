@@ -23,7 +23,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """WITH
--- TODO(#8895): Don't pull in contacts here once we have a real source for names.
+-- TODO(#18543): Don't pull in contacts here once we have a real source for names.
 names_from_parole_contacts as (
   SELECT
     * EXCEPT (recency_rank)
@@ -49,10 +49,13 @@ names_from_parole_contacts as (
 )
 SELECT 
   offender.ParoleNumber, offender.OffRaceEthnicGroup, offender.OffSex,
-  names.first_name, names.last_name, names.suffix
+  names.first_name, names.last_name, names.suffix, 
+  SAFE.PARSE_DATE('%Y%m%d', parolee.DOB) as DOB
 FROM {dbo_Offender} offender
 LEFT JOIN names_from_parole_contacts names
 ON offender.ParoleNumber = names.parole_number
+LEFT JOIN {dbo_Parolee} parolee
+USING (ParoleNumber)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
