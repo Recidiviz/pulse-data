@@ -70,15 +70,11 @@ class ReferredCaseSeverityType(DimensionBase, enum.Enum):
 
 
 class DispositionType(DimensionBase, enum.Enum):
-    ACQUITTAL = "Acquittal"
-    CONVICTION_PLEA = "Conviction - Plea"
-    CONVICTION_TRIAL = "Conviction - Trial"
-    DISMISSAL = "Dismissal"
-    DIVERTED_OR_DEFERRED = "Diverted or Deferred"
-    REJECTED = "Declined"
-    TRANSFER = "Transfer"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    DISMISSAL = "Cases Disposed by Dismissal"
+    PLEA = "Cases Resolved by Plea"
+    TRIAL = "Cases Resolved at Trial"
+    OTHER = "Other Disposition"
+    UNKNOWN = "Unknown Disposition"
 
     @classmethod
     def dimension_identifier(cls) -> str:
