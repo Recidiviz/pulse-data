@@ -64,7 +64,7 @@ cron:
 
   - description: "[Direct ingest][sftp] Initiate SFTP download for US_MO"
     url: /direct/handle_sftp_files?region=us_mo
-    schedule: every Monday 08:00
+    schedule: every Sunday 18:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 30

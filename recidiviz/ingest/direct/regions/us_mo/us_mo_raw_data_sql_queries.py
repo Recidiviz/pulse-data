@@ -55,7 +55,7 @@ ORAS_WEEKLY_SUMMARY_UPDATE = """
         ASSESSMENT_STATUS,
         SCORE,
         DATE_CREATED,
-        '"' CONCAT REPLACE(OFFENDER_NAME, '"', '""') CONCAT '"' AS OFFENDER_NAME,
+        '"' CONCAT REPLACE(USER_CREATED, '"', '""') CONCAT '"' AS USER_CREATED,
         RACE,
         BIRTH_DATE,
         CREATED_DATE
@@ -652,6 +652,29 @@ LBAKRDTA_TAK065 = """
         LBAKRDTA.TAK065;
     """
 
+LBAKRDTA_TAK068 = f"""
+    SELECT 
+        CT$DOC,
+        CT$CYC,
+        CT$CNO,
+        CT$CSD,
+        CT$CSS,
+        CT$HCI,
+        '"' CONCAT REPLACE(CT$HCJ, '"', '""') CONCAT '"' AS CT$HCJ,
+        '"' CONCAT REPLACE(CT$HCT, '"', '""') CONCAT '"' AS CT$HCT, 
+        CT$UID,
+        CT$DCR,
+        CT$TCR,
+        CT$UIU,
+        CT$DLU,
+        CT$TLU
+    FROM
+        LBAKRDTA.TAK068
+    WHERE
+        MAX(COALESCE(CT$DLU, 0),
+            COALESCE(CT$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK076 = f"""
     SELECT 
         CZ$DOC,
@@ -1073,7 +1096,237 @@ OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = """
         OFNDR_PDB.FOC_SUPERVISION_ENHANCEMENTS_VW;
     """
 
-MO_CASEPLANS_DB2 = """
+OFNDR_PDB_OFNDR_ASMNTS = f"""
+    SELECT 
+        OFNDR_ASMNT_REF_ID,
+        OFNDR_CYCLE_REF_ID,
+        ASSESSMENT_TOOL_REF_ID,
+        LOC_REF_ID,
+        SCORE_BY_USER_REF_ID,
+        OVERRIDE_EVALUATION_REF_ID,
+        EVAL_OVERRIDE_CD,
+        OVERRIDE_APPROVAL_USER_REF_ID,
+        '"' CONCAT REPLACE(OVERRIDE_COMMENT, '"', '""') CONCAT '"' AS OVERRIDE_COMMENT,
+        ASSESSMENT_DATE,
+        NEXT_REVIEW_DT,
+        CREATE_TS,
+        CREATE_USER_REF_ID,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        OFNDR_PDB.OFNDR_ASMNTS
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+OFNDR_PDB_OFNDR_ASMNT_SCORES = f"""
+    SELECT 
+        OFNDR_ASMNT_SCORE_REF_ID,
+        OFNDR_ASMNT_REF_ID,
+        EVALUATION_REF_ID,
+        SECTION_EVALUATION_REF_ID,
+        SCORING_PART_REF_ID,
+        SECTION_CATEGORY_REF_ID,
+        SECTION_REF_ID,
+        ASMNT_SCORING_TYPE_CD,
+        SCORING_TYPE_SCORE_VALUE,
+        OVERRIDE_TOOL_SCORE_IND,
+        OVERRIDE_TOOL_SCORE_VALUE,
+        RAW_TOOL_SCORE_VALUE,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        OFNDR_PDB.OFNDR_ASMNT_SCORES
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+OFNDR_PDB_OFNDR_ASMNT_RESPONSES = f"""
+    SELECT 
+        OFNDR_RESPONSE_REF_ID,
+        OFNDR_ASMNT_REF_ID,
+        RESPONSE_REF_ID,
+        '"' CONCAT REPLACE(RESPONSE_COMMENT, '"', '""') CONCAT '"' AS RESPONSE_COMMENT,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        OFNDR_PDB.OFNDR_ASMNT_RESPONSES
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+# This file is known to be quite large (40M+ rows). For this first time that we are switching to full historicals for
+# all files, we are NOT going to pull this one. It is not currently needed since other tables can be used in its place
+# for now. After success with that rest of the files, we can revisit this decision and add it in if needed.
+
+OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF = f"""
+    SELECT 
+        OFNDR_CYCLE_REF_ID,
+        DOC_ID,
+        CYCLE_NO,
+        DELETE_IND,
+        CREATE_USER_ID,
+        CREATE_TS,
+        UPDATE_USER_ID,
+        UPDATE_TS,
+        CYCLE_CLOSED_IND,
+        CREATE_USER_REF_ID
+    FROM
+        OFNDR_PDB.OFNDR_CYCLE_REF_ID_XREF
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+CODE_PDB_ASMNT_PRIMARY_TYPE_CODES = f"""
+    SELECT 
+        ASMNT_PRIMARY_TYPE_CD,
+        ASMNT_GENERAL_TYPE_CD,
+        INTEGRATED_ASMNT_TOOL_REF_ID,
+        ASSESSMENT_TOOL_REF_ID,
+        SECTION_REF_ID,
+        QUESTION_REF_ID,
+       '"' CONCAT REPLACE(ASMNT_PRIMARY_TYPE_DESC, '"', '""') CONCAT '"' AS ASMNT_PRIMARY_TYPE_DESC,
+        ASMNT_PRIMARY_TYPE_START_DT,
+        ASMNT_PRIMARY_TYPE_STOP_DT,
+        ASMNT_PRIMARY_TYPE_SORT_SEQ_NO,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS
+    FROM
+        CODE_PDB.ASMNT_PRIMARY_TYPE_CODES
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES = f"""
+    SELECT 
+        EVAL_OVERRIDE_CD,
+        '"' CONCAT REPLACE(EVAL_OVERRIDE_DESC, '"', '""') CONCAT '"' AS EVAL_OVERRIDE_DESC,
+        ASSESSMENT_TYPE_CD,
+        EVAL_OVERRIDE_START_DT,
+        EVAL_OVERRIDE_STOP_DT,
+        EVAL_OVERRIDE_SORT_SEQ_NO,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS
+    FROM
+        CODE_PDB.ASMNT_EVAL_OVERRIDE_CODES
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+MASTER_PDB_ASSESSMENT_EVALUATIONS = f"""
+    SELECT 
+        EVALUATION_REF_ID,
+        ASSESSMENT_TOOL_REF_ID,
+        EVALUATION_ID,
+        FROM_SCORE,
+        TO_SCORE,
+        '"' CONCAT REPLACE(SCORE_INTERPRETATION, '"', '""') CONCAT '"' AS SCORE_INTERPRETATION,
+        ACTIVE_IND,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        MASTER_PDB.ASSESSMENT_EVALUATIONS
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+MASTER_PDB_ASSESSMENT_SECTIONS = f"""
+    SELECT 
+        SECTION_REF_ID,
+        ASSESSMENT_TOOL_REF_ID,
+        SECTION_ID,
+        '"' CONCAT REPLACE(SECTION_TITLE, '"', '""') CONCAT '"' AS SECTION_TITLE,
+        '"' CONCAT REPLACE(SECTION_INSTRUCTION, '"', '""') CONCAT '"' AS SECTION_INSTRUCTION,
+        KIOSK_IND,
+        '"' CONCAT REPLACE(SECTION_OBJECTIVE, '"', '""') CONCAT '"' AS SECTION_OBJECTIVE,
+        ACTIVE_IND,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        MASTER_PDB.ASSESSMENT_SECTIONS
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+MASTER_PDB_ASSESSMENT_QUESTIONS = f"""
+    SELECT 
+        QUESTION_REF_ID,
+        SECTION_REF_ID,
+        QUESTION_ID,
+        '"' CONCAT REPLACE(QUESTION_TEXT, '"', '""') CONCAT '"' AS QUESTION_TEXT,
+        QUESTION_TYPE_CD,
+        RESPONSE_REQ_IND,
+        MULTIPLE_RESPONSE_IND,
+        ACTIVE_IND,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        MASTER_PDB.ASSESSMENT_QUESTIONS
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+MASTER_PDB_ASSESSMENT_RESPONSES = f"""
+    SELECT 
+        RESPONSE_REF_ID,
+        QUESTION_REF_ID,
+        RESPONSE_ID,
+        '"' CONCAT REPLACE(RESPONSE_TEXT, '"', '""') CONCAT '"' AS RESPONSE_TEXT,
+        SECTION_VALUE,
+        TOOL_VALUE,
+        COMMENT_REQUIRED_IND,
+        ACTIVE_IND,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
+    FROM
+        MASTER_PDB.ASSESSMENT_RESPONSES
+    WHERE
+        UPDATE_TS < '7799-12-31' AND 
+        MAX(COALESCE(UPDATE_TS, '1900-01-01'),
+            COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+MO_CASEPLANS_DB2 = f"""
     SELECT 
         OFFENDER_ID,
         CASE_PLAN_ID,
@@ -1089,7 +1342,7 @@ MO_CASEPLANS_DB2 = """
     FROM
         ORAS.MO_CASEPLANS_DB2
     WHERE
-        COALESCE(CREATED_AT, '1900-01-01') >= {iso_format_lower_bound_update_date};
+        COALESCE(CREATED_AT, '1900-01-01') >= '{iso_format_lower_bound_update_date}';
     """
 
 # Note: for this table without time bounds, there is no date field or ordering field to allow for only new rows to
@@ -1132,7 +1385,7 @@ MO_CASEPLAN_TARGETS_DB2 = """
         ORAS.MO_CASEPLAN_TARGETS_DB2;
     """
 
-MO_CASEPLAN_GOALS_DB2 = """
+MO_CASEPLAN_GOALS_DB2 = f"""
     SELECT 
         OFFENDER_ID,
         CASE_PLAN_ID,
@@ -1148,7 +1401,7 @@ MO_CASEPLAN_GOALS_DB2 = """
         ORAS.MO_CASEPLAN_GOALS_DB2
     WHERE
         MAX(COALESCE(CREATED_AT, '1900-01-01'),
-            COALESCE(CREATED_AT, '1900-01-01')) >= {iso_format_lower_bound_update_date};
+            COALESCE(CREATED_AT, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
 
 # Note: for this table without time bounds, there is no date field or ordering field to allow for only new rows to
@@ -1222,6 +1475,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
         ("LBAKRDTA_TAK044", LBAKRDTA_TAK044),
         ("LBAKRDTA_TAK065", LBAKRDTA_TAK065),
+        ("LBAKRDTA_TAK068", LBAKRDTA_TAK068),
         ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
         ("LBAKRDTA_TAK090", LBAKRDTA_TAK090),
         ("LBAKRDTA_TAK142", LBAKRDTA_TAK142),
@@ -1231,7 +1485,10 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK233", LBAKRDTA_TAK233),
         ("LBAKRDTA_TAK234", LBAKRDTA_TAK234),
         ("LBAKRDTA_TAK235", LBAKRDTA_TAK235),
-        ("LBAKRDTA_TAK238", LBAKRDTA_TAK238),
+        (
+            "LBAKRDTA_TAK238",
+            LBAKRDTA_TAK238,
+        ),  # TODO(#18635): Determine if this file should be pulled every week or instead should be pulled only when requested.
         ("LBAKRDTA_TAK291", LBAKRDTA_TAK291),
         ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
         ("LBAKRDTA_TAK293", LBAKRDTA_TAK293),
@@ -1243,7 +1500,17 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
             "OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW",
             OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW,
         ),
+        ("OFNDR_PDB_OFNDR_ASMNTS", OFNDR_PDB_OFNDR_ASMNTS),
+        ("OFNDR_PDB_OFNDR_ASMNT_SCORES", OFNDR_PDB_OFNDR_ASMNT_SCORES),
+        ("CODE_PDB_ASMNT_PRIMARY_TYPE_CODES", CODE_PDB_ASMNT_PRIMARY_TYPE_CODES),
+        ("CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES", CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES),
+        ("MASTER_PDB_ASSESSMENT_EVALUATIONS", MASTER_PDB_ASSESSMENT_EVALUATIONS),
+        ("MASTER_PDB_ASSESSMENT_SECTIONS", MASTER_PDB_ASSESSMENT_SECTIONS),
+        ("MASTER_PDB_ASSESSMENT_QUESTIONS", MASTER_PDB_ASSESSMENT_QUESTIONS),
+        ("MASTER_PDB_ASSESSMENT_RESPONSES", MASTER_PDB_ASSESSMENT_RESPONSES),
+        ("OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF", OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF),
         # These queries should only be run ad-hoc for now. See above for more details.
+        # ("OFNDR_PDB_OFNDR_ASMNT_RESPONSES", OFNDR_PDB_OFNDR_ASMNT_RESPONSES),
         # ("MO_CASEPLANS_DB2", MO_CASEPLANS_DB2),
         # ("MO_CASEPLAN_INFO_DB2", MO_CASEPLAN_INFO_DB2),
         # ("MO_CASEPLAN_TARGETS_DB2", MO_CASEPLAN_TARGETS_DB2),
