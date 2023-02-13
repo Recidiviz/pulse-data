@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines all Justice Counts metrics for the Jail system."""
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
@@ -25,6 +24,7 @@ from recidiviz.justice_counts.dimensions.jails import (
     ReleaseType,
     StaffType,
 )
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -48,6 +48,7 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     ManagementAndOperationsStaffIncludesExcludes,
     PersonalSafetyIncludesExcludes,
     PersonnelIncludesExcludes,
+    PreAdjudicationAdmissionsIncludesExcludes,
     ProgrammaticStaffIncludesExcludes,
     SecurityStaffIncludesExcludes,
     StaffIncludesExcludes,
@@ -56,13 +57,17 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     UseOfForceIncidentsIncludesExcludes,
     VacantPositionsIncludesExcludes,
 )
+from recidiviz.justice_counts.includes_excludes.offense import (
+    DrugOffenseIncludesExcludes,
+    PersonOffenseIncludesExcludes,
+    PropertyOffenseIncludesExcludes,
+    PublicOrderOffenseIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
-    YesNoContext,
 )
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
@@ -287,32 +292,66 @@ readmissions = MetricDefinition(
     ],
 )
 
-admissions = MetricDefinition(
+pre_adjudication_admissions = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.ADMISSIONS,
+    metric_type=MetricType.PRE_ADJUDICATION_ADMISSIONS,
     category=MetricCategory.POPULATIONS,
-    display_name="Admissions",
-    description="Measures the number of new admissions to your jail system.",
-    reporting_note="Report individuals in the most serious category (new sentence > violation > hold).",
+    display_name="Pre-adjudication Admissions",
+    description="The number of admission events to the agency’s jurisdiction in which the person has not yet been adjudicated.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_DEFINITION_OF_ADMISSION,
-            value_type=ValueType.TEXT,
-            label="Please provide your agency's definition of admission.",
-            required=True,
-        ),
-        Context(
-            key=ContextKey.INCLUDES_VIOLATED_CONDITIONS,
-            value_type=ValueType.MULTIPLE_CHOICE,
-            label="Are the individuals admitted for violation of conditions counted within the total population?",
-            required=False,
-            multiple_choice_options=YesNoContext,
-        ),
-    ],
+    # TODO(#18071) implement reused includes/excludes
+    includes_excludes=IncludesExcludesSet(
+        members=PreAdjudicationAdmissionsIncludesExcludes,
+        excluded_set={
+            PreAdjudicationAdmissionsIncludesExcludes.TEMPORARY_ABSENCE,
+            PreAdjudicationAdmissionsIncludesExcludes.MOVING,
+        },
+    ),
+    # TODO(#18071) implement reused includes/excludes
     aggregated_dimensions=[
-        AggregatedDimension(dimension=PopulationType, required=False)
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={
+                        PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                    },
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={
+                        PropertyOffenseIncludesExcludes.ROBBERY,
+                    },
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                OffenseType.PERSON: "The number of pre-adjudication admission events in which the most serious charge was for an offense against a person.",
+                OffenseType.PROPERTY: "The number of pre-adjudication admission events in which the most serious charge was for a property offense.",
+                OffenseType.PUBLIC_ORDER: "The number of pre-adjudication admission events in which the most serious charge was for a public order offense.",
+                OffenseType.DRUG: "The number of pre-adjudication admission events in which the most serious charge was for a drug offense.",
+                OffenseType.OTHER: "The number of pre-adjudication admission events in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
+                OffenseType.UNKNOWN: "The number of pre-adjudication admission events in which the most serious offense charge type is not known.",
+            },
+        )
     ],
 )
 

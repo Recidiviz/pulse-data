@@ -54,7 +54,7 @@ METRICS = [
     jails.expenses,
     jails.total_staff,
     jails.residents,
-    jails.admissions,
+    jails.pre_adjudication_admissions,
     jails.average_daily_population,
     jails.readmissions,
     jails.releases,
