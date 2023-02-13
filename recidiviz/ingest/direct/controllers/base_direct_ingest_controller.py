@@ -492,14 +492,25 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         # If there aren't any more tasks to schedule for the region, update to the appropriate next
         # status, based on the ingest instance.
         if self.ingest_instance == DirectIngestInstance.PRIMARY:
+            logging.info(
+                "Controller's instance is PRIMARY. No tasks to schedule and instance is now up to date."
+            )
             self.ingest_instance_status_manager.change_status_to(
                 DirectIngestStatus.UP_TO_DATE
             )
         elif stale_secondary_raw_data(self.region_code()):
+            logging.info(
+                "Controller's instance is SECONDARY. No tasks to schedule but secondary raw data is now "
+                "stale."
+            )
             self.ingest_instance_status_manager.change_status_to(
                 DirectIngestStatus.STALE_RAW_DATA
             )
         else:
+            logging.info(
+                "Controller's instance is SECONDARY. No tasks to schedule and secondary is now ready to "
+                "flash."
+            )
             self.ingest_instance_status_manager.change_status_to(
                 DirectIngestStatus.READY_TO_FLASH
             )

@@ -625,8 +625,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               description={
                 <p>
                   Use the command below within the <code>pipenv shell</code> to
-                  move SECONDARY storage raw files to deprecated (confirm output
-                  with <code>--dry-run True</code> before proceeding)
+                  move SECONDARY storage raw files to deprecated
                   <CodeBlock
                     enabled={
                       currentStepSection ===
@@ -637,7 +636,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
                     --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
                     --ingest-instance SECONDARY --skip-prompts True --dry-run
-                    True
+                    False
                   </CodeBlock>
                 </p>
               }
@@ -982,8 +981,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               description={
                 <p>
                   Use the command below within the <code>pipenv shell</code> to
-                  move PRIMARY storage raw files to deprecated (confirm output
-                  with <code>--dry-run True</code> before proceeding)
+                  move PRIMARY storage raw files to deprecated
                   <CodeBlock
                     enabled={
                       currentStepSection ===
@@ -993,7 +991,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     python -m
                     recidiviz.tools.ingest.operations.move_storage_raw_files_to_deprecated
                     --project-id {projectId} --region {stateCode.toLowerCase()}{" "}
-                    --ingest-instance PRIMARY --skip-prompts True --dry-run True
+                    --ingest-instance PRIMARY --skip-prompts True --dry-run
+                    False
                   </CodeBlock>
                 </p>
               }

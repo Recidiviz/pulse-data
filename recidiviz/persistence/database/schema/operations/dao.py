@@ -202,15 +202,29 @@ def stale_secondary_raw_data(region_code: str) -> bool:
     )
     # It is not possible to have stale SECONDARY raw data if there isn't a SECONDARY raw data import rerun in progress
     # or if a start of a rerun was not found in SECONDARY
-    if (
-        secondary_status_manager.get_raw_data_source_instance()
-        != DirectIngestInstance.SECONDARY
-        or not secondary_rerun_start_timestamp
-    ):
+    secondary_raw_data_source = secondary_status_manager.get_raw_data_source_instance()
+    if secondary_raw_data_source != DirectIngestInstance.SECONDARY:
+        logging.info(
+            "[stale_secondary_raw_data] Secondary raw data source is not SECONDARY: %s. Raw data in secondary cannot "
+            "be stale. Returning.",
+            secondary_raw_data_source,
+        )
+        return False
+
+    if not secondary_rerun_start_timestamp:
+        logging.info(
+            "[stale_secondary_raw_data] Could not locate the start of a secondary rerun. "
+            "Raw data in secondary cannot be stale. Returning."
+        )
         return False
 
     database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.OPERATIONS)
     with SessionFactory.using_database(database_key) as session:
+        logging.info(
+            "[stale_secondary_raw_data] Executing query of direct_ingest_raw_file_metadata to determine if"
+            "there are stale raw files in SECONDARY. Secondary rerun start timestamp is: %s",
+            secondary_rerun_start_timestamp,
+        )
         query = f"""
         WITH primary_raw_data AS (
             SELECT * 
@@ -238,8 +252,8 @@ def stale_secondary_raw_data(region_code: str) -> bool:
         is_stale = count > 0
         if is_stale:
             logging.info(
-                "[%s] Found non-invalidated raw files in PRIMARY that were discovered after=[%s], indicating stale "
-                "raw data in SECONDARY.",
+                "[%s][stale_secondary_raw_data] Found non-invalidated raw files in PRIMARY that were discovered "
+                "after=[%s], indicating stale raw data in SECONDARY.",
                 region_code,
                 secondary_rerun_start_timestamp,
             )
