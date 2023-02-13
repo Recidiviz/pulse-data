@@ -17,6 +17,10 @@
 """Helpers for querying user events logged from Workflows"""
 from typing import List, Optional
 
+# The first US_IX export for workflows was on 1/11 in staging and 1/17 in prod.
+# For simplicity, use the prod date.
+first_ix_export_date = "2023-01-17"
+
 
 def user_event_template(
     table_name: str, add_columns: Optional[List[str]] = None
@@ -32,8 +36,9 @@ def user_event_template(
         SELECT DISTINCT
             person_id,
             person_external_id,
-            -- this incorporates state code so we don't need to join on it explicitly
             pseudonymized_id,
+            -- Join on state_code because we want to be able to distinguish between US_ID and US_IX person_ids
+            state_code,
         FROM `{{project_id}}.{{workflows_views_dataset}}.client_record_archive_materialized` client_records
 
         UNION ALL
@@ -42,6 +47,7 @@ def user_event_template(
             person_id,
             person_external_id,
             pseudonymized_id,
+            state_code,
         # TODO(#17870): replace with resident record archive once available
         FROM `{{project_id}}.{{workflows_views_dataset}}.resident_record_materialized` resident_records
     )
@@ -74,5 +80,10 @@ def user_event_template(
     -- inner join to filter out recidiviz users and others unidentified (if any)
     INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users`
         USING (user_id)
-    LEFT JOIN clients USING (pseudonymized_id)
+    INNER JOIN clients USING (state_code, pseudonymized_id)
+    -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
+    -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish
+    -- because they may match between both states. Instead, use the timestamp of the event to
+    -- determine whether it is a US_ID event or a US_IX event.
+    WHERE state_code != "US_ID" OR timestamp < "{first_ix_export_date}"
     """

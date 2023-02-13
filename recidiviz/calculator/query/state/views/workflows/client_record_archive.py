@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.workflows.populate_missing_exports_template import (
     populate_missing_export_dates,
 )
+from recidiviz.calculator.query.state.views.workflows.user_event_template import (
+    first_ix_export_date,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -50,7 +53,8 @@ CLIENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
             CAST(remaining_criteria_needed AS INT64) AS remaining_criteria_needed,
             ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
             DATE(path_parts[OFFSET(1)]) AS export_date,
-            path_parts[OFFSET(2)] AS state_code,
+            -- Because we export US_IX records as US_ID, use the export date to determine which state code to use
+            IF(path_parts[OFFSET(2)] = "US_ID" AND DATE(path_parts[OFFSET(1)]) >= "{first_ix_export_date}", "US_IX", path_parts[OFFSET(2)]) AS state_code,
         FROM split_path
     )
     {populate_missing_export_dates}
@@ -73,6 +77,7 @@ CLIENT_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
     workflows_dataset=WORKFLOWS_VIEWS_DATASET,
     populate_missing_export_dates=populate_missing_export_dates(),
+    first_ix_export_date=first_ix_export_date,
 )
 
 if __name__ == "__main__":
