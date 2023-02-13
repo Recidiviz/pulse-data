@@ -67,14 +67,17 @@ WITH all_states_spans AS (
 ),
 #TODO(#15410) remove piping of raw data once validation issues are addressed
 id_max_date AS ( 
-    SELECT 
+    SELECT
       "US_ID" AS state_code,
       pei.person_id,
-      SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sent_ftrd_dt) AS DATE) AS projected_completion_date_external,
+      MAX(
+        SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', sent_ftrd_dt) AS DATE)
+      ) AS projected_completion_date_external,
     FROM `{{project_id}}.{{raw_data_up_to_date_dataset}}.summary_ofndr_ftrd_dt_recidiviz_latest` ftrd
     INNER JOIN `{{project_id}}.{{normalized_dataset}}.state_person_external_id` pei
       ON ftrd.ofndr_num = pei.external_id
       AND pei.state_code = 'US_ID'
+    GROUP BY person_id
 ), 
 final_spans AS (
     SELECT 
