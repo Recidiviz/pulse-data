@@ -21,8 +21,6 @@ input_columns:
   - Common_Statute_NCIC_Code
   - Common_Statute_Number
   - JUDGE
-  - legacy_desc
-  - cst_desc
 unused_columns:
   - COUNT # No apparent use for this
   - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision
@@ -68,21 +66,18 @@ output:
                       $then: Common_Statute_NCIC_Code
                     - $else: CODE
                 description:
-                  $conditional:
-                    - $if:
-                        $not_null: Common_Statute_NCIC_Code
-                      $then: cst_desc
-                    - $else: legacy_desc
+                  # TODO(#18210): When we get this data, pull descriptions of
+                  # Common_Statute_NCIC_Code from Tbl_CST_NCIC_CODES, and
+                  # CODE from Tbl_NcicCodes
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_description_from_ncic_code
+                    $args:
+                      ncic_code: CODE
                 is_violent:
                   $custom:
                     $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
                     $args:
-                      ncic_code:
-                        $conditional:
-                          - $if:
-                              $not_null: Common_Statute_NCIC_Code
-                            $then: Common_Statute_NCIC_Code
-                          - $else: CODE
+                      ncic_code: CODE
                 county_code:
                   $custom:
                     $function: us_nd_custom_parsers.normalize_county_code
