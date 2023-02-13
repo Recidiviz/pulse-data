@@ -224,6 +224,32 @@ class ProsecutionCasesDeclinedIncludesExcludes(enum.Enum):
     INTERNAL_TRANSFER = "Cases transferred internally"
 
 
+# Cases Disposed
+
+
+class ProsecutionCasesDisposedIncludesExcludes(enum.Enum):
+    DISMISSED = "Cases dismissed"
+    PLEA = "Cases resolved by plea"
+    TRIAL = "Cases resolved by trial"
+    INACTIVE = "Cases marked as inactive, but not closed"
+    PENDING = "Pending cases"
+
+
+class ProsecutionCasesDismissedIncludesExcludes(enum.Enum):
+    FELONY = "Cases with a leading felony charge dismissed"
+    MISDEMEANOR = "Cases with a leading misdemeanor charge dismissed"
+
+
+class ProsecutionCasesResolvedByPleaIncludesExcludes(enum.Enum):
+    FELONY = "Cases with a leading felony charge resolved by plea"
+    MISDEMEANOR = "Cases with a leading misdemeanor charge resolved by plea"
+
+
+class ProsecutionCasesResolvedAtTrialIncludesExcludes(enum.Enum):
+    FELONY = "Cases with a leading felony charge resolved at trial"
+    MISDEMEANOR = "Cases with a leading misdemeanor charge resolved at trial"
+
+
 # Violations Filed Resulting in Discipline
 
 

@@ -43,7 +43,11 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionAdvocateStaffIncludesExcludes,
     ProsecutionCaseloadIncludesExcludes,
     ProsecutionCasesDeclinedIncludesExcludes,
+    ProsecutionCasesDismissedIncludesExcludes,
+    ProsecutionCasesDisposedIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
+    ProsecutionCasesResolvedAtTrialIncludesExcludes,
+    ProsecutionCasesResolvedByPleaIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
     ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes,
     ProsecutionFelonyCaseloadIncludesExcludes,
@@ -63,7 +67,6 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -401,18 +404,39 @@ cases_disposed = MetricDefinition(
     metric_type=MetricType.CASES_DISPOSED,
     category=MetricCategory.POPULATIONS,
     display_name="Cases Disposed",
-    definitions=[
-        Definition(
-            term="Disposition",
-            definition="The initial decision made in the adjudication of the criminal case. Report the disposition for the case as a whole, such that if two charges are dismissed and one is plead, the case disposition is a conviction by plea.",
-        )
-    ],
-    description="Measures the number of cases disposed by your office.",
+    description="The number of criminal cases disposed by the office.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="To the extent possible, report the initial disposition on the case and not any post-conviction decisions. If your case management system requires that post-conviction decisions overwrite the initial disposition, note this as additional context.",
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCasesDisposedIncludesExcludes,
+        excluded_set={
+            ProsecutionCasesDisposedIncludesExcludes.INACTIVE,
+            ProsecutionCasesDisposedIncludesExcludes.PENDING,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=DispositionType, required=False)
+        AggregatedDimension(
+            dimension=DispositionType,
+            required=False,
+            dimension_to_description={
+                DispositionType.DISMISSAL: "he number of criminal cases dismissed after filing and closed by the office.",
+                DispositionType.PLEA: "The number of criminal cases resulting in conviction by guilty plea and closed by the office.",
+                DispositionType.TRIAL: "The number of criminal cases resolved at trial and closed by the office.",
+                DispositionType.OTHER: "The number of criminal cases disposed by the office that were not dismissed, resolved by plea, or resolved at trial but disposed by another means.",
+                DispositionType.UNKNOWN: "The number of criminal cases disposed by the office for which the disposition method is unknown.",
+            },
+            dimension_to_includes_excludes={
+                DispositionType.DISMISSAL: IncludesExcludesSet(
+                    members=ProsecutionCasesDismissedIncludesExcludes
+                ),
+                DispositionType.PLEA: IncludesExcludesSet(
+                    members=ProsecutionCasesResolvedByPleaIncludesExcludes
+                ),
+                DispositionType.TRIAL: IncludesExcludesSet(
+                    members=ProsecutionCasesResolvedAtTrialIncludesExcludes
+                ),
+            },
+        )
     ],
 )
 
