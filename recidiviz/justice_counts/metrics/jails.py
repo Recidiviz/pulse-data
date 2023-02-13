@@ -29,18 +29,21 @@ from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
+from recidiviz.justice_counts.includes_excludes.common import (
+    CountyOrMunicipalAppropriationIncludesExcludes,
+    GrantsIncludesExcludes,
+    StateAppropriationIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.jails import (
     AccessToHealthCareIncludesExcludes,
     ClinicalAndMedicalStaffIncludesExcludes,
     CommissaryAndFeesIncludesExcludes,
     ContractBedsExpensesIncludesExcludes,
     ContractBedsFundingIncludesExcludes,
-    CountyOrMunicipalAppropriationIncludesExcludes,
     DiscriminationRacialBiasReligiousIncludesExcludes,
     ExpensesIncludesExcludes,
     FacilitiesAndEquipmentIncludesExcludes,
     FundingIncludesExcludes,
-    GrantsIncludesExcludes,
     GrievancesUpheldIncludesExcludes,
     HealthCareForPeopleWhoAreIncarceratedIncludesExcludes,
     LegalIncludesExcludes,
@@ -52,7 +55,6 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     ProgrammaticStaffIncludesExcludes,
     SecurityStaffIncludesExcludes,
     StaffIncludesExcludes,
-    StateAppropriationIncludesExcludes,
     TrainingIncludesExcludes,
     UseOfForceIncidentsIncludesExcludes,
     VacantPositionsIncludesExcludes,

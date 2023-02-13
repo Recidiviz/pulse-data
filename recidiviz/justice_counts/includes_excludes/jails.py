@@ -44,26 +44,6 @@ class FundingIncludesExcludes(Enum):
     LAW_ENFORCEMENT = "Funding for law enforcement functions"
 
 
-class StateAppropriationIncludesExcludes(Enum):
-    FINALIZED = "Finalized state appropriations"
-    PROPOSED = "Proposed state appropriations"
-    PRELIMINARY = "Preliminary state appropriations"
-    GRANTS = "Grants from state sources that are not budget appropriations approved by the legislature/governor"
-
-
-class CountyOrMunicipalAppropriationIncludesExcludes(Enum):
-    FINALIZED = "Finalized county or municipal appropriations"
-    PROPOSED = "Proposed county or municipal appropriations"
-    PRELIMINARY = "Preliminary county or municipal appropriations"
-
-
-class GrantsIncludesExcludes(Enum):
-    LOCAL = "Local grants"
-    STATE = "State grants"
-    FEDERAL = "Federal grants"
-    PRIVATE = "Private or foundation grants"
-
-
 class CommissaryAndFeesIncludesExcludes(Enum):
     JAIL_COMMISSARIES = "Sales in jail commissaries"
     FEES_INCARCERATED = "Fees charged to people who are incarcerated"

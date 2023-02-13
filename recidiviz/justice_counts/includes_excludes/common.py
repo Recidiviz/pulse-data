@@ -30,3 +30,23 @@ class MisdemeanorCasesIncludesExcludes(enum.Enum):
     MISDEMEANOR = "Cases with a leading misdemeanor charge"
     FELONY = "Cases with a leading felony charge"
     INFRACTION = "Cases with a leading infraction charge"
+
+
+class StateAppropriationIncludesExcludes(enum.Enum):
+    FINALIZED = "Finalized state appropriations"
+    PROPOSED = "Proposed state appropriations"
+    PRELIMINARY = "Preliminary state appropriations"
+    GRANTS = "Grants from state sources that are not budget appropriations approved by the legislature/governor"
+
+
+class CountyOrMunicipalAppropriationIncludesExcludes(enum.Enum):
+    FINALIZED = "Finalized county or municipal appropriations"
+    PROPOSED = "Proposed county or municipal appropriations"
+    PRELIMINARY = "Preliminary county or municipal appropriations"
+
+
+class GrantsIncludesExcludes(enum.Enum):
+    LOCAL = "Local grants"
+    STATE = "State grants"
+    FEDERAL = "Federal grants"
+    PRIVATE = "Private or foundation grants"
