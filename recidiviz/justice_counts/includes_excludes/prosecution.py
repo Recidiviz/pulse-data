@@ -222,3 +222,26 @@ class ProsecutionCasesDeclinedIncludesExcludes(enum.Enum):
         "The number of new cases declined by the office for lack of resources"
     )
     INTERNAL_TRANSFER = "Cases transferred internally"
+
+
+# Violations Filed Resulting in Discipline
+
+
+class ProsecutionViolationsIncludesExcludes(enum.Enum):
+    BRADY = "Formal Brady violations"
+    DISCOVERY = "Formal discovery violations"
+    BIASED_JURY = "Formal violations for biased jury selection"
+    INEFFECTIVE_COUNSEL = "Formal violations for ineffective counsel"
+    CLIENT_CONFIDENTIALITY = "Formal violations for violating client confidentiality"
+    FINANCIAL_CONFLICT_OF_INTEREST = (
+        "Formal violations for conflict of interest – financial"
+    )
+    NON_FINANCIAL_CONFLICT_OF_INTEREST = (
+        "Formal violations for conflict of interest – non-financial"
+    )
+    DISCRIMINATION = "Formal violations for discrimination"
+    HARASSMENT = "Formal violations for harassment"
+    INFORMAL = "Violations submitted informally or not in writing"
+    NO_DISCIPLINARY_ACTION = "Violations not resulting in formal disciplinary action"
+    PENDING = "Violations pending investigation and review"
+    DUPLICATE = "Duplicate violations filed"

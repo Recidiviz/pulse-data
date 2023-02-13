@@ -59,6 +59,7 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionStaffIncludesExcludes,
     ProsecutionTrainingExpensesIncludesExcludes,
     ProsecutionVacantStaffIncludesExcludes,
+    ProsecutionViolationsIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -419,14 +420,17 @@ violations = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.VIOLATIONS_WITH_DISCIPLINARY_ACTION,
     category=MetricCategory.FAIRNESS,
-    display_name="Violations",
-    definitions=[
-        Definition(
-            term="Violation",
-            definition="A complaint filed against an attorney pertaining to an error in judgment or other prosecutorial misconduct.",
-        )
-    ],
-    description="Measures the percent of violations filed against attorneys in your office that have resulted in disciplinary actions.",
+    display_name="Violations Filed Resulting in Discipline",
+    description="The number of violations filed against any attorney with a criminal caseload in the office that resulted in a disciplinary action imposed on the attorney by the local or state disciplinary board during the time period.",
     measurement_type=MeasurementType.DELTA,
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionViolationsIncludesExcludes,
+        excluded_set={
+            ProsecutionViolationsIncludesExcludes.NO_DISCIPLINARY_ACTION,
+            ProsecutionViolationsIncludesExcludes.INFORMAL,
+            ProsecutionViolationsIncludesExcludes.PENDING,
+            ProsecutionViolationsIncludesExcludes.DUPLICATE,
+        },
+    ),
     reporting_frequencies=[ReportingFrequency.ANNUAL],
 )
