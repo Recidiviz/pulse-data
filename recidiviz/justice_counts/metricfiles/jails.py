@@ -24,6 +24,7 @@ from recidiviz.justice_counts.dimensions.jails import (
     ReleaseType,
     StaffType,
 )
+from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -73,14 +74,14 @@ JAILS_METRIC_FILES = [
         disaggregation_column_name="readmission_type",
     ),
     MetricFile(
-        canonical_filename="admissions",
-        definition=jails.admissions,
+        canonical_filename="pre_adjudication_admissions",
+        definition=jails.pre_adjudication_admissions,
     ),
     MetricFile(
-        canonical_filename="admissions_by_type",
-        definition=jails.admissions,
-        disaggregation=PopulationType,
-        disaggregation_column_name="admission_type",
+        canonical_filename="pre_adjudication_admissions_by_type",
+        definition=jails.pre_adjudication_admissions,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
     ),
     MetricFile(
         canonical_filename="population",

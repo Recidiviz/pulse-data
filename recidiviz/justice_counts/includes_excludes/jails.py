@@ -295,3 +295,17 @@ class UseOfForceIncidentsIncludesExcludes(Enum):
     )
     OTHER = "Other incidents not captured by the listed categories"
     ROUTINE = "Use of restraints during routine operations and movement of people in the agency’s jurisdiction that follows jurisdiction policy and standard operating procedures"
+
+
+# Pre-adjudication Admissions
+class PreAdjudicationAdmissionsIncludesExcludes(Enum):
+    PAPER_BOOKINGS = "“Paper bookings” who are never admitted to facilities"
+    LESS_THAN_TWELVE_HOURS = (
+        "Admission events that are booked and released in less than 12 hours"
+    )
+    BETWEEN_TWELVE_AND_TWENTY_FOUR_HOURS = (
+        "Admission events that are booked and released between 12 and 24 hours"
+    )
+    ADMITTED = "Admission events that are booked and admitted to jail pre-adjudication"
+    TEMPORARY_ABSENCE = "Admission events returning from a temporary absence (e.g., hospital visit, court hearing, etc.)"
+    MOVING = "Admission events that are moving between facilities under the same agency’s jurisdiction"
