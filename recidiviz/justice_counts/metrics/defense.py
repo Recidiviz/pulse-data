@@ -17,6 +17,7 @@
 """Defines all Justice Counts metrics for Defense."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.justice_counts.dimensions.defense import FundingType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -26,10 +27,20 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DispositionType,
     StaffType,
 )
+from recidiviz.justice_counts.includes_excludes.common import (
+    CountyOrMunicipalAppropriationIncludesExcludes,
+    GrantsIncludesExcludes,
+    StateAppropriationIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.defense import (
+    DefenseFundingIncludesExcludes,
+    FeesFundingIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
 )
@@ -55,21 +66,55 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.DEFENSE,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the total annual budget (in dollars) of your office.",
+    display_name="Funding",
+    description="The amount of funding for the operation and maintenance of defense providers and criminal public defense services.",
     measurement_type=MeasurementType.INSTANT,
+    # TODO(#17577) implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseFundingIncludesExcludes,
+        excluded_set={DefenseFundingIncludesExcludes.NON_CRIMINAL_CASES},
+    ),
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Please describe the primary funding source.",
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=FundingType,
             required=False,
-        ),
+            dimension_to_description={
+                FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of defense providers and criminal public defense services.",
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: "The amount of funding appropriated by counties or municipalities for the operation and maintenance of defense providers and criminal public defense services.",
+                FundingType.GRANTS: "The amount of funding derived by the provider through grants and awards to be used for the operation and maintenance of defense providers and criminal public defense services.",
+                FundingType.FEES: "The amount of funding earned by the provider through fees collected from people who are criminal public defense clients of the provider.",
+                FundingType.OTHER: "The amount of funding to be used for the operation and maintenance of defense providers and criminal public defense services that is not appropriations from the state, appropriations from the county or city, grants, or fees.",
+                FundingType.UNKNOWN: "The amount of funding to be used for the operation and maintenance of defense providers and criminal public defense services for which the source is not known.",
+            },
+            dimension_to_includes_excludes={
+                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                    members=StateAppropriationIncludesExcludes,
+                    excluded_set={
+                        StateAppropriationIncludesExcludes.PROPOSED,
+                        StateAppropriationIncludesExcludes.PRELIMINARY,
+                        StateAppropriationIncludesExcludes.GRANTS,
+                    },
+                ),
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
+                    members=CountyOrMunicipalAppropriationIncludesExcludes,
+                    excluded_set={
+                        CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
+                        CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                    },
+                ),
+                FundingType.GRANTS: IncludesExcludesSet(
+                    members=GrantsIncludesExcludes,
+                ),
+                FundingType.FEES: IncludesExcludesSet(
+                    members=FeesFundingIncludesExcludes,
+                ),
+            },
+        )
     ],
 )
 

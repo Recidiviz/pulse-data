@@ -19,6 +19,7 @@
 from recidiviz.justice_counts.dimensions import (
     corrections,
     courts,
+    defense,
     jails,
     law_enforcement,
     location,
@@ -78,6 +79,7 @@ DIMENSIONS = [
     prosecution.StaffType,
     prosecution.FundingType,
     prosecution.ExpenseType,
+    defense.FundingType,
     courts.CaseSeverityType,
     courts.CaseType,
     courts.ReleaseType,

@@ -16,6 +16,7 @@
 # =============================================================================
 """Metricfile objects used for Defense metrics."""
 
+from recidiviz.justice_counts.dimensions.defense import FundingType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -30,8 +31,14 @@ from recidiviz.justice_counts.metrics import defense
 
 DEFENSE_METRIC_FILES = [
     MetricFile(
-        canonical_filename="annual_budget",
-        definition=defense.annual_budget,
+        canonical_filename="funding",
+        definition=defense.funding,
+    ),
+    MetricFile(
+        canonical_filename="funding_by_type",
+        definition=defense.funding,
+        disaggregation=FundingType,
+        disaggregation_column_name="funding_type",
     ),
     MetricFile(
         canonical_filename="total_staff",
