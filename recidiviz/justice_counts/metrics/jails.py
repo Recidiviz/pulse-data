@@ -60,6 +60,7 @@ from recidiviz.justice_counts.includes_excludes.jails import (
 from recidiviz.justice_counts.includes_excludes.offense import (
     DrugOffenseIncludesExcludes,
     PersonOffenseIncludesExcludes,
+    PostAdjudicationJailPopulation,
     PropertyOffenseIncludesExcludes,
     PublicOrderOffenseIncludesExcludes,
 )
@@ -350,6 +351,81 @@ pre_adjudication_admissions = MetricDefinition(
                 OffenseType.DRUG: "The number of pre-adjudication admission events in which the most serious charge was for a drug offense.",
                 OffenseType.OTHER: "The number of pre-adjudication admission events in which the most serious charge was for another type of offense that was not a person, property, public order, or drug offense.",
                 OffenseType.UNKNOWN: "The number of pre-adjudication admission events in which the most serious offense charge type is not known.",
+            },
+        )
+    ],
+)
+
+post_adjudication_admissions = MetricDefinition(
+    system=System.JAILS,
+    metric_type=MetricType.POST_ADJUDICATION_ADMISSIONS,
+    category=MetricCategory.POPULATIONS,
+    display_name="Post-adjudication Admissions",
+    description="The number of admission events to the agency’s jurisdiction in which the person has been adjudicated.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    # TODO(#18071) implement reused includes/excludes
+    includes_excludes=IncludesExcludesSet(
+        members=PostAdjudicationJailPopulation,
+        excluded_set={
+            PostAdjudicationJailPopulation.AWAITING_ARRAIGNMENT,
+            PostAdjudicationJailPopulation.UNPAID_BAIL,
+            PostAdjudicationJailPopulation.DENIAL_OF_BAIL,
+            PostAdjudicationJailPopulation.REVOCATION_OF_BAIL,
+            PostAdjudicationJailPopulation.PENDING_ASSESSMENT,
+            PostAdjudicationJailPopulation.TRANSFERRED_TO_HOSPITAL,
+            PostAdjudicationJailPopulation.PENDING_OUTCOME,
+            PostAdjudicationJailPopulation.REVOCATION_PRETRIAL_RELEASE,
+            PostAdjudicationJailPopulation.PRETRIAL_SUPERVISION_SANCTION,
+            PostAdjudicationJailPopulation.US_MARSHALS_SERVICE,
+            PostAdjudicationJailPopulation.TRIBAL_NATION,
+            PostAdjudicationJailPopulation.FAILURE_TO_APPEAR,
+            PostAdjudicationJailPopulation.FAILURE_TO_PAY,
+            PostAdjudicationJailPopulation.HELD_FOR_OTHER_STATE,
+        },
+    ),
+    # TODO(#18071) implement reused includes/excludes
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={
+                        PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                    },
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={
+                        PropertyOffenseIncludesExcludes.ROBBERY,
+                    },
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                OffenseType.PERSON: "The number of post-adjudication admission events in which the most serious offense was a crime against a person.",
+                OffenseType.PROPERTY: "The number of post-adjudication admission events in which the most serious offense was a property crime.",
+                OffenseType.PUBLIC_ORDER: "The number of post-adjudication admission events in which the most serious offense was a public order offense.",
+                OffenseType.DRUG: "The number of post-adjudication admission events in which the most serious offense was a drug offense.",
+                OffenseType.OTHER: "The number of post-adjudication admission events in which the most serious offense was for another type of offense that was not a person, property, drug, or public order offense.",
+                OffenseType.UNKNOWN: "The number of post-adjudication admission events in which the most serious offense charge type is not known.",
             },
         )
     ],

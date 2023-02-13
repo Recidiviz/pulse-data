@@ -134,7 +134,7 @@ class DrugOffenseIncludesExcludes(Enum):
     DRUG_POSSESSION = "Drug possession"
 
 
-# Shared among Supervision and Prisons
+# Shared among Supervision, Prisons, and Jails
 class ProbationDefinitionIncludesExcludes(Enum):
     IN_LIEU_INCARCERATION = "People sentenced to a period of probation in lieu of incarceration (including to electronic monitoring, home confinement, traditional supervision, etc.)"
     AFTER_INCARCERATION = "People sentenced to a period of probation after a period of incarceration (including to electronic monitoring, home confinement, traditional supervision, etc.)"
@@ -196,3 +196,63 @@ class OtherCommunityDefinitionIncludesExcludes(Enum):
     ANOTHER_FORM_SUPERVISION = "People on other community supervision who are also on another form of supervision"
     PRIOR_TO_RESOLUTION = "People on other community supervision who have not been sentenced but are supervised in the community prior to the resolution of their case"
     COURT_PROGRAM = "People on other community supervision in a pre-adjudication specialty or problem-solving court program (e.g., drug court, etc.)"
+
+
+# Shared among Jails
+class PreAdjudicationJailPopulation(Enum):
+    AWAITING_ARRAIGNMENT = "People in jail awaiting arraignment"
+    UNPAID_BAIL = "People in jail due to unpaid bail"
+    DENIAL_OF_BAIL = "People in jail due to denial of bail"
+    REVOCATION_OF_BAIL = "People in jail due to revocation of bail"
+    PENDING_ASSESSMENT = "People in jail pending assessment of capacity to stand trial"
+    TRANSFERRED_TO_HOSPITAL = "People who have been transferred to a hospital for a capacity assessment but are still counted in jail population"
+    PENDING_PRETRIAL_OUTCOME = (
+        "People in jail to be held pending outcome of pretrial revocation decision"
+    )
+    REVOCATION_PRETRIAL_RELEASE = "People in jail due to revocation of pretrial release"
+    PRETRIAL_SUPERVISION_SANCTION = (
+        "People in jail due to a pretrial supervision incarceration sanction"
+    )
+    US_MARSHALS_SERVICE = "People in jail due to a pre-adjudication federal hold for U.S. Marshals Service, Federal Bureau of Prisons, or U.S. Immigration and Customs Enforcement"
+    TRIBAL_NATION = "People in jail due to a pre-adjudication federal hold for a Tribal Nation or the Bureau of Indian Affairs"
+    FAILURE_TO_APPEAR = "People held awaiting hearings for failure to appear in court or court-ordered programs"
+    FAILURE_TO_PAY = "People held due to failure to pay fines or fees ordered by civil or criminal courts"
+    HELD_FOR_OTHER_STATE = "People held for other state or county jurisdictions"
+    SERVE_SENTENCE = "People in jail to serve a sentence of jail incarceration"
+    SPLIT_SENTENCE = "People in jail to serve a split sentence of jail incarceration"
+    SUSPEND_SENTENCE = (
+        "People in jail to serve a suspended sentence of jail incarceration"
+    )
+    REVOCATION_COMMUNITY_SUPERVISION = "People in jail due to a revocation of post-adjudication community supervision sentence (i.e., probation, parole, or other community supervision sentence type)"
+    COMMUNITY_SUPERVISION_SANCTION = "People in jail due to a post-adjudication incarceration sanction imposed by a community supervision agency (e.g., a “dip,” “dunk,” or weekend sentence)"
+    COURT_SANCTION = "People in jail due to a post-adjudication incarceration sanction imposed by a specialty, treatment, or problem-solving court (e.g., a “dip,” “dunk,” or weekend sentence)"
+
+
+class PostAdjudicationJailPopulation(Enum):
+    JAIL_INCARCERATION = "People in jail to serve a sentence of jail incarceration"
+    PRISON_SENTENCE = "People in jail to serve a state prison sentence"
+    SPLIT_SENTENCE = "People in jail to serve a split sentence of jail incarceration"
+    SUSPENDED_SENTENCE = (
+        "People in jail to serve a suspended sentence of jail incarceration"
+    )
+    REVOCATION_COMMUNITY_SUPERVISION = "People in jail due to a revocation of post-adjudication community supervision sentence (i.e., probation, parole, or other community supervision sentence type)"
+    COMMUNITY_SUPERVISION_SANCTION = "People in jail due to a post-adjudication incarceration sanction imposed by a community supervision agency (e.g., a “dip,” “dunk,” or weekend sentence)"
+    COURT_SANCTION = "People in jail due to a post-adjudication incarceration sanction imposed by a specialty, treatment, or problem-solving court (e.g., a “dip,” “dunk,” or weekend sentence)"
+    AWAITING_ARRAIGNMENT = "People in jail awaiting arraignment"
+    UNPAID_BAIL = "People in jail due to unpaid bail"
+    DENIAL_OF_BAIL = "People in jail due to denial of bail"
+    REVOCATION_OF_BAIL = "People in jail due to revocation of bail"
+    PENDING_ASSESSMENT = "People in jail pending assessment of capacity to stand trial"
+    TRANSFERRED_TO_HOSPITAL = "People who have been transferred to a hospital for a capacity assessment but are still counted on jail rolls"
+    PENDING_OUTCOME = (
+        "People in jail to be held pending outcome of pretrial revocation decision"
+    )
+    REVOCATION_PRETRIAL_RELEASE = "People in jail due to revocation of pretrial release"
+    PRETRIAL_SUPERVISION_SANCTION = (
+        "People in jail due to a pretrial supervision incarceration sanction"
+    )
+    US_MARSHALS_SERVICE = "People in jail due to a pre-adjudication federal hold for U.S. Marshals Service, Federal Bureau of Prisons, or U.S. Immigration and Customs Enforcement"
+    TRIBAL_NATION = "People in jail due to a pre-adjudication federal hold for a Tribal Nation or the Bureau of Indian Affairs"
+    FAILURE_TO_APPEAR = "People held awaiting hearings for failure to appear in court or court-ordered programs"
+    FAILURE_TO_PAY = "People held due to failure to pay fines or fees ordered by civil or criminal courts"
+    HELD_FOR_OTHER_STATE = "People held for other state or county jurisdictions"
