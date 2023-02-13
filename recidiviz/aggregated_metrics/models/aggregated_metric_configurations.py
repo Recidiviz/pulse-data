@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines AggregatedMetric objects"""
+from typing import Dict, List
+
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AssignmentAvgSpanValueMetric,
     AssignmentDaysToFirstEventMetric,
@@ -26,9 +28,26 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventValueMetric,
     SumSpanDaysMetric,
 )
+from recidiviz.common.constants.state.state_supervision_violation import (
+    StateSupervisionViolationType,
+)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
 )
+
+_VIOLATION_CATEGORY_TO_TYPES_DICT: Dict[str, List[str]] = {
+    "ABSCONSION": [StateSupervisionViolationType.ABSCONDED.name],
+    "NEW_CRIME": [
+        StateSupervisionViolationType.FELONY.name,
+        StateSupervisionViolationType.LAW.name,
+        StateSupervisionViolationType.MISDEMEANOR.name,
+    ],
+    "TECHNICAL": [StateSupervisionViolationType.TECHNICAL.name],
+    "UNKNOWN": [
+        StateSupervisionViolationType.INTERNAL_UNKNOWN.name,
+        StateSupervisionViolationType.EXTERNAL_UNKNOWN.name,
+    ],
+}
 
 ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     name="absconsions_bench_warrants",
@@ -440,25 +459,18 @@ DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
     window_length_days=365,
 )
 
-DAYS_TO_FIRST_VIOLATION_ABSCONDED_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_absconded_365",
-    display_name="Days To First Absconsion Violation Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first absconsion violation within 1 year following assignment, "
-    "for all assignments during the analysis period",
-    event_types=["VIOLATION"],
-    event_attribute_filters={"violation_type": ["ABSCONDED"]},
-    window_length_days=365,
-)
-
-DAYS_TO_FIRST_VIOLATION_NEW_CRIME_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_new_crime_365",
-    display_name="Days To First New Crime Violation Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first new crime violation within 1 year following assignment, "
-    "for all assignments during the analysis period",
-    event_types=["VIOLATION"],
-    event_attribute_filters={"violation_type": ["NEW_CRIME"]},
-    window_length_days=365,
-)
+DAYS_TO_FIRST_VIOLATION_365_BY_TYPE_METRICS = [
+    AssignmentDaysToFirstEventMetric(
+        name=f"days_to_first_violation_{category.lower()}_365",
+        display_name=f"Days To First {category.title()} Violation Within 1 Year After Assignment",
+        description=f"Sum of the number of days prior to first {category.lower()} violation within 1 year following "
+        f"assignment, for all assignments during the analysis period",
+        event_types=["VIOLATION"],
+        event_attribute_filters={"violation_type": types},
+        window_length_days=365,
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
 
 DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_violation_response_365",
@@ -470,45 +482,18 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
     window_length_days=365,
 )
 
-DAYS_TO_FIRST_VIOLATION_RESPONSE_ABSCONDED_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response_absconded_365",
-    display_name="Days To First Absconsion Violation Response Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first absconsion violation response within 1 year following "
-    "assignment, for all assignments during the analysis period",
-    event_types=["VIOLATION_RESPONSE"],
-    event_attribute_filters={"violation_type": ["ABSCONDED"]},
-    window_length_days=365,
-)
-
-DAYS_TO_FIRST_VIOLATION_RESPONSE_NEW_CRIME_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response_new_crime_365",
-    display_name="Days To First New Crime Violation Response Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first new crime violation response within 1 year following "
-    "assignment, for all assignments during the analysis period",
-    event_types=["VIOLATION_RESPONSE"],
-    event_attribute_filters={"violation_type": ["NEW_CRIME"]},
-    window_length_days=365,
-)
-
-DAYS_TO_FIRST_VIOLATION_RESPONSE_TECHNICAL_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_response_technical_365",
-    display_name="Days To First Technical Violation Response Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first technical violation response within 1 year following "
-    "assignment, for all assignments during the analysis period",
-    event_types=["VIOLATION_RESPONSE"],
-    event_attribute_filters={"violation_type": ["TECHNICAL"]},
-    window_length_days=365,
-)
-
-DAYS_TO_FIRST_VIOLATION_TECHNICAL_365 = AssignmentDaysToFirstEventMetric(
-    name="days_to_first_violation_technical_365",
-    display_name="Days To First Technical Violation Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first technical violation within 1 year following assignment, "
-    "for all assignments during the analysis period",
-    event_types=["VIOLATION"],
-    event_attribute_filters={"violation_type": ["TECHNICAL"]},
-    window_length_days=365,
-)
+DAYS_TO_FIRST_VIOLATION_RESPONSE_365_BY_TYPE_METRICS = [
+    AssignmentDaysToFirstEventMetric(
+        name=f"days_to_first_violation_response_{category.lower()}_365",
+        display_name=f"Days To First {category.title()} Violation Response Within 1 Year After Assignment",
+        description=f"Sum of the number of days prior to first {category.lower()} violation response within 1 year following "
+        f"assignment, for all assignments during the analysis period",
+        event_types=["VIOLATION_RESPONSE"],
+        event_attribute_filters={"most_serious_violation_type": types},
+        window_length_days=365,
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
 
 DRUG_SCREENS = EventCountMetric(
     name="drug_screens",
@@ -554,56 +539,85 @@ EMPLOYED_STATUS_STARTS = EventCountMetric(
     },
 )
 
-INCARCERATIONS = EventCountMetric(
-    name="incarcerations",
-    display_name="Incarcerations, All",
-    description="Number of transitions to incarceration",
+INCARCERATIONS_INFERRED = EventCountMetric(
+    name="incarcerations_inferred",
+    display_name="Inferred Incarcerations",
+    description="Number of inferred incarceration events that do not align with an observed "
+    "incarceration session start",
+    event_types=[
+        "SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON",
+    ],
+    event_attribute_filters={"outflow_to_incarceration": ["false"]},
+)
+
+INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"incarcerations_inferred_{category.lower()}_violation",
+        display_name=f"Inferred Incarcerations, {category.title()} Violation",
+        description="Number of inferred incarceration events that do not align with an observed "
+        f"incarceration session start, for which the most severe violation type was {category.lower()}",
+        event_types=["SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON"],
+        event_attribute_filters={
+            "outflow_to_incarceration": ["false"],
+            "most_severe_violation_type": types,
+        },
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
+
+INCARCERATION_STARTS = EventCountMetric(
+    name="incarceration_starts",
+    display_name="Incarceration Starts",
+    description="Number of observed incarceration starts",
     event_types=["INCARCERATION_START"],
     event_attribute_filters={},
 )
 
-INCARCERATIONS_ABSCONDED_VIOLATION = EventCountMetric(
-    name="incarcerations_absconded_violation",
-    display_name="Incarcerations, Absconded Violation",
-    description="Number of transitions to incarceration for which the most severe violation type was absconsion",
-    event_types=["INCARCERATION_START"],
-    event_attribute_filters={"most_severe_violation_type": ["ABSCONDED"]},
+INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"incarceration_starts_{category.lower()}_violation",
+        display_name=f"Incarceration Starts, {category.title()} Violation",
+        description="Number of observed incarceration starts for which the most severe "
+        f"violation type was {category.lower()}",
+        event_types=["INCARCERATION_START"],
+        event_attribute_filters={"most_severe_violation_type": types},
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
+
+INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
+    name="incarceration_starts_and_inferred",
+    display_name="Incarceration Starts And Inferred Incarcerations",
+    description="Number of total observed incarceration starts or inferred incarcerations",
+    event_types=[
+        "INCARCERATION_START",
+        "SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON",
+    ],
+    event_attribute_filters={},
 )
 
-INCARCERATIONS_NEW_CRIME_VIOLATION = EventCountMetric(
-    name="incarcerations_new_crime_violation",
-    display_name="Incarcerations, New Crime Violation",
-    description="Number of transitions to incarceration for which the most severe violation type was a new crime",
-    event_types=["INCARCERATION_START"],
-    event_attribute_filters={
-        "most_severe_violation_type": ["LAW", "FELONY", "MISDEMEANOR"]
-    },
-)
+INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"incarceration_starts_and_inferred_{category.lower()}_violation",
+        display_name=f"Incarceration Starts And Inferred Incarcerations, {category.title()} Violation",
+        description="Number of total observed incarceration starts or inferred incarcerations for which "
+        f"the most severe violation type was {category.lower()}",
+        event_types=[
+            "INCARCERATION_START",
+            "SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON",
+        ],
+        event_attribute_filters={"most_severe_violation_type": types},
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
 
-INCARCERATIONS_TECHNICAL_VIOLATION = EventCountMetric(
-    name="incarcerations_technical_violation",
-    display_name="Incarcerations, Technical Violation",
-    description="Number of transitions to incarceration for which the most severe violation type was a technical",
-    event_types=["INCARCERATION_START"],
-    event_attribute_filters={"most_severe_violation_type": ["TECHNICAL"]},
-)
 
 INCARCERATIONS_TEMPORARY = EventCountMetric(
-    name="incarcerations_temporary",
-    display_name="Incarcerations, Temporary",
-    description="Number of transitions to temporary incarceration",
+    name="incarceration_starts_temporary",
+    display_name="Incarceration Starts, Temporary",
+    description="Number of observed temporary incarceration starts",
     event_types=["INCARCERATION_START_TEMPORARY"],
     event_attribute_filters={},
-)
-
-INCARCERATIONS_UNKNOWN_VIOLATION = EventCountMetric(
-    name="incarcerations_unknown_violation",
-    display_name="Incarcerations, Unknown Violation",
-    description="Number of transitions to incarceration with an unknown violation type",
-    event_types=["INCARCERATION_START"],
-    event_attribute_filters={
-        "most_severe_violation_type": ["INTERNAL_UNKNOWN", "EXTERNAL_UNKNOWN"]
-    },
 )
 
 LATE_OPPORTUNITY_METRICS = [
@@ -753,29 +767,18 @@ VIOLATIONS = EventCountMetric(
     event_attribute_filters={},
 )
 
-VIOLATIONS_ABSCONDED = EventCountMetric(
-    name="violations_absconded",
-    display_name="Violations: Absconded",
-    description="Number of absconsion violations",
-    event_types=["VIOLATION"],
-    event_attribute_filters={"violation_type": ["ABSCONDED"]},
-)
-
-VIOLATIONS_NEW_CRIME = EventCountMetric(
-    name="violations_new_crime",
-    display_name="Violations: New Crime",
-    description="Number of new crime violations",
-    event_types=["VIOLATION"],
-    event_attribute_filters={"violation_type": ["FELONY", "LAW", "MISDEMEANOR"]},
-)
-
-VIOLATIONS_TECHNICAL = EventCountMetric(
-    name="violations_technical",
-    display_name="Violations: Technical",
-    description="Number of technical violations",
-    event_types=["VIOLATION"],
-    event_attribute_filters={"violation_type": ["TECHNICAL"]},
-)
+VIOLATIONS_BY_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"violations_{category.lower()}",
+        display_name=f"Violations: {category.title()}",
+        description=f"Number of {category.lower()} violations",
+        event_types=[
+            "VIOLATION",
+        ],
+        event_attribute_filters={"violation_type": types},
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]
 
 VIOLATION_RESPONSES = EventCountMetric(
     name="violation_responses",
@@ -785,28 +788,15 @@ VIOLATION_RESPONSES = EventCountMetric(
     event_attribute_filters={},
 )
 
-VIOLATION_RESPONSES_ABSCONDED = EventCountMetric(
-    name="violation_responses_absconded",
-    display_name="Violation Responses: Absconded",
-    description="Number of absconsion violation responses",
-    event_types=["VIOLATION_RESPONSE"],
-    event_attribute_filters={"most_serious_violation_type": ["ABSCONDED"]},
-)
-
-VIOLATION_RESPONSES_NEW_CRIME = EventCountMetric(
-    name="violation_responses_new_crime",
-    display_name="Violation Responses: New Crime",
-    description="Number of new crime violation responses",
-    event_types=["VIOLATION_RESPONSE"],
-    event_attribute_filters={
-        "most_serious_violation_type": ["FELONY", "LAW", "MISDEMEANOR"]
-    },
-)
-
-VIOLATION_RESPONSES_TECHNICAL = EventCountMetric(
-    name="violation_responses_technical",
-    display_name="Violation Responses: Technical",
-    description="Number of technical violation responses",
-    event_types=["VIOLATION_RESPONSE"],
-    event_attribute_filters={"most_serious_violation_type": ["TECHNICAL"]},
-)
+VIOLATION_RESPONSES_BY_TYPE_METRICS = [
+    EventCountMetric(
+        name=f"violation_responses_{category.lower()}",
+        display_name=f"Violation Responses: {category.title()}",
+        description=f"Number of {category.lower()} violation responses",
+        event_types=[
+            "VIOLATION_RESPONSE",
+        ],
+        event_attribute_filters={"most_serious_violation_type": types},
+    )
+    for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
+]

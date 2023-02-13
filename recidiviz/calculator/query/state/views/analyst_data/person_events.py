@@ -201,7 +201,60 @@ FROM
 WHERE
     compartment_level_1 IN ("INCARCERATION", "LIBERTY", "SUPERVISION")
 GROUP BY 1, 2, 3, 4
-    
+
+UNION ALL
+
+-- supervision terminations with an end reason indicating subsequent incarceration
+-- may contain terminations that do not have an immediate compartment outflow to incarceration
+SELECT
+    state_code,
+    person_id,
+    "SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON" AS event,
+    end_date_exclusive AS event_date,
+    TO_JSON_STRING(STRUCT(
+        compartment_level_1,
+        compartment_level_2,
+        CAST(outflow_to_incarceration AS STRING) AS outflow_to_incarceration,
+        IFNULL(end_reason, "INTERNAL_UNKNOWN") AS end_reason,
+        IFNULL(most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
+        CAST(termination_date AS STRING) AS most_severe_violation_type_termination_date
+    )) AS event_attributes,
+FROM (
+    SELECT
+        a.state_code,
+        a.person_id,
+        a.end_date_exclusive,
+        a.compartment_level_1,
+        a.compartment_level_2,
+        a.outflow_to_level_1 = "INCARCERATION" AS outflow_to_incarceration,
+        a.end_reason,
+        -- Get the first non-null violation type among supervision terminations occurring during the super session
+        c.most_severe_violation_type AS most_severe_violation_type,
+        c.termination_date,
+    FROM
+        `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
+    LEFT JOIN
+        `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` b
+    ON
+        a.person_id = b.person_id
+        -- If person outflows to another supervision compartment, this join will consider all terminations
+        -- during the remainder of that supervision compartment super session. Otherwise,
+        -- it takes the next compartment level 1 super session.
+        AND a.end_date_exclusive BETWEEN b.start_date AND COALESCE(b.end_date, "9999-01-01")
+    LEFT JOIN
+        `{project_id}.{dataflow_dataset}.most_recent_supervision_termination_metrics_materialized` c
+    ON
+        a.person_id = c.person_id
+        AND c.termination_date BETWEEN a.end_date_exclusive AND COALESCE(b.end_date, "9999-01-01")
+    WHERE
+        a.compartment_level_1 = "SUPERVISION"
+        AND a.end_reason IN ("ADMITTED_TO_INCARCERATION", "REVOCATION")
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY a.person_id, a.end_date_exclusive
+        ORDER BY IF(c.most_severe_violation_type IS NOT NULL, 0, 1), c.termination_date
+    ) = 1
+)
+
 UNION ALL
 
 -- supervision officer assigned (transition from NULL officer session to at least one 
