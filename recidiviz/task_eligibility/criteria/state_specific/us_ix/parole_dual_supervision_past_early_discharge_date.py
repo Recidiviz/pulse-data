@@ -75,7 +75,7 @@ parole_starts_with_sentences AS (
   INNER JOIN parole_starts p
     ON p.state_code = s.state_code
     AND p.person_id = s.person_id
-    AND p.parole_start_date < {nonnull_end_date_clause('DATE_SUB(s.end_date, INTERVAL 1 DAY)')}
+    AND p.parole_start_date < {nonnull_end_date_clause('s.end_date')}
   QUALIFY ROW_NUMBER() OVER (
     PARTITION BY s.state_code, s.person_id, s.start_date
     -- Pick the most recent parole start date

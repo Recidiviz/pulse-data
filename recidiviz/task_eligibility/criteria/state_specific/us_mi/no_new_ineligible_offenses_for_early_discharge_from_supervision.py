@@ -15,14 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which someone has no new
-operating while intoxicated violation on parole/dual supervision
+ineligible offenses on parole/dual supervision
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -32,10 +39,13 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_NO_OWI_VIOLATION_ON_PAROLE_DUAL_SUPERVISION"
+_CRITERIA_NAME = "US_MI_NO_NEW_INELIGIBLE_OFFENSES_FOR_EARLY_DISCHARGE_FROM_SUPERVISION"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has no involvement in a violation of MCL 257.625 (Operating while intoxicated) during parole term
+someone has no new ineligible offenses (below) on supervision
+        - No involvement or suspected offenses during parole/probation requiring registry under the Sex Offender Registration Act
+        - No new assaultive misdemeanors during parole/probation period
+        - No new felony during parole/probation period
 """
 _QUERY_TEMPLATE = f"""
 WITH parole_starts AS (
@@ -45,25 +55,40 @@ WITH parole_starts AS (
     person_id,
     start_date,
     end_date,
-  FROM `{{project_id}}.{{sessions_dataset}}.compartment_{{sessions_dataset}}_materialized`
+  FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
   WHERE state_code = "US_MI"
     AND compartment_level_2 IN ("PAROLE", "DUAL")
     --ignore transitions from PAROLE to DUAL as parole starts
     AND inflow_from_level_2 NOT IN ("PAROLE", "DUAL")
 ),
-sentences AS (
-/* This CTE groups by person and date imposed to identify dates where OWI charges were imposed */
+sentences_and_violations AS (
+/* This CTE groups by person and date imposed where ineligible offenses were sentenced */
   SELECT
       span.state_code,
       span.person_id,
-      sent.date_imposed,
-      LOGICAL_OR(sent.statute = "257.625") AS is_owi,
+      sent.date_imposed AS critical_date, 
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
   UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
   INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
     USING (state_code, person_id, sentences_preprocessed_id)
   WHERE state_code = "US_MI"
+  AND (sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
+            WHERE CAST(requires_so_registration AS BOOL))
+    OR sent.classification_type = "FELONY")
   GROUP BY 1, 2, 3
+  UNION ALL 
+  SELECT
+        v.state_code,
+        v.person_id,
+        v.violation_date AS critical_date,
+    FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation_type_entry` vt
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_violation` v
+        ON vt.supervision_violation_id = v.supervision_violation_id
+        AND vt.person_id = v.person_id
+        AND vt.state_code = v.state_code
+    WHERE vt.state_code = "US_MI"
+    AND vt.violation_type = "FELONY"
+    GROUP BY 1,2,3
 ),
 critical_date_spans AS (
   SELECT
@@ -71,15 +96,14 @@ critical_date_spans AS (
     p.person_id,
     p.start_date AS start_datetime,
     p.end_date AS end_datetime,
-    s.date_imposed AS critical_date,
+    s.critical_date,
   FROM parole_starts p
-  INNER JOIN sentences s
+  INNER JOIN sentences_and_violations s
     ON p.state_code = s.state_code
     AND p.person_id = s.person_id
-    --only join parole spans that have a OWI date imposed during a parole session
-    AND s.date_imposed > p.start_date 
-    AND s.date_imposed <= {nonnull_end_date_clause('p.end_date')}
-    AND s.is_owi
+    --only join parole spans that have an ineligible offense date imposed during a parole session
+    AND s.critical_date > p.start_date 
+    AND s.critical_date <= {nonnull_end_date_clause('p.end_date')}
 ),
 {critical_date_has_passed_spans_cte()},
 {create_sub_sessions_with_attributes('critical_date_has_passed_spans')}
@@ -88,9 +112,9 @@ SELECT
     cd.person_id,
     cd.start_date,
     cd.end_date,
-    --group by spans and if any OWI date has passed, set meets_criteria to FALSE
+    --group by spans and if any ineligible offense date imposed has passed, set meets_criteria to FALSE
     NOT LOGICAL_OR(cd.critical_date_has_passed) AS meets_criteria,
-    --only included sentence dates where meets_criteria is FALSE
+    --only included violation dates where meets_criteria is FALSE
     TO_JSON(STRUCT(
       IF(LOGICAL_OR(cd.critical_date_has_passed), ARRAY_AGG(cd.critical_date), NULL)
         AS latest_ineligible_convictions
@@ -107,6 +131,11 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
         sessions_dataset=SESSIONS_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
         meets_criteria_default=True,
     )
 )

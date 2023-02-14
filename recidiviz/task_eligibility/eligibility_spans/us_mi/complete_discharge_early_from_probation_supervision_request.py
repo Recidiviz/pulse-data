@@ -23,12 +23,13 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_not_past_full_term_completion_date,
     supervision_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     no_active_ppo,
-    no_new_ineligible_offenses_on_supervision,
-    not_serving_ineligible_offenses_on_probation_supervision,
+    no_new_ineligible_offenses_for_early_discharge_from_supervision,
+    not_serving_ineligible_offenses_for_early_discharge_from_probation_supervision,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -46,10 +47,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        not_serving_ineligible_offenses_on_probation_supervision.VIEW_BUILDER,
+        not_serving_ineligible_offenses_for_early_discharge_from_probation_supervision.VIEW_BUILDER,
         no_active_ppo.VIEW_BUILDER,
-        no_new_ineligible_offenses_on_supervision.VIEW_BUILDER,
+        no_new_ineligible_offenses_for_early_discharge_from_supervision.VIEW_BUILDER,
         supervision_past_half_full_term_release_date.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

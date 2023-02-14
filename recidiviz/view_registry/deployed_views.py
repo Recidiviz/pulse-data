@@ -123,6 +123,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "shared_metric_views",
     "task_eligibility",
     "task_eligibility_candidates_general",
+    "task_eligibility_candidates_us_mi",
     "task_eligibility_completion_events",
     "task_eligibility_criteria_general",
     "task_eligibility_criteria_us_id",

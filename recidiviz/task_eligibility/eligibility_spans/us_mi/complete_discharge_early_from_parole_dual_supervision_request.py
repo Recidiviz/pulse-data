@@ -18,22 +18,20 @@
 someone in MI is eligible for early discharge from parole or dual supervision.
 """
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.candidate_populations.general import (
-    parole_dual_supervision_population,
+from recidiviz.task_eligibility.candidate_populations.state_specific.us_mi import (
+    parole_dual_supervision_population_not_high_or_sai,
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
-    parole_dual_supervision_past_half_original_term,
-    serving_at_least_one_year_on_parole_dual_supervision,
+    serving_at_least_one_year_on_parole_supervision,
     supervision_not_past_full_term_completion_date,
+    supervision_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     no_active_ppo,
-    no_new_ineligible_offenses_on_supervision,
+    no_new_ineligible_offenses_for_early_discharge_from_supervision,
     no_owi_violation_on_parole_dual_supervision,
-    not_on_intensive_supervision,
-    not_paroled_from_sai,
-    not_serving_ineligible_offenses_on_parole_dual_supervision,
+    not_serving_ineligible_offenses_for_early_discharge_from_parole_dual_supervision,
     parole_dual_supervision_past_early_discharge_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -50,18 +48,16 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=parole_dual_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=parole_dual_supervision_population_not_high_or_sai.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
-        serving_at_least_one_year_on_parole_dual_supervision.VIEW_BUILDER,
+        serving_at_least_one_year_on_parole_supervision.VIEW_BUILDER,
         parole_dual_supervision_past_early_discharge_date.VIEW_BUILDER,
-        not_serving_ineligible_offenses_on_parole_dual_supervision.VIEW_BUILDER,
-        no_new_ineligible_offenses_on_supervision.VIEW_BUILDER,
-        not_paroled_from_sai.VIEW_BUILDER,
-        not_on_intensive_supervision.VIEW_BUILDER,
+        not_serving_ineligible_offenses_for_early_discharge_from_parole_dual_supervision.VIEW_BUILDER,
+        no_new_ineligible_offenses_for_early_discharge_from_supervision.VIEW_BUILDER,
         no_active_ppo.VIEW_BUILDER,
         no_owi_violation_on_parole_dual_supervision.VIEW_BUILDER,
-        parole_dual_supervision_past_half_original_term.VIEW_BUILDER,
+        supervision_past_half_full_term_release_date.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

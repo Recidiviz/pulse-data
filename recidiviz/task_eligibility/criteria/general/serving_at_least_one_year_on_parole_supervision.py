@@ -15,31 +15,45 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone is serving
-a parole/dual term of one year or more
+a parole term of one year or more. This query is only relevant for states who have
+parole sentencing data stored separately in supervision sentences.
 """
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_1_sessions,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_DUAL_SUPERVISION"
+_CRITERIA_NAME = "SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone is past their supervision full term completion date (projected max completion
-date)"""
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during during which someone is serving
+a parole term of one year or more. This query is only relevant for states who have 
+parole sentencing data stored separately in supervision sentences."""
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS eligible_date))"""
+_QUERY_TEMPLATE = f"""
+    SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        CAST(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY) AS INT64) >= 365 AS meets_criteria,
+        TO_JSON(STRUCT(MAX(sent.projected_completion_date_max) AS projected_completion_date_max)) AS reason,
+    {join_sentence_spans_to_compartment_1_sessions()}
+    WHERE sent.sentence_sub_type = "PAROLE" 
+    GROUP BY 1, 2, 3, 4
+"""
 
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

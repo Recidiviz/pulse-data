@@ -18,7 +18,9 @@
 as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_1_sessions,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -41,18 +43,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date_exclusive,
         span.end_date_exclusive AS end_date,
         MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-      USING (state_code, person_id, sentences_preprocessed_id)
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
-        ON span.state_code = sess.state_code
-        AND span.person_id = sess.person_id
-        -- Restrict to spans that overlap with supervision sessions
-        AND sess.compartment_level_1 = "SUPERVISION"
-        -- Use strictly less than for exclusive end_dates
-        AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
-        AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+    {join_sentence_spans_to_compartment_1_sessions()}
     WHERE
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
