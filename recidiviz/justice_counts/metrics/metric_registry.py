@@ -49,7 +49,7 @@ METRICS = [
     defense.cases_appointed_counsel,
     defense.caseloads,
     defense.cases_disposed,
-    defense.complaints,
+    defense.client_complaints_sustained,
     jails.funding,
     jails.expenses,
     jails.total_staff,
