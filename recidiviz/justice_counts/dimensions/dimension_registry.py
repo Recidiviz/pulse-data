@@ -66,7 +66,6 @@ DIMENSIONS = [
     prisons.GrievancesUpheldType,
     prisons.ExpenseType,
     prisons.FundingType,
-    jails.ReadmissionType,
     jails.PopulationType,
     jails.StaffType,
     jails.ReleaseType,
