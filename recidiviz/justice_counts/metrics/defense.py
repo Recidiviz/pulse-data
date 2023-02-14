@@ -17,7 +17,11 @@
 """Defines all Justice Counts metrics for Defense."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
-from recidiviz.justice_counts.dimensions.defense import FundingType, StaffType
+from recidiviz.justice_counts.dimensions.defense import (
+    CaseAppointedSeverityType,
+    FundingType,
+    StaffType,
+)
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -32,12 +36,15 @@ from recidiviz.justice_counts.includes_excludes.common import (
     CasesResolvedAtTrialIncludesExcludes,
     CasesResolvedByPleaIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
+    FelonyCasesIncludesExcludes,
     GrantsIncludesExcludes,
+    MisdemeanorCasesIncludesExcludes,
     StaffIncludesExcludes,
     StateAppropriationIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseAdministrativeStaffIncludesExcludes,
+    DefenseCasesAppointedCounselIncludesExcludes,
     DefenseCasesDisposedIncludesExcludes,
     DefenseComplaintsIncludesExcludes,
     DefenseFundingIncludesExcludes,
@@ -53,7 +60,6 @@ from recidiviz.justice_counts.includes_excludes.person import (
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -187,17 +193,41 @@ cases_appointed_counsel = MetricDefinition(
     metric_type=MetricType.CASES_APPOINTED_COUNSEL,
     category=MetricCategory.POPULATIONS,
     display_name="Cases Appointed Counsel",
-    definitions=[
-        Definition(
-            term="Appointed",
-            definition="The point at which a case is assigned to an attorney in the office, whether or not the case is ultimately reassigned internally or externally due to conflict.",
-        )
-    ],
-    description="Measures the number of new cases appointed counsel from your office, by case severity.",
+    description="The number of criminal cases opened by the provider.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseCasesAppointedCounselIncludesExcludes,
+        excluded_set={
+            DefenseCasesAppointedCounselIncludesExcludes.INACTIVE,
+            DefenseCasesAppointedCounselIncludesExcludes.TRANSFERRED,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False)
+        AggregatedDimension(
+            # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
+            dimension=CaseAppointedSeverityType,
+            required=False,
+            dimension_to_description={
+                CaseAppointedSeverityType.MISDEMEANOR: "The number of criminal cases appointed for representation by attorneys employed by the provider in which the leading charge was for a misdemeanor offense.",
+                CaseAppointedSeverityType.FELONY: "The number of criminal cases appointed for representation by attorneys employed by the provider in which the leading charge was for a felony offense.",
+                CaseAppointedSeverityType.OTHER: "The number of criminal cases appointed for representation by attorneys employed by the provider in which the leading charge was not for a felony or misdemeanor.",
+                CaseAppointedSeverityType.UNKNOWN: "The number of criminal cases appointed for representation by attorneys employed by the provider in which the leading charge was of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                CaseAppointedSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCasesIncludesExcludes,
+                    excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
+                ),
+                CaseAppointedSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorCasesIncludesExcludes,
+                    excluded_set={
+                        MisdemeanorCasesIncludesExcludes.FELONY,
+                        MisdemeanorCasesIncludesExcludes.INFRACTION,
+                    },
+                ),
+            },
+        )
     ],
 )
 

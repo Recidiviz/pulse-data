@@ -41,6 +41,7 @@ DIMENSIONS = [
     person.GenderRestricted,
     person.Ethnicity,
     defense.StaffType,
+    defense.CaseAppointedSeverityType,
     location.Agency,
     location.Facility,
     location.CountyFIPS,
