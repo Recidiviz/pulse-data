@@ -72,6 +72,16 @@ class DefenseVacantStaffIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"
 
 
+# Cases Disposed
+class DefenseCasesDisposedIncludesExcludes(enum.Enum):
+    DIVERTED = "Criminal cases diverted from traditional case processing"
+    DISMISSED = "Cases dismissed"
+    PLEA = "Cases resolved by plea"
+    TRIAL = "Cases resolved by trial"
+    INACTIVE = "Cases marked as inactive, but not closed"
+    PENDING = "Pending cases"
+
+
 # Complaints
 class DefenseComplaintsIncludesExcludes(enum.Enum):
     UPHELD = "Complaints in criminal cases that were upheld or substantiated during the time period"

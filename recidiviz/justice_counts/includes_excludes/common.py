@@ -61,3 +61,18 @@ class StaffIncludesExcludes(enum.Enum):
     TEMPORARY = "Temporary positions"
     VOLUNTEER = "Volunteer positions"
     INTERN = "Intern positions"
+
+
+class CasesDismissedIncludesExcludes(enum.Enum):
+    FELONY = "Cases with a leading felony charge dismissed"
+    MISDEMEANOR = "Cases with a leading misdemeanor charge dismissed"
+
+
+class CasesResolvedByPleaIncludesExcludes(enum.Enum):
+    FELONY = "Cases with a leading felony charge resolved by plea"
+    MISDEMEANOR = "Cases with a leading misdemeanor charge resolved by plea"
+
+
+class CasesResolvedAtTrialIncludesExcludes(enum.Enum):
+    FELONY = "Cases with a leading felony charge resolved at trial"
+    MISDEMEANOR = "Cases with a leading misdemeanor charge resolved at trial"

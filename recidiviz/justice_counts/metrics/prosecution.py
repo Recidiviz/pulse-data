@@ -32,6 +32,9 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     StaffType,
 )
 from recidiviz.justice_counts.includes_excludes.common import (
+    CasesDismissedIncludesExcludes,
+    CasesResolvedAtTrialIncludesExcludes,
+    CasesResolvedByPleaIncludesExcludes,
     FelonyCasesIncludesExcludes,
     MisdemeanorCasesIncludesExcludes,
 )
@@ -44,12 +47,9 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionAdvocateStaffIncludesExcludes,
     ProsecutionCaseloadIncludesExcludes,
     ProsecutionCasesDeclinedIncludesExcludes,
-    ProsecutionCasesDismissedIncludesExcludes,
     ProsecutionCasesDisposedIncludesExcludes,
     ProsecutionCasesDivertedOrDeferredIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
-    ProsecutionCasesResolvedAtTrialIncludesExcludes,
-    ProsecutionCasesResolvedByPleaIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
     ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes,
     ProsecutionFelonyCaseloadIncludesExcludes,
@@ -490,13 +490,13 @@ cases_disposed = MetricDefinition(
             },
             dimension_to_includes_excludes={
                 DispositionType.DISMISSAL: IncludesExcludesSet(
-                    members=ProsecutionCasesDismissedIncludesExcludes
+                    members=CasesDismissedIncludesExcludes
                 ),
                 DispositionType.PLEA: IncludesExcludesSet(
-                    members=ProsecutionCasesResolvedByPleaIncludesExcludes
+                    members=CasesResolvedByPleaIncludesExcludes
                 ),
                 DispositionType.TRIAL: IncludesExcludesSet(
-                    members=ProsecutionCasesResolvedAtTrialIncludesExcludes
+                    members=CasesResolvedAtTrialIncludesExcludes
                 ),
             },
         )

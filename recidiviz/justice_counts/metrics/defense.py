@@ -19,6 +19,7 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.defense import FundingType, StaffType
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -27,6 +28,9 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DispositionType,
 )
 from recidiviz.justice_counts.includes_excludes.common import (
+    CasesDismissedIncludesExcludes,
+    CasesResolvedAtTrialIncludesExcludes,
+    CasesResolvedByPleaIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
     StaffIncludesExcludes,
@@ -34,12 +38,17 @@ from recidiviz.justice_counts.includes_excludes.common import (
 )
 from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseAdministrativeStaffIncludesExcludes,
+    DefenseCasesDisposedIncludesExcludes,
     DefenseComplaintsIncludesExcludes,
     DefenseFundingIncludesExcludes,
     DefenseInvestigativeStaffIncludesExcludes,
     DefenseLegalStaffIncludesExcludes,
     DefenseVacantStaffIncludesExcludes,
     FeesFundingIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -219,18 +228,60 @@ cases_disposed = MetricDefinition(
     metric_type=MetricType.CASES_DISPOSED,
     category=MetricCategory.POPULATIONS,
     display_name="Cases Disposed",
-    description="Measures the number of cases disposed by your office.",
-    definitions=[
-        Definition(
-            term="Disposition",
-            definition="The initial decision made in the adjudication of the criminal case. Report the disposition for the case as a whole, such that if two charges are dismissed and one is plead, the case disposition is a conviction by plea.",
-        )
-    ],
+    description="The number of criminal cases for which representation by the provider ended during the time period.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseCasesDisposedIncludesExcludes,
+        excluded_set={
+            DefenseCasesDisposedIncludesExcludes.INACTIVE,
+            DefenseCasesDisposedIncludesExcludes.PENDING,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=DispositionType, required=False),
-        AggregatedDimension(dimension=GenderRestricted, required=False),
+        AggregatedDimension(
+            dimension=DispositionType,
+            required=False,
+            dimension_to_description={
+                DispositionType.DISMISSAL: "The number of criminal cases dismissed after filing and closed by the provider.",
+                DispositionType.PLEA: "The number of criminal cases resolved by plea and closed by the provider.",
+                DispositionType.TRIAL: "The number of criminal cases resolved by trial.",
+                DispositionType.OTHER: "The number of criminal cases disposed by the provider that were not dismissed, resolved by plea, or resolved at trial but disposed by another means.",
+                DispositionType.UNKNOWN: "The number of criminal cases disposed by the provider for which the disposition method is unknown.",
+            },
+            dimension_to_includes_excludes={
+                DispositionType.DISMISSAL: IncludesExcludesSet(
+                    members=CasesDismissedIncludesExcludes
+                ),
+                DispositionType.PLEA: IncludesExcludesSet(
+                    members=CasesResolvedByPleaIncludesExcludes
+                ),
+                DispositionType.TRIAL: IncludesExcludesSet(
+                    members=CasesResolvedAtTrialIncludesExcludes
+                ),
+            },
+        ),
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=BiologicalSex,
+            required=False,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of criminal cases disposed in which the defendant’s biological sex is male.",
+                BiologicalSex.FEMALE: "The number of criminal cases disposed in which the defendant’s biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of criminal cases disposed in which the defendant’s biological sex is unknown.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
+        # TODO(#18071)
         AggregatedDimension(dimension=RaceAndEthnicity, required=False),
     ],
 )
