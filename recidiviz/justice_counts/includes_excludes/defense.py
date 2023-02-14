@@ -82,6 +82,15 @@ class DefenseCasesDisposedIncludesExcludes(enum.Enum):
     PENDING = "Pending cases"
 
 
+# Cases Appointed Counsel
+
+
+class DefenseCasesAppointedCounselIncludesExcludes(enum.Enum):
+    NEW = "New criminal cases appointed to attorneys employed by the provider"
+    INACTIVE = "Inactive cases reopened"
+    TRANSFERRED = "	Criminal cases transferred to conflict counsel"
+
+
 # Complaints
 class DefenseComplaintsIncludesExcludes(enum.Enum):
     UPHELD = "Complaints in criminal cases that were upheld or substantiated during the time period"
