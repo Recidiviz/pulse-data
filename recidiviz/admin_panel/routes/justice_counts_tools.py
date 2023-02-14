@@ -19,12 +19,15 @@
 from http import HTTPStatus
 from typing import List, Tuple
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, jsonify, make_response, request
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
 
 from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
+from recidiviz.justice_counts.agency_user_account_association import (
+    AgencyUserAccountAssociationInterface,
+)
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -110,6 +113,85 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                     HTTPStatus.UNPROCESSABLE_ENTITY,
                 )
             raise e
+
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["GET"])
+    @requires_gae_auth
+    def get_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """Returns Agency information."""
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            return (
+                jsonify(
+                    {
+                        "agency": AgencyInterface.get_agency_by_id(
+                            session=session, agency_id=agency_id
+                        ).to_json(),
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>/users", methods=["PATCH"])
+    @requires_gae_auth
+    def update_agency_user_role(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """Update a User's role in an Agency."""
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            role = assert_type(request_json.get("role"), str)
+            email = assert_type(request_json.get("email"), str)
+
+            user = UserAccountInterface.get_user_by_email(session=session, email=email)
+            if not user:
+                return (
+                    make_response(
+                        "No user was found.",
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                    ),
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+
+            agency = AgencyInterface.get_agency_by_id(
+                session=session,
+                agency_id=int(agency_id),
+            )
+            AgencyUserAccountAssociationInterface.update_user_role(
+                role=role,
+                user=user,
+                agency=agency,
+                session=session,
+            )
+            session.commit()
+            return (
+                jsonify({"status": "ok", "status_code": HTTPStatus.OK}),
+                HTTPStatus.OK,
+            )
+
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>/users", methods=["DELETE"])
+    @requires_gae_auth
+    def remove_agency_user(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """Remove a User from an Agency."""
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            email = assert_type(request_json.get("email"), str)
+
+            if email is None:
+                raise ValueError("email is required")
+
+            AgencyUserAccountAssociationInterface.remove_user_from_agency(
+                email=email,
+                agency_id=int(agency_id),
+                session=session,
+            )
+            session.commit()
+            return (
+                jsonify({"status": "ok", "status_code": HTTPStatus.OK}),
+                HTTPStatus.OK,
+            )
 
     @bp.route("/api/justice_counts_tools/users", methods=["GET"])
     @requires_gae_auth

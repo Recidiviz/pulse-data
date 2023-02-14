@@ -48,6 +48,19 @@ export const putWithURLAndBody = async (
   });
 };
 
+export const patchWithURLAndBody = async (
+  url: string,
+  body: Record<string, unknown> = {}
+): Promise<Response> => {
+  return fetch(`/admin${url}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
 export const getAuthResource = async (url: string): Promise<Response> => {
   return fetch(`/auth${url}`, {
     headers: {

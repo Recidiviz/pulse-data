@@ -16,11 +16,20 @@
 // =============================================================================
 
 import { User } from "../components/JusticeCountsTools/constants";
-import { getResource, postWithURLAndBody, putWithURLAndBody } from "./utils";
+import {
+  getResource,
+  patchWithURLAndBody,
+  postWithURLAndBody,
+  putWithURLAndBody,
+} from "./utils";
 
 // Agency Provisioning
 export const getAgencies = async (): Promise<Response> => {
   return getResource(`/api/justice_counts_tools/agencies`);
+};
+
+export const getAgency = (agencyId: string) => (): Promise<Response> => {
+  return getResource(`/api/justice_counts_tools/agency/${agencyId}`);
 };
 
 export const createAgency = async (
@@ -37,6 +46,20 @@ export const createAgency = async (
     state_code: stateCode,
     fips_county_code: fipsCountyCode,
   });
+};
+
+export const updateAgencyUserRole = async (
+  agencyId: string,
+  email: string,
+  role: string
+): Promise<Response> => {
+  return patchWithURLAndBody(
+    `/api/justice_counts_tools/agency/${agencyId}/users`,
+    {
+      email,
+      role,
+    }
+  );
 };
 
 // User Provisioning

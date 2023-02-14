@@ -181,6 +181,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
             id=i,
             auth0_user_id=f"auth0|{i}",
             name=f"User {i}",
+            email=f"user{i}@email.com",
         )
         for i in range(num_users)
     ]
@@ -271,6 +272,7 @@ def generate_fixtures(session: Session) -> List[schema.JusticeCountsBase]:
                 schema.AgencyUserAccountAssociation(
                     user_account=user,
                     agency=agency,
+                    invitation_status=schema.UserAccountInvitationStatus.ACCEPTED,
                     role=random.choice(
                         [
                             schema.UserAccountRole.AGENCY_ADMIN,
