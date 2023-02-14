@@ -114,12 +114,14 @@ _QUERY_TEMPLATE = f"""
             end_date,
             -- Someone meets the criteria if there are no zero tolerance contact codes in a given span
             -- LOGICAL_OR(critical_date_has_passed) AS critical_date_has_passed,
-            FIRST_VALUE(critical_date_has_passed) OVER(critical_date_window) AS critical_date_has_passed,
+            COALESCE(FIRST_VALUE(critical_date_has_passed) OVER(critical_date_window), FALSE) AS critical_date_has_passed,
             FIRST_VALUE(supervision_type) OVER(sup_type_window) AS supervision_type,
         FROM sub_sessions_with_attributes
         WINDOW sup_type_window AS (
           PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY CASE WHEN supervision_type = 'PAROLE' THEN 0 ELSE 1 END
+            ORDER BY CASE WHEN supervision_type = 'PAROLE' THEN 0 
+                          WHEN supervision_type IS NOT NULL THEN 1
+                          ELSE 2 END
         ),
         critical_date_window AS (
           PARTITION BY state_code, person_id, start_date, end_date
