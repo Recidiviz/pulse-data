@@ -25,6 +25,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     CaseSeverityType,
     DispositionType,
+    DivertedCaseSeverityType,
     ExpenseType,
     FundingType,
     ReferredCaseSeverityType,
@@ -45,6 +46,7 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionCasesDeclinedIncludesExcludes,
     ProsecutionCasesDismissedIncludesExcludes,
     ProsecutionCasesDisposedIncludesExcludes,
+    ProsecutionCasesDivertedOrDeferredIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
     ProsecutionCasesResolvedAtTrialIncludesExcludes,
     ProsecutionCasesResolvedByPleaIncludesExcludes,
@@ -399,6 +401,67 @@ caseload = MetricDefinition(
     ],
 )
 
+cases_diverted_or_deferred = MetricDefinition(
+    system=System.PROSECUTION,
+    metric_type=MetricType.CASES_DIVERTED,
+    category=MetricCategory.POPULATIONS,
+    display_name="Cases Diverted/Deferred",
+    description="The number of criminal cases diverted from traditional case processing.",
+    measurement_type=MeasurementType.DELTA,
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCasesDivertedOrDeferredIncludesExcludes,
+        excluded_set={ProsecutionCasesDivertedOrDeferredIncludesExcludes.RETAINED},
+    ),
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    aggregated_dimensions=[
+        # TODO(#18071)
+        AggregatedDimension(
+            dimension=DivertedCaseSeverityType,
+            required=False,
+            dimension_to_description={
+                DivertedCaseSeverityType.FELONY: "The number of criminal cases diverted or deferred in which the leading charge was for a felony offense.",
+                DivertedCaseSeverityType.MISDEMEANOR: "The number of criminal cases diverted or deferred in which the leading charge was for a misdemeanor offense.",
+                DivertedCaseSeverityType.OTHER: "The number of criminal cases diverted or deferred in which the leading charge was for another offense that was not a felony or misdemeanor.",
+                DivertedCaseSeverityType.UNKNOWN: "The number of criminal cases diverted or deferred in which the leading charge was for an offense of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                DivertedCaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCasesIncludesExcludes,
+                    excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
+                ),
+                DivertedCaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorCasesIncludesExcludes,
+                    excluded_set={
+                        MisdemeanorCasesIncludesExcludes.INFRACTION,
+                        MisdemeanorCasesIncludesExcludes.FELONY,
+                    },
+                ),
+            },
+        ),
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=BiologicalSex,
+            required=False,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of cases diverted from traditional case processing and closed by the office with a defendant whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of cases diverted from traditional case processing and closed by the office with a defendant whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of cases diverted from traditional case processing and closed by the office with a defendant whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
+        # TODO(#18071)
+        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
+    ],
+)
 cases_disposed = MetricDefinition(
     system=System.PROSECUTION,
     metric_type=MetricType.CASES_DISPOSED,

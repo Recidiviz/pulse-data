@@ -87,6 +87,7 @@ METRICS = [
     prosecution.cases_disposed,
     prosecution.cases_referred,
     prosecution.cases_declined,
+    prosecution.cases_diverted_or_deferred,
     prosecution.violations,
     supervision.funding,
     supervision.expenses,
