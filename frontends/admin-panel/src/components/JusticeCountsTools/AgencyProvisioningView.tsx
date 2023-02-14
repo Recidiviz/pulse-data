@@ -29,6 +29,7 @@ import {
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
 import { getUsers } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
@@ -179,6 +180,16 @@ const AgencyProvisioningView = (): JSX.Element => {
       title: "County",
       dataIndex: "county",
       key: "fipsCountyCode",
+      ...getColumnSearchProps("county"),
+    },
+    {
+      title: "Team Members",
+      dataIndex: "id",
+      key: "fipsCountyCode",
+      render: (agencyId: number) => {
+        const linkUrl = `/admin/justice_counts_tools/agency/${agencyId}/users`;
+        return <Link to={linkUrl}>Team Members</Link>;
+      },
       ...getColumnSearchProps("county"),
     },
   ];

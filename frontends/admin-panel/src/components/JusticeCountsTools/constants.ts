@@ -5,8 +5,23 @@ export type Agency = {
   systems: string[];
   state_code: string;
   fips_county_code?: string;
+  team: AgencyTeamMember[];
+};
+
+export type AgencyTeamMember = {
+  auth0_user_id: string;
+  name: string;
+  email: string;
+  invitation_status: "NOT_SENT" | "PENDING" | "ACCEPTED" | "ERRORED";
+  role: AgencyTeamMemberRole;
 };
 /* eslint-enable camelcase */
+
+export enum AgencyTeamMemberRole {
+  JUSTICE_COUNTS_ADMIN = "JUSTICE_COUNTS_ADMIN",
+  AGENCY_ADMIN = "AGENCY_ADMIN",
+  CONTRIBUTOR = "CONTRIBUTOR",
+}
 
 export type CreateAgencyRequest = {
   name: string;
@@ -19,6 +34,10 @@ export type CreateAgencyRequest = {
 export type AgenciesResponse = {
   agencies: Agency[];
   systems: string[];
+};
+
+export type AgencyResponse = {
+  agency: Agency;
 };
 
 export type CreateAgencyResponse = {

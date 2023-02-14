@@ -47,6 +47,7 @@ import StateUserPermissionsView from "./StateUserPermissions/StateUserPermission
 import UploadLineStaffRostersView from "./UploadRostersView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
+import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 
 type MenuItem = Required<MenuProps>["items"][number];
 
@@ -256,6 +257,10 @@ const App = (): JSX.Element => {
           <Route
             path={JusticeCountsTools.AGENCY_PROVISIONING_ROUTE}
             component={AgencyProvisioningView}
+          />
+          <Route
+            path={JusticeCountsTools.AGENCY_DETAILS_ROUTE}
+            component={AgencyDetailsView}
           />
           <Route
             path={JusticeCountsTools.USER_PROVISIONING_ROUTE}
