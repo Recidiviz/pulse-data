@@ -62,6 +62,10 @@ class MetricAggregationLevel:
         """Returns lowercase enum name"""
         return self.level_type.value.lower()
 
+    @property
+    def pretty_name(self) -> str:
+        return self.level_name_short.replace("_", " ").title()
+
     def get_index_columns_query_string(self, prefix: Optional[str] = None) -> str:
         """Returns string containing comma separated index column names with optional prefix"""
         prefix_str = f"{prefix}." if prefix else ""

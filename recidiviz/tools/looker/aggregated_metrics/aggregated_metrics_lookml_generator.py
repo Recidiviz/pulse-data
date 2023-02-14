@@ -28,10 +28,7 @@ To save view file to a directory, add parameter:
     --save_view_to_dir [PATH]
 """
 import argparse
-from pathlib import Path
 from typing import List, Optional
-
-from more_itertools import one
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     METRICS_BY_POPULATION_TYPE,
@@ -39,19 +36,7 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.aggregated_metrics import (
     generate_aggregated_metrics_view_builder,
 )
-from recidiviz.aggregated_metrics.models.aggregated_metric import (
-    AggregatedMetric,
-    AssignmentAvgSpanValueMetric,
-    AssignmentDaysToFirstEventMetric,
-    AssignmentEventCountMetric,
-    AssignmentSpanDaysMetric,
-    DailyAvgSpanCountMetric,
-    DailyAvgSpanValueMetric,
-    DailyAvgTimeSinceSpanStartMetric,
-    EventCountMetric,
-    EventValueMetric,
-    SumSpanDaysMetric,
-)
+from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
     METRIC_AGGREGATION_LEVELS_BY_TYPE,
     MetricAggregationLevel,
@@ -62,7 +47,6 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulation,
     MetricPopulationType,
 )
-from recidiviz.looker import lookml_view_field_parameter
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
     DimensionLookMLViewField,
@@ -70,157 +54,17 @@ from recidiviz.looker.lookml_view_field import (
     MeasureLookMLViewField,
     ParameterLookMLViewField,
 )
-from recidiviz.looker.lookml_view_field_parameter import LookMLFieldType
+from recidiviz.looker.lookml_view_field_parameter import (
+    LookMLFieldType,
+    LookMLSqlReferenceType,
+)
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
+from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
+    get_metric_filter_parameter,
+    get_metric_value_measure,
+    measure_for_metric,
+)
 from recidiviz.utils.params import str_to_bool
-
-
-def _generate_lookml_measure_fragment(metric: AggregatedMetric) -> Optional[str]:
-    """
-    Returns the appropriate formula for aggregated a metric over multiple time periods
-    """
-    if isinstance(
-        metric,
-        (
-            SumSpanDaysMetric,
-            AssignmentSpanDaysMetric,
-            EventCountMetric,
-            AssignmentDaysToFirstEventMetric,
-            AssignmentEventCountMetric,
-        ),
-    ):
-        return f"SUM(${{TABLE}}.{metric.name})"
-    if isinstance(metric, (DailyAvgSpanValueMetric, DailyAvgTimeSinceSpanStartMetric)):
-        return (
-            f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.avg_daily_population * ${{days_in_period}}) / "
-            f"SUM(${{TABLE}}.avg_daily_population * ${{days_in_period}})"
-        )
-    if isinstance(metric, DailyAvgSpanCountMetric):
-        return (
-            f"SUM(${{TABLE}}.{metric.name} * ${{days_in_period}}) / "
-            f"SUM(${{days_in_period}})"
-        )
-    if isinstance(metric, AssignmentAvgSpanValueMetric):
-        return (
-            f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.assignments) / "
-            f"SUM(${{TABLE}}.assignments)"
-        )
-    if isinstance(metric, EventValueMetric):
-        return (
-            f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.{metric.event_count_metric.name}) / "
-            f"SUM(${{TABLE}}.{metric.event_count_metric.name})"
-        )
-    return None
-
-
-def _generate_lookml_measure_fragment_normalized(
-    metric: AggregatedMetric,
-) -> Optional[str]:
-    """
-    Returns the appropriate formula for aggregated a metric over multiple time periods
-    and converting to a normalized rate
-    """
-    if isinstance(
-        metric,
-        (
-            AssignmentDaysToFirstEventMetric,
-            AssignmentEventCountMetric,
-            AssignmentSpanDaysMetric,
-        ),
-    ):
-        return f"SUM(${{TABLE}}.{metric.name}) / SUM(${{TABLE}}.assignments)"
-    if isinstance(metric, (DailyAvgSpanCountMetric, EventCountMetric)):
-        return (
-            f"(SUM(${{TABLE}}.{metric.name} * ${{days_in_period}}) / SUM(${{TABLE}}.avg_daily_population)) / "
-            f"SUM(${{days_in_period}})"
-        )
-    if isinstance(metric, SumSpanDaysMetric):
-        return (
-            f"SUM(${{TABLE}}.{metric.name}) / "
-            f"SUM(${{TABLE}}.avg_daily_population * ${{days_in_period}})"
-        )
-    return "NULL"
-
-
-def measure_for_metric(metric: AggregatedMetric) -> MeasureLookMLViewField:
-    # TODO(#18172): Add the option to take a unit-level average.
-    sql = f"""{{% if measure_type._parameter_value == "normalized" %}}
-        {_generate_lookml_measure_fragment_normalized(metric)}
-        {{% else %}}
-        {_generate_lookml_measure_fragment(metric)}
-        {{% endif %}}"""
-    return MeasureLookMLViewField(
-        field_name=f"{metric.name}_measure",
-        parameters=[
-            LookMLFieldParameter.label(metric.display_name),
-            LookMLFieldParameter.description(metric.description),
-            LookMLFieldParameter.type(LookMLFieldType.NUMBER),
-            LookMLFieldParameter.group_label(metric.pretty_name()),
-            LookMLFieldParameter.sql(sql),
-        ],
-    )
-
-
-def get_metric_filter_parameter(
-    metrics: List[AggregatedMetric],
-    aggregation_level: MetricAggregationLevel,
-) -> ParameterLookMLViewField:
-    return ParameterLookMLViewField(
-        field_name="metric_filter",
-        parameters=[
-            LookMLFieldParameter.description(
-                "Used to select one metric for a Look. Works across all levels of observation."
-            ),
-            LookMLFieldParameter.view_label("Metric Menu"),
-            LookMLFieldParameter.group_label(
-                aggregation_level.level_name_short.replace("_", " ").title()
-            ),
-            LookMLFieldParameter.type(LookMLFieldType.UNQUOTED),
-            *[
-                LookMLFieldParameter.allowed_value(metric.display_name, metric.name)
-                for metric in metrics
-            ],
-        ],
-    )
-
-
-def get_metric_value_measure(
-    view_name: str,
-    metric_filter_parameter: ParameterLookMLViewField,
-    aggregation_level: MetricAggregationLevel,
-) -> MeasureLookMLViewField:
-    view_label_parameter = one(
-        p
-        for p in metric_filter_parameter.parameters
-        if isinstance(p, lookml_view_field_parameter.FieldParameterViewLabel)
-    )
-
-    metric_parameter_clauses = []
-    for ix, allowed_value_param in enumerate(metric_filter_parameter.allowed_values()):
-        allowed_value = allowed_value_param.value_param
-        conditional_str = "elsif"
-        if ix == 0:
-            conditional_str = "if"
-        metric_parameter_clauses.append(
-            f"""{{% {conditional_str} {view_name}.{metric_filter_parameter.field_name}._parameter_value == "{allowed_value}" %}} ${{{allowed_value}_measure}}"""
-        )
-    metric_parameter_clauses.append("{% endif %}")
-
-    sql_text = "\n      ".join(metric_parameter_clauses)
-    return MeasureLookMLViewField(
-        field_name="metric_value",
-        parameters=[
-            LookMLFieldParameter.description(
-                f"Takes the value associated with the metric chosen using `{metric_filter_parameter.field_name}`"
-            ),
-            LookMLFieldParameter.group_label(
-                aggregation_level.level_name_short.replace("_", " ").title()
-            ),
-            LookMLFieldParameter.type(LookMLFieldType.NUMBER),
-            LookMLFieldParameter.view_label(view_label_parameter.text),
-            LookMLFieldParameter.sql(sql_text),
-        ],
-    )
 
 
 def get_lookml_view_for_metrics(
@@ -279,15 +123,18 @@ def get_lookml_view_for_metrics(
                 "Used to select whether metric should be presented as a raw value or a normalized rate"
             ),
             LookMLFieldParameter.view_label("Metric Menu"),
-            LookMLFieldParameter.group_label(
-                aggregation_level.level_name_short.replace("_", " ").title()
-            ),
+            LookMLFieldParameter.group_label(aggregation_level.pretty_name),
             LookMLFieldParameter.allowed_value("Normalized", "normalized"),
             LookMLFieldParameter.allowed_value("Value", "value"),
             LookMLFieldParameter.default_value("value"),
         ],
     )
-    metric_measures = [measure_for_metric(metric) for metric in metrics]
+    metric_measures = [
+        measure_for_metric(
+            metric, days_in_period_source=LookMLSqlReferenceType.DIMENSION
+        )
+        for metric in metrics
+    ]
     metric_filter_parameter = get_metric_filter_parameter(metrics, aggregation_level)
     metric_value_measure = get_metric_value_measure(
         view_name, metric_filter_parameter, aggregation_level
@@ -366,8 +213,6 @@ def main(
     if print_view:
         print(lookml_view.build())
     if output_directory:
-        # if directory doesn't already exist, create
-        Path(output_directory).mkdir(parents=True, exist_ok=True)
         lookml_view.write(output_directory, source_script_path=__file__)
 
 
