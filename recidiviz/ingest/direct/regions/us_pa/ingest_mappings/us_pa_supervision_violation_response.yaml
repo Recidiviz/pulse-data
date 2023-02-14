@@ -68,6 +68,7 @@ output:
                                   - PV04
                                   - PV05
                                   - PV06
+                                  - PV07
                                   # TODO(#10502): Ask what this new sanction code value means.
                                   - GMED # Unknown, new as of 2023-01-10
                                   - GPSL # Unknown, new as of 2023-01-18
