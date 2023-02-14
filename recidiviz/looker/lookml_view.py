@@ -17,6 +17,7 @@
 """Creates a LookMLView object and associated functions"""
 import os
 from datetime import date
+from pathlib import Path
 from typing import List
 
 import attr
@@ -26,8 +27,8 @@ from recidiviz.looker.lookml_view_field import LookMLViewField
 from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.utils.string import StrictStringFormatter
 
-VIEW_TEMPLATE = """view: {view_name} {{
-{table_clause}{field_declarations}
+VIEW_TEMPLATE = """{include_clause}view: {view_name} {{
+{extends_clause}{table_clause}{field_declarations}
 }}"""
 
 VIEW_FILE_TEMPLATE = """# This file was automatically generated using a pulse-data script on {date_str}.
@@ -47,6 +48,8 @@ class LookMLView:
     view_name: str
     table: LookMLViewSourceTable
     fields: List[LookMLViewField] = attr.ib(factory=list)
+    included_paths: List[str] = attr.ib(factory=list)
+    extended_views: List[str] = attr.ib(factory=list)
 
     def __attrs_post_init__(self) -> None:
         field_names = [field.field_name for field in self.fields]
@@ -56,9 +59,23 @@ class LookMLView:
     def build(self) -> str:
         """Builds string defining a standalone LookML view file"""
         field_declarations = "".join([f"\n{field.build()}" for field in self.fields])
+        include_clause = ""
+        if self.included_paths:
+            include_clause = "".join(
+                [f'include: "{path}"\n' for path in self.included_paths]
+            )
+
+        extends_clause = ""
+        if self.extended_views:
+            extends_str = ",\n".join(
+                [f"    {view_name}" for view_name in self.extended_views]
+            )
+            extends_clause = f"extends: [\n{extends_str}\n]"
 
         return StrictStringFormatter().format(
             VIEW_TEMPLATE,
+            include_clause=include_clause,
+            extends_clause=extends_clause,
             view_name=self.view_name,
             table_clause=self.table.build(),
             field_declarations=field_declarations,
@@ -74,6 +91,9 @@ class LookMLView:
             "recidiviz",
             os.path.relpath(source_script_path, os.path.dirname(recidiviz.__file__)),
         )
+        # if directory doesn't already exist, create
+        Path(output_directory).mkdir(parents=True, exist_ok=True)
+
         with open(
             os.path.join(output_directory, f"{self.view_name}.view.lkml"),
             "w",

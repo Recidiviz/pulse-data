@@ -29,7 +29,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
     MetricPopulationType,
 )
-from recidiviz.tools.looker.aggregated_metrics_lookml_generator import (
+from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator import (
     get_lookml_view_for_metrics,
 )
 

@@ -47,6 +47,11 @@ class LookMLFieldDatatype(Enum):
     YYYYMMDD = "yyyymmdd"
 
 
+class LookMLSqlReferenceType(Enum):
+    TABLE_COLUMN = "table_column"
+    DIMENSION = "dimension"
+
+
 @attr.define
 class LookMLFieldParameter:
     """Defines a LookML field parameter, including the parameter key
