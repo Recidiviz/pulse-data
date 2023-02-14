@@ -29,6 +29,7 @@ from sqlalchemy import (
     Integer,
     PrimaryKeyConstraint,
     String,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 from sqlalchemy.sql.sqltypes import Enum
@@ -103,6 +104,12 @@ class DirectIngestSftpRemoteFileMetadata(OperationsBase):
             "remote_file_path IS NOT NULL", name="nonnull_sftp_remote_file_path"
         ),
         CheckConstraint("sftp_timestamp IS NOT NULL", name="nonnull_sftp_timestamp"),
+        UniqueConstraint(
+            "region_code",
+            "remote_file_path",
+            "sftp_timestamp",
+            name="remote_file_path_sftp_timestamps_unique_within_state",
+        ),
     )
 
     file_id = Column(Integer, primary_key=True)
@@ -136,6 +143,12 @@ class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
         CheckConstraint(
             "post_processed_normalized_file_path IS NOT NULL AND remote_file_path IS NOT NULL",
             name="nonnull post_processed_and_remote_paths",
+        ),
+        UniqueConstraint(
+            "region_code",
+            "post_processed_normalized_file_path",
+            "remote_file_path",
+            name="post_processed_remote_file_paths_unique_within_state",
         ),
     )
 
