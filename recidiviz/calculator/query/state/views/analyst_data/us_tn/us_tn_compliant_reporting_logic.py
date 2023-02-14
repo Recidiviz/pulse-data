@@ -824,13 +824,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     determine_criteria AS (
         SELECT *, 
             CASE
-                -- People on ICOTS and minimum with no active TN sentences should automatically be on compliant reporting 
-                WHEN supervision_type LIKE '%ISC%' 
-                    AND supervision_level LIKE '%MINIMUM%' 
-                    AND has_TN_sentence = 0 
-                    AND eligible_lifetime_flag = 1 
-                    AND no_sup_level_higher_than_mininmum in ('Eligible')
-                THEN 'c4'
                 WHEN LEAST(
                         eligible_supervision_level,
                         eligible_arrests_flag,
@@ -884,10 +877,8 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
     )
     SELECT *,
         CASE WHEN cr_eligible_discretion_level IN ('c1','c2','c3') THEN remaining_addl_criteria_needed 
-            WHEN cr_eligible_discretion_level = 'c4' THEN 0
             END AS remaining_criteria_needed,
         CASE 
-            WHEN cr_eligible_discretion_level = 'c4' THEN cr_eligible_discretion_level
             WHEN cr_eligible_complete IN ('eligible','almost_eligible') THEN cr_eligible_discretion_level 
             END AS compliant_reporting_eligible
     FROM determine_criteria

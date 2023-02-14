@@ -55,7 +55,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
     WITH sentences AS (
         SELECT
             person_id,
-            description AS offense_description,
+            UPPER(REGEXP_REPLACE(description, "  ", " ")) AS offense_description,
             completion_date AS expiration_date,
             projected_completion_date_max AS full_expiration_date,
             effective_date AS sentence_effective_date,
@@ -70,7 +70,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
     ),
     prior_record AS (
         SELECT pei.person_id,
-                OffenseDescription AS offense_description,
+                UPPER(REGEXP_REPLACE(OffenseDescription, "  ", " ")) AS offense_description,
                 CAST(CAST(DispositionDate AS DATETIME) AS DATE) AS expiration_date,
                 CAST(CAST(DispositionDate AS DATETIME) AS DATE) AS full_expiration_date,
                 CAST(CAST(ArrestDate AS DATETIME) AS DATE) AS sentence_effective_date,
@@ -171,7 +171,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
             
             CASE WHEN (offense_description LIKE '%13%' AND offense_description LIKE '%VICT%' ) THEN 1 ELSE 0 END AS young_victim_flag,
             
-            CASE WHEN (offense_description LIKE '%HOMICIDE%' OR offense_description LIKE '%MURDER%' ) THEN 1 ELSE 0 END AS homicide_flag,
+            CASE WHEN (offense_description LIKE '%HOMICIDE%' OR offense_description LIKE '%MURD%' ) THEN 1 ELSE 0 END AS homicide_flag,
             
             CASE WHEN life_sentence THEN 0 ELSE 1 END AS no_lifetime_flag,
             
@@ -185,7 +185,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
                    FIRST_VALUE(DrugOffensesFlag) OVER(PARTITION BY OffenseDescription ORDER BY CASE WHEN DrugOffensesFlag = 'Y' THEN 0 ELSE 1 END) AS DrugOffensesFlag 
             FROM  `{project_id}.{us_tn_raw_data_up_to_date_dataset}.OffenderStatute_latest` 
             ) statute
-                ON offense_description = statute.OffenseDescription 
+                ON offense_description = REGEXP_REPLACE(statute.OffenseDescription, "  ", " ")
     )
     SELECT a.* EXCEPT (sentence_effective_date),
             COALESCE(sentence_effective_date, '1900-01-01') AS sentence_effective_date,
