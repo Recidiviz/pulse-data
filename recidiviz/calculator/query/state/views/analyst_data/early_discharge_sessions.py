@@ -30,7 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 DISCHARGE_SESSION_DIFF_DAYS = "7"
 
 # States currently supported
-SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN")
+SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME")
 
 EARLY_DISCHARGE_SESSIONS_VIEW_NAME = "early_discharge_sessions"
 
@@ -44,6 +44,8 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
             SELECT * FROM `{project_id}.{analyst_dataset}.us_id_early_discharge_sessions_preprocessing`
             UNION ALL
             SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
+            UNION ALL
+            SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
         )
         -- Only count sessions ending in release where the discharge date is within a specified number of days of session end date
         WHERE outflow_to_level_1 = 'LIBERTY'

@@ -108,6 +108,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_sccp 
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_supervision_downgrade import (
     US_ME_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_early_discharge_sessions_preprocessing import (
+    US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_early_termination import (
     US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
 )
@@ -211,6 +214,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_ME_DAY_0_EARLY_DISCHARGE_VIEW_BUILDER,
         US_ME_DAY_0_SCCP_VIEW_BUILDER,
         US_ME_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
+        US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
         US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
         US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
         US_ND_DAY_0_OVERDUE_DISCHARGE_VIEW_BUILDER,
