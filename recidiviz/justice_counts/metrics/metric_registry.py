@@ -56,7 +56,7 @@ METRICS = [
     jails.residents,
     jails.pre_adjudication_admissions,
     jails.post_adjudication_admissions,
-    jails.average_daily_population,
+    jails.pre_adjudication_daily_population,
     jails.readmissions,
     jails.releases,
     jails.staff_use_of_force_incidents,

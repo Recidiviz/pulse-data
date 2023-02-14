@@ -19,12 +19,12 @@ from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
     GrievancesUpheldType,
-    PopulationType,
     ReleaseType,
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -62,8 +62,13 @@ from recidiviz.justice_counts.includes_excludes.offense import (
     DrugOffenseIncludesExcludes,
     PersonOffenseIncludesExcludes,
     PostAdjudicationJailPopulation,
+    PreAdjudicationJailPopulation,
     PropertyOffenseIncludesExcludes,
     PublicOrderOffenseIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -428,19 +433,92 @@ post_adjudication_admissions = MetricDefinition(
     ],
 )
 
-average_daily_population = MetricDefinition(
+pre_adjudication_daily_population = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.POPULATION,
+    metric_type=MetricType.PRE_ADJUDICATION_POPULATION,
     category=MetricCategory.POPULATIONS,
-    display_name="Average Daily Population",
-    description="Measures the average daily population of individuals held in jail custody.",
+    display_name="Pre-adjudication Daily Population",
+    description="A single day count of the number of people incarcerated in the agency’s jurisdiction who have not yet been adjudicated.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[],
+    # TODO(#18071) Implement reused global includes/excludes
+    includes_excludes=IncludesExcludesSet(
+        members=PreAdjudicationJailPopulation,
+        excluded_set={
+            PreAdjudicationJailPopulation.SERVE_SENTENCE,
+            PreAdjudicationJailPopulation.SPLIT_SENTENCE,
+            PreAdjudicationJailPopulation.SUSPEND_SENTENCE,
+            PreAdjudicationJailPopulation.REVOCATION_COMMUNITY_SUPERVISION,
+            PreAdjudicationJailPopulation.COMMUNITY_SUPERVISION_SANCTION,
+            PreAdjudicationJailPopulation.COURT_SANCTION,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=PopulationType, required=False),
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={
+                        PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                    },
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={
+                        PropertyOffenseIncludesExcludes.ROBBERY,
+                    },
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                OffenseType.PERSON: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was an offense against a person.",
+                OffenseType.PROPERTY: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was a property offense.",
+                OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was a public order offense.",
+                OffenseType.DRUG: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was a drug offense.",
+                OffenseType.OTHER: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge was not a person, property, drug, or public order offense.",
+                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated pre-adjudication whose most serious charge type is not known.",
+            },
+        ),
+        # TODO(#18071) Implement reused global includes/excludes
+        # TODO(#17579) Implement Y/N Tables
         AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
+        # TODO(#18071) Implement reused global includes/excludes
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=True,
+            dimension_to_description={
+                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
     ],
 )
 
