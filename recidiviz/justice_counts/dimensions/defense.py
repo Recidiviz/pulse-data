@@ -32,3 +32,16 @@ class FundingType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/funding/defense/type"
+
+
+class StaffType(DimensionBase, enum.Enum):
+    LEGAL = "Legal Staff"
+    ADMINISTRATIVE = "Administrative Staff"
+    INVESTIGATIVE = "Investigative Staff"
+    OTHER = "Other Staff"
+    UNKNOWN = "Unknown Unknown"
+    VACANT = "Vacant Positions (Any Staff Type)"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/defense/staff/type"

@@ -17,7 +17,7 @@
 """Defines all Justice Counts metrics for Defense."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
-from recidiviz.justice_counts.dimensions.defense import FundingType
+from recidiviz.justice_counts.dimensions.defense import FundingType, StaffType
 from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
@@ -25,15 +25,19 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseSeverityType,
     DispositionType,
-    StaffType,
 )
 from recidiviz.justice_counts.includes_excludes.common import (
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
+    StaffIncludesExcludes,
     StateAppropriationIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.defense import (
+    DefenseAdministrativeStaffIncludesExcludes,
     DefenseFundingIncludesExcludes,
+    DefenseInvestigativeStaffIncludesExcludes,
+    DefenseLegalStaffIncludesExcludes,
+    DefenseVacantStaffIncludesExcludes,
     FeesFundingIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
@@ -118,22 +122,54 @@ funding = MetricDefinition(
     ],
 )
 
-total_staff = MetricDefinition(
+staff = MetricDefinition(
     system=System.DEFENSE,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Staff",
-    definitions=[
-        Definition(
-            term="Full-time staff",
-            definition="Number of people employed in a full-time (0.9+) capacity.",
-        )
-    ],
-    description="Measures the number of full-time staff employed by your office.",
+    display_name="Staff",
+    description="The number of full-time equivalent positions budgeted for the provider for criminal defense services.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full-time staff position filled.",
-    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
+    includes_excludes=IncludesExcludesSet(
+        members=StaffIncludesExcludes,
+        excluded_set={StaffIncludesExcludes.VOLUNTEER, StaffIncludesExcludes.INTERN},
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=StaffType,
+            required=False,
+            dimension_to_description={
+                StaffType.ADMINISTRATIVE: "The number of full-time equivalent positions that work to support the day-to-day organization and logistics of the provider for criminal defense services.",
+                StaffType.LEGAL: "The number of full-time equivalent positions that are responsible for the criminal legal representation of clients or support that work through the provision of legal services.",
+                StaffType.INVESTIGATIVE: "The number of full-time equivalent positions that work to obtain evidence in support of the work of legal staff for criminal defense services.",
+                StaffType.OTHER: "The number of full-time equivalent positions that provide or support criminal defense services that are not legal staff, administrative staff, or investigative staff.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions that provide or support criminal defense services of an unknown type.",
+                StaffType.VACANT: "The number of full-time equivalent positions that provide or support criminal defense services of any type that are budgeted but not currently filled.",
+            },
+            dimension_to_includes_excludes={
+                StaffType.LEGAL: IncludesExcludesSet(
+                    members=DefenseLegalStaffIncludesExcludes,
+                    excluded_set={DefenseLegalStaffIncludesExcludes.CURRENTLY_VACANT},
+                ),
+                StaffType.ADMINISTRATIVE: IncludesExcludesSet(
+                    members=DefenseAdministrativeStaffIncludesExcludes,
+                    excluded_set={
+                        DefenseAdministrativeStaffIncludesExcludes.CURRENTLY_VACANT
+                    },
+                ),
+                StaffType.INVESTIGATIVE: IncludesExcludesSet(
+                    members=DefenseInvestigativeStaffIncludesExcludes,
+                    excluded_set={
+                        DefenseInvestigativeStaffIncludesExcludes.CURRENTLY_VACANT
+                    },
+                ),
+                StaffType.VACANT: IncludesExcludesSet(
+                    members=DefenseVacantStaffIncludesExcludes,
+                    excluded_set={DefenseVacantStaffIncludesExcludes.FILLED},
+                ),
+            },
+        )
+    ],
 )
 
 cases_appointed_counsel = MetricDefinition(

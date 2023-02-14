@@ -50,3 +50,14 @@ class GrantsIncludesExcludes(enum.Enum):
     STATE = "State grants"
     FEDERAL = "Federal grants"
     PRIVATE = "Private or foundation grants"
+
+
+class StaffIncludesExcludes(enum.Enum):
+    FILLED = "Filled positions"
+    VACANT = "Staff positions budgeted but currently vacant"
+    FULL_TIME = "Full-time positions"
+    PART_TIME = "Part-time positions"
+    CONTRACTED = "Contracted positions"
+    TEMPORARY = "Temporary positions"
+    VOLUNTEER = "Volunteer positions"
+    INTERN = "Intern positions"

@@ -42,11 +42,11 @@ DEFENSE_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="total_staff",
-        definition=defense.total_staff,
+        definition=defense.staff,
     ),
     MetricFile(
         canonical_filename="total_staff_by_type",
-        definition=defense.total_staff,
+        definition=defense.staff,
         disaggregation=StaffType,
         disaggregation_column_name="staff_type",
     ),

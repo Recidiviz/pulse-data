@@ -41,3 +41,32 @@ class DefenseFundingIncludesExcludes(enum.Enum):
 
 class FeesFundingIncludesExcludes(enum.Enum):
     FEES = "Fees charged to people who have been assigned criminal defense counsel due to indigence"
+
+
+# Staff
+class DefenseLegalStaffIncludesExcludes(enum.Enum):
+    LINE_ATTORNEYS = "Line attorneys"
+    SUPERVISORY = "Supervisory attorneys"
+    PARALEGALS = "Paralegals"
+    LEGAL_ASSISTANTS = "Legal assistants"
+    CURRENTLY_VACANT = "Legal staff positions budgeted but currently vacant"
+
+
+class DefenseAdministrativeStaffIncludesExcludes(enum.Enum):
+    CLERICAL = "Clerical staff"
+    ANALYTIC_STAFF = "Data or analytic staff"
+    LEADERSHIP = "Administrative supervisory or leadership staff"
+    CURRENTLY_VACANT = "Administrative staff positions budgeted but currently vacant"
+
+
+class DefenseInvestigativeStaffIncludesExcludes(enum.Enum):
+    INVESTIGATIVE = "Investigative staff"
+    CURRENTLY_VACANT = "Investigative staff positions budgeted but currently vacant"
+
+
+class DefenseVacantStaffIncludesExcludes(enum.Enum):
+    LEGAL = "Vacant legal staff positions"
+    ADMINISTRATIVE = "Vacant administrative staff positions"
+    INVESTIGATIVE = "Vacant investigative staff positions"
+    UNKNOWN = "Vacant staff positions of unknown type"
+    FILLED = "Filled positions"
