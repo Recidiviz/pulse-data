@@ -270,7 +270,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                 "/api/opportunity_deferrals",
                 json={
                     "personExternalId": "nonexistent-person",
-                    "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
+                    "opportunityType": OpportunityType.OVERDUE_DISCHARGE.value,
                     "deferralType": OpportunityDeferralType.REMINDER.value,
                     "deferUntil": str(datetime.now()),
                     "requestReminder": True,
@@ -786,7 +786,7 @@ class TestCaseTriageAPIRoutes(TestCase):
                     "/api/opportunity_deferrals",
                     {
                         "personExternalId": self.client_2.person_external_id,
-                        "opportunityType": OpportunityType.EARLY_DISCHARGE.value,
+                        "opportunityType": OpportunityType.OVERDUE_DISCHARGE.value,
                         "deferralType": OpportunityDeferralType.REMINDER.value,
                         "deferUntil": str(datetime.now() + timedelta(days=1)),
                         "requestReminder": True,

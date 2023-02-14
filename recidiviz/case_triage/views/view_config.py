@@ -27,9 +27,6 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
 from recidiviz.case_triage.views.client_contact_info import (
     CLIENT_CONTACT_INFO_VIEW_BUILDER,
 )
-from recidiviz.case_triage.views.client_eligibility_criteria import (
-    CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER,
-)
 from recidiviz.case_triage.views.employment_periods import (
     CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER,
 )
@@ -58,7 +55,6 @@ CASE_TRIAGE_EXPORTED_VIEW_BUILDERS: Sequence[SelectedColumnsBigQueryViewBuilder]
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     CLIENT_CONTACT_INFO_VIEW_BUILDER,
-    CLIENT_ELIGIBILITY_CRITERIA_VIEW_BUILDER,
     CLIENT_LIST_VIEW_BUILDER,
     CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER,
     LAST_KNOWN_DATE_OF_EMPLOYMENT_VIEW_BUILDER,
