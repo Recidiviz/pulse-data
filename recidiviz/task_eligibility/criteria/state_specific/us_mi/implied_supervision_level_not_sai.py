@@ -14,34 +14,48 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Defines a criteria span view that shows spans of time during which someone is not
-paroled from the Special Alternative Incarceration program (SAI).
+"""This criteria view builder implies that the client is not paroled from SAI (Special Alternative Incarceration).
+Supervision level is filtered in the candidate population query, so this
+criteria view builder is always True, and functions just to serve the front end display.
 """
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_NOT_PAROLED_FROM_SAI"
+_CRITERIA_NAME = "US_MI_IMPLIED_SUPERVISION_LEVEL_NOT_SAI"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is not
-paroled from the Special Alternative Incarceration program (SAI).
+_DESCRIPTION = """This criteria view builder implies that the client is not paroled from SAI (Special Alternative Incarceration).
+Supervision level is filtered in the candidate population query, so this
+criteria view builder is always True, and functions just to serve the front end display.
 """
-_REASON_QUERY = "TO_JSON(STRUCT('9999-99-99' as eligible_date))"
+
+_QUERY_TEMPLATE = """
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        TRUE AS meets_criteria,
+        TO_JSON(STRUCT(supervision_level AS supervision_level)) AS reason,
+    FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+    WHERE state_code = "US_MI"
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        meets_criteria_default=True,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
+
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
         VIEW_BUILDER.build_and_print()

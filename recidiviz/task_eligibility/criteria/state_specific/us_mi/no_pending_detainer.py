@@ -15,10 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which someone does
-not have an active personal protection order (PPO).
+not have a pending detainer.
 """
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -34,45 +33,49 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_NO_ACTIVE_PPO"
+_CRITERIA_NAME = "US_MI_NO_PENDING_DETAINER"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone does
-not have an active personal protection order (PPO). 
+not have a pending detainer. 
 """
 
 _QUERY_TEMPLATE = f"""
-WITH ppo_data_parsed AS(
-/*This CTE cleans PPO data from raw data */
+WITH detainers_parsed AS(
+/*This CTE identifies parses detainer data from raw data*/
     SELECT
       pei.state_code,
       pei.person_id,
-      CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(effective_date, r'\\:\\d\\d\\d', '')) AS DATETIME) AS DATE) AS effective_date,
-      COALESCE(CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(expiration_date, r'\\:\\d\\d\\d', '')) AS DATETIME) AS DATE), "9999-12-31") AS expiration_date,
-    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_PERSONAL_PROTECTION_ORDER_latest` o
+      CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(detainer_received_date, r'\\:\\d\\d\\d', '')) AS DATETIME) AS DATE) AS start_date,
+      --revoked_date, expiration_date, and inactive_date all have instances where they are non null but the other fields are null, 
+      --so here we coalesce all three dates for an end_date 
+      COALESCE(CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(revoked_date, r'\\:\\d\\d\\d', '')) AS DATETIME) AS DATE), 
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(expiration_date,r'\\:\\d\\d\\d', '')) AS DATETIME) AS DATE),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE(inactive_date, r'\\:\\d\\d\\d', '')) AS DATETIME) AS DATE), "9999-12-31") AS end_date,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_OFFENDER_DETAINER_latest` o
     INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
       ON o.offender_id= pei.external_id
       AND pei.state_code = 'US_MI'
       AND pei.id_type = "US_MI_DOC"
-),
-active_ppos AS (
-/*This CTE identifies active ppos and sets active_ppo as TRUE*/
+), 
+pending_detainers AS (
+/*This CTE identifies pending detainers and sets active_ppo as TRUE*/
     SELECT
       state_code,
       person_id,
-      effective_date AS start_date,
-      expiration_date AS end_date,
-      TRUE AS active_ppo
-    FROM ppo_data_parsed
-    WHERE effective_date != {nonnull_end_date_clause('expiration_date')}
+      start_date,
+      end_date,
+      TRUE AS pending_detainer
+    FROM detainers_parsed
+    WHERE start_date != end_date
 ),
-{create_sub_sessions_with_attributes('active_ppos')}
+{create_sub_sessions_with_attributes('pending_detainers')}
     SELECT
         state_code,
         person_id,
         start_date,
         end_date,
-        NOT active_ppo AS meets_criteria,
-        TO_JSON(STRUCT(LOGICAL_OR(active_ppo) AS active_ppo)) AS reason,
+        NOT pending_detainer AS meets_criteria,
+        TO_JSON(STRUCT(LOGICAL_OR(pending_detainer) AS active_ppo)) AS reason,
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4,5
 """

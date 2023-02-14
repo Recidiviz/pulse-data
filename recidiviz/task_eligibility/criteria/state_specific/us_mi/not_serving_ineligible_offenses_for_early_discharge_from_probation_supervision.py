@@ -14,37 +14,52 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has no new
-ineligible offenses on parole/dual supervision
+"""Defines a criteria span view that shows spans of time during which someone is not serving
+ineligible offenses on probation supervision
 """
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_2_sessions,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_NO_NEW_INELIGIBLE_OFFENSES_ON_SUPERVISION"
+_CRITERIA_NAME = "US_MI_NOT_SERVING_INELIGIBLE_OFFENSES_FOR_EARLY_DISCHARGE_FROM_PROBATION_SUPERVISION"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has no new ineligible offenses (below) on supervision
-        - No involvement or suspected offenses during parole/probation requiring registry under the Sex Offender Registration Act
-        - No new assaultive misdemeanors during parole/probation period
-        - No new felony during parole/probation period
+someone is not serving on probation for any ineligible offense listed below: 
+    - Not serving for MCL 750.81
+    - Not serving for MC 750.84 (Assault with intent to commit Great bodily harm less than murder)
+    - Not serving for an offense that requires a mandatory probation term (750.411H, 750.411I, 750.136b) 
 """
-_REASON_QUERY = (
-    """TO_JSON(STRUCT(['9999-99-99','9999-99-99'] as latest_ineligible_convictions))"""
-)
+_QUERY_TEMPLATE = f"""
+ SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
+    {join_sentence_spans_to_compartment_2_sessions("'PROBATION'")}
+    WHERE span.state_code = "US_MI"
+        AND sent.sentence_sub_type = "PROBATION" 
+        --only include spans with ineligible offenses 
+        AND sent.statute IN ("750.81", "750.84", "750.411H", "750.411I", "750.136B")
+    GROUP BY 1, 2, 3, 4,5
+    """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
     )
 )
 
