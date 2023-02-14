@@ -42,7 +42,7 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
 
 Examples:
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline
-        --pipeline incarceration \
+        --pipeline incarceration_metrics \
         --project recidiviz-staging \
         --job_name incarceration-test \
         --sandbox_output_dataset username_dataflow_metrics \
