@@ -20,7 +20,6 @@ from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
     PopulationType,
-    ReadmissionType,
     ReleaseType,
     StaffType,
 )
@@ -66,12 +65,6 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="readmissions",
         definition=jails.readmissions,
-    ),
-    MetricFile(
-        canonical_filename="readmissions_by_type",
-        definition=jails.readmissions,
-        disaggregation=ReadmissionType,
-        disaggregation_column_name="readmission_type",
     ),
     MetricFile(
         canonical_filename="pre_adjudication_admissions",

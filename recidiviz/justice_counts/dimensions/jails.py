@@ -50,16 +50,6 @@ class ExpenseType(DimensionBase, enum.Enum):
         return "metric/jails/expense/type"
 
 
-class ReadmissionType(DimensionBase, enum.Enum):
-    NEW_ADMISSION = "New Admission"
-    VIOLATION_OF_CONDITIONS = "Violation of Conditions"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/jails/readmissions/type"
-
-
 class PopulationType(DimensionBase, enum.Enum):
     PRETRIAL = "Pretrial"
     SENTENCED = "Sentenced"

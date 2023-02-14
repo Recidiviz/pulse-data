@@ -20,7 +20,6 @@ from recidiviz.justice_counts.dimensions.jails import (
     FundingType,
     GrievancesUpheldType,
     PopulationType,
-    ReadmissionType,
     ReleaseType,
     StaffType,
 )
@@ -285,14 +284,10 @@ readmissions = MetricDefinition(
     metric_type=MetricType.READMISSIONS,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Readmissions",
-    description="Measures the number of individuals admitted who had at least one other jail admission within the prior 12 months.",
-    reporting_note="You may only be able to identify if an individual was admitted to your same facility within the last year.",
+    description="The number of admission events to the agency’s jurisdiction of people who were incarcerated in the agency’s jurisdiction within the previous year (365 days).",
     measurement_type=MeasurementType.DELTA,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=ReadmissionType, required=False)
-    ],
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    # TODO(#18071) implement reused includes/excludes
 )
 
 pre_adjudication_admissions = MetricDefinition(
