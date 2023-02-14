@@ -198,7 +198,15 @@ output:
                     $mappings:
                       StateSupervisionSentenceSupervisionType.PAROLE: "2165"
                       StateSupervisionSentenceSupervisionType.PROBATION: "431"
-                date_imposed: sentenced_date
+                date_imposed:
+                  $conditional:
+                    # For parole sentences, let's use effective_date as date_imposed instead of sentenced_date since sentenced_date is only valued for probation and incarceration sentences
+                    - $if:
+                        $equal:
+                          - sentence_type_id
+                          - $literal("2165")
+                      $then: effective_date
+                    - $else: sentenced_date
                 start_date: effective_date
                 projected_completion_date: expiration_date
                 completion_date: closing_date
