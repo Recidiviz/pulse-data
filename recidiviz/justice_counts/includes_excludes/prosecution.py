@@ -224,32 +224,6 @@ class ProsecutionCasesDeclinedIncludesExcludes(enum.Enum):
     INTERNAL_TRANSFER = "Cases transferred internally"
 
 
-# Cases Disposed
-
-
-class ProsecutionCasesDisposedIncludesExcludes(enum.Enum):
-    DISMISSED = "Cases dismissed"
-    PLEA = "Cases resolved by plea"
-    TRIAL = "Cases resolved by trial"
-    INACTIVE = "Cases marked as inactive, but not closed"
-    PENDING = "Pending cases"
-
-
-class ProsecutionCasesDismissedIncludesExcludes(enum.Enum):
-    FELONY = "Cases with a leading felony charge dismissed"
-    MISDEMEANOR = "Cases with a leading misdemeanor charge dismissed"
-
-
-class ProsecutionCasesResolvedByPleaIncludesExcludes(enum.Enum):
-    FELONY = "Cases with a leading felony charge resolved by plea"
-    MISDEMEANOR = "Cases with a leading misdemeanor charge resolved by plea"
-
-
-class ProsecutionCasesResolvedAtTrialIncludesExcludes(enum.Enum):
-    FELONY = "Cases with a leading felony charge resolved at trial"
-    MISDEMEANOR = "Cases with a leading misdemeanor charge resolved at trial"
-
-
 # Cases Diverted
 
 
@@ -262,6 +236,16 @@ class ProsecutionCasesDivertedOrDeferredIncludesExcludes(enum.Enum):
     SPECIALTY_COURT = "Cases diverted to a specialty court"
     MEDIATION = "Cases diverted to mediation or alternative dispute resolution"
     RETAINED = "Cases diverted or deferred and retained as open cases by the office"
+
+
+# Cases Disposed
+class ProsecutionCasesDisposedIncludesExcludes(enum.Enum):
+    DIVERTED = "Criminal cases diverted from traditional case processing"
+    DISMISSED = "Cases dismissed"
+    PLEA = "Cases resolved by plea"
+    TRIAL = "Cases resolved by trial"
+    INACTIVE = "Cases marked as inactive, but not closed"
+    PENDING = "Pending cases"
 
 
 # Violations Filed Resulting in Discipline
