@@ -268,14 +268,13 @@ metric_pipelines:
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION
     region: us-west1
 
-  # TODO(#17948): Re-enable oz population metrics once testing for secondary raw data import is completed.
   # Full US_OZ calculations with no time limit
-#  - pipeline: population_span_metrics
-#    job_name: full-us-oz-population-span-metrics
-#    state_code: US_OZ
-#    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
-#    region: us-west3
-#    staging_only: True
+  - pipeline: population_span_metrics
+    job_name: full-us-oz-population-span-metrics
+    state_code: US_OZ
+    metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
+    region: us-west3
+    staging_only: True
 
 supplemental_dataset_pipelines:
   # TODO(#16661) Delete this once products are no longer reading from legacy US_ID infrastructure
