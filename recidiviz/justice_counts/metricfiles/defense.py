@@ -94,6 +94,6 @@ DEFENSE_METRIC_FILES = [
     ),
     MetricFile(
         canonical_filename="complaints_sustained",
-        definition=defense.complaints,
+        definition=defense.client_complaints_sustained,
     ),
 ]

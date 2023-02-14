@@ -70,3 +70,15 @@ class DefenseVacantStaffIncludesExcludes(enum.Enum):
     INVESTIGATIVE = "Vacant investigative staff positions"
     UNKNOWN = "Vacant staff positions of unknown type"
     FILLED = "Filled positions"
+
+
+# Complaints
+class DefenseComplaintsIncludesExcludes(enum.Enum):
+    UPHELD = "Complaints in criminal cases that were upheld or substantiated during the time period"
+    RESULT_IN_PUNISHMENT = "Complaints in criminal cases resulting in punishment (e.g., reprimand, disbarment) during the time period"
+    UNSUBSTANTIATED = (
+        "Complaints in criminal cases that were unsubstantiated during the time period"
+    )
+    PENDING = "Complaints in criminal cases pending resolution"
+    INFORMAL = "Complaints in criminal cases submitted informally or not in writing"
+    DUPLICATE = "Duplicate complaints in criminal cases"

@@ -34,6 +34,7 @@ from recidiviz.justice_counts.includes_excludes.common import (
 )
 from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseAdministrativeStaffIncludesExcludes,
+    DefenseComplaintsIncludesExcludes,
     DefenseFundingIncludesExcludes,
     DefenseInvestigativeStaffIncludesExcludes,
     DefenseLegalStaffIncludesExcludes,
@@ -234,23 +235,21 @@ cases_disposed = MetricDefinition(
     ],
 )
 
-complaints = MetricDefinition(
+client_complaints_sustained = MetricDefinition(
     system=System.DEFENSE,
     metric_type=MetricType.COMPLAINTS_SUSTAINED,
     category=MetricCategory.FAIRNESS,
-    display_name="Client Complaints against Counsel Sustained",
-    description="Measures the number of complaints filed against attorneys in your office that are ultimately sustained.",
-    definitions=[
-        Definition(
-            term="Complaint",
-            definition="One case that represents one or more acts committed by the same attorney, or group of attorneys in the same case. Record complaints filed with the office or the state.",
-        ),
-        Definition(
-            term="Sustained",
-            definition="Found to be supported by the evidence, and may or may not result in disciplinary action.",
-        ),
-    ],
+    display_name="Client Complaints Sustained",
+    description="The number of formal, written complaints made against criminal defense counsel that were subsequently sustained by the disciplinary board.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Count only complaints filed against counsel.",
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseComplaintsIncludesExcludes,
+        excluded_set={
+            DefenseComplaintsIncludesExcludes.DUPLICATE,
+            DefenseComplaintsIncludesExcludes.INFORMAL,
+            DefenseComplaintsIncludesExcludes.PENDING,
+            DefenseComplaintsIncludesExcludes.UNSUBSTANTIATED,
+        },
+    ),
 )
