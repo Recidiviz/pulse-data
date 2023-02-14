@@ -41,6 +41,8 @@ output:
                         - "Migration - New Offense"
                       StateSupervisionViolationType.MISDEMEANOR:
                         - "Misdemeanor"
+                        # TODO(#18646) these codes are no longer used, but there are still 8 instances in our data. We probably
+                        # do not want to ingest these as charged
                         - "Misdemeanor (Not Charged)"
                       StateSupervisionViolationType.TECHNICAL:
                         - "Technical"

@@ -68,7 +68,7 @@ columns:
       - value: 62
         description: Warrant Requested
   - name: Cis_4009_Violation_Type_Cd
-    description: The type of violation
+    description: The type of violation. Note that I believe the "Not Charged" types are no longer used (see \#18646).
     known_values:
       - value: 63
         description: Technical
