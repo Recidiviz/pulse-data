@@ -52,11 +52,11 @@ _FIXTURE_PATH = os.path.abspath(
         "./fixtures/",
     )
 )
-_PARAMETER_USER_HASH = "\\x666c662b7475785a46754d4f54675a663861495a69446a2f6134437734744977526c3757637056644341303d"
-_ADD_USER_HASH = "\\x3044315769656b55445542686a566e71794e626277474a5032786c6c304353397666736e5072786e6d53453d"
-_LEADERSHIP_USER_HASH = "\\x714b544361566d576d6a71624a583053636b45303832514a4b7636734534572f624b7a6648515a4a4e596b3d"
-_LINE_STAFF_USER_HASH = "\\x6f757141636f336f2f65635973634675302f4d45556a645572756545724e4c32504372596d7373347638773d"
-_USER_HASH = "\\x6a382b704339726333353358577434783166672b334b6d395451747235584d5a4d543846726c3337482f6f3d"
+_PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
+_ADD_USER_HASH = "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
+_LEADERSHIP_USER_HASH = "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
+_LINE_STAFF_USER_HASH = "ouqAco3o/ecYscFu0/MEUjdUrueErNL2PCrYmss4v8w="
+_USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
 
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
@@ -123,11 +123,10 @@ class AuthEndpointTests(TestCase):
             self.users = flask.url_for("auth_endpoint_blueprint.users")
             self.user = flask.url_for(
                 "auth_endpoint_blueprint.users",
-                email="parameter@domain.org",
+                user_hash=_PARAMETER_USER_HASH,
             )
             self.add_user = flask.url_for(
                 "auth_endpoint_blueprint.add_user",
-                email="parameter@domain.org",
             )
             self.upload_roster = lambda state_code, role=None: flask.url_for(
                 "auth_endpoint_blueprint.upload_roster",
@@ -135,19 +134,19 @@ class AuthEndpointTests(TestCase):
             )
             self.update_user = flask.url_for(
                 "auth_endpoint_blueprint.update_user",
-                email="parameter@domain.org",
+                user_hash=_PARAMETER_USER_HASH,
             )
             self.update_user_permissions = flask.url_for(
                 "auth_endpoint_blueprint.update_user_permissions",
-                email="user@domain.org",
+                user_hash=_USER_HASH,
             )
             self.delete_user_permissions = flask.url_for(
                 "auth_endpoint_blueprint.delete_user_permissions",
-                email="user@domain.org",
+                user_hash=_USER_HASH,
             )
             self.delete_user = flask.url_for(
                 "auth_endpoint_blueprint.delete_user",
-                email="parameter@domain.org",
+                user_hash=_PARAMETER_USER_HASH,
             )
             self.states = flask.url_for("auth_endpoint_blueprint.states")
             self.add_state_role = lambda state_code, role: flask.url_for(
@@ -892,6 +891,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_MO",
+                    "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "role": "leadership_role",
                     "district": "1, 2",
@@ -1015,7 +1015,7 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
         )
         self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
-        error_message = "User not found for email address parameter@domain.org"
+        error_message = f"User not found for email address hash {_PARAMETER_USER_HASH}, please file a bug"
         self.assertEqual(error_message, response.data.decode("UTF-8"))
 
     def test_add_user_bad_request(self) -> None:
@@ -1024,6 +1024,7 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
             json={
                 "stateCode": None,
+                "emailAddress": "parameter@domain.org",
                 "externalId": "XYZ",
                 "role": "leadership_role",
                 "district": "D1",
@@ -1038,6 +1039,7 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
             json={
                 "stateCode": "US_ID",
+                "emailAddress": "parameter@domain.org",
                 "externalId": "XYZ",
                 "role": {"A": "B"},
                 "district": "D1",
@@ -1055,6 +1057,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_ID",
+                    "emailAddress": "parameter@domain.org",
                     "externalId": "XYZ",
                     "role": "leadership_role",
                     "district": "D1",
@@ -1083,6 +1086,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_ND",
+                    "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "role": "leadership_role",
                     "district": None,
@@ -1109,6 +1113,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
+                    "emailAddress": "parameter@domain.org",
                     "externalId": None,
                     "role": "leadership_role",
                     "district": "40",
@@ -1428,6 +1433,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_CO",
+                    "emailAddress": "parameter@domain.org",
                     "role": "leadership_role",
                     "reason": "test",
                 },
@@ -1478,6 +1484,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
+                    "emailAddress": "parameter@domain.org",
                     "externalId": "Updated ID",
                     "firstName": "Updated",
                     "reason": "test",
@@ -1529,6 +1536,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "externalId": "Updated ID",
+                    "emailAddress": "parameter@domain.org",
                     "firstName": "Updated",
                     "reason": "test",
                 },
@@ -1635,7 +1643,9 @@ class AuthEndpointTests(TestCase):
                     "reason": "test",
                 },
             )
-            self.assertEqual(HTTPStatus.OK, update_tn_access.status_code)
+            self.assertEqual(
+                HTTPStatus.OK, update_tn_access.status_code, update_tn_access.data
+            )
             self.assertReasonLog(
                 log.output,
                 "updating permissions for user user@domain.org with reason: test",
@@ -1648,7 +1658,9 @@ class AuthEndpointTests(TestCase):
                     "reason": "test",
                 },
             )
-            self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
+            self.assertEqual(
+                HTTPStatus.BAD_REQUEST, wrong_type.status_code, update_tn_access.data
+            )
             expected_response = [
                 {
                     "allowedSupervisionLocationIds": "",
@@ -1913,6 +1925,7 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
+                    "emailAddress": "parameter@domain.org",
                     "role": "line_staff_user",
                     "reason": "test",
                 },

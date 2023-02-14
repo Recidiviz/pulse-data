@@ -130,7 +130,7 @@ const StateUserPermissionsView = (): JSX.Element => {
       return;
     }
     const updatedUser = await updateUser({
-      email: userToEnable.emailAddress,
+      userHash: userToEnable.userHash,
       stateCode: userToEnable.stateCode,
       reason,
       blocked: false,
@@ -161,7 +161,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         // update user info
         if (role || district || externalId || firstName || lastName) {
           const updatedUser = await updateUser({
-            email: row.emailAddress,
+            userHash: row.userHash,
             stateCode: row.stateCode,
             externalId,
             role,
@@ -176,7 +176,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         // delete user's custom permissions
         if (useCustomPermissions === false) {
           const deletedPermissions = await deleteCustomUserPermissions(
-            row.emailAddress,
+            row.userHash,
             reason
           );
           await checkResponse(deletedPermissions);
@@ -195,7 +195,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         );
         if (useCustomPermissions) {
           const updatedPermissions = await updateUserPermissions(
-            row.emailAddress,
+            row.userHash,
             reason,
             canAccessLeadershipDashboard,
             canAccessCaseTriage,
@@ -215,7 +215,7 @@ const StateUserPermissionsView = (): JSX.Element => {
   const onRevokeAccess = async (reason: string) => {
     const results: Array<Promise<Response>> = [];
     selectedRows.forEach((row) => {
-      results.push(blockUser(row.emailAddress, reason));
+      results.push(blockUser(row.userHash, reason));
     });
     finishPromises(results, `Blocked`);
   };

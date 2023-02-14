@@ -79,6 +79,7 @@ interface StateUserPermissionsResponse {
   role: string;
   district: string;
   featureVariants: Record<string, boolean>;
+  userHash: string;
 }
 
 interface StateUserPermissionsRequest extends StateUserPermissionsResponse {
