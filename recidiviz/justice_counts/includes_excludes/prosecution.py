@@ -250,6 +250,20 @@ class ProsecutionCasesResolvedAtTrialIncludesExcludes(enum.Enum):
     MISDEMEANOR = "Cases with a leading misdemeanor charge resolved at trial"
 
 
+# Cases Diverted
+
+
+class ProsecutionCasesDivertedOrDeferredIncludesExcludes(enum.Enum):
+    COMPLETION = "Cases deferred for completion of treatment"
+    RESTITUTION = "Cases deferred for restitution payment"
+    COMMUNITY_SERVICE = (
+        "Cases deferred for completion of community service or schooling"
+    )
+    SPECIALTY_COURT = "Cases diverted to a specialty court"
+    MEDIATION = "Cases diverted to mediation or alternative dispute resolution"
+    RETAINED = "Cases diverted or deferred and retained as open cases by the office"
+
+
 # Violations Filed Resulting in Discipline
 
 

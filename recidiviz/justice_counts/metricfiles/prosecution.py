@@ -16,14 +16,12 @@
 # =============================================================================
 """Metricfile objects used for prosecution metrics."""
 
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     CaseSeverityType,
     DispositionType,
+    DivertedCaseSeverityType,
     FundingType,
     ReferredCaseSeverityType,
     StaffType,
@@ -83,6 +81,28 @@ PROSECUTION_METRIC_FILES = [
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
+        canonical_filename="cases_diverted",
+        definition=prosecution.cases_diverted_or_deferred,
+    ),
+    MetricFile(
+        canonical_filename="cases_diverted_by_type",
+        definition=prosecution.cases_diverted_or_deferred,
+        disaggregation=DivertedCaseSeverityType,
+        disaggregation_column_name="case_severity",
+    ),
+    MetricFile(
+        canonical_filename="cases_diverted_by_race",
+        definition=prosecution.cases_diverted_or_deferred,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
+    ),
+    MetricFile(
+        canonical_filename="cases_diverted_by_biological_sex",
+        definition=prosecution.cases_diverted_or_deferred,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
+    ),
+    MetricFile(
         canonical_filename="cases_declined",
         definition=prosecution.cases_declined,
     ),
@@ -93,10 +113,10 @@ PROSECUTION_METRIC_FILES = [
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
-        canonical_filename="cases_declined_by_gender",
+        canonical_filename="cases_declined_by_biological_sex",
         definition=prosecution.cases_declined,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="cases_declined_by_race",
