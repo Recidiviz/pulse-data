@@ -170,6 +170,11 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                         incarceration_period,
                         incarceration_period_to_judicial_district,
                     ),
+                    custody_level=incarceration_period.custody_level,
+                    custody_level_raw_text=incarceration_period.custody_level_raw_text,
+                    housing_unit=incarceration_period.housing_unit,
+                    housing_unit_type=incarceration_period.housing_unit_type,
+                    housing_unit_type_raw_text=incarceration_period.housing_unit_type_raw_text,
                 )
             )
 

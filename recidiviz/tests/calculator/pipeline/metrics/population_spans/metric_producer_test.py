@@ -50,6 +50,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_super
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitType,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import (
@@ -126,6 +128,11 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             included_in_state_population=True,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            housing_unit="COUNTY JAIL",
+            housing_unit_type=StateIncarcerationPeriodHousingUnitType.GENERAL,
+            housing_unit_type_raw_text="US XX COUNTY JAIL",
+            custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
+            custody_level_raw_text="MEDIUM",
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -157,6 +164,11 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
                     judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
+                    custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
+                    custody_level_raw_text="MEDIUM",
+                    housing_unit="COUNTY JAIL",
+                    housing_unit_type=StateIncarcerationPeriodHousingUnitType.GENERAL,
+                    housing_unit_type_raw_text="US XX COUNTY JAIL",
                 )
             ],
         )

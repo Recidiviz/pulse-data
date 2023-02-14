@@ -32,6 +32,8 @@ from recidiviz.calculator.pipeline.utils.identifier_models import (
 )
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodCustodyLevel,
+    StateIncarcerationPeriodHousingUnitType,
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_shared_enums import StateCustodialAuthority
@@ -113,6 +115,25 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
     # Area of jurisdictional coverage of the court that sentenced the person to this
     # incarceration
     judicial_district_code: Optional[str] = attr.ib(default=None)
+
+    # The level of staff supervision and security employed for a person held in custody
+    custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = attr.ib(
+        default=None
+    )
+
+    # The raw text value of the incarceration period custody level
+    custody_level_raw_text: Optional[str] = attr.ib(default=None)
+
+    # The housing unit within the facility in which the person currently resides
+    housing_unit: Optional[str] = attr.ib(default=None)
+
+    # Where the person is currently being housed regardless of technical assignment/custody level
+    housing_unit_type: Optional[StateIncarcerationPeriodHousingUnitType] = attr.ib(
+        default=None
+    )
+
+    # The raw text value of the incarceration period housing unit type
+    housing_unit_type_raw_text: Optional[str] = attr.ib(default=None)
 
 
 @attr.s
