@@ -49,28 +49,50 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
             MAX(CASE WHEN sentence_source IN ('SENTENCE','DIVERSION') AND sentence_status != 'IN' THEN 1 ELSE 0 END) AS has_TN_sentence,
             MAX(CASE WHEN expiration_date IS NULL AND full_expiration_date IS NULL THEN 1 ELSE 0 END) AS missing_at_least_1_exp_date,
             max(missing_offense) AS missing_offense_ever,
-            max(case when missing_offense = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_missing_offenses_expired,
             max(drug_offense) AS drug_offense_ever,
             max(domestic_flag) AS domestic_flag_ever,
-            max(case when domestic_flag = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_domestic_offenses_expired,
             max(sex_offense_flag) AS sex_offense_flag_ever,
-            max(case when sex_offense_flag = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_sex_offenses_expired,
             max(assaultive_offense_flag) AS assaultive_offense_flag_ever,
-            max(case when assaultive_offense_flag = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_assaultive_offenses_expired,
             max(young_victim_flag) AS young_victim_flag_ever,
-            max(case when young_victim_flag = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_young_victim_offenses_expired,
             #max(dui_last_5_years) AS dui_last_5_years_flag,
             max(case when DATE_DIFF(CURRENT_DATE,offense_date,YEAR) <5 AND dui_flag = 1 THEN 1 ELSE 0 END) as dui_last_5_years_flag,
             max(maybe_assaultive_flag) AS maybe_assaultive_flag_ever,
-            max(case when maybe_assaultive_flag = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_maybe_assaultive_offenses_expired,
             max(unknown_offense_flag) AS unknown_offense_flag_ever,
             max(homicide_flag) AS homicide_flag_ever,
-            max(case when unknown_offense_flag = 1 then (case when expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) then 1 else 0 end) end) AS all_unknown_offenses_expired,
+            /*
+            If there's an excluded offense then we consider whether the offense expired 10+ years ago or not. LOGICAL_AND checks if all of them did
+            If the sentence isn't for an excluded offense, then set to TRUE 
+            */
+            LOGICAL_AND(CASE WHEN missing_offense = 1 
+                            THEN expired_over_10_years_ago
+                            ELSE TRUE END) AS all_missing_offenses_expired,
+            LOGICAL_AND(CASE WHEN domestic_flag = 1 
+                            THEN expired_over_10_years_ago 
+                            ELSE TRUE END) AS all_domestic_offenses_expired,
+            LOGICAL_AND(CASE WHEN sex_offense_flag = 1 
+                            THEN expired_over_10_years_ago
+                            ELSE TRUE END) AS all_sex_offenses_expired,
+            LOGICAL_AND(CASE WHEN assaultive_offense_flag = 1 
+                            THEN expired_over_10_years_ago
+                        ELSE TRUE END) AS all_assaultive_offenses_expired,
+            LOGICAL_AND(CASE WHEN young_victim_flag = 1 
+                            THEN expired_over_10_years_ago 
+                        ELSE TRUE END) AS all_young_victim_offenses_expired,
+            LOGICAL_AND(CASE WHEN maybe_assaultive_flag = 1 
+                            THEN expired_over_10_years_ago
+                        ELSE TRUE END) AS all_maybe_assaultive_offenses_expired,
+            LOGICAL_AND(CASE WHEN unknown_offense_flag = 1 
+                            THEN expired_over_10_years_ago 
+                        ELSE TRUE END) AS all_unknown_offenses_expired,
             max(case when domestic_flag = 1 OR sex_offense_flag = 1 OR assaultive_offense_flag = 1 OR dui_flag = 1 OR young_victim_flag = 1 OR maybe_assaultive_flag = 1 then expiration_date END) AS latest_expiration_date_for_excluded_offenses,
             /* If there are any lifetime supervision or sentence flags, across all sentences, then no_lifetime_flag = 0 */
             min(COALESCE(no_lifetime_flag,1)) AS no_lifetime_flag,
             ARRAY_AGG(offense_description IGNORE NULLS) AS lifetime_offenses,
-        FROM `{project_id}.{analyst_dataset}.us_tn_cr_raw_sentence_preprocessing_materialized`
+        FROM (
+            SELECT *, 
+                expiration_date <= DATE_SUB(current_date('US/Eastern'),INTERVAL 10 YEAR) AS expired_over_10_years_ago
+            FROM `{project_id}.{analyst_dataset}.us_tn_cr_raw_sentence_preprocessing_materialized`    
+        ) 
         WHERE sentence_source != 'PriorRecord'
         GROUP BY 1
     ),
@@ -177,35 +199,43 @@ US_TN_SENTENCE_LOGIC_QUERY_TEMPLATE = """
                              COALESCE(young_victim_flag_prior,0)) = 1 THEN 1
                 WHEN GREATEST(domestic_flag_ever, sex_offense_flag_ever, assaultive_offense_flag_ever, maybe_assaultive_flag_ever, unknown_offense_flag_ever, missing_offense_ever, young_victim_flag_ever) = 1
                 THEN (
-                    CASE WHEN LEAST(COALESCE(all_domestic_offenses_expired,1), 
-                                    COALESCE(all_sex_offenses_expired,1),
-                                    COALESCE(all_assaultive_offenses_expired,1),
-                                    COALESCE(all_maybe_assaultive_offenses_expired,1),
-                                    COALESCE(all_unknown_offenses_expired,1),
-                                    COALESCE(all_missing_offenses_expired,1),
-                                    COALESCE(all_young_victim_offenses_expired,1)
-                                    ) = 0 
-                        THEN 1
-                        ELSE 0
+                    -- check if all ineligible offenses in the past are over 10 years expired OR that the flag is irrelevant
+                    CASE WHEN COALESCE(all_domestic_offenses_expired,TRUE)
+                              AND COALESCE(all_sex_offenses_expired,TRUE)
+                              AND COALESCE(all_assaultive_offenses_expired,TRUE)
+                              AND COALESCE(all_maybe_assaultive_offenses_expired,TRUE)
+                              AND COALESCE(all_unknown_offenses_expired,TRUE)
+                              AND COALESCE(all_missing_offenses_expired,TRUE)
+                              AND COALESCE(all_young_victim_offenses_expired,TRUE)
+                        -- if all are expired, or the flag is irrelevant, then dont need discretion
+                        THEN 0
+                        ELSE 1
                         END
                 )
                 ELSE 0 END as eligible_offense_discretion, 
              -- Want 1 Offense Type Eligibility Flag that takes on values 0, 1, or 2. 0 is ineligible, 1 is C1, and 2 is C2
              
              /* These flags are retained to later be able to pull an array of lifetime offenses that are expired to display */   
-            CASE WHEN GREATEST(domestic_flag,domestic_flag_prior) = 0 AND domestic_flag_ever = 1 AND all_domestic_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(domestic_flag,0),
+                               COALESCE(domestic_flag_prior,0)) = 0 AND domestic_flag_ever = 1 AND all_domestic_offenses_expired THEN 'Eligible - Expired'
                  END AS domestic_flag_eligibility,
-            CASE WHEN GREATEST(sex_offense_flag,sex_offense_flag_prior) = 0 AND sex_offense_flag_ever = 1 AND all_sex_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(sex_offense_flag,0),
+                              COALESCE(sex_offense_flag_prior,0)) = 0 AND sex_offense_flag_ever = 1 AND all_sex_offenses_expired THEN 'Eligible - Expired'
                  END AS sex_offense_flag_eligibility,
-            CASE WHEN GREATEST(assaultive_offense_flag,assaultive_offense_flag_prior) = 0 AND assaultive_offense_flag_ever = 1 AND all_assaultive_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(assaultive_offense_flag,0),
+                                COALESCE(assaultive_offense_flag_prior,0)) = 0 AND assaultive_offense_flag_ever = 1 AND all_assaultive_offenses_expired THEN 'Eligible - Expired'
                  END AS assaultive_offense_flag_eligibility,
-            CASE WHEN GREATEST(maybe_assaultive_flag,maybe_assaultive_flag_prior) = 0 AND maybe_assaultive_flag_ever = 1 AND all_maybe_assaultive_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(maybe_assaultive_flag,0),
+                               COALESCE(maybe_assaultive_flag_prior,0)) = 0 AND maybe_assaultive_flag_ever = 1 AND all_maybe_assaultive_offenses_expired THEN 'Eligible - Expired'
                  END AS maybe_assaultive_flag_eligibility,
-            CASE WHEN GREATEST(unknown_offense_flag,unknown_offense_flag_prior) = 0 AND unknown_offense_flag_ever = 1 AND all_unknown_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(unknown_offense_flag,0),
+                               COALESCE(unknown_offense_flag_prior,0)) = 0 AND unknown_offense_flag_ever = 1 AND all_unknown_offenses_expired THEN 'Eligible - Expired'
                  END AS unknown_offense_flag_eligibility,
-            CASE WHEN GREATEST(missing_offense,missing_offense_prior) = 0 AND missing_offense_ever = 1 AND all_missing_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(missing_offense,0),
+                               COALESCE(missing_offense_prior,0)) = 0 AND missing_offense_ever = 1 AND all_missing_offenses_expired THEN 'Eligible - Expired'
                  END AS missing_offense_flag_eligibility,
-            CASE WHEN GREATEST(young_victim_flag,young_victim_flag_prior) = 0 AND young_victim_flag_ever = 1 AND all_young_victim_offenses_expired = 1 THEN 'Eligible - Expired'
+            CASE WHEN GREATEST(COALESCE(young_victim_flag,0),
+                               COALESCE(young_victim_flag_prior,0)) = 0 AND young_victim_flag_ever = 1 AND all_young_victim_offenses_expired THEN 'Eligible - Expired'
                  END AS young_victim_flag_eligibility,
     FROM all_sentences 
     FULL OUTER JOIN prior_sentences 
