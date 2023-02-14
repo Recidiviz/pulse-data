@@ -119,6 +119,9 @@ def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
             # NOTE: This value must match the default value for temp_location in
             # recidiviz/calculator/pipeline/utils/legacy_pipeline_args_utils.py
             "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
+            # NOTE: Dataflow failures are usually persistent and retrying is expensive,
+            # so we opt not to retry any Dataflow pipelines.
+            "retries": 0,
         }
     )
 
