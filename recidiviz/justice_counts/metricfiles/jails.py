@@ -19,15 +19,11 @@
 from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
-    PopulationType,
     ReleaseType,
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import jails
 
@@ -67,46 +63,46 @@ JAILS_METRIC_FILES = [
         definition=jails.readmissions,
     ),
     MetricFile(
-        canonical_filename="pre_adjudication_admissions",
+        canonical_filename="pre_adj_admissions",
         definition=jails.pre_adjudication_admissions,
     ),
     MetricFile(
-        canonical_filename="pre_adjudication_admissions_by_type",
+        canonical_filename="pre_adj_admissions_by_type",
         definition=jails.pre_adjudication_admissions,
         disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
-        canonical_filename="post_adjudication_admissions",
+        canonical_filename="post_adj_admissions",
         definition=jails.post_adjudication_admissions,
     ),
     MetricFile(
-        canonical_filename="post_adjudication_admissions_by_type",
+        canonical_filename="post_adj_admissions_by_type",
         definition=jails.post_adjudication_admissions,
         disaggregation=OffenseType,
         disaggregation_column_name="offense_type",
     ),
     MetricFile(
-        canonical_filename="population",
-        definition=jails.average_daily_population,
+        canonical_filename="pre_adj_population",
+        definition=jails.pre_adjudication_daily_population,
     ),
     MetricFile(
-        canonical_filename="population_by_type",
-        definition=jails.average_daily_population,
-        disaggregation=PopulationType,
-        disaggregation_column_name="population_type",
+        canonical_filename="pre_adj_population_by_type",
+        definition=jails.pre_adjudication_daily_population,
+        disaggregation=OffenseType,
+        disaggregation_column_name="offense_type",
     ),
     MetricFile(
-        canonical_filename="population_by_race",
-        definition=jails.average_daily_population,
+        canonical_filename="pre_adj_population_by_race",
+        definition=jails.pre_adjudication_daily_population,
         disaggregation=RaceAndEthnicity,
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="population_by_gender",
-        definition=jails.average_daily_population,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        canonical_filename="pre_adj_population_by_sex",
+        definition=jails.pre_adjudication_daily_population,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="releases",
