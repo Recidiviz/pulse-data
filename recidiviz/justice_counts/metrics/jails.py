@@ -522,6 +522,103 @@ pre_adjudication_daily_population = MetricDefinition(
     ],
 )
 
+post_adjudication_daily_population = MetricDefinition(
+    system=System.JAILS,
+    metric_type=MetricType.POST_ADJUDICATION_POPULATION,
+    category=MetricCategory.POPULATIONS,
+    display_name="Post-adjudication Daily Population",
+    description="A single day count of the number of people incarcerated in the agency’s jurisdiction who have been adjudicated and convicted.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    # TODO(#18071) implement reused includes/excludes
+    includes_excludes=IncludesExcludesSet(
+        members=PostAdjudicationJailPopulation,
+        excluded_set={
+            PostAdjudicationJailPopulation.AWAITING_ARRAIGNMENT,
+            PostAdjudicationJailPopulation.UNPAID_BAIL,
+            PostAdjudicationJailPopulation.DENIAL_OF_BAIL,
+            PostAdjudicationJailPopulation.REVOCATION_OF_BAIL,
+            PostAdjudicationJailPopulation.PENDING_ASSESSMENT,
+            PostAdjudicationJailPopulation.TRANSFERRED_TO_HOSPITAL,
+            PostAdjudicationJailPopulation.PENDING_OUTCOME,
+            PostAdjudicationJailPopulation.REVOCATION_PRETRIAL_RELEASE,
+            PostAdjudicationJailPopulation.PRETRIAL_SUPERVISION_SANCTION,
+            PostAdjudicationJailPopulation.US_MARSHALS_SERVICE,
+            PostAdjudicationJailPopulation.TRIBAL_NATION,
+            PostAdjudicationJailPopulation.FAILURE_TO_APPEAR,
+            PostAdjudicationJailPopulation.FAILURE_TO_PAY,
+            PostAdjudicationJailPopulation.HELD_FOR_OTHER_STATE,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=OffenseType,
+            required=False,
+            dimension_to_includes_excludes={
+                OffenseType.PERSON: IncludesExcludesSet(
+                    members=PersonOffenseIncludesExcludes,
+                    excluded_set={
+                        PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                    },
+                ),
+                OffenseType.PROPERTY: IncludesExcludesSet(
+                    members=PropertyOffenseIncludesExcludes,
+                    excluded_set={
+                        PropertyOffenseIncludesExcludes.ROBBERY,
+                    },
+                ),
+                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
+                    members=PublicOrderOffenseIncludesExcludes,
+                    excluded_set={
+                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                    },
+                ),
+                OffenseType.DRUG: IncludesExcludesSet(
+                    members=DrugOffenseIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                OffenseType.PERSON: "A single day count of the number of people incarcerated post-adjudication whose most serious offense was a crime against a person.",
+                OffenseType.PROPERTY: "A single day count of the number of people incarcerated post-adjudication whose most serious offense was a property offense.",
+                OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated post-adjudication whose most serious offense was a public order offense.",
+                OffenseType.DRUG: "A single day count of the number of people incarcerated post-adjudication whose most serious offense was a drug offense.",
+                OffenseType.OTHER: "A single day count of the number of people incarcerated post-adjudication whose most serious offense was for another type of offense that was not a person, property, drug, or public order offense.",
+                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated post-adjudication whose most serious offense was not known.",
+            },
+        ),
+        # TODO(#18071) Implement reused global includes/excludes
+        # TODO(#17579) Implement Y/N Tables
+        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
+        # TODO(#18071) Implement reused global includes/excludes
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=True,
+            dimension_to_description={
+                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
+    ],
+)
+
 releases = MetricDefinition(
     system=System.JAILS,
     metric_type=MetricType.RELEASES,
