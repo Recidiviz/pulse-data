@@ -129,15 +129,14 @@ export const getStateRoleDefaultPermissions = async (): Promise<Response> => {
 export const createNewUser = async (
   request: AddUserRequest
 ): Promise<Response> => {
-  const { emailAddress, ...rest } = request;
   return postAuthWithURLAndBody(
-    `/users/${emailAddress}`,
-    rest as unknown as Record<string, unknown>
+    `/users`,
+    request as unknown as Record<string, unknown>
   );
 };
 
 export const updateUser = async ({
-  email,
+  userHash,
   stateCode,
   externalId,
   role,
@@ -147,7 +146,7 @@ export const updateUser = async ({
   blocked = false,
   reason,
 }: {
-  email: string;
+  userHash: string;
   stateCode: string;
   externalId?: string;
   role?: string;
@@ -157,7 +156,7 @@ export const updateUser = async ({
   blocked?: boolean;
   reason: string;
 }): Promise<Response> => {
-  return patchAuthWithURLAndBody(`/users/${email}`, {
+  return patchAuthWithURLAndBody(`/users/${encodeURIComponent(userHash)}`, {
     stateCode,
     externalId,
     role,
@@ -170,7 +169,7 @@ export const updateUser = async ({
 };
 
 export const updateUserPermissions = async (
-  email: string,
+  userHash: string,
   reason: string,
   canAccessLeadershipDashboard?: boolean,
   canAccessCaseTriage?: boolean,
@@ -178,28 +177,33 @@ export const updateUserPermissions = async (
   routes?: Record<string, boolean>,
   featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
-  return putAuthWithURLAndBody(`/users/${email}/permissions`, {
-    canAccessLeadershipDashboard,
-    canAccessCaseTriage,
-    shouldSeeBetaCharts,
-    routes,
-    featureVariants,
+  return putAuthWithURLAndBody(
+    `/users/${encodeURIComponent(userHash)}/permissions`,
+    {
+      canAccessLeadershipDashboard,
+      canAccessCaseTriage,
+      shouldSeeBetaCharts,
+      routes,
+      featureVariants,
+      reason,
+    }
+  );
+};
+
+export const deleteCustomUserPermissions = async (
+  userHash: string,
+  reason: string
+): Promise<Response> => {
+  return deleteResource(`/users/${encodeURIComponent(userHash)}/permissions`, {
     reason,
   });
 };
 
-export const deleteCustomUserPermissions = async (
-  email: string,
-  reason: string
-): Promise<Response> => {
-  return deleteResource(`/users/${email}/permissions`, { reason });
-};
-
 export const blockUser = async (
-  email: string,
+  userHash: string,
   reason: string
 ): Promise<Response> => {
-  return deleteResource(`/users/${email}`, { reason });
+  return deleteResource(`/users/${encodeURIComponent(userHash)}`, { reason });
 };
 
 export const createStateRolePermissions = async (

@@ -29,8 +29,10 @@ _UNKNOWN_USER = "unknown"
 _REASON_KEY = "reason"
 
 
-def generate_user_hash(email: str) -> bytes:
-    return base64.b64encode(hashlib.sha256(email.encode("utf-8")).digest())
+def generate_user_hash(email: str) -> str:
+    return base64.b64encode(hashlib.sha256(email.encode("utf-8")).digest()).decode(
+        "utf-8"
+    )
 
 
 def format_user_info(user: Any) -> dict[str, str]:

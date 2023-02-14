@@ -65,6 +65,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
     UserOverride,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting.email_reporting_utils import validate_email_address
@@ -343,14 +344,33 @@ def dashboard_user_restrictions() -> Response:
     )
 
 
-@auth_endpoint_blueprint.route("/users", defaults={"email": None}, methods=["GET"])
-@auth_endpoint_blueprint.route("/users/<email>", methods=["GET"])
+def _lookup_email_from_hash(session: Session, user_hash: str) -> Optional[str]:
+    return (
+        session.query(
+            func.coalesce(UserOverride.email_address, Roster.email_address).label(
+                "email_address"
+            ),
+        )
+        .select_from(Roster)
+        .join(
+            UserOverride,
+            UserOverride.email_address == Roster.email_address,
+            full=True,
+        )
+        .filter(func.coalesce(UserOverride.user_hash, Roster.user_hash) == user_hash)
+        .scalar()
+    )
+
+
+@auth_endpoint_blueprint.route("/users", defaults={"user_hash": None}, methods=["GET"])
+# "path" type annotation allows parameters containing slashes, which the user hash might
+@auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["GET"])
 @requires_gae_auth
-def users(email: Optional[str] = None) -> Tuple[Union[str, Response], HTTPStatus]:
+def users(user_hash: Optional[str] = None) -> Tuple[Union[str, Response], HTTPStatus]:
     """
-    This endpoint is accessed via the admin panel. It queries data from four Case Triage CloudSQL instance tables
-    (roster, user_override, state_role_permissions, and permissions_overrides) in order to account for overrides to
-    a user's roster data or permissions.
+    This endpoint is accessed via the admin panel and our auth0 actions. It queries data from four
+    Case Triage CloudSQL instance tables (roster, user_override, state_role_permissions, and
+    permissions_overrides) in order to account for overrides to a user's roster data or permissions.
 
     Returns: JSON string with accurate information about state user/users and their permissions
     """
@@ -432,29 +452,29 @@ def users(email: Optional[str] = None) -> Tuple[Union[str, Response], HTTPStatus
             )
             user_info = (
                 query.all()
-                if email is None
+                if user_hash is None
                 else query.where(
-                    func.coalesce(UserOverride.email_address, Roster.email_address)
-                    == email,
+                    func.coalesce(UserOverride.user_hash, Roster.user_hash)
+                    == user_hash,
                 ).one()
             )
             permissions = (
                 jsonify(format_user_info(user_info))
-                if email is not None
+                if user_hash is not None
                 else jsonify([format_user_info(user) for user in user_info])
             )
             return (permissions, HTTPStatus.OK)
 
         except sqlalchemy.orm.exc.NoResultFound:
             return (
-                f"User not found for email address {email}",
+                f"User not found for email address hash {user_hash}, please file a bug",
                 HTTPStatus.NOT_FOUND,
             )
 
 
-@auth_endpoint_blueprint.route("/users/<email>", methods=["POST"])
+@auth_endpoint_blueprint.route("/users", methods=["POST"])
 @requires_gae_auth
-def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
+def add_user() -> Union[tuple[Response, int], tuple[str, int]]:
     """Adds a new user to UserOverride and returns the created user.
     Returns an error message if a user already exists with that email address.
     """
@@ -467,8 +487,10 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
             )
             if user_dict["state_code"] is None:
                 raise ValueError("Request is missing the state_code param")
+            if user_dict["email_address"] is None:
+                raise ValueError("Request is missing the email_address param")
             # Enforce casing for columns where we have a preference.
-            user_dict["email_address"] = email.lower()
+            user_dict["email_address"] = user_dict["email_address"].lower()
             user_dict["state_code"] = user_dict["state_code"].upper()
             user_dict["external_id"] = (
                 user_dict["external_id"].upper()
@@ -477,7 +499,9 @@ def add_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
             )
             user_dict["user_hash"] = generate_user_hash(user_dict["email_address"])
             if (
-                session.query(Roster).filter(Roster.email_address == email).first()
+                session.query(Roster)
+                .filter(Roster.email_address == user_dict["email_address"])
+                .first()
                 is not None
             ):
                 return (
@@ -929,9 +953,10 @@ def delete_state_role(
         return (f"{error}", HTTPStatus.BAD_REQUEST)
 
 
-@auth_endpoint_blueprint.route("/users/<email>", methods=["PATCH"])
+# "path" type annotation allows parameters containing slashes, which the user hash might
+@auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["PATCH"])
 @requires_gae_auth
-def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
+def update_user(user_hash: str) -> Union[tuple[Response, int], tuple[str, int]]:
     """Edits an existing user's info by adding or updating an entry for that user in UserOverride."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
@@ -941,17 +966,21 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
             )
             if "state_code" not in user_dict:
                 raise ValueError("Must provide a state_code when updating a user")
+
+            if (email := _lookup_email_from_hash(session, user_hash)) is None:
+                raise ValueError(
+                    f"User not found for email address hash {user_hash}, please file a bug"
+                )
+
             user_dict["email_address"] = email
+            user_dict["user_hash"] = user_hash
             log_reason(user_dict, f"updating user {user_dict['email_address']}")
             if (
                 session.query(UserOverride)
-                .filter(UserOverride.email_address == email)
+                .filter(UserOverride.user_hash == user_hash)
                 .first()
                 is None
             ):
-                user_dict["user_hash"] = generate_user_hash(
-                    user_dict["email_address"].lower()
-                )
                 user = UserOverride(**user_dict)
                 session.add(user)
                 session.commit()
@@ -972,12 +1001,12 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
                 )
             session.execute(
                 Update(UserOverride)
-                .where(UserOverride.email_address == email)
+                .where(UserOverride.user_hash == user_hash)
                 .values(user_dict)
             )
             updated_user = (
                 session.query(UserOverride)
-                .filter(UserOverride.email_address == email)
+                .filter(UserOverride.user_hash == user_hash)
                 .first()
             )
             return (
@@ -1002,16 +1031,18 @@ def update_user(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
         )
 
 
-@auth_endpoint_blueprint.route("/users/<email>/permissions", methods=["PUT"])
+# "path" type annotation allows parameters containing slashes, which the user hash might
+@auth_endpoint_blueprint.route("/users/<path:user_hash>/permissions", methods=["PUT"])
 @requires_gae_auth
-def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str, int]]:
+def update_user_permissions(
+    user_hash: str,
+) -> Union[tuple[Response, int], tuple[str, int]]:
     """Gives a state user custom permissions by adding or updating an entry for that user in Permissions Override."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
         with SessionFactory.using_database(database_key) as session:
             request_json = assert_type(request.json, dict)
             user_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
-            user_dict["user_email"] = email
             # user_dict's value for "routes" and "feature_variants" shouldn't be in snake case
             routes_json = request_json.get("routes")
             if routes_json is not None:
@@ -1020,6 +1051,12 @@ def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str
             if feature_variants_json is not None:
                 user_dict["feature_variants"] = assert_type(feature_variants_json, dict)
 
+            if (email := _lookup_email_from_hash(session, user_hash)) is None:
+                raise ValueError(
+                    f"User not found for email address hash {user_hash}, please file a bug"
+                )
+
+            user_dict["user_email"] = email
             log_reason(
                 user_dict, f"updating permissions for user {user_dict['user_email']}"
             )
@@ -1076,12 +1113,21 @@ def update_user_permissions(email: str) -> Union[tuple[Response, int], tuple[str
         )
 
 
-@auth_endpoint_blueprint.route("/users/<email>/permissions", methods=["DELETE"])
+# "path" type annotation allows parameters containing slashes, which the user hash might
+@auth_endpoint_blueprint.route(
+    "/users/<path:user_hash>/permissions", methods=["DELETE"]
+)
 @requires_gae_auth
-def delete_user_permissions(email: str) -> tuple[str, int]:
+def delete_user_permissions(user_hash: str) -> tuple[str, int]:
+    """Removes state user custom permissions by deleting an entry for that user in Permissions Override."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
         with SessionFactory.using_database(database_key) as session:
+            if (email := _lookup_email_from_hash(session, user_hash)) is None:
+                raise ValueError(
+                    f"User not found for email address hash {user_hash}, please file a bug"
+                )
+
             overrides = session.query(PermissionsOverride).filter(
                 PermissionsOverride.user_email == email
             )
@@ -1109,39 +1155,45 @@ def delete_user_permissions(email: str) -> tuple[str, int]:
         )
 
 
-@auth_endpoint_blueprint.route("/users/<email>", methods=["DELETE"])
+# "path" type annotation allows parameters containing slashes, which the user hash might
+@auth_endpoint_blueprint.route("/users/<path:user_hash>", methods=["DELETE"])
 @requires_gae_auth
-def delete_user(email: str) -> tuple[str, int]:
+def delete_user(user_hash: str) -> tuple[str, int]:
     """Blocks a user by setting blocked=true in the corresponding Roster object."""
     database_key = SQLAlchemyDatabaseKey.for_schema(schema_type=SchemaType.CASE_TRIAGE)
     try:
         with SessionFactory.using_database(database_key) as session:
             request_json = assert_type(request.json, dict)
             request_dict = convert_nested_dictionary_keys(request_json, to_snake_case)
-            log_reason(
-                request_dict,
-                f"blocking user {email}",
-            )
 
             existing_override = session.query(UserOverride).filter(
-                UserOverride.email_address == email
+                UserOverride.user_hash == user_hash
             )
-            if existing_override.first():
+            if value := existing_override.first():
                 existing_override.update({"blocked": True}, synchronize_session=False)
+                email = value.email_address
             else:
                 roster_user = (
-                    session.query(Roster).filter(Roster.email_address == email).first()
+                    session.query(Roster).filter(Roster.user_hash == user_hash).first()
                 )
                 if roster_user is None:
-                    raise ValueError(f"An entry for {email} does not exist.")
+                    raise ValueError(
+                        f"An entry for user_hash {user_hash} does not exist."
+                    )
+                email = roster_user.email_address
                 user_override = UserOverride(
                     state_code=roster_user.state_code,
-                    email_address=email,
+                    email_address=roster_user.email_address,
                     blocked=True,
                     user_hash=roster_user.user_hash,
                 )
                 session.add(user_override)
                 session.commit()
+
+            log_reason(
+                request_dict,
+                f"blocking user {email}",
+            )
             return (
                 f"{email} has been blocked.",
                 HTTPStatus.OK,
