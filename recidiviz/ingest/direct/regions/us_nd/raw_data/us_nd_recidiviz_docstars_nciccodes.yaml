@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: recidiviz_docstars_nciccodes
+file_description: |-
+  A static list of NCIC codes and descriptions that correspond to legacy NCIC code system. Can be used for determining description of legacy NCIC codes (CODE in docstars_offensestable).
+data_classification: source
+primary_key_cols:
+  - CODE
+columns:
+  - name: _50YR
+    description: Unclear. Either NULL or -1.
+  - name: ACTIVE
+    description: Whether this offense is still actively in use. "N" or "Y"
+  - name: CODE
+    description: The legacy NCIC code for the offense.
+  - name: DESCRIPTION
+    description: A terse but human-readable description of the offense
