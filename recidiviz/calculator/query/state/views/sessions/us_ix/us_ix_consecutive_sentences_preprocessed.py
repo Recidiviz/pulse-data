@@ -46,7 +46,16 @@ US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- Pull out the parent sequence number for each consecutive relationship
         IF(relationship LIKE "%CONSECUTIVE%", SPLIT(relationship, "_")[OFFSET(1)], NULL) AS consec_seq_num,
     FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`,
-    UNNEST(SPLIT(JSON_EXTRACT_SCALAR(sentence_metadata, "$.RELATIONSHIPS"), ",")) AS relationship
+    UNNEST(
+        SPLIT(
+            COALESCE(
+                JSON_EXTRACT_SCALAR(sentence_metadata, "$.relationships"),
+                # TODO(#18731): remove the uppercase extract and the coalesce once prod uses lowercase
+                JSON_EXTRACT_SCALAR(sentence_metadata, "$.RELATIONSHIPS")
+            ),
+            ","
+        )
+    ) AS relationship
     WHERE state_code = "US_IX"
 
     UNION ALL
@@ -62,7 +71,16 @@ US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         -- Pull out the parent sequence number for each consecutive relationship
         IF(relationship LIKE "%CONSECUTIVE%", SPLIT(relationship, "_")[OFFSET(1)], NULL) AS consec_seq_num,
     FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`,
-    UNNEST(SPLIT(JSON_EXTRACT_SCALAR(sentence_metadata, "$.RELATIONSHIPS"), ",")) AS relationship
+    UNNEST(
+        SPLIT(
+            COALESCE(
+                JSON_EXTRACT_SCALAR(sentence_metadata, "$.relationships"),
+                # TODO(#18731): remove the uppercase extract and the coalesce once prod uses lowercase
+                JSON_EXTRACT_SCALAR(sentence_metadata, "$.RELATIONSHIPS")
+            ),
+            ","
+        )
+    ) AS relationship
     WHERE state_code = "US_IX"
     )
     SELECT
