@@ -86,7 +86,7 @@ probation_sessions_ed AS (
     ON ses.external_id = et.Cis_400_Cis_100_Client_Id
     AND ed_date BETWEEN start_date AND {nonnull_end_date_clause('ses.end_date_exclusive')}
   -- Some POs have filed ETs when the cause was death
-  WHERE NOT REGEXP_CONTAINS(UPPER(COALESCE(Comm_Override_Notes_Tx, '')), r'{_DEATH_REGEX_FILTER}'')
+  WHERE NOT REGEXP_CONTAINS(UPPER(COALESCE(Comm_Override_Notes_Tx, '')), r'{_DEATH_REGEX_FILTER}')
 )
 
 SELECT 
