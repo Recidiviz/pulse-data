@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Defense."""
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.defense import (
     CaseAppointedSeverityType,
     FundingType,
@@ -27,10 +27,7 @@ from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
-from recidiviz.justice_counts.dimensions.prosecution import (
-    CaseSeverityType,
-    DispositionType,
-)
+from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import (
     CasesDismissedIncludesExcludes,
     CasesResolvedAtTrialIncludesExcludes,
@@ -44,12 +41,20 @@ from recidiviz.justice_counts.includes_excludes.common import (
 )
 from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseAdministrativeStaffIncludesExcludes,
+    DefenseCaseloadDenominatorIncludesExcludes,
+    DefenseCaseloadNumeratorIncludesExcludes,
     DefenseCasesAppointedCounselIncludesExcludes,
     DefenseCasesDisposedIncludesExcludes,
     DefenseComplaintsIncludesExcludes,
+    DefenseFelonyCaseloadDenominatorIncludesExcludes,
+    DefenseFelonyCaseloadNumeratorIncludesExcludes,
     DefenseFundingIncludesExcludes,
     DefenseInvestigativeStaffIncludesExcludes,
     DefenseLegalStaffIncludesExcludes,
+    DefenseMisdemeanorCaseloadDenominatorIncludesExcludes,
+    DefenseMisdemeanorCaseloadNumeratorIncludesExcludes,
+    DefenseMixedCaseloadDenominatorIncludesExcludes,
+    DefenseMixedCaseloadNumeratorIncludesExcludes,
     DefenseVacantStaffIncludesExcludes,
     FeesFundingIncludesExcludes,
 )
@@ -59,7 +64,6 @@ from recidiviz.justice_counts.includes_excludes.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -231,25 +235,103 @@ cases_appointed_counsel = MetricDefinition(
     ],
 )
 
-caseloads = MetricDefinition(
+caseload_numerator = MetricDefinition(
     system=System.DEFENSE,
-    metric_type=MetricType.CASELOADS,
+    metric_type=MetricType.CASELOADS_PEOPLE,
     category=MetricCategory.POPULATIONS,
-    display_name="Caseloads",
-    description="Measures the average caseload per attorney in your office.",
-    measurement_type=MeasurementType.DELTA,
+    display_name="Open Cases",
+    description="The number of people with open criminal cases carried by the provider (used as the numerator in the calculation of the caseload metric).",
+    measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="These elements may not be necessary if the office already calculates their average caseloads by type on a monthly basis. Accept the office's calculation with required context.",
-    specified_contexts=[
-        Context(
-            key=ContextKey.METHOD_OF_CALCULATING_CASELOAD,
-            value_type=ValueType.TEXT,
-            label="Please describe your office's method of calculating caseload.",
-            required=True,
-        ),
-    ],
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseCaseloadNumeratorIncludesExcludes,
+        excluded_set={DefenseCaseloadNumeratorIncludesExcludes.NOT_ASSIGNED},
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False)
+        # TODO(#18071)
+        AggregatedDimension(
+            dimension=CaseSeverityType,
+            required=False,
+            dimension_to_description={
+                CaseSeverityType.FELONY: "The number of people with open felony cases.",
+                CaseSeverityType.MISDEMEANOR: "The number of people with open misdemeanor cases.",
+                CaseSeverityType.MIXED: "The  number of people with open felony and misdemeanor cases.",
+                CaseSeverityType.OTHER: "The number of people with open criminal cases.",
+                CaseSeverityType.UNKNOWN: "The number of people with open criminal cases of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                CaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=DefenseFelonyCaseloadNumeratorIncludesExcludes,
+                    excluded_set={
+                        DefenseFelonyCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
+                    },
+                ),
+                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=DefenseMisdemeanorCaseloadNumeratorIncludesExcludes,
+                    excluded_set={
+                        DefenseMisdemeanorCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
+                    },
+                ),
+                CaseSeverityType.MIXED: IncludesExcludesSet(
+                    members=DefenseMixedCaseloadNumeratorIncludesExcludes,
+                    excluded_set={
+                        DefenseMixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_FELONY_CASES,
+                        DefenseMixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
+                    },
+                ),
+            },
+        )
+    ],
+)
+
+caseload_denominator = MetricDefinition(
+    system=System.DEFENSE,
+    metric_type=MetricType.CASELOADS_STAFF,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Staff with Caseload",
+    description="The number of legal staff carrying a criminal caseload (used as the denominator in the calculation of the caseload metric).",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseCaseloadDenominatorIncludesExcludes,
+        excluded_set={
+            DefenseCaseloadDenominatorIncludesExcludes.ON_LEAVE,
+        },
+    ),
+    aggregated_dimensions=[
+        # TODO(#18071)
+        AggregatedDimension(
+            dimension=CaseSeverityType,
+            required=False,
+            dimension_to_description={
+                CaseSeverityType.FELONY: "The number of staff carrying a felony caseload.",
+                CaseSeverityType.MISDEMEANOR: "The number of staff carrying a misdemeanor caseload.",
+                CaseSeverityType.MIXED: "The number of staff carrying a mixed (felony and misdemeanor) caseload.",
+                CaseSeverityType.OTHER: "The number of staff carrying a criminal caseload that does not comprise felony or misdemeanor cases.",
+                CaseSeverityType.UNKNOWN: "The number of staff carrying a criminal caseload of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                CaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=DefenseFelonyCaseloadDenominatorIncludesExcludes,
+                    excluded_set={
+                        DefenseFelonyCaseloadDenominatorIncludesExcludes.MIXED,
+                    },
+                ),
+                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=DefenseMisdemeanorCaseloadDenominatorIncludesExcludes,
+                    excluded_set={
+                        DefenseMisdemeanorCaseloadDenominatorIncludesExcludes.MIXED,
+                    },
+                ),
+                CaseSeverityType.MIXED: IncludesExcludesSet(
+                    members=DefenseMixedCaseloadDenominatorIncludesExcludes,
+                    excluded_set={
+                        DefenseMixedCaseloadDenominatorIncludesExcludes.FELONY_ONLY,
+                        DefenseMixedCaseloadDenominatorIncludesExcludes.MISDEMEANOR_ONLY,
+                    },
+                ),
+            },
+        )
     ],
 )
 

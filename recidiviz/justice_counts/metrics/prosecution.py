@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Prosecution."""
 
+from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -23,7 +24,6 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
-    CaseSeverityType,
     DispositionType,
     DivertedCaseSeverityType,
     ExpenseType,
