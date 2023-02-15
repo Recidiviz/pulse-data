@@ -97,3 +97,42 @@ class FelonyCriminalCaseFilingsIncludesExcludes(enum.Enum):
 class MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes(enum.Enum):
     MISDEMEANOR_CHARGE = "Cases with a leading misdemeanor charge"
     INFRACTION_CHARGE = "Cases with a leading infraction charge"
+
+
+# Pretrial Releases
+class PretrialReleasesIncludesExcludes(enum.Enum):
+    ON_OWN = "People released on their own recognizance"
+    MONETARY_BAIL = "People released on monetary bail"
+    NON_MONETARY_BAIL = "People released on non-monetary bail"
+    BAIL_MODIFICATION = "People released with subsequent bail modifications"
+    AWAITING_DISPOSITION = (
+        "People initially ordered by the court to be held awaiting disposition"
+    )
+    TRANSFERRED = "People transferred to another jurisdiction"
+
+
+class PretrialReleasesOnOwnRecognizanceIncludesExcludes(enum.Enum):
+    OWN_RECOGNIZANCE = "People released on their own recognizance"
+    SIGNATURE_BOND = (
+        "People released on a signature bond (a.k.a. recognizance bond or oath bond)"
+    )
+    STATUTORY_REQUIREMENT = "People released due to a statutory requirement"
+    BEFORE_BAIL_HEARING = "People released before initial bail hearing"
+    AWAITING_DISPOSITION = "People held awaiting disposition"
+    TRANSFERRED = "People transferred to another jurisdiction"
+
+
+class PretrialReleasesMonetaryBailIncludesExcludes(enum.Enum):
+    UNSECURED = "People released on unsecured bond"
+    DEPOSIT = "People released on deposit bond"
+    MONETARY_BAIL = "People released on monetary bail"
+    BEFORE_BAIL_HEARING = "People released before initial bail hearing"
+
+
+class PretrialReleasesNonMonetaryBailIncludesExcludes(enum.Enum):
+    WITH_PRE_TRIAL_SUPERVISION = (
+        "People released with any form of pre-trial supervision"
+    )
+    WITHOUT_PRE_TRIAL_SUPERVISION = (
+        "People released without any form of pre-trial supervision"
+    )
