@@ -54,8 +54,9 @@ CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
     UNION ALL
 
     SELECT
-        *
+        * EXCEPT (parent_sentence_order)
     FROM `{project_id}.{sessions_dataset}.us_ix_consecutive_sentences_preprocessed_materialized`
+    WHERE parent_sentence_order = 1
 
 """
 
