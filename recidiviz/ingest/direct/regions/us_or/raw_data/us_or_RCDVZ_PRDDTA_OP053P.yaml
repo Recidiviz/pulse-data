@@ -24,11 +24,19 @@ columns:
     description: |-
       Number of offense.
   - name: LAST_UPDATED_WHEN
+    is_datetime: True
     description: |-
       Date when information was last updated.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ARREST_DATE
+    is_datetime: True
     description: |-
       Date of arrest.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: COUNTY
     description: |-
       County where offense or case occured.
@@ -39,8 +47,12 @@ columns:
     description: |-
       Count of court cases.
   - name: CRIME_COMMITTED_DATE
+    is_datetime: True
     description: |-
       Date the crime was committed.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: DISTRICT_ATTORNEY
     description: |-
       The district attorney in the case.
@@ -54,8 +66,12 @@ columns:
       Judge in the case.
     is_pii: True
   - name: CONVICTED_DATE
+    is_datetime: True
     description: |-
       Date of the conviction.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: DA_CASE_NUMBER
     description: |-
       DA case number.

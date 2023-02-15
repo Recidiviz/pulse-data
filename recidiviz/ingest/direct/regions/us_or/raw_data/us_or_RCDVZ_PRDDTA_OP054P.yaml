@@ -31,8 +31,12 @@ columns:
     description: |-
       Number indicating order of sentences.
   - name: LAST_UPDATED_WHEN
+    is_datetime: True
     description: |-
       Date when last updated.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: SENTENCE_TYPE
     description: |-
       Type of sentence.
@@ -59,11 +63,19 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: SENTENCE_BEGIN_DATE
+    is_datetime: True
     description: |-
       Date sentence began.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: TOLLING_DATE
+    is_datetime: True
     description: |-
       TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: COMPACT_BEGIN_DATE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -165,11 +177,19 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: MAXIMUM_DATE
+    is_datetime: True
     description: |-
       TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MINIMUM_DATE
+    is_datetime: True
     description: |-
       TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MANUAL_SENTCALC_USERID
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -188,6 +208,12 @@ columns:
   - name: MERIT_GT_DATE
   - name: TERMINATION_CODE
   - name: TERMINATION_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PV_CODE
   - name: INOP_DAYS_AFTER_REVOKE
   - name: PPS_SENTENCE_YEARS

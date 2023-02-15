@@ -53,8 +53,12 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: TERMINATION_DATE
+    is_datetime: True
     description: |-
       TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: SANCTION_SUPV_CODE
     description: |-
       TODO(#17148): Fill in with answer from OR
@@ -62,8 +66,12 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: SENTENCE_BEGIN_DATE
+    is_datetime: True
     description: |-
       Date the sentence began.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: CRIME_CATEGORY
     description: |-
       Category of the crime.
