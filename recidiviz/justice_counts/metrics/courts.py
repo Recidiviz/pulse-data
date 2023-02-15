@@ -31,8 +31,11 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import StaffIncludesExcludes
 from recidiviz.justice_counts.includes_excludes.courts import (
+    CriminalCaseFilingsIncludesExcludes,
+    FelonyCriminalCaseFilingsIncludesExcludes,
     JudgesIncludesExcludes,
     LegalStaffIncludesExcludes,
+    MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
     SecurityStaffIncludesExcludes,
     SupportOrAdministrativeStaffIncludesExcludes,
     VacantPositionsIncludesExcludes,
@@ -199,19 +202,37 @@ criminal_case_filings = MetricDefinition(
     metric_type=MetricType.CASES_FILED,
     category=MetricCategory.POPULATIONS,
     display_name="Criminal Case Filings",
-    description="Measures the number of new criminal cases filed with the court.",
+    description="The number of criminal cases filed with the court.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    specified_contexts=[
-        Context(
-            key=ContextKey.AGENCIES_AUTHORIZED_TO_FILE_CASES,
-            value_type=ValueType.TEXT,
-            label="Please provide the names of the agencies authorized to file cases directly with the court.",
-            required=True,
-        )
-    ],
+    includes_excludes=IncludesExcludesSet(
+        members=CriminalCaseFilingsIncludesExcludes,
+        excluded_set={
+            CriminalCaseFilingsIncludesExcludes.VIOLATIONS,
+            CriminalCaseFilingsIncludesExcludes.REVOCATIONS,
+            CriminalCaseFilingsIncludesExcludes.REOPENED,
+            CriminalCaseFilingsIncludesExcludes.TRANSFERRED_INTERNAL,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=CaseSeverityType, required=False)
+        AggregatedDimension(
+            dimension=CaseSeverityType,
+            required=False,
+            dimension_to_includes_excludes={
+                CaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCriminalCaseFilingsIncludesExcludes,
+                ),
+                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                CaseSeverityType.FELONY: "The number of criminal cases filed with the court in which the leading charge was for a felony offense.",
+                CaseSeverityType.MISDEMEANOR: "The number of criminal cases filed with the court in which the leading charge was for a misdemeanor offense.",
+                CaseSeverityType.OTHER: "The number of criminal cases filed with the court in which the leading charge was not for a felony or misdemeanor or infraction offense.",
+                CaseSeverityType.UNKNOWN: "The number of criminal cases filed with the court in which the leading charge was of unknown severity.",
+            },
+        )
     ],
 )
 
