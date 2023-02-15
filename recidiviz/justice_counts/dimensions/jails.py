@@ -62,12 +62,12 @@ class PopulationType(DimensionBase, enum.Enum):
 
 
 class ReleaseType(DimensionBase, enum.Enum):
-    SENTENCE_COMPLETION = "Sentence Completion"
-    PRETRIAL_RELEASE = "Pretrial Release"
-    TRANSFER = "Transfer"
-    UNAPPROVED_ABSENCE = "Unapproved Absence"
-    COMPASSIONATE = "Compassionate"
-    UNKNOWN = "Unknown"
+    AWAITING_TRIAL = "Pre-adjudication Releases to Own Recognizance Awaiting Trial"
+    BAIL = "Pre-adjudication Releases to Monetary Bail"
+    DEATH = "Pre-adjudication Releases Due to Death"
+    AWOL = "Pre-adjudication Releases Due to Escape or AWOL Status"
+    OTHER = "Other Pre-adjudication Releases"
+    UNKNOWN = "Unknown Pre-adjudication Releases"
 
     @classmethod
     def dimension_identifier(cls) -> str:

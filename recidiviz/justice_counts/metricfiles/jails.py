@@ -127,12 +127,12 @@ JAILS_METRIC_FILES = [
         disaggregation_column_name="biological_sex",
     ),
     MetricFile(
-        canonical_filename="releases",
-        definition=jails.releases,
+        canonical_filename="pre_adj_releases",
+        definition=jails.pre_adjudication_releases,
     ),
     MetricFile(
-        canonical_filename="releases_by_type",
-        definition=jails.releases,
+        canonical_filename="pre_adj_releases_by_type",
+        definition=jails.pre_adjudication_releases,
         disaggregation=ReleaseType,
         disaggregation_column_name="release_type",
     ),
