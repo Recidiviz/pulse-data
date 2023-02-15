@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - crim_cd
+  - new_flg
 columns:
   - name: crim_cd
     description: |-
