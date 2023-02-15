@@ -434,12 +434,14 @@ def create_bq_refresh_nodes(
 
 
 def update_all_views_branch_func(
-    trigger_update_all_views_task_id: str, trigger_source: str
+    trigger_update_all_views_task_id: str,
+    trigger_rematerialize_views_task_id: str,
+    trigger_source: str,
 ) -> str:
     if trigger_source == "POST_DEPLOY":
         return trigger_update_all_views_task_id
     if trigger_source == "DAILY":
-        return "do_not_update_all_views"
+        return trigger_rematerialize_views_task_id
     raise ValueError(f" TRIGGER_SOURCE unexpected value: {trigger_source}")
 
 
@@ -505,14 +507,11 @@ def create_calculation_dag() -> None:
         python_callable=update_all_views_branch_func,
         op_kwargs={
             "trigger_update_all_views_task_id": trigger_update_all_views.task_id,
+            "trigger_rematerialize_views_task_id": trigger_view_rematerialize.task_id,
             "trigger_source": "{{ dag_run.conf['TRIGGER_SOURCE'] }}",
         },
         retries=0,
         task_group=view_materialize_task_group,
-    )
-
-    do_not_update_all_views = EmptyOperator(
-        task_id="do_not_update_all_views", task_group=view_materialize_task_group
     )
 
     (
@@ -522,7 +521,7 @@ def create_calculation_dag() -> None:
             case_triage_bq_refresh_completion,
         ]
         >> update_all_views_branch
-        >> [trigger_update_all_views, do_not_update_all_views]
+        >> [trigger_update_all_views, trigger_view_rematerialize]
     )
 
     wait_for_update_all_views = BQResultSensor(
@@ -537,9 +536,16 @@ def create_calculation_dag() -> None:
         task_group=view_materialize_task_group,
     )
 
-    trigger_update_all_views >> wait_for_update_all_views >> trigger_view_rematerialize
+    end_update_all_views_branch = EmptyOperator(
+        task_id="end_update_all_views_branch",
+        # This task will run if the upstream parents either are skipped or succeeded.
+        trigger_rule=TriggerRule.NONE_FAILED,
+        task_group=view_materialize_task_group,
+    )
 
-    update_normalized_state >> trigger_view_rematerialize >> wait_for_rematerialize
+    trigger_update_all_views >> wait_for_update_all_views >> end_update_all_views_branch
+
+    trigger_view_rematerialize >> wait_for_rematerialize >> end_update_all_views_branch
 
     metric_pipelines = YAMLDict.from_path(config_file).pop_dicts("metric_pipelines")
 
@@ -566,7 +572,7 @@ def create_calculation_dag() -> None:
             )
 
             # Metric pipelines should complete before view rematerialization starts
-            metric_pipeline_operator >> trigger_view_rematerialize
+            metric_pipeline_operator >> update_all_views_branch
 
             # Add the pipeline to the list of metric pipelines for this state
             metric_pipelines_by_state[pipeline_config_args.state_code].append(
@@ -619,7 +625,7 @@ def create_calculation_dag() -> None:
                 dataflow_pipeline_task_groups[pipeline_config_args.state_code],
             )
 
-            supplemental_pipeline_operator >> trigger_view_rematerialize
+            supplemental_pipeline_operator >> update_all_views_branch
 
     validation_task_groups: Dict[str, TaskGroup] = {}
     validation_task_group = TaskGroup("validations")
@@ -643,7 +649,7 @@ def create_calculation_dag() -> None:
             task_group=validation_task_groups[state_code],
         )
         (
-            wait_for_rematerialize
+            end_update_all_views_branch
             >> trigger_state_validations
             >> wait_for_state_validations
         )
@@ -680,7 +686,7 @@ def create_calculation_dag() -> None:
     ]
 
     for data_export_operator in all_create_metric_view_data_export_nodes:
-        wait_for_rematerialize >> data_export_operator
+        end_update_all_views_branch >> data_export_operator
 
     for state_code, metric_pipeline_operators in metric_pipelines_by_state.items():
         for metric_pipeline_operator in metric_pipeline_operators:

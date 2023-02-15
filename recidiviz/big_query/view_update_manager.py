@@ -110,6 +110,7 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        force_materialize=True,
     )
     end = datetime.datetime.now()
     runtime_sec = int((end - start).total_seconds())
