@@ -289,3 +289,43 @@ class PreAdjudicationAdmissionsIncludesExcludes(Enum):
     ADMITTED = "Admission events that are booked and admitted to jail pre-adjudication"
     TEMPORARY_ABSENCE = "Admission events returning from a temporary absence (e.g., hospital visit, court hearing, etc.)"
     MOVING = "Admission events that are moving between facilities under the same agency’s jurisdiction"
+
+
+# Pre-adjudication Releases
+class PreAdjudicationReleasesIncludesExcludes(Enum):
+    AWAITING_TRIAL = "Releases to own recognizance awaiting trial"
+    MONETARY_BAIL = "Releases on monetary bail"
+    NON_MONETARY_BAIL = "Release events on nonmonetary bail (i.e., travel restrictions, no contact orders)"
+    SUPERVISION = "Releases to supervision (including electronic monitoring, home confinement, traditional supervision, etc.)"
+    BAIL_MODIFICATIONS = "Releases with subsequent bail modifications"
+    DEATH = "Releases due to death in custody"
+    AWOL = "Releases due to escape or Absent Without Leave (AWOL) status for more than 30 days"
+    EMERGENCY = "Emergency releases (such as due to COVID-19, etc.)"
+
+
+class PreAdjudicationReleasesOwnRecognizanceAwaitingTrialIncludesExcludes(Enum):
+    SIGNATURE_BOND = (
+        "Releases on signature bond (a.k.a. recognizance bond or oath bond)"
+    )
+    OWN_RECOGNIZANCE = "Releases on own recognizance"
+    NON_MONETARY = "Releases on non-monetary conditions (e.g., surrender passport, no contact order, etc.)"
+
+
+class PreAdjudicationReleasesMonetaryBailIncludesExcludes(Enum):
+    UNSECURED_BOND = "Releases on unsecured bond"
+    DEPOSIT_BOND = "Releases on deposit bond"
+    MONETARY_BAIL = "Releases on monetary bail"
+    BEFORE_HEARING = "Releases before initial bail hearing"
+
+
+class PreAdjudicationReleasesDeathIncludesExcludes(Enum):
+    UNDER_AGENCY_JURISDICTION = "Death while under the agency’s jurisdiction"
+    TEMPORARILY_ABSENT = (
+        "Death while temporarily absent (e.g., hospital, court, work release)"
+    )
+
+
+class PreAdjudicationReleasesEscapeOrAWOLIncludesExcludes(Enum):
+    ESCAPE_PRETRIAL_HOLD = "Escape from pretrial hold"
+    AWOL_PRETRIAL_HOLD = "AWOL from pretrial hold"
+    AWOL_PRETRIAL_SUPERVISION = "AWOL from pretrial supervision"

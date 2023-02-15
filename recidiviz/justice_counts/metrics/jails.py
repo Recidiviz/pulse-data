@@ -51,6 +51,11 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     PersonalSafetyIncludesExcludes,
     PersonnelIncludesExcludes,
     PreAdjudicationAdmissionsIncludesExcludes,
+    PreAdjudicationReleasesDeathIncludesExcludes,
+    PreAdjudicationReleasesEscapeOrAWOLIncludesExcludes,
+    PreAdjudicationReleasesIncludesExcludes,
+    PreAdjudicationReleasesMonetaryBailIncludesExcludes,
+    PreAdjudicationReleasesOwnRecognizanceAwaitingTrialIncludesExcludes,
     ProgrammaticStaffIncludesExcludes,
     SecurityStaffIncludesExcludes,
     StaffIncludesExcludes,
@@ -619,15 +624,48 @@ post_adjudication_daily_population = MetricDefinition(
     ],
 )
 
-releases = MetricDefinition(
+pre_adjudication_releases = MetricDefinition(
     system=System.JAILS,
-    metric_type=MetricType.RELEASES,
+    metric_type=MetricType.PRE_ADJUDICATION_RELEASES,
     category=MetricCategory.POPULATIONS,
-    display_name="Releases",
-    description="Measures the number of new releases from your jail system.",
+    display_name="Pre-adjudication Releases",
+    description="The number of release events from the agency’s jurisdiction after a period of pre-adjudication incarceration.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[AggregatedDimension(dimension=ReleaseType, required=False)],
+    includes_excludes=IncludesExcludesSet(
+        members=PreAdjudicationReleasesIncludesExcludes,
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ReleaseType,
+            required=False,
+            dimension_to_includes_excludes={
+                ReleaseType.AWAITING_TRIAL: IncludesExcludesSet(
+                    members=PreAdjudicationReleasesOwnRecognizanceAwaitingTrialIncludesExcludes,
+                ),
+                ReleaseType.BAIL: IncludesExcludesSet(
+                    members=PreAdjudicationReleasesMonetaryBailIncludesExcludes,
+                    excluded_set={
+                        PreAdjudicationReleasesMonetaryBailIncludesExcludes.BEFORE_HEARING,
+                    },
+                ),
+                ReleaseType.DEATH: IncludesExcludesSet(
+                    members=PreAdjudicationReleasesDeathIncludesExcludes,
+                ),
+                ReleaseType.AWOL: IncludesExcludesSet(
+                    members=PreAdjudicationReleasesEscapeOrAWOLIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                ReleaseType.AWAITING_TRIAL: "The number of pre-adjudication release events of people to their own recognizance while awaiting trial, without out any other form of supervision.",
+                ReleaseType.BAIL: "The number of pre-adjudication release events of people to bond while awaiting trial, without out any other form of supervision.",
+                ReleaseType.DEATH: "The number of pre-adjudication release events due to death of people in custody.",
+                ReleaseType.AWOL: "The number of pre-adjudication release events due to escape from custody or assessment as AWOL for more than 30 days.",
+                ReleaseType.OTHER: "The number of pre-adjudication release events from the agency’s jurisdiction that are not releases to pretrial supervision, to own recognizance awaiting trial, to monetary bail, death, or escape/AWOL status.",
+                ReleaseType.UNKNOWN: "The number of pre-adjudication release events from the agency’s jurisdiction whose release type is not known.",
+            },
+        )
+    ],
 )
 
 staff_use_of_force_incidents = MetricDefinition(
