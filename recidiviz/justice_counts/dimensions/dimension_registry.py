@@ -17,6 +17,7 @@
 """Registry containing all official Justice Counts dimensions."""
 
 from recidiviz.justice_counts.dimensions import (
+    common,
     corrections,
     courts,
     defense,
@@ -32,6 +33,7 @@ from recidiviz.justice_counts.dimensions import (
 
 # All official Justice Counts dimensions should be "checked in" here
 DIMENSIONS = [
+    common.CaseSeverityType,
     offense.OffenseType,
     person.Age,
     person.BiologicalSex,
@@ -73,7 +75,6 @@ DIMENSIONS = [
     jails.GrievancesUpheldType,
     jails.FundingType,
     jails.ExpenseType,
-    prosecution.CaseSeverityType,
     prosecution.DivertedCaseSeverityType,
     prosecution.ReferredCaseSeverityType,
     prosecution.CaseDeclinedSeverityType,

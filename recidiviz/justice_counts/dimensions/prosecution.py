@@ -46,18 +46,6 @@ class CaseDeclinedSeverityType(DimensionBase, enum.Enum):
         return "metric/declined/severity/prosecution/type"
 
 
-class CaseSeverityType(DimensionBase, enum.Enum):
-    FELONY = "Felony Caseload"
-    MISDEMEANOR = "Misdemeanor Caseload"
-    MIXED = "Mixed Caseload"
-    OTHER = "Other Caseload"
-    UNKNOWN = "Unknown Caseload"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/severity/prosecution/type"
-
-
 class ReferredCaseSeverityType(DimensionBase, enum.Enum):
     FELONY = "Felony Cases Referred"
     MISDEMEANOR = "Misdemeanor Cases Referred"
