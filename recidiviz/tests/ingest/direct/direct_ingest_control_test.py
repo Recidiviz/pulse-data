@@ -713,12 +713,12 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_environment.return_value = "production"
 
         fake_supported_regions = {
-            "us_mo": fake_region(region_code="us_mo", environment="staging"),
+            "us_xx": fake_region(region_code="us_xx", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"
             ),
         }
-        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
+        mock_states_in_env.return_value = [StateCode.US_XX, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         mock_controllers_by_region_code = {}
@@ -756,9 +756,9 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_cloud_task_manager.create_direct_ingest_handle_new_files_task.assert_has_calls(
             [
                 call(
-                    fake_supported_regions["us_mo"],
+                    fake_supported_regions["us_xx"],
                     ingest_instance=mock_controllers_by_region_code[
-                        "us_mo"
+                        "us_xx"
                     ].ingest_instance,
                     can_start_ingest=False,
                 ),
@@ -911,12 +911,12 @@ class TestDirectIngestControl(unittest.TestCase):
     ) -> None:
 
         fake_supported_regions = {
-            "us_mo": fake_region(region_code="us_mo", environment="staging"),
+            "us_xx": fake_region(region_code="us_xx", environment="staging"),
             self.region_code: fake_region(
                 region_code=self.region_code, environment="production"
             ),
         }
-        mock_states_in_env.return_value = [StateCode.US_MO, self.state_code]
+        mock_states_in_env.return_value = [StateCode.US_XX, self.state_code]
 
         mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskQueueManager)
         region_to_mock_controller = defaultdict(list)
