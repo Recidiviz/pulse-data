@@ -19,7 +19,6 @@
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
-    CaseType,
     ReleaseType,
     SentenceType,
     StaffType,
@@ -36,6 +35,7 @@ from recidiviz.justice_counts.includes_excludes.courts import (
     JudgesIncludesExcludes,
     LegalStaffIncludesExcludes,
     MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
+    NewOffensesWhileOnPretrialReleaseIncludesExcludes,
     SecurityStaffIncludesExcludes,
     SupportOrAdministrativeStaffIncludesExcludes,
     VacantPositionsIncludesExcludes,
@@ -259,12 +259,17 @@ new_offenses_while_on_pretrial_release = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
     metric_type=MetricType.ARRESTS_ON_PRETRIAL_RELEASE,
     category=MetricCategory.PUBLIC_SAFETY,
-    display_name="New offenses while on Pretrial Release",
-    description="Measures the number of cases in which an individual was released pending trial in the previous calendar year and was arrested for a new offense.",
+    display_name="New Offenses While on Pretrial Release",
+    description="The number of new arrests involving a person awaiting criminal trial in the community that are unrelated to their pending disposition.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Choose all cases in previous year and identify if they were released, and whether they had any new offense between release and reporting date.",
-    aggregated_dimensions=[AggregatedDimension(dimension=CaseType, required=False)],
+    includes_excludes=IncludesExcludesSet(
+        members=NewOffensesWhileOnPretrialReleaseIncludesExcludes,
+        excluded_set={
+            NewOffensesWhileOnPretrialReleaseIncludesExcludes.AWAITING_DISPOSITION,
+            NewOffensesWhileOnPretrialReleaseIncludesExcludes.TRANSFERRED,
+        },
+    ),
 )
 
 cases_overturned = MetricDefinition(

@@ -18,7 +18,6 @@
 
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
-    CaseType,
     ReleaseType,
     SentenceType,
     StaffType,
@@ -101,12 +100,6 @@ COURTS_METRIC_FILES = [
     MetricFile(
         canonical_filename="offenses_on_release",
         definition=courts.new_offenses_while_on_pretrial_release,
-    ),
-    MetricFile(
-        canonical_filename="offenses_on_release_by_type",
-        definition=courts.new_offenses_while_on_pretrial_release,
-        disaggregation=CaseType,
-        disaggregation_column_name="case_type",
     ),
     MetricFile(
         canonical_filename="cases_overturned",
