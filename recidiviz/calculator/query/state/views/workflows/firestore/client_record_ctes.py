@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,10 @@
 # =============================================================================
 """CTEs used across multiple states' client record queries."""
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_exclusive_clause,
+    today_between_start_date_and_nullable_end_date_clause,
+)
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     workflows_state_specific_supervision_level,
 )
@@ -146,6 +149,20 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
     ),
 """
 
+_CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
+    employment_info AS (
+        SELECT
+            person_id,
+            sep.employer_name AS current_employer,
+            sep.start_date AS current_employer_start_date,
+            # TODO(#18490): Add employer address
+            CAST(NULL AS STRING) AS current_employer_address,
+        FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
+        WHERE {today_between_start_date_and_nullable_end_date_clause('sep.start_date', 'sep.end_date')}
+            AND state_code IN ("US_IX")
+    ),
+"""
+
 _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
     join_clients AS (
         SELECT DISTINCT
@@ -161,6 +178,9 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
+          ei.current_employer,
+          ei.current_employer_start_date,
+          ei.current_employer_address,
           FIRST_VALUE(sc.expiration_date IGNORE NULLS) OVER (
             PARTITION BY sc.person_id
             ORDER BY sc.expiration_date DESC
@@ -169,6 +189,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
+        LEFT JOIN employment_info ei USING (person_id)
         LEFT JOIN phone_numbers ph
             -- join on state_code / person_external_id instead of person_id alone because state data
             -- may have multiple external_ids for a given person_id, and by this point in the
@@ -200,6 +221,9 @@ _CLIENTS_CTE = """
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             district,
+            current_employer,
+            current_employer_start_date,
+            current_employer_address,
             opportunities_aggregated.all_eligible_opportunities
         FROM join_clients
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
@@ -215,6 +239,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
+    {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
     {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
     {_CLIENTS_CTE}
     """
