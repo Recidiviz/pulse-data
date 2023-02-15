@@ -543,12 +543,17 @@ class BigQueryViewDagWalker:
                     )
                     for adjacent_address in adjacent_addresses:
                         adjacent_node = self.nodes_by_address[adjacent_address]
-                        if adjacent_node in processed or adjacent_node in queue:
+                        if (
+                            adjacent_node.view.address in processed
+                            or adjacent_node in queue
+                        ):
                             raise ValueError(
                                 f"Unexpected situation where adjacent node has already been processed: {adjacent_address}"
                             )
-                        if adjacent_node in processing:
-                            continue
+                        if adjacent_node.view.address in processing:
+                            raise ValueError(
+                                f"Unexpected situation where adjacent node is already processing: {adjacent_address}"
+                            )
 
                         previous_level_all_processed = True
                         previous_level_results = {}
