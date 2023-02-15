@@ -99,14 +99,6 @@ class ProsecutionTrainingExpensesIncludesExcludes(enum.Enum):
     FREE_PROGRAMS = "Courses or programs offered at no cost to individuals or the prosecutor's office"
 
 
-class ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes(enum.Enum):
-    OPERATIONS = "Facility operations"
-    MAINTENANCE = "Facility maintenance"
-    RENOVATION = "Facility renovation"
-    CONSTRUCTION = "Facility construction"
-    TECHNOLOGY = "Equipment (e.g., computers, communication, and information technology infrastructure)"
-
-
 # Staff
 class ProsecutionStaffIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"

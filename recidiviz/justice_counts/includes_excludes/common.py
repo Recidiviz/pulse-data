@@ -76,3 +76,11 @@ class CasesResolvedByPleaIncludesExcludes(enum.Enum):
 class CasesResolvedAtTrialIncludesExcludes(enum.Enum):
     FELONY = "Cases with a leading felony charge resolved at trial"
     MISDEMEANOR = "Cases with a leading misdemeanor charge resolved at trial"
+
+
+class FacilitiesAndEquipmentExpensesIncludesExcludes(enum.Enum):
+    OPERATIONS = "Facility operations"
+    MAINTENANCE = "Facility maintenance"
+    RENOVATION = "Facility renovation"
+    CONSTRUCTION = "Facility construction"
+    TECHNOLOGY = "Equipment (e.g., computers, communication, and information technology infrastructure)"
