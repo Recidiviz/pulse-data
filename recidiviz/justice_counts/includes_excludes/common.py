@@ -84,3 +84,37 @@ class FacilitiesAndEquipmentExpensesIncludesExcludes(enum.Enum):
     RENOVATION = "Facility renovation"
     CONSTRUCTION = "Facility construction"
     TECHNOLOGY = "Equipment (e.g., computers, communication, and information technology infrastructure)"
+
+
+# Caseload
+
+
+class CaseloadNumeratorIncludesExcludes(enum.Enum):
+    OPEN = "Criminal cases open and active during the time period"
+    ASSIGNED = "Criminal cases assigned to an attorney but inactive"
+    NOT_ASSIGNED = "Criminal cases not yet assigned to an attorney"
+
+
+class FelonyCaseloadNumeratorIncludesExcludes(enum.Enum):
+    OPEN_CASES = "Felony cases open and active during the sharing period"
+    ASSIGNED_CASES = "Felony cases assigned to an attorney but inactive"
+    UNASSIGNED_CASES = "Felony cases not yet assigned to an attorney"
+
+
+class MisdemeanorCaseloadNumeratorIncludesExcludes(enum.Enum):
+    OPEN_CASES = "Misdemeanor cases open and active during the sharing period"
+    ASSIGNED_CASES = "Misdemeanor cases assigned to an attorney but inactive"
+    UNASSIGNED_CASES = "Misdemeanor cases not yet assigned to an attorney"
+
+
+class MixedCaseloadNumeratorIncludesExcludes(enum.Enum):
+    OPEN_FELONY_CASES = "Felony cases open and active during the sharing period"
+    ASSIGNED_FELONY_CASES = "Felony cases assigned to an attorney but inactive"
+    OPEN_MISDEMEANOR_CASES = (
+        "Misdemeanor cases open and active during the sharing period"
+    )
+    ASSIGNED_MISDEMEANOR_CASES = (
+        "Misdemeanor cases assigned to an attorney but inactive"
+    )
+    UNASSIGNED_FELONY_CASES = "Felony cases not yet assigned to an attorney"
+    UNASSIGNED_MISDEMEANOR_CASES = "Misdemeanor cases not yet assigned to an attorney"
