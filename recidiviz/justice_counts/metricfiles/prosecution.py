@@ -52,12 +52,22 @@ PROSECUTION_METRIC_FILES = [
         disaggregation_column_name="staff_type",
     ),
     MetricFile(
-        canonical_filename="caseloads",
-        definition=prosecution.caseload,
+        canonical_filename="open_cases",
+        definition=prosecution.caseload_numerator,
     ),
     MetricFile(
-        canonical_filename="caseloads_by_severity",
-        definition=prosecution.caseload,
+        canonical_filename="open_cases_by_type",
+        definition=prosecution.caseload_numerator,
+        disaggregation=CaseSeverityType,
+        disaggregation_column_name="case_severity",
+    ),
+    MetricFile(
+        canonical_filename="staff_with_caseload",
+        definition=prosecution.caseload_denominator,
+    ),
+    MetricFile(
+        canonical_filename="staff_with_caseload_by_type",
+        definition=prosecution.caseload_denominator,
         disaggregation=CaseSeverityType,
         disaggregation_column_name="case_severity",
     ),

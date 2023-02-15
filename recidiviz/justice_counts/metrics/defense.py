@@ -30,34 +30,34 @@ from recidiviz.justice_counts.dimensions.person import (
 )
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import (
+    CaseloadNumeratorIncludesExcludes,
     CasesDismissedIncludesExcludes,
     CasesResolvedAtTrialIncludesExcludes,
     CasesResolvedByPleaIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
     FacilitiesAndEquipmentExpensesIncludesExcludes,
+    FelonyCaseloadNumeratorIncludesExcludes,
     FelonyCasesIncludesExcludes,
     GrantsIncludesExcludes,
+    MisdemeanorCaseloadNumeratorIncludesExcludes,
     MisdemeanorCasesIncludesExcludes,
+    MixedCaseloadNumeratorIncludesExcludes,
     StaffIncludesExcludes,
     StateAppropriationIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseAdministrativeStaffIncludesExcludes,
     DefenseCaseloadDenominatorIncludesExcludes,
-    DefenseCaseloadNumeratorIncludesExcludes,
     DefenseCasesAppointedCounselIncludesExcludes,
     DefenseCasesDisposedIncludesExcludes,
     DefenseComplaintsIncludesExcludes,
     DefenseExpensesIncludesExcludes,
     DefenseFelonyCaseloadDenominatorIncludesExcludes,
-    DefenseFelonyCaseloadNumeratorIncludesExcludes,
     DefenseFundingIncludesExcludes,
     DefenseInvestigativeStaffIncludesExcludes,
     DefenseLegalStaffIncludesExcludes,
     DefenseMisdemeanorCaseloadDenominatorIncludesExcludes,
-    DefenseMisdemeanorCaseloadNumeratorIncludesExcludes,
     DefenseMixedCaseloadDenominatorIncludesExcludes,
-    DefenseMixedCaseloadNumeratorIncludesExcludes,
     DefensePersonnelExpensesIncludesExcludes,
     DefenseTrainingExpensesIncludesExcludes,
     DefenseVacantStaffIncludesExcludes,
@@ -293,8 +293,8 @@ caseload_numerator = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     includes_excludes=IncludesExcludesSet(
-        members=DefenseCaseloadNumeratorIncludesExcludes,
-        excluded_set={DefenseCaseloadNumeratorIncludesExcludes.NOT_ASSIGNED},
+        members=CaseloadNumeratorIncludesExcludes,
+        excluded_set={CaseloadNumeratorIncludesExcludes.NOT_ASSIGNED},
     ),
     aggregated_dimensions=[
         # TODO(#18071)
@@ -310,22 +310,22 @@ caseload_numerator = MetricDefinition(
             },
             dimension_to_includes_excludes={
                 CaseSeverityType.FELONY: IncludesExcludesSet(
-                    members=DefenseFelonyCaseloadNumeratorIncludesExcludes,
+                    members=FelonyCaseloadNumeratorIncludesExcludes,
                     excluded_set={
-                        DefenseFelonyCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
+                        FelonyCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
                     },
                 ),
                 CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
-                    members=DefenseMisdemeanorCaseloadNumeratorIncludesExcludes,
+                    members=MisdemeanorCaseloadNumeratorIncludesExcludes,
                     excluded_set={
-                        DefenseMisdemeanorCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
+                        MisdemeanorCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
                     },
                 ),
                 CaseSeverityType.MIXED: IncludesExcludesSet(
-                    members=DefenseMixedCaseloadNumeratorIncludesExcludes,
+                    members=MixedCaseloadNumeratorIncludesExcludes,
                     excluded_set={
-                        DefenseMixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_FELONY_CASES,
-                        DefenseMixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
+                        MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_FELONY_CASES,
+                        MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
                     },
                 ),
             },

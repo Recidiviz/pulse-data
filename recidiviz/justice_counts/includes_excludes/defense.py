@@ -113,6 +113,36 @@ class DefenseVacantStaffIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"
 
 
+# Caseload
+
+
+class DefenseCaseloadDenominatorIncludesExcludes(enum.Enum):
+    LINE_ATTORNEYS = "Line attorneys carrying a caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a caseload"
+    ON_LEAVE = "Staff on leave whose criminal caseload is being covered by a colleague"
+
+
+class DefenseFelonyCaseloadDenominatorIncludesExcludes(enum.Enum):
+    LINE_ATTORNEYS = "Line attorneys carrying a felony-only caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a felony-only caseload"
+    MIXED = "Line or supervising attorneys carrying a mixed (felony and misdemeanor) caseload"
+
+
+class DefenseMisdemeanorCaseloadDenominatorIncludesExcludes(enum.Enum):
+    LINE_ATTORNEYS = "Line attorneys carrying a misdemeanor-only caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a misdemeanor-only caseload"
+    MIXED = "Line or supervising attorneys carrying a mixed (felony and misdemeanor) caseload"
+
+
+class DefenseMixedCaseloadDenominatorIncludesExcludes(enum.Enum):
+    LINE_ATTORNEYS = "Line attorneys carrying a mixed caseload"
+    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a mixed caseload"
+    FELONY_ONLY = "Line or supervising attorneys carrying a felony-only caseload"
+    MISDEMEANOR_ONLY = (
+        "Line or supervising attorneys carrying a misdemeanor-only caseload"
+    )
+
+
 # Cases Disposed
 class DefenseCasesDisposedIncludesExcludes(enum.Enum):
     DIVERTED = "Criminal cases diverted from traditional case processing"
@@ -130,67 +160,6 @@ class DefenseCasesAppointedCounselIncludesExcludes(enum.Enum):
     NEW = "New criminal cases appointed to attorneys employed by the provider"
     INACTIVE = "Inactive cases reopened"
     TRANSFERRED = "	Criminal cases transferred to conflict counsel"
-
-
-# Caseload
-
-
-class DefenseCaseloadNumeratorIncludesExcludes(enum.Enum):
-    OPEN = "Criminal cases open and active during the time period"
-    ASSIGNED = "Criminal cases assigned to an attorney but inactive"
-    NOT_ASSIGNED = "Criminal cases not yet assigned to an attorney"
-
-
-class DefenseCaseloadDenominatorIncludesExcludes(enum.Enum):
-    LINE_ATTORNEYS = "Line attorneys carrying a caseload"
-    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a caseload"
-    ON_LEAVE = "Staff on leave whose criminal caseload is being covered by a colleague"
-
-
-class DefenseFelonyCaseloadNumeratorIncludesExcludes(enum.Enum):
-    OPEN_CASES = "Felony cases open and active during the sharing period"
-    ASSIGNED_CASES = "Felony cases assigned to an attorney but inactive"
-    UNASSIGNED_CASES = "Felony cases not yet assigned to an attorney"
-
-
-class DefenseFelonyCaseloadDenominatorIncludesExcludes(enum.Enum):
-    LINE_ATTORNEYS = "Line attorneys carrying a felony-only caseload"
-    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a felony-only caseload"
-    MIXED = "Line or supervising attorneys carrying a mixed (felony and misdemeanor) caseload"
-
-
-class DefenseMisdemeanorCaseloadNumeratorIncludesExcludes(enum.Enum):
-    OPEN_CASES = "Misdemeanor cases open and active during the sharing period"
-    ASSIGNED_CASES = "Misdemeanor cases assigned to an attorney but inactive"
-    UNASSIGNED_CASES = "Misdemeanor cases not yet assigned to an attorney"
-
-
-class DefenseMisdemeanorCaseloadDenominatorIncludesExcludes(enum.Enum):
-    LINE_ATTORNEYS = "Line attorneys carrying a misdemeanor-only caseload"
-    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a misdemeanor-only caseload"
-    MIXED = "Line or supervising attorneys carrying a mixed (felony and misdemeanor) caseload"
-
-
-class DefenseMixedCaseloadNumeratorIncludesExcludes(enum.Enum):
-    OPEN_FELONY_CASES = "Felony cases open and active during the sharing period"
-    ASSIGNED_FELONY_CASES = "Felony cases assigned to an attorney but inactive"
-    OPEN_MISDEMEANOR_CASES = (
-        "Misdemeanor cases open and active during the sharing period"
-    )
-    ASSIGNED_MISDEMEANOR_CASES = (
-        "Misdemeanor cases assigned to an attorney but inactive"
-    )
-    UNASSIGNED_FELONY_CASES = "Felony cases not yet assigned to an attorney"
-    UNASSIGNED_MISDEMEANOR_CASES = "Misdemeanor cases not yet assigned to an attorney"
-
-
-class DefenseMixedCaseloadDenominatorIncludesExcludes(enum.Enum):
-    LINE_ATTORNEYS = "Line attorneys carrying a mixed caseload"
-    SUPERVISING_ATTORNEYS = "Supervising attorneys carrying a mixed caseload"
-    FELONY_ONLY = "Line or supervising attorneys carrying a felony-only caseload"
-    MISDEMEANOR_ONLY = (
-        "Line or supervising attorneys carrying a misdemeanor-only caseload"
-    )
 
 
 # Complaints

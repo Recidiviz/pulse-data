@@ -33,12 +33,16 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     StaffType,
 )
 from recidiviz.justice_counts.includes_excludes.common import (
+    CaseloadNumeratorIncludesExcludes,
     CasesDismissedIncludesExcludes,
     CasesResolvedAtTrialIncludesExcludes,
     CasesResolvedByPleaIncludesExcludes,
     FacilitiesAndEquipmentExpensesIncludesExcludes,
+    FelonyCaseloadNumeratorIncludesExcludes,
     FelonyCasesIncludesExcludes,
+    MisdemeanorCaseloadNumeratorIncludesExcludes,
     MisdemeanorCasesIncludesExcludes,
+    MixedCaseloadNumeratorIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.person import (
     FemaleBiologicalSexIncludesExcludes,
@@ -47,22 +51,22 @@ from recidiviz.justice_counts.includes_excludes.person import (
 from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionAdministrativeStaffIncludesExcludes,
     ProsecutionAdvocateStaffIncludesExcludes,
-    ProsecutionCaseloadIncludesExcludes,
+    ProsecutionCaseloadDenominatorIncludesExcludes,
     ProsecutionCasesDeclinedIncludesExcludes,
     ProsecutionCasesDisposedIncludesExcludes,
     ProsecutionCasesDivertedOrDeferredIncludesExcludes,
     ProsecutionCasesProsecutedIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
-    ProsecutionFelonyCaseloadIncludesExcludes,
+    ProsecutionFelonyCaseloadDenominatorIncludesExcludes,
     ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes,
     ProsecutionFundingGrantsIncludesExcludes,
     ProsecutionFundingIncludesExcludes,
     ProsecutionFundingStateAppropriationsIncludesExcludes,
     ProsecutionInvestigativeStaffIncludesExcludes,
     ProsecutionLegalStaffIncludesExcludes,
-    ProsecutionMisdemeanorCaseloadIncludesExcludes,
-    ProsecutionMixedCaseloadIncludesExcludes,
+    ProsecutionMisdemeanorCaseloadDenominatorIncludesExcludes,
+    ProsecutionMixedCaseloadDenominatorIncludesExcludes,
     ProsecutionPersonnelExpensesIncludesExcludes,
     ProsecutionStaffIncludesExcludes,
     ProsecutionTrainingExpensesIncludesExcludes,
@@ -416,49 +420,88 @@ cases_prosecuted = MetricDefinition(
     ],
 )
 
-caseload = MetricDefinition(
+caseload_numerator = MetricDefinition(
     system=System.PROSECUTION,
-    metric_type=MetricType.CASELOADS,
+    metric_type=MetricType.CASELOADS_PEOPLE,
     category=MetricCategory.POPULATIONS,
-    display_name="Caseload",
-    description="The ratio of the number of people with open criminal cases to the number of staff carrying a criminal caseload.",
-    measurement_type=MeasurementType.DELTA,
+    display_name="Open Cases",
+    description="The number of people with open criminal cases carried by the office (used as the numerator in the calculation of the caseload metric).",
+    measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    # TODO(#17577)
     includes_excludes=IncludesExcludesSet(
-        members=ProsecutionCaseloadIncludesExcludes,
-        excluded_set={ProsecutionCaseloadIncludesExcludes.UNASSIGNED_CASES},
+        members=CaseloadNumeratorIncludesExcludes,
+        excluded_set={CaseloadNumeratorIncludesExcludes.NOT_ASSIGNED},
     ),
     aggregated_dimensions=[
+        # TODO(#18071)
         AggregatedDimension(
             dimension=CaseSeverityType,
             required=False,
             dimension_to_description={
-                CaseSeverityType.FELONY: "The ratio of the number of people with open felony cases to the number of staff carrying a felony caseload.",
-                CaseSeverityType.MISDEMEANOR: "The ratio of the number of people with open misdemeanor cases to the number of staff carrying a misdemeanor caseload.",
-                CaseSeverityType.MIXED: "The ratio of the number of people with open felony and misdemeanor cases to the number of staff carrying a mixed (felony and misdemeanor) caseload.",
-                CaseSeverityType.OTHER: "The ratio of the number of people with open criminal cases that are not felony or misdemeanor cases to the number of staff carrying a criminal caseload that does not comprise felony or misdemeanor cases.",
-                CaseSeverityType.UNKNOWN: "The ratio of the number of people with open criminal cases of unknown severity to the number of staff carrying a criminal caseload of unknown severity.",
+                CaseSeverityType.FELONY: "The number of people with open felony cases.",
+                CaseSeverityType.MISDEMEANOR: "The number of people with open misdemeanor cases.",
+                CaseSeverityType.MIXED: "The number of people with open felony and misdemeanor cases.",
+                CaseSeverityType.OTHER: "The number of people with open criminal cases.",
+                CaseSeverityType.UNKNOWN: "The number of people with open criminal cases of unknown severity.",
             },
             dimension_to_includes_excludes={
-                CaseSeverityType.FELONY: IncludesExcludesSet(  # TODO(#18071)
-                    members=ProsecutionFelonyCaseloadIncludesExcludes,
+                CaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCaseloadNumeratorIncludesExcludes,
                     excluded_set={
-                        ProsecutionFelonyCaseloadIncludesExcludes.UNASSIGNED_CASES
+                        FelonyCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
                     },
                 ),
-                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(  # TODO(#18071)
-                    members=ProsecutionMisdemeanorCaseloadIncludesExcludes,
+                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorCaseloadNumeratorIncludesExcludes,
                     excluded_set={
-                        ProsecutionMisdemeanorCaseloadIncludesExcludes.UNASSIGNED_CASES
+                        MisdemeanorCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
                     },
                 ),
-                CaseSeverityType.MIXED: IncludesExcludesSet(  # TODO(#18071)
-                    members=ProsecutionMixedCaseloadIncludesExcludes,
+                CaseSeverityType.MIXED: IncludesExcludesSet(
+                    members=MixedCaseloadNumeratorIncludesExcludes,
                     excluded_set={
-                        ProsecutionMixedCaseloadIncludesExcludes.UNASSIGNED_FELONY_CASES,
-                        ProsecutionMixedCaseloadIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
+                        MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_FELONY_CASES,
+                        MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
                     },
+                ),
+            },
+        )
+    ],
+)
+
+
+caseload_denominator = MetricDefinition(
+    system=System.PROSECUTION,
+    metric_type=MetricType.CASELOADS_STAFF,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Staff with Caseload",
+    description="The number of legal staff carrying a criminal caseload (used as the denominator in the calculation of the caseload metric).",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCaseloadDenominatorIncludesExcludes,
+    ),
+    aggregated_dimensions=[
+        # TODO(#18071)
+        AggregatedDimension(
+            dimension=CaseSeverityType,
+            required=False,
+            dimension_to_description={
+                CaseSeverityType.FELONY: "The number of staff carrying a felony caseload.",
+                CaseSeverityType.MISDEMEANOR: "The number of staff carrying a misdemeanor caseload.",
+                CaseSeverityType.MIXED: "The number of staff carrying a mixed (felony and misdemeanor) caseload.",
+                CaseSeverityType.OTHER: "The number of staff carrying a criminal caseload that does not comprise felony or misdemeanor cases.",
+                CaseSeverityType.UNKNOWN: "The number of staff carrying a criminal caseload of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                CaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=ProsecutionFelonyCaseloadDenominatorIncludesExcludes,
+                ),
+                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=ProsecutionMisdemeanorCaseloadDenominatorIncludesExcludes,
+                ),
+                CaseSeverityType.MIXED: IncludesExcludesSet(
+                    members=ProsecutionMixedCaseloadDenominatorIncludesExcludes,
                 ),
             },
         )
