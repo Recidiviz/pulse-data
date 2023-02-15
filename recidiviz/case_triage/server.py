@@ -70,7 +70,13 @@ from recidiviz.utils.auth.auth0 import (
     build_auth0_authorization_decorator,
     update_session_with_user_info,
 )
-from recidiviz.utils.environment import in_development, in_gcp, in_offline_mode, in_test
+from recidiviz.utils.environment import (
+    get_gcp_environment,
+    in_development,
+    in_gcp,
+    in_offline_mode,
+    in_test,
+)
 from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.structured_logging import StructuredCloudLoggingHandler
 from recidiviz.utils.timer import RepeatedTimer
@@ -84,6 +90,7 @@ if in_gcp():
         integrations=[FlaskIntegration()],
         # This value may need to be adjusted over time as usage increases.
         traces_sample_rate=1.0,
+        environment=get_gcp_environment(),
     )
 
 # Flask setup
