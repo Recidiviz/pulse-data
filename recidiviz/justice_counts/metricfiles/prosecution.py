@@ -23,6 +23,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DispositionType,
     DivertedCaseSeverityType,
     FundingType,
+    ProsecutedCaseSeverityType,
     ReferredCaseSeverityType,
     StaffType,
 )
@@ -79,6 +80,28 @@ PROSECUTION_METRIC_FILES = [
         definition=prosecution.cases_referred,
         disaggregation=ReferredCaseSeverityType,
         disaggregation_column_name="case_severity",
+    ),
+    MetricFile(
+        canonical_filename="cases_prosecuted",
+        definition=prosecution.cases_prosecuted,
+    ),
+    MetricFile(
+        canonical_filename="cases_prosecuted_by_type",
+        definition=prosecution.cases_prosecuted,
+        disaggregation=ProsecutedCaseSeverityType,
+        disaggregation_column_name="case_severity",
+    ),
+    MetricFile(
+        canonical_filename="cases_prosecuted_by_sex",
+        definition=prosecution.cases_prosecuted,
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
+    ),
+    MetricFile(
+        canonical_filename="cases_prosecuted_by_race",
+        definition=prosecution.cases_prosecuted,
+        disaggregation=RaceAndEthnicity,
+        disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
         canonical_filename="cases_diverted",
