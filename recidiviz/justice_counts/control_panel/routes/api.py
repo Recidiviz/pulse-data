@@ -208,6 +208,7 @@ def get_api_blueprint(
                 allowed_roles={
                     schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
                     schema.UserAccountRole.AGENCY_ADMIN,
+                    schema.UserAccountRole.CONTRIBUTOR,
                 },
             )
 
