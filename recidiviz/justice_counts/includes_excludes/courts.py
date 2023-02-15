@@ -61,3 +61,27 @@ class VacantPositionsIncludesExcludes(enum.Enum):
     ADVOCATE = "Vacant victim advocate staff positions"
     UNKNOWN = "Vacant staff positions of unknown type"
     FILLED = "Filled positions"
+
+
+# Criminal Case Filings
+class CriminalCaseFilingsIncludesExcludes(enum.Enum):
+    AUTHORIZED_AGENCY = "New cases filed by any authorized agency (e.g., prosecuting authority, law enforcement agency, etc.)"
+    NEW_CHARGES = (
+        "Cases filed for new criminal charges for people on community supervision"
+    )
+    TRANSFERRED_EXTERNAL = (
+        "Cases transferred from another jurisdiction for new prosecution"
+    )
+    VIOLATIONS = "Violations of an existing supervision case"
+    REVOCATIONS = "Revocations of an existing supervision case"
+    REOPENED = "Inactive cases reopened"
+    TRANSFERRED_INTERNAL = "Cases transferred internally"
+
+
+class FelonyCriminalCaseFilingsIncludesExcludes(enum.Enum):
+    FELONY_CHARGE = "Cases with a leading felony charge"
+
+
+class MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes(enum.Enum):
+    MISDEMEANOR_CHARGE = "Cases with a leading misdemeanor charge"
+    INFRACTION_CHARGE = "Cases with a leading infraction charge"

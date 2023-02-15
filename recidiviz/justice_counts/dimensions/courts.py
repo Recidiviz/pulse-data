@@ -62,10 +62,10 @@ class SentenceType(DimensionBase, enum.Enum):
 
 
 class CaseSeverityType(DimensionBase, enum.Enum):
-    FELONY = "Felony"
-    MISDEMEANOR = "Misdemeanor"
-    INFRACTION = "Infraction"
-    UNKNOWN = "Unknown"
+    FELONY = "Felony Criminal Case Filings"
+    MISDEMEANOR = "Misdemeanor or Infraction Criminal Case Filings"
+    OTHER = "Other Criminal Case Filings"
+    UNKNOWN = "Unknown Criminal Case Filings"
 
     @classmethod
     def dimension_identifier(cls) -> str:
