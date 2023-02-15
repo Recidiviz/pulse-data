@@ -163,6 +163,69 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
     ),
 """
 
+_CLIENT_RECORD_MILESTONES_CTE = """
+    milestones AS (
+        SELECT
+            state_code,
+            person_id,
+            ARRAY_AGG(STRUCT(milestone_type AS type, milestone_text AS text) IGNORE NULLS ORDER BY milestone_priority ASC) AS milestones
+        FROM (
+            -- birthdays
+            SELECT *
+            FROM (
+                SELECT
+                    sc.state_code,
+                    person_id,
+                    IF(
+                        EXTRACT(MONTH from sp.birthdate) = EXTRACT(MONTH from CURRENT_DATE('US/Eastern')) AND EXTRACT(DAY from sp.birthdate) <= EXTRACT(DAY from CURRENT_DATE('US/Eastern')),
+                        "Birthday this month (" || FORMAT_DATE('%B %d', sp.birthdate) ||")",
+                        NULL
+                    ) AS milestone_text,
+                    "BIRTHDAY_THIS_MONTH" as milestone_type,
+                    1 AS milestone_priority,
+                FROM supervision_cases sc
+                LEFT JOIN {project_id}.{normalized_state_dataset}.state_person sp
+                USING(state_code, person_id)
+            )
+            UNION ALL
+            -- months without violation
+            SELECT *
+            FROM (
+                SELECT
+                    state_code,
+                    person_id,
+                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) as string) || " months since last violation" as milestone_text,
+                    "MONTHS_WITHOUT_VIOLATION" as milestone_type,
+                    2 AS milestone_priority
+                    FROM (
+                        SELECT
+                        *,
+                        ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
+                        from {project_id}.{dataflow_metrics_dataset}.most_recent_violation_with_response_metrics_materialized df
+                        ORDER BY person_id, rn
+                    )
+                WHERE rn = 1
+            )
+            UNION ALL
+            -- months on supervision
+            SELECT *
+            FROM (
+                SELECT
+                    state_code,
+                    person_id,
+                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), ss.start_date, MONTH) as string) || " months on supervision" as milestone_text,
+                    "MONTHS_ON_SUPERVISION" as milestone_type,
+                    3 AS milestone_priority
+                FROM supervision_cases
+                INNER JOIN supervision_super_sessions ss USING(person_id)
+            )
+        )
+        WHERE state_code in ('US_ID', 'US_IX')
+        AND milestone_text IS NOT NULL
+        GROUP BY state_code, person_id
+    ),
+"""
+
 _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
     join_clients AS (
         SELECT DISTINCT
@@ -224,9 +287,11 @@ _CLIENTS_CTE = """
             current_employer,
             current_employer_start_date,
             current_employer_address,
-            opportunities_aggregated.all_eligible_opportunities
+            opportunities_aggregated.all_eligible_opportunities,
+            milestones
         FROM join_clients
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
+        LEFT JOIN milestones mi USING(state_code, person_id)
         # TODO(#17138): Remove this condition if we are no longer missing person details post-ATLAS
         WHERE person_name IS NOT NULL
     )
@@ -240,6 +305,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
     {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
+    {_CLIENT_RECORD_MILESTONES_CTE}
     {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
     {_CLIENTS_CTE}
     """

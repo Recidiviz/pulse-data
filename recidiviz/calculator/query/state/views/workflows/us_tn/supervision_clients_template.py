@@ -67,6 +67,7 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             {columns_to_array(["tn_supervision_level_downgrade_eligibility.opportunity_name",
                                "tn_compliant_reporting_eligibility.opportunity_name",
                                "tn_expiration_eligibility.opportunity_name"])} AS all_eligible_opportunities,
+            CAST(NULL AS ARRAY<STRUCT<type STRING, text STRING>>) as milestones,
         FROM tn_compliant_reporting_eligibility
         LEFT JOIN tn_supervision_level_downgrade_eligibility USING (person_external_id)
         FULL OUTER JOIN tn_expiration_eligibility USING (person_external_id)
