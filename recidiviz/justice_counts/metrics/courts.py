@@ -36,6 +36,10 @@ from recidiviz.justice_counts.includes_excludes.courts import (
     LegalStaffIncludesExcludes,
     MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
     NewOffensesWhileOnPretrialReleaseIncludesExcludes,
+    PretrialReleasesIncludesExcludes,
+    PretrialReleasesMonetaryBailIncludesExcludes,
+    PretrialReleasesNonMonetaryBailIncludesExcludes,
+    PretrialReleasesOnOwnRecognizanceIncludesExcludes,
     SecurityStaffIncludesExcludes,
     SupportOrAdministrativeStaffIncludesExcludes,
     VacantPositionsIncludesExcludes,
@@ -158,18 +162,49 @@ pretrial_releases = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
     metric_type=MetricType.PRETRIAL_RELEASES,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
-    definitions=[
-        Definition(
-            term="Pretrial release",
-            definition="The initial decision that an individual does not need to remain in custody while awaiting trial. This may involve nonmonetary release or monetary bail, or release with conditions (including electronic monitoring).",
-        )
-    ],
     display_name="Pretrial Releases",
-    description="Measures the number of cases in which an individual is released while awaiting trial.",
+    description="The number of people released while awaiting disposition in a criminal case.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="As much as possible, report the initial decision made by the court or on a bail schedule. Many jurisdictions may overwrite this decision if bail is modified at any point. This should be noted.",
-    aggregated_dimensions=[AggregatedDimension(dimension=ReleaseType, required=False)],
+    includes_excludes=IncludesExcludesSet(
+        members=PretrialReleasesIncludesExcludes,
+        excluded_set={
+            PretrialReleasesIncludesExcludes.AWAITING_DISPOSITION,
+            PretrialReleasesIncludesExcludes.TRANSFERRED,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ReleaseType,
+            required=False,
+            dimension_to_includes_excludes={
+                ReleaseType.ON_OWN: IncludesExcludesSet(
+                    members=PretrialReleasesOnOwnRecognizanceIncludesExcludes,
+                    excluded_set={
+                        PretrialReleasesOnOwnRecognizanceIncludesExcludes.BEFORE_BAIL_HEARING,
+                        PretrialReleasesOnOwnRecognizanceIncludesExcludes.AWAITING_DISPOSITION,
+                        PretrialReleasesOnOwnRecognizanceIncludesExcludes.TRANSFERRED,
+                    },
+                ),
+                ReleaseType.MONETARY_BAIL: IncludesExcludesSet(
+                    members=PretrialReleasesMonetaryBailIncludesExcludes,
+                    excluded_set={
+                        PretrialReleasesMonetaryBailIncludesExcludes.BEFORE_BAIL_HEARING,
+                    },
+                ),
+                ReleaseType.NON_MONETARY_BAIL: IncludesExcludesSet(
+                    members=PretrialReleasesNonMonetaryBailIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                ReleaseType.ON_OWN: "The number of people released without conditions awaiting disposition in a criminal case.",
+                ReleaseType.MONETARY_BAIL: "The number of people released on monetary bail while awaiting disposition in a criminal case.",
+                ReleaseType.NON_MONETARY_BAIL: "The number of people released on non-monetary bail while awaiting disposition in a criminal case.",
+                ReleaseType.OTHER: "The number of people released while awaiting disposition in a criminal case by a means other than on their own recognizance, on monetary bail, or on non-monetary bail.",
+                ReleaseType.UNKNOWN: "The number of people released while awaiting disposition in a criminal case by unknown means.",
+            },
+        )
+    ],
 )
 
 

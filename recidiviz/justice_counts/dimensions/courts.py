@@ -36,11 +36,11 @@ class StaffType(DimensionBase, enum.Enum):
 
 
 class ReleaseType(DimensionBase, enum.Enum):
-    ROR = "ROR Release"
-    MONETARY_BAIL = "Monetary Bail Release"
-    SUPERVISION_OR_EM = "Supervision or EM"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    ON_OWN = "On Own Recognizance"
+    MONETARY_BAIL = "Monetary Bail"
+    NON_MONETARY_BAIL = "Non-Monetary Bail"
+    OTHER = "Other Pretrial Releases"
+    UNKNOWN = "Unknown Pretrial Releases"
 
     @classmethod
     def dimension_identifier(cls) -> str:
