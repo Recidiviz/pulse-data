@@ -102,3 +102,14 @@ class ExpenseType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/expense/prosecution/type"
+
+
+class ProsecutedCaseSeverityType(DimensionBase, enum.Enum):
+    FELONY = "Felony Cases Prosecuted"
+    MISDEMEANOR = "Misdemeanor Cases Prosecuted"
+    OTHER = "Other Cases Prosecuted"
+    UNKNOWN = "Unknown Cases Prosecuted"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/severity/prosecuted/prosecution/type"

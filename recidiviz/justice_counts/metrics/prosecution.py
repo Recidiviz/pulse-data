@@ -28,6 +28,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     DivertedCaseSeverityType,
     ExpenseType,
     FundingType,
+    ProsecutedCaseSeverityType,
     ReferredCaseSeverityType,
     StaffType,
 )
@@ -50,6 +51,7 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionCasesDeclinedIncludesExcludes,
     ProsecutionCasesDisposedIncludesExcludes,
     ProsecutionCasesDivertedOrDeferredIncludesExcludes,
+    ProsecutionCasesProsecutedIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
     ProsecutionFelonyCaseloadIncludesExcludes,
@@ -349,6 +351,68 @@ cases_referred = MetricDefinition(
                 ),
             },
         )
+    ],
+)
+
+cases_prosecuted = MetricDefinition(
+    system=System.PROSECUTION,
+    metric_type=MetricType.CASES_PROSECUTED,
+    category=MetricCategory.OPERATIONS_AND_DYNAMICS,
+    display_name="Cases Prosecuted",
+    description="The number of criminal cases assigned for prosecution to an attorney and prosecuted by the office.",
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionCasesProsecutedIncludesExcludes,
+        excluded_set={ProsecutionCasesProsecutedIncludesExcludes.UNASSIGNED},
+    ),
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    measurement_type=MeasurementType.DELTA,
+    aggregated_dimensions=[
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=ProsecutedCaseSeverityType,
+            required=False,
+            dimension_to_description={
+                ProsecutedCaseSeverityType.FELONY: "The number of cases prosecuted in which the leading charge was for a felony offense.",
+                ProsecutedCaseSeverityType.MISDEMEANOR: "The number of cases prosecuted in which the leading charge was for a misdemeanor offense.",
+                ProsecutedCaseSeverityType.OTHER: "The number of cases prosecuted in which the leading charge was for another offense that was not a felony or misdemeanor.",
+                ProsecutedCaseSeverityType.UNKNOWN: "The number of cases prosecuted in which the leading charge was for an offense of unknown severity.",
+            },
+            dimension_to_includes_excludes={
+                ProsecutedCaseSeverityType.FELONY: IncludesExcludesSet(
+                    members=FelonyCasesIncludesExcludes,
+                    excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
+                ),
+                ProsecutedCaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
+                    members=MisdemeanorCasesIncludesExcludes,
+                    excluded_set={
+                        MisdemeanorCasesIncludesExcludes.INFRACTION,
+                        MisdemeanorCasesIncludesExcludes.FELONY,
+                    },
+                ),
+            },
+        ),
+        AggregatedDimension(
+            # TODO(#18071)
+            dimension=BiologicalSex,
+            required=False,
+            dimension_to_description={
+                BiologicalSex.MALE: "The number of cases assigned for prosecution to an attorney and prosecuted by the office with a defendant whose biological sex is male.",
+                BiologicalSex.FEMALE: "The number of cases assigned for prosecution to an attorney and prosecuted by the office with a defendant whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "The number of cases assigned for prosecution to an attorney and prosecuted by the office with a defendant whose biological sex is not known.",
+            },
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                ),
+            },
+        ),
+        # TODO(#18071)
+        AggregatedDimension(dimension=RaceAndEthnicity, required=False),
     ],
 )
 

@@ -91,6 +91,7 @@ METRICS = [
     prosecution.cases_referred,
     prosecution.cases_declined,
     prosecution.cases_diverted_or_deferred,
+    prosecution.cases_prosecuted,
     prosecution.violations,
     supervision.funding,
     supervision.expenses,

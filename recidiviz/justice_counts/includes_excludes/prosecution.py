@@ -216,6 +216,18 @@ class ProsecutionCasesDeclinedIncludesExcludes(enum.Enum):
     INTERNAL_TRANSFER = "Cases transferred internally"
 
 
+# Cases Prosecuted
+class ProsecutionCasesProsecutedIncludesExcludes(enum.Enum):
+    CASES_CONVICTED = (
+        "The number of cases prosecuted by the office that resulted in a conviction"
+    )
+    NOT_GUILTY = "The number of cases prosecuted by the office that resulted in a not guilty verdict"
+    MISTRIAL = (
+        "The number of cases prosecuted by the office that resulted in a mistrial"
+    )
+    UNASSIGNED = "Cases accepted for prosecution but not assigned to an attorney"
+
+
 # Cases Diverted
 
 
