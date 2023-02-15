@@ -63,6 +63,18 @@ class VacantPositionsIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"
 
 
+# New Offenses While on Pretrial Release
+class NewOffensesWhileOnPretrialReleaseIncludesExcludes(enum.Enum):
+    OWN_RECOGNIZANCE = "Cases involving people released on their own recognizance"
+    MONETARY_BAIL = "Cases involving people released on monetary bail"
+    NON_MONETARY_BAIL = "Cases involving people released on non-monetary bail"
+    BAIL_MODIFICATION = (
+        "Cases involving people released with subsequent bail modifications"
+    )
+    AWAITING_DISPOSITION = "Cases involving people initially ordered by the court to be held awaiting disposition"
+    TRANSFERRED = "Cases involving people transferred to another jurisdiction"
+
+
 # Criminal Case Filings
 class CriminalCaseFilingsIncludesExcludes(enum.Enum):
     AUTHORIZED_AGENCY = "New cases filed by any authorized agency (e.g., prosecuting authority, law enforcement agency, etc.)"

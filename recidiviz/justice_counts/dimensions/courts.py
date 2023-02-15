@@ -70,13 +70,3 @@ class CaseSeverityType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/courts/case/severity/type"
-
-
-class CaseType(DimensionBase, enum.Enum):
-    VIOLENT = "Violent"
-    NON_VIOLENT = "Non-violent"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/courts/case/type"
