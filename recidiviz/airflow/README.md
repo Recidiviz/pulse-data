@@ -33,6 +33,12 @@ not have with our other applications (like App Engine or Cloud Run). This means 
 need a specific Pipfile within the `recidiviz/airflow` directory in order to get started with
 local development.
 
+Before developing and installing the dependencies of this Pipenv for the first time, run
+
+```
+brew install mysql
+```
+
 To initialize a virtualenv with this Pipfile,
 
 ```

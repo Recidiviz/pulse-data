@@ -55,6 +55,7 @@ _TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
 _WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID = (
     "view_materialization.wait_for_view_update_all_success"
 )
+_END_UPDATE_VIEW_BRANCH_TASK_ID = "view_materialization.end_update_all_views_branch"
 _TRIGGER_VALIDATIONS_TASK_ID_REGEX = (
     r"validations.US_[A-Z]{2}_validations.trigger_us_[a-z]{2}_validations_task"
 )
@@ -174,10 +175,10 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_tasks_not_upstream = metric_pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
-    def test_rematerialization_upstream_of_all_exports(
+    def test_update_all_views_branch_upstream_of_all_exports(
         self,
     ) -> None:
-        """Tests that view rematerialization happens before any of the metric exports."""
+        """Tests that view update happens before any of the metric exports."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
@@ -192,7 +193,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self.assertNotEqual(0, len(metric_view_data_export_tasks.leaves))
         for task in metric_view_data_export_tasks.leaves:
             self.assertRegex(task.task_id, metric_view_data_export_id_regex)
-            self.assertIn(_WAIT_FOR_REMATERIALIZATION_TASK_ID, task.upstream_task_ids)
+            self.assertIn(_END_UPDATE_VIEW_BRANCH_TASK_ID, task.upstream_task_ids)
 
     def test_rematerialization_upstream_of_validation(
         self,
@@ -225,6 +226,42 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         found_upstream = False
         for upstream_task_id in wait_for_materialization_upstream_dag.task_ids:
+            if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
+                found_upstream = True
+
+        self.assertFalse(found_upstream)
+
+    def test_update_all_views_upstream_of_validation(
+        self,
+    ) -> None:
+        """Tests that update_all_views happens before the validations run."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_for_update_all_views_downstream_dag = dag.partial_subset(
+            task_ids_or_regex=[_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID],
+            include_downstream=True,
+            include_upstream=False,
+        )
+
+        self.assertNotEqual(0, len(wait_for_update_all_views_downstream_dag.task_ids))
+
+        found_downstream = False
+        for upstream_task_id in wait_for_update_all_views_downstream_dag.task_ids:
+            if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
+                found_downstream = True
+
+        self.assertTrue(found_downstream)
+
+        wait_for_update_all_views_upstream_dag = dag.partial_subset(
+            task_ids_or_regex=[_WAIT_FOR_UPDATE_ALL_MANAGED_VIEWS_TASK_ID],
+            include_downstream=False,
+            include_upstream=True,
+        )
+
+        found_upstream = False
+        for upstream_task_id in wait_for_update_all_views_upstream_dag.task_ids:
             if re.match(_TRIGGER_VALIDATIONS_TASK_ID_REGEX, upstream_task_id):
                 found_upstream = True
 
@@ -273,6 +310,35 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         trigger_task_subdag = dag.partial_subset(
             task_ids_or_regex=_TRIGGER_REMATERIALIZATION_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+
+        upstream_tasks = set()
+        for task in trigger_task_subdag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
+
+        pipeline_tasks_not_upstream = pipeline_task_ids - upstream_tasks
+        self.assertEqual(set(), pipeline_tasks_not_upstream)
+
+    def test_view_update_downstream_of_all_pipelines(
+        self,
+    ) -> None:
+        """Tests that view update happens after all pipelines have run."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        pipeline_task_ids: Set[str] = {
+            task.task_id
+            for task in dag.tasks
+            if isinstance(task, RecidivizDataflowTemplateOperator)
+        }
+
+        self.assertNotEqual(0, len(pipeline_task_ids))
+
+        trigger_task_subdag = dag.partial_subset(
+            task_ids_or_regex=_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID,
             include_downstream=False,
             include_upstream=True,
         )
@@ -409,31 +475,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
             wait_task.upstream_task_ids,
         )
 
-    def test_state_bq_refresh_completion_task_upstream_of_update_all_views_branch(
-        self,
-    ) -> None:
-        """Tests that state_bq_refresh_completion happens directly before we call update_all_views_branch."""
-        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
-        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
-        self.assertNotEqual(0, len(dag.task_ids))
-
-        wait_subdag = dag.partial_subset(
-            task_ids_or_regex=_UPDATE_ALL_VIEWS_BRANCH_TASK_ID,
-            include_downstream=False,
-            include_upstream=True,
-        )
-        wait_task = one(wait_subdag.leaves)
-
-        self.assertEqual(_UPDATE_ALL_VIEWS_BRANCH_TASK_ID, wait_task.task_id)
-        self.assertEqual(
-            {
-                get_post_refresh_short_circuit_task_id("STATE"),
-                get_post_refresh_short_circuit_task_id("OPERATIONS"),
-                get_post_refresh_short_circuit_task_id("CASE_TRIAGE"),
-            },
-            wait_task.upstream_task_ids,
-        )
-
     def test_update_all_views_branch_task_upstream_of_update_all_managed_views(
         self,
     ) -> None:
@@ -450,6 +491,29 @@ class TestCalculationPipelineDag(unittest.TestCase):
         wait_task = one(wait_subdag.leaves)
 
         self.assertEqual(_TRIGGER_UPDATE_ALL_MANAGED_VIEWS_TASK_ID, wait_task.task_id)
+        self.assertEqual(
+            {
+                _UPDATE_ALL_VIEWS_BRANCH_TASK_ID,
+            },
+            wait_task.upstream_task_ids,
+        )
+
+    def test_update_all_views_branch_task_upstream_of_rematerialize_all_views(
+        self,
+    ) -> None:
+        """Tests that update_all_views_branch happens directly before we call rematerialize_all_views."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        wait_subdag = dag.partial_subset(
+            task_ids_or_regex=_TRIGGER_REMATERIALIZATION_TASK_ID,
+            include_downstream=False,
+            include_upstream=True,
+        )
+        wait_task = one(wait_subdag.leaves)
+
+        self.assertEqual(_TRIGGER_REMATERIALIZATION_TASK_ID, wait_task.task_id)
         self.assertEqual(
             {
                 _UPDATE_ALL_VIEWS_BRANCH_TASK_ID,
