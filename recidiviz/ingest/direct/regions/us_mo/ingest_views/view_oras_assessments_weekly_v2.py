@@ -23,6 +23,8 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH 
+    assessments_with_duplicates AS (
     SELECT
         OFFENDER_NAME,
         AGENCY_NAME,
@@ -41,14 +43,47 @@ VIEW_QUERY_TEMPLATE = """
         USER_CREATED,
         RACE,
         BIRTH_DATE,
-        CREATED_DATE
-    FROM
-        {ORAS_WEEKLY_SUMMARY_UPDATE}
+        CREATED_DATE,
+        ROW_NUMBER() OVER (PARTITION BY DOC_ID,CREATED_DATE,ASSESSMENT_TYPE) AS assessment_rank
+    FROM {ORAS_WEEKLY_SUMMARY_UPDATE}
     WHERE
         ASSESSMENT_STATUS = 'Complete'
     -- explicitly filter out any test data from UCCI
         AND OFFENDER_NAME NOT LIKE '%Test%'
-        AND OFFENDER_NAME NOT LIKE '%test%';
+        AND OFFENDER_NAME NOT LIKE '%test%'
+),
+    duplicate_counts AS (
+    SELECT 
+        DOC_ID,
+        CREATED_DATE,
+        ASSESSMENT_TYPE,
+        COUNT(DISTINCT SCORE) AS score_count,
+        COUNT(DISTINCT RISK_LEVEL) AS rl_count
+        FROM assessments_with_duplicates
+        GROUP BY DOC_ID,CREATED_DATE,ASSESSMENT_TYPE
+)
+SELECT 
+    OFFENDER_NAME,
+    AGENCY_NAME,
+    DATE_OF_BIRTH,
+    GENDER,
+    ETHNICITY,
+    DOC_ID,
+    ASSESSMENT_TYPE,
+    CASE WHEN rl_count > 1 THEN NULL ELSE RISK_LEVEL END AS RISK_LEVEL,
+    OVERRIDE_RISK_LEVEL,
+    OVERRIDE_RISK_REASON,
+    ASSESSMENT_OUTCOME,
+    ASSESSMENT_STATUS,
+    CASE WHEN score_count > 1 THEN NULL ELSE SCORE END AS SCORE,
+    DATE_CREATED,
+    USER_CREATED,
+    RACE,
+    BIRTH_DATE,
+    CREATED_DATE
+FROM assessments_with_duplicates 
+LEFT JOIN duplicate_counts USING(DOC_ID,CREATED_DATE,ASSESSMENT_TYPE)
+WHERE assessment_rank = 1
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
