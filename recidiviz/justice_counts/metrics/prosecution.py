@@ -35,6 +35,7 @@ from recidiviz.justice_counts.includes_excludes.common import (
     CasesDismissedIncludesExcludes,
     CasesResolvedAtTrialIncludesExcludes,
     CasesResolvedByPleaIncludesExcludes,
+    FacilitiesAndEquipmentExpensesIncludesExcludes,
     FelonyCasesIncludesExcludes,
     MisdemeanorCasesIncludesExcludes,
 )
@@ -51,7 +52,6 @@ from recidiviz.justice_counts.includes_excludes.prosecution import (
     ProsecutionCasesDivertedOrDeferredIncludesExcludes,
     ProsecutionCasesReferredIncludesExcludes,
     ProsecutionExpensesIncludesExcludes,
-    ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes,
     ProsecutionFelonyCaseloadIncludesExcludes,
     ProsecutionFundingCountyOrMunicipalAppropriationsIncludesExcludes,
     ProsecutionFundingGrantsIncludesExcludes,
@@ -185,7 +185,7 @@ expenses = (
                         },
                     ),
                     ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
-                        members=ProsecutionFacilitiesAndEquipmentExpensesIncludesExcludes
+                        members=FacilitiesAndEquipmentExpensesIncludesExcludes
                     ),
                 },
             )

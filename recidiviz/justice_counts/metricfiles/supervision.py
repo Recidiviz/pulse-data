@@ -46,10 +46,10 @@ SUPERVISION_METRIC_FILES = [
         definition=supervision.expenses,
     ),
     MetricFile(
-        canonical_filename="expenses_by_type",
+        canonical_filename="expense_by_type",
         definition=supervision.expenses,
         disaggregation=ExpenseType,
-        disaggregation_column_name="expenses_type",
+        disaggregation_column_name="expense_type",
     ),
     MetricFile(
         canonical_filename="total_staff",

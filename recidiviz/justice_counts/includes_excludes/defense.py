@@ -43,6 +43,47 @@ class FeesFundingIncludesExcludes(enum.Enum):
     FEES = "Fees charged to people who have been assigned criminal defense counsel due to indigence"
 
 
+# Expenses
+
+
+class DefenseExpensesIncludesExcludes(enum.Enum):
+    SINGLE_YEAR = "Expenses for single fiscal year"
+    BIENNIUM = "Biennium funding appropriated during the time period"
+    MULTI_YEAR = (
+        "Multi-year appropriations that are appropriated in during the time period"
+    )
+    OPERATIONS = (
+        "Expenses for provider facility construction, operations, and maintenance"
+    )
+    CRIMINAL_DEFENSE_SERVICES = "Expenses for criminal defense services provided for clients through the provider, including transportation and bail services"
+    CONTINUING_EDUCATION = "Expenses for continuing legal education"
+    STAFF = "Expenses for criminal defense provider staff and personnel"
+    CONTRACTED_PERSONNEL = (
+        "Expenses for contracted personnel (e.g., expert witnesses, etc.)"
+    )
+    CASE_MANAGEMENT_SYSTEMS = "Expenses for electronic case management systems"
+    NON_CRIMINAL_CASES = "Expenses for non-criminal case processing"
+
+
+class DefensePersonnelExpensesIncludesExcludes(enum.Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT = "Retirement contributions"
+    INDIVIDUALS_CONTRACTED = (
+        "Contracts for individuals doing work related to criminal public defense"
+    )
+    COMPANIES_CONTRACTED = "Companies or service providers contracted to support work related to criminal public defense"
+
+
+class DefenseTrainingExpensesIncludesExcludes(enum.Enum):
+    ANNUAL = "Annual training"
+    LEGAL_EDUCATION = "Continuing education"
+    SPECIALIZED_TRAINING = "Specialized training"
+    FREE_COURSES = (
+        "Courses or programs offered at no cost to individuals or the provider"
+    )
+
+
 # Staff
 class DefenseLegalStaffIncludesExcludes(enum.Enum):
     LINE_ATTORNEYS = "Line attorneys"

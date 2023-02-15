@@ -35,7 +35,7 @@ LAW_ENFORCEMENT_METRIC_FILES = [
         definition=law_enforcement.expenses,
     ),
     MetricFile(
-        canonical_filename="expenses_by_type",
+        canonical_filename="expense_by_type",
         definition=law_enforcement.expenses,
         disaggregation=ExpenseType,
         disaggregation_column_name="expense_type",

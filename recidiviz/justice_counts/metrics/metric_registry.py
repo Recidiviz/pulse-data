@@ -45,6 +45,7 @@ METRICS = [
     courts.sentences_imposed,
     defense.funding,
     defense.staff,
+    defense.expenses,
     defense.residents,
     defense.cases_appointed_counsel,
     defense.caseload_numerator,

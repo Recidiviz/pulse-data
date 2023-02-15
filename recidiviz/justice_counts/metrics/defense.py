@@ -19,6 +19,7 @@
 from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.defense import (
     CaseAppointedSeverityType,
+    ExpenseType,
     FundingType,
     StaffType,
 )
@@ -33,6 +34,7 @@ from recidiviz.justice_counts.includes_excludes.common import (
     CasesResolvedAtTrialIncludesExcludes,
     CasesResolvedByPleaIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
+    FacilitiesAndEquipmentExpensesIncludesExcludes,
     FelonyCasesIncludesExcludes,
     GrantsIncludesExcludes,
     MisdemeanorCasesIncludesExcludes,
@@ -46,6 +48,7 @@ from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseCasesAppointedCounselIncludesExcludes,
     DefenseCasesDisposedIncludesExcludes,
     DefenseComplaintsIncludesExcludes,
+    DefenseExpensesIncludesExcludes,
     DefenseFelonyCaseloadDenominatorIncludesExcludes,
     DefenseFelonyCaseloadNumeratorIncludesExcludes,
     DefenseFundingIncludesExcludes,
@@ -55,6 +58,8 @@ from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseMisdemeanorCaseloadNumeratorIncludesExcludes,
     DefenseMixedCaseloadDenominatorIncludesExcludes,
     DefenseMixedCaseloadNumeratorIncludesExcludes,
+    DefensePersonnelExpensesIncludesExcludes,
+    DefenseTrainingExpensesIncludesExcludes,
     DefenseVacantStaffIncludesExcludes,
     FeesFundingIncludesExcludes,
 )
@@ -136,6 +141,50 @@ funding = MetricDefinition(
                 ),
                 FundingType.FEES: IncludesExcludesSet(
                     members=FeesFundingIncludesExcludes,
+                ),
+            },
+        )
+    ],
+)
+
+
+expenses = MetricDefinition(
+    system=System.DEFENSE,
+    metric_type=MetricType.EXPENSES,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Expenses",
+    description="The amount spent for the operation and maintenance of defense providers and criminal public defense services.",
+    measurement_type=MeasurementType.INSTANT,
+    # TODO(#17577) implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=DefenseExpensesIncludesExcludes,
+        excluded_set={DefenseExpensesIncludesExcludes.NON_CRIMINAL_CASES},
+    ),
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ExpenseType,
+            required=False,
+            dimension_to_description={
+                ExpenseType.PERSONNEL: "The amount spent by the office to employ personnel involved in the operation and maintenance of defense providers and criminal public defense services.",
+                ExpenseType.TRAINING: "The amount spent on the training of personnel involved in the operation and maintenance of criminal public defense providers and the representation of people who are clients of those providers, including any associated expenses, such as registration fees and travel costs.",
+                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent for the purchase and use of the physical plant and property owned and operated by the provider for criminal defense services.",
+                ExpenseType.OTHER: "The amount spent on other costs relating the operation and maintenance of criminal public defense providers and the representation of people who are clients of those providers that are not personnel, training, or facilities and equipment expenses.",
+                ExpenseType.UNKNOWN: "he amount spent on other costs relating the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers that are for an unknown purpose.",
+            },
+            dimension_to_includes_excludes={
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=DefensePersonnelExpensesIncludesExcludes,
+                    excluded_set={
+                        DefensePersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED
+                    },
+                ),
+                ExpenseType.TRAINING: IncludesExcludesSet(
+                    members=DefenseTrainingExpensesIncludesExcludes,
+                    excluded_set={DefenseTrainingExpensesIncludesExcludes.FREE_COURSES},
+                ),
+                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                    members=FacilitiesAndEquipmentExpensesIncludesExcludes,
                 ),
             },
         )
