@@ -37,14 +37,14 @@ COURTS_METRIC_FILES = [
         definition=courts.annual_budget,
     ),
     MetricFile(
-        canonical_filename="total_staff",
-        definition=courts.total_staff,
+        canonical_filename="judges_and_staff",
+        definition=courts.judges_and_staff,
     ),
     MetricFile(
-        canonical_filename="total_staff_by_type",
-        definition=courts.total_staff,
+        canonical_filename="judges_and_staff_by_type",
+        definition=courts.judges_and_staff,
         disaggregation=StaffType,
-        disaggregation_column_name="staff_type",
+        disaggregation_column_name="judges_and_staff_type",
     ),
     MetricFile(
         canonical_filename="pretrial_releases",
