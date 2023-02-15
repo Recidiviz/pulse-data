@@ -29,10 +29,20 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType
+from recidiviz.justice_counts.includes_excludes.common import StaffIncludesExcludes
+from recidiviz.justice_counts.includes_excludes.courts import (
+    JudgesIncludesExcludes,
+    LegalStaffIncludesExcludes,
+    SecurityStaffIncludesExcludes,
+    SupportOrAdministrativeStaffIncludesExcludes,
+    VacantPositionsIncludesExcludes,
+    VictimAdvocateStaffIncludesExcludes,
+)
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
     Context,
     Definition,
+    IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
     ReportingFrequency,
@@ -76,22 +86,69 @@ annual_budget = MetricDefinition(
     ],
 )
 
-total_staff = MetricDefinition(
+judges_and_staff = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Total Staff",
-    definitions=[
-        Definition(
-            term="Full-time staff",
-            definition="Number of people employed in a full-time (0.9+) capacity.",
-        )
-    ],
-    reporting_note="If multiple staff are part-time but make up a full-time position of employment, this may count as one full-time staff position filled.",
-    description="Measures the number of full-time staff employed by the criminal courts.",
+    display_name="Judges and Staff",
+    description="The number of full-time equivalent positions budgeted and paid for by the court system for criminal case processing.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[AggregatedDimension(dimension=StaffType, required=False)],
+    includes_excludes=IncludesExcludesSet(
+        members=StaffIncludesExcludes,
+        excluded_set={
+            StaffIncludesExcludes.VOLUNTEER,
+            StaffIncludesExcludes.INTERN,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=StaffType,
+            required=False,
+            dimension_to_includes_excludes={
+                StaffType.JUDGES: IncludesExcludesSet(
+                    members=JudgesIncludesExcludes,
+                    excluded_set={
+                        JudgesIncludesExcludes.WITHOUT_CRIMINAL_CASE,
+                    },
+                ),
+                StaffType.LEGAL: IncludesExcludesSet(
+                    members=LegalStaffIncludesExcludes,
+                    excluded_set={
+                        LegalStaffIncludesExcludes.JUDGES,
+                    },
+                ),
+                StaffType.SECURITY: IncludesExcludesSet(
+                    members=SecurityStaffIncludesExcludes,
+                ),
+                StaffType.ADMINISTRATIVE: IncludesExcludesSet(
+                    members=SupportOrAdministrativeStaffIncludesExcludes,
+                ),
+                StaffType.ADVOCATE: IncludesExcludesSet(
+                    members=VictimAdvocateStaffIncludesExcludes,
+                    excluded_set={
+                        VictimAdvocateStaffIncludesExcludes.NOT_FULL_TIME,
+                    },
+                ),
+                StaffType.VACANT: IncludesExcludesSet(
+                    members=VacantPositionsIncludesExcludes,
+                    excluded_set={
+                        VacantPositionsIncludesExcludes.FILLED,
+                    },
+                ),
+            },
+            dimension_to_description={
+                StaffType.JUDGES: "The number of full-time equivalent positions for judges for criminal case processing.",
+                StaffType.LEGAL: "The number of full-time equivalent positions for criminal case processing that are not judges and are responsible for legal work.",
+                StaffType.SECURITY: "The number of full-time equivalent positions for criminal case processing that are responsible for the safety of the court and people within the court system’s facilities.",
+                StaffType.ADMINISTRATIVE: "The number of full-time equivalent positions for criminal case processing that assist in the organization, logistics, and management of the court system.",
+                StaffType.ADVOCATE: "The number of full-time equivalent positions for criminal case processing that provide victim support services.",
+                StaffType.OTHER: "The number of full-time equivalent positions for criminal case filings that are not judges, legal staff, security staff, support or administrative staff, or victim advocate staff.",
+                StaffType.UNKNOWN: "The number of full-time equivalent positions for criminal case processing that are of an unknown type.",
+                StaffType.VACANT: "The number of full-time equivalent positions for criminal case processing of any type that are budgeted but not currently filled.",
+            },
+        )
+    ],
 )
 
 pretrial_releases = MetricDefinition(
