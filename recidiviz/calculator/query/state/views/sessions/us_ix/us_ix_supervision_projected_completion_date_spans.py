@@ -52,11 +52,6 @@ WITH all_states_spans AS (
         AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
     WHERE
         span.state_code = 'US_IX'
-        #TODO(#17720) Fix impact tracking for overdue for discharge
-        AND (
-            NOT CURRENT_DATE("US/Pacific") BETWEEN span.start_date AND {nonnull_end_date_clause('span.end_date_exclusive')} 
-            OR sent.status != 'COMPLETED'
-        )
     GROUP BY 1, 2, 3, 4
 )
     SELECT 
