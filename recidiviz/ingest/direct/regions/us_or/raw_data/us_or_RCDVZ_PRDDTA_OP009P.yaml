@@ -21,8 +21,12 @@ columns:
     description: |-
       Location where admitted, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
   - name: ADMISSION_DATE
+    is_datetime: True
     description: |-
       Date of current incarceration admission.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PREVIOUS_STATUS
     description: |-
       Previous status of incarceration.
@@ -41,8 +45,12 @@ columns:
     description: |-
       TODO(#17148): Fill in with answer from OR
   - name: RELEASE_DATE
+    is_datetime: True
     description: |-
       Date of current incarceration release.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: RELEASE_REASON
     description: |-
       Release reason from current period of incarceration.
