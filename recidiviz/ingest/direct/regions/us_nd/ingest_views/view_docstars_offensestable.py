@@ -23,10 +23,17 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT ot.*, oc.JUDGE
+SELECT ot.*, 
+oc.JUDGE,
+UPPER(ncic.DESCRIPTION) AS legacy_desc, 
+UPPER(cst.DESCRIPTION) AS cst_desc
 FROM {docstars_offensestable} ot
 LEFT JOIN {docstars_offendercasestable} oc
 USING (CASE_NUMBER)
+LEFT JOIN {recidiviz_docstars_cst_ncic_code} cst
+ON ot.Common_Statute_NCIC_Code = cst.CODE
+LEFT JOIN {recidiviz_docstars_nciccodes} ncic
+USING(CODE)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
