@@ -88,7 +88,14 @@ US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         s.state_code,
         s.sentence_id,
         s.sentence_type,
-        cs.sentence_id AS consecutive_sentence_id
+        cs.sentence_id AS consecutive_sentence_id,
+        -- Flag the earliest imposed parent if the sentence has more than 1
+        -- TODO(#18011): determine the best sentence to use as a parent for multi-parent
+        -- consecutive (amended) sentences
+        ROW_NUMBER() OVER (
+            PARTITION BY s.state_code, s.person_id, s.sentence_id
+            ORDER BY cs.date_imposed, cs.sentence_id
+        ) AS parent_sentence_order,
     FROM sentences s
     LEFT JOIN sentences cs
         ON s.state_code = cs.state_code
@@ -96,13 +103,6 @@ US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND s.consec_seq_num = cs.seq_num
         AND s.sentence_type = cs.sentence_type
     WHERE s.is_consecutive_sentence
-    -- Pick the earliest imposed parent if the sentence has more than 1
-    -- TODO(#18011): determine the best sentence to use as a parent for multi-parent
-    -- consecutive (amended) sentences
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY s.state_code, s.person_id, s.sentence_id
-        ORDER BY cs.date_imposed, cs.sentence_id
-    ) = 1
 """
 
 US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
