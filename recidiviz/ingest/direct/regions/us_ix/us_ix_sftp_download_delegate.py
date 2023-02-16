@@ -56,7 +56,7 @@ class UsIxSftpDownloadDelegate(BaseSftpDownloadDelegate):
         return self.CURRENT_ROOT
 
     def post_process_downloads(
-        self, downloaded_path: GcsfsFilePath, _: GCSFileSystem
+        self, downloaded_path: GcsfsFilePath, gcsfs: GCSFileSystem
     ) -> List[str]:
         """The US_IX server doesn't require any post-processing."""
         return [downloaded_path.abs_path()]
