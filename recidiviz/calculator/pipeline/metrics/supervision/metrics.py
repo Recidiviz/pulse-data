@@ -348,7 +348,7 @@ The calculation of the attributes of this metric relies entirely on the state-sp
         init=False, default=SupervisionMetricType.SUPERVISION_COMPLIANCE
     )
 
-    # The date the on which the case's compliance was evaluated
+    # The date on which the case's compliance was evaluated
     date_of_evaluation: date = attr.ib(default=None)
 
     # The number of risk assessments conducted on this person on the date_of_evaluation
