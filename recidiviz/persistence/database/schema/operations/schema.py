@@ -144,6 +144,8 @@ class DirectIngestSftpIngestReadyFileMetadata(OperationsBase):
             "post_processed_normalized_file_path IS NOT NULL AND remote_file_path IS NOT NULL",
             name="nonnull post_processed_and_remote_paths",
         ),
+        # This is sufficient because the SFTP timestamp is encoded as the first part of the
+        # post_processed_normalized_file_path.
         UniqueConstraint(
             "region_code",
             "post_processed_normalized_file_path",

@@ -14,6 +14,8 @@
 - [recidiviz/common, local_file_paths.py]
 - [recidiviz/common, str_field_utils.py]
 - [recidiviz/ingest/direct, direct_ingest_bucket_name_utils.py]
+- [recidiviz/ingest/direct/gcs, direct_ingest_gcs_file_system.py]
+- [recidiviz/ingest/direct/gcs, filename_parts.py]
 - [recidiviz/ingest/direct/regions, us_*/us_*_sftp_download_delegate.py]
 - [recidiviz/ingest/direct/sftp, base_sftp_download_delegate.py]
 - [recidiviz/ingest/direct/sftp, sftp_download_delegate_factory.py]

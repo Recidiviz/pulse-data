@@ -14,12 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Constants used to reference metadata fields in the SFTP DAG"""
-
-REMOTE_FILE_PATH = "remote_file_path"
-SFTP_TIMESTAMP = "sftp_timestamp"
-DOWNLOADED_FILE_PATH = "downloaded_file_path"
-POST_PROCESSED_FILE_PATH = "post_processed_file_path"
-POST_PROCESSED_NORMALIZED_FILE_PATH = "post_processed_normalized_file_path"
-INGEST_READY_FILE_PATH = "ingest_ready_file_path"
-UPLOADED_FILE_PATH = "uploaded_file_path"

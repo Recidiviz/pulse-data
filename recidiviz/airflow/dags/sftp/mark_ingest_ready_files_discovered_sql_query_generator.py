@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for marking all SFTP files as discovered."""
+"""The CloudSQLQueryGenerator for marking all SFTP ingest ready files as discovered."""
 import datetime
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -33,24 +33,30 @@ try:
         CloudSqlQueryGenerator,
         CloudSqlQueryOperator,
     )
-    from sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP  # type: ignore
+    from sftp.metadata import (  # type: ignore
+        POST_PROCESSED_NORMALIZED_FILE_PATH,
+        REMOTE_FILE_PATH,
+    )
 except ImportError:
     from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
         CloudSqlQueryGenerator,
         CloudSqlQueryOperator,
     )
-    from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
+    from recidiviz.airflow.dags.sftp.metadata import (
+        POST_PROCESSED_NORMALIZED_FILE_PATH,
+        REMOTE_FILE_PATH,
+    )
 
 
-class MarkRemoteFilesDiscoveredSqlQueryGenerator(
+class MarkIngestReadyFilesDiscoveredSqlQueryGenerator(
     CloudSqlQueryGenerator[List[Dict[str, Union[str, int]]]]
 ):
-    """Custom query generator for marking all files as discovered."""
+    """Custom query generator for marking all ingest ready files as discovered."""
 
-    def __init__(self, region_code: str, filter_downloaded_files_task_id: str) -> None:
+    def __init__(self, region_code: str, filter_invalid_gcs_files_task_id: str) -> None:
         super().__init__()
         self.region_code = region_code
-        self.filter_downloaded_files_task_id = filter_downloaded_files_task_id
+        self.filter_invalid_gcs_files_task_id = filter_invalid_gcs_files_task_id
 
     def execute_postgres_query(
         self,
@@ -60,30 +66,31 @@ class MarkRemoteFilesDiscoveredSqlQueryGenerator(
     ) -> List[Dict[str, Union[str, int]]]:
         """Returns the original list of all files to download after marking all new files
         as discovered in the Postgres database."""
-        sftp_files_with_timestamps: Optional[
-            List[Dict[str, Union[str, int]]]
+        post_processed_file_metadatas: List[
+            Dict[str, Union[str, int]]
         ] = operator.xcom_pull(
-            context, key="return_value", task_ids=self.filter_downloaded_files_task_id
+            context, key="return_value", task_ids=self.filter_invalid_gcs_files_task_id
         )
-        if sftp_files_with_timestamps:
-            sftp_file_to_timestamp_set: Set[Tuple[str, int]] = {
+        if post_processed_file_metadatas:
+            post_processed_file_to_remote_file_set: Set[Tuple[str, str]] = {
                 (
+                    assert_type(metadata[POST_PROCESSED_NORMALIZED_FILE_PATH], str),
                     assert_type(metadata[REMOTE_FILE_PATH], str),
-                    assert_type(metadata[SFTP_TIMESTAMP], int),
                 )
-                for metadata in sftp_files_with_timestamps
+                for metadata in post_processed_file_metadatas
             }
 
             already_discovered_df = postgres_hook.get_pandas_df(
-                self.exists_sql_query(sftp_file_to_timestamp_set)
+                self.exists_sql_query(post_processed_file_to_remote_file_set)
             )
-            discovered_file_to_timestamp_set: Set[Tuple[str, int]] = {
-                (row[REMOTE_FILE_PATH], row[SFTP_TIMESTAMP])
+            discovered_file_to_timestamp_set: Set[Tuple[str, str]] = {
+                (row[POST_PROCESSED_NORMALIZED_FILE_PATH], row[REMOTE_FILE_PATH])
                 for _, row in already_discovered_df.iterrows()
             }
 
-            files_to_mark_discovered: Set[Tuple[str, int]] = (
-                sftp_file_to_timestamp_set - discovered_file_to_timestamp_set
+            files_to_mark_discovered: Set[Tuple[str, str]] = (
+                post_processed_file_to_remote_file_set
+                - discovered_file_to_timestamp_set
             )
 
             if files_to_mark_discovered:
@@ -91,31 +98,41 @@ class MarkRemoteFilesDiscoveredSqlQueryGenerator(
 
             # Due to how Airflow wraps XCOM values, we need to access the underlying
             # dictionary in order to properly serialize for the next task
-            return [{**metadata} for metadata in sftp_files_with_timestamps]
+            return [{**metadata} for metadata in post_processed_file_metadatas]
+
         return []
 
-    def exists_sql_query(self, file_to_timestamp_set: Set[Tuple[str, int]]) -> str:
+    def exists_sql_query(
+        self, post_processed_file_to_remote_file_set: Set[Tuple[str, str]]
+    ) -> str:
         sql_tuples = ",".join(
             [
-                f"('{file}', {timestamp})"
-                for file, timestamp in sorted(list(file_to_timestamp_set))
+                f"('{post_processed_file}', '{remote_file}')"
+                for post_processed_file, remote_file in sorted(
+                    list(post_processed_file_to_remote_file_set)
+                )
             ]
         )
         return f"""
-SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
- WHERE file_download_time IS NULL AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""
+SELECT post_processed_normalized_file_path, remote_file_path FROM
+ direct_ingest_sftp_ingest_ready_file_metadata
+ WHERE file_upload_time IS NULL AND (post_processed_normalized_file_path, remote_file_path)
+ IN ({sql_tuples});"""
 
-    def insert_sql_query(self, files_to_mark_discovered: Set[Tuple[str, int]]) -> str:
+    def insert_sql_query(self, files_to_mark_discovered: Set[Tuple[str, str]]) -> str:
         current_date = datetime.datetime.now(tz=pytz.UTC).strftime(
             "%Y-%m-%d %H:%M:%S.%f %Z"
         )
         values = ",".join(
             [
-                f"\n('{self.region_code}', '{file}', {timestamp}, '{current_date}')"
-                for file, timestamp in sorted(list(files_to_mark_discovered))
+                f"\n('{self.region_code}', '{post_processed_file}', '{remote_file}', '{current_date}')"
+                for post_processed_file, remote_file in sorted(
+                    list(files_to_mark_discovered)
+                )
             ]
         )
 
         return f"""
-INSERT INTO direct_ingest_sftp_remote_file_metadata (region_code, remote_file_path, sftp_timestamp, file_discovery_time)
+INSERT INTO direct_ingest_sftp_ingest_ready_file_metadata
+(region_code, post_processed_normalized_file_path, remote_file_path, file_discovery_time)
 VALUES{values};"""

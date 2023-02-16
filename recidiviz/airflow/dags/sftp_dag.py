@@ -18,9 +18,10 @@
 import logging
 import os
 import uuid
-from typing import List
+from typing import Dict, List, Optional, Union
 
 from airflow.decorators import dag
+from airflow.models.xcom_arg import XComArg
 from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator, ShortCircuitOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
@@ -30,6 +31,7 @@ from airflow.providers.google.cloud.operators.tasks import (
 )
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
+from google.api_core.retry import Retry
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
@@ -44,15 +46,27 @@ from recidiviz.utils.yaml_dict import YAMLDict
 # pylint: disable=ungrouped-imports
 try:
     from operators.cloud_sql_query_operator import CloudSqlQueryOperator  # type: ignore
-    from operators.find_sftp_files_operator import FindSftpFilesOperator  # type: ignore
-    from operators.gcs_transform_file_operator import (  # type:ignore
+    from operators.sftp.filter_invalid_gcs_files import (  # type: ignore
+        FilterInvalidGcsFilesOperator,
+    )
+    from operators.sftp.find_sftp_files_operator import (  # type: ignore
+        FindSftpFilesOperator,
+    )
+    from operators.sftp.gcs_to_gcs_operator import SFTPGcsToGcsOperator  # type: ignore
+    from operators.sftp.gcs_transform_file_operator import (  # type:ignore
         RecidivizGcsFileTransformOperator,
     )
-    from operators.sftp_to_gcs_operator import (  # type: ignore
+    from operators.sftp.sftp_to_gcs_operator import (  # type: ignore
         RecidivizSftpToGcsOperator,
     )
     from sftp.filter_downloaded_files_sql_query_generator import (  # type: ignore
         FilterDownloadedFilesSqlQueryGenerator,
+    )
+    from sftp.mark_ingest_ready_files_discovered_sql_query_generator import (  # type: ignore
+        MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
+    )
+    from sftp.mark_ingest_ready_files_uploaded_sql_query_generator import (  # type: ignore
+        MarkIngestReadyFilesUploadedSqlQueryGenerator,
     )
     from sftp.mark_remote_files_discovered_sql_query_generator import (  # type: ignore
         MarkRemoteFilesDiscoveredSqlQueryGenerator,
@@ -66,17 +80,29 @@ except ImportError:
     from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
         CloudSqlQueryOperator,
     )
-    from recidiviz.airflow.dags.operators.find_sftp_files_operator import (
+    from recidiviz.airflow.dags.operators.sftp.filter_invalid_gcs_files import (
+        FilterInvalidGcsFilesOperator,
+    )
+    from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
         FindSftpFilesOperator,
     )
-    from recidiviz.airflow.dags.operators.gcs_transform_file_operator import (
+    from recidiviz.airflow.dags.operators.sftp.gcs_to_gcs_operator import (
+        SFTPGcsToGcsOperator,
+    )
+    from recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator import (
         RecidivizGcsFileTransformOperator,
     )
-    from recidiviz.airflow.dags.operators.sftp_to_gcs_operator import (
+    from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
         RecidivizSftpToGcsOperator,
     )
     from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
         FilterDownloadedFilesSqlQueryGenerator,
+    )
+    from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_discovered_sql_query_generator import (
+        MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
+    )
+    from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_uploaded_sql_query_generator import (
+        MarkIngestReadyFilesUploadedSqlQueryGenerator,
     )
     from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generator import (
         MarkRemoteFilesDiscoveredSqlQueryGenerator,
@@ -92,6 +118,8 @@ except ImportError:
 # pylint: disable=W0104 pointless-statement
 
 project_id = os.environ.get("GCP_PROJECT")
+
+retry: Retry = Retry(predicate=lambda _: False)
 
 # TODO(#17283): Remove test buckets once SFTP is switched over
 GCS_LOCK_BUCKET = f"{project_id}-test-gcslock"
@@ -144,6 +172,14 @@ def delete_lock(lock_id: str) -> None:
     GCSHook().delete(bucket_name=GCS_LOCK_BUCKET, object_name=lock_id)
 
 
+def merge_post_processed_files(
+    output: Optional[List[List[Dict[str, Union[str, int]]]]]
+) -> List[Dict[str, Union[str, int]]]:
+    if output:
+        return [metadata for metadata_list in output for metadata in metadata_list]
+    return []
+
+
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     default_args=DEFAULT_ARGS,
@@ -188,14 +224,15 @@ def sftp_dag() -> None:
                 for lock_name, lock_id in lock_names_with_lock_ids.items()
             ]
 
+            operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
+                SchemaType.OPERATIONS
+            )
+
             # Discovery flow
             with TaskGroup("remote_file_discovery") as remote_file_discovery:
                 find_sftp_files_from_server = FindSftpFilesOperator(
                     task_id="find_sftp_files_to_download",
                     state_code=state_code,
-                )
-                operations_cloud_sql_conn_id = cloud_sql_conn_id_for_schema_type(
-                    SchemaType.OPERATIONS
                 )
                 filter_downloaded_files = CloudSqlQueryOperator(
                     task_id="filter_downloaded_files",
@@ -262,9 +299,59 @@ def sftp_dag() -> None:
                 location=QUEUE_LOCATION,
                 queue_name=scheduler_queue,
                 project_id=project_id,
-                retry=None,
+                retry=retry,
             )
-            # TODO(#17335): Implement upload flow
+
+            # Discovery flow
+            with TaskGroup(
+                "ingest_ready_file_discovery"
+            ) as ingest_ready_file_discovery:
+                collect_all_post_processed_files = PythonOperator(
+                    task_id="collect_all_post_processed_files",
+                    python_callable=merge_post_processed_files,
+                    op_args=[XComArg(post_process_downloaded_files)],
+                )
+                # Some files are initially downloaded as ZIP files that may contain improper
+                # files for ingest, therefore we need to filter them out before uploading.
+                filter_invalid_files_downloaded = FilterInvalidGcsFilesOperator(
+                    task_id="filter_invalid_files_downloaded_from_sftp",
+                    collect_all_post_processed_files_task_id=collect_all_post_processed_files.task_id,
+                )
+                mark_ingest_ready_files_discovered = CloudSqlQueryOperator(
+                    task_id="mark_ingest_ready_files_discovered",
+                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                    query_generator=MarkIngestReadyFilesDiscoveredSqlQueryGenerator(
+                        region_code=state_code,
+                        filter_invalid_gcs_files_task_id=filter_invalid_files_downloaded.task_id,
+                    ),
+                )
+                (
+                    collect_all_post_processed_files
+                    >> filter_invalid_files_downloaded
+                    >> mark_ingest_ready_files_discovered
+                )
+
+            # Upload flow
+            with TaskGroup("ingest_ready_file_upload") as ingest_ready_file_upload:
+                upload_files_to_ingest_bucket = SFTPGcsToGcsOperator.partial(
+                    task_id="upload_files_to_ingest_bucket",
+                    project_id=project_id,
+                    region_code=state_code,
+                    max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
+                ).expand_kwargs(mark_ingest_ready_files_discovered.output)
+                mark_ingest_ready_files_uploaded = CloudSqlQueryOperator(
+                    task_id="mark_ingest_ready_files_uploaded",
+                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                    query_generator=MarkIngestReadyFilesUploadedSqlQueryGenerator(
+                        region_code=state_code,
+                        upload_files_to_ingest_bucket_task_id=upload_files_to_ingest_bucket.task_id,
+                    ),
+                    # This will trigger the task regardless of the failure or success of the
+                    # upstream uploads. This task will only mark successful uploads as uploaded.
+                    trigger_rule=TriggerRule.ALL_DONE,
+                )
+                upload_files_to_ingest_bucket >> mark_ingest_ready_files_uploaded
+
             resume_scheduler_queue = CloudTasksQueueResumeOperator(
                 task_id="resume_scheduler_queue",
                 location=QUEUE_LOCATION,
@@ -273,7 +360,7 @@ def sftp_dag() -> None:
                 # This will trigger the task regardless of the failure or success of the
                 # upstream uploads/downloads.
                 trigger_rule=TriggerRule.ALL_DONE,
-                retry=None,
+                retry=retry,
             )
 
             release_locks = [
@@ -294,6 +381,8 @@ def sftp_dag() -> None:
                 >> remote_file_discovery
                 >> remote_file_download
                 >> pause_scheduler_queue
+                >> ingest_ready_file_discovery
+                >> ingest_ready_file_upload
                 >> resume_scheduler_queue
                 >> release_locks
             )

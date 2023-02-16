@@ -33,23 +33,33 @@ try:
         CloudSqlQueryGenerator,
         CloudSqlQueryOperator,
     )
-    from sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP  # type: ignore
+    from sftp.metadata import (  # type: ignore
+        POST_PROCESSED_NORMALIZED_FILE_PATH,
+        REMOTE_FILE_PATH,
+    )
 except ImportError:
     from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
         CloudSqlQueryGenerator,
         CloudSqlQueryOperator,
     )
-    from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
+    from recidiviz.airflow.dags.sftp.metadata import (
+        POST_PROCESSED_NORMALIZED_FILE_PATH,
+        REMOTE_FILE_PATH,
+    )
 
 
-class MarkRemoteFilesDownloadedSqlQueryGenerator(
+class MarkIngestReadyFilesUploadedSqlQueryGenerator(
     CloudSqlQueryGenerator[List[Dict[str, Union[str, int]]]]
 ):
-    """Custom query generator for marking all files as downloaded."""
+    """Custom query generator for marking all ingest ready files as uploaded."""
 
-    def __init__(self, region_code: str, download_sftp_files_task_id: str) -> None:
+    def __init__(
+        self, region_code: str, upload_files_to_ingest_bucket_task_id: str
+    ) -> None:
         self.region_code = region_code
-        self.download_sftp_files_task_id = download_sftp_files_task_id
+        self.upload_files_to_ingest_bucket_task_id = (
+            upload_files_to_ingest_bucket_task_id
+        )
 
     def execute_postgres_query(
         self,
@@ -59,44 +69,47 @@ class MarkRemoteFilesDownloadedSqlQueryGenerator(
     ) -> List[Dict[str, Union[str, int]]]:
         """Returns the list of all files that were downloaded and should be post processed
         after marking all files as downloaded in the Postgres database."""
-        sftp_files_with_timestamps_and_downloaded_paths: Optional[
+        ingest_ready_files_with_uploaded_paths: Optional[
             List[Dict[str, Union[str, int]]]
         ] = operator.xcom_pull(
-            context, key="return_value", task_ids=self.download_sftp_files_task_id
+            context,
+            key="return_value",
+            task_ids=self.upload_files_to_ingest_bucket_task_id,
         )
-        if sftp_files_with_timestamps_and_downloaded_paths:
-            sftp_files_with_timestamp_set: Set[Tuple[str, int]] = {
+        if ingest_ready_files_with_uploaded_paths:
+            post_processed_path_to_remote_path_set: Set[Tuple[str, str]] = {
                 (
+                    assert_type(metadata[POST_PROCESSED_NORMALIZED_FILE_PATH], str),
                     assert_type(metadata[REMOTE_FILE_PATH], str),
-                    assert_type(metadata[SFTP_TIMESTAMP], int),
                 )
-                for metadata in sftp_files_with_timestamps_and_downloaded_paths
+                for metadata in ingest_ready_files_with_uploaded_paths
             }
-
-            postgres_hook.run(self.update_sql_query(sftp_files_with_timestamp_set))
+            postgres_hook.run(
+                self.update_sql_query(post_processed_path_to_remote_path_set)
+            )
 
             # Due to how Airflow wraps XCOM values, we need to access the underlying
             # dictionary in order to properly serialize for the next task
-            return [
-                {**metadata}
-                for metadata in sftp_files_with_timestamps_and_downloaded_paths
-            ]
+            return [{**metadata} for metadata in ingest_ready_files_with_uploaded_paths]
+
         return []
 
     def update_sql_query(
         self,
-        sftp_files_with_timestamp_set: Set[Tuple[str, int]],
+        post_processed_path_to_remote_path_set: Set[Tuple[str, str]],
     ) -> str:
         current_date = datetime.datetime.now(tz=pytz.UTC).strftime(
             "%Y-%m-%d %H:%M:%S.%f %Z"
         )
         sql_tuples = ",".join(
             [
-                f"('{file}', {timestamp})"
-                for file, timestamp in list(sorted(sftp_files_with_timestamp_set))
+                f"('{post_processed_normalized_file_path}', '{remote_file_path}')"
+                for post_processed_normalized_file_path, remote_file_path in list(
+                    sorted(post_processed_path_to_remote_path_set)
+                )
             ]
         )
 
         return f"""
-UPDATE direct_ingest_sftp_remote_file_metadata SET file_download_time = '{current_date}'
-WHERE region_code = '{self.region_code}' AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""
+UPDATE direct_ingest_sftp_ingest_ready_file_metadata SET file_upload_time = '{current_date}'
+WHERE region_code = '{self.region_code}' AND (post_processed_normalized_file_path, remote_file_path) IN ({sql_tuples});"""

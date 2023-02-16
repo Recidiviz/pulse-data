@@ -32,7 +32,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
-EXPERIMENT_CLOUD_COMPOSER_BUCKET = "us-east1-experiment-v2-fbddbedc-bucket"
+EXPERIMENT_CLOUD_COMPOSER_BUCKET = "us-central1-experiment-2-8bb6ce5a-bucket"
 DAGS_FOLDER = "dags"
 ROOT = os.path.dirname(recidiviz.__file__)
 
