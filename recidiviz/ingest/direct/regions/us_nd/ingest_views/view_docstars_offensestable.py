@@ -33,7 +33,7 @@ USING (CASE_NUMBER)
 LEFT JOIN {recidiviz_docstars_cst_ncic_code} cst
 ON ot.Common_Statute_NCIC_Code = cst.CODE
 LEFT JOIN {recidiviz_docstars_nciccodes} ncic
-USING(CODE)
+ON ot.CODE = ncic.CODE
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
