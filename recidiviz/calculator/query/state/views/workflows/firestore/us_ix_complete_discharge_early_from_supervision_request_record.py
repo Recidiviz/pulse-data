@@ -73,6 +73,19 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
             ON sent.OffenderId = SPLIT((charge.external_id), '-')[SAFE_OFFSET(0)]
             AND sentoff.OffenseId = SPLIT((charge.external_id), '-')[SAFE_OFFSET(1)]
     ),
+    open_consecutive_sentences AS (
+    /* This CTE creates a list of open parent sentences that have consecutive sentences */ 
+    SELECT sent.sentence_id
+    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`,
+        UNNEST (sentences_preprocessed_id_array) sentences_preprocessed_id
+      INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        USING (state_code, person_id, sentences_preprocessed_id)
+      INNER JOIN `{{project_id}}.{{sessions_dataset}}.us_ix_consecutive_sentences_preprocessed_materialized` cs
+        ON cs.consecutive_sentence_id = sent.sentence_id
+      WHERE sent.state_code = "US_IX"
+      AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
+      AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
+    ),
    sentence_charge_description AS (
       SELECT
         sent.state_code,
@@ -97,12 +110,22 @@ US_IX_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_QUERY_TEMPLATE = 
         ON charge.county_code = loc.LocationId
       LEFT JOIN case_numbers cn
         USING (state_code, person_id, charge_id)
+      LEFT JOIN `{{project_id}}.{{sessions_dataset}}.us_ix_consecutive_sentences_preprocessed_materialized` cs
+        USING(sentence_id)
       WHERE sent.state_code = "US_IX"
       AND CURRENT_DATE('US/Pacific') BETWEEN start_date AND {nonnull_end_date_clause('end_date')}
+      --if this sentence is consecutive to a parent sentence that is open, than do not include this sentence 
+      AND (cs.consecutive_sentence_id IS NULL OR cs.consecutive_sentence_id NOT IN (SELECT sentence_id FROM open_consecutive_sentences))
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
       --Pick one record per person, sentence type and ChargeId, selecting the lowest sentence sequence number
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id, sent.sentence_type, SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
-      ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(1)])=1
+      # TODO(#18731): remove the uppercase extract and the coalesce once prod uses lowercase
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id, sent.sentence_type, 
+            SPLIT(COALESCE(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.sentence_sequence'),
+                            JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE')), '-')[SAFE_OFFSET(0)] 
+      ORDER BY SPLIT(COALESCE(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.sentence_sequence'), 
+                                JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE')), '-')[SAFE_OFFSET(1)], 
+                SPLIT(COALESCE(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.sentence_sequence'), 
+                                JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE')),'-')[SAFE_OFFSET(2)])=1
     ),
     sentence_charge_description_aggregated AS (
       SELECT 
