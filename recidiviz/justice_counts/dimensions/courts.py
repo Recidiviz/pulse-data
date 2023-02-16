@@ -48,13 +48,14 @@ class ReleaseType(DimensionBase, enum.Enum):
 
 
 class SentenceType(DimensionBase, enum.Enum):
-    DEATH = "Death"
-    LIFE = "Life"
-    INCARCERATION = "Incarceration"
-    SUPERVISION = "Supervision"
-    FINANCIAL_OBLIGATIONS = "Financial Obligations"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
+    PRISON = "Prison Sentences"
+    JAIL = "Jail Sentences"
+    SPLIT = "Split Sentences"
+    SUSPENDED = "Suspended Sentences"
+    COMMUNITY_SUPERVISION = "Community Supervision Only Sentences"
+    FINES_FEES = "Fines or Fees Only Sentences"
+    OTHER = "Other Sentences"
+    UNKNOWN = "Unknown Sentences"
 
     @classmethod
     def dimension_identifier(cls) -> str:

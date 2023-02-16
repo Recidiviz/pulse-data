@@ -22,10 +22,7 @@ from recidiviz.justice_counts.dimensions.courts import (
     SentenceType,
     StaffType,
 )
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import courts
@@ -72,10 +69,10 @@ COURTS_METRIC_FILES = [
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="sentences_imposed_by_gender",
+        canonical_filename="sentences_imposed_by_sex",
         definition=courts.sentences_imposed,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="cases_filed",
