@@ -2,6 +2,7 @@
 # The paths should follow the Terraform fileset format of path, pattern
 - [recidiviz/airflow/dags, "*dag*.py"]
 - [recidiviz/airflow/dags/operators, "*.py"]
+- [recidiviz/airflow/dags/operators/sftp, "*.py"]
 - [recidiviz/airflow/dags/utils, "*.py"]
 - [recidiviz/airflow/dags/calculation, "*.py"]
 - [recidiviz/airflow/dags/sftp, "*.py"]

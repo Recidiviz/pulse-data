@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit tests for MarkRemoteFilesDiscoveredSqlQueryGeneratorr"""
+"""Unit tests for MarkRemoteFilesDiscoveredSqlQueryGenerator"""
 import datetime
 import unittest
 from typing import Set, Tuple
@@ -34,14 +34,14 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generato
 
 
 class TestMarkRemoteFilesDiscoveredSqlQueryGeneratorr(unittest.TestCase):
-    """Unit tests for MarkRemoteFilesDiscoveredSqlQueryGeneratorr"""
+    """Unit tests for MarkRemoteFilesDiscoveredSqlQueryGenerator"""
 
     def setUp(self) -> None:
         self.generator = MarkRemoteFilesDiscoveredSqlQueryGenerator(
             region_code="US_XX", filter_downloaded_files_task_id="test_task_id"
         )
 
-    def tests_generates_exists_sql_correctly(self) -> None:
+    def test_generates_exists_sql_correctly(self) -> None:
         sample_data_set: Set[Tuple[str, int]] = {("file1.csv", 1), ("file2.csv", 1)}
         expected_query = """
 SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
@@ -52,7 +52,7 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 1, 26, 0, 0, 0, 0))
-    def tests_generates_insert_sql_correctly(self) -> None:
+    def test_generates_insert_sql_correctly(self) -> None:
         sample_data_set: Set[Tuple[str, int]] = {("file1.csv", 1), ("file2.csv", 1)}
         expected_query = """
 INSERT INTO direct_ingest_sftp_remote_file_metadata (region_code, remote_file_path, sftp_timestamp, file_discovery_time)

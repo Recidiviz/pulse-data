@@ -20,13 +20,15 @@ import unittest
 
 import pytz
 
-from recidiviz.airflow.dags.operators.sftp_to_gcs_operator import (
+from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
     RecidivizSftpToGcsOperator,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
 class TestSftpToGcsOperator(unittest.TestCase):
+    """Tests for the SftpToGcsOperator"""
+
     def test_creates_correct_download_path(self) -> None:
         operator = RecidivizSftpToGcsOperator(
             task_id="test-task",

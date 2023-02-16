@@ -25,7 +25,7 @@ from airflow import DAG
 from paramiko import SFTPAttributes, SFTPClient
 
 from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
-from recidiviz.airflow.dags.operators.find_sftp_files_operator import (
+from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
     FindSftpFilesOperator,
 )
 from recidiviz.airflow.tests.test_utils import execute_task
@@ -70,7 +70,7 @@ class TestFindSftpFilesOperator(unittest.TestCase):
     def setUp(self) -> None:
         self.mock_sftp_hook = create_autospec(RecidivizSFTPHook)
         self.mock_sftp_patcher = patch(
-            "recidiviz.airflow.dags.operators.find_sftp_files_operator.RecidivizSFTPHook"
+            "recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator.RecidivizSFTPHook"
         )
         self.mock_sftp_patcher.start().return_value = self.mock_sftp_hook
 
