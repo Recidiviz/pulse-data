@@ -152,14 +152,28 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
 _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
     employment_info AS (
         SELECT
+            state_code,
             person_id,
-            sep.employer_name AS current_employer,
+            current_employer,
+            current_employer_start_date,
+            current_employer_address,
+        FROM (
+            SELECT
+            state_code,
+            person_id,
+            STRING_AGG(sep.employer_name, ", ") AS current_employer,
             sep.start_date AS current_employer_start_date,
+            sep.end_date AS current_employer_end_date,
             # TODO(#18490): Add employer address
             CAST(NULL AS STRING) AS current_employer_address,
-        FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
-        WHERE {today_between_start_date_and_nullable_end_date_clause('sep.start_date', 'sep.end_date')}
+            ROW_NUMBER() OVER(PARTITION BY state_code, person_id order by start_date desc, end_date asc) as rn
+            FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
+            GROUP BY state_code, person_id, sep.start_date, sep.end_date
+            ORDER BY person_id, rn
+        )
+        WHERE {today_between_start_date_and_nullable_end_date_clause('current_employer_start_date', 'current_employer_end_date')}
             AND state_code IN ("US_IX")
+            AND rn = 1
     ),
 """
 
@@ -201,7 +215,7 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                         SELECT
                         *,
                         ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
-                        from {project_id}.{dataflow_metrics_dataset}.most_recent_violation_with_response_metrics_materialized df
+                        FROM {project_id}.{dataflow_metrics_dataset}.most_recent_violation_with_response_metrics_materialized df
                         ORDER BY person_id, rn
                     )
                 WHERE rn = 1
@@ -219,8 +233,20 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                 FROM supervision_cases
                 INNER JOIN supervision_super_sessions ss USING(person_id)
             )
+            UNION ALL
+            -- months with the same employer
+            SELECT *
+            FROM (
+                SELECT
+                    state_code,
+                    person_id,
+                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date, MONTH) as string) || " months with the same employer" as milestone_text,
+                    "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
+                    4 AS milestone_priority
+                FROM employment_info
+            )
         )
-        WHERE state_code in ('US_ID', 'US_IX')
+        WHERE state_code in ('US_IX')
         AND milestone_text IS NOT NULL
         GROUP BY state_code, person_id
     ),
