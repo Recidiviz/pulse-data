@@ -35,7 +35,17 @@ CLIENTS_REFERRAL_STATUS_UPDATED_DESCRIPTION = """
 
 
 CLIENTS_REFERRAL_STATUS_UPDATED_QUERY_TEMPLATE = f"""
-    {user_event_template("frontend_opportunity_status_updated", add_columns=["status", "opportunity_type"])}
+    WITH
+    referral_status_updated AS (
+        {user_event_template(
+            "frontend_opportunity_status_updated", add_columns=["status", "opportunity_type", "denied_reasons"]
+        )}
+    )
+    
+    SELECT
+        * EXCEPT (denied_reasons),
+        JSON_VALUE_ARRAY(denied_reasons) AS denied_reasons,
+    FROM referral_status_updated
 """
 
 CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

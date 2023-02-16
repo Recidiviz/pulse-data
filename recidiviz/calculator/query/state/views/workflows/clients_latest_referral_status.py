@@ -38,7 +38,7 @@ CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
     WITH 
     status_updates AS (
         {user_event_template(
-            "frontend_opportunity_status_updated", add_columns=["status", "opportunity_type"]
+            "frontend_opportunity_status_updated", add_columns=["status", "opportunity_type", "denied_reasons"]
         )}
     )
     SELECT
@@ -50,6 +50,7 @@ CLIENTS_LATEST_REFERRAL_STATUS_QUERY_TEMPLATE = f"""
             person_external_id,
             timestamp,
             status,
+            JSON_VALUE_ARRAY(denied_reasons) AS denied_reasons,
             -- this field was initially left out of the tracking calls by mistake;
             -- if it's missing we can infer that it was supposed to be "compliantReporting"
             -- because that was the only possible value at the time
