@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - case_load_id
+  - employee_id
 columns:
   - name: case_load_id
   - name: employee_id

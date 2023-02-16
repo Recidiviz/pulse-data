@@ -90,7 +90,7 @@ VIEW_QUERY_TEMPLATE = """,
                     middle_name,
                         last_name,
                         name_suffix,
-                        position) ORDER BY _response_external_id)
+                        position) ORDER BY _response_type, _response_external_id)
             ) as decision_info
         FROM (
             (select * from management_decisions) 
