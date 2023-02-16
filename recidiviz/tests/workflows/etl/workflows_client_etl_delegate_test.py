@@ -103,6 +103,16 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     ],
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
+                    "milestones": [
+                        {
+                            "type": "BIRTHDAY_THIS_MONTH",
+                            "text": "Birthday this month (February 17)",
+                        },
+                        {
+                            "type": "MONTHS_WITHOUT_VIOLATION",
+                            "text": "12 months without a violation",
+                        },
+                    ],
                 },
                 row,
             )
@@ -131,7 +141,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                 row,
             )
 
-            # US_TN third row has supervision downgrade eligible
+            # US_TN third row has supervision downgrade eligible and milestones
             fixture = fp.readline()
             doc_id, row = delegate.transform_row(fixture)
             self.assertEqual(doc_id, "202")
@@ -170,6 +180,16 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionStartDate": "2021-03-04",
                     "district": "DISTRICT 0",
                     "allEligibleOpportunities": ["supervisionLevelDowngrade"],
+                    "milestones": [
+                        {
+                            "type": "MONTHS_WITHOUT_VIOLATION",
+                            "text": "12 months without a violation",
+                        },
+                        {
+                            "type": "MONTHS_ON_+SUPERVISION",
+                            "text": "23 months on supervision",
+                        },
+                    ],
                 },
                 row,
             )
