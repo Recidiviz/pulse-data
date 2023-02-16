@@ -99,6 +99,12 @@ class MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes(enum.Enum):
     INFRACTION_CHARGE = "Cases with a leading infraction charge"
 
 
+# Cases Overturned on Appeal
+class CasesOverturnedOnAppealIncludesExcludes(enum.Enum):
+    OVERTURNED = "Cases overturned on appeal"
+    INTERLOCUTORY_APPEAL = "Cases involving interlocutory appeal"
+
+
 # Pretrial Releases
 class PretrialReleasesIncludesExcludes(enum.Enum):
     ON_OWN = "People released on their own recognizance"
