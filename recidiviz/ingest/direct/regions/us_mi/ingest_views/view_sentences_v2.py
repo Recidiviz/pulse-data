@@ -67,13 +67,13 @@ sentence_records as (
     -- related sentence records defined as same offender booking, legal order, and charge
     LAG(sentence.closing_reason_code) 
       OVER(PARTITION BY sentence.offender_booking_id, sentence.legal_order_id, sentence.offender_charge_id 
-           ORDER BY sentenced_date, sentence.closing_date) 
+           ORDER BY sentenced_date, sentence.closing_date, offender_sentence_id) 
       as prev_sentence_closing_reason_code,
     -- calculate the first offender sentence id within each set of related sentence records  
-    -- related sentence records defined as same offender booking, legal order, and charge  
+    -- related sentence records defined as same offender booking, legal order, and charge 
     FIRST_VALUE(offender_sentence_id) OVER (
       PARTITION BY sentence.offender_booking_id, sentence.legal_order_id, sentence.offender_charge_id
-      ORDER BY sentenced_date, sentence.closing_date
+      ORDER BY sentenced_date, sentence.closing_date, offender_sentence_id
       RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS first_offender_sentence_id
   FROM {ADH_OFFENDER_SENTENCE} sentence
     -- 10/7 update: revise to use inner join so that we won't be left with null state_person ever 
