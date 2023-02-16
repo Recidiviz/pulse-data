@@ -24,7 +24,6 @@ jupyter = "*"
 pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
-PyGithub = "*"
 parameterized = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
@@ -194,6 +193,7 @@ ratelimit-stubs = "*"
 werkzeug = "<2.1.0"
 pysftp = "*"
 nbconvert = ">=6.5.1"
+PyGithub = "*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
