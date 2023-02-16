@@ -50,6 +50,7 @@ WITH all_events AS (
         "OPPORTUNITY_PREVIEWED" AS status,
         opportunity_type,
         9999 AS rank,
+        NULL as denied_reasons,
     FROM `{project_id}.{workflows_views_dataset}.clients_opportunity_previewed`
 
     UNION ALL
@@ -63,6 +64,7 @@ WITH all_events AS (
         "REFERRAL_FORM_VIEWED" AS status,
         opportunity_type,
         9999 AS rank,
+        NULL as denied_reasons,
     FROM `{project_id}.{workflows_views_dataset}.clients_referral_form_viewed`
 
     UNION ALL
@@ -77,6 +79,7 @@ WITH all_events AS (
         status,
         opportunity_type,
         1 AS rank,
+        denied_reasons,
     FROM `{project_id}.{workflows_views_dataset}.clients_latest_referral_status`
 )
 SELECT 
