@@ -30,6 +30,7 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import StaffIncludesExcludes
 from recidiviz.justice_counts.includes_excludes.courts import (
+    CasesOverturnedOnAppealIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
     FelonyCriminalCaseFilingsIncludesExcludes,
     JudgesIncludesExcludes,
@@ -312,8 +313,13 @@ cases_overturned = MetricDefinition(
     metric_type=MetricType.CASES_OVERTURNED_ON_APPEAL,
     category=MetricCategory.FAIRNESS,
     display_name="Cases Overturned on Appeal",
-    description="Measures the number of cases for which the decision was overturned as a result of an appeal.",
+    description="The number of criminal cases that were overturned on appeal.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    reporting_note="Disclaimer: Many factors can lead to a case being overturned and they aren't always reflection of fairness (e.g., jury question, procedural issues, case law interpretations, misconduct).",
+    includes_excludes=IncludesExcludesSet(
+        members=CasesOverturnedOnAppealIncludesExcludes,
+        excluded_set={
+            CasesOverturnedOnAppealIncludesExcludes.INTERLOCUTORY_APPEAL,
+        },
+    ),
 )
