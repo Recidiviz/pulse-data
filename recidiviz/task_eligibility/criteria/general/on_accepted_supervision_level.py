@@ -37,7 +37,7 @@ _QUERY_TEMPLATE = """
         state_code,
         person_id,
         start_date,
-        end_date,
+        end_date_exclusive AS end_date,
         TRUE AS meets_criteria,
         TO_JSON(STRUCT(supervision_level AS supervision_level)) AS reason,
     FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
