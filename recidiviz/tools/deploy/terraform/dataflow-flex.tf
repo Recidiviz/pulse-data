@@ -20,7 +20,7 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
   description = "Builds a remote Docker image for flex pipelines on every push to main or a release branch."
   # A build trigger is only needed in staging, when we push to prod the existing staging image will just be retagged,
   # instead of pushing the same image to both prod and staging upon every commit.
-  count       = var.project_id == "recidiviz-staging" ? 1 : 0
+  count = var.project_id == "recidiviz-staging" ? 1 : 0
 
   github {
     owner = "Recidiviz"
@@ -44,7 +44,7 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
     }
     # In the build step above the image is tagged with us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA
     # and below in the images param we specify the tags of images that we want to be pushed.
-    images = ["us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"]
+    images  = ["us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"]
     timeout = "3600s"
   }
 
@@ -54,21 +54,21 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
 # TODO(#18494): replace flexpipelinetest.json with real pipeline name
 # TODO(#18495): replace template_metadata.json with permanent descriptive template name
 resource "google_storage_bucket_object" "flex_template_metadata" {
-    bucket       = "recidiviz-staging-gloria-scratch"
-    content_type = "application/json"
+  bucket       = "recidiviz-staging-gloria-scratch"
+  content_type = "application/json"
 
-    # This line means we will make a new google_storage_bucket_object for each file we find at the given wildcard path
-    for_each = fileset("${local.recidiviz_root}/calculator/pipeline/","*/template_metadata.json")
+  # This line means we will make a new google_storage_bucket_object for each file we find at the given wildcard path
+  for_each = fileset("${local.recidiviz_root}/calculator/pipeline/", "*/template_metadata.json")
 
-    # Here we extract the last directory before the filename (e.g. metrics) and append to the filename to make the full file name
-    name = "flex_template_metadata/${basename(dirname(each.value))}_${basename(each.value)}"
+  # Here we extract the last directory before the filename (e.g. metrics) and append to the filename to make the full file name
+  name = "flex_template_metadata/${basename(dirname(each.value))}_${basename(each.value)}"
 
-    content = jsonencode({
-        image = "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"
-        sdkInfo = {
-            language = "PYTHON"
-        }
-        # Here we read the file contents using the full file path
-        metadata = jsondecode(file("${local.recidiviz_root}/calculator/pipeline/${each.value}")),
-    })
+  content = jsonencode({
+    image = "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"
+    sdkInfo = {
+      language = "PYTHON"
+    }
+    # Here we read the file contents using the full file path
+    metadata = jsondecode(file("${local.recidiviz_root}/calculator/pipeline/${each.value}")),
+  })
 }
