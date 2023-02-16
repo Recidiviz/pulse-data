@@ -24,6 +24,7 @@ from recidiviz.justice_counts.dimensions.courts import (
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import (
+    BiologicalSex,
     GenderRestricted,
     RaceAndEthnicity,
 )
@@ -31,8 +32,11 @@ from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import StaffIncludesExcludes
 from recidiviz.justice_counts.includes_excludes.courts import (
     CasesOverturnedOnAppealIncludesExcludes,
+    CommunitySupervisionOnlySentencesIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
     FelonyCriminalCaseFilingsIncludesExcludes,
+    FinesOrFeesOnlySentencesIncludesExcludes,
+    JailSentencesIncludesExcludes,
     JudgesIncludesExcludes,
     LegalStaffIncludesExcludes,
     MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
@@ -41,10 +45,18 @@ from recidiviz.justice_counts.includes_excludes.courts import (
     PretrialReleasesMonetaryBailIncludesExcludes,
     PretrialReleasesNonMonetaryBailIncludesExcludes,
     PretrialReleasesOnOwnRecognizanceIncludesExcludes,
+    PrisonSentencesIncludesExcludes,
     SecurityStaffIncludesExcludes,
+    SentencesImposedIncludesExcludes,
+    SplitSentencesIncludesExcludes,
     SupportOrAdministrativeStaffIncludesExcludes,
+    SuspendedSentencesIncludesExcludes,
     VacantPositionsIncludesExcludes,
     VictimAdvocateStaffIncludesExcludes,
+)
+from recidiviz.justice_counts.includes_excludes.person import (
+    FemaleBiologicalSexIncludesExcludes,
+    MaleBiologicalSexIncludesExcludes,
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
@@ -214,22 +226,97 @@ sentences_imposed = MetricDefinition(
     metric_type=MetricType.SENTENCES,
     category=MetricCategory.OPERATIONS_AND_DYNAMICS,
     display_name="Sentences Imposed",
-    description="Measures the number of cases with a sentence imposed.",
+    description="The number of cases in which the court imposed a sentence as a result of a criminal conviction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    reporting_note="Report cases under the most restrictive sentence (from death to financial obligations only).",
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_METHOD_FOR_TIME_SERVED,
-            value_type=ValueType.TEXT,
-            label="Please describe your jurisdiction’s method for recording time served.",
-            required=True,
-        )
-    ],
+    includes_excludes=IncludesExcludesSet(
+        members=SentencesImposedIncludesExcludes,
+        excluded_set={
+            SentencesImposedIncludesExcludes.TRANSFERRED,
+            SentencesImposedIncludesExcludes.REINSTATED,
+            SentencesImposedIncludesExcludes.CHANGING_PAROLE_STATUS,
+        },
+    ),
     aggregated_dimensions=[
-        AggregatedDimension(dimension=SentenceType, required=False),
+        AggregatedDimension(
+            dimension=SentenceType,
+            required=False,
+            dimension_to_includes_excludes={
+                SentenceType.PRISON: IncludesExcludesSet(
+                    members=PrisonSentencesIncludesExcludes,
+                    excluded_set={
+                        PrisonSentencesIncludesExcludes.RETURNS_TO_PRISON,
+                        PrisonSentencesIncludesExcludes.SPLIT_SENTENCE,
+                    },
+                ),
+                SentenceType.JAIL: IncludesExcludesSet(
+                    members=JailSentencesIncludesExcludes,
+                    excluded_set={
+                        JailSentencesIncludesExcludes.RETURNS_TO_JAIL,
+                        JailSentencesIncludesExcludes.SPLIT_SENTENCE,
+                    },
+                ),
+                SentenceType.SPLIT: IncludesExcludesSet(
+                    members=SplitSentencesIncludesExcludes,
+                ),
+                SentenceType.SUSPENDED: IncludesExcludesSet(
+                    members=SuspendedSentencesIncludesExcludes,
+                ),
+                SentenceType.COMMUNITY_SUPERVISION: IncludesExcludesSet(
+                    members=CommunitySupervisionOnlySentencesIncludesExcludes,
+                    excluded_set={
+                        CommunitySupervisionOnlySentencesIncludesExcludes.SPLIT_SENTENCE,
+                        CommunitySupervisionOnlySentencesIncludesExcludes.SUSPENDED_SENTENCE,
+                    },
+                ),
+                SentenceType.FINES_FEES: IncludesExcludesSet(
+                    members=FinesOrFeesOnlySentencesIncludesExcludes,
+                    excluded_set={
+                        FinesOrFeesOnlySentencesIncludesExcludes.CASE_FEES,
+                        FinesOrFeesOnlySentencesIncludesExcludes.MONETARY_SANCTIONS,
+                        FinesOrFeesOnlySentencesIncludesExcludes.OTHER_FINANCIAL_OBLIGATIONS,
+                    },
+                ),
+            },
+            dimension_to_description={
+                SentenceType.PRISON: "The number of cases disposed with a criminal conviction for which the most serious sentence imposed was incarceration in state prison.",
+                SentenceType.JAIL: "The number of cases resolved with a criminal conviction for which the most serious sentence imposed was incarceration in a county jail.",
+                SentenceType.SPLIT: "The number of cases resolved with a criminal conviction for which the most serious sentence explicitly imposed was a sentence to incarceration followed by community supervision.",
+                SentenceType.SUSPENDED: "The number of cases resolved with a criminal conviction for which the most serious sentence imposed was a term of incarceration, but that term of incarceration is suspended, and the person begins a term of community supervision.",
+                SentenceType.COMMUNITY_SUPERVISION: "The number of cases resolved with a criminal conviction for which the most serious sentence imposed was community supervision.",
+                SentenceType.FINES_FEES: "The number of cases resolved with a criminal conviction for which the most serious sentence imposed is solely financial obligations to the court.",
+                SentenceType.OTHER: "The number of cases resolved by criminal conviction for which the most serious sentence imposed is not prison, jail, split, suspended, community supervision, or solely fines/fees.",
+                SentenceType.UNKNOWN: "The number of cases resolved by criminal conviction for which the most serious sentence imposed is unknown.",
+            },
+        ),
+        # TODO(#18071) reuse global includes/excludes
+        # TODO(#17579) implement yes/no tables
         AggregatedDimension(dimension=RaceAndEthnicity, required=False),
-        AggregatedDimension(dimension=GenderRestricted, required=False),
+        # TODO(#18071) reuse global includes/excludes
+        # TODO(#17579) implement yes/no tables
+        AggregatedDimension(
+            dimension=BiologicalSex,
+            required=False,
+            dimension_to_includes_excludes={
+                BiologicalSex.MALE: IncludesExcludesSet(
+                    members=MaleBiologicalSexIncludesExcludes,
+                    excluded_set={
+                        MaleBiologicalSexIncludesExcludes.UNKNOWN,
+                    },
+                ),
+                BiologicalSex.FEMALE: IncludesExcludesSet(
+                    members=FemaleBiologicalSexIncludesExcludes,
+                    excluded_set={
+                        FemaleBiologicalSexIncludesExcludes.UNKNOWN,
+                    },
+                ),
+            },
+            dimension_to_description={
+                BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
+                BiologicalSex.FEMALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is female.",
+                BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
+            },
+        ),
     ],
 )
 

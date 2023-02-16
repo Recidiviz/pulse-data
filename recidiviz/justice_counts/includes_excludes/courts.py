@@ -63,6 +63,67 @@ class VacantPositionsIncludesExcludes(enum.Enum):
     FILLED = "Filled positions"
 
 
+# Sentences Imposed
+class SentencesImposedIncludesExcludes(enum.Enum):
+    NEW_SENTENCE = "Cases resulting in a new sentence imposed (e.g., new conviction, parole revocation, etc.)"
+    SUSPENDED_SENTENCE = "Cases involving the imposition of some or all of the incarceration portion of a suspended sentence"
+    SENTENCE_CHANGE = "Cases in which the sentence is changed by the court but the conviction remains in place"
+    TIME_SERVED = "Cases in which the sentence imposed is for time served"
+    TRANSFERRED = "Cases transferred to another jurisdiction"
+    REINSTATED = "Cases involving a person reinstated to an existing community supervision sentence"
+    CHANGING_PAROLE_STATUS = "Cases involving a person changing parole status (e.g., returning to prison from parole or re-paroled to the community)"
+
+
+class PrisonSentencesIncludesExcludes(enum.Enum):
+    INCARCERATION = "Cases resulting in a sentence of incarceration in state prison"
+    RETURNS_TO_PRISON = "Court-ordered returns to state prison for violations of the conditions of community supervision or revocations"
+    SPLIT_SENTENCE = "Convictions that result in a split sentence of incarceration in state prison followed by a period of community supervision that is not the result of early release to the community while still under correctional control for the duration of a prison term (e.g. parole supervision)"
+
+
+class JailSentencesIncludesExcludes(enum.Enum):
+    INCARCERATION = (
+        "Convictions that result in a sentence of incarceration in county jail"
+    )
+    TIME_SERVED = "Convictions that result in a sentence of incarceration in county jail that concludes on imposition due to time served"
+    RETURNS_TO_JAIL = "Court ordered returns to county jail for violations or revocations of the conditions of community supervision"
+    SPLIT_SENTENCE = "Convictions that result in a split sentence of incarceration in county jail followed by a period of community supervision that is not the result of early release to the community while still under correctional control for the duration of a jail term (e.g. parole supervision)"
+
+
+class SplitSentencesIncludesExcludes(enum.Enum):
+    SPLIT_SENTENCE_PRISON = "Convictions that result in a split sentence of incarceration in state prison and a period of community supervision that is not the result of early release to the community while still under correctional control for the duration of a prison term (e.g. parole supervision)"
+    SPLIT_SENTENCE_JAIL = "Convictions that result in a split sentence of incarceration in county jail and a period of community supervision that is not the result of early release to the community while still under correctional control for the duration of a prison term (e.g. parole supervision)"
+
+
+class SuspendedSentencesIncludesExcludes(enum.Enum):
+    PROBATION = "Convictions that result in a suspended sentence of incarceration where the community supervision term is served on probation"
+    COMMUNITY_SUPERVISION = "Convictions that result in a suspended sentence of incarceration where the community supervision term is served on a type of community supervision that is not probation"
+    VIOLATION = "Convictions that result in the incarceration portion of a suspended sentence being imposed due to violation of the conditions of community supervision"
+
+
+class CommunitySupervisionOnlySentencesIncludesExcludes(enum.Enum):
+    PROBATION = "Convictions that result in a sentence of probation only"
+    COMMUNITY_CORRECTIONS = (
+        "Convictions that result in a sentence of community corrections only"
+    )
+    COMMUNITY_SUPERVISION = "Convictions that result in a sentence to community supervision that is not probation or parole"
+    SPLIT_SENTENCE = "Convictions that result in a split sentence"
+    SUSPENDED_SENTENCE = "Convictions that result in a suspended sentence"
+
+
+class FinesOrFeesOnlySentencesIncludesExcludes(enum.Enum):
+    FINE_FEE = "Convictions that solely result in a fine or fee"
+    PAYMENTS_VICTIM_RESTITUTION = (
+        "Convictions that solely result in payments of victim restitution"
+    )
+    CASE_FEES = (
+        "Fees only imposed during the course of a case (e.g., drug testing fees)"
+    )
+    MONETARY_SANCTIONS = (
+        "Convictions that result in monetary sanctions in addition to other sanctions"
+    )
+    OTHER_FINANCIAL_OBLIGATIONS = "Convictions that result in other financial obligations not captured in the listed categories"
+
+
 # New Offenses While on Pretrial Release
 class NewOffensesWhileOnPretrialReleaseIncludesExcludes(enum.Enum):
     OWN_RECOGNIZANCE = "Cases involving people released on their own recognizance"
