@@ -19,10 +19,12 @@
 
 from typing import List, Optional, Set
 from unittest import TestCase
+from unittest.mock import call
 
 import attr
 import mock
 from flask import Flask
+from github.Issue import Issue
 from mock import MagicMock, patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
@@ -188,8 +190,16 @@ class TestHandleRequest(TestCase):
     def setUp(self) -> None:
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
         self.project_id_patcher.start().return_value = "recidiviz-456"
+        self.project_id_patcher_2 = patch(
+            "recidiviz.validation.validation_manager.project_id"
+        )
+        self.project_id_patcher_2.start().return_value = "recidiviz-456"
         self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
         self.project_number_patcher.start().return_value = "123456789"
+        self.environment_patcher = patch(
+            "recidiviz.validation.validation_manager.get_gcp_environment"
+        )
+        self.environment_patcher.start().return_value = GCPEnvironment.STAGING.value
 
         app = Flask(__name__)
         app.register_blueprint(validation_manager_blueprint)
@@ -200,8 +210,13 @@ class TestHandleRequest(TestCase):
 
     def tearDown(self) -> None:
         self.project_id_patcher.stop()
+        self.project_id_patcher_2.stop()
         self.project_number_patcher.stop()
+        self.environment_patcher.stop()
 
+    @patch(
+        "recidiviz.validation.validation_manager._file_tickets_for_failing_validations"
+    )
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -218,6 +233,7 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_file_tickets_for_failing_validations: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
@@ -236,6 +252,7 @@ class TestHandleRequest(TestCase):
             mock_run_job.assert_any_call(job)
 
         mock_emit_opencensus_failure_events.assert_not_called()
+        mock_file_tickets_for_failing_validations.assert_not_called()
         mock_store_validation_results.assert_called_once()
         ((results,), _kwargs) = mock_store_validation_results.call_args
         self.assertEqual(5, len(results))
@@ -247,6 +264,7 @@ class TestHandleRequest(TestCase):
             validation_run_id=mock.ANY,
         )
 
+    @patch("recidiviz.validation.validation_manager.github_helperbot_client")
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -263,8 +281,19 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_github_client: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_github_repo = MagicMock()
+        mock_github_repo.get_issues.return_value = [
+            Issue(
+                requester=MagicMock(),
+                headers=MagicMock(),
+                attributes={"title": "[staging][US_XX] `test_3`"},
+                completed=MagicMock(),
+            )
+        ]
+        mock_github_client.return_value.get_repo.return_value = mock_github_repo
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1],
             result_details=FakeValidationResultDetails(
@@ -318,6 +347,24 @@ class TestHandleRequest(TestCase):
             validation_run_id=mock.ANY,
         )
 
+        expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
+        expected_calls = [
+            call(
+                title="[staging][US_XX] `test_2`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+            call(
+                title="[staging][US_XX] `test_4`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+        ]
+        self.assertCountEqual(
+            mock_github_repo.create_issue.call_args_list, expected_calls
+        )
+
+    @patch("recidiviz.validation.validation_manager.github_helperbot_client")
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -334,8 +381,19 @@ class TestHandleRequest(TestCase):
         mock_fetch_validations: MagicMock,
         mock_run_job: MagicMock,
         mock_emit_opencensus_failure_events: MagicMock,
+        mock_github_client: MagicMock,
     ) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
+        mock_github_repo = MagicMock()
+        mock_github_repo.get_issues.return_value = [
+            Issue(
+                requester=MagicMock(),
+                headers=MagicMock(),
+                attributes={"title": "[staging][US_XX] `test_3`"},
+                completed=MagicMock(),
+            )
+        ]
+        mock_github_client.return_value.get_repo.return_value = mock_github_repo
 
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1],
@@ -394,6 +452,23 @@ class TestHandleRequest(TestCase):
             num_validations_run=5,
             validations_runtime_sec=mock.ANY,
             validation_run_id=mock.ANY,
+        )
+
+        expected_labels = ["Validation", "Region: US_XX", "Team: State Pod"]
+        expected_calls = [
+            call(
+                title="[staging][US_XX] `test_2`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+            call(
+                title="[staging][US_XX] `test_4`",
+                body=mock.ANY,
+                labels=expected_labels,
+            ),
+        ]
+        self.assertCountEqual(
+            mock_github_repo.create_issue.call_args_list, expected_calls
         )
 
     @patch("recidiviz.validation.validation_manager._emit_opencensus_failure_events")

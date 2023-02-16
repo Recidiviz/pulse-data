@@ -22,6 +22,7 @@ import re
 import uuid
 from concurrent import futures
 from http import HTTPStatus
+from itertools import groupby
 from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 import pytz
@@ -33,6 +34,9 @@ from recidiviz.big_query.big_query_client import BQ_CLIENT_MAX_POOL_SIZE
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.utils import metadata, monitoring, structured_logging, trace
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.environment import get_gcp_environment
+from recidiviz.utils.github import RECIDIVIZ_DATA_REPO, github_helperbot_client
+from recidiviz.utils.metadata import project_id
 from recidiviz.validation.configured_validations import (
     get_all_validations,
     get_validation_global_config,
@@ -222,6 +226,13 @@ def execute_validation(
     logging.info(
         "Validation run complete. Analyzed a total of %s jobs.", len(validation_jobs)
     )
+    if failed_hard_validations:
+        # Put GitHub filing in a try/except so we don't fail the endpoint completely if we can't
+        # talk to GitHub for whatever reason.
+        try:
+            _file_tickets_for_failing_validations(failed_hard_validations)
+        except Exception as e:
+            logging.error("Error filing github tickets: %s", e)
     return run_id, len(validation_jobs)
 
 
@@ -344,3 +355,43 @@ def _emit_opencensus_failure_events(
         monitoring_tags = tags_for_job(result.validation_job)
         with monitoring.measurements(monitoring_tags) as measurements:
             measurements.measure_int_put(m_failed_validations, 1)
+
+
+def _file_tickets_for_failing_validations(
+    failed_validations: List[DataValidationJobResult],
+) -> None:
+    """Files GitHub tickets for failed validations that do not already have an associated ticket."""
+    logging.info("Filing GitHub tickets for failed validations")
+    if (env := get_gcp_environment()) is None:
+        # If we don't know if we're in prod or staging, don't bother filing tickets
+        return
+    github_client = github_helperbot_client()
+
+    for region, validations in groupby(
+        failed_validations, lambda v: v.validation_job.region_code
+    ):
+        issue_labels = ["Validation", f"Region: {region}", "Team: State Pod"]
+        existing_issues = github_client.get_repo(RECIDIVIZ_DATA_REPO).get_issues(
+            state="open", labels=issue_labels
+        )
+        for validation in validations:
+            name = validation.validation_job.validation.validation_name
+            name_str = f"`{name}`"
+            env_str = f"[{env}]"
+            ticket_body = f"""Automated data validation found a hard failure for {name_str} in {env} environment.
+Admin Panel link: https://{project_id()}.ue.r.appspot.com/admin/validation_metadata/status/details/{name}?stateCode={region}
+Failure details: {validation.result_details.failure_description()}
+Description: {validation.validation_job.validation.view_builder.description}
+"""
+            if not any(
+                name_str in issue.title and env_str in issue.title
+                for issue in existing_issues
+            ):
+                logging.info(
+                    "Filing ticket in region %s for validation %s", region, name_str
+                )
+                github_client.get_repo(RECIDIVIZ_DATA_REPO).create_issue(
+                    title=f"{env_str}[{region}] {name_str}",
+                    body=ticket_body,
+                    labels=issue_labels,
+                )
