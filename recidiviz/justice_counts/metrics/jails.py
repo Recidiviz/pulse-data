@@ -31,6 +31,8 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.includes_excludes.common import (
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
+    PostAdjudicationJailPopulation,
+    PreAdjudicationJailPopulation,
     StateAppropriationIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.jails import (
@@ -66,8 +68,6 @@ from recidiviz.justice_counts.includes_excludes.jails import (
 from recidiviz.justice_counts.includes_excludes.offense import (
     DrugOffenseIncludesExcludes,
     PersonOffenseIncludesExcludes,
-    PostAdjudicationJailPopulation,
-    PreAdjudicationJailPopulation,
     PropertyOffenseIncludesExcludes,
     PublicOrderOffenseIncludesExcludes,
 )
