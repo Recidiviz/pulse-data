@@ -428,7 +428,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the recidivism pipeline."""
-        project = "project"
+        project = "recidiviz-staging"
         dataset = "dataset"
         normalized_dataset = "us_xx_normalized_state"
 
@@ -766,7 +766,7 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
         default_beam_args: List[str] = [
             "--project",
-            "project",
+            "recidiviz-staging",
             "--job_name",
             "test",
         ]

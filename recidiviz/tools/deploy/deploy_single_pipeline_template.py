@@ -45,6 +45,7 @@ from recidiviz.tools.deploy.dataflow_template_helpers import (
     PipelineConfig,
     load_pipeline_config_yaml,
 )
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -56,7 +57,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         dest="project_id",
         required=True,
         help="The project to deploy the templates to",
-        choices=["recidiviz-staging", "recidiviz-123"],
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
     )
 
     parser.add_argument(

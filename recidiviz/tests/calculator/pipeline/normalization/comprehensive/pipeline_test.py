@@ -94,7 +94,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         unifying_id_field_filter_set: Optional[Set[int]] = None,
     ) -> None:
         """Runs a test version of the supervision pipeline."""
-        project = "project"
+        project = "recidiviz-staging"
         dataset = "dataset"
 
         read_from_bq_constructor = (

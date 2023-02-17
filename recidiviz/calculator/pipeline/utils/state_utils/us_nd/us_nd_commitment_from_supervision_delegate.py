@@ -16,15 +16,11 @@
 # =============================================================================
 """Utils for state-specific logic related to identifying commitments from
 supervision in US_ND."""
-import datetime
-from typing import List, Optional, Set
-
-from dateutil.relativedelta import relativedelta
+from typing import Optional, Set
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
@@ -41,7 +37,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.common.date import DateRange
 
 
 class UsNdCommitmentFromSupervisionDelegate(
@@ -91,28 +86,6 @@ class UsNdCommitmentFromSupervisionDelegate(
         }
 
         return filtered_admission_raw_texts
-
-    def violation_history_window_pre_commitment_from_supervision(
-        self,
-        admission_date: datetime.date,
-        sorted_and_filtered_violation_responses: List[
-            NormalizedStateSupervisionViolationResponse
-        ],
-        default_violation_history_window_months: int,
-    ) -> DateRange:
-        """For US_ND we look for violation responses with a response_date within 90 days
-        of a commitment from supervision admission to incarceration. 90 days is an
-        arbitrary buffer for which we accept discrepancies between the
-        SupervisionViolationResponse response_date and the StateIncarcerationPeriod's
-        admission_date.
-        """
-
-        violation_window_lower_bound_inclusive = admission_date - relativedelta(days=90)
-        violation_window_upper_bound_exclusive = admission_date + relativedelta(days=90)
-        return DateRange(
-            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
-            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
-        )
 
     def get_commitment_from_supervision_supervision_type(
         self,

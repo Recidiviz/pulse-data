@@ -27,14 +27,10 @@ from recidiviz.calculator.pipeline.metrics.utils.commitment_from_supervision_uti
     count_temporary_custody_as_commitment_from_supervision,
     period_is_commitment_from_supervision_admission_from_parole_board_hold,
 )
-from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
-    VIOLATION_HISTORY_WINDOW_MONTHS,
-)
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionCaseTypeEntry,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarceration_period_index import (
     NormalizedIncarcerationPeriodIndex,
@@ -84,10 +80,6 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.constants.state.state_supervision_violation_response import (
-    StateSupervisionViolationResponseType,
-)
-from recidiviz.common.date import DateRange
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
     default_normalized_sp_index_for_tests,
@@ -684,127 +676,6 @@ class TestGetCommitmentDetails(unittest.TestCase):
             ),
             commitment_details,
         )
-
-
-class TestDefaultViolationHistoryWindowPreCommitmentFromSupervision(unittest.TestCase):
-    """Tests the default behavior of the
-    violation_history_window_pre_commitment_from_supervision function on the
-    StateSpecificCommitmentFromSupervisionDelegate."""
-
-    def test_default_violation_history_window_pre_commitment_from_supervision(
-        self,
-    ) -> None:
-        state_code = "US_XX"
-
-        supervision_violation_response_1 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                state_code=state_code,
-                supervision_violation_response_id=123,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2008, 12, 7),
-            )
-        )
-
-        supervision_violation_response_2 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=234,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code=state_code,
-                response_date=date(2009, 11, 13),
-            )
-        )
-
-        supervision_violation_response_3 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                state_code=state_code,
-                supervision_violation_response_id=345,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2009, 12, 1),
-            )
-        )
-
-        violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
-            admission_date=date(2009, 12, 14),
-            sorted_and_filtered_violation_responses=[
-                supervision_violation_response_1,
-                supervision_violation_response_2,
-                supervision_violation_response_3,
-            ],
-            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
-        )
-
-        expected_violation_window = DateRange(
-            lower_bound_inclusive_date=date(2008, 12, 1),
-            upper_bound_exclusive_date=date(2009, 12, 2),
-        )
-
-        self.assertEqual(expected_violation_window, violation_window)
-
-    def test_default_violation_history_window_pre_commitment_from_supervision_filter_after(
-        self,
-    ) -> None:
-        state_code = "US_XX"
-
-        supervision_violation_response_1 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                state_code=state_code,
-                supervision_violation_response_id=123,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2008, 12, 7),
-            )
-        )
-
-        supervision_violation_response_2 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                supervision_violation_response_id=234,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                state_code=state_code,
-                response_date=date(2009, 11, 13),
-            )
-        )
-
-        # This is after the admission_date
-        supervision_violation_response_3 = (
-            NormalizedStateSupervisionViolationResponse.new_with_defaults(
-                state_code=state_code,
-                supervision_violation_response_id=345,
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2012, 12, 1),
-            )
-        )
-
-        violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
-            admission_date=date(2009, 12, 14),
-            sorted_and_filtered_violation_responses=[
-                supervision_violation_response_1,
-                supervision_violation_response_2,
-                supervision_violation_response_3,
-            ],
-            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
-        )
-
-        expected_violation_window = DateRange(
-            lower_bound_inclusive_date=date(2008, 11, 13),
-            upper_bound_exclusive_date=date(2009, 11, 14),
-        )
-
-        self.assertEqual(expected_violation_window, violation_window)
-
-    def test_default_violation_history_window_pre_commitment_from_supervision_no_responses(
-        self,
-    ) -> None:
-        violation_window = UsXxCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
-            admission_date=date(2009, 12, 14),
-            sorted_and_filtered_violation_responses=[],
-            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
-        )
-
-        expected_violation_window = DateRange(
-            lower_bound_inclusive_date=date(2008, 12, 14),
-            upper_bound_exclusive_date=date(2009, 12, 15),
-        )
-
-        self.assertEqual(expected_violation_window, violation_window)
 
 
 class TestCommitmentFromBoardHold(unittest.TestCase):

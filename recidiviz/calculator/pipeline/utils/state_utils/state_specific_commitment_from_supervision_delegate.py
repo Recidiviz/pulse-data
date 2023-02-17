@@ -18,21 +18,14 @@
 for state-specific decisions involved in categorizing various attributes of
 commitment from supervision admissions."""
 import abc
-import datetime
-from typing import List, Optional, Set
-
-from dateutil.relativedelta import relativedelta
+from typing import Optional, Set
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
     NormalizedStateSupervisionPeriod,
-    NormalizedStateSupervisionViolationResponse,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
-)
-from recidiviz.calculator.pipeline.utils.violation_response_utils import (
-    violation_responses_in_window,
 )
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
@@ -40,7 +33,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
-from recidiviz.common.date import DateRange
 
 
 class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDelegate):
@@ -76,62 +68,6 @@ class StateSpecificCommitmentFromSupervisionDelegate(abc.ABC, StateSpecificDeleg
         """
 
         return set()
-
-    def violation_history_window_pre_commitment_from_supervision(
-        self,
-        admission_date: datetime.date,
-        sorted_and_filtered_violation_responses: List[
-            NormalizedStateSupervisionViolationResponse
-        ],
-        default_violation_history_window_months: int,
-    ) -> DateRange:
-        """Returns the window of time before a commitment from supervision in which we
-        should consider violations for the violation history prior to the admission.
-
-        Default behavior is to use the date of the last violation response recorded
-        prior to the |admission_date| as the upper bound of the window, with a lower
-        bound that is |default_violation_history_window_months| before that date.
-
-        Should be overridden by state-specific implementations if necessary.
-        """
-        # We will use the date of the last response prior to the admission as the
-        # window cutoff.
-        responses_before_admission = violation_responses_in_window(
-            violation_responses=sorted_and_filtered_violation_responses,
-            upper_bound_exclusive=admission_date + relativedelta(days=1),
-            lower_bound_inclusive=None,
-        )
-
-        violation_history_end_date = admission_date
-
-        if responses_before_admission:
-            # If there were violation responses leading up to the incarceration
-            # admission, then we want the violation history leading up to the last
-            # response_date instead of the admission_date on the
-            # incarceration_period
-            last_response = responses_before_admission[-1]
-
-            if not last_response.response_date:
-                # This should never happen, but is here to silence mypy warnings
-                # about empty response_dates.
-                raise ValueError(
-                    "Not effectively filtering out responses without valid"
-                    " response_dates."
-                )
-            violation_history_end_date = last_response.response_date
-
-        violation_window_lower_bound_inclusive = (
-            violation_history_end_date
-            - relativedelta(months=default_violation_history_window_months)
-        )
-        violation_window_upper_bound_exclusive = (
-            violation_history_end_date + relativedelta(days=1)
-        )
-
-        return DateRange(
-            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
-            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
-        )
 
     # pylint: disable=unused-argument
     def get_commitment_from_supervision_supervision_type(

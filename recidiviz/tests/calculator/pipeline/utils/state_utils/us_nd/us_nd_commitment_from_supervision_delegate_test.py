@@ -46,35 +46,11 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
     StateSupervisionPeriodTerminationReason,
 )
-from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 from recidiviz.tests.calculator.pipeline.utils.entity_normalization.normalization_testing_utils import (
     default_normalized_ip_index_for_tests,
     default_normalized_sp_index_for_tests,
 )
-
-
-class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
-    """Tests the violation_history_window_pre_commitment_from_supervision
-    function on the UsNdCommitmentFromSupervisionDelegate."""
-
-    def test_us_nd_violation_history_window_pre_commitment_from_supervision(
-        self,
-    ) -> None:
-        violation_window = UsNdCommitmentFromSupervisionDelegate().violation_history_window_pre_commitment_from_supervision(
-            admission_date=date(2000, 1, 1),
-            sorted_and_filtered_violation_responses=[],
-            default_violation_history_window_months=0,
-        )
-
-        expected_violation_window = DateRange(
-            # 90 days before
-            lower_bound_inclusive_date=date(1999, 10, 3),
-            # 90 days, including admission_date
-            upper_bound_exclusive_date=date(2000, 3, 31),
-        )
-
-        self.assertEqual(expected_violation_window, violation_window)
 
 
 class TestPreCommitmentSupervisionPeriod(unittest.TestCase):

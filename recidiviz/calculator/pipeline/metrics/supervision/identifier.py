@@ -45,6 +45,7 @@ from recidiviz.calculator.pipeline.metrics.utils.supervision_utils import (
     is_supervision_out_of_state,
 )
 from recidiviz.calculator.pipeline.metrics.utils.violation_utils import (
+    VIOLATION_HISTORY_WINDOW_MONTHS,
     filter_violation_responses_for_violation_history,
     get_violation_and_response_history,
 )
@@ -738,8 +739,17 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervision_delegate,
             )
 
+            violation_history_window = violation_delegate.violation_history_window_pre_critical_date(
+                critical_date=supervision_period.termination_date,
+                sorted_and_filtered_violation_responses=violation_responses_for_history,
+                default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
+            )
+
+            # Get details about the violation and response history leading up to the
+            # supervision termination
             violation_history = get_violation_and_response_history(
-                upper_bound_exclusive_date=(termination_date + relativedelta(days=1)),
+                upper_bound_exclusive_date=violation_history_window.upper_bound_exclusive_date,
+                lower_bound_inclusive_date_override=violation_history_window.lower_bound_inclusive_date,
                 violation_responses_for_history=violation_responses_for_history,
                 violation_delegate=violation_delegate,
             )
