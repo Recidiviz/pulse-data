@@ -97,7 +97,7 @@ The versions we've deployed to staging or prod are tracked [here](https://paper.
 
 - To create a new Agency, use the Justice Counts > Agency Provisioning page in the admin panel (go/admin or go/admin-prod).
 - To add or remove an _existing_ user from an agency, you can use the Justice Counts > User Provisioning page in the admin panel.
-- To create a _new_ user, you must create them in both Auth0 and in our database. After creating them in Auth0, you can use the pulse-data/recidiviz/tools/justice_counts/create_user.py script to create a corresponding user in our DB. #TODO(#18438): Be able to create new users via the Admin Panel
+- To create a _new_ user, you must create them in both Auth0 and in our database. After creating them in Auth0, you can use the pulse-data/recidiviz/tools/justice_counts/create_user.py script to create a corresponding user in our DB.
 - To update a user's role for a given agency, you can use the pulse-data/recidiviz/tools/justice_counts/update_user_role.py script (this can also be used to add a user to an agency)
 
 ## SQLAlchemy Primer

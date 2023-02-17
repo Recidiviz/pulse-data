@@ -235,12 +235,62 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
+    @bp.route("/api/justice_counts_tools/users", methods=["POST"])
+    @requires_gae_auth
+    def create_user() -> Tuple[Response, HTTPStatus]:
+        """
+        Looks for an existing user in Auth0 and creates the User in the database.
+        """
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            email = assert_type(request_json.get("email"), str)
+            name = assert_type(request_json.get("name"), str)
+
+            db_user = UserAccountInterface.get_user_by_email(
+                session=session, email=email
+            )
+            if db_user:
+                return (
+                    jsonify(
+                        {
+                            "error": "User with this email already exists in the database."
+                        }
+                    ),
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+
+            auth0_client = _get_auth0_client()
+            matching_users = auth0_client.get_all_users_by_email_addresses(
+                email_addresses=[email]
+            )
+            if len(matching_users) == 0:
+                return (
+                    jsonify({"error": f"email {email} was not found in Auth0."}),
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+
+            matching_user = matching_users[0]
+            auth0_user_id = matching_user["user_id"]
+
+            user = UserAccountInterface.create_or_update_user(
+                session=session,
+                name=name,
+                email=email,
+                auth0_user_id=auth0_user_id,
+            )
+
+            return (
+                jsonify({"user": user.to_json()}),
+                HTTPStatus.OK,
+            )
+
     @bp.route("/api/justice_counts_tools/users", methods=["PUT"])
     @requires_gae_auth
     def update_user() -> Tuple[Response, HTTPStatus]:
         """
-        Updates a User. If name is provided, update in our DB and Auth0.
-        If agencies are provided, update in Auth0.
+        Updates a User. Updates name and agency ids in our DB.
         """
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
@@ -256,17 +306,16 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             agencies = AgencyInterface.get_agencies_by_id(
                 session=session, agency_ids=agency_ids or []
             )
-            if name is not None:
-                user = UserAccountInterface.create_or_update_user(
-                    session=session,
-                    name=name,
-                    auth0_user_id=auth0_user_id,
-                )
-                UserAccountInterface.add_or_update_user_agency_association(
-                    session=session,
-                    user=user,
-                    agencies=agencies,
-                )
+            user = UserAccountInterface.create_or_update_user(
+                session=session,
+                name=name,
+                auth0_user_id=auth0_user_id,
+            )
+            UserAccountInterface.add_or_update_user_agency_association(
+                session=session,
+                user=user,
+                agencies=agencies,
+            )
 
             return (
                 jsonify({"status": "ok"}),

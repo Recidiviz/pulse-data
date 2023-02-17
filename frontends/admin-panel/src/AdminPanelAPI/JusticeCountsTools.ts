@@ -67,6 +67,16 @@ export const getUsers = async (): Promise<Response> => {
   return getResource(`/api/justice_counts_tools/users`);
 };
 
+export const createUser = async (
+  email: string,
+  name: string
+): Promise<Response> => {
+  return postWithURLAndBody(`/api/justice_counts_tools/users`, {
+    email,
+    name,
+  });
+};
+
 export const updateUser = async (
   user: User,
   name: string | null,
