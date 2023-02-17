@@ -20,6 +20,8 @@
 import argparse
 from typing import List, Optional
 
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+
 
 def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
     """Adds argument configs to the |parser| for pipeline args that get passed through to Apache Beam and may be used to
@@ -33,7 +35,11 @@ def _add_base_apache_beam_args(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "--project", type=str, help="ID of the GCP project.", required=True
+        "--project",
+        type=str,
+        help="ID of the GCP project.",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
     )
 
     parser.add_argument(

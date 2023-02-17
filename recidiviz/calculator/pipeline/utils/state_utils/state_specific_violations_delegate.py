@@ -18,15 +18,25 @@
 for state-specific decisions involved in categorizing various attributes of
 violations."""
 import abc
+import datetime
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
+from dateutil.relativedelta import relativedelta
+
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
+)
+from recidiviz.calculator.pipeline.utils.violation_response_utils import (
+    violation_responses_in_window,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
@@ -72,6 +82,61 @@ class StateSpecificViolationDelegate(abc.ABC, StateSpecificDelegate):
         return response.response_type in (
             StateSupervisionViolationResponseType.VIOLATION_REPORT,
             StateSupervisionViolationResponseType.CITATION,
+        )
+
+    def violation_history_window_pre_critical_date(
+        self,
+        critical_date: datetime.date,
+        sorted_and_filtered_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
+        default_violation_history_window_months: int,
+    ) -> DateRange:
+        """Returns the window of time before a particular critical date in which we
+        should consider violations for the violation history prior to that date.
+
+        Default behavior is to use the date of the last violation response recorded
+        prior to the |critical_date| as the upper bound of the window, with a lower
+        bound that is |default_violation_history_window_months| before that date.
+
+        Should be overridden by state-specific implementations if necessary.
+        """
+        # We will use the date of the last response prior to the critical date as the
+        # window cutoff.
+        responses_before_critical_date = violation_responses_in_window(
+            violation_responses=sorted_and_filtered_violation_responses,
+            upper_bound_exclusive=critical_date + relativedelta(days=1),
+            lower_bound_inclusive=None,
+        )
+
+        violation_history_end_date = critical_date
+
+        if responses_before_critical_date:
+            # If there were violation responses leading up to the critical
+            # date, then we want the violation history leading up to the last
+            # response_date instead of the critical_date
+            last_response = responses_before_critical_date[-1]
+
+            if not last_response.response_date:
+                # This should never happen, but is here to silence mypy warnings
+                # about empty response_dates.
+                raise ValueError(
+                    "Not effectively filtering out responses without valid"
+                    " response_dates."
+                )
+            violation_history_end_date = last_response.response_date
+
+        violation_window_lower_bound_inclusive = (
+            violation_history_end_date
+            - relativedelta(months=default_violation_history_window_months)
+        )
+        violation_window_upper_bound_exclusive = (
+            violation_history_end_date + relativedelta(days=1)
+        )
+
+        return DateRange(
+            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
+            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
         )
 
     def get_violation_type_subtype_strings_for_violation(

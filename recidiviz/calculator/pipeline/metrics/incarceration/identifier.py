@@ -409,10 +409,12 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             )
         )
 
-        violation_history_window = commitment_from_supervision_delegate.violation_history_window_pre_commitment_from_supervision(
-            admission_date=admission_date,
-            sorted_and_filtered_violation_responses=violation_responses_for_history,
-            default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
+        violation_history_window = (
+            violation_delegate.violation_history_window_pre_critical_date(
+                critical_date=admission_date,
+                sorted_and_filtered_violation_responses=violation_responses_for_history,
+                default_violation_history_window_months=VIOLATION_HISTORY_WINDOW_MONTHS,
+            )
         )
 
         # Get details about the violation and response history leading up to the

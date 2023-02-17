@@ -548,7 +548,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         metric_types_filter: Optional[Set[str]] = None,
     ) -> None:
         """Runs a test version of the supervision pipeline."""
-        project = "project"
+        project = "recidiviz-staging"
         dataset = "dataset"
         normalized_dataset = f"{state_code.lower()}_normalized_state"
 
@@ -1346,7 +1346,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         default_beam_args: List[str] = [
             "--project",
-            "project",
+            "recidiviz-staging",
             "--job_name",
             "test",
         ]

@@ -29,6 +29,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
@@ -121,3 +122,28 @@ class TestFilterViolationResponses(unittest.TestCase):
         expected_output: List[StateSupervisionViolationResponse] = []
 
         self.assertEqual(expected_output, filtered_responses)
+
+
+class TestViolationHistoryWindowPreCommitment(unittest.TestCase):
+    """Tests the US_ND specific implementation of violation_history_window_pre_critical_date
+    function on the UsNDViolationDelegate."""
+
+    def test_us_nd_violation_history_window_pre_critical_date(
+        self,
+    ) -> None:
+        violation_window = (
+            UsNdViolationDelegate().violation_history_window_pre_critical_date(
+                critical_date=date(2000, 1, 1),
+                sorted_and_filtered_violation_responses=[],
+                default_violation_history_window_months=0,
+            )
+        )
+
+        expected_violation_window = DateRange(
+            # 90 days before
+            lower_bound_inclusive_date=date(1999, 10, 3),
+            # 90 days, including admission_date
+            upper_bound_exclusive_date=date(2000, 3, 31),
+        )
+
+        self.assertEqual(expected_violation_window, violation_window)

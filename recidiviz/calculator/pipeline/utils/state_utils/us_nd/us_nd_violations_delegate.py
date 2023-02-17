@@ -15,13 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for state-specific logic related to identifying violations in US_ND."""
+import datetime
+from typing import List
 
+from dateutil.relativedelta import relativedelta
+
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateSupervisionViolationResponse,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseType,
 )
+from recidiviz.common.date import DateRange
 from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
@@ -39,4 +47,25 @@ class UsNdViolationDelegate(StateSpecificViolationDelegate):
         return (
             response.response_type
             == StateSupervisionViolationResponseType.PERMANENT_DECISION
+        )
+
+    def violation_history_window_pre_critical_date(
+        self,
+        critical_date: datetime.date,
+        sorted_and_filtered_violation_responses: List[
+            NormalizedStateSupervisionViolationResponse
+        ],
+        default_violation_history_window_months: int,
+    ) -> DateRange:
+        """For US_ND we look for violation responses with a response_date within 90 days
+        of a critical date. 90 days is an arbitrary buffer for which we accept discrepancies between the
+        SupervisionViolationResponse response_date and the StateIncarcerationPeriod's
+        admission_date.
+        """
+
+        violation_window_lower_bound_inclusive = critical_date - relativedelta(days=90)
+        violation_window_upper_bound_exclusive = critical_date + relativedelta(days=90)
+        return DateRange(
+            lower_bound_inclusive_date=violation_window_lower_bound_inclusive,
+            upper_bound_exclusive_date=violation_window_upper_bound_exclusive,
         )
