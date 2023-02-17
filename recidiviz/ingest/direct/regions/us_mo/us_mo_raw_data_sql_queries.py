@@ -206,7 +206,9 @@ LBAKRDTA_TAK015 = f"""
             COALESCE(BL$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
-LBAKRDTA_TAK017 = f"""
+# We cannot yet support more full historical files being pulled in the automated transfer, so for now we will pull this historically every week as a
+# separate manual query and then add it back in when SFTP infra can support this.
+LBAKRDTA_TAK017 = """
     SELECT 
         BN$DOC,
         BN$CYC,
@@ -227,10 +229,7 @@ LBAKRDTA_TAK017 = f"""
         BN$DLU,
         BN$TLU
     FROM
-        LBAKRDTA.TAK017
-    WHERE
-        MAX(COALESCE(BN$DLU, 0),
-            COALESCE(BN$DCR, 0)) >= {julian_format_lower_bound_update_date};
+        LBAKRDTA.TAK017;
     """
 
 LBAKRDTA_TAK020 = f"""
@@ -486,7 +485,7 @@ LBAKRDTA_TAK034 = f"""
 
 LBAKRDTA_TAK039 = f"""
     SELECT 
-        DN$DOC
+        DN$DOC,
         DN$CYC,
         DN$NSN,
         DN$PIN,
@@ -596,6 +595,23 @@ LBAKRDTA_TAK042 = f"""
             COALESCE(CF$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK047 = f"""
+    SELECT 
+        CJ$DOC,
+        CJ$CYC,
+        CJ$BSN,
+        '"' CONCAT REPLACE(CJ$GRX, '"', '""') CONCAT '"' AS CJ$GRX,
+        CJ$DCR,
+        CJ$TCR,
+        CJ$DLU,
+        CJ$TLU
+    FROM
+        LBAKRDTA.TAK047
+    WHERE
+        MAX(COALESCE(CJ$DLU, 0),
+            COALESCE(CJ$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK044 = f"""
     SELECT 
         CG$DOC,
@@ -675,6 +691,37 @@ LBAKRDTA_TAK068 = f"""
             COALESCE(CT$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK071 = f"""
+    SELECT 
+        CV$DOC,
+        CV$CYC,
+        CV$MXY,
+        CV$MXM,
+        CV$MXD,
+        CV$AP,
+        CV$AM,
+        CV$MR,
+        CV$TC,
+        CV$TA,
+        '"' CONCAT REPLACE(CV$TCA, '"', '""') CONCAT '"' AS CV$TCA,
+        CV$S1,
+        '"' CONCAT REPLACE(CV$S1A, '"', '""') CONCAT '"' AS CV$S1A,
+        CV$S2,
+        '"' CONCAT REPLACE(CV$S2A, '"', '""') CONCAT '"' AS CV$S2A,
+        '"' CONCAT REPLACE(CV$TC1, '"', '""') CONCAT '"' AS CV$TC1,
+        '"' CONCAT REPLACE(CV$TC2, '"', '""') CONCAT '"' AS CV$TC2,
+        '"' CONCAT REPLACE(CV$TC3, '"', '""') CONCAT '"' AS CV$TC3,
+        CV$DCR,
+        CV$TCR,
+        CV$DLU,
+        CV$TLU
+    FROM
+        LBAKRDTA.TAK071
+    WHERE
+        MAX(COALESCE(CV$DLU, 0),
+            COALESCE(CV$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
 LBAKRDTA_TAK076 = f"""
     SELECT 
         CZ$DOC,
@@ -743,6 +790,35 @@ LBAKRDTA_TAK142 = f"""
     WHERE
         MAX(COALESCE(E6$DLU, 0),
             COALESCE(E6$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK204 = f"""
+    SELECT 
+        HL$DOC,
+        HL$CYC,
+        HL$BL,
+        HL$SNS,
+        '"' CONCAT REPLACE(HL$IT1, '"', '""') CONCAT '"' AS HL$IT1,
+        '"' CONCAT REPLACE(HL$IT2, '"', '""') CONCAT '"' AS HL$IT2,
+        '"' CONCAT REPLACE(HL$IT3, '"', '""') CONCAT '"' AS HL$IT3,
+        '"' CONCAT REPLACE(HL$IT4, '"', '""') CONCAT '"' AS HL$IT4,
+        '"' CONCAT REPLACE(HL$IT5, '"', '""') CONCAT '"' AS HL$IT5,
+        HL$OLA,
+        HL$OLC,
+        HL$PON,
+        HL$PIN,
+        HL$PLN,
+        HL$DCR,
+        HL$TCR,
+        HL$UID,
+        HL$DLU,
+        HL$TLU,
+        HL$UIU
+    FROM
+        LBAKRDTA.TAK204
+    WHERE
+        MAX(COALESCE(HL$DLU, 0),
+            COALESCE(HL$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
 LBAKRDTA_TAK222 = f"""
@@ -1461,7 +1537,6 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRCOD_TAK146", LBAKRCOD_TAK146),
         ("LBAKRDTA_TAK001", LBAKRDTA_TAK001),
         ("LBAKRDTA_TAK015", LBAKRDTA_TAK015),
-        ("LBAKRDTA_TAK017", LBAKRDTA_TAK017),
         ("LBAKRDTA_TAK020", LBAKRDTA_TAK020),
         ("LBAKRDTA_TAK022", LBAKRDTA_TAK022),
         ("LBAKRDTA_TAK023", LBAKRDTA_TAK023),
@@ -1474,12 +1549,15 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK040", LBAKRDTA_TAK040),
         ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
         ("LBAKRDTA_TAK044", LBAKRDTA_TAK044),
+        ("LBAKRDTA_TAK047", LBAKRDTA_TAK047),
         ("LBAKRDTA_TAK065", LBAKRDTA_TAK065),
         ("LBAKRDTA_TAK068", LBAKRDTA_TAK068),
+        ("LBAKRDTA_TAK071", LBAKRDTA_TAK071),
         ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
         ("LBAKRDTA_TAK090", LBAKRDTA_TAK090),
         ("LBAKRDTA_TAK142", LBAKRDTA_TAK142),
         ("LBAKRDTA_TAK158", LBAKRDTA_TAK158),
+        ("LBAKRDTA_TAK204", LBAKRDTA_TAK204),
         ("LBAKRDTA_TAK222", LBAKRDTA_TAK222),
         ("LBAKRDTA_TAK223", LBAKRDTA_TAK223),
         ("LBAKRDTA_TAK233", LBAKRDTA_TAK233),
@@ -1510,6 +1588,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("MASTER_PDB_ASSESSMENT_RESPONSES", MASTER_PDB_ASSESSMENT_RESPONSES),
         ("OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF", OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF),
         # These queries should only be run ad-hoc for now. See above for more details.
+        # ("LBAKRDTA_TAK017", LBAKRDTA_TAK017),
         # ("OFNDR_PDB_OFNDR_ASMNT_RESPONSES", OFNDR_PDB_OFNDR_ASMNT_RESPONSES),
         # ("MO_CASEPLANS_DB2", MO_CASEPLANS_DB2),
         # ("MO_CASEPLAN_INFO_DB2", MO_CASEPLAN_INFO_DB2),
