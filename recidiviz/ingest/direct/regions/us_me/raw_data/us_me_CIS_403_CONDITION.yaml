@@ -29,6 +29,7 @@ columns:
     is_datetime: True
   - name: Fulfilled_Inactive_Comment_Tx
   - name: General_Comments_Tx
+    description: General comments relevant to the supervision condition and the client
     is_pii: True
   - name: Logical_Delete_Ind
     description: Delete if 'Y'
