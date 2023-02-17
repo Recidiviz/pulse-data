@@ -130,6 +130,7 @@ columns:
   - name: Fta_Ind
     description: Indicates whether or not there is a "Failure to Appear" related to the violation outcome proceedings.
   - name: Logical_Delete_Ind
+    description: Delete if 'Y'
   - name: Modified_By_Tx
     is_pii: True
   - name: Modified_On_Date
