@@ -60,8 +60,11 @@ export type User = {
 
 export type CreateUserRequest = {
   email: string;
-  agencyIds: number[];
-  name?: string;
+  name: string;
+};
+
+export type CreateUserResponse = {
+  user: User;
 };
 
 export type UsersResponse = {

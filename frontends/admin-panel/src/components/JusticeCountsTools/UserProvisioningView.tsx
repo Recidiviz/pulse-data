@@ -15,25 +15,64 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { SearchOutlined } from "@ant-design/icons";
-import { Button, Input, message, PageHeader, Select, Space, Table } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  message,
+  PageHeader,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Typography,
+} from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { getAgencies, getUsers } from "../../AdminPanelAPI";
-import { updateUser } from "../../AdminPanelAPI/JusticeCountsTools";
+import { createUser, updateUser } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
+import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
+  CreateUserRequest,
+  CreateUserResponse,
   ErrorResponse,
   User,
   UsersResponse,
 } from "./constants";
 
 const UserProvisioningView = (): JSX.Element => {
-  const [showSpinner] = useState(false);
-  const { data: usersData } = useFetchedDataJSON<UsersResponse>(getUsers);
+  const [showSpinner, setShowSpinner] = useState(false);
+  const [form] = Form.useForm();
+  const { data: usersData, setData: setUsersData } =
+    useFetchedDataJSON<UsersResponse>(getUsers);
   const { data: agenciesData } =
     useFetchedDataJSON<AgenciesResponse>(getAgencies);
+
+  const onFinish = async ({ email, name }: CreateUserRequest) => {
+    const emailTrimmed = email.trim();
+    const nameTrimmed = name.trim();
+    setShowSpinner(true);
+    try {
+      const response = await createUser(emailTrimmed, nameTrimmed);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        throw error;
+      }
+      const { user } = (await response.json()) as CreateUserResponse;
+      setUsersData({
+        users: [...(usersData?.users || []), user],
+      });
+      form.resetFields();
+      setShowSpinner(false);
+      message.success(`"${name}" added!`);
+    } catch (err) {
+      setShowSpinner(false);
+      message.error(`An error occured: ${err}`);
+    }
+  };
 
   const onAgencyChange = async (user: User, agencyIds: number[]) => {
     try {
@@ -190,6 +229,36 @@ const UserProvisioningView = (): JSX.Element => {
         }}
         rowKey={(user) => user.auth0_user_id}
       />
+      <Form
+        {...formLayout}
+        form={form}
+        onFinish={onFinish}
+        requiredMark={false}
+      >
+        <Typography.Title
+          level={4}
+          style={{ paddingTop: 16, paddingBottom: 8 }}
+        >
+          Add User
+        </Typography.Title>
+        <Typography.Paragraph style={{ marginBottom: 16 }}>
+          To create a new user, you must first create the user in Auth0.
+          Afterwards, create a new user here with the same user email you used
+          in Auth0 to add the user to our database.
+        </Typography.Paragraph>
+        <Form.Item label="Name" name="name" rules={[{ required: true }]}>
+          <Input disabled={showSpinner} />
+        </Form.Item>
+        <Form.Item label="Email" name="email" rules={[{ required: true }]}>
+          <Input disabled={showSpinner} />
+        </Form.Item>
+        <Form.Item {...formTailLayout}>
+          <Button type="primary" htmlType="submit" disabled={showSpinner}>
+            Submit
+          </Button>
+          {showSpinner && <Spin style={{ marginLeft: 16 }} />}
+        </Form.Item>
+      </Form>
     </>
   );
 };
