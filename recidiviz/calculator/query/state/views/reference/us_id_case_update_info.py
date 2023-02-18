@@ -38,7 +38,7 @@ US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
             external_id AS person_external_id,
             state_code
         FROM
-            `{project_id}.{base_dataset}.state_person_external_id`
+            `{project_id}.{normalized_state_dataset}.state_person_external_id`
         WHERE
             state_code = 'US_ID' AND id_type = 'US_ID_DOC'),
     agnt_case_updt AS (
@@ -64,7 +64,7 @@ US_ID_CASE_UPDATE_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_ID_CASE_UPDATE_INFO_VIEW_NAME,
     view_query_template=US_ID_CASE_UPDATE_INFO_QUERY_TEMPLATE,
     description=US_ID_CASE_UPDATE_INFO_DESCRIPTION,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
     us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
