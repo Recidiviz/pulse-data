@@ -363,11 +363,35 @@ CONTACTS_HOME_VISIT = EventCountMetric(
     },
 )
 
+DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
+    name="days_absconded_365",
+    display_name="Days Absconded Within 1 Year Of Assignment",
+    description="Sum of the number of days with absconsion or bench warrant status "
+    "within 1 year following assignment, for all assignments during the analysis period",
+    span_types=["COMPARTMENT_SESSION"],
+    span_attribute_filters={
+        "compartment_level_2": ["ABSCONSION", "BENCH_WARRANT"],
+    },
+    window_length_days=365,
+)
+
+DAYS_AT_LIBERTY_365 = AssignmentSpanDaysMetric(
+    name="days_at_liberty_365",
+    display_name="Days At Liberty Within 1 Year Of Assignment",
+    description="Sum of the number of days spent at liberty within 1 year following "
+    "assignment, for all assignments during the analysis period",
+    span_types=["COMPARTMENT_SESSION"],
+    span_attribute_filters={
+        "compartment_level_1": ["LIBERTY"],
+    },
+    window_length_days=365,
+)
+
 DAYS_EMPLOYED_365 = AssignmentSpanDaysMetric(
     name="days_employed_365",
     display_name="Days Employed Within 1 Year Of Assignment",
-    description="Sum of the number of days clients had valid employment status within 1 year following assignment, "
-    "for all assignments during the analysis period",
+    description="Sum of the number of days clients had valid employment status within 1 "
+    "year following assignment, for all assignments during the analysis period",
     span_types=["EMPLOYMENT_STATUS_SESSION"],
     span_attribute_filters={
         "is_employed": ["true"],
@@ -378,8 +402,9 @@ DAYS_EMPLOYED_365 = AssignmentSpanDaysMetric(
 DAYS_IN_COMMUNITY_365 = AssignmentSpanDaysMetric(
     name="days_in_community_365",
     display_name="Days In Community Within 1 Year Of Assignment",
-    description="Sum of the number of days spent in community (supervision or at liberty) within 1 year following "
-    "assignment, for all assignments during the analysis period",
+    description="Sum of the number of days spent in community (supervision or at "
+    "liberty) within 1 year following assignment, for all assignments during the "
+    "analysis period",
     span_types=["COMPARTMENT_SESSION"],
     span_attribute_filters={
         "compartment_level_1": ["SUPERVISION", "LIBERTY"],
@@ -390,8 +415,8 @@ DAYS_IN_COMMUNITY_365 = AssignmentSpanDaysMetric(
 DAYS_INCARCERATED_365 = AssignmentSpanDaysMetric(
     name="days_incarcerated_365",
     display_name="Days Incarcerated Within 1 Year Of Assignment",
-    description="Sum of the number of incarcerated days within 1 year following assignment, for all assignments "
-    "during the analysis period",
+    description="Sum of the number of incarcerated days within 1 year following "
+    "assignment, for all assignments during the analysis period",
     span_types=["COMPARTMENT_SESSION"],
     span_attribute_filters={
         "compartment_level_1": ["INCARCERATION"],
@@ -399,11 +424,38 @@ DAYS_INCARCERATED_365 = AssignmentSpanDaysMetric(
     window_length_days=365,
 )
 
+DAYS_OUT_OF_STATE_365 = AssignmentSpanDaysMetric(
+    name="days_out_of_state_365",
+    display_name="Days Out of State Within 1 Year Of Assignment",
+    description="Sum of the number of days incarcerated or supervised out of state "
+    "within 1 year following assignment, for all assignments during the analysis period",
+    span_types=["COMPARTMENT_SESSION"],
+    span_attribute_filters={
+        "compartment_level_1": [
+            "INCARCERATION_OUT_OF_STATE",
+            "SUPERVISION_OUT_OF_STATE",
+        ],
+    },
+    window_length_days=365,
+)
+
+DAYS_PENDING_CUSTODY_365 = AssignmentSpanDaysMetric(
+    name="days_pending_custody_365",
+    display_name="Days Pending Custody Within 1 Year Of Assignment",
+    description="Sum of the number of days pending custody within 1 year following "
+    "assignment, for all assignments during the analysis period",
+    span_types=["COMPARTMENT_SESSION"],
+    span_attribute_filters={
+        "compartment_level_1": ["PENDING_CUSTODY"],
+    },
+    window_length_days=365,
+)
+
 DAYS_SINCE_MOST_RECENT_COMPLETED_CONTACT = DailyAvgTimeSinceSpanStartMetric(
     name="avg_days_since_most_recent_completed_contact",
     display_name="Days Since Most Recent Completed Contact",
-    description="Average number of days since a client's most recent completed contact, across all days on which "
-    "client is in population",
+    description="Average number of days since a client's most recent completed contact, "
+    "across all days on which client is in population",
     span_types=["COMPLETED_CONTACT_SESSION"],
     span_attribute_filters={},
 )
@@ -411,19 +463,31 @@ DAYS_SINCE_MOST_RECENT_COMPLETED_CONTACT = DailyAvgTimeSinceSpanStartMetric(
 DAYS_SINCE_MOST_RECENT_LSIR = DailyAvgTimeSinceSpanStartMetric(
     name="avg_days_since_most_recent_lsir",
     display_name="Days Since Most Recent LSI-R",
-    description="Average number of days since a client's most recent LSI-R assessment, across all days on which "
-    "client is in population",
+    description="Average number of days since a client's most recent LSI-R assessment, "
+    "across all days on which client is in population",
     span_types=["ASSESSMENT_SCORE_SESSION"],
     span_attribute_filters={
         "assessment_type": ["LSIR"],
     },
 )
 
+DAYS_SUPERVISED_365 = AssignmentSpanDaysMetric(
+    name="days_supervised_365",
+    display_name="Days Supervised Within 1 Year Of Assignment",
+    description="Sum of the number of supervised days within 1 year following "
+    "assignment, for all assignments during the analysis period",
+    span_types=["COMPARTMENT_SESSION"],
+    span_attribute_filters={
+        "compartment_level_1": ["SUPERVISION"],
+    },
+    window_length_days=365,
+)
+
 DAYS_TO_FIRST_ABSCONSION_BENCH_WARRANT_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_absconsion_bench_warrant_365",
     display_name="Days To First Absconsion/Bench Warrant (Legal Status) Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first absconsion/bench warrant legal status within 1 year "
-    "following assignment, for all assignments during the analysis period",
+    description="Sum of the number of days prior to first absconsion/bench warrant legal "
+    "status within 1 year following assignment, for all assignments during the analysis period",
     event_types=["ABSCONSION_BENCH_WARRANT"],
     event_attribute_filters={},
     window_length_days=365,
@@ -432,9 +496,19 @@ DAYS_TO_FIRST_ABSCONSION_BENCH_WARRANT_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_INCARCERATION_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_incarceration_365",
     display_name="Days To First Incarceration Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first incarceration within 1 year following assignment, "
-    "for all assignments during the analysis period",
+    description="Sum of the number of days prior to first incarceration within 1 year "
+    "following assignment, for all assignments during the analysis period",
     event_types=["INCARCERATION_START"],
+    event_attribute_filters={},
+    window_length_days=365,
+)
+
+DAYS_TO_FIRST_LIBERTY_365 = AssignmentDaysToFirstEventMetric(
+    name="days_to_first_liberty_365",
+    display_name="Days To First Liberty Within 1 Year After Assignment",
+    description="Sum of the number of days prior to first liberty transition within 1 "
+    "year following assignment, for all assignments during the analysis period",
+    event_types=["LIBERTY_START"],
     event_attribute_filters={},
     window_length_days=365,
 )
@@ -442,8 +516,8 @@ DAYS_TO_FIRST_INCARCERATION_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_SUPERVISION_START_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_supervision_start_365",
     display_name="Days To First Supervision Start Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first supervision start within 1 year following assignment, "
-    "for all assignments during the analysis period",
+    description="Sum of the number of days prior to first supervision start within 1 "
+    "year following assignment, for all assignments during the analysis period",
     event_types=["SUPERVISION_START"],
     event_attribute_filters={},
     window_length_days=365,
@@ -452,8 +526,8 @@ DAYS_TO_FIRST_SUPERVISION_START_365 = AssignmentDaysToFirstEventMetric(
 DAYS_TO_FIRST_VIOLATION_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_violation_365",
     display_name="Days To First Violation Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first violation within 1 year following assignment, "
-    "for all assignments during the analysis period",
+    description="Sum of the number of days prior to first violation within 1 year "
+    "following assignment, for all assignments during the analysis period",
     event_types=["VIOLATION"],
     event_attribute_filters={},
     window_length_days=365,
@@ -463,8 +537,9 @@ DAYS_TO_FIRST_VIOLATION_365_BY_TYPE_METRICS = [
     AssignmentDaysToFirstEventMetric(
         name=f"days_to_first_violation_{category.lower()}_365",
         display_name=f"Days To First {category.title()} Violation Within 1 Year After Assignment",
-        description=f"Sum of the number of days prior to first {category.lower()} violation within 1 year following "
-        f"assignment, for all assignments during the analysis period",
+        description=f"Sum of the number of days prior to first {category.lower()} "
+        "violation within 1 year following assignment, for all assignments during the "
+        "analysis period",
         event_types=["VIOLATION"],
         event_attribute_filters={"violation_type": types},
         window_length_days=365,
@@ -475,8 +550,8 @@ DAYS_TO_FIRST_VIOLATION_365_BY_TYPE_METRICS = [
 DAYS_TO_FIRST_VIOLATION_RESPONSE_365 = AssignmentDaysToFirstEventMetric(
     name="days_to_first_violation_response_365",
     display_name="Days To First Violation Response Within 1 Year After Assignment",
-    description="Sum of the number of days prior to first violation response within 1 year following assignment, "
-    "for all assignments during the analysis period",
+    description="Sum of the number of days prior to first violation response within 1 "
+    "year following assignment, for all assignments during the analysis period",
     event_types=["VIOLATION_RESPONSE"],
     event_attribute_filters={},
     window_length_days=365,
@@ -486,8 +561,9 @@ DAYS_TO_FIRST_VIOLATION_RESPONSE_365_BY_TYPE_METRICS = [
     AssignmentDaysToFirstEventMetric(
         name=f"days_to_first_violation_response_{category.lower()}_365",
         display_name=f"Days To First {category.title()} Violation Response Within 1 Year After Assignment",
-        description=f"Sum of the number of days prior to first {category.lower()} violation response within 1 year following "
-        f"assignment, for all assignments during the analysis period",
+        description=f"Sum of the number of days prior to first {category.lower()} "
+        "violation response within 1 year following assignment, for all assignments "
+        "during the analysis period",
         event_types=["VIOLATION_RESPONSE"],
         event_attribute_filters={"most_serious_violation_type": types},
         window_length_days=365,
@@ -554,8 +630,9 @@ INCARCERATIONS_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
         name=f"incarcerations_inferred_{category.lower()}_violation",
         display_name=f"Inferred Incarcerations, {category.title()} Violation",
-        description="Number of inferred incarceration events that do not align with an observed "
-        f"incarceration session start, for which the most severe violation type was {category.lower()}",
+        description="Number of inferred incarceration events that do not align with an "
+        "observed incarceration session start, for which the most severe violation "
+        f"type was {category.lower()}",
         event_types=["SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON"],
         event_attribute_filters={
             "outflow_to_incarceration": ["false"],
@@ -600,8 +677,8 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     EventCountMetric(
         name=f"incarceration_starts_and_inferred_{category.lower()}_violation",
         display_name=f"Incarceration Starts And Inferred Incarcerations, {category.title()} Violation",
-        description="Number of total observed incarceration starts or inferred incarcerations for which "
-        f"the most severe violation type was {category.lower()}",
+        description="Number of total observed incarceration starts or inferred "
+        f"incarcerations for which the most severe violation type was {category.lower()}",
         event_types=[
             "INCARCERATION_START",
             "SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON",
@@ -624,7 +701,8 @@ LATE_OPPORTUNITY_METRICS = [
     EventCountMetric(
         name=f"late_opportunity_{b.task_type_name.lower()}_{num_days}_days",
         display_name=f"{num_days} Days Late: {b.task_title}",
-        description=f"Number of times clients surpass {num_days} days of being eligible for opportunities of type: {b.task_title.lower()}",
+        description=f"Number of times clients surpass {num_days} days of being eligible "
+        f"for opportunities of type: {b.task_title.lower()}",
         event_types=[f"TASK_ELIGIBLE_{num_days}_DAYS"],
         event_attribute_filters={
             "task_type": [b.task_type_name],
@@ -697,7 +775,8 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS = [
     SumSpanDaysMetric(
         name=f"person_days_task_eligible_{b.task_type_name.lower()}",
         display_name=f"Person-Days Eligible: {b.task_title}",
-        description=f"Total number of person-days spent eligible for opportunities of type: {b.task_title.lower()}",
+        description="Total number of person-days spent eligible for opportunities of "
+        f"type: {b.task_title.lower()}",
         span_types=["TASK_ELIGIBILITY_SESSION"],
         span_attribute_filters={
             "is_eligible": ["true"],
