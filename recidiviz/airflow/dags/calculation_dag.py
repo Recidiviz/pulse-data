@@ -574,6 +574,11 @@ def create_calculation_dag() -> None:
             # Metric pipelines should complete before view rematerialization starts
             metric_pipeline_operator >> update_all_views_branch
 
+            # This ensures that all of the normalization pipelines for a state will
+            # run and the normalized_state dataset will be updated before the
+            # metric pipelines for the state are triggered.
+            update_normalized_state >> metric_pipeline_operator
+
             # Add the pipeline to the list of metric pipelines for this state
             metric_pipelines_by_state[pipeline_config_args.state_code].append(
                 metric_pipeline_operator
@@ -599,14 +604,6 @@ def create_calculation_dag() -> None:
                 >> update_normalized_state
             )
 
-            for metric_pipeline in metric_pipelines_by_state[
-                pipeline_config_args.state_code
-            ]:
-                # This ensures that all of the normalization pipelines for a state will
-                # run and the normalized_state dataset will be updated before the
-                # metric pipelines for the state are triggered.
-                update_normalized_state >> metric_pipeline
-
     supplemental_dataset_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "supplemental_dataset_pipelines"
     )
@@ -626,6 +623,11 @@ def create_calculation_dag() -> None:
             )
 
             supplemental_pipeline_operator >> update_all_views_branch
+
+            # This ensures that all of the normalization pipelines for a state will
+            # run and the normalized_state dataset will be updated before the
+            # supplemental pipelines for the state are triggered.
+            update_normalized_state >> supplemental_pipeline_operator
 
     validation_task_groups: Dict[str, TaskGroup] = {}
     validation_task_group = TaskGroup("validations")

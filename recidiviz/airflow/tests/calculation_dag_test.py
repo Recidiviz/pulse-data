@@ -72,10 +72,6 @@ _TRIGGER_REFRESH_BQ_DATASET_TASK_ID = (
 _WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = (
     "bq_refresh.state_bq_refresh.wait_for_refresh_bq_dataset_success_STATE"
 )
-_SUPPLEMENTAL_PIPELINE_IDS = [
-    "dataflow_pipelines.US_ID_dataflow_pipelines.us-id-case-note-extracted-entities",
-    "dataflow_pipelines.US_IX_dataflow_pipelines.us-ix-case-note-extracted-entities",
-]
 
 
 def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
@@ -145,7 +141,9 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_tasks_not_upstream = normalization_pipeline_task_ids - upstream_tasks
         self.assertEqual(set(), pipeline_tasks_not_upstream)
 
-    def test_update_normalized_state_upstream_of_metric_pipelines(self) -> None:
+    def test_update_normalized_state_upstream_of_non_normalization_pipelines(
+        self,
+    ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
         normalization pipelines are run.
         """
@@ -158,7 +156,6 @@ class TestCalculationPipelineDag(unittest.TestCase):
             for task in dag.tasks
             if isinstance(task, RecidivizDataflowTemplateOperator)
             and "normalization" not in task.task_id
-            and task.task_id not in _SUPPLEMENTAL_PIPELINE_IDS
         }
 
         normalized_state_upstream_dag = dag.partial_subset(

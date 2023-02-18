@@ -38,7 +38,7 @@ US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE = """
             person_id,
             external_id AS person_external_id,
             state_code
-        FROM `{project_id}.{base_dataset}.state_person_external_id`
+        FROM `{project_id}.{normalized_state_dataset}.state_person_external_id`
         WHERE state_code = 'US_IX' AND id_type = 'US_IX_DOC'
     ),
     offender_notes AS (
@@ -70,7 +70,7 @@ US_IX_CASE_UPDATE_INFO_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=US_IX_CASE_UPDATE_INFO_VIEW_NAME,
     view_query_template=US_IX_CASE_UPDATE_INFO_QUERY_TEMPLATE,
     description=US_IX_CASE_UPDATE_INFO_DESCRIPTION,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
+    normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
     ),
