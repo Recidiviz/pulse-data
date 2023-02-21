@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Supervision."""
 
+from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
@@ -25,7 +26,6 @@ from recidiviz.justice_counts.dimensions.person import (
 from recidiviz.justice_counts.dimensions.supervision import (
     DailyPopulationType,
     DischargeType,
-    ExpenseType,
     FundingType,
     RevocationType,
     StaffType,
@@ -198,14 +198,14 @@ expenses = MetricDefinition(
                 ExpenseType.TRAINING: IncludesExcludesSet(
                     members=SupervisionTrainingExpensesIncludesExcludes,
                 ),
-                ExpenseType.FACILITIES_EQUIPMENT: IncludesExcludesSet(
+                ExpenseType.FACILITIES: IncludesExcludesSet(
                     members=SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
                 ),
             },
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
                 ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency, including any associated expenses, such as registration fees and travel costs.",
-                ExpenseType.FACILITIES_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
+                ExpenseType.FACILITIES: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
                 ExpenseType.OTHER: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency that are not personnel, training, or facilities and equipment expenses.",
                 ExpenseType.UNKNOWN: "The amount spent by the agency on other costs relating to the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency for a purpose that is not known.",
             },

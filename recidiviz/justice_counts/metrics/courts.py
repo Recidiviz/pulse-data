@@ -16,6 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Courts and Pretrial."""
 
+from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
     FundingType,
@@ -39,6 +40,10 @@ from recidiviz.justice_counts.includes_excludes.courts import (
     CasesOverturnedOnAppealIncludesExcludes,
     CommunitySupervisionOnlySentencesIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
+    ExpensesFacilitiesAndEquipmentIncludesExcludes,
+    ExpensesIncludesExcludes,
+    ExpensesPersonnelIncludesExcludes,
+    ExpensesTrainingIncludesExcludes,
     FelonyCriminalCaseFilingsIncludesExcludes,
     FinesOrFeesOnlySentencesIncludesExcludes,
     FundingIncludesExcludes,
@@ -140,6 +145,55 @@ funding = MetricDefinition(
                 FundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the operation and maintenance of the court system’s criminal case processing.",
                 FundingType.OTHER: "The amount of funding for the operation and maintenance of the court that is not appropriations from the state, appropriations from counties or cities, or funding from grants.",
                 FundingType.UNKNOWN: "The amount of funding to be used for the operation and maintenance of the court for which the source is not known.",
+            },
+        )
+    ],
+)
+
+expenses = MetricDefinition(
+    system=System.COURTS_AND_PRETRIAL,
+    metric_type=MetricType.EXPENSES,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Expenses",
+    description="The amount spent by the court system for the operation and maintenance of the court system to process criminal cases.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    # TODO(#17577) implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=ExpensesIncludesExcludes,
+        excluded_set={
+            ExpensesIncludesExcludes.COMMUNITY_SUPERVISION_OPERATIONS,
+            ExpensesIncludesExcludes.JUVENILE,
+            ExpensesIncludesExcludes.NON_COURT_FUNCTIONS,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ExpenseType,
+            required=True,
+            dimension_to_includes_excludes={
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=ExpensesPersonnelIncludesExcludes,
+                    excluded_set={
+                        ExpensesPersonnelIncludesExcludes.COMPANIES_CONTRACTED,
+                    },
+                ),
+                ExpenseType.TRAINING: IncludesExcludesSet(
+                    members=ExpensesTrainingIncludesExcludes,
+                    excluded_set={
+                        ExpensesTrainingIncludesExcludes.NO_COST_COURSES,
+                    },
+                ),
+                ExpenseType.FACILITIES: IncludesExcludesSet(
+                    members=ExpensesFacilitiesAndEquipmentIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                ExpenseType.PERSONNEL: "The amount spent by the court to employ personnel involved in the operation and maintenance of the court for the processing of criminal cases.",
+                ExpenseType.TRAINING: "The amount spent by the court on the training of personnel and staff involved in the operation and maintenance of the court for the processing of criminal cases, including any associated expenses, such as registration fees and travel costs.",
+                ExpenseType.FACILITIES: "The amount the court spent for the purchase and use of the physical plant and property owned and operated by the court for the processing of criminal cases.",
+                ExpenseType.OTHER: "The amount spent by the court on other costs relating to the operation and maintenance of the court for the processing of criminal cases that are not personnel, training, or facilities and equipment expenses.",
+                ExpenseType.UNKNOWN: "The amount spent by the court on other costs relating to the operation and maintenance of the court for the processing of criminal cases for a purpose that is not known.",
             },
         )
     ],

@@ -35,6 +35,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 # should be "checked in" here
 METRICS = [
     courts.funding,
+    courts.expenses,
     courts.judges_and_staff,
     courts.residents,
     courts.pretrial_releases,

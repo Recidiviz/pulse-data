@@ -33,6 +33,7 @@ from recidiviz.justice_counts.dimensions import (
 
 # All official Justice Counts dimensions should be "checked in" here
 DIMENSIONS = [
+    common.ExpenseType,
     common.CaseSeverityType,
     offense.OffenseType,
     person.Age,
@@ -56,7 +57,6 @@ DIMENSIONS = [
     law_enforcement.ComplaintType,
     law_enforcement.StaffType,
     law_enforcement.FundingType,
-    law_enforcement.ExpenseType,
     corrections.PopulationType,
     corrections.ReleaseType,
     corrections.ReleaseType,
@@ -82,7 +82,6 @@ DIMENSIONS = [
     prosecution.DispositionType,
     prosecution.StaffType,
     prosecution.FundingType,
-    prosecution.ExpenseType,
     prosecution.ProsecutedCaseSeverityType,
     defense.FundingType,
     defense.ExpenseType,
@@ -97,7 +96,6 @@ DIMENSIONS = [
     supervision.DischargeType,
     supervision.ViolationType,
     supervision.FundingType,
-    supervision.ExpenseType,
     supervision.RevocationType,
 ]
 

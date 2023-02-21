@@ -16,6 +16,7 @@
 # =============================================================================
 """Metricfile objects used for Courts metrics."""
 
+from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
     FundingType,
@@ -38,6 +39,16 @@ COURTS_METRIC_FILES = [
         definition=courts.funding,
         disaggregation=FundingType,
         disaggregation_column_name="funding_type",
+    ),
+    MetricFile(
+        canonical_filename="expenses",
+        definition=courts.expenses,
+    ),
+    MetricFile(
+        canonical_filename="expense_by_type",
+        definition=courts.expenses,
+        disaggregation=ExpenseType,
+        disaggregation_column_name="expense_type",
     ),
     MetricFile(
         canonical_filename="judges_and_staff",

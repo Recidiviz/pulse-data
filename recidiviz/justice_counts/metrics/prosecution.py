@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Prosecution."""
 
-from recidiviz.justice_counts.dimensions.common import CaseSeverityType
+from recidiviz.justice_counts.dimensions.common import CaseSeverityType, ExpenseType
 from recidiviz.justice_counts.dimensions.person import (
     BiologicalSex,
     GenderRestricted,
@@ -26,7 +26,6 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     DispositionType,
     DivertedCaseSeverityType,
-    ExpenseType,
     FundingType,
     ProsecutedCaseSeverityType,
     ReferredCaseSeverityType,
@@ -172,7 +171,7 @@ expenses = MetricDefinition(
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent to employ personnel involved in the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers.",
                 ExpenseType.TRAINING: "The amount spent by the office on the training of personnel involved in the operation and maintenance of the prosecutor’s office to process criminal cases, including any associated expenses, such as registration fees and travel costs.",
-                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the office for the purchase and use of the physical plant and property owned and operated by the office to process criminal cases.",
+                ExpenseType.FACILITIES: "The amount spent by the office for the purchase and use of the physical plant and property owned and operated by the office to process criminal cases.",
                 ExpenseType.OTHER: "The amount spent by the office to process criminal cases on other costs relating to the operation and maintenance of the prosecutor’s office that are not personnel, training, or facilities and equipment expenses.",
                 ExpenseType.UNKNOWN: "The amount spent by the office to process criminal cases on costs relating to the operation and maintenance of the prosecutor’s office for a purpose that is not known.",
             },
@@ -187,7 +186,7 @@ expenses = MetricDefinition(
                         ProsecutionTrainingExpensesIncludesExcludes.FREE_PROGRAMS
                     },
                 ),
-                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                ExpenseType.FACILITIES: IncludesExcludesSet(
                     members=FacilitiesAndEquipmentExpensesIncludesExcludes
                 ),
             },
