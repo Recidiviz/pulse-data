@@ -142,21 +142,27 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             person_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
-WITH rows_with_recency_rank AS (
+WITH filtered_rows AS (
     SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY primary
-                           ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
-    FROM
-        `recidiviz-test.us_xx_raw_data.raw_data_table`
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY primary
+                               ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
+        FROM
+            `recidiviz-test.us_xx_raw_data.raw_data_table`
+        
+    ) a
+    WHERE
+        recency_rank = 1
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM filtered_rows
 AND External_Id_Col IN ('123');"""
         self.assertEqual(
-            query,
             expected_query,
+            query,
         )
 
     def test_build_query_for_raw_table_single_column_multiple_values(self) -> None:
@@ -168,17 +174,23 @@ AND External_Id_Col IN ('123');"""
             person_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
-WITH rows_with_recency_rank AS (
+WITH filtered_rows AS (
     SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY primary
-                           ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
-    FROM
-        `recidiviz-test.us_xx_raw_data.raw_data_table`
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY primary
+                               ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
+        FROM
+            `recidiviz-test.us_xx_raw_data.raw_data_table`
+        
+    ) a
+    WHERE
+        recency_rank = 1
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM filtered_rows
 AND External_Id_Col IN ('123', '456');"""
 
         self.assertEqual(expected_query, query)
@@ -196,17 +208,23 @@ AND External_Id_Col IN ('123', '456');"""
             ],
         )
         expected_query = """
-WITH rows_with_recency_rank AS (
+WITH filtered_rows AS (
     SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY primary
-                           ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
-    FROM
-        `recidiviz-test.us_xx_raw_data.raw_data_table`
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY primary
+                               ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
+        FROM
+            `recidiviz-test.us_xx_raw_data.raw_data_table`
+        
+    ) a
+    WHERE
+        recency_rank = 1
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM filtered_rows
 AND External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR External_Id_Col_3 IN ('123', '456');"""
         self.maxDiff = None
         self.assertEqual(expected_query, query)
@@ -220,17 +238,23 @@ AND External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR 
             person_external_id_columns=[],
         )
         expected_query = """
-WITH rows_with_recency_rank AS (
+WITH filtered_rows AS (
     SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY primary
-                           ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
-    FROM
-        `recidiviz-test.us_xx_raw_data.raw_data_table`
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY primary
+                               ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
+        FROM
+            `recidiviz-test.us_xx_raw_data.raw_data_table`
+        
+    ) a
+    WHERE
+        recency_rank = 1
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
+FROM filtered_rows
 ;"""
 
         self.assertEqual(expected_query, query)
@@ -259,6 +283,7 @@ WITH max_update_datetime AS (
         MAX(update_datetime) AS update_datetime
     FROM
         `recidiviz-test.us_xx_raw_data.raw_data_table`
+    
 ),
 max_file_id AS (
     SELECT
@@ -267,11 +292,15 @@ max_file_id AS (
         `recidiviz-test.us_xx_raw_data.raw_data_table`
     WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
+),
+filtered_rows AS (
+    SELECT *
+    FROM
+        `recidiviz-test.us_xx_raw_data.raw_data_table`
+    WHERE
+        file_id = (SELECT file_id FROM max_file_id)
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
-FROM
-    `recidiviz-test.us_xx_raw_data.raw_data_table`
-WHERE
-    file_id = (SELECT file_id FROM max_file_id)
+FROM filtered_rows
 AND External_Id_Col IN ('123');"""
         self.assertEqual(expected_query, query)

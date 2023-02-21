@@ -18,7 +18,7 @@
 import re
 import string
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 
 import attr
 
@@ -39,96 +39,52 @@ from recidiviz.utils.string import StrictStringFormatter
 
 UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
-# A parameterized query for looking at the most recent row for each primary key, among rows with update datetimes
-# before a certain date.
-RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
-WITH rows_with_recency_rank AS (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
-                           ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
-    FROM
-        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE
-        update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
-),
-normalized_rows AS (
+LATEST_INCREMENTAL_FILE_FILTER_CLAUSE = """filtered_rows AS (
     SELECT
         * EXCEPT (recency_rank)
-    FROM
-        rows_with_recency_rank
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
+                               ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
+        FROM
+            `{{project_id}}.{raw_table_dataset_id}.{raw_table_name}`
+        {date_filter_clause}
+    ) a
     WHERE
         recency_rank = 1
-)
-SELECT {{columns_clause}}
-FROM normalized_rows
-"""
+)"""
 
 # When querying raw data we receive as full historical dumps every transfer, we don't
 # need to collapse rows down to one per primary key, because we believe that the
 # contents of a single file are the correct, non-duplicated contents of the source table.
-RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = f"""
-WITH max_update_datetime AS (
+LATEST_HISTORICAL_FILE_FILTER_CLAUSE = """max_update_datetime AS (
     SELECT
         MAX(update_datetime) AS update_datetime
     FROM
-        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE
-        update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
+        `{{project_id}}.{raw_table_dataset_id}.{raw_table_name}`
+    {date_filter_clause}
 ),
 max_file_id AS (
     SELECT
         MAX(file_id) AS file_id
     FROM
-        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+        `{{project_id}}.{raw_table_dataset_id}.{raw_table_name}`
     WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
-)
-SELECT {{columns_clause}}
-FROM
-    `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-WHERE
-    file_id = (SELECT file_id FROM max_file_id)
-"""
-
-# A query for looking at the most recent row for each primary key
-RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
-WITH rows_with_recency_rank AS (
-    SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
-                           ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
-    FROM
-        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
-)
-SELECT {columns_clause}
-FROM rows_with_recency_rank
-WHERE recency_rank = 1
-"""
-
-# When querying raw data we receive as full historical dumps every transfer, we don't
-# need to collapse rows down to one per primary key, because we believe that the
-# contents of a single file are the correct, non-duplicated contents of the source table.
-RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = """
-WITH max_update_datetime AS (
-    SELECT
-        MAX(update_datetime) AS update_datetime
-    FROM
-        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
 ),
-max_file_id AS (
-    SELECT
-        MAX(file_id) AS file_id
+filtered_rows AS (
+    SELECT *
     FROM
-        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+        `{{project_id}}.{raw_table_dataset_id}.{raw_table_name}`
     WHERE
-        update_datetime = (SELECT update_datetime FROM max_update_datetime)
-)
+        file_id = (SELECT file_id FROM max_file_id)
+)"""
+
+RAW_DATA_VIEW_TEMPLATE = """
+WITH {filtered_rows_cte}
 SELECT {columns_clause}
-FROM
-    `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
-WHERE
-    file_id = (SELECT file_id FROM max_file_id)
+FROM filtered_rows
 """
 
 DEFAULT_DATETIME_COL_NORMALIZATION_TEMPLATE = """
@@ -183,20 +139,52 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         region_code: str,
         view_id: str,
         description: str,
-        view_query_template: str,
         raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
         should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides],
-        columns_clause: str,
-        **additional_query_template_kwargs: Any,
+        normalized_column_values: bool,
+        include_undocumented_columns: bool,
+        parameterized_date_filter: bool,
     ):
-        view_dataset_id = raw_latest_views_dataset_for_region(
+        if normalized_column_values:
+            columns_clause = self.normalized_columns_for_config(
+                raw_file_config, include_undocumented_columns
+            )
+        else:
+            columns_clause = self._columns_clause_for_config(raw_file_config)
+
+        if parameterized_date_filter:
+            date_filter_clause = (
+                f"WHERE update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}"
+            )
+        else:
+            date_filter_clause = ""
+
+        raw_table_dataset_id = raw_tables_dataset_for_region(
             state_code=StateCode(region_code.upper()),
             instance=raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
-        self.raw_table_dataset_id = raw_tables_dataset_for_region(
+        if not raw_file_config.always_historical_export:
+            filtered_rows_cte = StrictStringFormatter().format(
+                LATEST_INCREMENTAL_FILE_FILTER_CLAUSE,
+                raw_table_dataset_id=raw_table_dataset_id,
+                raw_table_name=raw_file_config.file_tag,
+                raw_table_primary_key_str=raw_file_config.primary_key_str,
+                supplemental_order_by_clause=self._supplemental_order_by_clause_for_config(
+                    raw_file_config
+                ),
+                date_filter_clause=date_filter_clause,
+            )
+        else:
+            filtered_rows_cte = StrictStringFormatter().format(
+                LATEST_HISTORICAL_FILE_FILTER_CLAUSE,
+                raw_table_dataset_id=raw_table_dataset_id,
+                raw_table_name=raw_file_config.file_tag,
+                date_filter_clause=date_filter_clause,
+            )
+        view_dataset_id = raw_latest_views_dataset_for_region(
             state_code=StateCode(region_code.upper()),
             instance=raw_data_source_instance,
             sandbox_dataset_prefix=None,
@@ -206,15 +194,14 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             dataset_id=view_dataset_id,
             view_id=view_id,
             description=description,
-            view_query_template=view_query_template,
-            raw_table_dataset_id=self.raw_table_dataset_id,
-            raw_table_name=raw_file_config.file_tag,
+            view_query_template=RAW_DATA_VIEW_TEMPLATE,
             columns_clause=columns_clause,
+            filtered_rows_cte=filtered_rows_cte,
             address_overrides=address_overrides,
             should_deploy_predicate=should_deploy_predicate,
-            **additional_query_template_kwargs,
         )
         self.raw_file_config = raw_file_config
+        self.raw_table_dataset_id = raw_table_dataset_id
 
     def should_deploy(self) -> bool:
         should_deploy = super().should_deploy()
@@ -317,21 +304,6 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
     ):
         view_id = f"{raw_file_config.file_tag}_latest"
         description = f"{raw_file_config.file_tag} latest view"
-        view_query_template = (
-            RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
-            if raw_file_config.always_historical_export
-            else RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE
-        )
-        additional_query_template_kwargs: Dict[str, str] = {}
-        if not raw_file_config.always_historical_export:
-            supplemental_order_by_clause = (
-                self._supplemental_order_by_clause_for_config(raw_file_config)
-            )
-            additional_query_template_kwargs = {
-                **additional_query_template_kwargs,
-                "raw_table_primary_key_str": raw_file_config.primary_key_str,
-                "supplemental_order_by_clause": supplemental_order_by_clause,
-            }
 
         super().__init__(
             project_id=project_id,
@@ -339,14 +311,12 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
             raw_data_source_instance=raw_data_source_instance,
             view_id=view_id,
             description=description,
-            view_query_template=view_query_template,
             raw_file_config=raw_file_config,
             address_overrides=address_overrides,
             should_deploy_predicate=should_deploy_predicate,
-            columns_clause=self.normalized_columns_for_config(
-                raw_file_config, include_undocumented_columns=False
-            ),
-            **additional_query_template_kwargs,
+            include_undocumented_columns=False,
+            normalized_column_values=True,
+            parameterized_date_filter=False,
         )
 
 
@@ -372,35 +342,19 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
     ):
         view_id = f"{raw_file_config.file_tag}_by_update_date"
         description = f"{raw_file_config.file_tag} parameterized view"
-        view_query_template = (
-            RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
-            if raw_file_config.always_historical_export
-            else RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE
-        )
-        additional_query_template_kwargs: Dict[str, str] = {}
-        if not raw_file_config.always_historical_export:
-            supplemental_order_by_clause = (
-                self._supplemental_order_by_clause_for_config(raw_file_config)
-            )
-            additional_query_template_kwargs = {
-                **additional_query_template_kwargs,
-                "raw_table_primary_key_str": raw_file_config.primary_key_str,
-                "supplemental_order_by_clause": supplemental_order_by_clause,
-            }
+
         super().__init__(
             project_id=project_id,
             region_code=region_code,
             view_id=view_id,
             description=description,
-            view_query_template=view_query_template,
             raw_data_source_instance=raw_data_source_instance,
             raw_file_config=raw_file_config,
             should_deploy_predicate=None,
             address_overrides=address_overrides,
-            columns_clause=self.normalized_columns_for_config(
-                raw_file_config, include_undocumented_columns
-            ),
-            **additional_query_template_kwargs,
+            include_undocumented_columns=include_undocumented_columns,
+            normalized_column_values=True,
+            parameterized_date_filter=True,
         )
 
 
@@ -422,22 +376,6 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
     ) -> None:
         view_id = f"{raw_file_config.file_tag}_unnormalized_latest_rows"
         description = f"{raw_file_config.file_tag} unnormalized latest rows view"
-        view_query_template = (
-            RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
-            if raw_file_config.always_historical_export
-            else RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE
-        )
-
-        additional_query_template_kwargs: Dict[str, str] = {}
-        if not raw_file_config.always_historical_export:
-            supplemental_order_by_clause = (
-                self._supplemental_order_by_clause_for_config(raw_file_config)
-            )
-            additional_query_template_kwargs = {
-                **additional_query_template_kwargs,
-                "raw_table_primary_key_str": raw_file_config.primary_key_str,
-                "supplemental_order_by_clause": supplemental_order_by_clause,
-            }
 
         super().__init__(
             project_id=project_id,
@@ -445,12 +383,12 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
             raw_data_source_instance=raw_data_source_instance,
             view_id=view_id,
             description=description,
-            view_query_template=view_query_template,
             raw_file_config=raw_file_config,
             should_deploy_predicate=should_deploy_predicate,
             address_overrides=address_overrides,
-            columns_clause=self._columns_clause_for_config(raw_file_config),
-            **additional_query_template_kwargs,
+            include_undocumented_columns=False,
+            normalized_column_values=False,
+            parameterized_date_filter=False,
         )
 
 

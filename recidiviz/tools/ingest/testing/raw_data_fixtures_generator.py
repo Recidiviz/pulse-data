@@ -178,9 +178,7 @@ class RawDataFixturesGenerator:
                     f" OR {person_external_id_column} IN ({filter_by_values})"
                 )
 
-        query_str = f"{raw_table_view.view_query}{id_filter_condition};"
-        print(query_str)
-        return query_str
+        return f"{raw_table_view.view_query}{id_filter_condition};"
 
     def validate_dateset_and_view_exist(
         self, raw_table_config: DirectIngestRawFileConfig
@@ -200,7 +198,7 @@ class RawDataFixturesGenerator:
         if not self.bq_client.table_exists(
             dataset_ref, table_id=raw_table_view.raw_file_config.file_tag
         ):
-            raise Exception(
+            raise RuntimeError(
                 f"Table [{raw_table_view.raw_table_dataset_id}].[{raw_table_view.raw_file_config.file_tag}] does not exist, exiting."
             )
         return raw_table_view
