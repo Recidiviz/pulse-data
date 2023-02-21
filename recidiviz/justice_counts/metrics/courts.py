@@ -16,9 +16,9 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Courts and Pretrial."""
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
+    FundingType,
     ReleaseType,
     SentenceType,
     StaffType,
@@ -29,13 +29,19 @@ from recidiviz.justice_counts.dimensions.person import (
     RaceAndEthnicity,
 )
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType
-from recidiviz.justice_counts.includes_excludes.common import StaffIncludesExcludes
+from recidiviz.justice_counts.includes_excludes.common import (
+    CountyOrMunicipalAppropriationIncludesExcludes,
+    GrantsIncludesExcludes,
+    StaffIncludesExcludes,
+    StateAppropriationIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.courts import (
     CasesOverturnedOnAppealIncludesExcludes,
     CommunitySupervisionOnlySentencesIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
     FelonyCriminalCaseFilingsIncludesExcludes,
     FinesOrFeesOnlySentencesIncludesExcludes,
+    FundingIncludesExcludes,
     JailSentencesIncludesExcludes,
     JudgesIncludesExcludes,
     LegalStaffIncludesExcludes,
@@ -60,7 +66,6 @@ from recidiviz.justice_counts.includes_excludes.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     Definition,
     IncludesExcludesSet,
     MetricCategory,
@@ -88,20 +93,54 @@ residents = MetricDefinition(
     disabled=True,
 )
 
-annual_budget = MetricDefinition(
+funding = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
-    display_name="Annual Budget",
-    description="Measures the annual budget (in dollars) of the criminal courts.",
+    display_name="Funding",
+    description="The amount of funding for the operation and maintenance of the court system to process criminal cases.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.PRIMARY_FUNDING_SOURCE,
-            value_type=ValueType.TEXT,
-            label="Please describe your primary budget source.",
-            required=False,
+    # TODO(#17577) implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=FundingIncludesExcludes,
+        excluded_set={
+            FundingIncludesExcludes.SUPERVISION_OPERATIONS,
+            FundingIncludesExcludes.JUVENILE,
+            FundingIncludesExcludes.NON_COURT_FUNCTIONS,
+        },
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=FundingType,
+            required=True,
+            dimension_to_includes_excludes={
+                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
+                    members=StateAppropriationIncludesExcludes,
+                    excluded_set={
+                        StateAppropriationIncludesExcludes.PROPOSED,
+                        StateAppropriationIncludesExcludes.PRELIMINARY,
+                        StateAppropriationIncludesExcludes.GRANTS,
+                    },
+                ),
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
+                    members=CountyOrMunicipalAppropriationIncludesExcludes,
+                    excluded_set={
+                        CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
+                        CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                    },
+                ),
+                FundingType.GRANTS: IncludesExcludesSet(
+                    members=GrantsIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of the court system’s criminal case processing.",
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: "The amount of funding counties or municipalities appropriated for the operation and maintenance of the court system’s criminal case processing.",
+                FundingType.GRANTS: "The amount of funding derived by the agency through grants and awards to be used for the operation and maintenance of the court system’s criminal case processing.",
+                FundingType.OTHER: "The amount of funding for the operation and maintenance of the court that is not appropriations from the state, appropriations from counties or cities, or funding from grants.",
+                FundingType.UNKNOWN: "The amount of funding to be used for the operation and maintenance of the court for which the source is not known.",
+            },
         )
     ],
 )
