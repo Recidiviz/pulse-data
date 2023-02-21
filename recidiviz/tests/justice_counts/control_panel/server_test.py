@@ -35,7 +35,6 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.agency_jurisdictions import AgencyJurisdictionInterface
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
@@ -2335,100 +2334,136 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
     def test_update_jurisdictions(self) -> None:
         agency = self.test_schema_objects.test_agency_A
+        user = self.test_schema_objects.test_user_A
         self.session.add_all(
             [
                 agency,
+                user,
+                schema.AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                    role=schema.UserAccountRole.AGENCY_ADMIN,
+                ),
             ]
         )
         self.session.commit()
         self.session.refresh(agency)
         agency_id = agency.id
 
-        # add included jurisdictions
-        included_ids = ["0100000000", "0103100000", "0104700000"]
-        excluded_ids: List[str] = []
-        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
-            session=self.session,
-            agency_id=agency_id,
-            included_jurisdiction_ids=included_ids,
-            excluded_jurisdiction_ids=excluded_ids,
-        )
-        jurisdictions = AgencyJurisdictionInterface.to_json(
-            session=self.session, agency_id=agency_id
-        )
-        self.assertEqual(
-            {
-                "agency_id": agency_id,
-                "jurisdictions": {
-                    "included": ["0100000000", "0103100000", "0104700000"],
-                    "excluded": [],
-                },
-            },
-            jurisdictions,
-        )
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+            )
 
-        # add excluded jurisdictions
-        excluded_ids = ["0105500000", "0105900000"]
-        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
-            session=self.session,
-            agency_id=agency_id,
-            included_jurisdiction_ids=included_ids,
-            excluded_jurisdiction_ids=excluded_ids,
-        )
-        jurisdictions = AgencyJurisdictionInterface.to_json(
-            session=self.session, agency_id=agency_id
-        )
-        self.assertEqual(
-            {
-                "agency_id": agency_id,
-                "jurisdictions": {
-                    "included": ["0100000000", "0103100000", "0104700000"],
-                    "excluded": ["0105500000", "0105900000"],
+            # add included jurisdictions
+            included_ids = ["0100000000", "0103100000", "0104700000"]
+            excluded_ids: List[str] = []
+            patch_response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={
+                    "jurisdictions": {
+                        "included": included_ids,
+                        "excluded": excluded_ids,
+                    }
                 },
-            },
-            jurisdictions,
-        )
+            )
+            self.assertEqual(patch_response.status_code, 200)
+            get_response = self.client.get(
+                f"/api/agencies/{agency_id}/jurisdictions",
+            )
+            self.assertEqual(get_response.status_code, 200)
+            jurisdictions = get_response.json
+            self.assertEqual(
+                {
+                    "agency_id": str(agency_id),
+                    "jurisdictions": {
+                        "included": ["0100000000", "0103100000", "0104700000"],
+                        "excluded": [],
+                    },
+                },
+                jurisdictions,
+            )
 
-        # remove included jurisdictions
-        included_ids = []
-        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
-            session=self.session,
-            agency_id=agency_id,
-            included_jurisdiction_ids=included_ids,
-            excluded_jurisdiction_ids=excluded_ids,
-        )
-        jurisdictions = AgencyJurisdictionInterface.to_json(
-            session=self.session, agency_id=agency_id
-        )
-        self.assertEqual(
-            {
-                "agency_id": agency_id,
-                "jurisdictions": {
-                    "included": [],
-                    "excluded": ["0105500000", "0105900000"],
+            # add excluded jurisdictions
+            excluded_ids = ["0105500000", "0105900000"]
+            patch_response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={
+                    "jurisdictions": {
+                        "included": included_ids,
+                        "excluded": excluded_ids,
+                    }
                 },
-            },
-            jurisdictions,
-        )
+            )
+            self.assertEqual(patch_response.status_code, 200)
+            get_response = self.client.get(
+                f"/api/agencies/{agency_id}/jurisdictions",
+            )
+            self.assertEqual(get_response.status_code, 200)
+            jurisdictions = get_response.json
+            self.assertEqual(
+                {
+                    "agency_id": str(agency_id),
+                    "jurisdictions": {
+                        "included": ["0100000000", "0103100000", "0104700000"],
+                        "excluded": ["0105500000", "0105900000"],
+                    },
+                },
+                jurisdictions,
+            )
 
-        # remove excluded jurisdictions
-        excluded_ids = []
-        AgencyJurisdictionInterface.create_or_update_agency_jurisdictions(
-            session=self.session,
-            agency_id=agency_id,
-            included_jurisdiction_ids=included_ids,
-            excluded_jurisdiction_ids=excluded_ids,
-        )
-        jurisdictions = AgencyJurisdictionInterface.to_json(
-            session=self.session, agency_id=agency_id
-        )
-        self.assertEqual(
-            {
-                "agency_id": agency_id,
-                "jurisdictions": {
-                    "included": [],
-                    "excluded": [],
+            # remove included jurisdictions
+            included_ids = []
+            patch_response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={
+                    "jurisdictions": {
+                        "included": included_ids,
+                        "excluded": excluded_ids,
+                    }
                 },
-            },
-            jurisdictions,
-        )
+            )
+            self.assertEqual(patch_response.status_code, 200)
+            get_response = self.client.get(
+                f"/api/agencies/{agency_id}/jurisdictions",
+            )
+            self.assertEqual(get_response.status_code, 200)
+            jurisdictions = get_response.json
+            self.assertEqual(
+                {
+                    "agency_id": str(agency_id),
+                    "jurisdictions": {
+                        "included": [],
+                        "excluded": ["0105500000", "0105900000"],
+                    },
+                },
+                jurisdictions,
+            )
+
+            # remove excluded jurisdictions
+            excluded_ids = []
+            patch_response = self.client.patch(
+                f"/api/agencies/{agency_id}",
+                json={
+                    "jurisdictions": {
+                        "included": included_ids,
+                        "excluded": excluded_ids,
+                    }
+                },
+            )
+            self.assertEqual(patch_response.status_code, 200)
+            get_response = self.client.get(
+                f"/api/agencies/{agency_id}/jurisdictions",
+            )
+            self.assertEqual(get_response.status_code, 200)
+            jurisdictions = get_response.json
+            self.assertEqual(
+                {
+                    "agency_id": str(agency_id),
+                    "jurisdictions": {
+                        "included": [],
+                        "excluded": [],
+                    },
+                },
+                jurisdictions,
+            )
