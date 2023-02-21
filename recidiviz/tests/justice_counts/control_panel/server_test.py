@@ -209,8 +209,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         metrics = assert_type(response_json["metrics"], list)
         self.assertEqual(len(metrics), 3)
         self.assertEqual(metrics[0]["key"], law_enforcement.calls_for_service.key)
-        self.assertEqual(metrics[1]["key"], law_enforcement.reported_crime.key)
-        self.assertEqual(metrics[2]["key"], law_enforcement.arrests.key)
+        self.assertEqual(metrics[1]["key"], law_enforcement.arrests.key)
+        self.assertEqual(metrics[2]["key"], law_enforcement.reported_crime.key)
 
     def shared_test_agency_metrics(self, metrics: List[Dict[str, Any]]) -> None:
         """shared function for testing test_get_agency_metrics and test_get_agency_published_data"""
@@ -429,27 +429,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         self.assertEqual(metrics[4]["key"], prisons.daily_population.key)
-        # Readmissions metric has a prefilled context.
-        self.assertEqual(metrics[5]["key"], prisons.readmissions.key)
-        self.assertEqual(
-            metrics[5]["contexts"],
-            [
-                {
-                    "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
-                    "key": "INCLUDES_EXCLUDES_DESCRIPTION",
-                    "multiple_choice_options": [],
-                    "reporting_note": None,
-                    "required": False,
-                    "type": "TEXT",
-                    "value": None,
-                },
-            ],
-        )
         # For the release metric, two settings are excluded from the parole to supervision
         # disaggregation.
-        self.assertEqual(metrics[6]["key"], prisons.releases.key)
+        self.assertEqual(metrics[5]["key"], prisons.releases.key)
         self.assertEqual(
-            metrics[6]["disaggregations"][0]["dimensions"][1]["settings"],
+            metrics[5]["disaggregations"][0]["dimensions"][1]["settings"],
             [
                 {
                     "key": "AFTER_SANCTION",
@@ -477,6 +461,22 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 },
             ],
         )
+        # Readmissions metric has a prefilled context.
+        self.assertEqual(metrics[6]["key"], prisons.readmissions.key)
+        self.assertEqual(
+            metrics[6]["contexts"],
+            [
+                {
+                    "display_name": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                    "key": "INCLUDES_EXCLUDES_DESCRIPTION",
+                    "multiple_choice_options": [],
+                    "reporting_note": None,
+                    "required": False,
+                    "type": "TEXT",
+                    "value": None,
+                },
+            ],
+        )
         self.assertEqual(metrics[7]["key"], prisons.staff_use_of_force_incidents.key)
         self.assertEqual(metrics[8]["key"], prisons.grievances_upheld.key)
 
@@ -493,10 +493,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "population_by_biological_sex",
             ],
         )
+        self.assertEqual(metrics[5]["filenames"], ["releases", "releases_by_type"])
         self.assertEqual(
-            metrics[5]["filenames"], ["readmissions", "readmissions_by_type"]
+            metrics[6]["filenames"], ["readmissions", "readmissions_by_type"]
         )
-        self.assertEqual(metrics[6]["filenames"], ["releases", "releases_by_type"])
         self.assertEqual(metrics[7]["filenames"], ["use_of_force"])
         self.assertEqual(
             metrics[8]["filenames"], ["grievances_upheld", "grievances_upheld_by_type"]

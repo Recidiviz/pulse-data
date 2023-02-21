@@ -22,6 +22,7 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     DispositionType,
     DivertedCaseSeverityType,
+    ExpenseType,
     FundingType,
     ProsecutedCaseSeverityType,
     ReferredCaseSeverityType,
@@ -40,6 +41,16 @@ PROSECUTION_METRIC_FILES = [
         definition=prosecution.funding,
         disaggregation=FundingType,
         disaggregation_column_name="funding_type",
+    ),
+    MetricFile(
+        canonical_filename="expenses",
+        definition=prosecution.expenses,
+    ),
+    MetricFile(
+        canonical_filename="expense_by_type",
+        definition=prosecution.expenses,
+        disaggregation=ExpenseType,
+        disaggregation_column_name="expense_type",
     ),
     MetricFile(
         canonical_filename="total_staff",

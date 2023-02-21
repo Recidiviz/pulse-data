@@ -152,51 +152,47 @@ funding = MetricDefinition(
 )
 
 
-expenses = (
-    MetricDefinition(
-        system=System.PROSECUTION,
-        metric_type=MetricType.EXPENSES,
-        category=MetricCategory.CAPACITY_AND_COST,
-        display_name="Expenses",
-        description="The amount spent by the office for the operation and maintenance of the prosecutor’s office to process criminal cases.",
-        measurement_type=MeasurementType.INSTANT,
-        reporting_frequencies=[ReportingFrequency.ANNUAL],
-        # TODO(#17577) Implement multiple includes/excludes tables
-        includes_excludes=IncludesExcludesSet(
-            members=ProsecutionExpensesIncludesExcludes,
-            excluded_set={ProsecutionExpensesIncludesExcludes.NON_CRIMINAL},
-        ),
-        aggregated_dimensions=[
-            AggregatedDimension(
-                dimension=ExpenseType,
-                required=False,
-                dimension_to_description={
-                    ExpenseType.PERSONNEL: "The amount spent to employ personnel involved in the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers.",
-                    ExpenseType.TRAINING: "The amount spent by the office on the training of personnel involved in the operation and maintenance of the prosecutor’s office to process criminal cases, including any associated expenses, such as registration fees and travel costs.",
-                    ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the office for the purchase and use of the physical plant and property owned and operated by the office to process criminal cases.",
-                    ExpenseType.OTHER: "The amount spent by the office to process criminal cases on other costs relating to the operation and maintenance of the prosecutor’s office that are not personnel, training, or facilities and equipment expenses.",
-                    ExpenseType.UNKNOWN: "The amount spent by the office to process criminal cases on costs relating to the operation and maintenance of the prosecutor’s office for a purpose that is not known.",
-                },
-                dimension_to_includes_excludes={
-                    ExpenseType.PERSONNEL: IncludesExcludesSet(
-                        members=ProsecutionPersonnelExpensesIncludesExcludes,
-                        excluded_set={
-                            ProsecutionPersonnelExpensesIncludesExcludes.DEFENSE
-                        },
-                    ),
-                    ExpenseType.TRAINING: IncludesExcludesSet(
-                        members=ProsecutionTrainingExpensesIncludesExcludes,
-                        excluded_set={
-                            ProsecutionTrainingExpensesIncludesExcludes.FREE_PROGRAMS
-                        },
-                    ),
-                    ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
-                        members=FacilitiesAndEquipmentExpensesIncludesExcludes
-                    ),
-                },
-            )
-        ],
+expenses = MetricDefinition(
+    system=System.PROSECUTION,
+    metric_type=MetricType.EXPENSES,
+    category=MetricCategory.CAPACITY_AND_COST,
+    display_name="Expenses",
+    description="The amount spent by the office for the operation and maintenance of the prosecutor’s office to process criminal cases.",
+    measurement_type=MeasurementType.INSTANT,
+    reporting_frequencies=[ReportingFrequency.ANNUAL],
+    # TODO(#17577) Implement multiple includes/excludes tables
+    includes_excludes=IncludesExcludesSet(
+        members=ProsecutionExpensesIncludesExcludes,
+        excluded_set={ProsecutionExpensesIncludesExcludes.NON_CRIMINAL},
     ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=ExpenseType,
+            required=False,
+            dimension_to_description={
+                ExpenseType.PERSONNEL: "The amount spent to employ personnel involved in the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers.",
+                ExpenseType.TRAINING: "The amount spent by the office on the training of personnel involved in the operation and maintenance of the prosecutor’s office to process criminal cases, including any associated expenses, such as registration fees and travel costs.",
+                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the office for the purchase and use of the physical plant and property owned and operated by the office to process criminal cases.",
+                ExpenseType.OTHER: "The amount spent by the office to process criminal cases on other costs relating to the operation and maintenance of the prosecutor’s office that are not personnel, training, or facilities and equipment expenses.",
+                ExpenseType.UNKNOWN: "The amount spent by the office to process criminal cases on costs relating to the operation and maintenance of the prosecutor’s office for a purpose that is not known.",
+            },
+            dimension_to_includes_excludes={
+                ExpenseType.PERSONNEL: IncludesExcludesSet(
+                    members=ProsecutionPersonnelExpensesIncludesExcludes,
+                    excluded_set={ProsecutionPersonnelExpensesIncludesExcludes.DEFENSE},
+                ),
+                ExpenseType.TRAINING: IncludesExcludesSet(
+                    members=ProsecutionTrainingExpensesIncludesExcludes,
+                    excluded_set={
+                        ProsecutionTrainingExpensesIncludesExcludes.FREE_PROGRAMS
+                    },
+                ),
+                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                    members=FacilitiesAndEquipmentExpensesIncludesExcludes
+                ),
+            },
+        )
+    ],
 )
 
 
