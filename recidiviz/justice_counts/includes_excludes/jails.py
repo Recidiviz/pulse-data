@@ -329,3 +329,70 @@ class PreAdjudicationReleasesEscapeOrAWOLIncludesExcludes(Enum):
     ESCAPE_PRETRIAL_HOLD = "Escape from pretrial hold"
     AWOL_PRETRIAL_HOLD = "AWOL from pretrial hold"
     AWOL_PRETRIAL_SUPERVISION = "AWOL from pretrial supervision"
+
+
+# Post-adjudication Releases
+class PostAdjudicationReleasesIncludesExcludes(Enum):
+    PROBATION_SUPERVISION = "Releases to probation supervision following a period of jail incarceration (including electronic monitoring)"
+    PAROLE_SUPERVISION = (
+        "Releases to parole supervision following a period of jail incarceration"
+    )
+    COMMUNITY_SUPERVISION = (
+        "Releases to other community supervision that is not probation or parole"
+    )
+    INPATIENT_TRATMENT = "Releases to inpatient treatment in the community"
+    NO_ADDITIONAL_CONTROL = "Releases with no additional correctional control"
+
+
+class PostAdjudicationReleasesProbationSupervisionIncludesExcludes(Enum):
+    ADDITIONAL_PROBATION = (
+        "Releases to an additional probation sentence after completing a jail sentence"
+    )
+    POST_JAIL_INCARCERATION = (
+        "Releases back to probation after a jail incarceration probation sanction"
+    )
+    SPLIT_SENTENCE = "Releases to probation to serve a split- or on-and-after sentence"
+    SHOCK_SENTENCE = "Releases to probation after a shock probation sentence"
+    OTHER_COUNTY_STATE = (
+        "Releases to probation in the jurisdiction of another county or state"
+    )
+
+
+class PostAdjudicationReleasesParoleSupervisionIncludesExcludes(Enum):
+    PAROLE_BOARD = "Releases to parole at the authority of a parole board or similar decision-making entity"
+    STATUTORY_REQUIREMENT = "Releases to parole by statutory requirement or other automatic release mechanism"
+    POST_JAIL_SANCTION = (
+        "Releases back to parole after a jail sanction for a parole violation"
+    )
+    COMMUTED_SENTENCE = "Releases to parole due to commuted or lowered sentence"
+    OTHER_STATE = "Releases to parole or re-parole in the jurisdiction of another state"
+
+
+class PostAdjudicationReleasesOtherCommunitySupervisionIncludesExcludes(Enum):
+    POST_JAIL_SENTENCE = "Releases to an additional other community supervision sentence after completing a jail sentence"
+    POST_JAIL_INCARCERATION = "Releases back to other community supervision after a jail incarceration probation sanction"
+    SPLIT_SENTENCE = "Releases to other community supervision to serve a split- or on-and-after sentence"
+    PAROLE_BOARD = "Releases to other community supervision at the authority of a parole board or similar decision-making entity"
+    STATUTORY_REQUIREMENT = "Releases to other community supervision by statutory requirement or other automatic release mechanism"
+    POST_JAIL_SANCTION = "Releases back to other community supervision after a jail sanction for a supervision violation"
+    COMMUTED_SENTENCE = (
+        "Releases to other community supervision due to commuted or lowered sentence"
+    )
+    OTHER_STATE = "Releases to other community supervision or re-released to other community supervision in the jurisdiction of another state"
+
+
+class PostAdjudicationReleasesNoAdditionalCorrectionalControlIncludesExcludes(Enum):
+    SENTENCE_COMPLETION = (
+        "Releases due to sentence completion, no post-release supervision"
+    )
+    EXONERATION = "Releases due to exoneration"
+
+
+class PostAdjudicationReleasesDueToDeathIncludesExcludes(Enum):
+    IN_CUSTODY = "Releases due to death of people in custody"
+    TEMPORARILY_ABSENT = "Releases due to death of people in custody who were temporarily absent (e.g., hospital, court, work release)"
+
+
+class PostAdjudicationReleasesDueToEscapeOrAWOLIncludesExcludes(Enum):
+    ESCAPE = "Escape from custody"
+    AWOL = "AWOL from custody"

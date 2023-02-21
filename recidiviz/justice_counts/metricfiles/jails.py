@@ -19,7 +19,8 @@
 from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
-    ReleaseType,
+    PostAdjudicationReleaseType,
+    PreAdjudicationReleaseType,
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
@@ -133,7 +134,17 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="pre_adj_releases_by_type",
         definition=jails.pre_adjudication_releases,
-        disaggregation=ReleaseType,
+        disaggregation=PreAdjudicationReleaseType,
+        disaggregation_column_name="release_type",
+    ),
+    MetricFile(
+        canonical_filename="post_adj_releases",
+        definition=jails.post_adjudication_releases,
+    ),
+    MetricFile(
+        canonical_filename="post_adj_releases_by_type",
+        definition=jails.post_adjudication_releases,
+        disaggregation=PostAdjudicationReleaseType,
         disaggregation_column_name="release_type",
     ),
     MetricFile(

@@ -61,7 +61,7 @@ class PopulationType(DimensionBase, enum.Enum):
         return "metric/jails/population/type"
 
 
-class ReleaseType(DimensionBase, enum.Enum):
+class PreAdjudicationReleaseType(DimensionBase, enum.Enum):
     AWAITING_TRIAL = "Pre-adjudication Releases to Own Recognizance Awaiting Trial"
     BAIL = "Pre-adjudication Releases to Monetary Bail"
     DEATH = "Pre-adjudication Releases Due to Death"
@@ -71,7 +71,32 @@ class ReleaseType(DimensionBase, enum.Enum):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return "metric/jails/release/type"
+        return "metric/jails/pre_adjudication/release/type"
+
+    @classmethod
+    def human_readable_name(cls) -> str:
+        return "Pre-adjudication Release Type"
+
+
+class PostAdjudicationReleaseType(DimensionBase, enum.Enum):
+    PROBATION = "Post-adjudication Releases to Probation Supervision"
+    PAROLE = "Post-adjudication Releases to Parole Supervision"
+    COMMUNITY_SUPERVISION = "Post-adjudication Releases to Other Community Supervision That Is Not Probation or Parole"
+    NO_ADDITIONAL_CONTROL = (
+        "Post-adjudication Releases with No Additional Correctional Control"
+    )
+    DEATH = "Post-adjudication Releases Due to Death"
+    AWOL = "Post-adjudication Releases Due to Escape or AWOL Status"
+    OTHER = "Other Post-adjudication Releases"
+    UNKNOWN = "Unknown Post-adjudication Releases"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/jails/post_adjudication/release/type"
+
+    @classmethod
+    def human_readable_name(cls) -> str:
+        return "Post-adjudication Release Type"
 
 
 class StaffType(DimensionBase, enum.Enum):
