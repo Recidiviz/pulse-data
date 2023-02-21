@@ -52,7 +52,7 @@ VIEW_QUERY_TEMPLATE = """
     leg.NameSuffix,
     ord.CountyId,
     ord_type.SentenceOrderCategoryId,
-    sentlink2.SentenceId as _sentence_external_id
+    sent.SentenceId as _sentence_external_id
 FROM {scl_Sentence} sent
   LEFT JOIN {scl_SentenceLink} sentlink ON sent.SentenceId = sentlink.SentenceId
   LEFT JOIN {scl_SentenceLinkOffense} sentoff ON sentlink.SentenceLinkId = sentoff.SentenceLinkId
@@ -61,27 +61,6 @@ FROM {scl_Sentence} sent
   LEFT JOIN {scl_SentenceOrder} ord ON off.SentenceOrderId = ord.SentenceOrderId
   LEFT JOIN {scl_SentenceOrderType} ord_type ON ord.SentenceOrderTypeId = ord_type.SentenceOrderTypeId
   LEFT JOIN {scl_Legist} leg ON ord.JudgeLegistId = leg.LegistId
-  -- 
-  -- Charge records and sentence information are all stored in the same tables (scl_Sentence and scl_SentenceLink) but 
-  -- denoted differently by SentenceLinkClassId and use different association tables (scl_SentenceLinkSentenceOrder 
-  -- and scl_SentenceLinkOffense).  It broadly looks like this:
-  -- 
-  --                        scl_Sentence
-  --                              |
-  --                       scl_SentenceLink
-  --                      |               |
-  -- scl_SentenceLinkSentenceOrder     scl_SentenceLinkOffense
-  --                       |                      | 
-  --                scl_SentenceOrder  ---  scl_Offense
-  -- 
-  -- So here we're taking the SentenceOrder we have attached to the charge record and
-  -- joining on scl_SentenceLinkSentenceOrder and scl_SentenceLink (again) 
-  -- to go from SentenceOrder > SentenceOrder/SentenceLink > SentenceLink > Sentence in order to
-  -- grab the SentenceId for the sentence record attached to the same sentence order 
-  -- that this charge record is attached to.  In other words, from sent and sentlink we grab information
-  -- about the charge, whereas from sentlink2 we grab information about the associated sentence.
-  LEFT JOIN {scl_SentenceLinkSentenceOrder} linkorder ON ord.SentenceOrderId = linkorder.SentenceOrderId
-  LEFT JOIN {scl_SentenceLink} sentlink2 ON sentlink2.SentenceLinkId = linkorder.SentenceLinkId
 WHERE sentlink.SentenceLinkClassId = '1' -- only look at offense sentence records
     AND sent.OffenderId IS NOT NULL
     AND off.OffenseId IS NOT NULL
