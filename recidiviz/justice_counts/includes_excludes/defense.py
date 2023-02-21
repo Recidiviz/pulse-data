@@ -159,7 +159,7 @@ class DefenseCasesDisposedIncludesExcludes(enum.Enum):
 class DefenseCasesAppointedCounselIncludesExcludes(enum.Enum):
     NEW = "New criminal cases appointed to attorneys employed by the provider"
     INACTIVE = "Inactive cases reopened"
-    TRANSFERRED = "	Criminal cases transferred to conflict counsel"
+    TRANSFERRED = "Criminal cases transferred to conflict counsel"
 
 
 # Complaints
