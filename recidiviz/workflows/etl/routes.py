@@ -47,6 +47,9 @@ from recidiviz.workflows.etl.workflows_resident_etl_delegate import (
 from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
     WorkflowsStaffETLDelegate,
 )
+from recidiviz.workflows.etl.workflows_tasks_etl_delegate import (
+    WorkflowsTasksETLDelegate,
+)
 
 WORKFLOWS_ETL_OPERATIONS_QUEUE = "workflows-etl-operations-queue"
 
@@ -58,6 +61,7 @@ def get_workflows_delegates(state_code: StateCode) -> List[WorkflowsETLDelegate]
         WorkflowsStaffETLDelegate(state_code),
         WorkflowsClientETLDelegate(state_code),
         WorkflowsResidentETLDelegate(state_code),
+        WorkflowsTasksETLDelegate(state_code),
     ]
 
 
