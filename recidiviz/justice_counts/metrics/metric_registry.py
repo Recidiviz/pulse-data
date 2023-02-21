@@ -34,15 +34,15 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 # All official Justice Counts metrics (i.e. all instances of MetricDefinition)
 # should be "checked in" here
 METRICS = [
-    courts.annual_budget,
+    courts.funding,
     courts.judges_and_staff,
     courts.residents,
-    courts.cases_disposed,
-    courts.cases_overturned,
-    courts.criminal_case_filings,
-    courts.new_offenses_while_on_pretrial_release,
     courts.pretrial_releases,
+    courts.criminal_case_filings,
     courts.sentences_imposed,
+    courts.new_offenses_while_on_pretrial_release,
+    courts.cases_overturned,
+    courts.cases_disposed,
     defense.funding,
     defense.expenses,
     defense.staff,

@@ -203,3 +203,31 @@ class PretrialReleasesNonMonetaryBailIncludesExcludes(enum.Enum):
     WITHOUT_PRE_TRIAL_SUPERVISION = (
         "People released without any form of pre-trial supervision"
     )
+
+
+# Funding
+# TODO(#17577) implement multiple includes/excludes tables
+class FundingIncludesExcludes(enum.Enum):
+    FISCAL_YEAR = "Funding for single fiscal year"
+    BIENNIUM = "Biennium funding appropriated during the time period"
+    MULTI_YEAR = (
+        "Multi-year appropriations that are appropriated in during the time period"
+    )
+    FACILITY_OPERATIONS_MAINTENANCE = (
+        "Funding for court system facility operations and maintenance"
+    )
+    CONSTRUCTION = "Funding for construction or rental of new court system facilities"
+    PROGRAMMING = (
+        "Funding for court system-run or -contracted treatment and programming"
+    )
+    PRETRIAL_SERVICES = "Funding for pretrial services managed by the court system"
+    STAFF = "Funding for court system staff"
+    CASE_PROCESSING = "Funding for criminal case processing"
+    CASE_MANAGEMENT = "Funding for electronic case management systems"
+    SUPERVISION_OPERATIONS = (
+        "Funding for community supervision operations and facility maintenance"
+    )
+    JUVENILE = "Funding for juvenile court systems"
+    NON_COURT_FUNCTIONS = (
+        "Funding for non-court system functions such as law enforcement or jails"
+    )

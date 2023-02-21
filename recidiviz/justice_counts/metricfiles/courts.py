@@ -18,6 +18,7 @@
 
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
+    FundingType,
     ReleaseType,
     SentenceType,
     StaffType,
@@ -29,8 +30,14 @@ from recidiviz.justice_counts.metrics import courts
 
 COURTS_METRIC_FILES = [
     MetricFile(
-        canonical_filename="annual_budget",
-        definition=courts.annual_budget,
+        canonical_filename="funding",
+        definition=courts.funding,
+    ),
+    MetricFile(
+        canonical_filename="funding_by_type",
+        definition=courts.funding,
+        disaggregation=FundingType,
+        disaggregation_column_name="funding_type",
     ),
     MetricFile(
         canonical_filename="judges_and_staff",
