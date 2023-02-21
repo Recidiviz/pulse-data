@@ -210,7 +210,6 @@ FROM filtered_rows
         view = DirectIngestRawDataTableUpToDateView(
             region_code="us_xx",
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            include_undocumented_columns=False,
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag="table_name",
                 file_path="path/to/file.yaml",
@@ -297,114 +296,6 @@ SELECT col1,
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
             col3
         ) AS col3
-FROM filtered_rows
-"""
-
-        self.assertEqual(expected_view_query, view.view_query)
-        self.assertEqual(
-            "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_by_update_date`",
-            view.select_query,
-        )
-
-    def test_raw_up_to_date_view_include_undocumented(self) -> None:
-        view = DirectIngestRawDataTableUpToDateView(
-            region_code="us_xx",
-            raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            include_undocumented_columns=True,
-            raw_file_config=DirectIngestRawFileConfig(
-                file_tag="table_name",
-                file_path="path/to/file.yaml",
-                file_description="file description",
-                data_classification=RawDataClassification.SOURCE,
-                primary_key_cols=["col1"],
-                columns=[
-                    RawTableColumnInfo(
-                        name="col1",
-                        is_datetime=False,
-                        is_pii=False,
-                        description="col1 description",
-                    ),
-                    RawTableColumnInfo(
-                        name="col2",
-                        is_datetime=True,
-                        is_pii=False,
-                        description="col2 description",
-                    ),
-                    RawTableColumnInfo(
-                        name="col3",
-                        is_datetime=True,
-                        is_pii=False,
-                        description="col3 description",
-                        datetime_sql_parsers=[
-                            "SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE({col_name}, r'\:\d\d\d.*', ''))"
-                        ],
-                    ),
-                    RawTableColumnInfo(
-                        name="undocumented_column",
-                        is_datetime=True,
-                        is_pii=False,
-                        description=None,
-                    ),
-                    RawTableColumnInfo(
-                        name="undocumented_column_2",
-                        is_datetime=False,
-                        is_pii=False,
-                        description=None,
-                    ),
-                ],
-                supplemental_order_by_clause="",
-                encoding="any-encoding",
-                separator="@",
-                custom_line_terminator=None,
-                ignore_quotes=False,
-                always_historical_export=False,
-                import_chunk_size_rows=10,
-                infer_columns_from_config=False,
-            ),
-        )
-
-        self.assertEqual(self.PROJECT_ID, view.project)
-        self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
-        self.assertEqual("table_name_by_update_date", view.table_id)
-        self.assertEqual("table_name_by_update_date", view.view_id)
-
-        expected_view_query = """
-WITH filtered_rows AS (
-    SELECT
-        * EXCEPT (recency_rank)
-    FROM (
-        SELECT
-            *,
-            ROW_NUMBER() OVER (PARTITION BY col1
-                               ORDER BY update_datetime DESC) AS recency_rank
-        FROM
-            `recidiviz-456.us_xx_raw_data.table_name`
-        WHERE update_datetime <= @update_timestamp
-    ) a
-    WHERE
-        recency_rank = 1
-)
-SELECT col1, undocumented_column_2, 
-        COALESCE(
-            CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
-            col2
-        ) AS col2, 
-        COALESCE(
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
-            col3
-        ) AS col3, 
-        COALESCE(
-            CAST(SAFE_CAST(undocumented_column AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', undocumented_column) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', undocumented_column) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', undocumented_column) AS DATETIME) AS STRING),
-            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', undocumented_column) AS DATETIME) AS STRING),
-            undocumented_column
-        ) AS undocumented_column
 FROM filtered_rows
 """
 

@@ -144,13 +144,10 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         should_deploy_predicate: Optional[Callable[[], bool]],
         address_overrides: Optional[BigQueryAddressOverrides],
         normalized_column_values: bool,
-        include_undocumented_columns: bool,
         parameterized_date_filter: bool,
     ):
         if normalized_column_values:
-            columns_clause = self.normalized_columns_for_config(
-                raw_file_config, include_undocumented_columns
-            )
+            columns_clause = self.normalized_columns_for_config(raw_file_config)
         else:
             columns_clause = self._columns_clause_for_config(raw_file_config)
 
@@ -240,21 +237,12 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
     @staticmethod
     def normalized_columns_for_config(
         raw_file_config: DirectIngestRawFileConfig,
-        include_undocumented_columns: bool,
     ) -> str:
-        non_datetime_cols_to_format = (
-            raw_file_config.non_datetime_cols
-            if include_undocumented_columns
-            else raw_file_config.available_non_datetime_cols
-        )
+        non_datetime_cols_to_format = raw_file_config.available_non_datetime_cols
         non_datetime_col_str = ", ".join(non_datetime_cols_to_format)
-        datetime_cols_to_format = (
-            raw_file_config.datetime_cols
-            if include_undocumented_columns
-            else raw_file_config.available_datetime_cols
-        )
+        datetime_cols_to_format = raw_file_config.available_datetime_cols
 
-        if not raw_file_config.datetime_cols:
+        if not datetime_cols_to_format:
             return non_datetime_col_str
 
         # Right now this only performs normalization for datetime columns, but in the future
@@ -314,7 +302,6 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
             raw_file_config=raw_file_config,
             address_overrides=address_overrides,
             should_deploy_predicate=should_deploy_predicate,
-            include_undocumented_columns=False,
             normalized_column_values=True,
             parameterized_date_filter=False,
         )
@@ -337,7 +324,6 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
         region_code: str,
         raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
-        include_undocumented_columns: bool = False,
         address_overrides: Optional[BigQueryAddressOverrides] = None,
     ):
         view_id = f"{raw_file_config.file_tag}_by_update_date"
@@ -352,7 +338,6 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
             raw_file_config=raw_file_config,
             should_deploy_predicate=None,
             address_overrides=address_overrides,
-            include_undocumented_columns=include_undocumented_columns,
             normalized_column_values=True,
             parameterized_date_filter=True,
         )
@@ -386,7 +371,6 @@ class DirectIngestRawDataTableUnnormalizedLatestRowsView(
             raw_file_config=raw_file_config,
             should_deploy_predicate=should_deploy_predicate,
             address_overrides=address_overrides,
-            include_undocumented_columns=False,
             normalized_column_values=False,
             parameterized_date_filter=False,
         )
