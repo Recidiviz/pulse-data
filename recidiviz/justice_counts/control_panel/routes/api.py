@@ -164,7 +164,7 @@ def get_api_blueprint(
     @auth_decorator
     def get_agency_jurisdictions(agency_id: int) -> Response:
         try:
-            request_json = assert_type(request.json, dict)
+            request_json = assert_type(request.values, dict)
             user = UserAccountInterface.get_user_by_auth0_user_id(
                 session=current_session,
                 auth0_user_id=get_auth0_user_id(request_dict=request_json),
