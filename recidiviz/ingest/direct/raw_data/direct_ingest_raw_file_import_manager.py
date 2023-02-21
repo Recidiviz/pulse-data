@@ -274,18 +274,6 @@ class DirectIngestRawFileConfig:
         ]
 
     @property
-    def non_datetime_cols(self) -> List[str]:
-        return [column.name for column in self.columns if not column.is_datetime]
-
-    @property
-    def datetime_cols(self) -> List[Tuple[str, Optional[List[str]]]]:
-        return [
-            (column.name, column.datetime_sql_parsers)
-            for column in self.columns
-            if column.is_datetime
-        ]
-
-    @property
     def has_enums(self) -> bool:
         """If true, columns with enum values exist within this raw file, and this config is eligible to be refreshed
         with the for the fetch_column_values_for_state script."""
