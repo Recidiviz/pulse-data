@@ -21,6 +21,18 @@ import enum
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
+class ExpenseType(DimensionBase, enum.Enum):
+    PERSONNEL = "Personnel"
+    TRAINING = "Training"
+    FACILITIES = "Facilities and Equipment"
+    OTHER = "Other Expenses"
+    UNKNOWN = "Unknown Expenses"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/expense/type"
+
+
 class CaseSeverityType(DimensionBase, enum.Enum):
     FELONY = "Felony Caseload"
     MISDEMEANOR = "Misdemeanor Caseload"

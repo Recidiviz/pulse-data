@@ -16,10 +16,10 @@
 # =============================================================================
 """Metricfile objects used for law enforcement metrics."""
 
+from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ComplaintType,
-    ExpenseType,
     ForceType,
     FundingType,
     StaffType,

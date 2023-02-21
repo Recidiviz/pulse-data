@@ -16,13 +16,12 @@
 # =============================================================================
 """Metricfile objects used for prosecution metrics."""
 
-from recidiviz.justice_counts.dimensions.common import CaseSeverityType
+from recidiviz.justice_counts.dimensions.common import CaseSeverityType, ExpenseType
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.prosecution import (
     CaseDeclinedSeverityType,
     DispositionType,
     DivertedCaseSeverityType,
-    ExpenseType,
     FundingType,
     ProsecutedCaseSeverityType,
     ReferredCaseSeverityType,

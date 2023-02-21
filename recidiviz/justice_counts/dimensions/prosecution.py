@@ -92,18 +92,6 @@ class FundingType(DimensionBase, enum.Enum):
         return "metric/funding/prosecution/type"
 
 
-class ExpenseType(DimensionBase, enum.Enum):
-    PERSONNEL = "Personnel"
-    TRAINING = "Training"
-    FACILITIES_AND_EQUIPMENT = "Facilities and Equipment"
-    OTHER = "Other Expenses"
-    UNKNOWN = "Unknown Expenses"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/expense/prosecution/type"
-
-
 class ProsecutedCaseSeverityType(DimensionBase, enum.Enum):
     FELONY = "Felony Cases Prosecuted"
     MISDEMEANOR = "Misdemeanor Cases Prosecuted"

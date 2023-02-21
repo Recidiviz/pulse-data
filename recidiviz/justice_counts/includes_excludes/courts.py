@@ -231,3 +231,61 @@ class FundingIncludesExcludes(enum.Enum):
     NON_COURT_FUNCTIONS = (
         "Funding for non-court system functions such as law enforcement or jails"
     )
+
+
+# Expenses
+# TODO(#17577) implement multiple includes/excludes tables
+class ExpensesIncludesExcludes(enum.Enum):
+    FISCAL_YEAR = "Expenses for single fiscal year"
+    BIENNIUM = "Biennium expenses allocated during the time period"
+    MULTI_YEAR = "Multi-year expenses allocated during the time period"
+    OPERATIONS_MAINTENANCE = (
+        "Expenses for court system facility operations and maintenance"
+    )
+    CONSTRUCTION = "Expenses for construction or rental of new court system facilities"
+    PROGRAMMING = (
+        "Expenses for court system-run or -contracted treatment and programming"
+    )
+    PRETRIAL_SERVICES = "Expenses for pretrial services managed by the court system"
+    STAFF = "Expenses for court system staff"
+    CASE_PROCESSING = "Expenses for criminal case processing"
+    CASE_MANAGEMENT = "Expenses for electronic case management systems"
+    COMMUNITY_SUPERVISION_OPERATIONS = (
+        "Expenses for community supervision operations and facility maintenance"
+    )
+    JUVENILE = "Expenses for juvenile court systems"
+    NON_COURT_FUNCTIONS = (
+        "Expenses for non-court system functions such as law enforcement or jails"
+    )
+
+
+class ExpensesPersonnelIncludesExcludes(enum.Enum):
+    SALARIES = "Salaries"
+    BENEFITS = "Benefits"
+    RETIREMENT = "Retirement contributions"
+    INDIVIDUALS_CONTRACTED = (
+        "Costs for individuals contracted to work in or for the court system"
+    )
+    COMPANIES_CONTRACTED = (
+        "Costs for companies contracted to work in or for the court system"
+    )
+
+
+class ExpensesTrainingIncludesExcludes(enum.Enum):
+    ANNUAL_TRAINING = "Annual training"
+    EDUCATION = "Continuing legal education (CLE)"
+    EDUCATION_OTHER = "Continuing education – other (not CLE eligible)"
+    TRAINING_ACADEMY = "Training academy"
+    SPECIALIZED_TRAINING = "Specialized training"
+    EXTERNAL_TRAINING = "External training or professional development opportunities (e.g., conferences, classes, etc.)"
+    NO_COST_COURSES = (
+        "Courses or programs offered at no cost to individuals or the court system"
+    )
+
+
+class ExpensesFacilitiesAndEquipmentIncludesExcludes(enum.Enum):
+    OPERATIONS = "Court system facility operations"
+    MAINTENANCE = "Court system facility maintenance"
+    RENOVATION = "Court system facility renovation"
+    CONSTRUCTION = "Court system facility construction"
+    EQUIPMENT = "Equipment (e.g., computers, communication, and information technology infrastructure)"

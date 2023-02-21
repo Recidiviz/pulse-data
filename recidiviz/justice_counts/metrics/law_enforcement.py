@@ -17,10 +17,10 @@
 """Defines all Justice Counts metrics for the Law Enforcement system."""
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
+from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
     ComplaintType,
-    ExpenseType,
     ForceType,
     FundingType,
     StaffType,
@@ -195,14 +195,14 @@ expenses = MetricDefinition(
                         LawEnforcementPersonnelIncludesExcludes.COMPANY_CONTRACTS,
                     },
                 ),
-                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
+                ExpenseType.FACILITIES: IncludesExcludesSet(
                     members=LawEnforcementFacilitiesIncludesExcludes,
                 ),
             },
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in law enforcement activities.",
                 ExpenseType.TRAINING: "The amount spent by the agency on the training of personnel involved in law enforcement activities.",
-                ExpenseType.FACILITIES_AND_EQUIPMENT: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used in law enforcement activities.",
+                ExpenseType.FACILITIES: "The amount spent by the agency for the purchase and use of the physical plant and property owned and operated by the agency and equipment used in law enforcement activities.",
                 ExpenseType.OTHER: "The amount spent by the agency on other costs relating to law enforcement activities that are not personnel, training, or facilities and equipment expenses.",
                 ExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to law enforcement activities for a purpose that is not known.",
             },
