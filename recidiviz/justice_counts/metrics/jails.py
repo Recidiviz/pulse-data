@@ -19,7 +19,8 @@ from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
     GrievancesUpheldType,
-    ReleaseType,
+    PostAdjudicationReleaseType,
+    PreAdjudicationReleaseType,
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
@@ -52,6 +53,13 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     ManagementAndOperationsStaffIncludesExcludes,
     PersonalSafetyIncludesExcludes,
     PersonnelIncludesExcludes,
+    PostAdjudicationReleasesDueToDeathIncludesExcludes,
+    PostAdjudicationReleasesDueToEscapeOrAWOLIncludesExcludes,
+    PostAdjudicationReleasesIncludesExcludes,
+    PostAdjudicationReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+    PostAdjudicationReleasesOtherCommunitySupervisionIncludesExcludes,
+    PostAdjudicationReleasesParoleSupervisionIncludesExcludes,
+    PostAdjudicationReleasesProbationSupervisionIncludesExcludes,
     PreAdjudicationAdmissionsIncludesExcludes,
     PreAdjudicationReleasesDeathIncludesExcludes,
     PreAdjudicationReleasesEscapeOrAWOLIncludesExcludes,
@@ -637,34 +645,84 @@ pre_adjudication_releases = MetricDefinition(
     ),
     aggregated_dimensions=[
         AggregatedDimension(
-            dimension=ReleaseType,
+            dimension=PreAdjudicationReleaseType,
             required=False,
             dimension_to_includes_excludes={
-                ReleaseType.AWAITING_TRIAL: IncludesExcludesSet(
+                PreAdjudicationReleaseType.AWAITING_TRIAL: IncludesExcludesSet(
                     members=PreAdjudicationReleasesOwnRecognizanceAwaitingTrialIncludesExcludes,
                 ),
-                ReleaseType.BAIL: IncludesExcludesSet(
+                PreAdjudicationReleaseType.BAIL: IncludesExcludesSet(
                     members=PreAdjudicationReleasesMonetaryBailIncludesExcludes,
                     excluded_set={
                         PreAdjudicationReleasesMonetaryBailIncludesExcludes.BEFORE_HEARING,
                     },
                 ),
-                ReleaseType.DEATH: IncludesExcludesSet(
+                PreAdjudicationReleaseType.DEATH: IncludesExcludesSet(
                     members=PreAdjudicationReleasesDeathIncludesExcludes,
                 ),
-                ReleaseType.AWOL: IncludesExcludesSet(
+                PreAdjudicationReleaseType.AWOL: IncludesExcludesSet(
                     members=PreAdjudicationReleasesEscapeOrAWOLIncludesExcludes,
                 ),
             },
             dimension_to_description={
-                ReleaseType.AWAITING_TRIAL: "The number of pre-adjudication release events of people to their own recognizance while awaiting trial, without out any other form of supervision.",
-                ReleaseType.BAIL: "The number of pre-adjudication release events of people to bond while awaiting trial, without out any other form of supervision.",
-                ReleaseType.DEATH: "The number of pre-adjudication release events due to death of people in custody.",
-                ReleaseType.AWOL: "The number of pre-adjudication release events due to escape from custody or assessment as AWOL for more than 30 days.",
-                ReleaseType.OTHER: "The number of pre-adjudication release events from the agency’s jurisdiction that are not releases to pretrial supervision, to own recognizance awaiting trial, to monetary bail, death, or escape/AWOL status.",
-                ReleaseType.UNKNOWN: "The number of pre-adjudication release events from the agency’s jurisdiction whose release type is not known.",
+                PreAdjudicationReleaseType.AWAITING_TRIAL: "The number of pre-adjudication release events of people to their own recognizance while awaiting trial, without out any other form of supervision.",
+                PreAdjudicationReleaseType.BAIL: "The number of pre-adjudication release events of people to bond while awaiting trial, without out any other form of supervision.",
+                PreAdjudicationReleaseType.DEATH: "The number of pre-adjudication release events due to death of people in custody.",
+                PreAdjudicationReleaseType.AWOL: "The number of pre-adjudication release events due to escape from custody or assessment as AWOL for more than 30 days.",
+                PreAdjudicationReleaseType.OTHER: "The number of pre-adjudication release events from the agency’s jurisdiction that are not releases to pretrial supervision, to own recognizance awaiting trial, to monetary bail, death, or escape/AWOL status.",
+                PreAdjudicationReleaseType.UNKNOWN: "The number of pre-adjudication release events from the agency’s jurisdiction whose release type is not known.",
             },
         )
+    ],
+)
+
+post_adjudication_releases = MetricDefinition(
+    system=System.JAILS,
+    metric_type=MetricType.POST_ADJUDICATION_RELEASES,
+    category=MetricCategory.POPULATIONS,
+    display_name="Post-adjudication Releases",
+    description="The number of release events from the agency’s jurisdiction following a sentence of a period of incarceration in jail due to a conviction for a criminal offense.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=IncludesExcludesSet(
+        members=PostAdjudicationReleasesIncludesExcludes,
+    ),
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=PostAdjudicationReleaseType,
+            required=False,
+            # TODO(#18071) implement reused includes/excludes
+            dimension_to_includes_excludes={
+                PostAdjudicationReleaseType.PROBATION: IncludesExcludesSet(
+                    members=PostAdjudicationReleasesProbationSupervisionIncludesExcludes,
+                ),
+                PostAdjudicationReleaseType.PAROLE: IncludesExcludesSet(
+                    members=PostAdjudicationReleasesParoleSupervisionIncludesExcludes,
+                ),
+                PostAdjudicationReleaseType.COMMUNITY_SUPERVISION: IncludesExcludesSet(
+                    members=PostAdjudicationReleasesOtherCommunitySupervisionIncludesExcludes,
+                ),
+                PostAdjudicationReleaseType.NO_ADDITIONAL_CONTROL: IncludesExcludesSet(
+                    members=PostAdjudicationReleasesNoAdditionalCorrectionalControlIncludesExcludes,
+                ),
+                PostAdjudicationReleaseType.DEATH: IncludesExcludesSet(
+                    members=PostAdjudicationReleasesDueToDeathIncludesExcludes,
+                ),
+                PostAdjudicationReleaseType.AWOL: IncludesExcludesSet(
+                    members=PostAdjudicationReleasesDueToEscapeOrAWOLIncludesExcludes,
+                ),
+            },
+            dimension_to_description={
+                PostAdjudicationReleaseType.PROBATION: "The number of post-adjudication release events from the agency’s jurisdiction to probation supervision.",
+                PostAdjudicationReleaseType.PAROLE: "The number of post-adjudication release events from the agency’s jurisdiction to parole supervision.",
+                PostAdjudicationReleaseType.COMMUNITY_SUPERVISION: "The number of post-adjudication release events from the agency’s jurisdiction to another form of community supervision that is not probation or parole.",
+                PostAdjudicationReleaseType.NO_ADDITIONAL_CONTROL: "The number of post-adjudication release events from the agency’s jurisdiction with no additional correctional control.",
+                PostAdjudicationReleaseType.DEATH: "The number of post-adjudication release events from the agency’s jurisdiction due to death of people in custody.",
+                PostAdjudicationReleaseType.AWOL: "The number of pre-adjudication release events due to escape from custody or assessment as AWOL for more than 30 days.",
+                PostAdjudicationReleaseType.OTHER: "The number of post-adjudication release events from the agency’s jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, due to death, or due to escape or AWOL status.",
+                PostAdjudicationReleaseType.UNKNOWN: "The number of post-adjudication release events from the agency’s jurisdiction where the release type is not known.",
+            },
+        ),
     ],
 )
 
