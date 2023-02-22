@@ -22,14 +22,15 @@ from typing import Any, Dict, Union
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.context import Context
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
-    INGEST_SFTP_BUCKET_SUFFIX,
-    build_ingest_bucket_name,
-)
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
 )
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_direct_ingest_bucket_for_state,
+    gcsfs_sftp_download_bucket_path_for_state,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 # Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
 # Cloud Composer environment at the top-level. However, for unit tests, we still need to
@@ -65,12 +66,13 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
         self.remote_file_path = remote_file_path
         self.post_processed_normalized_file_path = post_processed_normalized_file_path
 
-        # TODO(#17283): Change to original buckets when SFTP is switched over
-        self.sftp_bucket = GcsfsBucketPath(
-            f"{build_ingest_bucket_name(project_id=self.project_id, region_code=self.region_code, suffix=INGEST_SFTP_BUCKET_SUFFIX)}-test"
+        self.sftp_bucket = gcsfs_sftp_download_bucket_path_for_state(
+            region_code, project_id
         )
-        self.ingest_bucket = GcsfsBucketPath(
-            f"{build_ingest_bucket_name(project_id=self.project_id, region_code=self.region_code, suffix='')}-test"
+        self.ingest_bucket = gcsfs_direct_ingest_bucket_for_state(
+            region_code=region_code,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+            project_id=project_id,
         )
 
         self.uploaded_file_path = self.build_upload_path()

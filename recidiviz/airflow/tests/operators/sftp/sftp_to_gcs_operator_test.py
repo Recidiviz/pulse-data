@@ -40,7 +40,7 @@ class TestSftpToGcsOperator(unittest.TestCase):
             ),
         )
         expected_file = GcsfsFilePath.from_bucket_and_blob_name(
-            bucket_name="recidiviz-testing-direct-ingest-state-us-xx-sftp-test",
+            bucket_name="recidiviz-testing-direct-ingest-state-us-xx-sftp",
             blob_name="2023-01-01T01:00:00:000000/inside_folder/file.txt",
         )
         self.assertEqual(
