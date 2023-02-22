@@ -44,7 +44,7 @@ JAILS_METRIC_FILES = [
         definition=jails.expenses,
     ),
     MetricFile(
-        canonical_filename="expense_by_type",
+        canonical_filename="expenses_by_type",
         definition=jails.expenses,
         disaggregation=ExpenseType,
         disaggregation_column_name="expense_type",

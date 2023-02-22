@@ -42,7 +42,7 @@ DEFENSE_METRIC_FILES = [
         definition=defense.expenses,
     ),
     MetricFile(
-        canonical_filename="expense_by_type",
+        canonical_filename="expenses_by_type",
         definition=defense.expenses,
         disaggregation=ExpenseType,
         disaggregation_column_name="expense_type",
