@@ -35,13 +35,16 @@ class TestFilterDownloadedFilesSqlQueryGenerator(unittest.TestCase):
     """Unit tests for FilterDownloadedFilesSqlQueryGenerator"""
 
     def setUp(self) -> None:
-        self.generator = FilterDownloadedFilesSqlQueryGenerator("test_task_id")
+        self.generator = FilterDownloadedFilesSqlQueryGenerator(
+            region_code="US_XX", find_sftp_files_task_id="test_task_id"
+        )
 
     def test_generates_sql_correctly(self) -> None:
         sample_data_set: Set[Tuple[str, int]] = {("file1.csv", 1), ("file2.csv", 1)}
         expected_query = """
 SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
- WHERE file_download_time IS NOT NULL AND (remote_file_path, sftp_timestamp) IN (('file1.csv', 1),('file2.csv', 1));"""
+ WHERE region_code = 'US_XX' AND file_download_time IS NOT NULL
+ AND (remote_file_path, sftp_timestamp) IN (('file1.csv', 1),('file2.csv', 1));"""
 
         self.assertEqual(self.generator.sql_query(sample_data_set), expected_query)
 
@@ -74,7 +77,7 @@ SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_meta
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
 
-        mock_operator.xcom_pull.return_value = None
+        mock_operator.xcom_pull.return_value = []
 
         results = self.generator.execute_postgres_query(
             mock_operator, mock_postgres, mock_context

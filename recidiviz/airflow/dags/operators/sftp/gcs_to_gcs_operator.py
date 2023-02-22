@@ -19,7 +19,6 @@ import datetime
 import os
 from typing import Any, Dict, Union
 
-import pytz
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.context import Context
 
@@ -38,22 +37,14 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 # pylint: disable=ungrouped-imports
 try:
     from sftp.metadata import (  # type: ignore
-        DOWNLOADED_FILE_PATH,
-        INGEST_READY_FILE_PATH,
-        POST_PROCESSED_FILE_PATH,
         POST_PROCESSED_NORMALIZED_FILE_PATH,
         REMOTE_FILE_PATH,
-        SFTP_TIMESTAMP,
         UPLOADED_FILE_PATH,
     )
 except ImportError:
     from recidiviz.airflow.dags.sftp.metadata import (
-        DOWNLOADED_FILE_PATH,
-        INGEST_READY_FILE_PATH,
-        POST_PROCESSED_FILE_PATH,
         POST_PROCESSED_NORMALIZED_FILE_PATH,
         REMOTE_FILE_PATH,
-        SFTP_TIMESTAMP,
         UPLOADED_FILE_PATH,
     )
 
@@ -66,21 +57,13 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
         project_id: str,
         region_code: str,
         remote_file_path: str,
-        sftp_timestamp: int,
-        downloaded_file_path: str,
-        post_processed_file_path: str,
         post_processed_normalized_file_path: str,
-        ingest_ready_file_path: str,
         **kwargs: Any,
     ):
         self.project_id = project_id
         self.region_code = region_code
         self.remote_file_path = remote_file_path
-        self.sftp_timestamp = sftp_timestamp
-        self.downloaded_file_path = downloaded_file_path
-        self.post_processed_file_path = post_processed_file_path
         self.post_processed_normalized_file_path = post_processed_normalized_file_path
-        self.ingest_ready_file_path = ingest_ready_file_path
 
         # TODO(#17283): Change to original buckets when SFTP is switched over
         self.sftp_bucket = GcsfsBucketPath(
@@ -102,12 +85,11 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
         )
 
     def build_upload_path(self) -> GcsfsFilePath:
+        date_str = self.post_processed_normalized_file_path.split("/")[0]
         normalized_file_name = os.path.basename(
             to_normalized_unprocessed_raw_file_path(
-                self.ingest_ready_file_path,
-                datetime.datetime.fromtimestamp(self.sftp_timestamp).astimezone(
-                    pytz.UTC
-                ),
+                self.post_processed_normalized_file_path,
+                datetime.datetime.fromisoformat(date_str),
             )
         )
         return GcsfsFilePath.from_directory_and_file_name(
@@ -118,10 +100,6 @@ class SFTPGcsToGcsOperator(GCSToGCSOperator):
         super().execute(context)
         return {
             REMOTE_FILE_PATH: self.remote_file_path,
-            SFTP_TIMESTAMP: self.sftp_timestamp,
-            DOWNLOADED_FILE_PATH: self.downloaded_file_path,
-            POST_PROCESSED_FILE_PATH: self.post_processed_file_path,
             POST_PROCESSED_NORMALIZED_FILE_PATH: self.post_processed_normalized_file_path,
-            INGEST_READY_FILE_PATH: self.ingest_ready_file_path,
             UPLOADED_FILE_PATH: self.uploaded_file_path.abs_path(),
         }

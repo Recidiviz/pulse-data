@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A subclass of the GCSTransformOperator that returns output to the DAG and uses
+"""A custom GCSTransformOperator that uses Recidiviz utils, returns output to the DAG and uses
 the SFTP delegate to stream the output back to GCS."""
 from typing import Any, Dict, List, Union
 

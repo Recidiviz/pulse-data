@@ -15,10 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the SFTPGcsToGcsOperator"""
-import datetime
 import unittest
-
-import pytz
 
 from recidiviz.airflow.dags.operators.sftp.gcs_to_gcs_operator import (
     SFTPGcsToGcsOperator,
@@ -35,13 +32,7 @@ class TestSFTPGcsToGcsOperator(unittest.TestCase):
             project_id="recidiviz-testing",
             region_code="US_XX",
             remote_file_path="outside_folder/inside_folder/file.txt",
-            sftp_timestamp=int(
-                datetime.datetime(2023, 1, 1, 1, 0, 0, 0, tzinfo=pytz.UTC).timestamp()
-            ),
-            downloaded_file_path="gs://recidiviz-testing-direct-ingest-state-us-xx-sftp-test/2023-01-01T01:00:00:000000/inside_folder/file.txt",
-            post_processed_file_path="gs://recidiviz-testing-direct-ingest-state-us-xx-sftp-test/2023-01-01T01:00:00:000000/inside_folder/file.txt",
             post_processed_normalized_file_path="2023-01-01T01:00:00:000000/inside_folder/file.txt",
-            ingest_ready_file_path="gs://recidiviz-testing-direct-ingest-state-us-xx-sftp-test/2023-01-01T01:00:00:000000/inside_folder/file.txt",
         )
         expected_file = GcsfsFilePath.from_bucket_and_blob_name(
             bucket_name="recidiviz-testing-direct-ingest-state-us-xx-test",

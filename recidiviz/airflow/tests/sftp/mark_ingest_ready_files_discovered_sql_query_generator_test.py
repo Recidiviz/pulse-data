@@ -49,8 +49,8 @@ class TestMarkIngestReadyFilesDiscoveredSqlQueryGenerator(unittest.TestCase):
         expected_query = """
 SELECT post_processed_normalized_file_path, remote_file_path FROM
  direct_ingest_sftp_ingest_ready_file_metadata
- WHERE file_upload_time IS NULL AND (post_processed_normalized_file_path, remote_file_path)
- IN (('2023-01-01T01:00:00:000000/folder/file1.csv', 'folder/file1.csv'),('2023-01-01T01:00:00:000000/folder/file2.csv', 'folder/file2.csv'));"""
+ WHERE region_code = 'US_XX' AND file_upload_time IS NULL
+ AND (post_processed_normalized_file_path, remote_file_path) IN (('2023-01-01T01:00:00:000000/folder/file1.csv', 'folder/file1.csv'),('2023-01-01T01:00:00:000000/folder/file2.csv', 'folder/file2.csv'));"""
         self.assertEqual(
             self.generator.exists_sql_query(sample_data_set), expected_query
         )
@@ -80,16 +80,10 @@ VALUES
         sample_data = [
             {
                 "remote_file_path": "file1.csv",
-                "sftp_timestamp": 1,
-                "post_processed_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file1.csv",
-                "ingest_ready_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file1.csv",
                 "post_processed_normalized_file_path": "2023-01-01T01:00:00:000000/file1.csv",
             },
             {
                 "remote_file_path": "file2.csv",
-                "sftp_timestamp": 1,
-                "post_processed_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file2.csv",
-                "ingest_ready_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file2.csv",
                 "post_processed_normalized_file_path": "2023-01-01T01:00:00:000000/file2.csv",
             },
         ]
@@ -126,16 +120,10 @@ VALUES
         sample_data = [
             {
                 "remote_file_path": "file1.csv",
-                "sftp_timestamp": 1,
-                "post_processed_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file1.csv",
-                "ingest_ready_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file1.csv",
                 "post_processed_normalized_file_path": "2023-01-01T01:00:00:000000/file1.csv",
             },
             {
                 "remote_file_path": "file2.csv",
-                "sftp_timestamp": 1,
-                "post_processed_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file2.csv",
-                "ingest_ready_file_path": "gs://test-bucket/2023-01-01T01:00:00:000000/file2.csv",
                 "post_processed_normalized_file_path": "2023-01-01T01:00:00:000000/file2.csv",
             },
         ]
@@ -156,7 +144,7 @@ VALUES
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
 
-        mock_operator.xcom_pull.return_value = None
+        mock_operator.xcom_pull.return_value = []
 
         results = self.generator.execute_postgres_query(
             mock_operator, mock_postgres, mock_context

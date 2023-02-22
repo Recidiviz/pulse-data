@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""A subclass of the SFTPToGCSOperator that returns output to the DAG."""
+"""A customized SFTPToGCSOperator that uses Recidiviz utils and returns output to the DAG."""
 import datetime
 import os
 from typing import Any, Dict, Union

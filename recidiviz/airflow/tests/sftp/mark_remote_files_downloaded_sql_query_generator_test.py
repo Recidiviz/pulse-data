@@ -37,7 +37,7 @@ class TestMarkFilesDownloadedSqlQueryGenerator(unittest.TestCase):
 
     def setUp(self) -> None:
         self.generator = MarkRemoteFilesDownloadedSqlQueryGenerator(
-            region_code="US_XX", download_sftp_files_task_id="test_task_id"
+            region_code="US_XX", post_process_sftp_files_task_id="test_task_id"
         )
 
     @freezegun.freeze_time(datetime.datetime(2023, 2, 1, 0, 0, 0, 0))
@@ -57,16 +57,22 @@ WHERE region_code = 'US_XX' AND (remote_file_path, sftp_timestamp) IN (('file1.c
         mock_context = create_autospec(Context)
 
         sample_data = [
-            {
-                "remote_file_path": "file1.csv",
-                "sftp_timestamp": 1,
-                "downloaded_file_path": "gs://test-bucket/file1.csv",
-            },
-            {
-                "remote_file_path": "file2.csv",
-                "sftp_timestamp": 2,
-                "downloaded_file_path": "gs://test-bucket/file2.csv",
-            },
+            [
+                {
+                    "remote_file_path": "file1.csv",
+                    "sftp_timestamp": 1,
+                    "downloaded_file_path": "gs://test-bucket/file1.csv",
+                    "post_processed_file_path": "gs://test-bucket/file1.csv",
+                }
+            ],
+            [
+                {
+                    "remote_file_path": "file2.csv",
+                    "sftp_timestamp": 2,
+                    "downloaded_file_path": "gs://test-bucket/file2.csv",
+                    "post_processed_file_path": "gs://test-bucket/file2.csv",
+                }
+            ],
         ]
 
         mock_operator.xcom_pull.return_value = sample_data
@@ -80,14 +86,30 @@ UPDATE direct_ingest_sftp_remote_file_metadata SET file_download_time = '2023-02
 WHERE region_code = 'US_XX' AND (remote_file_path, sftp_timestamp) IN (('file1.csv', 1),('file2.csv', 2));"""
         )
 
-        self.assertListEqual(results, sample_data)
+        self.assertListEqual(
+            results,
+            [
+                {
+                    "remote_file_path": "file1.csv",
+                    "sftp_timestamp": 1,
+                    "downloaded_file_path": "gs://test-bucket/file1.csv",
+                    "post_processed_file_path": "gs://test-bucket/file1.csv",
+                },
+                {
+                    "remote_file_path": "file2.csv",
+                    "sftp_timestamp": 2,
+                    "downloaded_file_path": "gs://test-bucket/file2.csv",
+                    "post_processed_file_path": "gs://test-bucket/file2.csv",
+                },
+            ],
+        )
 
     def test_marks_files_downloaded_no_files_to_mark(self) -> None:
         mock_operator = create_autospec(CloudSqlQueryOperator)
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
 
-        mock_operator.xcom_pull.return_value = None
+        mock_operator.xcom_pull.return_value = []
 
         results = self.generator.execute_postgres_query(
             mock_operator, mock_postgres, mock_context
