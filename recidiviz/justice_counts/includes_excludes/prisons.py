@@ -209,7 +209,7 @@ class PrisonProgrammaticStaffIncludesExcludes(Enum):
 
 
 class VacantPrisonStaffIncludesExcludes(Enum):
-    SUPERVISION = "Vacant supervision staff positions"
+    SUPERVISION = "Vacant security staff positions"
     MANAGEMENT_OPERATIONS = "Vacant management and operations staff positions"
     CLINICAL_OR_MEDICAL = "Vacant clinical and medical staff positions"
     PROGRAMMATIC = "Vacant programmatic staff positions"

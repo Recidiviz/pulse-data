@@ -447,7 +447,7 @@ daily_population = MetricDefinition(
                 OffenseType.PUBLIC_ORDER: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was a public order offense.",
                 OffenseType.DRUG: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was a drug offense.",
                 OffenseType.OTHER: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was not a person offense, property offense, public order offense, or drug offense.",
-                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was an unknown.",
+                OffenseType.UNKNOWN: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was unknown.",
             },
             dimension_to_includes_excludes={
                 OffenseType.PERSON: IncludesExcludesSet(
