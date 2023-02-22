@@ -16,13 +16,13 @@
 # =============================================================================
 """The purpose of this file is to convert the CSV file 'fips_with_county_subdivisions'
 to a list of dictionaries, which will later be converted to a json representation for the frontend."""
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 import pandas as pd
 
 
-def get_all_jurisdictions() -> List[Dict[str, Any]]:
-    """Reads in fips_with_county_subdivisions.csv and converts to a list of dictionaries
+def get_all_jurisdictions() -> Dict[str, Dict[str, Any]]:
+    """Reads in fips_with_county_subdivisions.csv and converts to a dictionary of dictionaries
     of all 24,329 jurisdictions.
     """
     jurisdictions_df = pd.read_csv(
@@ -37,9 +37,9 @@ def get_all_jurisdictions() -> List[Dict[str, Any]]:
             "id": str,
         },
     )
-    jurisdiction_lst = []
+    all_jurisdictions = {}
     for _, jurisdiction in jurisdictions_df.iterrows():
-        jurisdiction_json = {
+        all_jurisdictions[jurisdiction[6]] = {
             "id": jurisdiction[6],
             "state_abbrev": jurisdiction[1],
             "state_name": jurisdiction[0],
@@ -52,5 +52,4 @@ def get_all_jurisdictions() -> List[Dict[str, Any]]:
             "name": jurisdiction[2],
             "type": jurisdiction[5],
         }
-        jurisdiction_lst.append(jurisdiction_json)
-    return jurisdiction_lst
+    return all_jurisdictions

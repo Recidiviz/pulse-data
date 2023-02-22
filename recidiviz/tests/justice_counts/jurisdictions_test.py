@@ -32,7 +32,7 @@ class TestJurisdictions(TestCase):
         self.maxDiff = None
 
     def test_jurisdictions(self) -> None:
-        all_jurisdictions_lst = get_all_jurisdictions()
+        all_jurisdictions = get_all_jurisdictions()
         jurisdictions_csv = pd.read_csv(
             "./recidiviz/common/data_sets/fips_with_county_subdivisions.csv",
             dtype={
@@ -45,10 +45,10 @@ class TestJurisdictions(TestCase):
                 "id": str,
             },
         )
-        self.assertEqual(len(all_jurisdictions_lst), len(jurisdictions_csv))
+        self.assertEqual(len(all_jurisdictions), len(jurisdictions_csv))
 
         # check state record
-        alabama_state = all_jurisdictions_lst[0]
+        alabama_state = all_jurisdictions["0100000000"]
         self.assertEqual(
             alabama_state,
             {
@@ -62,10 +62,10 @@ class TestJurisdictions(TestCase):
             },
         )
         # check unique ids
-        ids = set(jurisdiction["id"] for jurisdiction in all_jurisdictions_lst)
-        self.assertEqual(len(ids), len(all_jurisdictions_lst))
+        ids = set(all_jurisdictions.keys())
+        self.assertEqual(len(ids), len(all_jurisdictions))
         # check county record
-        alabama_county = all_jurisdictions_lst[1]
+        alabama_county = all_jurisdictions["0100100000"]
         self.assertEqual(
             alabama_county,
             {
@@ -79,7 +79,7 @@ class TestJurisdictions(TestCase):
             },
         )
         # check county subdivision record
-        ct_county_subdivision = all_jurisdictions_lst[324]
+        ct_county_subdivision = all_jurisdictions["0900104720"]
         self.assertEqual(
             ct_county_subdivision,
             {
@@ -93,7 +93,7 @@ class TestJurisdictions(TestCase):
             },
         )
         # check D.C.
-        dc = all_jurisdictions_lst[497]
+        dc = all_jurisdictions["1100000000"]
         self.assertEqual(
             dc,
             {
@@ -108,7 +108,7 @@ class TestJurisdictions(TestCase):
         )
 
         # check Puerto Rico
-        pr = all_jurisdictions_lst[24250]
+        pr = all_jurisdictions["7200000000"]
         self.assertEqual(
             pr,
             {
