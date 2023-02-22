@@ -93,6 +93,7 @@ cleaned_Sentence_view AS (
         Sentence.FullExpirationDate AS FullExpirationDate,
         Sentence.ExpirationDate AS ExpirationDate,
         OffenderStatute.AssaultiveOffenseFlag as AssaultiveOffenseFlag,
+        OffenderStatute.SexOffenderFlag as SexOffenderFlag,
         Sentence.ConsecutiveConvictionCounty AS ConsecutiveConvictionCounty,
         Sentence.ConsecutiveCaseYear AS ConsecutiveCaseYear,
         Sentence.ConsecutiveCaseNumber AS ConsecutiveCaseNumber,
@@ -130,6 +131,7 @@ cleaned_Diversion_view AS (
         ExpirationDate as FullExpirationDate,
         ExpirationDate as ExpirationDate,
         OffenderStatute.AssaultiveOffenseFlag as AssaultiveOffenseFlag,
+        OffenderStatute.SexOffenderFlag as SexOffenderFlag,
         CAST(NULL as STRING) AS ConsecutiveConvictionCounty,
         CAST(NULL as STRING) AS ConsecutiveCaseYear,
         CAST(NULL as STRING) AS ConsecutiveCaseNumber,
@@ -189,6 +191,7 @@ cleaned_ISCSentence_view AS (
                         OR ConvictedOffense LIKE '%STALKING%'
                         OR ConvictedOffense LIKE '%CRIMES AGAINST PERSON%'
                         THEN 'Y' ELSE 'N' END AS AssaultiveOffenseFlag,
+        CASE WHEN ISC.ConvictedOffense LIKE '%SEX%' OR ISC.ConvictedOffense LIKE '%RAPE%' THEN 'Y' ELSE 'N' END AS SexOffenderFlag,
         ISCR.RelatedJurisidicationCounty AS ConsecutiveConvictionCounty,
         ISCR.RelatedCaseYear AS ConsecutiveCaseYear,
         ISCR.RelatedCaseNumber AS ConsecutiveCaseNumber,
@@ -254,7 +257,7 @@ SELECT
     JOIdentification.JudicialDistrict,
     Sentences.OffenseDescription,
     Sentences.AssaultiveOffenseFlag,
-    OffenderStatute.SexOffenderFlag,
+    Sentences.SexOffenderFlag,
     Sentences.ISCSentencyType,
     Sentences.lifetime_flag,
     Sentences.sentence_source
@@ -273,8 +276,6 @@ LEFT JOIN {{JOIdentification}} JOIdentification
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 LEFT JOIN special_conditions_aggregation JOSpecialConditions 
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
-LEFT JOIN {{OffenderStatute}} OffenderStatute
-ON JOCharge.ConvictionOffense = OffenderStatute.Offense
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
