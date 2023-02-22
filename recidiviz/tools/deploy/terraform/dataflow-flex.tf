@@ -50,11 +50,8 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
 
 }
 
-# TODO(#18477): replace temporary gloria-scratch bucket with a permanent one
-# TODO(#18494): replace flexpipelinetest.json with real pipeline name
-# TODO(#18495): replace template_metadata.json with permanent descriptive template name
 resource "google_storage_bucket_object" "flex_template_metadata" {
-  bucket       = "recidiviz-staging-gloria-scratch"
+  bucket       = "recidiviz-staging-dataflow-flex-templates"
   content_type = "application/json"
 
   # This line means we will make a new google_storage_bucket_object for each file we find at the given wildcard path
