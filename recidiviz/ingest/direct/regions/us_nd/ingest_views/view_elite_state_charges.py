@@ -41,8 +41,8 @@ VIEW_QUERY_TEMPLATE = """
         orders.JUDGE_NAME,
         orders.ORDER_STATUS,
         orders.ISSUING_AGY_LOC_ID
-    FROM `{elite_offenderchargestable}` charges
-    LEFT JOIN `{elite_orderstable}` orders
+    FROM {elite_offenderchargestable} charges
+    LEFT JOIN {elite_orderstable} orders
     USING (OFFENDER_BOOK_ID, ORDER_ID)
     LEFT JOIN {RECIDIVIZ_REFERENCE_offense_codes} codes
     USING (OFFENCE_CODE)
