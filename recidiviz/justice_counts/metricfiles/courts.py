@@ -45,7 +45,7 @@ COURTS_METRIC_FILES = [
         definition=courts.expenses,
     ),
     MetricFile(
-        canonical_filename="expense_by_type",
+        canonical_filename="expenses_by_type",
         definition=courts.expenses,
         disaggregation=ExpenseType,
         disaggregation_column_name="expense_type",
