@@ -85,7 +85,11 @@ US_MO_HOUSING_STAYS_PREPROCESSED_QUERY_TEMPLATE = """
             ) 
         ) AS confinement_type,
         h.BN_LRU AS confinement_type_raw_text,
-        h.BN_HDS AS reason_raw_text
+        h.BN_HDS AS reason_raw_text,
+        h.BN_LBD AS bed_number,
+        h.BN_LRM AS room_number,
+        h.BN_COM AS complex_number,
+        h.BN_LOC AS building_number
     FROM {project_id}.{raw_dataset}.LBAKRDTA_TAK017_latest h
     LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
     ON

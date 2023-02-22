@@ -14,33 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are in
-comparment_level_1 = 'INCARCERATION' and compartment_level_2 = 'GENERAL'
-at any point in time.
+"""Defines a view that shows when hearings have occurred or the "next review date" has passed
 """
-from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
-    StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.candidate_population_builders import (
-    state_agnostic_candidate_population_view_builder,
+from recidiviz.calculator.query.state import dataset_config
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    TaskCompletionEventBigQueryViewBuilder,
+    TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "GENERAL_INCARCERATION_POPULATION"
-
-_DESCRIPTION = """Selects all spans of time in which a person is in INCARCERATION GENERAL
-as tracked by data in our `sessions` dataset. The only type of incarceration included is 
-compartment_level_2='GENERAL'.
+_DESCRIPTION = """Defines a view that shows when hearings have occurred or the "next review date" has passed"
 """
 
-VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
-    state_agnostic_candidate_population_view_builder(
-        population_name=_POPULATION_NAME,
-        description=_DESCRIPTION,
-        additional_filters=['attr.compartment_level_2 = "GENERAL" '],
-        compartment_level_1="INCARCERATION",
-    )
+# STUB TODO(#18772)
+_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    start_date AS completion_event_date,
+FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+WHERE FALSE
+"""
+
+VIEW_BUILDER: TaskCompletionEventBigQueryViewBuilder = TaskCompletionEventBigQueryViewBuilder(
+    completion_event_type=TaskCompletionEventType.HEARING_OCCURRED_OR_PAST_REVIEW_DATE,
+    description=_DESCRIPTION,
+    completion_event_query_template=_QUERY_TEMPLATE,
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
 )
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are in
-comparment_level_1 = 'INCARCERATION' and compartment_level_2 = 'GENERAL'
-at any point in time.
+"""Defines a candidate population view containing all people who are
+incarcerated at any point in time.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -27,18 +26,18 @@ from recidiviz.task_eligibility.utils.candidate_population_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "GENERAL_INCARCERATION_POPULATION"
+_POPULATION_NAME = "INCARCERATION_POPULATION"
 
-_DESCRIPTION = """Selects all spans of time in which a person is in INCARCERATION GENERAL
-as tracked by data in our `sessions` dataset. The only type of incarceration included is 
-compartment_level_2='GENERAL'.
+_DESCRIPTION = """Selects all spans of time in which a person is incarcerated as tracked
+by data in our `sessions` dataset. All types of incarceration (including INTERNAL_UNKNOWN)
+are included.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
-        additional_filters=['attr.compartment_level_2 = "GENERAL" '],
+        additional_filters=[],
         compartment_level_1="INCARCERATION",
     )
 )
