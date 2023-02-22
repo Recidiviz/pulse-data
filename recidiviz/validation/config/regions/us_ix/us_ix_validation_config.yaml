@@ -3,7 +3,7 @@
 region_code: US_IX
 # TODO(#10703): Move the exclusions / overrides in this validation config over to the
 # US_ID validation config once US_IX is merged into US_ID
-dev_mode: True
+dev_mode: False
 exclusions: []
 max_allowed_error_overrides: []
 num_allowed_rows_overrides: []
