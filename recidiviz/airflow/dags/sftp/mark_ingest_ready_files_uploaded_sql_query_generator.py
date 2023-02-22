@@ -16,7 +16,7 @@
 # =============================================================================
 """The CloudSQLQueryGenerator for marking SFTP files as downloaded."""
 import datetime
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -69,30 +69,29 @@ class MarkIngestReadyFilesUploadedSqlQueryGenerator(
     ) -> List[Dict[str, Union[str, int]]]:
         """Returns the list of all files that were downloaded and should be post processed
         after marking all files as downloaded in the Postgres database."""
-        ingest_ready_files_with_uploaded_paths: Optional[
-            List[Dict[str, Union[str, int]]]
+        # Based on the prior check, this list should always be non-empty.
+        ingest_ready_files_with_uploaded_paths: List[
+            Dict[str, Union[str, int]]
         ] = operator.xcom_pull(
             context,
             key="return_value",
             task_ids=self.upload_files_to_ingest_bucket_task_id,
         )
-        if ingest_ready_files_with_uploaded_paths:
-            post_processed_path_to_remote_path_set: Set[Tuple[str, str]] = {
-                (
-                    assert_type(metadata[POST_PROCESSED_NORMALIZED_FILE_PATH], str),
-                    assert_type(metadata[REMOTE_FILE_PATH], str),
-                )
-                for metadata in ingest_ready_files_with_uploaded_paths
-            }
+        post_processed_path_to_remote_path_set: Set[Tuple[str, str]] = {
+            (
+                assert_type(metadata[POST_PROCESSED_NORMALIZED_FILE_PATH], str),
+                assert_type(metadata[REMOTE_FILE_PATH], str),
+            )
+            for metadata in ingest_ready_files_with_uploaded_paths
+        }
+        if post_processed_path_to_remote_path_set:
             postgres_hook.run(
                 self.update_sql_query(post_processed_path_to_remote_path_set)
             )
 
-            # Due to how Airflow wraps XCOM values, we need to access the underlying
-            # dictionary in order to properly serialize for the next task
-            return [{**metadata} for metadata in ingest_ready_files_with_uploaded_paths]
-
-        return []
+        # Due to how Airflow wraps XCOM values, we need to access the underlying
+        # dictionary in order to properly serialize for the next task
+        return [{**metadata} for metadata in ingest_ready_files_with_uploaded_paths]
 
     def update_sql_query(
         self,

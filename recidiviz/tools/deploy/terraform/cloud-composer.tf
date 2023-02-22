@@ -43,10 +43,13 @@ resource "google_composer_environment" "default_v2" {
       airflow_config_overrides = {
         "api-auth_backend"                         = "airflow.composer.api.backend.composer_auth"
         "api-composer_auth_user_registration_role" = "Op"
-        "celery-worker_concurrency"                = 3
-        "webserver-web_server_name"                = "orchestration-v2"
-        "secrets-backend"                          = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
-        "secrets-backend_kwargs"                   = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
+        # The default maximum is 1024, but there may be instances where we may have stopped
+        # SFTP and will need to catch up after a few days, so we will increase the limit.
+        "core-max_map_length"       = 2000
+        "celery-worker_concurrency" = 3
+        "webserver-web_server_name" = "orchestration-v2"
+        "secrets-backend"           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
+        "secrets-backend_kwargs"    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
         "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"

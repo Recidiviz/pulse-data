@@ -33,7 +33,7 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generato
 )
 
 
-class TestMarkRemoteFilesDiscoveredSqlQueryGeneratorr(unittest.TestCase):
+class TestMarkRemoteFilesDiscoveredSqlQueryGenerator(unittest.TestCase):
     """Unit tests for MarkRemoteFilesDiscoveredSqlQueryGenerator"""
 
     def setUp(self) -> None:
@@ -45,7 +45,8 @@ class TestMarkRemoteFilesDiscoveredSqlQueryGeneratorr(unittest.TestCase):
         sample_data_set: Set[Tuple[str, int]] = {("file1.csv", 1), ("file2.csv", 1)}
         expected_query = """
 SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
- WHERE file_download_time IS NULL AND (remote_file_path, sftp_timestamp) IN (('file1.csv', 1),('file2.csv', 1));"""
+ WHERE region_code = 'US_XX' AND file_download_time IS NULL
+ AND (remote_file_path, sftp_timestamp) IN (('file1.csv', 1),('file2.csv', 1));"""
 
         self.assertEqual(
             self.generator.exists_sql_query(sample_data_set), expected_query
@@ -119,7 +120,7 @@ VALUES
         mock_postgres = create_autospec(PostgresHook)
         mock_context = create_autospec(Context)
 
-        mock_operator.xcom_pull.return_value = None
+        mock_operator.xcom_pull.return_value = []
 
         results = self.generator.execute_postgres_query(
             mock_operator, mock_postgres, mock_context

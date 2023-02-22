@@ -65,6 +65,8 @@ class FilterInvalidGcsFilesOperator(BaseOperator):
         super().__init__(**kwargs)
 
     def execute(self, context: Context) -> List[Dict[str, Union[str, int]]]:
+        # The prior step to this may have been skipped. If that is the case, the XCOMS
+        # is None.
         file_metadatas: Optional[List[Dict[str, Union[str, int]]]] = self.xcom_pull(
             context,
             key="return_value",

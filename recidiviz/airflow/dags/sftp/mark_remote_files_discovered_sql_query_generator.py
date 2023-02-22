@@ -16,7 +16,7 @@
 # =============================================================================
 """The CloudSQLQueryGenerator for marking all SFTP files as discovered."""
 import datetime
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -54,45 +54,47 @@ class MarkRemoteFilesDiscoveredSqlQueryGenerator(
 
     def execute_postgres_query(
         self,
-        operator: "CloudSqlQueryOperator",
+        operator: CloudSqlQueryOperator,
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[Dict[str, Union[str, int]]]:
         """Returns the original list of all files to download after marking all new files
         as discovered in the Postgres database."""
-        sftp_files_with_timestamps: Optional[
-            List[Dict[str, Union[str, int]]]
+        # The filter_download_files task will always return a List.
+        sftp_files_with_timestamps: List[
+            Dict[str, Union[str, int]]
         ] = operator.xcom_pull(
             context, key="return_value", task_ids=self.filter_downloaded_files_task_id
         )
-        if sftp_files_with_timestamps:
-            sftp_file_to_timestamp_set: Set[Tuple[str, int]] = {
-                (
-                    assert_type(metadata[REMOTE_FILE_PATH], str),
-                    assert_type(metadata[SFTP_TIMESTAMP], int),
-                )
-                for metadata in sftp_files_with_timestamps
-            }
-
-            already_discovered_df = postgres_hook.get_pandas_df(
-                self.exists_sql_query(sftp_file_to_timestamp_set)
+        sftp_file_to_timestamp_set: Set[Tuple[str, int]] = {
+            (
+                assert_type(metadata[REMOTE_FILE_PATH], str),
+                assert_type(metadata[SFTP_TIMESTAMP], int),
             )
-            discovered_file_to_timestamp_set: Set[Tuple[str, int]] = {
+            for metadata in sftp_files_with_timestamps
+        }
+
+        discovered_file_to_timestamp_set: Set[Tuple[str, int]] = (
+            {
                 (row[REMOTE_FILE_PATH], row[SFTP_TIMESTAMP])
-                for _, row in already_discovered_df.iterrows()
+                for _, row in postgres_hook.get_pandas_df(
+                    self.exists_sql_query(sftp_file_to_timestamp_set)
+                ).iterrows()
             }
+            if sftp_file_to_timestamp_set
+            else set()
+        )
 
-            files_to_mark_discovered: Set[Tuple[str, int]] = (
-                sftp_file_to_timestamp_set - discovered_file_to_timestamp_set
-            )
+        files_to_mark_discovered: Set[Tuple[str, int]] = (
+            sftp_file_to_timestamp_set - discovered_file_to_timestamp_set
+        )
 
-            if files_to_mark_discovered:
-                postgres_hook.run(self.insert_sql_query(files_to_mark_discovered))
+        if files_to_mark_discovered:
+            postgres_hook.run(self.insert_sql_query(files_to_mark_discovered))
 
-            # Due to how Airflow wraps XCOM values, we need to access the underlying
-            # dictionary in order to properly serialize for the next task
-            return [{**metadata} for metadata in sftp_files_with_timestamps]
-        return []
+        # Due to how Airflow wraps XCOM values, we need to access the underlying
+        # dictionary in order to properly serialize for the next task
+        return [{**metadata} for metadata in sftp_files_with_timestamps]
 
     def exists_sql_query(self, file_to_timestamp_set: Set[Tuple[str, int]]) -> str:
         sql_tuples = ",".join(
@@ -103,7 +105,8 @@ class MarkRemoteFilesDiscoveredSqlQueryGenerator(
         )
         return f"""
 SELECT remote_file_path, sftp_timestamp FROM direct_ingest_sftp_remote_file_metadata
- WHERE file_download_time IS NULL AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""
+ WHERE region_code = '{self.region_code}' AND file_download_time IS NULL
+ AND (remote_file_path, sftp_timestamp) IN ({sql_tuples});"""
 
     def insert_sql_query(self, files_to_mark_discovered: Set[Tuple[str, int]]) -> str:
         current_date = datetime.datetime.now(tz=pytz.UTC).strftime(

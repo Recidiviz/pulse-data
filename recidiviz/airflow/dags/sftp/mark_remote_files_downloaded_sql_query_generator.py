@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The CloudSQLQueryGenerator for marking SFTP files as downloaded."""
+"""The CloudSqlQueryGenerator for marking SFTP files as downloaded."""
 import datetime
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Set, Tuple, Union
 
 import pytz
 from airflow.providers.postgres.hooks.postgres import PostgresHook
@@ -47,41 +47,45 @@ class MarkRemoteFilesDownloadedSqlQueryGenerator(
 ):
     """Custom query generator for marking all files as downloaded."""
 
-    def __init__(self, region_code: str, download_sftp_files_task_id: str) -> None:
+    def __init__(self, region_code: str, post_process_sftp_files_task_id: str) -> None:
         self.region_code = region_code
-        self.download_sftp_files_task_id = download_sftp_files_task_id
+        self.post_process_sftp_files_task_id = post_process_sftp_files_task_id
+        super().__init__()
 
     def execute_postgres_query(
         self,
-        operator: "CloudSqlQueryOperator",
+        operator: CloudSqlQueryOperator,
         postgres_hook: PostgresHook,
         context: Context,
     ) -> List[Dict[str, Union[str, int]]]:
-        """Returns the list of all files that were downloaded and should be post processed
+        """Returns the list of all files that were downloaded and post processed
         after marking all files as downloaded in the Postgres database."""
-        sftp_files_with_timestamps_and_downloaded_paths: Optional[
+        # Based on the prior check, this list should always be non-empty and because
+        # post_process_sftp_files returns a List[List[Dict]], we first need to flatten it.
+        sftp_files_with_timestamps_and_downloaded_paths: List[
             List[Dict[str, Union[str, int]]]
         ] = operator.xcom_pull(
-            context, key="return_value", task_ids=self.download_sftp_files_task_id
+            context, key="return_value", task_ids=self.post_process_sftp_files_task_id
         )
-        if sftp_files_with_timestamps_and_downloaded_paths:
-            sftp_files_with_timestamp_set: Set[Tuple[str, int]] = {
-                (
-                    assert_type(metadata[REMOTE_FILE_PATH], str),
-                    assert_type(metadata[SFTP_TIMESTAMP], int),
-                )
-                for metadata in sftp_files_with_timestamps_and_downloaded_paths
-            }
+        sftp_files_with_timestamp_set: Set[Tuple[str, int]] = {
+            (
+                assert_type(metadata[REMOTE_FILE_PATH], str),
+                assert_type(metadata[SFTP_TIMESTAMP], int),
+            )
+            for metadata_list in sftp_files_with_timestamps_and_downloaded_paths
+            for metadata in metadata_list
+        }
 
+        if sftp_files_with_timestamp_set:
             postgres_hook.run(self.update_sql_query(sftp_files_with_timestamp_set))
 
-            # Due to how Airflow wraps XCOM values, we need to access the underlying
-            # dictionary in order to properly serialize for the next task
-            return [
-                {**metadata}
-                for metadata in sftp_files_with_timestamps_and_downloaded_paths
-            ]
-        return []
+        # Due to how Airflow wraps XCOM values, we need to access the underlying
+        # dictionary in order to properly serialize for the next task
+        return [
+            {**metadata}
+            for metadata_list in sftp_files_with_timestamps_and_downloaded_paths
+            for metadata in metadata_list
+        ]
 
     def update_sql_query(
         self,

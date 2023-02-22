@@ -18,7 +18,7 @@
 import logging
 import os
 import uuid
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 from airflow.decorators import dag
 from airflow.models.xcom_arg import XComArg
@@ -62,6 +62,12 @@ try:
     from sftp.filter_downloaded_files_sql_query_generator import (  # type: ignore
         FilterDownloadedFilesSqlQueryGenerator,
     )
+    from sftp.gather_discovered_ingest_ready_files_sql_query_generator import (  # type: ignore
+        GatherDiscoveredIngestReadyFilesSqlQueryGenerator,
+    )
+    from sftp.gather_discovered_remote_files_sql_query_generator import (  # type: ignore
+        GatherDiscoveredRemoteFilesSqlQueryGenerator,
+    )
     from sftp.mark_ingest_ready_files_discovered_sql_query_generator import (  # type: ignore
         MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
     )
@@ -97,6 +103,12 @@ except ImportError:
     )
     from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
         FilterDownloadedFilesSqlQueryGenerator,
+    )
+    from recidiviz.airflow.dags.sftp.gather_discovered_ingest_ready_files_sql_query_generator import (
+        GatherDiscoveredIngestReadyFilesSqlQueryGenerator,
+    )
+    from recidiviz.airflow.dags.sftp.gather_discovered_remote_files_sql_query_generator import (
+        GatherDiscoveredRemoteFilesSqlQueryGenerator,
     )
     from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_discovered_sql_query_generator import (
         MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
@@ -172,12 +184,8 @@ def delete_lock(lock_id: str) -> None:
     GCSHook().delete(bucket_name=GCS_LOCK_BUCKET, object_name=lock_id)
 
 
-def merge_post_processed_files(
-    output: Optional[List[List[Dict[str, Union[str, int]]]]]
-) -> List[Dict[str, Union[str, int]]]:
-    if output:
-        return [metadata for metadata_list in output for metadata in metadata_list]
-    return []
+def xcom_output_is_non_empty_list(xcom_output: Optional[List]) -> bool:
+    return xcom_output is not None and len(xcom_output) > 0
 
 
 @dag(
@@ -198,9 +206,9 @@ def sftp_dag() -> None:
         op_kwargs={"lock_id": "EXPORT_PROCESS_RUNNING_OPERATIONS"},
         ignore_downstream_trigger_rules=True,
     )
-    end_sftp = EmptyOperator(task_id="end_sftp")
+    end_sftp = EmptyOperator(task_id="end_sftp", trigger_rule=TriggerRule.ALL_DONE)
     for state_code in sftp_enabled_states():
-        with TaskGroup(group_id=state_code) as task_group:
+        with TaskGroup(group_id=state_code) as state_specific_task_group:
             # TODO(#17283): Remove usage of config once all states are enabled in Airflow.
             check_config = ShortCircuitOperator(
                 task_id="check_config",
@@ -238,7 +246,8 @@ def sftp_dag() -> None:
                     task_id="filter_downloaded_files",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
                     query_generator=FilterDownloadedFilesSqlQueryGenerator(
-                        find_sftp_files_task_id=find_sftp_files_from_server.task_id
+                        region_code=state_code,
+                        find_sftp_files_task_id=find_sftp_files_from_server.task_id,
                     ),
                 )
                 mark_remote_files_discovered = CloudSqlQueryOperator(
@@ -249,10 +258,22 @@ def sftp_dag() -> None:
                         filter_downloaded_files_task_id=filter_downloaded_files.task_id,
                     ),
                 )
+                gather_discovered_remote_files = CloudSqlQueryOperator(
+                    task_id="gather_discovered_remote_files",
+                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                    query_generator=GatherDiscoveredRemoteFilesSqlQueryGenerator(
+                        region_code=state_code
+                    ),
+                    # This step will always execute regardless of success of the previous
+                    # steps. This is to ensure that prior failed to download files are
+                    # rediscovered.
+                    trigger_rule=TriggerRule.ALL_DONE,
+                )
                 (
                     find_sftp_files_from_server
                     >> filter_downloaded_files
                     >> mark_remote_files_discovered
+                    >> gather_discovered_remote_files
                 )
 
             # Download flow
@@ -262,33 +283,42 @@ def sftp_dag() -> None:
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
-                ).expand_kwargs(mark_remote_files_discovered.output)
-                mark_remote_files_downloaded = CloudSqlQueryOperator(
-                    task_id="mark_remote_files_downloaded",
-                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
-                    query_generator=MarkRemoteFilesDownloadedSqlQueryGenerator(
-                        region_code=state_code,
-                        download_sftp_files_task_id=download_sftp_files.task_id,
-                    ),
-                    # This will trigger the task regardless of the failure or success of the
-                    # upstream downloads.
-                    trigger_rule=TriggerRule.ALL_DONE,
-                )
+                ).expand_kwargs(gather_discovered_remote_files.output)
                 post_process_downloaded_files = RecidivizGcsFileTransformOperator.partial(
                     task_id="post_process_downloaded_files",
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
-                    # This will trigger the task regardless of the failure or success of the
-                    # upstream downloads.
+                    # These tasks will always trigger no matter the status of the prior
+                    # tasks. We need to wait until downloads are finished in order
+                    # to decide what to post process.
                     trigger_rule=TriggerRule.ALL_DONE,
                 ).expand_kwargs(
-                    mark_remote_files_downloaded.output
+                    download_sftp_files.output
+                )
+                check_remote_files_downloaded_and_post_processed = ShortCircuitOperator(
+                    task_id="check_remote_files_downloaded_and_post_processed",
+                    python_callable=xcom_output_is_non_empty_list,
+                    op_args=[XComArg(post_process_downloaded_files)],
+                    # If the condition is False, that there were no files downloaded or
+                    # post processed, then the next direct task is skipped only.
+                    ignore_downstream_trigger_rules=False,
+                    # This task will always trigger no matter the status of the prior tasks.
+                    trigger_rule=TriggerRule.ALL_DONE,
+                )
+                mark_remote_files_downloaded = CloudSqlQueryOperator(
+                    task_id="mark_remote_files_downloaded",
+                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                    query_generator=MarkRemoteFilesDownloadedSqlQueryGenerator(
+                        region_code=state_code,
+                        post_process_sftp_files_task_id=post_process_downloaded_files.task_id,
+                    ),
                 )
                 (
                     download_sftp_files
-                    >> mark_remote_files_downloaded
                     >> post_process_downloaded_files
+                    >> check_remote_files_downloaded_and_post_processed
+                    >> mark_remote_files_downloaded
                 )
 
             scheduler_queue = (
@@ -306,16 +336,11 @@ def sftp_dag() -> None:
             with TaskGroup(
                 "ingest_ready_file_discovery"
             ) as ingest_ready_file_discovery:
-                collect_all_post_processed_files = PythonOperator(
-                    task_id="collect_all_post_processed_files",
-                    python_callable=merge_post_processed_files,
-                    op_args=[XComArg(post_process_downloaded_files)],
-                )
                 # Some files are initially downloaded as ZIP files that may contain improper
                 # files for ingest, therefore we need to filter them out before uploading.
                 filter_invalid_files_downloaded = FilterInvalidGcsFilesOperator(
                     task_id="filter_invalid_files_downloaded_from_sftp",
-                    collect_all_post_processed_files_task_id=collect_all_post_processed_files.task_id,
+                    collect_all_post_processed_files_task_id=mark_remote_files_downloaded.task_id,
                 )
                 mark_ingest_ready_files_discovered = CloudSqlQueryOperator(
                     task_id="mark_ingest_ready_files_discovered",
@@ -325,10 +350,20 @@ def sftp_dag() -> None:
                         filter_invalid_gcs_files_task_id=filter_invalid_files_downloaded.task_id,
                     ),
                 )
+                gather_discovered_ingest_ready_files = CloudSqlQueryOperator(
+                    task_id="gather_discovered_ingest_ready_files",
+                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                    query_generator=GatherDiscoveredIngestReadyFilesSqlQueryGenerator(
+                        region_code=state_code
+                    ),
+                    # This step will always execute regardless of success of the previous
+                    # steps.
+                    trigger_rule=TriggerRule.ALL_DONE,
+                )
                 (
-                    collect_all_post_processed_files
-                    >> filter_invalid_files_downloaded
+                    filter_invalid_files_downloaded
                     >> mark_ingest_ready_files_discovered
+                    >> gather_discovered_ingest_ready_files
                 )
 
             # Upload flow
@@ -338,7 +373,17 @@ def sftp_dag() -> None:
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
-                ).expand_kwargs(mark_ingest_ready_files_discovered.output)
+                ).expand_kwargs(gather_discovered_ingest_ready_files.output)
+                check_ingest_ready_files_uploaded = ShortCircuitOperator(
+                    task_id="check_ingest_ready_files_uploaded",
+                    python_callable=xcom_output_is_non_empty_list,
+                    op_args=[XComArg(upload_files_to_ingest_bucket)],
+                    # If the condition is False, that there were no files uploaded,
+                    # then the next direct task is skipped only.
+                    ignore_downstream_trigger_rules=False,
+                    # This task will always trigger no matter the status of the prior tasks.
+                    trigger_rule=TriggerRule.ALL_DONE,
+                )
                 mark_ingest_ready_files_uploaded = CloudSqlQueryOperator(
                     task_id="mark_ingest_ready_files_uploaded",
                     cloud_sql_conn_id=operations_cloud_sql_conn_id,
@@ -346,11 +391,12 @@ def sftp_dag() -> None:
                         region_code=state_code,
                         upload_files_to_ingest_bucket_task_id=upload_files_to_ingest_bucket.task_id,
                     ),
-                    # This will trigger the task regardless of the failure or success of the
-                    # upstream uploads. This task will only mark successful uploads as uploaded.
-                    trigger_rule=TriggerRule.ALL_DONE,
                 )
-                upload_files_to_ingest_bucket >> mark_ingest_ready_files_uploaded
+                (
+                    upload_files_to_ingest_bucket
+                    >> check_ingest_ready_files_uploaded
+                    >> mark_ingest_ready_files_uploaded
+                )
 
             resume_scheduler_queue = CloudTasksQueueResumeOperator(
                 task_id="resume_scheduler_queue",
@@ -387,7 +433,7 @@ def sftp_dag() -> None:
                 >> release_locks
             )
 
-        start_sftp >> task_group >> end_sftp
+        start_sftp >> state_specific_task_group >> end_sftp
 
 
 dag = sftp_dag()
