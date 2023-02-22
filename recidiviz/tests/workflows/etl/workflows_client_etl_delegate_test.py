@@ -113,6 +113,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                             "text": "12 months without a violation",
                         },
                     ],
+                    "emailAddress": "matilda@mouse-house.net",
                 },
                 row,
             )
@@ -137,6 +138,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "district": "DISTRICT X",
                     "supervisionType": "ISC",
                     "specialConditions": "NULL",
+                    "emailAddress": "harry@houdini.net",
                 },
                 row,
             )
@@ -190,6 +192,7 @@ class WorkflowsClientETLDelegateTest(TestCase):
                             "text": "23 months on supervision",
                         },
                     ],
+                    "emailAddress": "third@realname.net",
                 },
                 row,
             )

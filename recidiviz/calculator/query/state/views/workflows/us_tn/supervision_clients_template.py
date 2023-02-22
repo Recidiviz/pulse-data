@@ -52,6 +52,7 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             supervision_level_start,
             address,
             phone_number,
+            CAST(NULL AS STRING) AS email_address,
             earliest_supervision_start_date_in_latest_system AS supervision_start_date,
             COALESCE(tn_expiration_eligibility.expiration_date, 
                      tn_compliant_reporting_eligibility.expiration_date) AS expiration_date,

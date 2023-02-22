@@ -149,6 +149,21 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
     ),
 """
 
+_CLIENT_RECORD_EMAIL_ADDRESSES_CTE = """
+    email_addresses AS (
+        SELECT
+            sp.state_code,
+            pei.external_id AS person_external_id,
+            sp.current_email_address as email_address
+        FROM `{project_id}.{normalized_state_dataset}.state_person` sp
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            USING (person_id)
+        WHERE
+            sp.state_code IN ({workflows_supervision_states})
+    ),
+"""
+
+
 _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
     employment_info AS (
         SELECT
@@ -261,6 +276,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           sp.full_name as person_name,
           sp.current_address as address,
           CAST(ph.phone_number AS INT64) AS phone_number,
+          LOWER(ea.email_address) AS email_address,
           sc.supervision_type,
           sc.officer_id,
           sc.district,
@@ -284,7 +300,10 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
             -- may have multiple external_ids for a given person_id, and by this point in the
             -- query we've already decided which person_external_id we're using
             ON sc.state_code = ph.state_code
-            AND sc.person_external_id = ph.person_external_id 
+            AND sc.person_external_id = ph.person_external_id
+        LEFT JOIN email_addresses ea
+            ON sc.state_code = ea.state_code
+            AND sc.person_external_id = ea.person_external_id
     ),
     """
 
@@ -302,6 +321,7 @@ _CLIENTS_CTE = """
             supervision_level_start,
             address,
             phone_number,
+            email_address,
             supervision_start_date,
             expiration_date,
             NULL AS current_balance,
@@ -330,6 +350,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_SUPERVISION_LEVEL_CTE}
     {_CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE}
     {_CLIENT_RECORD_PHONE_NUMBERS_CTE}
+    {_CLIENT_RECORD_EMAIL_ADDRESSES_CTE}
     {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
     {_CLIENT_RECORD_MILESTONES_CTE}
     {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
