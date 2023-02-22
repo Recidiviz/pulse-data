@@ -106,4 +106,7 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         if "milestones" in data:
             new_document["milestones"] = data["milestones"]
 
+        if "email_address" in data:
+            new_document["emailAddress"] = data["email_address"]
+
         return data["person_external_id"], new_document
