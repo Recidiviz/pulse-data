@@ -38,8 +38,6 @@ resource "google_composer_environment" "default_v2" {
   config {
 
     software_config {
-      # TODO(#4900): Not sure if we actually need these, given that they are specified in airflow.cfg, but leaving them
-      # for consistency with the existing dag for now.
       airflow_config_overrides = {
         "api-auth_backend"                         = "airflow.composer.api.backend.composer_auth"
         "api-composer_auth_user_registration_role" = "Op"
@@ -47,6 +45,10 @@ resource "google_composer_environment" "default_v2" {
         # SFTP and will need to catch up after a few days, so we will increase the limit.
         "core-max_map_length"       = 2000
         "celery-worker_concurrency" = 3
+        "email-email_backend"       = "airflow.providers.sendgrid.utils.emailer.send_email"
+        "email-email_conn_id"       = "sendgrid_default"
+        "email-from_email"          = "alerts+airflow@recidiviz.org"
+        "webserver-rbac"            = true
         "webserver-web_server_name" = "orchestration-v2"
         "secrets-backend"           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
         "secrets-backend_kwargs"    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
@@ -59,6 +61,7 @@ resource "google_composer_environment" "default_v2" {
         "apache-airflow-providers-sftp"     = "==4.2.0"
         "apache-airflow-providers-mysql"    = "==3.4.0"
         "apache-airflow-providers-postgres" = "==5.4.0"
+        "apache-airflow-providers-sendgrid" = "==3.1.0"
         "python-levenshtein"                = "==0.20.9"
         "dateparser"                        = "==1.1.6"
       }
@@ -107,10 +110,4 @@ resource "google_storage_bucket_object" "recidiviz_source_file" {
   name     = "dags/${each.key}"
   bucket   = local.composer_dag_bucket
   source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
-}
-
-resource "google_storage_bucket_object" "airflow_cfg" {
-  name   = "airflow.cfg"
-  bucket = local.composer_dag_bucket
-  source = "${local.recidiviz_root}/airflow/airflow.cfg"
 }
