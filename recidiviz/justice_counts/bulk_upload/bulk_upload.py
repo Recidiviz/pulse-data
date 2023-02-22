@@ -295,7 +295,7 @@ class BulkUploader:
                     description_suffix = f"The following sheets were empty: {', '.join(files_without_rows)}."
                 missing_metric_warning = JusticeCountsBulkUploadException(
                     title="Missing Metric",
-                    message_type=BulkUploadMessageType.ERROR,
+                    message_type=BulkUploadMessageType.WARNING,
                     description=(
                         f"No data for the {METRIC_KEY_TO_METRIC[metric_definition.key].display_name} metric was provided. "
                         + description_suffix
