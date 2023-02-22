@@ -133,9 +133,8 @@ project_id = os.environ.get("GCP_PROJECT")
 
 retry: Retry = Retry(predicate=lambda _: False)
 
-# TODO(#17283): Remove test buckets once SFTP is switched over
-GCS_LOCK_BUCKET = f"{project_id}-test-gcslock"
-GCS_CONFIG_BUCKET = f"{project_id}-test-configs"
+GCS_LOCK_BUCKET = f"{project_id}-gcslock"
+GCS_CONFIG_BUCKET = f"{project_id}-configs"
 
 QUEUE_LOCATION = "us-east1"
 
@@ -191,7 +190,7 @@ def xcom_output_is_non_empty_list(xcom_output: Optional[List]) -> bool:
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     default_args=DEFAULT_ARGS,
-    schedule_interval=None,
+    schedule_interval="@hourly",
     catchup=False,
     max_active_runs=1,
 )

@@ -19,8 +19,7 @@
 from recidiviz.persistence.database.schema_type import SchemaType
 
 
-# TODO(#17283): Remove test connections once SFTP is switched over
 def cloud_sql_conn_id_for_schema_type(schema_type: SchemaType) -> str:
     """These connection IDs will correspond to an Airflow Connection JSON or URI string
     stored in the Secrets Manager under `airflow-connections-{this connection id}`."""
-    return f"test_{schema_type.value.lower()}_postgres_conn_id"
+    return f"{schema_type.value.lower()}_postgres_conn_id"

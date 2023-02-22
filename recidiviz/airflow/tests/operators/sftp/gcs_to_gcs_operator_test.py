@@ -35,7 +35,7 @@ class TestSFTPGcsToGcsOperator(unittest.TestCase):
             post_processed_normalized_file_path="2023-01-01T01:00:00:000000/inside_folder/file.txt",
         )
         expected_file = GcsfsFilePath.from_bucket_and_blob_name(
-            bucket_name="recidiviz-testing-direct-ingest-state-us-xx-test",
+            bucket_name="recidiviz-testing-direct-ingest-state-us-xx",
             blob_name="unprocessed_2023-01-01T01:00:00:000000_raw_file.txt",
         )
         self.assertEqual(

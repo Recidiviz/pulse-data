@@ -23,10 +23,9 @@ from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.context import Context
 
 from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
-from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
-from recidiviz.ingest.direct.direct_ingest_bucket_name_utils import (
-    INGEST_SFTP_BUCKET_SUFFIX,
-    build_ingest_bucket_name,
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.gcs.directory_path_utils import (
+    gcsfs_sftp_download_bucket_path_for_state,
 )
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -72,10 +71,7 @@ class RecidivizGcsFileTransformOperator(BaseOperator):
         self.sftp_timestamp = sftp_timestamp
         self.downloaded_file_path = downloaded_file_path
 
-        # TODO(#17283): Change to original SFTP bucket when SFTP is switched over
-        self.bucket = GcsfsBucketPath(
-            f"{build_ingest_bucket_name(project_id=self.project_id, region_code=self.region_code, suffix=INGEST_SFTP_BUCKET_SUFFIX)}-test"
-        )
+        self.bucket = gcsfs_sftp_download_bucket_path_for_state(region_code, project_id)
 
         super().__init__(**kwargs)
 
