@@ -41,6 +41,9 @@ columns:
   - name: Offense
     description: |-
       The offense that a person is originally charged.
+  - name: Offense_Date
+    description: |-
+      The date on which an offense occurred.
   - name: County_Conviction
     description: |-
       The county in which a person commits the offense for a judgment order.
@@ -71,6 +74,10 @@ columns:
     is_datetime: True
     description: |-
       The date that a sentence expires.  This date includes all credits earned by a person.
+  - name: SID_Date
+    is_datetime: True
+    description: |-
+      TODO(#7424) - Fill in defintion from TDOC
   - name: Hearing_Date
     is_datetime: True
     description: |-
