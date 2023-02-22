@@ -234,6 +234,7 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                         ORDER BY person_id, rn
                     )
                 WHERE rn = 1
+                AND DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) > 0
             )
             UNION ALL
             -- months on supervision
@@ -247,6 +248,7 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                     3 AS milestone_priority
                 FROM supervision_cases
                 INNER JOIN supervision_super_sessions ss USING(person_id)
+                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), ss.start_date, MONTH) > 0
             )
             UNION ALL
             -- months with the same employer
@@ -259,6 +261,7 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
                 FROM employment_info
+                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date, MONTH) > 0
             )
         )
         WHERE state_code in ('US_IX')
