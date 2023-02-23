@@ -28,6 +28,7 @@ import sys
 from typing import List, Tuple
 
 import recidiviz
+from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 RECIDIVIZ_ROOT = os.path.abspath(os.path.join(recidiviz.__file__, "../.."))
@@ -74,4 +75,11 @@ if __name__ == "__main__":
 
     known_args, _ = parse_arguments(sys.argv)
 
-    sync_reporting_static_files(known_args.project_id, known_args.dry_run)
+    interactive_prompt_retry_on_exception(
+        fn=lambda: sync_reporting_static_files(
+            known_args.project_id, known_args.dry_run
+        ),
+        input_text="failed while deploying static files - retry?",
+        accepted_response_override="yes",
+        exit_on_cancel=False,
+    )
