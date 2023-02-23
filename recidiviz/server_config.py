@@ -27,6 +27,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -42,7 +43,7 @@ def database_keys_for_schema_type(
 
     if schema_type == SchemaType.STATE:
         return [
-            ingest_instance.database_key_for_state(state_code)
+            database_key_for_state(ingest_instance, state_code)
             for ingest_instance in DirectIngestInstance
             for state_code in get_direct_ingest_states_existing_in_env()
         ]

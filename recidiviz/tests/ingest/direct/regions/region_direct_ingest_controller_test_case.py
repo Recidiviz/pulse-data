@@ -45,6 +45,7 @@ from recidiviz.ingest.direct.types.cloud_task_args import (
     IngestViewMaterializationArgs,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
@@ -133,7 +134,8 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
     def _main_database_key(cls) -> "SQLAlchemyDatabaseKey":
         if cls.schema_type() == SchemaType.STATE:
             state_code = StateCode(cls.region_code().upper())
-            return cls._main_ingest_instance().database_key_for_state(
+            return database_key_for_state(
+                cls._main_ingest_instance(),
                 state_code,
             )
         return SQLAlchemyDatabaseKey.for_schema(cls.schema_type())

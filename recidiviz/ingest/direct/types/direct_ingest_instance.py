@@ -19,10 +19,6 @@ given region.
 """
 from enum import Enum
 
-from recidiviz.common.constants.states import StateCode
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-
 
 class DirectIngestInstance(Enum):
     """Enum for specifying an independent set of ingest data / infrastructure for a
@@ -36,11 +32,3 @@ class DirectIngestInstance(Enum):
     # Ingest instance that may be used for background ingest operations, such as a full
     # rerun.
     SECONDARY = "SECONDARY"
-
-    def database_key_for_state(self, state_code: StateCode) -> SQLAlchemyDatabaseKey:
-        """Returns the key to the database corresponding to the provided state code and
-        database version.
-        """
-        db_name = f"{state_code.value.lower()}_{self.value.lower()}"
-
-        return SQLAlchemyDatabaseKey(schema_type=SchemaType.STATE, db_name=db_name)

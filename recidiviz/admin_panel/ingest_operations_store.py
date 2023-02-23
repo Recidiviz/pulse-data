@@ -74,6 +74,7 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestInstanceError,
 )
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.utils import metadata
 
@@ -332,7 +333,7 @@ class IngestOperationsStore(AdminPanelStore):
         )
 
         # Get the database name corresponding to this instance
-        ingest_db_name = ingest_instance.database_key_for_state(state_code).db_name
+        ingest_db_name = database_key_for_state(ingest_instance, state_code).db_name
 
         # Get the operations metadata for this ingest instance
         operations_db_metadata = self._get_operations_db_metadata(

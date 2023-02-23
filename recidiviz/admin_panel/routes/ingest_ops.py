@@ -68,6 +68,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.ingest.flash_database_tools import (
     copy_raw_data_between_instances,
     copy_raw_data_to_backup,
@@ -241,7 +242,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 HTTPStatus.CONFLICT,
             )
 
-        db_key = ingest_instance.database_key_for_state(state_code)
+        db_key = database_key_for_state(ingest_instance, state_code)
         cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
 
         operation_id = cloud_sql_client.export_to_gcs_sql(
@@ -296,7 +297,7 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 HTTPStatus.CONFLICT,
             )
 
-        db_key = import_to_ingest_instance.database_key_for_state(state_code)
+        db_key = database_key_for_state(import_to_ingest_instance, state_code)
         cloud_sql_client = CloudSQLClientImpl(project_id=project_id)
 
         operation_id = cloud_sql_client.import_gcs_sql(
