@@ -25,6 +25,10 @@ my_enum_field:
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactMethod,
 )
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+    StateSupervisionPeriodSupervisionType,
+)
 
 
 def contact_method_from_contact_fields(raw_text: str) -> StateSupervisionContactMethod:
@@ -45,3 +49,19 @@ def contact_method_from_contact_fields(raw_text: str) -> StateSupervisionContact
     if type_text in ("NEGATIVE CONTACT", "447", "OFFICE"):
         return StateSupervisionContactMethod.IN_PERSON
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
+
+
+def bw_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
+    """Maps supervision type to BENCH_WARRANT for cases where we've already identified via the supervising officer as being bench warrant;
+    used instead of a literal enum so that raw text can be preserved."""
+    if raw_text:
+        return StateSupervisionPeriodSupervisionType.BENCH_WARRANT
+    raise ValueError("This parser should never be called on missing raw text.")
+
+
+def district_0_supervision_level(raw_text: str) -> StateSupervisionLevel:
+    """Maps supervision level to LIMITED for cases where we've already determined supervision site to be district 0;
+    used instead of a literal enum so that raw text can be preserved."""
+    if raw_text:
+        return StateSupervisionLevel.LIMITED
+    raise ValueError("This parser should never be called on missing raw text.")

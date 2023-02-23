@@ -26,6 +26,7 @@ my_flat_field:
             arg_2: <expression>
 """
 
+import re
 from typing import Optional
 
 from recidiviz.common.str_field_utils import (
@@ -83,3 +84,19 @@ def max_and_min_lengths_days(
             return None
         return str(result)
     return None
+
+
+def is_district(location_name: str, district_num: str) -> bool:
+    district_of_interest = re.match(
+        r"DISTRICT " + district_num + r"\b", location_name.upper()
+    )
+
+    return district_of_interest is not None
+
+
+def is_bw(supervising_officer_external_id: str) -> bool:
+
+    officer_id_includes_bw = re.match(
+        r"D[0-9]+BENCH", supervising_officer_external_id.upper()
+    )
+    return officer_id_includes_bw is not None
