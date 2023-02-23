@@ -12,7 +12,7 @@ columns:
       Unique identifier for record.
   - name: CUSTODY_NUMBER
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Prior adjudicated and discharged felony convictions.
   - name: CUSTODY_DATE
     description: |-
       Date signifying beginning of custody period.
@@ -29,25 +29,25 @@ columns:
       - value: N
         description: Not State Agency
       - value: DI
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not a valid custody type - invalid entry.
       - value: P
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not a valid custody type - invalid entry.
       - value: PROB
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not a valid custody type - invalid entry.
       - value: PR
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not a valid custody type - invalid entry.
       - value: IN
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Not a valid custody type - invalid entry.
   - name: CUSTODY_FROM
     description: |-
       County where custody took place.
   - name: DISCHARGE_DATE
     is_datetime: True
     description: |-
-      Date signifying end of custody period.
+      Date of custody discharge.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: DISCHARGE_TYPE
     description: |-
-      Type of discharge from custody. #TODO(#17148): Fill in with additional info from OR
+      Type of custody discharge.
