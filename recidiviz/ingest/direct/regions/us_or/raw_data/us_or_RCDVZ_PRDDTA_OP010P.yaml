@@ -14,13 +14,13 @@ columns:
       Unique identifier for record.
   - name: CUSTODY_NUMBER
     description: |-
-      Number signifying order of custody.
+      Prior adjudicated and discharged felony convictions.
   - name: ADMISSION_NUMBER
     description: |-
-      Number signifying order of admissions.
+      Incremental unique status changes.
   - name: TRANSFER_NUMBER
     description: |-
-      Number signifying order of transfers.
+      Incremental location transfers.
   - name: RESPONSIBLE_DIVISION
     description: |-
       Entity resposible for current location. Look up in DOCDTA_TBTABL with APPLICATION_ID = 'CIS' AND TABLE_ID = 'LT'
@@ -37,11 +37,11 @@ columns:
         description: Not State Agency
   - name: TRANSFER_IN_LOCATION
     description: |-
-      Location transferred in to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Location from, maps to DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_IN_DATE
     is_datetime: True
     description: |-
-      Date transferred in to.
+      Location from date.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
@@ -50,14 +50,14 @@ columns:
       Reason for transfer.
   - name: TRANSFER_FROM_LOCATION
     description: |-
-      Location transferred from, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Location transferred from, maps to DOCDTA_TBLOCA.LOCATION_CODE. Not used.
   - name: TRANSFER_TO_LOCATION
     description: |-
-      Location transferred to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Receiving location, maps to DOCDTA_TBLOCA.LOCATION_CODE.
   - name: TRANSFER_TO_DATE
     is_datetime: True
     description: |-
-      Date transferred out.
+      Receiving location date.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"

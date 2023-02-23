@@ -91,6 +91,25 @@ columns:
   - name: CRIME_CLASS
     description: |-
       Class of the crime.
+    known_values:
+      - value: AM
+        description: Class A Misdemeanor
+      - value: CF
+        description: Class C Felony
+      - value: CM
+        description: Class C Misdemeanor
+      - value: BF
+        description: Class B Felony
+      - value: AF
+        description: Class A Felony
+      - value: BM
+        description: Class B Misdemeanor
+      - value: UM
+        description: Unassigned Misdemeanor
+      - value: OC
+        description: #TODO(#17148): Fill in with answer from OR
+      - value: UF
+        description: Unassignmed Felony
   - name: CRIME_CATEGORY
     description: |-
       Category of the crime.

@@ -13,13 +13,13 @@ columns:
       Unique identifier for record.
   - name: CUSTODY_NUMBER
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Prior adjudicated and discharged felony convictions
   - name: ADMISSION_NUMBER
     description: |-
-      Number signifying order of admissions.
+      Incremental unique status changes.
   - name: ADMISSION_LOCATION
     description: |-
-      Location where admitted, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Location where admitted, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.
   - name: ADMISSION_DATE
     is_datetime: True
     description: |-
@@ -33,31 +33,31 @@ columns:
     known_values: [] #TODO(#17148): Fill in with dataname values from OR
   - name: ADMISSION_FROM_LOCATION
     description: |-
-      Location of previous period, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Location of previous period, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.
   - name: CURRENT_STATUS
     description: |-
       Current status of incarceration.
     known_values: []
   - name: NEW_CRIME_DATE
     description: |-
-      Date of a new crime, if any.
+      Date of a new crime, if any. Not used.
   - name: LEAVE_SCHEDULED_DATE
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Not used.
   - name: RELEASE_DATE
     is_datetime: True
     description: |-
-      Date of current incarceration release.
+      Date of status release.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: RELEASE_REASON
     description: |-
-      Release reason from current period of incarceration.
+      Reason for status release.
     known_values: [] #TODO(#17148): Fill in with values from OR
   - name: VIOLATION_TYPE
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Not used.
   - name: RELEASE_TO_LOCATION
     description: |-
-      Location where released to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Location where released to, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE. Not used.

@@ -17,25 +17,25 @@ columns:
       Unique identifier for record.
   - name: CUSTODY_NUMBER
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Prior adjudicated and discharged felony convictions.
   - name: ADMISSION_NUMBER
     description: |-
-      Number signifying order of admissions.
+      Incremental unique status changes.
   - name: TRANSFER_NUMBER
     description: |-
-      Number signifying order of transfers.
+      Incremental transfer number.
   - name: FACILITY
     description: |-
-      Current facility, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Current facility, maps to DOCDTA_TBLOCA.LOCATION_CODE.
   - name: CELL_NUMBER
     description: |-
-      Cell number where located.
+      Current cell.
   - name: OUTCOUNT_REASON
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Reason out of facility/location.
   - name: OUTCOUNT_LOCATION
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Location when out of facility/location.
   - name: MOVE_IN_DATE
     is_datetime: True
     description: |-
@@ -45,20 +45,20 @@ columns:
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: PREV_FACILITY
     description: |-
-      Previous facility code, maps to RCDVZ_DOCDTA_TBLOCA.LOCATION_CODE.
+      Previous facility code, maps to DOCDTA_TBLOCA.LOCATION_CODE.
   - name: PREV_CELL_NUMBER
     description: |-
       Previous cell number.
   - name: PREV_OUTCOUNT_REAS
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Previous outcount reason.
   - name: PREV_OUTCOUNT_LOCA
     description: |-
-      TODO(#17148): Fill in with answer from OR
+      Previous outcount location.
   - name: MOVE_OUT_DATE
     is_datetime: True
     description: |-
-      Date moved out of facility.
+      Date moved from location.
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
       - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
