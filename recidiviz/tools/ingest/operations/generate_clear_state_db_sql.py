@@ -28,6 +28,7 @@ import sqlalchemy
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -103,7 +104,9 @@ def main(state_code: StateCode, ingest_instance: DirectIngestInstance) -> None:
     print(
         "********************************************************************************"
     )
-    db_key = ingest_instance.database_key_for_state(state_code=state_code)
+    db_key = database_key_for_state(
+        direct_ingest_instance=ingest_instance, state_code=state_code
+    )
 
     # Connect to correct database for instance first
     print(f"\\c {db_key.db_name}")

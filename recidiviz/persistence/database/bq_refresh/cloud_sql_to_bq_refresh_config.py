@@ -53,6 +53,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
     FederatedSchemaTableRegionFilteredQueryBuilder,
@@ -175,8 +176,8 @@ class CloudSqlToBQConfig:
                 raise ValueError(
                     "Expected DirectIngestInstance to be non-None for STATE schema."
                 )
-            return self.direct_ingest_instance.database_key_for_state(
-                state_code=state_code
+            return database_key_for_state(
+                self.direct_ingest_instance, state_code=state_code
             )
 
         return SQLAlchemyDatabaseKey.for_schema(self.schema_type)

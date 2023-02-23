@@ -24,6 +24,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.base_schema import OperationsBase, StateBase
 from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_table_big_query_view import (
     FederatedCloudSQLTableBigQueryView,
@@ -56,7 +57,8 @@ class FederatedCloudSQLTableBigQueryViewTest(unittest.TestCase):
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM state_person;",
-            database_key=DirectIngestInstance.PRIMARY.database_key_for_state(
+            database_key=database_key_for_state(
+                DirectIngestInstance.PRIMARY,
                 StateCode.US_XX,
             ),
             materialized_address_override=BigQueryAddress(
@@ -129,7 +131,8 @@ FROM EXTERNAL_QUERY(
             table=table,
             view_id=table.name,
             cloud_sql_query="SELECT * FROM state_person;",
-            database_key=DirectIngestInstance.SECONDARY.database_key_for_state(
+            database_key=database_key_for_state(
+                DirectIngestInstance.SECONDARY,
                 StateCode.US_XX,
             ),
             materialized_address_override=BigQueryAddress(

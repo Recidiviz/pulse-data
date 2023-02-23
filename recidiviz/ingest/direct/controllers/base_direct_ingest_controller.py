@@ -113,6 +113,7 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
@@ -379,7 +380,8 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
     @property
     def ingest_database_key(self) -> SQLAlchemyDatabaseKey:
         state_code = StateCode(self.region_code().upper())
-        return self.ingest_instance.database_key_for_state(
+        return database_key_for_state(
+            self.ingest_instance,
             state_code,
         )
 

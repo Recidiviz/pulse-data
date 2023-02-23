@@ -21,6 +21,7 @@ from unittest.mock import Mock, patch
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.base_schema import CaseTriageBase, StateBase
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
@@ -37,9 +38,9 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
             _ = SQLAlchemyDatabaseKey.for_schema(SchemaType.STATE)
 
     def test_for_state_code(self) -> None:
-        primary = DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_MN)
-        secondary = DirectIngestInstance.SECONDARY.database_key_for_state(
-            StateCode.US_MN
+        primary = database_key_for_state(DirectIngestInstance.PRIMARY, StateCode.US_MN)
+        secondary = database_key_for_state(
+            DirectIngestInstance.SECONDARY, StateCode.US_MN
         )
 
         self.assertEqual(
@@ -57,7 +58,7 @@ class SQLAlchemyDatabaseKeyTest(TestCase):
         )
 
     def test_key_attributes_state(self) -> None:
-        key = DirectIngestInstance.PRIMARY.database_key_for_state(StateCode.US_MN)
+        key = database_key_for_state(DirectIngestInstance.PRIMARY, StateCode.US_MN)
 
         self.assertEqual(key.declarative_meta, StateBase)
 

@@ -36,6 +36,7 @@ import alembic.config
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.persistence.database.schema.state.schema import StateAgent, StatePerson
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -103,7 +104,7 @@ def main(
         f"PURGE {state_code.value} DATABASE STATE IN "
         f"{'PROD' if is_prod else 'STAGING'} {ingest_instance.value}"
     )
-    db_key = ingest_instance.database_key_for_state(state_code)
+    db_key = database_key_for_state(ingest_instance, state_code)
 
     prompt_for_confirmation(
         f"This script will PURGE all data for for [{state_code.value}] in DB [{db_key.db_name}].",
@@ -122,7 +123,7 @@ def main(
         )
 
     with cloudsql_proxy_control.connection(schema_type=SchemaType.STATE):
-        db_key = ingest_instance.database_key_for_state(state_code)
+        db_key = database_key_for_state(ingest_instance, state_code)
 
         with SessionFactory.for_proxy(db_key) as session:
             tables_to_truncate = [
