@@ -295,7 +295,11 @@ class ReportInterface:
         editors_reverse_chron = (
             reversed(report.modified_by) if report.modified_by is not None else []
         )
-        editor_json = [editor_id_to_json[id] for id in editors_reverse_chron]
+        editor_json = [
+            editor_id_to_json[id]
+            for id in editors_reverse_chron
+            if id in editor_id_to_json
+        ]
 
         reporting_frequency = ReportInterface.get_reporting_frequency(report=report)
         return {
