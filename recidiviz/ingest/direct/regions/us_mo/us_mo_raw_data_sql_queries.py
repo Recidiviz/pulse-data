@@ -595,6 +595,21 @@ LBAKRDTA_TAK042 = f"""
             COALESCE(CF$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK046 = """
+    SELECT 
+        CI$DOC,
+        CI$CYC,
+        CI$BSN,
+        CI$SPC,
+        '"' CONCAT REPLACE(CI$SCC, '"', '""') CONCAT '"' AS CI$SCC,
+        CI$DCR,
+        CI$TCR,
+        CI$DLU,
+        CI$TLU
+    FROM
+        LBAKRDTA.TAK046;
+    """
+
 LBAKRDTA_TAK047 = f"""
     SELECT 
         CJ$DOC,
@@ -1549,6 +1564,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK040", LBAKRDTA_TAK040),
         ("LBAKRDTA_TAK042", LBAKRDTA_TAK042),
         ("LBAKRDTA_TAK044", LBAKRDTA_TAK044),
+        ("LBAKRDTA_TAK046", LBAKRDTA_TAK046),
         ("LBAKRDTA_TAK047", LBAKRDTA_TAK047),
         ("LBAKRDTA_TAK065", LBAKRDTA_TAK065),
         ("LBAKRDTA_TAK068", LBAKRDTA_TAK068),
