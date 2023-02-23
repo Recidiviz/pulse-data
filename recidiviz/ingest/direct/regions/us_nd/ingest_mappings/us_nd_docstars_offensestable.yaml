@@ -1,7 +1,6 @@
 # yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
 manifest_language: 1.0.0
 input_columns:
-  - CODE
   - LEVEL
   - COUNTS
   - OFFENSEDATE
@@ -18,11 +17,11 @@ input_columns:
   - CREATED_BY
   - MASTER_OFFENSE_IND
   - REQUIRES_REGISTRATION
-  - Common_Statute_NCIC_Code
   - Common_Statute_Number
   - JUDGE
-  - legacy_desc
-  - cst_desc
+  - description
+  - violence_flag
+  - ncic_code
 unused_columns:
   - COUNT # No apparent use for this
   - COURT_NUMBER # TODO(#2311) Use this to do better entity matching between incarceration and supervision
@@ -61,23 +60,35 @@ output:
                     $function: us_nd_custom_parsers.classification_subtype_from_raw_text
                     $args:
                       raw_charge_text: LEVEL
-                ncic_code:
-                  $conditional:
-                    - $if:
-                        $not_null: Common_Statute_NCIC_Code
-                      $then: Common_Statute_NCIC_Code
-                    - $else: CODE
+                ncic_code: ncic_code
                 description:
                   $conditional:
                     - $if:
-                        $not_null: Common_Statute_NCIC_Code
-                      $then: cst_desc
-                    - $else: legacy_desc
+                        $not_null: description
+                      $then: description
+                    - $else:
+                        $custom:
+                          $function: us_nd_custom_parsers.extract_description_from_ncic_code
+                          $args:
+                            ncic_code: ncic_code
                 is_violent:
-                  $custom:
-                    $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
-                    $args:
-                      ncic_code: CODE
+                  $conditional:
+                    - $if:
+                        $is_null: violence_flag
+                      $then:
+                        $custom:
+                          $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
+                          $args:
+                            ncic_code: ncic_code
+                    - $else:
+                        $conditional:
+                          - $if:
+                              $equal:
+                                - violence_flag
+                                - $literal("N")
+                            $then: $literal_bool(False)
+                          - $else: $literal_bool(True)
+
                 county_code:
                   $custom:
                     $function: us_nd_custom_parsers.normalize_county_code

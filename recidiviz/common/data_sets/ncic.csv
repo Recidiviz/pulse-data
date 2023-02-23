@@ -21,6 +21,7 @@ ncic_code,description,is_violent
 1004,Unlawful Imprisonment,Y
 1005,Kidnap Minor,Y
 1006,Kidnap Adult,Y
+1008,,Y
 1099,Kidnapping - (free text),Y
 1100,Sex Asslt - (free text),Y
 1101,Gross Sexual Imp-Gun,Y
@@ -237,7 +238,7 @@ ncic_code,description,is_violent
 3706,Promote Child Sex Performance,Y
 3707,Promote Obsc Perf to Minor,Y
 3708,Use Child in Sex Performance,Y
-3799,Obscenity-Free Text,N
+3799,Obscenity-Free Text,Y
 3800,Family Offense - (free text),N
 3801,Neglect Family,N
 3802,Child Neglect,Y
@@ -282,7 +283,7 @@ ncic_code,description,is_violent
 4811,Poss/Intro to Escape,N
 4812,Failure Report Crime,N
 4813,Failure To Move On,N
-4899,Obstruct Police - (free text),N
+4899,Obstruct Police - (free text),Y
 4901,Escape,N
 4902,"Flight To Avoid (prosecution,confinement)",N
 4903,Aiding Prisoner Escape,N
@@ -310,25 +311,25 @@ ncic_code,description,is_violent
 5200,Weapon Offense - (free text),N
 5201,Prohibted Altering,N
 5202,Carrying Concealed Weapon,N
-5203,Poss Firearm Felon,N
-5204,Possess Short Barrel Weapon,N
-5205,Possess Explosives,N
-5206,"Poss Auto Rifle,Sil,Bomb",N
+5203,Poss Firearm Felon,Y
+5204,Possess Short Barrel Weapon,Y
+5205,Possess Explosives,Y
+5206,"Poss Auto Rifle,Sil,Bomb",Y
 5207,Loaded Firearm in Vehicle,N
-5208,Incendiary Device,N
+5208,Incendiary Device,Y
 5210,Pistol Permit Violation,N
 5211,Poss Explos in Gvt Blg,Y
-5212,Possession Firarm-Other,N
+5212,Possession Firarm-Other,Y
 5213,Discharge Firearm in City,N
 5214,Supply Illeagal Weapon,N
 5216,Provide Minor with Firearm,N
 5218,Firearm Bar/Gamble Site,N
-5299,Weapon Offense - (free text),N
+5299,Weapon Offense - (free text),Y
 5300,Public Peace - (free text),N
 5302,Riot-Inciting,Y
 5303,Riot-Engaging In,Y
 5305,Disobey Public Safe Orders,N
-5309,Harass/Obsce/Threat Comm,N
+5309,Harass/Obsce/Threat Comm,Y
 5311,Disorderly Conduct,N
 5399,Public Peace - (free text),N
 5400,Traffic Offense - (free text),Y

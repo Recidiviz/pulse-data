@@ -28,7 +28,7 @@ The `data_sets/ncic.csv` file contains a list of NCIC codes, their descriptions
 (as provided by North Dakota DOCR), and whether or not these are considered to
 be violent offenses.
 
-No judgements are made as to the contents of the list and the descriptions of
+No judgments are made as to the contents of the list and the descriptions of
 certain offenses. This is a reference tool.
 """
 
