@@ -28,22 +28,15 @@ from recidiviz.calculator.query.bq_utils import (
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import (
-    cis_319_after_csswa,
-    cis_319_term_cte,
-)
+from recidiviz.task_eligibility.utils.raw_table_import import cis_319_after_csswa
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -55,21 +48,20 @@ less or equal to 5 years or 2/3 if their term of imprisonment is more than 5 yea
 """
 
 _QUERY_TEMPLATE = f"""
-WITH {cis_319_term_cte()},
-
-term_wdur_cte AS (
+WITH term_wdur_cte AS (
 -- Calculate duration of term
     SELECT
         *,
         DATE_DIFF(end_date, start_date, DAY) AS term_duration_days,
-    FROM (SELECT
+    FROM (
+            SELECT
             * EXCEPT (start_date),
             -- if we don't have intake_date, we assume the end_date of previous term
             COALESCE(
                 start_date,
                 LAG(end_date) OVER (PARTITION BY person_id ORDER BY end_date)
                 ) AS start_date,
-            FROM term_cte)
+            FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized`)
     ),
 term_crit_date AS (
 -- Calculate critical date
@@ -136,10 +128,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
-        ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 
