@@ -17,6 +17,7 @@
 """View to prepare resident records for Workflows for export to the frontend."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.calculator.query.state.views.workflows.us_me.incarceration_residents_template import (
     US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE,
 )
@@ -75,6 +76,7 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     us_me_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),

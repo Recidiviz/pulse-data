@@ -23,10 +23,8 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
     revert_nonnull_start_date_clause,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import cis_319_term_cte
 
 US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
-{cis_319_term_cte()},
     us_me_incarceration_cases AS (
         SELECT
             dataflow.state_code,
@@ -48,7 +46,7 @@ US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE = f"""
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person` sp 
             ON dataflow.person_id = sp.person_id
         -- Use raw_table to get admission and release dates
-        LEFT JOIN term_cte t
+        LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` t
           ON dataflow.person_id = t.person_id
           -- subset the possible start and end_dates to those consistent with
           -- the current date

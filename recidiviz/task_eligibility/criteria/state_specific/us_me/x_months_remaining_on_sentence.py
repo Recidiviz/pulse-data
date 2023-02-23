@@ -29,29 +29,22 @@ they can be released from prison (real_eligible_date: when they are 30/24
 months away from their release date)
 """
 
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_start_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-)
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import (
-    cis_319_after_csswa,
-    cis_319_term_cte,
-)
+from recidiviz.task_eligibility.utils.raw_table_import import cis_319_after_csswa
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -72,57 +65,63 @@ months away from their release date)
 """
 
 _QUERY_TEMPLATE = f"""
-WITH case_load AS (
-  -- Current ratio of supervision clients/supervision officers
-  SELECT
-    supervision_clients/supervision_officers AS curr_supervision_client_ratio
-  FROM (
-        SELECT
-            COUNT(DISTINCT(supervising_officer_external_id)) AS supervision_officers,
-            COUNT(DISTINCT person_id) AS supervision_clients
-        FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
-        WHERE state_code = 'US_ME'
-            AND CURRENT_DATE('US/Pacific')  <= {nonnull_end_date_clause('end_date')}
-            -- TODO(#16408) we need to confirm who to subset here
-        )
-),
-{cis_319_term_cte()},
-term_crit_date AS (
-    -- Calculate the critical date as a function of the statewide case load
-    SELECT
-        * EXCEPT(curr_supervision_client_ratio),
-        CASE
-            WHEN curr_supervision_client_ratio > 90 THEN DATE_SUB(end_date, INTERVAL 24 MONTH)
-            ELSE DATE_SUB(end_date, INTERVAL 30 MONTH)
-        END critical_date,
-    FROM term_cte, case_load
+WITH term_crit_date AS (
+-- Calculate the critical date as a function of the statewide case load
+    -- 24 months if caseload is more than 90, 30 months otherwise
+    SELECT 
+        cl.state_code,
+        person_id,
+        GREATEST({nonnull_start_date_clause('tc.start_date')}, 
+                 cl.start_quarter) AS start_date,
+        LEAST({nonnull_end_date_clause('tc.end_date')}, 
+                 cl.end_quarter) AS end_date,
+        status,
+        term_id,
+        DATE_SUB(end_date, 
+                 INTERVAL IF(cl.officer_to_client_ratio > 90, 24, 30) MONTH)
+        AS critical_date,
+    FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` tc
+    INNER JOIN `{{project_id}}.{{analyst_dataset}}.supervision_clients_to_officers_ratio_quarterly_materialized` cl
+        ON cl.state_code = tc.state_code
+        AND {nonnull_start_date_clause('tc.start_date')} < COALESCE(cl.end_quarter, 
+                                                                    CURRENT_DATE('US/Eastern'))
+        AND cl.start_quarter < {nonnull_end_date_clause('tc.end_date')}
 ),
 term_crit_date_plus_real AS(
+    -- Folks can start their paperwork 3 months before their eligibility date,
+    -- so we save the actual eligibility date, but let the critical_date be 
+    -- the eligibility date - 3 months
     SELECT
         * EXCEPT (critical_date),
         critical_date AS real_eligible_date,
-        -- folks can start their paperwork 3 months before their eligibility date
         DATE_SUB(critical_date, INTERVAL 3 MONTH) AS critical_date,
     FROM term_crit_date
     WHERE start_date != {nonnull_end_date_clause('end_date')}
 ),
+-- Create sub-sessions w/attributes
 {create_sub_sessions_with_attributes('term_crit_date_plus_real')},
+
 critical_date_spans AS (
+    -- Drop additional repeated subsessions: if concurrent keep the longest one, drop
+    --   completed sessions over active ones
     {cis_319_after_csswa()}
 ),
 
 save_real_eligible_date AS (
+    -- Save real_eligible_date so we could send it in JSON later
     SELECT
         DISTINCT person_id, state_code, critical_date, real_eligible_date
     FROM critical_date_spans
 ),
+
+-- Critical date has passed
 {critical_date_has_passed_spans_cte()}
 SELECT
     cd.state_code,
     cd.person_id,
     CASE
         WHEN (start_date IS NULL) AND (critical_date_has_passed) THEN cd.critical_date
-                                -- When there was no intake date in CIS_319_TERM,
+                                -- When there was no intake date in us_me_sentence_term,
                                 -- start_date of our subsession is NULL for the
                                 -- period for which the criteria is met. But
                                 -- we know the end date and we can calculate the
@@ -148,11 +147,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         state_code=StateCode.US_ME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
-        us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-            state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
-        ),
-        normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        sessions_dataset=SESSIONS_DATASET,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 
