@@ -17,10 +17,7 @@
 """Sessionized view of each individual. Session defined as continuous time in a given facility or district office"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -36,37 +33,17 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         person_id, 
         session_attributes.compartment_location AS location,
         session_attributes.facility,
+        session_attributes.facility_name,
         session_attributes.supervision_office,
-        level_1.level_1_supervision_location_name AS supervision_office_name,
+        session_attributes.supervision_office_name,
         session_attributes.supervision_district,
-        level_2.level_2_supervision_location_name AS supervision_district_name,
-        level_2.level_3_supervision_location_name AS supervision_region_name,
+        session_attributes.supervision_district_name,
+        session_attributes.supervision_region_name,
         start_date,
         end_date_exclusive,
         dataflow_session_id,
     FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` s,
     UNNEST(session_attributes) session_attributes
-    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized` level_1
-        ON level_1.level_2_supervision_location_external_id = session_attributes.supervision_district
-        AND level_1.level_1_supervision_location_external_id = session_attributes.supervision_office
-        AND level_1.state_code = s.state_code
-    LEFT JOIN (
-        SELECT
-            state_code,
-            level_2_supervision_location_external_id,
-            level_2_supervision_location_name,
-            level_3_supervision_location_name,
-        FROM `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names_materialized`
-        -- Deduplicate to one row per level 2 location for the few districts that are
-        -- mapped to more than one region
-        QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY state_code, level_2_supervision_location_external_id,
-                level_2_supervision_location_name
-            ORDER BY level_3_supervision_location_name
-        ) = 1
-    ) level_2
-        ON level_2.level_2_supervision_location_external_id = session_attributes.supervision_district
-        AND level_2.state_code = s.state_code
     WHERE session_attributes.compartment_level_1 != 'INCARCERATION_NOT_INCLUDED_IN_STATE'
     )
     ,
@@ -165,7 +142,6 @@ LOCATION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=LOCATION_SESSIONS_QUERY_TEMPLATE,
     description=LOCATION_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )
