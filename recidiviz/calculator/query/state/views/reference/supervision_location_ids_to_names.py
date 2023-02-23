@@ -106,6 +106,11 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             UPPER(level_1_supervision_location_external_id) AS level_1_supervision_location_external_id,
             level_1_supervision_location_name,
         FROM `{project_id}.{us_pa_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+        -- Limit the central office mapping to the central region to remove duplicates
+        WHERE (
+            level_2_supervision_location_external_id != "CO"
+            OR level_3_supervision_location_external_id = "CR"
+        )
     ),
     tn_location_names AS (
         SELECT

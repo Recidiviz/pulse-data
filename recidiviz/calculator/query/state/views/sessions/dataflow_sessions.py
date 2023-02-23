@@ -170,6 +170,21 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     FROM `{{project_id}}.{{sessions_dataset}}.us_pa_supervision_population_metrics_preprocessed_materialized`        
     )
     ,
+    population_with_location_names AS (
+        SELECT
+            population_cte.*,
+            locations.supervision_office_name,
+            locations.supervision_district_name,
+            locations.supervision_region_name,
+            locations.facility_name,
+        FROM population_cte
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.session_location_names_materialized` locations
+            ON locations.state_code = population_cte.state_code
+            AND IFNULL(locations.supervision_district, "UNKNOWN") = IFNULL(population_cte.supervision_district, "UNKNOWN")
+            AND IFNULL(locations.supervision_office, "UNKNOWN") = IFNULL(population_cte.supervision_office, "UNKNOWN")
+            AND IFNULL(locations.facility, "UNKNOWN") = IFNULL(population_cte.facility, "UNKNOWN")
+    )
+    ,
     last_day_of_data_by_state_and_source AS
     /*
     Get the max date for each state and population source, and then the min of these dates for each state. This is to
@@ -193,7 +208,11 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     GROUP BY 1
     )
     ,
-    {create_sub_sessions_with_attributes(table_name='population_cte', use_magic_date_end_dates=True, end_date_field_name='end_date_exclusive')}
+    {create_sub_sessions_with_attributes(
+        table_name='population_with_location_names',
+        use_magic_date_end_dates=True,
+        end_date_field_name='end_date_exclusive'
+    )}
     ,
     sub_sessions_with_attributes_dedup AS
     (
@@ -213,8 +232,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 compartment_level_2,
                 compartment_location,
                 facility,
+                facility_name,
                 supervision_office,
+                supervision_office_name,
                 supervision_district,
+                supervision_district_name,
+                supervision_region_name,
                 correctional_level,
                 correctional_level_raw_text,
                 supervising_officer_external_id,
@@ -229,8 +252,12 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 compartment_level_2,
                 compartment_location,
                 facility,
+                facility_name,
                 supervision_office,
+                supervision_office_name,
                 supervision_district,
+                supervision_district_name,
+                supervision_region_name,
                 correctional_level,
                 correctional_level_raw_text,
                 supervising_officer_external_id,

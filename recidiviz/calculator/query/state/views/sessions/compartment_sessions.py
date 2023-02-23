@@ -72,8 +72,16 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	inflow_from_level_2	|	Compartment level 2 value of the preceding session	|
 |	outflow_to_level_1	|	Compartment level 1 value of the subsequent session	|
 |	outflow_to_level_2	|	Compartment level 2 value of the subsequent session	|
-|	compartment_location_start	|	Facility or supervision district at the start of the session	|
-|	compartment_location_end	|	Facility or supervision district at the end of the session	|
+|	compartment_location_start	|	Facility or supervision office & district location at the start of the session	|
+|	facility_name_start	|	Facility (display name) location at the start of the session	|
+|	supervision_office_name_start	|	Supervision office (display name) location at the start of the session	|
+|	supervision_district_name_start	|	Supervision district (display name) location at the start of the session	|
+|	supervision_region_name_start	|	Supervision region location at the start of the session	|
+|	compartment_location_end	|	Facility or supervision office & district at the end of the session	|
+|	facility_name_end	|	Facility (display name) location at the end of the session	|
+|	supervision_office_name_end	|	Supervision office (display name) location at the end of the session	|
+|	supervision_district_name_end	|	Supervision district (display name) location at the end of the session	|
+|	supervision_region_name_end	|	Supervision region location at the end of the session	|
 |	correctional_level_start	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the start of the session	|
 |	correctional_level_end	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the end of the session	|
 |	age_start	|	Age at start of session	|
@@ -176,7 +184,15 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ARRAY_AGG(supervising_officer_external_id IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervising_officer_external_id_end,
 
         ARRAY_AGG(compartment_location IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS compartment_location_start,
+        ARRAY_AGG(facility_name IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS facility_name_start,
+        ARRAY_AGG(supervision_office_name IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_office_name_start,
+        ARRAY_AGG(supervision_district_name IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_district_name_start,
+        ARRAY_AGG(supervision_region_name IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_region_name_start,
         ARRAY_AGG(compartment_location IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS compartment_location_end,
+        ARRAY_AGG(facility_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS facility_name_end,
+        ARRAY_AGG(supervision_office_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_office_name_end,
+        ARRAY_AGG(supervision_district_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_district_name_end,
+        ARRAY_AGG(supervision_region_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_region_name_end,
 
         ARRAY_AGG(correctional_level IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS correctional_level_start,
         ARRAY_AGG(correctional_level IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS correctional_level_end,
@@ -247,7 +263,15 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         supervising_officer_external_id_start,
         supervising_officer_external_id_end,
         compartment_location_start,
+        facility_name_start,
+        supervision_office_name_start,
+        supervision_district_name_start,
+        supervision_region_name_start,
         compartment_location_end,
+        facility_name_end,
+        supervision_office_name_end,
+        supervision_district_name_end,
+        supervision_region_name_end,
         correctional_level_start,
         correctional_level_end,
         case_type_start,

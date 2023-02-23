@@ -39,7 +39,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           #   There are officers with more than one legitimate external id. We are merging these ids and
           #   so must move all clients to the merged id.
           IFNULL(ids.external_id_mapped, sessions.supervising_officer_external_id_end) AS officer_id,
-          locations.level_2_supervision_location_name AS district,
+          sessions.supervision_district_name_end AS district,
           projected_end.projected_completion_date_max AS expiration_date
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN {{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map ids
@@ -65,15 +65,6 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         ) active_officer
             ON sessions.state_code = active_officer.state_code
             AND sessions.person_id = active_officer.person_id
-        LEFT JOIN (
-            SELECT DISTINCT
-                state_code,
-                level_2_supervision_location_external_id,
-                level_2_supervision_location_name
-            FROM `{{project_id}}.{{reference_views_dataset}}.supervision_location_ids_to_names_materialized`
-        ) locations
-            ON locations.state_code = sessions.state_code
-            AND locations.level_2_supervision_location_external_id = SPLIT(sessions.compartment_location_end, "|")[OFFSET(1)]
         WHERE sessions.state_code IN ({{workflows_supervision_states}})
           AND sessions.compartment_level_1 = "SUPERVISION"
           AND sessions.end_date IS NULL
@@ -176,7 +167,7 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
             SELECT
             state_code,
             person_id,
-            STRING_AGG(sep.employer_name, ", ") AS current_employer,
+            STRING_AGG(sep.employer_name, ", " ORDER BY sep.employer_name) AS current_employer,
             sep.start_date AS current_employer_start_date,
             sep.end_date AS current_employer_end_date,
             # TODO(#18490): Add employer address

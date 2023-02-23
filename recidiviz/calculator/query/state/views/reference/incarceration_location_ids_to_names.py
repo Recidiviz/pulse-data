@@ -150,13 +150,15 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             SELECT
                 facility_code as level_2_id,
                 facility_name as level_2_name
-            from `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+            FROM `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+            -- Exclude the Pueblo YOS level 1 facility to remove duplicates
+            WHERE facility_name != "Youthful Offender System-Pueblo"
         ),
         level_3_names AS (
             SELECT
                 facility_code as level_3_id,
                 facility_name as level_3_name
-            from `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
+            FROM `{project_id}.{external_reference_dataset}.us_co_incarceration_facility_names`
         )
         SELECT
             DISTINCT
@@ -176,6 +178,8 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         ON level_2_incarceration_location_external_id = level_2_id
         LEFT JOIN level_3_names
         ON level_3_incarceration_location_external_id = level_3_id
+        -- Exclude the YOS level 2 facility to remove duplicates
+        WHERE facility_name != "YOS Facility"
     )
     SELECT * FROM me_location_names
     UNION ALL

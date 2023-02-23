@@ -157,7 +157,6 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=CLIENT_RECORD_QUERY_TEMPLATE,
     description=CLIENT_RECORD_DESCRIPTION,
     analyst_views_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
