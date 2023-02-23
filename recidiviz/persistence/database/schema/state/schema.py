@@ -1373,6 +1373,10 @@ class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
     start_date = Column(
         Date, comment="The date the person started serving the sentence."
     )
+    effective_date = Column(
+        Date,
+        comment="The date on which a sentence effectively begins being served, including any pre-trial jail detention time if applicable.",
+    )
     projected_completion_date = Column(
         Date,
         comment="The earliest projected date the person may have completed their supervision.",
@@ -1489,6 +1493,10 @@ class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns)
         "date the person started serving the sentence",
     )
     start_date = Column(Date, comment="The date this sentence started.")
+    effective_date = Column(
+        Date,
+        comment="The date on which a sentence effectively begins being served, including any pre-trial jail detention time if applicable.",
+    )
     projected_min_release_date = Column(
         Date,
         comment="The earliest projected date the person may be released from incarceration due to this sentence.",
