@@ -160,26 +160,23 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
         SELECT
             state_code,
             person_id,
-            current_employer,
-            current_employer_start_date,
-            current_employer_address,
+            ARRAY_AGG(DISTINCT COALESCE(employer_name, "UNKNOWN")) AS current_employer,
+            ARRAY_AGG(DISTINCT start_date) AS current_employer_start_date,
+            # TODO(#18490): Add employer address
+            CAST(NULL AS ARRAY<STRING>) AS current_employer_address,
         FROM (
             SELECT
-            state_code,
-            person_id,
-            STRING_AGG(sep.employer_name, ", " ORDER BY sep.employer_name) AS current_employer,
-            sep.start_date AS current_employer_start_date,
-            sep.end_date AS current_employer_end_date,
-            # TODO(#18490): Add employer address
-            CAST(NULL AS STRING) AS current_employer_address,
-            ROW_NUMBER() OVER(PARTITION BY state_code, person_id order by start_date desc, end_date asc) as rn
+                state_code,
+                person_id,
+                sep.employer_name,
+                sep.start_date,
+                NULL AS end_date,
             FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
-            GROUP BY state_code, person_id, sep.start_date, sep.end_date
-            ORDER BY person_id, rn
+            WHERE {today_between_start_date_and_nullable_end_date_clause('start_date', 'end_date')}
+            ORDER BY person_id, sep.start_date ASC
         )
-        WHERE {today_between_start_date_and_nullable_end_date_clause('current_employer_start_date', 'current_employer_end_date')}
-            AND state_code IN ("US_IX")
-            AND rn = 1
+        WHERE state_code IN ("US_IX")
+        GROUP BY state_code, person_id
     ),
 """
 
@@ -248,11 +245,11 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                 SELECT
                     state_code,
                     person_id,
-                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date, MONTH) as string) || " months with the same employer" as milestone_text,
+                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date[OFFSET(0)], MONTH) as string) || " months with the same employer" as milestone_text,
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
                 FROM employment_info
-                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date, MONTH) > 0
+                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date[OFFSET(0)], MONTH) > 0
             )
         )
         WHERE state_code in ('US_IX')
@@ -277,9 +274,6 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
           sl.supervision_level,
           sl.supervision_level_start,
           ss.start_date AS supervision_start_date,
-          ei.current_employer,
-          ei.current_employer_start_date,
-          ei.current_employer_address,
           FIRST_VALUE(sc.expiration_date IGNORE NULLS) OVER (
             PARTITION BY sc.person_id
             ORDER BY sc.expiration_date DESC
@@ -288,7 +282,6 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
-        LEFT JOIN employment_info ei USING (person_id)
         LEFT JOIN phone_numbers ph
             -- join on state_code / person_external_id instead of person_id alone because state data
             -- may have multiple external_ids for a given person_id, and by this point in the
@@ -307,7 +300,7 @@ _CLIENTS_CTE = """
         # Values set to NULL are not applicable for this state
         SELECT
             person_external_id,
-            state_code,
+            c.state_code,
             person_name,
             officer_id,
             supervision_type,
@@ -324,14 +317,14 @@ _CLIENTS_CTE = """
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             district,
-            current_employer,
-            current_employer_start_date,
-            current_employer_address,
+            ei.current_employer,
+            ei.current_employer_address,
             opportunities_aggregated.all_eligible_opportunities,
             milestones
-        FROM join_clients
+        FROM join_clients c
         LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
-        LEFT JOIN milestones mi USING(state_code, person_id)
+        LEFT JOIN employment_info ei USING (person_id)
+        LEFT JOIN milestones mi  ON mi.state_code = c.state_code and mi.person_id = c.person_id
         # TODO(#17138): Remove this condition if we are no longer missing person details post-ATLAS
         WHERE person_name IS NOT NULL
     )

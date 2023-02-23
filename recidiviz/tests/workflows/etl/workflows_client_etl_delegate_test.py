@@ -114,6 +114,11 @@ class WorkflowsClientETLDelegateTest(TestCase):
                         },
                     ],
                     "emailAddress": "matilda@mouse-house.net",
+                    "currentEmployer": ["Mouse House", "Denny's"],
+                    "currentEmployerAddress": [
+                        "123 Mousey Way",
+                        "456 Cookie Crumble Drive",
+                    ],
                 },
                 row,
             )
@@ -139,6 +144,8 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "supervisionType": "ISC",
                     "specialConditions": "NULL",
                     "emailAddress": "harry@houdini.net",
+                    "currentEmployer": ["The Camera Store"],
+                    "currentEmployerAddress": ["496 Marigold Ave"],
                 },
                 row,
             )
