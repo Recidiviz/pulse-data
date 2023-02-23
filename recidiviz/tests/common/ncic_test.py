@@ -30,7 +30,7 @@ class NcicTest(unittest.TestCase):
 
     def test_get_all_codes(self) -> None:
         codes = ncic.get_all_codes()
-        self.assertEqual(len(codes), 371)
+        self.assertEqual(len(codes), 372)
 
     def test_get_all_codes_not_modifiable(self) -> None:
         codes = ncic.get_all_codes()

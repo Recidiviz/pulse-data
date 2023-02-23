@@ -29,6 +29,7 @@ import re
 from re import Pattern
 from typing import Optional
 
+from recidiviz.common import ncic
 from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
     safe_parse_days_from_duration_pieces,
@@ -132,16 +133,12 @@ def classification_subtype_from_raw_text(raw_charge_text: str) -> Optional[str]:
     return None
 
 
+def extract_description_from_ncic_code(ncic_code: str) -> Optional[str]:
+    return ncic.get_description(ncic_code)
+
+
 def extract_is_violent_from_ncic_code(ncic_code: str) -> Optional[bool]:
-    """Based on SSA Program Operations Manual System (POMS) (Effective Dates: 08/02/2022 - Present)
-    'Violent' crimes are reported in the 0900, 1000, 1100, 1200, and 1300 series of the NCIC offense codes.
-    Offense codes representing communication threatening use of physical force are 1602, 2101, 5215, and 5216."""
-    return ncic_code.startswith(("09", "10", "11", "12", "13")) or ncic_code in [
-        "1602",
-        "2101",
-        "5215",
-        "5216",
-    ]
+    return ncic.get_is_violent(ncic_code)
 
 
 _JUDICIAL_DISTRICT_CODE_MAPPINGS = {
