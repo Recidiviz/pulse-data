@@ -62,6 +62,35 @@ output:
                     - $literal("Absconded")
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
               - $else_if:
+                  $equal:
+                    - RequestedSupervisionAssignmentLevel
+                    - $literal("Unsupv/Court Prob")
+                $then:
+                  $enum_mapping:
+                    $raw_text: RequestedSupervisionAssignmentLevel
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION:
+                        - Unsupv/Court Prob
+              - $else_if:
+                  $equal:
+                    - DOCLocationToName
+                    - $literal("District 4 - PSI Unit")
+                $then:
+                  $enum_mapping:
+                    $raw_text: DOCLocationToName
+                    $mappings:
+                      StateSupervisionPeriodSupervisionType.INVESTIGATION:
+                        - District 4 - PSI Unit
+              - $else_if:
+                  $custom:
+                    $function: us_ix_custom_parsers.is_bw
+                    $args:
+                      supervising_officer_external_id: StaffId
+                $then:
+                  $enum_mapping:
+                    $raw_text: StaffId
+                    $custom_parser: us_ix_custom_enum_parsers.bw_supervision_type
+              - $else_if:
                   $not_null: LegalStatusDesc
                 $then:
                   $enum_mapping:
@@ -202,6 +231,26 @@ output:
                       StateCustodialAuthority.OTHER_STATE:
                         - Interstate Compact
                         - Parole Commission
+              - $else_if:
+                  $equal:
+                    - RequestedSupervisionAssignmentLevel
+                    - $literal("Interstate")
+                $then:
+                  $enum_mapping:
+                    $raw_text: RequestedSupervisionAssignmentLevel
+                    $mappings:
+                      StateCustodialAuthority.OTHER_STATE:
+                        - Interstate
+              - $else_if:
+                  $equal:
+                    - RequestedSupervisionAssignmentLevel
+                    - $literal("Deported")
+                $then:
+                  $enum_mapping:
+                    $raw_text: RequestedSupervisionAssignmentLevel
+                    $mappings:
+                      StateCustodialAuthority.OTHER_COUNTRY:
+                        - Deported
               - $else:
                   $enum_mapping:
                     $raw_text: DOCLocationToTypeName
@@ -218,9 +267,11 @@ output:
           supervision_level:
             $conditional:
               - $if:
-                  $equal:
-                    - DOCLocationToName
-                    - $literal("Low Supervsn Unit")
+                  $in:
+                    $value: DOCLocationToName
+                    $options:
+                      - $literal("Low Supervsn Unit")
+                      - $literal("Low Supervision Unit")
                 $then:
                   $enum_mapping:
                     $raw_text:
@@ -285,6 +336,59 @@ output:
                         - Low Supervsn Unit##SO To General Low
                         - Low Supervsn Unit##Substance Abuse
                         - Low Supervsn Unit##NONE
+                        - Low Supervision Unit##Administrative
+                        - Low Supervision Unit##DUI Override Level 2
+                        - Low Supervision Unit##Deported
+                        - Low Supervision Unit##Dosage
+                        - Low Supervision Unit##Dosage Eligible
+                        - Low Supervision Unit##Drug Court
+                        - Low Supervision Unit##Federal Custody
+                        - Low Supervision Unit##Gold Seal Pending
+                        - Low Supervision Unit##High
+                        - Low Supervision Unit##ICE Detainer
+                        - Low Supervision Unit##Interstate
+                        - Low Supervision Unit##Level 1
+                        - Low Supervision Unit##Level 2
+                        - Low Supervision Unit##Level 3
+                        - Low Supervision Unit##Level 4
+                        - Low Supervision Unit##Limited Supervision
+                        - Low Supervision Unit##Low
+                        - Low Supervision Unit##Medium
+                        - Low Supervision Unit##Mental Health Court
+                        - Low Supervision Unit##Minimum
+                        - Low Supervision Unit##Moderate
+                        - Low Supervision Unit##Moderate-Old
+                        - Low Supervision Unit##NONE
+                        - Low Supervision Unit##O/R High
+                        - Low Supervision Unit##O/R Moderate
+                        - Low Supervision Unit##Parole Violator
+                        - Low Supervision Unit##Probation Violator
+                        - Low Supervision Unit##SO High
+                        - Low Supervision Unit##SO Low
+                        - Low Supervision Unit##SO Moderate
+                        - Low Supervision Unit##Unclassified
+                        - Low Supervision Unit##Unsupv/Court Prob
+                        - Low Supervision Unit##Veterans Court
+              - $else_if:
+                  $custom:
+                    $function: us_ix_custom_parsers.is_district
+                    $args:
+                      location_name: DOCLocationToName
+                      district_num: $literal("0")
+                $then:
+                  $enum_mapping:
+                    $raw_text: DOCLocationToName
+                    $custom_parser: us_ix_custom_enum_parsers.district_0_supervision_level
+              - $else_if:
+                  $equal:
+                    - LegalStatusDesc
+                    - $literal("Non Idaho Commitment")
+                $then:
+                  $enum_mapping:
+                    $raw_text: LegalStatusDesc
+                    $mappings:
+                      StateSupervisionLevel.INTERSTATE_COMPACT:
+                        - Non Idaho Commitment
               - $else:
                   $enum_mapping:
                     $raw_text: RequestedSupervisionAssignmentLevel
