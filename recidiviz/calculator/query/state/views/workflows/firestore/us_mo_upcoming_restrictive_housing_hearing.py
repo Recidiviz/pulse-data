@@ -31,7 +31,10 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
-from recidiviz.task_eligibility.utils.us_mo_query_fragments import hearings_dedup_cte
+from recidiviz.task_eligibility.utils.us_mo_query_fragments import (
+    current_bed_stay_cte,
+    hearings_dedup_cte,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -97,32 +100,7 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
         )
     )
     ,
-    current_bed_stay AS (
-        SELECT DISTINCT
-            person_id,
-            state_code,
-            FIRST_VALUE(bed_number) OVER w as bed_number,
-            FIRST_VALUE(room_number) OVER w as room_number,
-            FIRST_VALUE(complex_number) OVER w as complex_number,
-            FIRST_VALUE(building_number) OVER w as building_number,
-            FIRST_VALUE(confinement_type_raw_text) OVER w as housing_use_code,
-        FROM `{{project_id}}.{{sessions_dataset}}.us_mo_housing_stays_preprocessed`
-        WHERE end_date_exclusive IS NULL
-        -- TODO(#18852): Refine this confinement_type_raw_text dedup logic
-        WINDOW w AS (
-            PARTITION BY person_id, state_code
-            ORDER BY
-                CASE confinement_type_raw_text
-                    WHEN "HOS" THEN 1
-                    WHEN "ADS" THEN 2
-                    WHEN "TAS" THEN 3
-                    WHEN "DIS" THEN 4
-                    WHEN "NOC" THEN 5
-                    WHEN "PRC" THEN 6
-                    WHEN "GNP" THEN 7
-                    ELSE 8 END
-        )
-    )
+    {current_bed_stay_cte()}
     ,
     final AS (
         SELECT
