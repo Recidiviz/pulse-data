@@ -100,3 +100,80 @@ def is_bw(supervising_officer_external_id: str) -> bool:
         r"D[0-9]+BENCH", supervising_officer_external_id.upper()
     )
     return officer_id_includes_bw is not None
+
+
+def judicial_district_from_county(county_code: str) -> Optional[str]:
+    """Maps county code to judicial district"""
+    if county_code in [
+        "12940",  # Benewah
+        "12944",  # Bonner
+        "12946",  # Boundary
+        "12963",  # Kootenai
+        "12976",  # Shoshone
+    ]:
+        return "FIRST JUDICIAL DISTRICT"
+
+    if county_code in [
+        "12953",  # Clearwater
+        "12960",  # Idaho
+        "12964",  # Latah
+        "12966",  # Lewis
+        "12970",  # Nez Perce
+    ]:
+        return "SECOND JUDICIAL DISTRICT"
+
+    if county_code in [
+        "12937",  # Adams
+        "12949",  # Canyon
+        "12958",  # Gem
+        "12973",  # Owyhee
+        "12974",  # Payette
+        "12980",  # Washington
+    ]:
+        return "THIRD JUDICIAL DISTRICT"
+
+    if county_code in [
+        "12936",  # Ada
+        "12943",  # Boise
+        "12955",  # Elmore
+        "12979",  # Valley
+    ]:
+        return "FOURTH JUDICIAL DISTRICT"
+
+    if county_code in [
+        "12942",  # Blaine
+        "12948",  # Camas
+        "12951",  # Cassia
+        "12959",  # Gooding
+        "12962",  # Jerome
+        "12967",  # Lincoln
+        "12969",  # Minidoka
+        "12978",  # Twin Falls
+    ]:
+        return "FIFTH JUDICIAL DISTRICT"
+
+    if county_code in [
+        "12938",  # Bannock
+        "12939",  # Bear Lake
+        "12950",  # Caribou
+        "12956",  # Franklin
+        "12971",  # Oneida
+        "12975",  # Power
+    ]:
+        return "SIXTH JUDICIAL DISTRICT"
+
+    if county_code in [
+        "12941",  # Bingham
+        "12945",  # Bonneville
+        "12947",  # Butte
+        "12952",  # Clark
+        "12954",  # Custer
+        "12957",  # Fremont
+        "12961",  # Jefferson
+        "12965",  # Lehmi
+        "12968",  # Madison
+        "12977",  # Teton
+    ]:
+        return "SEVENTH JUDICIAL DISTRICT"
+
+    return None

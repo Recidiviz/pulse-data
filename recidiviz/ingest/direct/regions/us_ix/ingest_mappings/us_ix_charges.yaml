@@ -59,7 +59,11 @@ variables:
             $middle_names: MiddleName
             $surname: LastName
             $name_suffix: NameSuffix
-
+        judicial_district_code:
+          $custom:
+            $function: us_ix_custom_parsers.judicial_district_from_county
+            $args:
+              county_code: CountyId
 output:
   StatePerson:
     external_ids:
