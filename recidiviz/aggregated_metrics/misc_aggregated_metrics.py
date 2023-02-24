@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Creates view builders that generate SQL views calculating period-span metrics"""
+"""Creates view builders calculating miscellaneous metrics for specific aggregation levels and populations"""
 from typing import Dict, List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
@@ -27,6 +27,10 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
     MetricPopulationType,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_current_date_clause,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 
 # List of [MetricPopulationType, MetricAggregationLevelType] tuples that are supported by
@@ -40,6 +44,8 @@ _MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS: List[
     (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.STATE_CODE),
 ]
 
+_MIN_OFFICER_CASELOAD_SIZE = 10
+
 
 def _query_template_and_format_args(
     aggregation_level: MetricAggregationLevel,
@@ -48,12 +54,14 @@ def _query_template_and_format_args(
     """Returns the appropriate query template (and associated dataset keyword args for
     that template) for the provided population and aggregation level.
     """
+    # TODO(#19011): Add support for misc_metrics metadata
     if population.population_type == MetricPopulationType.SUPERVISION:
         if (
             aggregation_level.level_type
             == MetricAggregationLevelType.SUPERVISION_OFFICER
         ):
-
+            group_by_range = range(1, len(aggregation_level.index_columns) + 6)
+            group_by_range_str = ", ".join(list(map(str, group_by_range)))
             query_template = f"""
 SELECT
     {aggregation_level.get_index_columns_query_string()},
@@ -62,12 +70,61 @@ SELECT
     population_end_date AS end_date,
     district AS primary_district,
     office AS primary_office,
+    -- Proportion of the analysis period where officer has a valid caseload size
+    SUM(
+        IF(
+            b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
+            DATE_DIFF(
+                LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
+                GREATEST(a.population_start_date, b.start_date),
+                DAY
+            ),
+            0
+        )
+    ) / DATE_DIFF(population_end_date, population_start_date, DAY) AS prop_period_with_critical_caseload,
+
+    -- Average caseload size across all days in the analysis period where officer has a valid caseload
+    SAFE_DIVIDE(
+        SUM(
+            IF(
+                b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
+                DATE_DIFF(
+                    LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
+                    GREATEST(a.population_start_date, b.start_date),
+                    DAY
+                ) * b.caseload_count,
+                0
+            )
+        )
+        ,
+        SUM(
+            IF(
+                b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
+                DATE_DIFF(
+                    LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
+                    GREATEST(a.population_start_date, b.start_date),
+                    DAY
+                ),
+                0
+            )
+        )
+    ) AS avg_critical_caseload_size,
 FROM
     `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized` a
-INNER JOIN 
-    `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized` b
+INNER JOIN
+    `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_caseload_count_spans_materialized` b
 ON
-    b.date = a.population_start_date
+    b.start_date < a.population_end_date
+    AND {nonnull_end_date_clause("b.end_date")} > a.population_start_date
+LEFT JOIN (
+    SELECT 
+        *, date AS population_start_date
+    FROM
+        `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized` c
+    )
+USING 
+    ({aggregation_level.get_index_columns_query_string()}, population_start_date)
+GROUP BY {group_by_range_str}
 """
             return query_template, {
                 "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID,
@@ -85,6 +142,7 @@ SELECT
     start_date,
     end_date,
     AVG(avg_daily_population) AS avg_daily_caseload_officer,
+    AVG(avg_critical_caseload_size) AS avg_critical_caseload_size_officer,
     AVG(assignments) AS avg_assignments_officer,
 FROM (
     SELECT 
