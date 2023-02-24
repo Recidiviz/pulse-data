@@ -7,6 +7,7 @@ primary_key_cols:
   - CI_DOC
   - CI_CYC
   - CI_BSN
+  - CI_SPC
 columns:
   - name: CI_DOC
     is_pii: True
