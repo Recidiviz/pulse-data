@@ -27,3 +27,16 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
     data       = base64encode("DAILY")
   }
 }
+
+resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
+  name        = "schedule_sftp_dag_run_cloud_function"
+  schedule    = "0 * * * *" # Every hour at minute 0
+  description = "Schedules the running of the SFTP DAG pipeline topic"
+  time_zone   = "America/Los_Angeles"
+
+  pubsub_target {
+    # topic's full resource name.
+    topic_name = "projects/${var.project_id}/topics/v1.sftp.trigger_sftp_dag"
+    data       = base64encode("DATA") # Added to fulfill requirements that data has to be passed
+  }
+}

@@ -99,3 +99,31 @@ def trigger_calculation_dag(
         message=f"The monitoring Airflow response is {monitor_response}",
     )
     return "", HTTPStatus(monitor_response.status_code)
+
+
+def trigger_sftp_dag(
+    _event: Dict[str, Any], _context: ContextType
+) -> Tuple[str, HTTPStatus]:
+    """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
+    the SFTP downloads for all states run simultaneously."""
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY, "")
+    if not project_id:
+        error_str = "No project id set for call to run the sftp pipelines, returning."
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    airflow_uri = os.environ.get("AIRFLOW_URI")
+    if not airflow_uri:
+        error_str = "The environment variable 'AIRFLOW_URI' is not set"
+        cloud_functions_log(severity="ERROR", message=error_str)
+        return error_str, HTTPStatus.BAD_REQUEST
+
+    # The name of the DAG you wish to trigger
+    dag_name = f"{project_id}_sftp_dag"
+
+    monitor_response = trigger_dag(airflow_uri, dag_name, data={})
+    cloud_functions_log(
+        severity="INFO",
+        message=f"The monitoring Airflow response is {monitor_response}",
+    )
+    return "", HTTPStatus(monitor_response.status_code)

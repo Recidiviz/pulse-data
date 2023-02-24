@@ -190,7 +190,7 @@ def xcom_output_is_non_empty_list(xcom_output: Optional[List]) -> bool:
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     default_args=DEFAULT_ARGS,
-    schedule_interval="@hourly",
+    schedule_interval=None,
     catchup=False,
     max_active_runs=1,
 )
