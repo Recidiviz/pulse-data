@@ -178,17 +178,6 @@ class AggregatedDimension:
         return self.dimension.dimension_identifier()
 
 
-@attr.define()
-class Definition:
-    """A definition provided to the agency to help them report the metric."""
-
-    term: str
-    definition: str
-
-    def to_json(self) -> Dict[str, str]:
-        return {"term": self.term, "definition": self.definition}
-
-
 @attr.define(frozen=True)
 class MetricDefinition:
     """Represents an official Justice Counts metric. An instance
@@ -214,8 +203,6 @@ class MetricDefinition:
     reporting_note: Optional[str] = None
     # Additional context that the agency is required to report on this metric
     specified_contexts: Optional[List[Context]] = None
-    # Definitions provided to the agency to help them report this metric
-    definitions: Optional[List[Definition]] = None
     # Dimensions that this metric should be disaggregated by in the reporting
     aggregated_dimensions: Optional[List[AggregatedDimension]] = None
     # If disabled, don't send to the frontend to render

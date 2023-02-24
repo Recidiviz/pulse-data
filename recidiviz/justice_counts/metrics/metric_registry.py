@@ -43,7 +43,6 @@ METRICS = [
     courts.sentences_imposed,
     courts.new_offenses_while_on_pretrial_release,
     courts.cases_overturned,
-    courts.cases_disposed,
     defense.funding,
     defense.expenses,
     defense.staff,

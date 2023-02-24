@@ -25,7 +25,6 @@ from recidiviz.justice_counts.dimensions.courts import (
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
-from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import courts
 
@@ -101,16 +100,6 @@ COURTS_METRIC_FILES = [
         definition=courts.criminal_case_filings,
         disaggregation=CaseSeverityType,
         disaggregation_column_name="severity_type",
-    ),
-    MetricFile(
-        canonical_filename="cases_disposed",
-        definition=courts.cases_disposed,
-    ),
-    MetricFile(
-        canonical_filename="cases_disposed_by_type",
-        definition=courts.cases_disposed,
-        disaggregation=DispositionType,
-        disaggregation_column_name="disposition_type",
     ),
     MetricFile(
         canonical_filename="offenses_on_release",

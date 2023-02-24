@@ -176,9 +176,6 @@ class MetricInterface:
             "starting_month": self.custom_reporting_frequency.starting_month,
             "filenames": metric_filenames,
             "datapoints": aggregate_datapoints_json,
-            "definitions": [
-                d.to_json() for d in self.metric_definition.definitions or []
-            ],
             "contexts": [
                 c.to_json(context_definition=context_key_to_context_definition[c.key])
                 for c in self.contexts
