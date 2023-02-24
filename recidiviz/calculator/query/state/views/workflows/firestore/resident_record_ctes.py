@@ -1,0 +1,187 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""CTEs used to create resident record query."""
+
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_start_date_clause,
+    revert_nonnull_end_date_clause,
+    revert_nonnull_start_date_clause,
+)
+
+_RESIDENT_RECORD_INCARCERATION_CTE = """
+    incarceration_cases AS (
+        SELECT
+            dataflow.state_code,
+            dataflow.person_id,
+            person_external_id,
+            sp.full_name AS person_name,
+            dataflow.facility AS facility_id,
+        FROM `{project_id}.{dataflow_dataset}.most_recent_incarceration_population_span_metrics_materialized` dataflow
+        INNER JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
+            ON dataflow.state_code = sessions.state_code
+            AND dataflow.person_id = sessions.person_id
+            AND sessions.compartment_level_1 = "INCARCERATION"
+            AND sessions.end_date IS NULL
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp 
+            ON dataflow.person_id = sp.person_id
+        WHERE dataflow.state_code IN ({workflows_incarceration_states}) AND dataflow.included_in_state_population
+            AND dataflow.end_date_exclusive IS NULL
+    ),
+"""
+
+_RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
+    incarceration_dates AS (
+        SELECT 
+            ic.*,
+            MIN(t.start_date) 
+                    OVER(w) AS admission_date,
+            MAX({nonnull_end_date_clause('t.end_date')}) 
+                    OVER(w) AS release_date
+            --TODO(#16175) ingest intake and release dates
+        FROM
+            incarceration_cases ic
+        -- Use raw_table to get admission and release dates
+        LEFT JOIN `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` t
+          ON ic.person_id = t.person_id
+          -- subset the possible start and end_dates to those consistent with
+          -- the current date
+              AND CURRENT_DATE('US/Eastern') 
+                    BETWEEN {nonnull_start_date_clause('t.start_date')} 
+                        AND {nonnull_end_date_clause('t.end_date')} 
+              AND t.status='1' -- only 'Active terms'
+        WINDOW w as (PARTITION BY ic.state_code, ic.person_id)
+    ),
+"""
+
+_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE = f"""
+    incarceration_cases_wdates AS (
+        SELECT 
+            * EXCEPT(release_date, admission_date),
+            {revert_nonnull_start_date_clause('admission_date')} AS admission_date, 
+            {revert_nonnull_end_date_clause('release_date')} AS release_date
+        FROM incarceration_dates
+        GROUP BY 1,2,3,4,5,6,7
+    ),
+"""
+
+_RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
+    custody_level AS (
+        SELECT
+            pei.person_id,
+            UPPER(cs.CLIENT_SYS_DESC) AS custody_level,
+        FROM `{project_id}.{us_me_raw_data_dataset}.CIS_112_CUSTODY_LEVEL` cl
+        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1017_CLIENT_SYS_latest` cs
+            ON cl.CIS_1017_CLIENT_SYS_CD = cs.CLIENT_SYS_CD
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            ON cl.CIS_100_CLIENT_ID = pei.external_id
+            AND pei.state_code = "US_ME"
+        WHERE TRUE
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY person_id
+            ORDER BY CAST(LEFT(cl.CUSTODY_DATE, 19) AS DATETIME) DESC
+        ) = 1
+        ORDER BY
+            pei.person_id,
+            CAST(LEFT(cl.CUSTODY_DATE, 19) AS DATETIME)
+    ),
+"""
+
+_RESIDENT_RECORD_HOUSING_UNIT_CTE = """
+    housing_unit AS (
+      SELECT
+        person_id,
+        housing_unit AS unit_id,
+        ROW_NUMBER() over (partition by person_id order by admission_date desc) rn 
+      FROM `{project_id}.{normalized_state_dataset}.state_incarceration_period` 
+      where
+          release_date is null
+          and state_code='US_ME'
+      qualify rn = 1
+    ),
+"""
+
+_RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
+    officer_assignments AS (
+        SELECT DISTINCT
+            IFNULL(ids.external_id_mapped, Cis_900_Employee_Id) AS officer_id,
+            Cis_100_Client_Id as person_external_id,
+            row_number() OVER (PARTITION BY Cis_100_Client_Id ORDER BY Assignment_Date DESC) rn
+        FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_124_SUPERVISION_HISTORY_latest` sp
+        LEFT JOIN {project_id}.{static_reference_dataset}.agent_multiple_ids_map ids
+            ON Cis_900_Employee_Id = ids.external_id_to_map AND 'US_ME' = ids.state_code 
+        WHERE Supervision_End_Date IS NULL
+        QUALIFY rn = 1
+    ),
+"""
+
+_RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
+    join_residents AS (
+        SELECT DISTINCT
+            ic.state_code,
+            ic.person_name,
+            ic.person_id,
+            ic.person_external_id,
+            officer_id,
+            facility_id,
+            unit_id,
+            custody_level.custody_level,
+            ic.admission_date,
+            ic.release_date,
+        FROM
+            incarceration_cases_wdates ic
+        LEFT JOIN custody_level
+            USING(person_id)
+        LEFT JOIN housing_unit
+          USING(person_id)
+        LEFT JOIN officer_assignments
+          USING(person_external_id)
+    ),
+"""
+
+_RESIDENTS_CTE = """
+    residents AS (
+        SELECT
+            person_external_id,
+            state_code,
+            person_name,
+            person_id,
+            officer_id,
+            facility_id,
+            unit_id,
+            custody_level,
+            admission_date,
+            release_date,
+            opportunities_aggregated.all_eligible_opportunities,
+        FROM join_residents
+        LEFT JOIN opportunities_aggregated USING (state_code, person_external_id)
+        WHERE officer_id IS NOT NULL
+    )
+"""
+
+
+def full_resident_record() -> str:
+    return f"""
+    {_RESIDENT_RECORD_INCARCERATION_CTE}
+    {_RESIDENT_RECORD_INCARCERATION_DATES_CTE}
+    {_RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE}
+    {_RESIDENT_RECORD_CUSTODY_LEVEL_CTE}
+    {_RESIDENT_RECORD_HOUSING_UNIT_CTE}
+    {_RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE}
+    {_RESIDENT_RECORD_JOIN_RESIDENTS_CTE}
+    {_RESIDENTS_CTE}
+    """

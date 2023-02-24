@@ -16,10 +16,15 @@
 #  =============================================================================
 """View to prepare resident records for Workflows for export to the frontend."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
-from recidiviz.calculator.query.state.views.workflows.us_me.incarceration_residents_template import (
-    US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE,
+from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
+    EligibilityQueryConfig,
+    get_eligibility_ctes,
+)
+from recidiviz.calculator.query.state.views.workflows.firestore.resident_record_ctes import (
+    full_resident_record,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -53,13 +58,22 @@ PSEUDONYMIZED_ID = """
         16
     )"""
 
+ELIGIBILITY_QUERY_CONFIGS = [
+    EligibilityQueryConfig(
+        "US_ME",
+        "usMeSCCP",
+        "us_me_complete_transfer_to_sccp_form_record_materialized",
+    ),
+]
+
 RESIDENT_RECORD_QUERY_TEMPLATE = f"""
-    WITH 
-        {US_ME_INCARCERATION_RESIDENTS_QUERY_TEMPLATE}
+    WITH
+        {get_eligibility_ctes(ELIGIBILITY_QUERY_CONFIGS)},
+        {full_resident_record()}
     SELECT
         * EXCEPT(key, value),
         {PSEUDONYMIZED_ID} AS pseudonymized_id
-    FROM me_residents
+    FROM residents
     JOIN {{project_id}}.{{static_reference_dataset}}.workflows_keys wk
         ON wk.key = 'resident_record_salt'
 """
@@ -82,6 +96,7 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
+    workflows_incarceration_states=list_to_query_string(["US_ME"], quoted=True),
 )
 
 if __name__ == "__main__":
