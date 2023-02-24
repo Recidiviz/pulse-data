@@ -105,13 +105,13 @@ case_notes_cte AS (
     FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
     INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
         ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
-        ON mp.CIS_9900_STAT_TYPE_CD = st.STAT_TYPE_CD
     -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text 
     LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
         ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
-        AND mp.CIS_9900_STAT_TYPE_CD = ps.Cis_9900_Stat_Type_Cd
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
+        ON ps.Cis_9900_Stat_Type_Cd = st.STAT_TYPE_CD
     WHERE pr.NAME_TX IS NOT NULL
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
 
     UNION ALL
   
