@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests deployed_views"""
 import datetime
+import re
 import unittest
 from typing import Set
 from unittest.mock import MagicMock, patch
@@ -27,11 +28,23 @@ from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
 from recidiviz.utils import metadata
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
+from recidiviz.utils.environment import (
+    GCP_PROJECT_PRODUCTION,
+    GCP_PROJECT_STAGING,
+    GCP_PROJECTS,
+)
+from recidiviz.validation.views import dataset_config as validations_dataset_config
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
     deployed_view_builders,
+)
+
+# Regex to find datasets that are referenced directly in a query template, rather that
+# being injected via a query argument. E.g. if the query contains
+# `{project_id}.my_dataset.my_table` instead of `{project_id}.{dataset}.my_table`.
+DIRECTLY_REFERENCED_DATASET_ID_REGEX = re.compile(
+    r"`[a-z_{}]+\.([a-zA-Z_\d]+)\.[a-zA-Z_\d]+`"
 )
 
 
@@ -165,3 +178,43 @@ class ViewDagInvariantTests(unittest.TestCase):
             self.fail(
                 f"Found invalid descendants: {invalid_descendants}",
             )
+
+    def test_no_project_ids_in_view_templates(self) -> None:
+        """Validates that the view_query_template does not contain any raw GCP
+        project_id values. Note that this prevents views from referencing project IDs
+        directly in any comments.
+        """
+        for view in self.dag_walker.views:
+            for project_id in GCP_PROJECTS:
+                self.assertNotIn(
+                    project_id,
+                    view.view_query_template,
+                    msg=f"view_query_template for view [{view.dataset_id}."
+                    f"{view.view_id}] cannot contain raw"
+                    f" value: {project_id}.",
+                )
+
+    def test_no_datasets_in_view_templates(self) -> None:
+        """Validates that all dataset_ids are passed in as arguments to the view,
+        and are not in the raw query template.
+        """
+
+        for view in self.dag_walker.views:
+            if (
+                view.dataset_id == validations_dataset_config.VIEWS_DATASET
+                and "freshness" in view.view_id
+            ):
+                # Due to the way freshness validation queries are constructed we have
+                # to allow for raw dataset_id strings in the view query template
+                continue
+
+            match = re.search(
+                DIRECTLY_REFERENCED_DATASET_ID_REGEX, view.view_query_template
+            )
+
+            if match:
+                raise ValueError(
+                    f"Found dataset_id [{match.group(1)}] referenced directly in view "
+                    f"query template for view: [{view.dataset_id}.{view.view_id}]. "
+                    f"Must replace with query argument."
+                )
