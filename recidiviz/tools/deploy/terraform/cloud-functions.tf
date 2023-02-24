@@ -49,3 +49,30 @@ resource "google_cloudfunctions_function" "trigger_calculation_dag" {
     url = local.repo_url
   }
 }
+
+resource "google_cloudfunctions_function" "trigger_sftp_dag" {
+  name          = "trigger_sftp_dag"
+  runtime       = "python38"
+  max_instances = 3000
+
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource   = "projects/${var.project_id}/topics/v1.sftp.trigger_sftp_dag"
+  }
+
+  entry_point = "trigger_sftp_dag"
+  environment_variables = {
+    # This is an output variable from the composer environment, relevant docs:
+    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+    "AIRFLOW_URI" = google_composer_environment.default_v2.config.0.airflow_uri
+    "GCP_PROJECT" = var.project_id
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+}
