@@ -59,11 +59,9 @@ FROM offenses_with_desc off
 LEFT JOIN {RECIDIVIZ_REF_violent_crimes_codes} vc
 ON off.Common_Statute_NCIC_Code = vc.CrimCodeTxt
 )
-SELECT recid, case_number, sid, common_statute_number, level,
-       county, court_number, counts, year, created_by,
-       master_offense_ind, count, requires_registration, last_update,
-       inactivedate, offensedate, recdate, judge, description,
-       violence_flag,
+SELECT  LEVEL, COUNTS, OFFENSEDATE, COUNTY, SID, CASE_NUMBER, RecID, COUNT, COURT_NUMBER, 
+INACTIVEDATE, RecDate, YEAR, LAST_UPDATE, CREATED_BY, MASTER_OFFENSE_IND,REQUIRES_REGISTRATION,
+Common_Statute_Number, JUDGE, description, violence_flag,
 COALESCE(Common_Statute_NCIC_Code, CODE) as ncic_code
 FROM offenses_with_violence_flag
 """
