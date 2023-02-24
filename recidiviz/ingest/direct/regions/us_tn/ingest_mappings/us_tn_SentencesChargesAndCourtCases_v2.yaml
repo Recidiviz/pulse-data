@@ -207,6 +207,7 @@ output:
                       StateIncarcerationType.INTERNAL_UNKNOWN:
                         - CC # There are only 41 instances
                 start_date: SentenceEffectiveDate
+                effective_date: SentenceEffectiveDate
                 date_imposed: SentenceImposeDate
                 projected_min_release_date: EarliestPossibleReleaseDate
                 projected_max_release_date: FullExpirationDate
@@ -250,6 +251,7 @@ output:
                     # TODO(#10923): Remove custom parser once multiple columns can be used to determine enum value.
                     $custom_parser: us_tn_custom_parsers.parse_sentence_status
                 start_date: SentenceEffectiveDate
+                effective_date: SentenceEffectiveDate
                 date_imposed: SentenceImposeDate
                 projected_completion_date: FullExpirationDate
                 completion_date: ExpirationDate

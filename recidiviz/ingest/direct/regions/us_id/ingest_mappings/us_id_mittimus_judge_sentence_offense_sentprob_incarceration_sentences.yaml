@@ -137,6 +137,7 @@ output:
               - lifer
               - $literal("L")
           start_date: sent_beg_dtd
+          effective_date: sent_beg_dtd
           status:
             $enum_mapping:
               $raw_text: sent_disp
