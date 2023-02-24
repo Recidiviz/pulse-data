@@ -64,6 +64,11 @@ ELIGIBILITY_QUERY_CONFIGS = [
         "usMeSCCP",
         "us_me_complete_transfer_to_sccp_form_record_materialized",
     ),
+    EligibilityQueryConfig(
+        "US_MO",
+        "usMoRestrictiveHousingStatusHearing",
+        "us_mo_upcoming_restrictive_housing_hearing_record_materialized",
+    ),
 ]
 
 RESIDENT_RECORD_QUERY_TEMPLATE = f"""
@@ -96,7 +101,9 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
-    workflows_incarceration_states=list_to_query_string(["US_ME"], quoted=True),
+    workflows_incarceration_states=list_to_query_string(
+        ["US_ME", "US_MO"], quoted=True
+    ),
 )
 
 if __name__ == "__main__":
