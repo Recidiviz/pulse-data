@@ -151,7 +151,6 @@ class TestMetricInterface(TestCase):
                 "display_name": "Funding",
                 "reporting_note": None,
                 "description": "The amount of funding for agency law enforcement activities.",
-                "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "category": "Capacity and Cost",
                 "value": 100000,
@@ -198,9 +197,6 @@ class TestMetricInterface(TestCase):
                 "reporting_note": metric_definition.reporting_note,
                 "datapoints": None,
                 "description": metric_definition.description,
-                "definitions": [
-                    d.to_json() for d in metric_definition.definitions or []
-                ],
                 "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.human_readable_string,
                 "value": reported_metric.value,
@@ -318,7 +314,6 @@ class TestMetricInterface(TestCase):
                     "civilian_complaints",
                     "civilian_complaints_by_type",
                 ],
-                "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.human_readable_string,
                 "settings": [],
@@ -347,7 +342,6 @@ class TestMetricInterface(TestCase):
                 "display_name": metric_definition.display_name,
                 "reporting_note": metric_definition.reporting_note,
                 "description": metric_definition.description,
-                "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "datapoints": None,
                 "category": metric_definition.category.human_readable_string,
@@ -778,7 +772,6 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
-                "definitions": [],
                 "contexts": [],
                 "disaggregations": [
                     {
@@ -1007,7 +1000,6 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
-                "definitions": [],
                 "contexts": [],
                 "disaggregations": [
                     {
@@ -1236,7 +1228,6 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
-                "definitions": [],
                 "contexts": [],
                 "disaggregations": [
                     {
@@ -1465,7 +1456,6 @@ class TestMetricInterface(TestCase):
                     },
                 ],
                 "datapoints": None,
-                "definitions": [],
                 "disaggregated_by_supervision_subsystems": None,
                 "display_name": metric_definition.display_name,
                 "description": metric_definition.description,
@@ -1825,7 +1815,6 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
-                "definitions": [],
                 "contexts": [],
                 "disaggregations": [
                     {
@@ -2441,7 +2430,6 @@ class TestMetricInterface(TestCase):
             "disaggregations": [],
             "datapoints": None,
             "contexts": [],
-            "definitions": [],
             "reporting_note": None,
             "settings": [
                 {
@@ -2531,7 +2519,6 @@ class TestMetricInterface(TestCase):
             "display_name": law_enforcement.funding.display_name,
             "description": law_enforcement.funding.description,
             "disaggregated_by_supervision_subsystems": None,
-            "definitions": [],
             "reporting_note": law_enforcement.funding.reporting_note,
             "unit": law_enforcement.funding.metric_type.unit,
             "category": law_enforcement.funding.category.human_readable_string,

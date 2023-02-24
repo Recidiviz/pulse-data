@@ -29,7 +29,6 @@ from recidiviz.justice_counts.dimensions.person import (
     GenderRestricted,
     RaceAndEthnicity,
 )
-from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import (
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
@@ -71,7 +70,6 @@ from recidiviz.justice_counts.includes_excludes.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Definition,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -452,24 +450,6 @@ criminal_case_filings = MetricDefinition(
     ],
 )
 
-cases_disposed = MetricDefinition(
-    system=System.COURTS_AND_PRETRIAL,
-    metric_type=MetricType.CASES_DISPOSED,
-    category=MetricCategory.POPULATIONS,
-    display_name="Cases Disposed",
-    definitions=[
-        Definition(
-            term="Disposition",
-            definition="The initial decision made in the adjudication of the criminal case. Report the disposition for the case as a whole, such that if two charges are dismissed and one is plead, the case disposition is a conviction by plea.",
-        )
-    ],
-    description="Measures the number of cases disposed of in the court.",
-    measurement_type=MeasurementType.DELTA,
-    reporting_frequencies=[ReportingFrequency.MONTHLY],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=DispositionType, required=False)
-    ],
-)
 
 new_offenses_while_on_pretrial_release = MetricDefinition(
     system=System.COURTS_AND_PRETRIAL,
