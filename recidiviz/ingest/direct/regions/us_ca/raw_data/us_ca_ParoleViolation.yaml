@@ -10,6 +10,10 @@ columns:
     description: |-
       An ID to reference a specific individual in who is in custody or under supervision of CDCR.
   - name: ORTGID
+  - name: Referral_Agent_Badge
+    is_pii: True
+    description: |-
+      Badge number of the referring agent.
   - name: Violation_ID
     description: |-
       TODO(#15297)

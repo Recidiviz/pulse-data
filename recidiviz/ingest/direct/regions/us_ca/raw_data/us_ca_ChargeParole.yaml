@@ -13,13 +13,16 @@ columns:
     is_pii: True
     description: |-
       This has the latest CDCNO for each person. See CDCNOParole for more.
+  - name: tcid
+    description: |-
+      TODO(#15297)
   - name: ORTGID
     description: |-
-      ORTGID identifies the Incarceration period associated with the case/offense.
-  - name: COMMITMENTPREFIX
+      ORTGID identifies the Incarceration period associated with the case/offense. This stopped being sent on 12/7/2022 and was replaced with tcid (which is different).
+  - name: CommitmentPrefix
     description: |-
       The first character indicates the numbers of CDCNOs a person has. Second character means one of 2 things: either to uniquely identify case or the judgement, if there were multiple judgements.
-  - name: SENTENCECOMPONENT
+  - name: SentenceComponent
     description: |-
       Identifies the multiple offenses that may be part of the same sentence.
   - name: SentencingCounty
@@ -28,6 +31,6 @@ columns:
   - name: Offense
   - name: OffenseStatus
   - name: OffenseDescription
-  - name: PRINCIPALOFFENSE
+  - name: PrincipalOffense
   - name: SentencingFactor
   - name: SentencingChainType

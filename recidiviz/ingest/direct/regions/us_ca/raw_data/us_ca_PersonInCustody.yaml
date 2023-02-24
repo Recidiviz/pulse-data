@@ -32,6 +32,6 @@ columns:
   - name: EligForPrcs
     description: |-
       TODO(#15297)
-  - name: ploc
+  - name: CurrentLocation
     description: |-
       TODO(#15297)

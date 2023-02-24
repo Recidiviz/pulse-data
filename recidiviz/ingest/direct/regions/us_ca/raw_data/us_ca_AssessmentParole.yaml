@@ -82,9 +82,6 @@ columns:
     description: |-
       Date that the Disability Placement Program (DPP) classification is effective
     is_datetime: True
-  - name: Assessment
-    description: |-
-      [Soon to be deprecated column] COMPAS Assessment score. Correctional Offender Management Profiling for Alternative Sanctions (COMPAS) is a case management and decision support tool developed and owned by Northpointe (now Equivant) used by U.S. courts to assess the likelihood of a defendant becoming a recidivist.
   - name: COMPAS_Assessment
     description: |-
       COMPAS Assessment score. Correctional Offender Management Profiling for Alternative Sanctions (COMPAS) is a case management and decision support tool developed and owned by Northpointe (now Equivant) used by U.S. courts to assess the likelihood of a defendant becoming a recidivist.
@@ -97,7 +94,7 @@ columns:
   - name: Social_Isolation_Score
     description: |-
       Part of COMPAS Assessment Score
-  - name: CriminalqPersonalityScore
+  - name: CriminalPersonalityScore
     description: |-
       Part of COMPAS Assessment Score
   - name: MenWomenAngerHostilityScore
