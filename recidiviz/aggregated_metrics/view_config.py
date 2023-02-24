@@ -24,6 +24,9 @@ from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
 from recidiviz.aggregated_metrics.metric_time_periods import (
     METRIC_TIME_PERIODS_VIEW_BUILDER,
 )
+from recidiviz.aggregated_metrics.supervision_officer_caseload_count_spans import (
+    SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
+)
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 
 
@@ -33,5 +36,6 @@ def get_aggregated_metrics_view_builders() -> Sequence[BigQueryViewBuilder]:
     """
     return [
         METRIC_TIME_PERIODS_VIEW_BUILDER,
+        SUPERVISION_OFFICER_CASELOAD_COUNT_SPANS_VIEW_BUILDER,
         *collect_aggregated_metrics_view_builders(),
     ]
