@@ -208,6 +208,7 @@ output:
                       $then: effective_date
                     - $else: sentenced_date
                 start_date: effective_date
+                effective_date: effective_date
                 projected_completion_date: expiration_date
                 completion_date: closing_date
                 is_life:
@@ -397,6 +398,7 @@ output:
                 incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
                 date_imposed: sentenced_date
                 start_date: effective_date
+                effective_date: effective_date
                 projected_max_release_date: expiration_date
                 completion_date: closing_date
                 parole_eligibility_date:

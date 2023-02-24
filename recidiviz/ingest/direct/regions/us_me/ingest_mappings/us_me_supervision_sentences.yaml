@@ -77,6 +77,7 @@ output:
           supervision_type: $literal_enum(StateSupervisionSentenceSupervisionType.PROBATION)
           date_imposed: Court_Order_Sent_Date
           start_date: Sentence_Start_Date
+          effective_date: Sentence_Start_Date
           projected_completion_date: Comm_Rel_Date
           completion_date: completion_date
           county_code: Jurisdiction_County_Cd
