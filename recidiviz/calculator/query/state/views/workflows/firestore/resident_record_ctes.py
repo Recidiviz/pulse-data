@@ -22,6 +22,7 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
     revert_nonnull_start_date_clause,
 )
+from recidiviz.task_eligibility.utils.us_mo_query_fragments import current_bed_stay_cte
 
 _RESIDENT_RECORD_INCARCERATION_CTE = """
     incarceration_cases AS (
@@ -64,7 +65,17 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
                     BETWEEN {nonnull_start_date_clause('t.start_date')} 
                         AND {nonnull_end_date_clause('t.end_date')} 
               AND t.status='1' -- only 'Active terms'
-        WINDOW w as (PARTITION BY ic.state_code, ic.person_id)
+        WHERE ic.state_code="US_ME"
+        WINDOW w as (PARTITION BY ic.person_id)
+
+        UNION ALL
+
+        SELECT
+            ic.*,
+            NULL AS admission_date,
+            NULL AS release_date
+        FROM incarceration_cases ic
+        WHERE state_code="US_MO"
     ),
 """
 
@@ -98,34 +109,53 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
         ORDER BY
             pei.person_id,
             CAST(LEFT(cl.CUSTODY_DATE, 19) AS DATETIME)
+        
+        -- NULL custody_levels for US_MO for now
     ),
 """
 
-_RESIDENT_RECORD_HOUSING_UNIT_CTE = """
+_RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
+    {current_bed_stay_cte()},
     housing_unit AS (
       SELECT
         person_id,
-        housing_unit AS unit_id,
-        ROW_NUMBER() over (partition by person_id order by admission_date desc) rn 
-      FROM `{project_id}.{normalized_state_dataset}.state_incarceration_period` 
-      where
-          release_date is null
-          and state_code='US_ME'
-      qualify rn = 1
+        housing_unit AS unit_id
+      FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
+      WHERE
+          release_date IS NULL
+          AND state_code='US_ME'
+      QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY admission_date DESC) = 1
+
+      UNION ALL
+
+      SELECT
+        person_id,
+        IF(complex_number=building_number, complex_number, complex_number || " " || building_number) AS unit_id
+      FROM current_bed_stay
     ),
 """
 
 _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
     officer_assignments AS (
         SELECT DISTINCT
+            "US_ME" AS state_code,
             IFNULL(ids.external_id_mapped, Cis_900_Employee_Id) AS officer_id,
-            Cis_100_Client_Id as person_external_id,
-            row_number() OVER (PARTITION BY Cis_100_Client_Id ORDER BY Assignment_Date DESC) rn
+            Cis_100_Client_Id as person_external_id
         FROM `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_124_SUPERVISION_HISTORY_latest` sp
         LEFT JOIN {project_id}.{static_reference_dataset}.agent_multiple_ids_map ids
             ON Cis_900_Employee_Id = ids.external_id_to_map AND 'US_ME' = ids.state_code 
         WHERE Supervision_End_Date IS NULL
-        QUALIFY rn = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY Cis_100_Client_Id ORDER BY Assignment_Date DESC) = 1
+
+        UNION ALL
+
+        SELECT
+            state_code,
+            -- In MO we treat facilities as officers to allow searching by facility
+            ic.facility_id AS officer_id,
+            ic.person_external_id
+        FROM incarceration_cases ic
+        WHERE state_code="US_MO"
     ),
 """
 
@@ -149,7 +179,7 @@ _RESIDENT_RECORD_JOIN_RESIDENTS_CTE = """
         LEFT JOIN housing_unit
           USING(person_id)
         LEFT JOIN officer_assignments
-          USING(person_external_id)
+          USING(state_code, person_external_id)
     ),
 """
 
