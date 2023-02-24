@@ -12,12 +12,15 @@ columns:
   - name: ORTGID
     description: |-
       ORTGID identifies the Incarceration period associated with the case/offense.
-  - name: IN_DATE
+  - name: tcid
+    description: |-
+      TODO(#15297). Started being sent on 12/7/2022.
+  - name: In_Date
     is_datetime: True
   - name: In_Move
   - name: In_Reason
   - name: Intake_Date
-  - name: OUT_DATE
+  - name: out_date
     description: |-
       OUT_DATE will be filled with the date a person was paroled or discharged.
     is_datetime: True

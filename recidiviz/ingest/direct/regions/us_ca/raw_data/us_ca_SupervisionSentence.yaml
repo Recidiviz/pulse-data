@@ -19,6 +19,9 @@ columns:
     is_datetime: True
   - name: ParoleAgentName
     is_pii: True
+  - name: BadgeNumber
+    description: |-
+      TODO(#15297)
   - name: ParoleRegion
   - name: ParoleDistrict
   - name: ParoleUnit
