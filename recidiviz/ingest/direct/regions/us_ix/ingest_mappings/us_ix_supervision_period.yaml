@@ -267,11 +267,17 @@ output:
           supervision_level:
             $conditional:
               - $if:
-                  $in:
-                    $value: DOCLocationToName
-                    $options:
-                      - $literal("Low Supervsn Unit")
-                      - $literal("Low Supervision Unit")
+                  $or:
+                    - $in:
+                        $value: DOCLocationToName
+                        $options:
+                          - $literal("Low Supervsn Unit")
+                          - $literal("Low Supervision Unit")
+                    - $custom:
+                        $function: us_ix_custom_parsers.is_district
+                        $args:
+                          location_name: DOCLocationToName
+                          district_num: $literal("0")
                 $then:
                   $enum_mapping:
                     $raw_text:
@@ -280,105 +286,7 @@ output:
                           - DOCLocationToName
                           - RequestedSupervisionAssignmentLevel
                         $separator: "##"
-                    # using an enum mapping so that the RequestedSupervisionAssignmentLevel is still accessible in the raw text
-                    $mappings:
-                      StateSupervisionLevel.LIMITED:
-                        - Low Supervsn Unit##Level 1
-                        - Low Supervsn Unit##Medium
-                        - Low Supervsn Unit##Parole Violator
-                        - Low Supervsn Unit##ICE Detainer
-                        - Low Supervsn Unit##Mental Health Court
-                        - Low Supervsn Unit##SO Low
-                        - Low Supervsn Unit##Bench Warrant
-                        - Low Supervsn Unit##SO Moderate
-                        - Low Supervsn Unit##Unclassified
-                        - Low Supervsn Unit##Drug Court
-                        - Low Supervsn Unit##Dosage
-                        - Low Supervsn Unit##Level 2
-                        - Low Supervsn Unit##Sex Offense
-                        - Low Supervsn Unit##Maximum
-                        - Low Supervsn Unit##Moderate-Old
-                        - Low Supervsn Unit##O/R Moderate
-                        - Low Supervsn Unit##SO To General Mod
-                        - Low Supervsn Unit##DUI Court
-                        - Low Supervsn Unit##Drug Court Div
-                        - Low Supervsn Unit##Special Needs
-                        - Low Supervsn Unit##Electronic Monitor
-                        - Low Supervsn Unit##Blended Sentence
-                        - Low Supervsn Unit##Transition
-                        - Low Supervsn Unit##Gold Seal Pending
-                        - Low Supervsn Unit##Moderate
-                        - Low Supervsn Unit##Limited Supervision
-                        - Low Supervsn Unit##Absconder
-                        - Low Supervsn Unit##Deported
-                        - Low Supervsn Unit##SO High
-                        - Low Supervsn Unit##Administrative
-                        - Low Supervsn Unit##Expanded CRC
-                        - Low Supervsn Unit##Family Court
-                        - Low Supervsn Unit##Close Comm Supervision
-                        - Low Supervsn Unit##Dosage Eligible
-                        - Low Supervsn Unit##Out ST Custody
-                        - Low Supervsn Unit##DUI Override Level 2
-                        - Low Supervsn Unit##SO To General High
-                        - Low Supervsn Unit##Mental Hlth Crt Div
-                        - Low Supervsn Unit##Level 3
-                        - Low Supervsn Unit##High
-                        - Low Supervsn Unit##Interstate
-                        - Low Supervsn Unit##Low
-                        - Low Supervsn Unit##Probation Violator
-                        - Low Supervsn Unit##Unsupv/Court Prob
-                        - Low Supervsn Unit##Level 4
-                        - Low Supervsn Unit##Federal Custody
-                        - Low Supervsn Unit##O/R High
-                        - Low Supervsn Unit##Minimum
-                        - Low Supervsn Unit##Veterans Court
-                        - Low Supervsn Unit##Veterans Court Div
-                        - Low Supervsn Unit##SO To General Low
-                        - Low Supervsn Unit##Substance Abuse
-                        - Low Supervsn Unit##NONE
-                        - Low Supervision Unit##Administrative
-                        - Low Supervision Unit##DUI Override Level 2
-                        - Low Supervision Unit##Deported
-                        - Low Supervision Unit##Dosage
-                        - Low Supervision Unit##Dosage Eligible
-                        - Low Supervision Unit##Drug Court
-                        - Low Supervision Unit##Federal Custody
-                        - Low Supervision Unit##Gold Seal Pending
-                        - Low Supervision Unit##High
-                        - Low Supervision Unit##ICE Detainer
-                        - Low Supervision Unit##Interstate
-                        - Low Supervision Unit##Level 1
-                        - Low Supervision Unit##Level 2
-                        - Low Supervision Unit##Level 3
-                        - Low Supervision Unit##Level 4
-                        - Low Supervision Unit##Limited Supervision
-                        - Low Supervision Unit##Low
-                        - Low Supervision Unit##Medium
-                        - Low Supervision Unit##Mental Health Court
-                        - Low Supervision Unit##Minimum
-                        - Low Supervision Unit##Moderate
-                        - Low Supervision Unit##Moderate-Old
-                        - Low Supervision Unit##NONE
-                        - Low Supervision Unit##O/R High
-                        - Low Supervision Unit##O/R Moderate
-                        - Low Supervision Unit##Parole Violator
-                        - Low Supervision Unit##Probation Violator
-                        - Low Supervision Unit##SO High
-                        - Low Supervision Unit##SO Low
-                        - Low Supervision Unit##SO Moderate
-                        - Low Supervision Unit##Unclassified
-                        - Low Supervision Unit##Unsupv/Court Prob
-                        - Low Supervision Unit##Veterans Court
-              - $else_if:
-                  $custom:
-                    $function: us_ix_custom_parsers.is_district
-                    $args:
-                      location_name: DOCLocationToName
-                      district_num: $literal("0")
-                $then:
-                  $enum_mapping:
-                    $raw_text: DOCLocationToName
-                    $custom_parser: us_ix_custom_enum_parsers.district_0_supervision_level
+                    $custom_parser: us_ix_custom_enum_parsers.lsu_supervision_level
               - $else_if:
                   $equal:
                     - LegalStatusDesc
