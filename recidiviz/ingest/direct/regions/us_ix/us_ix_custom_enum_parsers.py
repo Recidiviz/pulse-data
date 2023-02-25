@@ -59,8 +59,8 @@ def bw_supervision_type(raw_text: str) -> StateSupervisionPeriodSupervisionType:
     raise ValueError("This parser should never be called on missing raw text.")
 
 
-def district_0_supervision_level(raw_text: str) -> StateSupervisionLevel:
-    """Maps supervision level to LIMITED for cases where we've already determined supervision site to be district 0;
+def lsu_supervision_level(raw_text: str) -> StateSupervisionLevel:
+    """Maps supervision level to LIMITED for cases where we've already determined supervision site to be district 0 or LSU;
     used instead of a literal enum so that raw text can be preserved."""
     if raw_text:
         return StateSupervisionLevel.LIMITED
