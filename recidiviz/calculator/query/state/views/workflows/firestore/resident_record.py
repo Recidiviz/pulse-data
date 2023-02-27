@@ -95,6 +95,9 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
+    us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
+    ),
     analyst_dataset=ANALYST_VIEWS_DATASET,
     us_me_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY

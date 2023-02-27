@@ -106,11 +106,17 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
             PARTITION BY person_id
             ORDER BY CAST(LEFT(cl.CUSTODY_DATE, 19) AS DATETIME) DESC
         ) = 1
-        ORDER BY
-            pei.person_id,
-            CAST(LEFT(cl.CUSTODY_DATE, 19) AS DATETIME)
         
-        -- NULL custody_levels for US_MO for now
+        UNION ALL
+        
+        SELECT 
+            pei.person_id,
+            BL_ICA AS custody_level
+        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBAKRDTA_TAK015_latest` tak015
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            ON BL_DOC = pei.external_id
+            AND pei.state_code = "US_MO"
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY BL_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d', tak015.BL_IC) DESC) = 1
     ),
 """
 
