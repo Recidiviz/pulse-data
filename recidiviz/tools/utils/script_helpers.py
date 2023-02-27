@@ -88,7 +88,7 @@ def interactive_loop_until_tasks_succeed(
         elif not exceptions:
             logging.info("All tasks complete")
         else:
-            logging.warning("These tasks failed with an exception:")
+            logging.warning("These tasks failed with the following exceptions:")
             for exception, args in exceptions:
                 logging.warning("%s    %s", exception, args)
             if prompt_for_confirmation(

@@ -190,6 +190,12 @@ def test_interactive_prompt_retry_on_exception(
     ]
 
 
+TIMEOUT_ERROR = TimeoutError("Timeout!")
+KEY_ERROR = KeyError("Key error!")
+EXCEPTION = Exception("An exception!")
+VALUE_ERROR = ValueError("Value error!")
+
+
 class TestInteractiveLoopUntilTasksSucceed:
     """
     Namespace for verifying behavior of
@@ -259,7 +265,7 @@ class TestInteractiveLoopUntilTasksSucceed:
         mock_tasks_fn = mock.MagicMock(
             return_value=(
                 (task_one, task_two),
-                ((TimeoutError, task_three), (KeyError, task_four)),
+                ((TIMEOUT_ERROR, task_three), (KEY_ERROR, task_four)),
             )
         )
         interactive_loop_until_tasks_succeed(
@@ -274,9 +280,13 @@ class TestInteractiveLoopUntilTasksSucceed:
             ),
         ]
         assert caplog_info.record_tuples == [
-            ("root", logging.WARNING, "These tasks failed with an exception:"),
-            ("root", logging.WARNING, f"{TimeoutError}    {{'three': 3}}"),
-            ("root", logging.WARNING, f"{KeyError}    {{'four': 4}}"),
+            (
+                "root",
+                logging.WARNING,
+                "These tasks failed with the following exceptions:",
+            ),
+            ("root", logging.WARNING, "Timeout!    {'three': 3}"),
+            ("root", logging.WARNING, "'Key error!'    {'four': 4}"),
         ]
 
     @staticmethod
@@ -291,7 +301,7 @@ class TestInteractiveLoopUntilTasksSucceed:
         mock_tasks_fn = mock.MagicMock(
             side_effect=[
                 ((), ()),
-                ((task_one, task_two, task_three), ((Exception, task_four),)),
+                ((task_one, task_two, task_three), ((EXCEPTION, task_four),)),
             ]
         )
         interactive_loop_until_tasks_succeed(
@@ -315,8 +325,12 @@ class TestInteractiveLoopUntilTasksSucceed:
         ]
         assert caplog_info.record_tuples == [
             ("root", logging.ERROR, "Some results are not accounted for"),
-            ("root", logging.WARNING, "These tasks failed with an exception:"),
-            ("root", logging.WARNING, f"{Exception}    {{'four': 4}}"),
+            (
+                "root",
+                logging.WARNING,
+                "These tasks failed with the following exceptions:",
+            ),
+            ("root", logging.WARNING, "An exception!    {'four': 4}"),
         ]
 
     @staticmethod
@@ -333,9 +347,9 @@ class TestInteractiveLoopUntilTasksSucceed:
                 ((), ()),
                 (
                     (task_one, task_three),
-                    ((ValueError, task_two), (Exception, task_four)),
+                    ((VALUE_ERROR, task_two), (EXCEPTION, task_four)),
                 ),
-                ((task_two,), ((TimeoutError, task_four),)),
+                ((task_two,), ((TIMEOUT_ERROR, task_four),)),
                 ((task_four,), ()),
             ]
         )
@@ -367,10 +381,18 @@ class TestInteractiveLoopUntilTasksSucceed:
         ]
         assert caplog_info.record_tuples == [
             ("root", logging.ERROR, "Some results are not accounted for"),
-            ("root", logging.WARNING, "These tasks failed with an exception:"),
-            ("root", logging.WARNING, f"{ValueError}    {{'two': 2}}"),
-            ("root", logging.WARNING, f"{Exception}    {{'four': 4}}"),
-            ("root", logging.WARNING, "These tasks failed with an exception:"),
-            ("root", logging.WARNING, f"{TimeoutError}    {{'four': 4}}"),
+            (
+                "root",
+                logging.WARNING,
+                "These tasks failed with the following exceptions:",
+            ),
+            ("root", logging.WARNING, "Value error!    {'two': 2}"),
+            ("root", logging.WARNING, "An exception!    {'four': 4}"),
+            (
+                "root",
+                logging.WARNING,
+                "These tasks failed with the following exceptions:",
+            ),
+            ("root", logging.WARNING, "Timeout!    {'four': 4}"),
             ("root", logging.INFO, "All tasks complete"),
         ]

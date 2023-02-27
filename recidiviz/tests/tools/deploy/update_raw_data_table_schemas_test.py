@@ -82,7 +82,9 @@ def test_update_raw_data_table_schemas_parallel_loop_retry_integration(
 ) -> None:
     def mock_map_fn_result(
         *, kwargs_list: List[Dict[str, Any]], **_: str
-    ) -> Tuple[List[Tuple[Any, Dict[str, Any]]], List[Tuple[Any, Dict[str, Any]]]]:
+    ) -> Tuple[
+        List[Tuple[Any, Dict[str, Any]]], List[Tuple[Exception, Dict[str, Any]]]
+    ]:
         successes = []
         exceptions = []
         for i, kwargs in enumerate(kwargs_list):
@@ -90,7 +92,8 @@ def test_update_raw_data_table_schemas_parallel_loop_retry_integration(
                 successes.append((None, kwargs))
             else:
                 logging.info("Exception!")
-                exceptions.append((TimeoutError, kwargs))
+                e: Exception = TimeoutError("Time's up")
+                exceptions.append((e, kwargs))
         return (successes, exceptions)
 
     def mock_call(kwargs_list: List[Dict[str, Any]]) -> Any:
@@ -156,31 +159,22 @@ def test_update_raw_data_table_schemas_parallel_loop_retry_integration(
     assert caplog_info.record_tuples == [
         ("root", logging.INFO, f"Writing logs to {tmpdir}/test_log.log"),
         ("root", logging.ERROR, "Some results are not accounted for"),
-        ("root", logging.WARNING, "These tasks failed with an exception:"),
+        ("root", logging.WARNING, "These tasks failed with the following exceptions:"),
         (
             "root",
             logging.WARNING,
-            (
-                f"{TimeoutError}    "
-                f"{{'state_code': 'US_XX', 'raw_file_tag': 'tagone'}}"
-            ),
+            ("Time's up    {'state_code': 'US_XX', 'raw_file_tag': 'tagone'}"),
         ),
         (
             "root",
             logging.WARNING,
-            (
-                f"{TimeoutError}    "
-                f"{{'state_code': 'US_ZZ', 'raw_file_tag': 'tagthree'}}"
-            ),
+            ("Time's up    {'state_code': 'US_ZZ', 'raw_file_tag': 'tagthree'}"),
         ),
-        ("root", logging.WARNING, "These tasks failed with an exception:"),
+        ("root", logging.WARNING, "These tasks failed with the following exceptions:"),
         (
             "root",
             logging.WARNING,
-            (
-                f"{TimeoutError}    "
-                f"{{'state_code': 'US_ZZ', 'raw_file_tag': 'tagthree'}}"
-            ),
+            ("Time's up    {'state_code': 'US_ZZ', 'raw_file_tag': 'tagthree'}"),
         ),
         ("root", logging.INFO, "All tasks complete"),
     ]
