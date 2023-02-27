@@ -15,29 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Collector and Builder for the DirectIngestRawDataTableLatestView class"""
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableLatestView,
-)
+from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
+from recidiviz.utils import metadata
 
 
-class DirectIngestRawDataTableLatestViewBuilder(
-    BigQueryViewBuilder[DirectIngestRawDataTableLatestView]
-):
+class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
     """Factory class for building DirectIngestRawDataTableLatestView"""
 
     def __init__(
@@ -47,32 +43,47 @@ class DirectIngestRawDataTableLatestViewBuilder(
         region_code: str,
         raw_data_source_instance: DirectIngestInstance,
         raw_file_config: DirectIngestRawFileConfig,
-        should_deploy_predicate: Optional[Callable[[], bool]] = None,
     ):
-        self.project_id = project_id
+        self.project_id = project_id or metadata.project_id()
+        self.raw_data_source_instance = raw_data_source_instance
         self.region_code = region_code
         self.raw_file_config = raw_file_config
-        self.raw_data_source_instance = raw_data_source_instance
-        self.should_deploy_predicate = should_deploy_predicate
         self.view_id = f"{raw_file_config.file_tag}_latest"
+        self.description = f"{raw_file_config.file_tag} latest view"
         self.dataset_id = raw_latest_views_dataset_for_region(
-            state_code=StateCode(self.region_code.upper()),
+            state_code=StateCode(region_code.upper()),
             instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
         self.projects_to_deploy = None
         self.materialized_address = None
 
+        self.dataset_id = raw_latest_views_dataset_for_region(
+            state_code=StateCode(region_code.upper()),
+            instance=self.raw_data_source_instance,
+            sandbox_dataset_prefix=None,
+        )
+
     def _build(
         self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
-    ) -> DirectIngestRawDataTableLatestView:
-        return DirectIngestRawDataTableLatestView(
+    ) -> BigQueryView:
+        query = RawTableQueryBuilder(
             project_id=self.project_id,
             region_code=self.region_code,
             raw_data_source_instance=self.raw_data_source_instance,
+        ).build_query(
             raw_file_config=self.raw_file_config,
             address_overrides=address_overrides,
-            should_deploy_predicate=self.should_deploy_predicate,
+            normalized_column_values=True,
+            parameterized_date_filter=False,
+        )
+        return BigQueryView(
+            project_id=self.project_id,
+            dataset_id=self.dataset_id,
+            view_id=self.view_id,
+            view_query_template=query,
+            description=self.description,
+            address_overrides=address_overrides,
         )
 
 
@@ -85,33 +96,25 @@ class DirectIngestRawDataTableLatestViewCollector(
         self,
         region_code: str,
         raw_data_source_instance: DirectIngestInstance,
-        src_raw_tables_sandbox_dataset_prefix: Optional[str],
     ):
         self.region_code = region_code
         self.raw_data_source_instance = raw_data_source_instance
-        self.src_raw_tables_dataset = raw_tables_dataset_for_region(
-            state_code=StateCode(self.region_code.upper()),
-            instance=self.raw_data_source_instance,
-            sandbox_dataset_prefix=src_raw_tables_sandbox_dataset_prefix,
-        )
 
     def collect_view_builders(self) -> List[DirectIngestRawDataTableLatestViewBuilder]:
         region_raw_file_config = DirectIngestRegionRawFileConfig(self.region_code)
         raw_file_configs = region_raw_file_config.raw_file_configs
 
         return [
-            self._builder_for_config(config) for config in raw_file_configs.values()
+            self._builder_for_config(config)
+            for config in raw_file_configs.values()
+            if not config.is_undocumented
         ]
 
     def _builder_for_config(
         self, config: DirectIngestRawFileConfig
     ) -> DirectIngestRawDataTableLatestViewBuilder:
-        def should_deploy_predicate() -> bool:
-            return not config.is_undocumented and bool(config.primary_key_cols)
-
         return DirectIngestRawDataTableLatestViewBuilder(
             region_code=self.region_code,
             raw_file_config=config,
             raw_data_source_instance=self.raw_data_source_instance,
-            should_deploy_predicate=should_deploy_predicate,
         )

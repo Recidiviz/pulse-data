@@ -39,7 +39,6 @@ def get_direct_ingest_view_builders() -> Sequence[BigQueryViewBuilder]:
             DirectIngestRawDataTableLatestViewCollector(
                 region_code=state_code.value.lower(),
                 raw_data_source_instance=instance,
-                src_raw_tables_sandbox_dataset_prefix=None,
             ).collect_view_builders()
             for instance in DirectIngestInstance
             for state_code in get_direct_ingest_states_existing_in_env()

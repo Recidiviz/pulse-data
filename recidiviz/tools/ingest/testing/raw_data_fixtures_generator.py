@@ -29,18 +29,20 @@ from more_itertools import first
 from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableUnnormalizedLatestRowsView,
-)
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
     DirectIngestPreProcessedIngestViewCollector,
 )
+from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
@@ -128,6 +130,13 @@ class RawDataFixturesGenerator:
             for column in raw_config.columns
             if column.is_pii or column.name in columns_to_randomize
         ]
+        # Only look at primary instance to find the raw data
+        self.raw_data_source_instance = DirectIngestInstance.PRIMARY
+        self.query_builder = RawTableQueryBuilder(
+            project_id=self.project_id,
+            region_code=self.region_code,
+            raw_data_source_instance=self.raw_data_source_instance,
+        )
 
     def get_output_fixture_path(self, raw_table_file_tag: str) -> str:
         return direct_ingest_fixture_path(
@@ -154,10 +163,15 @@ class RawDataFixturesGenerator:
 
     def build_query_for_raw_table(
         self,
-        raw_table_view: DirectIngestRawDataTableUnnormalizedLatestRowsView,
+        raw_file_config: DirectIngestRawFileConfig,
         person_external_id_columns: List[str],
     ) -> str:
-
+        """Builds a query that can be used to collect a sample of rows from the raw data
+        table associated with the provided |raw_file_config|. Will return the most
+        recent version of each row associated with the people in
+        |person_external_id_columns|. Datetime cols etc are NOT normalized like they are
+        in *latest views (i.e. they retain the formatting in the source raw data table).
+        """
         filter_by_values = ", ".join(
             f"'{id_filter}'" for id_filter in self.person_external_ids
         )
@@ -178,30 +192,32 @@ class RawDataFixturesGenerator:
                     f" OR {person_external_id_column} IN ({filter_by_values})"
                 )
 
-        return f"{raw_table_view.view_query}{id_filter_condition};"
+        latest_query_template = self.query_builder.build_query(
+            raw_file_config=raw_file_config,
+            address_overrides=None,
+            normalized_column_values=False,
+            parameterized_date_filter=False,
+        )
 
-    def validate_dateset_and_view_exist(
-        self, raw_table_config: DirectIngestRawFileConfig
-    ) -> DirectIngestRawDataTableUnnormalizedLatestRowsView:
-        raw_table_view = DirectIngestRawDataTableUnnormalizedLatestRowsView(
-            project_id=self.project_id,
-            region_code=self.region_code,
-            # Only look at primary instance to find the view
-            raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            raw_file_config=raw_table_config,
-            # We shouldn't need to deploy this view
-            should_deploy_predicate=(lambda: False),
+        return f"{latest_query_template}{id_filter_condition};"
+
+    def validate_raw_table_exists(
+        self, raw_file_config: DirectIngestRawFileConfig
+    ) -> None:
+        raw_table_dataset_id = raw_tables_dataset_for_region(
+            state_code=StateCode(self.region_code.upper()),
+            instance=self.raw_data_source_instance,
+            sandbox_dataset_prefix=None,
         )
         dataset_ref = bigquery.DatasetReference.from_string(
-            raw_table_view.raw_table_dataset_id, default_project=raw_table_view.project
+            raw_table_dataset_id, default_project=self.project_id
         )
         if not self.bq_client.table_exists(
-            dataset_ref, table_id=raw_table_view.raw_file_config.file_tag
+            dataset_ref, table_id=raw_file_config.file_tag
         ):
             raise RuntimeError(
-                f"Table [{raw_table_view.raw_table_dataset_id}].[{raw_table_view.raw_file_config.file_tag}] does not exist, exiting."
+                f"Table [{raw_table_dataset_id}].[{raw_file_config.file_tag}] does not exist, exiting."
             )
-        return raw_table_view
 
     def randomize_column_data(
         self,
@@ -285,7 +301,7 @@ class RawDataFixturesGenerator:
         """Queries BigQuery for the provided raw table and writes the results to CSV."""
         for raw_table_config in self.ingest_view_raw_table_configs:
             raw_table_file_tag = raw_table_config.file_tag
-            raw_table_view = self.validate_dateset_and_view_exist(raw_table_config)
+            self.validate_raw_table_exists(raw_table_config)
 
             # Write fixtures to this path
             output_fixture_path = self.get_output_fixture_path(raw_table_file_tag)
@@ -309,7 +325,7 @@ class RawDataFixturesGenerator:
                 )
 
             query_str = self.build_query_for_raw_table(
-                raw_table_view=raw_table_view,
+                raw_file_config=raw_table_config,
                 person_external_id_columns=person_external_id_columns,
             )
 

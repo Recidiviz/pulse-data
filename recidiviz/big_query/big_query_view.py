@@ -160,18 +160,11 @@ class BigQueryView(bigquery.TableReference):
         |select_query| instead, which will query from the materialized table if there
         is one.
         """
-        return f"SELECT * FROM `{self.project}.{self.address.dataset_id}.{self.address.table_id}`"
+        return self.address.select_query(self.project)
 
     @property
     def select_query(self) -> str:
-        t = self.table_for_query
-        return f"SELECT * FROM `{self.project}.{t.dataset_id}.{t.table_id}`"
-
-    @property
-    def select_query_uninjected_project_id(self) -> str:
-        """This should be used when building another view template that will ultimately be passed to another
-        BigQueryView."""
-        return f"SELECT * FROM `{{project_id}}.{self.dataset_id}.{self.view_id}`"
+        return self.table_for_query.select_query(self.project)
 
     @property
     def address(self) -> BigQueryAddress:

@@ -27,10 +27,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawDataClassification,
     RawTableColumnInfo,
 )
-from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestRawDataTableUnnormalizedLatestRowsView,
-)
 from recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq import (
     RawDataFixturesGenerator,
 )
@@ -100,15 +96,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             always_historical_export=False,
             import_chunk_size_rows=2500,
             infer_columns_from_config=False,
-            primary_key_str="primary",
             custom_line_terminator="\n",
-        )
-        self.raw_table_view = DirectIngestRawDataTableUnnormalizedLatestRowsView(
-            project_id=self.project_id,
-            region_code=self.region_code,
-            raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            raw_file_config=self.raw_table_config,
-            should_deploy_predicate=(lambda: False),
         )
 
     def tearDown(self) -> None:
@@ -138,7 +126,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             person_external_ids=["123"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_table_view=self.raw_table_view,
+            raw_file_config=self.raw_table_config,
             person_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
@@ -148,7 +136,7 @@ WITH filtered_rows AS (
     FROM (
         SELECT
             *,
-            ROW_NUMBER() OVER (PARTITION BY primary
+            ROW_NUMBER() OVER (PARTITION BY Primary_Key_Col
                                ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
         FROM
             `recidiviz-test.us_xx_raw_data.raw_data_table`
@@ -170,7 +158,7 @@ AND External_Id_Col IN ('123');"""
             person_external_ids=["123", "456"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_table_view=self.raw_table_view,
+            raw_file_config=self.raw_table_config,
             person_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
@@ -180,7 +168,7 @@ WITH filtered_rows AS (
     FROM (
         SELECT
             *,
-            ROW_NUMBER() OVER (PARTITION BY primary
+            ROW_NUMBER() OVER (PARTITION BY Primary_Key_Col
                                ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
         FROM
             `recidiviz-test.us_xx_raw_data.raw_data_table`
@@ -200,7 +188,7 @@ AND External_Id_Col IN ('123', '456');"""
             person_external_ids=["123", "456"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_table_view=self.raw_table_view,
+            raw_file_config=self.raw_table_config,
             person_external_id_columns=[
                 "External_Id_Col",
                 "External_Id_Col_2",
@@ -214,7 +202,7 @@ WITH filtered_rows AS (
     FROM (
         SELECT
             *,
-            ROW_NUMBER() OVER (PARTITION BY primary
+            ROW_NUMBER() OVER (PARTITION BY Primary_Key_Col
                                ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
         FROM
             `recidiviz-test.us_xx_raw_data.raw_data_table`
@@ -234,7 +222,7 @@ AND External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR 
             person_external_ids=[]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_table_view=self.raw_table_view,
+            raw_file_config=self.raw_table_config,
             person_external_id_columns=[],
         )
         expected_query = """
@@ -244,7 +232,7 @@ WITH filtered_rows AS (
     FROM (
         SELECT
             *,
-            ROW_NUMBER() OVER (PARTITION BY primary
+            ROW_NUMBER() OVER (PARTITION BY Primary_Key_Col
                                ORDER BY update_datetime DESC, ORDER BY Primary_Key_Col) AS recency_rank
         FROM
             `recidiviz-test.us_xx_raw_data.raw_data_table`
@@ -263,18 +251,11 @@ FROM filtered_rows
         raw_table_config = attr.evolve(
             self.raw_table_config, always_historical_export=True
         )
-        self.raw_table_view = DirectIngestRawDataTableUnnormalizedLatestRowsView(
-            project_id=self.project_id,
-            region_code=self.region_code,
-            raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            raw_file_config=raw_table_config,
-            should_deploy_predicate=(lambda: False),
-        )
         fixtures_generator = self._build_raw_data_fixtures_generator(
             person_external_ids=["123"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_table_view=self.raw_table_view,
+            raw_file_config=raw_table_config,
             person_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
