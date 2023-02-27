@@ -87,7 +87,9 @@ def update_raw_data_table_schemas(
 
     def update_raw_tables_with_redirect(
         file_kwargs: List[Dict[str, Any]], log_path: str
-    ) -> Tuple[List[Tuple[Any, Dict[str, Any]]], List[Tuple[Any, Dict[str, Any]]]]:
+    ) -> Tuple[
+        List[Tuple[Any, Dict[str, Any]]], List[Tuple[Exception, Dict[str, Any]]]
+    ]:
         with redirect_logging_to_file(log_path):
             return map_fn_with_progress_bar_results(
                 fn=raw_data_table_schema_utils.update_raw_data_table_schema,

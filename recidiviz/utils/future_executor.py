@@ -138,7 +138,7 @@ def map_fn_with_progress_bar_results(
     max_workers: int,
     timeout: int,
     progress_bar_message: str,
-) -> Tuple[List[Tuple[Any, Dict[str, Any]]], List[Tuple[Any, Dict[str, Any]]]]:
+) -> Tuple[List[Tuple[Any, Dict[str, Any]]], List[Tuple[Exception, Dict[str, Any]]]]:
     successes = []
     exceptions = []
     with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -154,7 +154,7 @@ def map_fn_with_progress_bar_results(
                 try:
                     data = future.result()
                 except Exception as ex:
-                    exceptions.append((type(ex), task_kwargs))
+                    exceptions.append((ex, task_kwargs))
                 else:
                     successes.append((data, task_kwargs))
                 progress_bar.next()

@@ -90,12 +90,13 @@ def test_map_fn_with_progress_bar_results(capfd: Any) -> None:
         return number
 
     ten_minutes = 10 * 60
+    value_error = ValueError("An exception happened!")
     successes, exceptions = map_fn_with_progress_bar_results(
         fn=fake_futures_function,
         kwargs_list=[
             {"number": 1, "raises": False},
             {"number": 2, "raises": False},
-            {"number": 3, "raises": ValueError},
+            {"number": 3, "raises": value_error},
         ],
         max_workers=8,
         timeout=ten_minutes,
@@ -105,7 +106,7 @@ def test_map_fn_with_progress_bar_results(capfd: Any) -> None:
         (1, {"number": 1, "raises": False}),
         (2, {"number": 2, "raises": False}),
     ]
-    assert exceptions == [(ValueError, {"number": 3, "raises": ValueError})]
+    assert exceptions == [(value_error, {"number": 3, "raises": value_error})]
     assert capfd.readouterr().err == (
         "\x1b[?25l"
         "\r"
