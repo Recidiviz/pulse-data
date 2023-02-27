@@ -117,18 +117,55 @@ def get_case_compliance_task_ctes() -> str:
     return cte_body
 
 
+def get_case_compliance_need_ctes() -> str:
+    return """
+        SELECT
+            person_external_id,
+            state_code,
+            officer_id,
+            TO_JSON(STRUCT(
+                'employment' AS type
+            )) as need,
+        FROM `{project_id}.{workflows_views}.client_record_materialized`
+        WHERE array_length(current_employer) = 0
+        AND state_code = 'US_IX'
+    """
+
+
 US_IX_SUPERVISION_TASKS_RECORD_QUERY_TEMPLATE = f"""
-    WITH all_supervision_tasks AS ({get_case_compliance_task_ctes()})
+    WITH all_supervision_tasks AS ({get_case_compliance_task_ctes()}),
+    all_supervision_needs AS ({get_case_compliance_need_ctes()}),
+    combined_tasks AS (
+        SELECT
+            person_external_id,
+            state_code,
+            officer_id,
+            ARRAY_AGG(task IGNORE NULLS) AS tasks,
+        FROM all_supervision_tasks
+        WHERE task IS NOT NULL
+        GROUP BY 1,2,3
+    ),
+    combined_needs AS (
+        SELECT
+            person_external_id,
+            state_code,
+            officer_id,
+            ARRAY_AGG(need IGNORE NULLS) AS needs,
+        FROM all_supervision_needs
+        WHERE need IS NOT NULL
+        GROUP BY 1,2,3
+    )
 
     SELECT
-        t.person_external_id,
-        t.state_code,
-        t.officer_id,
-        ARRAY_AGG(task IGNORE NULLS) AS tasks
-    FROM all_supervision_tasks t
-    WHERE task IS NOT NULL
-    GROUP BY 1,2,3
-"""
+        person_external_id,
+        state_code,
+        officer_id,
+        tasks,
+        needs,
+    FROM combined_tasks
+    FULL JOIN combined_needs
+    USING (person_external_id, state_code, officer_id)
+    """
 
 US_IX_SUPERVISION_TASKS_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.WORKFLOWS_VIEWS_DATASET,

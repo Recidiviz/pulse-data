@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2022 Recidiviz, Inc.
+#  Copyright (C) 2023 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -70,6 +70,11 @@ class WorkflowsTasksETLDelegateTest(TestCase):
                             "type": "homeVisit",
                             "dueDate": "2023-02-01",
                             "details": {"supervisionLevel": "HIGH"},
+                        }
+                    ],
+                    "needs": [
+                        {
+                            "type": "employment",
                         }
                     ],
                 },

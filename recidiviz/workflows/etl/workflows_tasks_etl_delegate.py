@@ -1,5 +1,5 @@
 #  Recidiviz - a data platform for criminal justice reform
-#  Copyright (C) 2022 Recidiviz, Inc.
+#  Copyright (C) 2023 Recidiviz, Inc.
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -60,6 +60,10 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
             "tasks": [
                 convert_nested_dictionary_keys(task, snake_to_camel)
                 for task in data.get("tasks")
+            ],
+            "needs": [
+                convert_nested_dictionary_keys(task, snake_to_camel)
+                for task in data.get("needs")
             ],
         }
 
