@@ -32,7 +32,7 @@ class WorkflowsTasksETLDelegate(WorkflowsFirestoreETLDelegate):
 
     @property
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
-        return {"us_ix_supervision_tasks_record.json": "US-ID_supervisionTasks"}
+        return {"us_ix_supervision_tasks_record.json": "US_ID-supervisionTasks"}
 
     def get_supported_files(self) -> List[str]:
         return ["us_ix_supervision_tasks_record.json"]
