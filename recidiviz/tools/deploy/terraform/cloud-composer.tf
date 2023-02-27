@@ -32,6 +32,10 @@ locals {
   ]))
 }
 
+data "google_secret_manager_secret_version" "airflow_sendgrid_api_key" {
+  secret = "airflow_sendgrid_api_key"
+}
+
 resource "google_composer_environment" "default_v2" {
   name   = "orchestration-v2"
   region = var.region
@@ -47,14 +51,16 @@ resource "google_composer_environment" "default_v2" {
         "celery-worker_concurrency" = 3
         "email-email_backend"       = "airflow.providers.sendgrid.utils.emailer.send_email"
         "email-email_conn_id"       = "sendgrid_default"
-        "email-from_email"          = "alerts+airflow@recidiviz.org"
         "webserver-rbac"            = true
         "webserver-web_server_name" = "orchestration-v2"
         "secrets-backend"           = "airflow.providers.google.cloud.secrets.secret_manager.CloudSecretManagerBackend"
         "secrets-backend_kwargs"    = "{\"connections_prefix\": \"airflow-connections\", \"sep\": \"-\"}"
       }
       env_variables = {
-        "CONFIG_FILE" = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
+        "CONFIG_FILE"          = "/home/airflow/gcs/dags/recidiviz/calculator/pipeline/calculation_pipeline_templates.yaml"
+        "SENDGRID_API_KEY"     = data.google_secret_manager_secret_version.airflow_sendgrid_api_key.secret_data,
+        "SENDGRID_MAIL_FROM"   = var.project_id == "recidiviz-staging" ? "alerts+airflow-staging@recidiviz.org" : "alerts+airflow-production@recidiviz.org"
+        "SENDGRID_MAIL_SENDER" = var.project_id == "recidiviz-staging" ? "Airflow Alerts (staging)" : "Airflow Alerts (production)"
       }
       pypi_packages = {
         "us"                                = "==2.0.2"
