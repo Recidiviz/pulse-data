@@ -199,6 +199,56 @@ EOF
 
 }
 
+resource "google_bigquery_table" "workflows_resident_record_archive" {
+  dataset_id          = module.export_archives_dataset.dataset_id
+  table_id            = "workflows_resident_record_archive"
+  description         = "This table contains daily archives of the resident_record export for Workflows, which are read directly from Cloud Storage."
+  deletion_protection = false
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = true
+    max_bad_records       = 0
+    source_format         = "NEWLINE_DELIMITED_JSON"
+    source_uris           = ["gs://${var.project_id}-practices-etl-data-archive/*/resident_record.json"]
+  }
+
+  schema = <<EOF
+[
+    {
+        "name": "person_external_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "pseudonymized_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "person_id",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "officer_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "facility_id",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "all_eligible_opportunities",
+        "type": "STRING",
+        "mode": "REPEATED"
+    }
+]
+EOF
+
+}
+
 # This legacy table should be used to add any additional compliant reporting legacy fields from `client_record`
 # that we might need for impact tracking. Historically these fields were on client_record, and they have been moved
 # to compliant_reporting_referral_record.
