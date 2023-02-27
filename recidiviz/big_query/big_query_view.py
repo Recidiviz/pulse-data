@@ -17,29 +17,23 @@
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
 import re
-from typing import Any, Callable, Dict, Generic, List, Optional, Set, TypeVar
+from typing import Any, Callable, Generic, List, Optional, Set, TypeVar
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_query_builder import (
+    REFERENCED_BQ_ADDRESS_REGEX,
+    BigQueryQueryBuilder,
+)
 from recidiviz.utils import metadata
-from recidiviz.utils.string import StrictStringFormatter
 
-PROJECT_ID_KEY = "project_id"
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
 
 
 class BigQueryView(bigquery.TableReference):
     """An implementation of bigquery.TableReference with extra functionality related to views."""
-
-    # Description and project_id are required arguments to BigQueryView itself and may
-    # also, but not always, be used in the query text. The BigQueryView class does not
-    # know whether they will be used so it always makes them available to the query. If
-    # the query does not use them this is not indicative of a bug.
-    QUERY_FORMATTER = StrictStringFormatter(
-        allowed_unused_keywords=frozenset({"project_id"})
-    )
 
     def __init__(
         self,
@@ -87,23 +81,23 @@ class BigQueryView(bigquery.TableReference):
         )
         super().__init__(dataset_ref, view_id)
         self.query_format_kwargs = query_format_kwargs
+        self.query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
 
-        self._view_id = view_id
         self._description = description
         self._view_query_template = view_query_template
-        view_query_no_overrides = self._format_view_query(
-            view_query_template, inject_project_id=True, **self.query_format_kwargs
-        )
-        self._view_query = (
-            self._apply_overrides_to_view_query(
-                view_query_no_overrides, address_overrides
+
+        try:
+            self._view_query = self.query_builder.build_query(
+                project_id=self.project,
+                query_template=self.view_query_template,
+                query_format_kwargs=query_format_kwargs,
             )
-            if address_overrides
-            else view_query_no_overrides
-        )
-        self._parent_tables: Set[BigQueryAddress] = self._parse_parent_tables(
-            self._view_query
-        )
+        except ValueError as e:
+            raise ValueError(f"Unable to format view query for {self.address}") from e
+
+        # List of referenced parent addresses, loaded lazily.
+        self._parent_tables: Optional[Set[BigQueryAddress]] = None
+
         if materialized_address == self.address:
             raise ValueError(
                 f"Materialized address [{materialized_address}] cannot be same as view "
@@ -129,64 +123,6 @@ class BigQueryView(bigquery.TableReference):
                 self._should_deploy = True
         return self._should_deploy
 
-    @classmethod
-    def _format_view_query_without_project_id(
-        cls, view_query_template: str, **query_format_kwargs: Any
-    ) -> str:
-        """Formats the given |view_query_template| string with the given arguments, without injecting a value for the
-        PROJECT_ID_KEY."""
-        query_format_args = {
-            PROJECT_ID_KEY: f"{{{PROJECT_ID_KEY}}}",
-            **query_format_kwargs,
-        }
-
-        return cls.QUERY_FORMATTER.format(view_query_template, **query_format_args)
-
-    def _format_view_query(
-        self,
-        view_query_template: str,
-        inject_project_id: bool,
-        **query_format_kwargs: Any,
-    ) -> str:
-        """This builds the view_query with the given query_format_kwargs. If |inject_project_id| is set to True, sets
-        the PROJECT_ID_KEY value in the template to the current project. Else, returns the formatted view_query with the
-        PROJECT_ID_KEY as {PROJECT_ID_KEY}."""
-
-        try:
-
-            view_query_no_project_id = self._format_view_query_without_project_id(
-                view_query_template, **query_format_kwargs
-            )
-
-            if not inject_project_id:
-                return view_query_no_project_id
-
-            project_id_format_args = {PROJECT_ID_KEY: self.project}
-
-            return self.QUERY_FORMATTER.format(
-                view_query_no_project_id, **project_id_format_args
-            )
-        except ValueError as e:
-            raise ValueError(f"Unable to format view query for {self.address}") from e
-
-    def _apply_overrides_to_view_query(
-        self, view_query: str, address_overrides: BigQueryAddressOverrides
-    ) -> str:
-        query_with_overrides = view_query
-        referenced_parent_tables = self._parse_parent_tables(view_query)
-        for parent_table in referenced_parent_tables:
-            if override := address_overrides.get_sandbox_address(address=parent_table):
-                query_with_overrides = query_with_overrides.replace(
-                    f"`{self.project}.{parent_table.dataset_id}.{parent_table.table_id}`",
-                    f"`{self.project}.{override.dataset_id}.{override.table_id}`",
-                )
-        return query_with_overrides
-
-    def _query_format_args_with_project_id(
-        self, **query_format_kwargs: Any
-    ) -> Dict[str, str]:
-        return {PROJECT_ID_KEY: self.project, **query_format_kwargs}
-
     @property
     def view_id(self) -> str:
         return self.table_id
@@ -208,18 +144,14 @@ class BigQueryView(bigquery.TableReference):
         """Returns a set of set of addresses for tables/views referenced in the fully
         formatted view query.
         """
+        if self._parent_tables is None:
+            self._parent_tables = {
+                BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
+                for _project_id, dataset_id, table_id in re.findall(
+                    REFERENCED_BQ_ADDRESS_REGEX, self.view_query
+                )
+            }
         return self._parent_tables
-
-    @staticmethod
-    def _parse_parent_tables(view_query: str) -> Set[BigQueryAddress]:
-        """Returns a set of set of addresses for tables/views referenced in the provided
-        |view_query|.
-        """
-        parents = re.findall(r"`[\w-]*\.([\w-]*)\.([\w-]*)`", view_query)
-        return {
-            BigQueryAddress(dataset_id=candidate[0], table_id=candidate[1])
-            for candidate in parents
-        }
 
     @property
     def direct_select_query(self) -> str:

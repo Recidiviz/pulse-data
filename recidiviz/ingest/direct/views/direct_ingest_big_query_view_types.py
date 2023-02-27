@@ -23,6 +23,7 @@ from typing import Callable, List, Optional
 import attr
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
+from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -635,8 +636,10 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             materialize_raw_data_table_views=self._materialize_raw_data_table_views,
             config=config,
         )
-        return self.QUERY_FORMATTER.format(
-            query, **self._query_format_args_with_project_id()
+        return self.query_builder.build_query(
+            project_id=self.project,
+            query_template=query,
+            query_format_kwargs={},
         )
 
     @staticmethod
@@ -837,10 +840,12 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             )
 
         # We don't want to inject the project_id outside of the BigQueryView initializer
-        query = cls._format_view_query_without_project_id(
-            full_query_template, **format_args
+        query = BigQueryQueryBuilder(
+            address_overrides=None
+        ).build_no_project_query_template(
+            query_template=full_query_template,
+            query_format_kwargs=format_args,
         )
-
         if config.param_name_override:
             query = query.replace(
                 f"@{UPDATE_DATETIME_PARAM_NAME}", f"@{config.param_name_override}"

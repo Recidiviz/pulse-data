@@ -232,6 +232,7 @@ def main() -> int:
         valid_prefixes = {
             "recidiviz.big_query.address_overrides",
             "recidiviz.big_query.big_query_address",
+            "recidiviz.big_query.big_query_query_builder",
             "recidiviz.big_query.big_query_utils",
             "recidiviz.big_query.big_query_view",
             "recidiviz.calculator",

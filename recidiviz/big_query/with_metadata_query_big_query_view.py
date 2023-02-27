@@ -53,16 +53,17 @@ class WithMetadataQueryBigQueryView(BigQueryView):
             **delegate.query_format_kwargs,
         )
 
-        metadata_query_no_overrides = self._format_view_query(
-            metadata_query, inject_project_id=True, **metadata_query_format_kwargs
-        )
-        self.metadata_query = (
-            self._apply_overrides_to_view_query(
-                metadata_query_no_overrides, address_overrides
+        try:
+            self.metadata_query = self.query_builder.build_query(
+                project_id=self.project,
+                query_template=metadata_query,
+                query_format_kwargs=metadata_query_format_kwargs,
             )
-            if address_overrides
-            else metadata_query_no_overrides
-        )
+        except ValueError as e:
+            raise ValueError(
+                f"Unable to format metadata query for {self.address}"
+            ) from e
+
         self.delegate = delegate
 
     def __repr__(self) -> str:
