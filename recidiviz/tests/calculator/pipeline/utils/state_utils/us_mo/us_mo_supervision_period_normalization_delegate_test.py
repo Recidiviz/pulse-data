@@ -148,7 +148,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_MO",
             supervision_sentence_id=111,
-            start_date=date(2020, 9, 1),
+            effective_date=date(2020, 9, 1),
             completion_date=date(2020, 10, 1),
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
@@ -247,7 +247,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_MO",
             supervision_sentence_id=111,
-            start_date=date(2020, 9, 1),
+            effective_date=date(2020, 9, 1),
             completion_date=date(2020, 10, 1),
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
@@ -338,7 +338,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_MO",
             supervision_sentence_id=111,
-            start_date=date(2020, 9, 1),
+            effective_date=date(2020, 9, 1),
             completion_date=date(2020, 10, 1),
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
@@ -437,7 +437,7 @@ class TestUsMoSupervisionPeriodNormalizationDelegate(unittest.TestCase):
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             state_code="US_MO",
             supervision_sentence_id=111,
-            start_date=date(2020, 9, 1),
+            effective_date=date(2020, 9, 1),
             completion_date=date(2020, 10, 1),
             external_id="ss1",
             status=StateSentenceStatus.SUSPENDED,

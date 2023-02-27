@@ -216,11 +216,11 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         relevant_max_dates = [
             incarceration_sentence.projected_max_release_date
             for incarceration_sentence in incarceration_sentences
-            if incarceration_sentence.start_date
+            if incarceration_sentence.effective_date
             and DateRangeDiff(
                 supervision_period.duration,
                 DateRange.from_maybe_open_range(
-                    incarceration_sentence.start_date,
+                    incarceration_sentence.effective_date,
                     incarceration_sentence.completion_date,
                 ),
             ).overlapping_range
@@ -228,11 +228,11 @@ class StateSpecificSupervisionDelegate(abc.ABC, StateSpecificDelegate):
         ] + [
             supervision_sentence.projected_completion_date
             for supervision_sentence in supervision_sentences
-            if supervision_sentence.start_date
+            if supervision_sentence.effective_date
             and DateRangeDiff(
                 supervision_period.duration,
                 DateRange.from_maybe_open_range(
-                    supervision_sentence.start_date,
+                    supervision_sentence.effective_date,
                     supervision_sentence.completion_date,
                 ),
             ).overlapping_range

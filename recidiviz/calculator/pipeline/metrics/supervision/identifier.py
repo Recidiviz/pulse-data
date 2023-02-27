@@ -857,15 +857,15 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         all_sentences.extend(incarceration_sentences)
 
         for sentence in all_sentences:
-            sentence_start_date = sentence.start_date
+            sentence_effective_date = sentence.effective_date
             sentence_completion_date = sentence.completion_date
 
             # These fields must be set to be included in any supervision success metrics
             # Ignore sentences with erroneous start_dates in the future
             if (
-                not sentence_start_date
+                not sentence_effective_date
                 or not sentence_completion_date
-                or sentence_start_date > date.today()
+                or sentence_effective_date > date.today()
             ):
                 continue
 
@@ -877,8 +877,9 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 ):
                     continue
 
-                projected_completion_date = sentence_start_date + datetime.timedelta(
-                    days=sentence.max_length_days
+                projected_completion_date = (
+                    sentence_effective_date
+                    + datetime.timedelta(days=sentence.max_length_days)
                 )
 
                 sentence_supervision_type: Optional[
@@ -919,7 +920,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 if (
                     not termination_date
                     or not supervision_period.start_date
-                    or sentence_start_date > supervision_period.start_date
+                    or sentence_effective_date > supervision_period.start_date
                     or sentence_completion_date < termination_date
                 ):
                     continue
@@ -993,27 +994,27 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 "termination should be included in the metrics."
             )
 
-        start_date = sentence.start_date
+        effective_date = sentence.effective_date
         completion_date = sentence.completion_date
-        if start_date is None or completion_date is None:
+        if effective_date is None or completion_date is None:
             logging.warning(
                 "start_date and completion_date must be non-None for sentence: %s",
                 sentence,
             )
             return None
 
-        if completion_date < start_date:
+        if completion_date < effective_date:
             logging.warning(
                 "Sentence completion date is before the start date: %s",
                 sentence,
             )
             return None
 
-        sentence_days_served = (completion_date - start_date).days
+        sentence_days_served = (completion_date - effective_date).days
 
         incarcerated_during_sentence = (
             incarceration_period_index.incarceration_admissions_between_dates(
-                start_date, completion_date
+                effective_date, completion_date
             )
         )
 

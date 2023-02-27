@@ -162,7 +162,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
-            start_date=date(2018, 5, 1),
+            effective_date=date(2018, 5, 1),
             external_id="ss1",
             state_code="US_XX",
             status=StateSentenceStatus.COMPLETED,
@@ -232,7 +232,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
-            start_date=date(2018, 5, 1),
+            effective_date=date(2018, 5, 1),
             external_id="ss1",
             state_code="US_XX",
             status=StateSentenceStatus.COMPLETED,
@@ -277,7 +277,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",
-            start_date=date(2018, 5, 1),
+            effective_date=date(2018, 5, 1),
             projected_max_release_date=date(2018, 5, 10),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
@@ -319,7 +319,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
 
         supervision_sentence = NormalizedStateSupervisionSentence.new_with_defaults(
             supervision_sentence_id=111,
-            start_date=date(2018, 5, 1),
+            effective_date=date(2018, 5, 1),
             external_id="ss1",
             state_code="US_XX",
             status=StateSentenceStatus.COMPLETED,
@@ -334,7 +334,7 @@ class TestStateSpecificSupervisionDelegate(unittest.TestCase):
             state_code="US_XX",
             incarceration_sentence_id=123,
             external_id="is1",
-            start_date=date(2018, 5, 1),
+            effective_date=date(2018, 5, 1),
             projected_max_release_date=date(2018, 5, 20),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
