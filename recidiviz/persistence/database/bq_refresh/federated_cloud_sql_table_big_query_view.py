@@ -33,7 +33,7 @@ TABLE_QUERY_TEMPLATE = """
 SELECT
     *
 FROM EXTERNAL_QUERY(
-    "{{project_id}}.{connection_region}.{connection_name}",
+    "{project_id}.{connection_region}.{connection_name}",
     "{cloud_sql_query}"
 )"""
 

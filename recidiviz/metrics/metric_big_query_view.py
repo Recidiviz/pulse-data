@@ -24,8 +24,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.utils.types import assert_type
 
-PROJECT_ID_KEY = "project_id"
-
 
 class MetricBigQueryView(BigQueryView):
     """An extension of BigQueryView with extra functionality related to metric views specifically."""
