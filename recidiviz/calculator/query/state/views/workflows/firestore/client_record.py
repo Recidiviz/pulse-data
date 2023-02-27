@@ -46,7 +46,7 @@ PSEUDONYMIZED_ID = """
         # hashing external ID to base64url
         REPLACE(
             REPLACE(
-                TO_BASE64(SHA256(state_code || person_external_id)), 
+                TO_BASE64(SHA256(IF(state_code="US_IX", "US_ID", state_code) || person_external_id)), 
                 '+', 
                 '-'
             ), 
