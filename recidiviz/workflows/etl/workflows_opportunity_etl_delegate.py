@@ -74,6 +74,12 @@ CONFIG_BY_STATE: Dict[StateCode, List[OpportunityExportConfig]] = {
             export_collection_name="US_ME-SCCPReferrals",
         ),
     ],
+    StateCode.US_MO: [
+        OpportunityExportConfig(
+            source_filename="us_mo_upcoming_restrictive_housing_hearing_record.json",
+            export_collection_name="US_MO-restrictiveHousingStatusHearingReferrals",
+        ),
+    ],
 }
 
 CRITERIA_TO_DEPREFIX: List[str] = [
