@@ -30,7 +30,7 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
 
 resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
   name        = "schedule_sftp_dag_run_cloud_function"
-  schedule    = "0 * * * *" # Every hour at minute 0
+  schedule    = "45 * * * *" # Every hour at minute 45
   description = "Schedules the running of the SFTP DAG pipeline topic"
   time_zone   = "America/Los_Angeles"
 
