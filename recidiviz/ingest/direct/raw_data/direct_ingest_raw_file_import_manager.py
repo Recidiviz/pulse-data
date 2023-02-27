@@ -115,7 +115,7 @@ class RawTableColumnInfo:
     # It should contain the string literal {col_name} and follow the format with the
     # SAFE.PARSE_TIMESTAMP('[insert your time format st]', [some expression w/ {col_name}]).
     # SAFE.PARSE_DATE or SAFE.PARSE_DATETIME can also be used.
-    # See recidiviz.ingest.direct.views.direct_ingest_big_query_view_types.DATETIME_COL_NORMALIZATION_TEMPLATE
+    # See recidiviz.ingest.direct.views.raw_table_query_builder.DATETIME_COL_NORMALIZATION_TEMPLATE
     datetime_sql_parsers: Optional[List[str]] = attr.ib(
         default=None, validator=attr_validators.is_opt_list
     )
@@ -144,7 +144,7 @@ class RawTableColumnInfo:
                 ):
                     raise ValueError(
                         f"Expected datetime_sql_parser must match expected timestamp parsing formats for {self.name}. Current parser: {parser}"
-                        "See recidiviz.ingest.direct.views.direct_ingest_big_query_view_types.DATETIME_COL_NORMALIZATION_TEMPLATE"
+                        "See recidiviz.ingest.direct.views.raw_table_query_builder.DATETIME_COL_NORMALIZATION_TEMPLATE"
                     )
 
     @property
@@ -234,11 +234,14 @@ class DirectIngestRawFileConfig:
     # are defined in, as the column names. By default, False.
     infer_columns_from_config: bool = attr.ib()
 
-    # A comma-separated string representation of the primary keys
-    primary_key_str: str = attr.ib()
+    @property
+    def primary_key_str(self) -> str:
+        """A comma-separated string representation of the primary keys"""
+        if not self.primary_key_cols:
+            raise ValueError(
+                f"Found no defined primary key columns for file [{self.file_tag}]"
+            )
 
-    @primary_key_str.default
-    def _primary_key_str(self) -> str:
         return ", ".join(self.primary_key_cols)
 
     def encodings_to_try(self) -> List[str]:
@@ -281,8 +284,9 @@ class DirectIngestRawFileConfig:
 
     @property
     def is_undocumented(self) -> bool:
-        documented_cols = [column.name for column in self.columns if column.description]
-        return not documented_cols
+        # TODO(#18359): Change this logic to allow for empty primary key cols in files
+        #  that do not have valid primary keys.
+        return not self.available_columns or not self.primary_key_cols
 
     def caps_normalized_col(self, col_name: str) -> Optional[str]:
         """If the provided column name has a case-insensitive match in the columns list,

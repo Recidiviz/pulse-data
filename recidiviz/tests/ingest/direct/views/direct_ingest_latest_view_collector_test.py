@@ -1,0 +1,278 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Tests for classes in direct_ingest_latest_vie_collector.py"""
+import unittest
+from unittest.mock import patch
+
+import attr
+
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    DirectIngestRawFileConfig,
+    RawDataClassification,
+    RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
+    get_existing_direct_ingest_states,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
+    DirectIngestRawDataTableLatestViewBuilder,
+    DirectIngestRawDataTableLatestViewCollector,
+)
+from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
+    FakeDirectIngestRegionRawFileConfig,
+)
+
+NON_HISTORICAL_LATEST_VIEW_QUERY = """
+WITH filtered_rows AS (
+    SELECT
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY col1, col2
+                               ORDER BY update_datetime DESC, CAST(seq_num AS INT64)) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.table_name`
+        
+    ) a
+    WHERE
+        recency_rank = 1
+)
+SELECT col1, col2
+FROM filtered_rows
+"""
+
+
+HISTORICAL_LATEST_VIEW_QUERY = """
+WITH max_update_datetime AS (
+    SELECT
+        MAX(update_datetime) AS update_datetime
+    FROM
+        `recidiviz-456.us_xx_raw_data.table_name`
+    
+),
+max_file_id AS (
+    SELECT
+        MAX(file_id) AS file_id
+    FROM
+        `recidiviz-456.us_xx_raw_data.table_name`
+    WHERE
+        update_datetime = (SELECT update_datetime FROM max_update_datetime)
+),
+filtered_rows AS (
+    SELECT *
+    FROM
+        `recidiviz-456.us_xx_raw_data.table_name`
+    WHERE
+        file_id = (SELECT file_id FROM max_file_id)
+)
+SELECT col1, col2
+FROM filtered_rows
+"""
+
+
+class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
+    """Tests DirectIngestRawDataTableLatestViewBuilder"""
+
+    def setUp(self) -> None:
+        self.project_id = "recidiviz-456"
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = self.project_id
+        self.raw_file_config = DirectIngestRawFileConfig(
+            file_tag="table_name",
+            file_path="path/to/file.yaml",
+            file_description="file description",
+            data_classification=RawDataClassification.SOURCE,
+            primary_key_cols=["col1", "col2"],
+            columns=[
+                RawTableColumnInfo(
+                    name="col1",
+                    is_datetime=False,
+                    is_pii=False,
+                    description="col1 description",
+                ),
+                RawTableColumnInfo(
+                    name="col2",
+                    is_datetime=False,
+                    is_pii=False,
+                    description="col2 description",
+                ),
+            ],
+            supplemental_order_by_clause="CAST(seq_num AS INT64)",
+            encoding="any-encoding",
+            separator="@",
+            custom_line_terminator=None,
+            ignore_quotes=False,
+            always_historical_export=False,
+            import_chunk_size_rows=10,
+            infer_columns_from_config=False,
+        )
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_build_latest_view(self) -> None:
+        view = DirectIngestRawDataTableLatestViewBuilder(
+            region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            raw_file_config=self.raw_file_config,
+        ).build(address_overrides=None)
+
+        self.assertEqual(self.project_id, view.project)
+        self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
+        self.assertEqual("table_name_latest", view.table_id)
+        self.assertEqual("table_name_latest", view.view_id)
+
+        self.assertEqual(NON_HISTORICAL_LATEST_VIEW_QUERY, view.view_query)
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
+            view.select_query,
+        )
+        self.assertTrue(view.should_deploy())
+
+    def test_build_historical_file_latest_view(self) -> None:
+        raw_file_config = attr.evolve(
+            self.raw_file_config, always_historical_export=True
+        )
+        view = DirectIngestRawDataTableLatestViewBuilder(
+            region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            raw_file_config=raw_file_config,
+        ).build(address_overrides=None)
+
+        self.assertEqual(self.project_id, view.project)
+        self.assertEqual("us_xx_raw_data_up_to_date_views", view.dataset_id)
+        self.assertEqual("table_name_latest", view.table_id)
+        self.assertEqual("table_name_latest", view.view_id)
+
+        self.assertEqual(HISTORICAL_LATEST_VIEW_QUERY, view.view_query)
+        self.assertEqual(
+            "SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`",
+            view.select_query,
+        )
+        self.assertTrue(view.should_deploy())
+
+    def test_build_no_primary_keys_throws(self) -> None:
+        # Config with no columns
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            primary_key_cols=[],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found no defined primary key columns for file \[table_name\]",
+        ):
+            _ = DirectIngestRawDataTableLatestViewBuilder(
+                region_code="us_xx",
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_file_config=raw_file_config,
+            ).build(address_overrides=None)
+
+    def test_build_no_documented_columns_throws(self) -> None:
+        # Columns with no documentation
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            always_historical_export=True,
+            columns=[
+                RawTableColumnInfo(
+                    name="col1",
+                    is_datetime=False,
+                    is_pii=False,
+                    description=None,
+                ),
+                RawTableColumnInfo(
+                    name="col2",
+                    is_datetime=False,
+                    is_pii=False,
+                    description=None,
+                ),
+            ],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found no available \(documented\) columns for file \[table_name\]",
+        ):
+            _ = DirectIngestRawDataTableLatestViewBuilder(
+                region_code="us_xx",
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_file_config=raw_file_config,
+            ).build(address_overrides=None)
+
+    def test_build_no_columns_throws(self) -> None:
+        # Config with no columns
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            always_historical_export=True,
+            columns=[],
+        )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found no available \(documented\) columns for file \[table_name\]",
+        ):
+            _ = DirectIngestRawDataTableLatestViewBuilder(
+                region_code="us_xx",
+                raw_data_source_instance=DirectIngestInstance.PRIMARY,
+                raw_file_config=raw_file_config,
+            ).build(address_overrides=None)
+
+
+class DirectIngestRawDataTableLatestViewCollectorTest(unittest.TestCase):
+    """Tests DirectIngestRawDataTableLatestViewCollector"""
+
+    def setUp(self) -> None:
+        self.project_id = "recidiviz-456"
+        self.metadata_patcher = patch("recidiviz.utils.metadata.project_id")
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = self.project_id
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_collect_latest_view_builders(self) -> None:
+        with patch(
+            "recidiviz.ingest.direct.views.direct_ingest_latest_view_collector.DirectIngestRegionRawFileConfig",
+        ) as config_cls:
+            config_cls.return_value = FakeDirectIngestRegionRawFileConfig(
+                StateCode.US_XX.value
+            )
+            collector = DirectIngestRawDataTableLatestViewCollector(
+                StateCode.US_XX.value, DirectIngestInstance.PRIMARY
+            )
+
+            builders = collector.collect_view_builders()
+        self.assertCountEqual(
+            [
+                "tagFullyEmptyFile_latest",
+                "tagHeadersNoContents_latest",
+                "tagBasicData_latest",
+                "tagMoreBasicData_latest",
+                # Excludes tagWeDoNotIngest which has no documented columns
+            ],
+            [b.view_id for b in builders],
+        )
+
+    def test_collect_latest_view_builders_all(self) -> None:
+        for state_code in get_existing_direct_ingest_states():
+            collector = DirectIngestRawDataTableLatestViewCollector(
+                state_code.value, DirectIngestInstance.PRIMARY
+            )
+
+            # Just make sure we don't crash
+            _ = collector.collect_view_builders()

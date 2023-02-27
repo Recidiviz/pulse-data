@@ -104,7 +104,6 @@ def compare_raw_data_between_projects(
         if (
             not bq_client.table_exists(source_dataset, file_tag)
             or file_config.is_undocumented
-            or not file_config.primary_key_cols
         ):
             continue
 

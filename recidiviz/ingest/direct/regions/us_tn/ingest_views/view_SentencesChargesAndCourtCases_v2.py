@@ -22,8 +22,10 @@ sentence row, as well as a single court case with a single agent (judge).
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    UPDATE_DATETIME_PARAM_NAME,
     DirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.ingest.direct.views.raw_table_query_builder import (
+    UPDATE_DATETIME_PARAM_NAME,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

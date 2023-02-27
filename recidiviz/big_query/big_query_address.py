@@ -36,3 +36,6 @@ class BigQueryAddress:
 
     def to_str(self) -> str:
         return f"{self.dataset_id}.{self.table_id}"
+
+    def select_query(self, project_id: str) -> str:
+        return f"SELECT * FROM `{project_id}.{self.dataset_id}.{self.table_id}`"
