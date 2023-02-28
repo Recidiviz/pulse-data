@@ -252,11 +252,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
     def __init__(self, ingest_instance: DirectIngestInstance):
         super().__init__(ingest_instance)
         self.enum_overrides = self.generate_enum_overrides()
-        early_discharge_deleted_rows_processors = [
-            gen_label_single_external_id_hook(US_ID_DOC),
-            self._set_generated_ids,
-            self._set_invalid_early_discharge_status,
-        ]
         self.row_post_processors_by_file: Dict[str, List[IngestRowPosthookCallable]] = {
             "offender_ofndr_dob_address": [
                 copy_name_to_alias,
@@ -314,8 +309,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
                 self._hydrate_violation_types,
                 self._hydrate_violation_report_fields,
             ],
-            "early_discharge_incarceration_sentence_deleted_rows": early_discharge_deleted_rows_processors,
-            "early_discharge_supervision_sentence_deleted_rows": early_discharge_deleted_rows_processors,
         }
         self.file_post_processors_by_file: Dict[
             str, List[IngestFilePostprocessorCallable]
@@ -563,8 +556,6 @@ class UsIdController(BaseDirectIngestController, LegacyIngestViewProcessorDelega
             "movement_facility_location_offstat_supervision_periods",
             "ofndr_tst_tst_qstn_rspns_violation_reports",
             "ofndr_tst_tst_qstn_rspns_violation_reports_old",
-            "early_discharge_incarceration_sentence_deleted_rows",
-            "early_discharge_supervision_sentence_deleted_rows",
             "sprvsn_cntc_v3",
             "agnt_case_updt",
         ]

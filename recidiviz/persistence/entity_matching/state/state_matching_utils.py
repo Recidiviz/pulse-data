@@ -345,8 +345,6 @@ def can_atomically_merge_entity(
             # We update this entity from four views in US_ID:
             # early_discharge_supervision_sentence
             # early_discharge_incarceration_sentence
-            # early_discharge_supervision_sentence_deleted_rows
-            # early_discharge_incarceration_sentence_deleted_rows
             schema.StateEarlyDischarge,
         ),
     ):

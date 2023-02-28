@@ -127,7 +127,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
     def create_args_generator(
         self,
         region: DirectIngestRegion,
-        is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
         ingest_view_name: Optional[str] = None,
     ) -> IngestViewMaterializationArgsGenerator:
@@ -144,7 +143,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]
                 region,
                 ingest_view_name=ingest_view_name or "ingest_view",
-                is_detect_row_deletion_view=is_detect_row_deletion_view,
                 materialize_raw_data_table_views=materialize_raw_data_table_views,
             ),
             launched_ingest_views=[ingest_view_name],
@@ -274,58 +272,6 @@ class TestIngestViewMaterializationArgsGenerator(unittest.TestCase):
         # Assert
         # New code tables are backdated but don't need to be re-ingested, so ignore them.
         self.assertListEqual(args, [])
-
-    def test_getIngestViewExportTaskArgs_reverseDateDiff(self) -> None:
-        # Arrange
-        region = fake_region(environment="production")
-        args_generator = self.create_args_generator(
-            region, is_detect_row_deletion_view=True
-        )
-        args_generator.metadata_manager.get_most_recent_registered_job = Mock(  # type: ignore
-            return_value=None
-        )
-        args_generator.raw_file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock(  # type: ignore
-            return_value=[
-                DirectIngestRawFileMetadata(
-                    file_id=2,
-                    region_code=region.region_code,
-                    file_tag="file_tag",
-                    file_discovery_time=_DATE_1_UTC,
-                    normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    file_processed_time=None,
-                    update_datetime=_DATE_1_UTC,
-                    raw_data_instance=DirectIngestInstance.PRIMARY,
-                ),
-                DirectIngestRawFileMetadata(
-                    file_id=2,
-                    region_code=region.region_code,
-                    file_tag="file_tag",
-                    file_discovery_time=_DATE_2_UTC,
-                    normalized_file_name="unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv",
-                    file_processed_time=None,
-                    update_datetime=_DATE_2_UTC,
-                    raw_data_instance=DirectIngestInstance.PRIMARY,
-                ),
-            ]
-        )
-
-        # Act
-        args = args_generator.get_ingest_view_materialization_task_args()
-
-        # Assert
-        self.assertListEqual(
-            args,
-            [
-                # We create args for the time between DATE 1 and DATE 2 but not for
-                # the time between None and DATE 1 (e.g. the historical query).
-                IngestViewMaterializationArgs(
-                    ingest_view_name="ingest_view",
-                    ingest_instance=self.ingest_instance,
-                    lower_bound_datetime_exclusive=_DATE_1,
-                    upper_bound_datetime_inclusive=_DATE_2,
-                )
-            ],
-        )
 
     def test_ingest_view_export_job_created_between_raw_file_discoveries_with_same_datetime(
         self,

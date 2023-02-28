@@ -73,8 +73,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         self.assertEqual(
@@ -153,34 +151,6 @@ ORDER BY col1, col2;"""
             ),
         )
 
-    def test_direct_ingest_preprocessed_view_detect_row_deletion_no_historical_table(
-        self,
-    ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
-
-        view_query_template = """SELECT * FROM {file_tag_first}
-LEFT OUTER JOIN {file_tag_second}
-USING (col1);"""
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "^Ingest view ingest_view_tag is marked as `is_detect_row_deletion_view` and has table file_tag_second "
-            "specified in `primary_key_tables_for_entity_deletion`; however the raw data file is not marked as always "
-            "being exported as historically.",
-        ):
-            DirectIngestPreProcessedIngestView(
-                dataset_id="NO DATASET",
-                view_id="ingest_view_tag",
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols="col1, col2",
-                is_detect_row_deletion_view=True,
-                primary_key_tables_for_entity_deletion=["file_tag_second"],
-            )
-
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
         self,
     ) -> None:
@@ -202,170 +172,7 @@ USING (col1);"""
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="any_col",
-                is_detect_row_deletion_view=False,
-                primary_key_tables_for_entity_deletion=[],
             )
-
-    def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(
-        self,
-    ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
-
-        view_query_template = """SELECT * FROM {file_tag_first}
-        LEFT OUTER JOIN {tagFullHistoricalExport}
-        USING (col1);"""
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "^Ingest view ingest_view_tag was marked as `is_detect_row_deletion_view`; however no "
-            "`primary_key_tables_for_entity_deletion` were defined.",
-        ):
-            DirectIngestPreProcessedIngestView(
-                dataset_id="NO DATASET",
-                view_id="ingest_view_tag",
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols="col1, col2",
-                is_detect_row_deletion_view=True,
-                primary_key_tables_for_entity_deletion=[],
-            )
-
-    def test_direct_ingest_preprocessed_view_detect_row_deletion_unknown_pk_table_specified(
-        self,
-    ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
-
-        view_query_template = """SELECT * FROM {file_tag_first}
-        LEFT OUTER JOIN {tagFullHistoricalExport}
-        USING (col1);"""
-
-        with self.assertRaisesRegex(
-            ValueError,
-            "^Ingest view ingest_view_tag has specified unknown in "
-            "`primary_key_tables_for_entity_deletion`, but that "
-            "raw file tag was not found as a dependency.",
-        ):
-            DirectIngestPreProcessedIngestView(
-                dataset_id="NO DATASET",
-                view_id="ingest_view_tag",
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols="col1, col2",
-                is_detect_row_deletion_view=True,
-                primary_key_tables_for_entity_deletion=[
-                    "tagFullHistoricalExport",
-                    "unknown",
-                ],
-            )
-
-    def test_direct_ingest_preprocessed_view_detect_row_deletion(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
-
-        view_query_template = """SELECT * FROM {file_tag_first}
-LEFT OUTER JOIN {tagFullHistoricalExport}
-USING (col1);"""
-
-        view = DirectIngestPreProcessedIngestView(
-            dataset_id="NO DATASET",
-            view_id="ingest_view_tag",
-            view_query_template=view_query_template,
-            region_raw_table_config=region_config,
-            order_by_cols="col1, col2",
-            is_detect_row_deletion_view=True,
-            primary_key_tables_for_entity_deletion=["tagFullHistoricalExport"],
-        )
-
-        self.assertEqual(
-            ["file_tag_first", "tagFullHistoricalExport"],
-            [c.file_tag for c in view.raw_table_dependency_configs],
-        )
-
-        expected_view_query = """WITH
-file_tag_first_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
-),
-tagFullHistoricalExport_generated_view AS (
-    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.tagFullHistoricalExport_latest`
-)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN tagFullHistoricalExport_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
-
-        self.assertEqual(
-            expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
-        )
-
-        expected_parameterized_view_query = """WITH
-file_tag_first_generated_view AS (
-    WITH filtered_rows AS (
-        SELECT
-            * EXCEPT (recency_rank)
-        FROM (
-            SELECT
-                *,
-                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
-                                   ORDER BY update_datetime DESC) AS recency_rank
-            FROM
-                `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @my_update_timestamp_param_name
-        ) a
-        WHERE
-            recency_rank = 1
-    )
-    SELECT col_name_1a, col_name_1b
-    FROM filtered_rows
-),
-tagFullHistoricalExport_generated_view AS (
-    WITH max_update_datetime AS (
-        SELECT
-            MAX(update_datetime) AS update_datetime
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= @my_update_timestamp_param_name
-    ),
-    max_file_id AS (
-        SELECT
-            MAX(file_id) AS file_id
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            update_datetime = (SELECT update_datetime FROM max_update_datetime)
-    ),
-    filtered_rows AS (
-        SELECT *
-        FROM
-            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE
-            file_id = (SELECT file_id FROM max_file_id)
-    )
-    SELECT COL_1
-    FROM filtered_rows
-)
-SELECT * FROM file_tag_first_generated_view
-LEFT OUTER JOIN tagFullHistoricalExport_generated_view
-USING (col1)
-ORDER BY col1, col2;"""
-
-        self.assertEqual(
-            expected_parameterized_view_query,
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
-                    param_name_override="my_update_timestamp_param_name",
-                )
-            ),
-        )
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -383,8 +190,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         self.assertEqual(
@@ -456,8 +261,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         self.assertEqual(
@@ -496,8 +299,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         self.assertEqual(
@@ -582,8 +383,6 @@ ORDER BY col1, col2;"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         self.assertEqual(
@@ -619,8 +418,6 @@ USING (col1);"""
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="any_col",
-                is_detect_row_deletion_view=False,
-                primary_key_tables_for_entity_deletion=[],
             )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_subqueries(
@@ -641,8 +438,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
             materialize_raw_data_table_views=True,
         )
 
@@ -745,8 +540,6 @@ SELECT * FROM my_subquery;"""
                 view_query_template=view_query_template,
                 region_raw_table_config=region_config,
                 order_by_cols="col1, col2",
-                is_detect_row_deletion_view=False,
-                primary_key_tables_for_entity_deletion=[],
             )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
@@ -767,8 +560,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
             materialize_raw_data_table_views=True,
         )
 
@@ -854,8 +645,6 @@ ORDER BY col1, col2;"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
             materialize_raw_data_table_views=True,
         )
 
@@ -893,8 +682,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
             materialize_raw_data_table_views=True,
         )
 
@@ -1008,8 +795,6 @@ USING (col1);"""
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         self.assertEqual(
@@ -1129,8 +914,6 @@ ORDER BY col1, col2
             view_query_template=view_query_template,
             region_raw_table_config=region_config,
             order_by_cols="col1, col2",
-            is_detect_row_deletion_view=False,
-            primary_key_tables_for_entity_deletion=[],
         )
 
         expected_view_query = """WITH
@@ -1205,8 +988,6 @@ ORDER BY col1, col2;"""
                     view_query_template=view_query_template,
                     region_raw_table_config=region_config,
                     order_by_cols="col1, col2",
-                    is_detect_row_deletion_view=False,
-                    primary_key_tables_for_entity_deletion=[],
                 )
 
     def test_query_structure_config_destination_table_type_dataset_id_validations(

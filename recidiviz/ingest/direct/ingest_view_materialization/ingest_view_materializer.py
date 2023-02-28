@@ -151,16 +151,12 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
 
     @staticmethod
     def _create_date_diff_query(
-        upper_bound_query: str, upper_bound_prev_query: str, do_reverse_date_diff: bool
+        upper_bound_query: str, upper_bound_prev_query: str
     ) -> str:
         """Provided the given |upper_bound_query| and |upper_bound_prev_query| returns a query which will return the
-        delta between those two queries. The ordering of the comparison depends on the provided |do_reverse_date_diff|.
+        delta between those two queries.
         """
-        main_query, filter_query = (
-            (upper_bound_prev_query, upper_bound_query)
-            if do_reverse_date_diff
-            else (upper_bound_query, upper_bound_prev_query)
-        )
+        main_query, filter_query = (upper_bound_query, upper_bound_prev_query)
         filter_query = filter_query.rstrip().rstrip(";")
         main_query = main_query.rstrip().rstrip(";")
         query = f"(\n{main_query}\n) EXCEPT DISTINCT (\n{filter_query}\n);"
@@ -231,7 +227,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             materialization_query = self._create_date_diff_query(
                 upper_bound_query=materialization_query,
                 upper_bound_prev_query=upper_bound_prev_query,
-                do_reverse_date_diff=ingest_view.do_reverse_date_diff,
             )
 
         return DirectIngestPreProcessedIngestView.add_order_by_suffix(
@@ -330,15 +325,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         ingest_view = self.ingest_views_by_name[
             ingest_view_materialization_args.ingest_view_name
         ]
-
-        if (
-            ingest_view.do_reverse_date_diff
-            and not ingest_view_materialization_args.lower_bound_datetime_exclusive
-        ):
-            raise ValueError(
-                f"Attempting to process reverse date diff view "
-                f"[{ingest_view.ingest_view_name}] with no lower bound date."
-            )
 
         logging.info(
             "Start loading results of individual date queries into intermediate tables."
@@ -457,7 +443,6 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             diff_query = cls._create_date_diff_query(
                 upper_bound_query=f"SELECT * FROM {upper_bound_table_id}",
                 upper_bound_prev_query=f"SELECT * FROM {lower_bound_table_id}",
-                do_reverse_date_diff=ingest_view.do_reverse_date_diff,
             )
             diff_query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
                 query=diff_query, order_by_cols=ingest_view.order_by_cols
