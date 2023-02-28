@@ -257,7 +257,7 @@ SELECT
     JOCharge.Verdict,
     JOMiscellaneous.JudgeName,
     JOIdentification.JudicialDistrict,
-    REGEXP_REPLACE(Sentences.OffenseDescription,'\\s+',' ') AS OffenseDescription,
+    Sentences.OffenseDescription,
     Sentences.AssaultiveOffenseFlag,
     Sentences.SexOffenderFlag,
     Sentences.ISCSentencyType,
