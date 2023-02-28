@@ -484,6 +484,31 @@ module "us_co_incarceration_facility_map_table" {
 EOF
 }
 
+module "us_mo_incarceration_facility_names_table" {
+  source = "./modules/reference-table"
+
+  project_id     = var.project_id
+  bucket_name    = module.external_reference_tables_bucket.name
+  dataset_id     = module.external_reference_dataset.dataset_id
+  recidiviz_root = local.recidiviz_root
+
+  table_name = "us_mo_incarceration_facility_names"
+  schema     = <<EOF
+[
+  {
+    "name": "incarceration_location_level_1_external_id",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "incarceration_location_level_1_name",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
+
 module "state_resident_populations_table" {
   source = "./modules/reference-table"
 
