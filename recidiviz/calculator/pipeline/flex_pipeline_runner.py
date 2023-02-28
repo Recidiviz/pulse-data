@@ -66,11 +66,11 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pipeline_name", help="name of pipeline to run")
+    parser.add_argument("--pipeline", help="name of pipeline to run")
 
     args, other_args = parser.parse_known_args()
 
     run_flex_pipeline(
-        pipeline_name=args.pipeline_name,
+        pipeline_name=args.pipeline,
         argv=other_args,
     )

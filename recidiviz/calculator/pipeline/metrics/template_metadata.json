@@ -3,7 +3,7 @@
   "description": "Streaming beam example for python flex template.",
   "parameters": [
     {
-      "name": "pipeline_name",
+      "name": "pipeline",
       "label": "xxx",
       "helpText": "xxx",
       "regexes": [".*"]
