@@ -19,7 +19,6 @@ import { Alert, Button, Form, Input, Modal } from "antd";
 import { rem } from "polished";
 import * as React from "react";
 import { useState } from "react";
-import { secondaryRawDataImportEnabledInState } from "../../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
   GCP_STORAGE_BASE_URL,
@@ -111,9 +110,6 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
       ingestRerunRawDataSourceInstance,
       setIngestRerunRawDataSourceInstance,
     ] = useState<DirectIngestInstance | undefined>(undefined);
-    // TODO(#13406): Remove flag once raw data can be processed in all states in secondary.
-    const [secondaryRawDataImportEnabled, setSecondaryRawDataImportEnabled] =
-      useState<boolean>(false);
     const [
       currentSecondaryIngestInstanceStatus,
       setSecondaryIngestInstanceStatus,
@@ -129,10 +125,8 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             regionCode,
             DirectIngestInstance.SECONDARY
           ),
-          secondaryRawDataImportEnabledInState(regionCode),
         ]);
         setSecondaryIngestInstanceStatus(response[0]);
-        setSecondaryRawDataImportEnabled(await response[1].json());
       }
     }, [regionCode]);
 
@@ -208,12 +202,6 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             in BigQuery and generate ingest view results based on that data.
           </li>
         </ul>
-        {!secondaryRawDataImportEnabled ? (
-          <i>
-            For now, the raw data source for secondary reruns can only be
-            PRIMARY.
-          </i>
-        ) : null}
         <div
           style={{
             display: "flex",
@@ -230,8 +218,6 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
             PRIMARY
           </Button>
           <Button
-            // TODO(#13406): Remove 'disabled' setting once raw data can be processed in secondary.
-            disabled={!secondaryRawDataImportEnabled}
             style={{ marginRight: 5 }}
             onClick={async () => {
               setIngestRerunRawDataSourceInstance(

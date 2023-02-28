@@ -101,7 +101,6 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_man
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
-    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import (
     ExtractAndMergeArgs,
@@ -297,17 +296,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             self._ingest_view_materialization_args_generator = None
             self._ingest_view_materializer = None
             return
-
-        if (
-            self._raw_data_source_instance == DirectIngestInstance.SECONDARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(self.region_code().upper())
-            )
-        ):
-            raise ValueError(
-                f"Invalid raw data source instance [{self._raw_data_source_instance.value}] "
-                f"provided."
-            )
 
         # Update all fields to rely on the new raw_data_source_instance.
         self._raw_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
@@ -968,19 +956,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         unprocessed_raw_paths = self.fs.get_unprocessed_raw_file_paths(
             self.raw_data_bucket_path
         )
-        if (
-            unprocessed_raw_paths
-            and self.raw_data_source_instance == DirectIngestInstance.SECONDARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(self.region_code().upper())
-            )
-        ):
-            raise ValueError(
-                f"Raw data import not supported from SECONDARY ingest bucket "
-                f"[{self.instance_bucket_path}], but found {len(unprocessed_raw_paths)} "
-                f"raw files. All raw files should be removed from this bucket and "
-                f"uploaded to the primary ingest bucket, if appropriate."
-            )
 
         self._register_all_new_raw_file_paths_in_metadata(unprocessed_raw_paths)
 
@@ -999,18 +974,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
                 "Ingest is not running in this instance - not proceeding and returning early.",
             )
             return
-
-        if (
-            self.raw_data_source_instance == DirectIngestInstance.SECONDARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(self.region_code().upper())
-            )
-        ):
-            raise ValueError(
-                f"Raw data import not supported from the SECONDARY instance. Raw "
-                f"data task for [{data_import_args.raw_data_file_path}] should never "
-                f"have been scheduled."
-            )
 
         try:
             file_metadata = self.raw_file_metadata_manager.get_raw_file_metadata(

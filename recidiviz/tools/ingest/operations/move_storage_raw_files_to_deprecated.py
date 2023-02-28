@@ -43,12 +43,8 @@ from datetime import date
 from typing import List, Optional
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
-)
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema.operations.schema import (
@@ -86,17 +82,6 @@ class MoveFilesToDeprecatedController:
         self.file_tag_filters = file_tag_filters
         self.project_id = project_id
         self.skip_prompts = skip_prompts
-
-        if (
-            ingest_instance == DirectIngestInstance.SECONDARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(self.region_code.upper())
-            )
-        ):
-            raise ValueError(
-                f"Raw files are only ever handled in the PRIMARY ingest instance for [{self.region_code.upper()}. "
-                f"Instead, found ingest_instance [{ingest_instance}]."
-            )
 
         self.region_storage_dir_path = (
             gcsfs_direct_ingest_storage_directory_path_for_state(

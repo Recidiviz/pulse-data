@@ -24,7 +24,6 @@ import pytz
 from sqlalchemy import and_
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DIRECT_INGEST_UNPROCESSED_PREFIX,
 )
@@ -33,11 +32,7 @@ from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import
     DirectIngestRawFileMetadataManager,
     DirectIngestRawFileMetadataSummary,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    secondary_raw_data_import_enabled_in_state,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import dao, schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
@@ -168,18 +163,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
         """Returns metadata for the unprocessed raw files in the operations table for
         this region.
         """
-        if (
-            self.raw_data_instance == DirectIngestInstance.SECONDARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(self.region_code.upper())
-            )
-        ):
-            raise DirectIngestInstanceError(
-                f"Invalid ingest instance [{self.raw_data_instance}] provided."
-                f"Raw files should only be processed in a primary ingest instance,"
-                f"not the secondary instance. "
-            )
-
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
@@ -202,18 +185,6 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
             ]
 
     def get_non_invalidated_files(self) -> List[DirectIngestRawFileMetadata]:
-        if (
-            self.raw_data_instance == DirectIngestInstance.SECONDARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(self.region_code.upper())
-            )
-        ):
-            raise DirectIngestInstanceError(
-                f"Invalid ingest instance [{self.raw_data_instance}] provided."
-                f"Raw files should only be processed in a primary ingest instance,"
-                f"not the secondary instance. "
-            )
-
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:

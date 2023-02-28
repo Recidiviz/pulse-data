@@ -49,9 +49,6 @@ from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    secondary_raw_data_import_enabled_in_state,
-)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_existing_in_env,
 )
@@ -299,11 +296,7 @@ def ensure_all_raw_file_paths_normalized() -> Tuple[str, HTTPStatus]:
     supported_states = get_direct_ingest_states_existing_in_env()
     for state_code in supported_states:
         logging.info("Ensuring paths normalized for region [%s]", state_code.value)
-        enabled_instances = [DirectIngestInstance.PRIMARY]
-        # TODO(#15450): iterate through both instances by default once secondary raw data import is fully live.
-        if secondary_raw_data_import_enabled_in_state(state_code):
-            enabled_instances.append(DirectIngestInstance.SECONDARY)
-        for ingest_instance in enabled_instances:
+        for ingest_instance in DirectIngestInstance:
             with monitoring.push_region_tag(
                 state_code.value, ingest_instance=ingest_instance.value
             ):

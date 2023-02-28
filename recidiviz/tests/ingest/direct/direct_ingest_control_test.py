@@ -729,13 +729,11 @@ class TestDirectIngestControl(unittest.TestCase):
             allow_unlaunched: bool,
         ) -> BaseDirectIngestController:
             self.assertTrue(allow_unlaunched)
-            self.assertEqual(DirectIngestInstance.PRIMARY, ingest_instance)
 
             mock_controller = Mock(__class__=BaseDirectIngestController)
             mock_controller.cloud_task_manager = mock_cloud_task_manager
             mock_controller.ingest_instance = ingest_instance
             mock_controller.region = fake_supported_regions[region_code.lower()]
-            mock_controller.ingest_instance = DirectIngestInstance.PRIMARY
 
             mock_controllers_by_region_code[region_code] = mock_controller
             return mock_controller
@@ -757,16 +755,22 @@ class TestDirectIngestControl(unittest.TestCase):
             [
                 call(
                     fake_supported_regions["us_xx"],
-                    ingest_instance=mock_controllers_by_region_code[
-                        "us_xx"
-                    ].ingest_instance,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    can_start_ingest=False,
+                ),
+                call(
+                    fake_supported_regions["us_xx"],
+                    ingest_instance=DirectIngestInstance.SECONDARY,
                     can_start_ingest=False,
                 ),
                 call(
                     fake_supported_regions[self.region_code],
-                    ingest_instance=mock_controllers_by_region_code[
-                        self.region_code
-                    ].ingest_instance,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                    can_start_ingest=True,
+                ),
+                call(
+                    fake_supported_regions[self.region_code],
+                    ingest_instance=DirectIngestInstance.SECONDARY,
                     can_start_ingest=True,
                 ),
             ]

@@ -40,7 +40,6 @@ import logging
 import os
 import re
 import subprocess
-import sys
 import threading
 from multiprocessing.pool import ThreadPool
 from typing import List, Optional, Tuple
@@ -60,9 +59,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
-)
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -478,19 +474,6 @@ def main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-    if (
-        args.destination_raw_data_instance == DirectIngestInstance.SECONDARY
-        and not secondary_raw_data_import_enabled_in_state(
-            StateCode(args.region.upper())
-        )
-    ):
-        logging.info(
-            "Cannot proceed with movement of raw state files from storage to SECONDARY ingest bucket because "
-            "raw data import is not yet launched in %s. Exiting.",
-            args.region.upper(),
-        )
-        sys.exit()
 
     with local_project_id_override(args.destination_project_id):
         with cloudsql_proxy_control.connection(schema_type=SchemaType.OPERATIONS):
