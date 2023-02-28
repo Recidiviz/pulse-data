@@ -140,7 +140,7 @@ PROSECUTION_METRIC_FILES = [
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="cases_diverted_by_biological_sex",
+        canonical_filename="cases_diverted_by_sex",
         definition=prosecution.cases_diverted_or_deferred,
         disaggregation=BiologicalSex,
         disaggregation_column_name="biological_sex",
@@ -156,7 +156,7 @@ PROSECUTION_METRIC_FILES = [
         disaggregation_column_name="case_severity",
     ),
     MetricFile(
-        canonical_filename="cases_declined_by_biological_sex",
+        canonical_filename="cases_declined_by_sex",
         definition=prosecution.cases_declined,
         disaggregation=BiologicalSex,
         disaggregation_column_name="biological_sex",
