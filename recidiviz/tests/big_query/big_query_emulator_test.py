@@ -17,6 +17,7 @@
 """Tests capabilities of the BigQuery emulator."""
 from datetime import date
 
+from google.api_core import exceptions
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
@@ -355,3 +356,18 @@ FROM UNNEST([STRUCT(1 AS a, 2 AS b)]);""",
             query,
             expected_result=[{"a": [1, 2, 3]}],
         )
+
+    def test_safe_parse_date_valid(self) -> None:
+        self.run_query_test(
+            """SELECT SAFE.PARSE_DATE("%m/%d/%Y", "12/25/2008") as a;""",
+            expected_result=[{"a": date(2008, 12, 25)}],
+        )
+
+    def test_safe_parse_date_invalid(self) -> None:
+        """Tests resolution of https://github.com/goccy/bigquery-emulator/issues/149."""
+        # TODO(goccy/bigquery-emulator#149): Remove `assertRaises` when fixed.
+        with self.assertRaises(exceptions.InternalServerError):
+            self.run_query_test(
+                """SELECT SAFE.PARSE_DATE("%m/%d/%Y", "2008-12-25") as a;""",
+                expected_result=[{"a": None}],
+            )

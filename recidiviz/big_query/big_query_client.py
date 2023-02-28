@@ -47,6 +47,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.utils import environment, metadata
+from recidiviz.utils.size import total_size
 from recidiviz.utils.string import StrictStringFormatter
 
 _clients_by_project_id_by_region: Dict[str, Dict[str, bigquery.Client]] = defaultdict(
@@ -1435,14 +1436,9 @@ class BigQueryClientImpl(BigQueryClient):
 
         # Warn on any large rows
         for row in rows:
-            try:
-                json_row = json.dumps(row)
-            except TypeError as e:
-                raise TypeError(f"Failed to serialize: {repr(row)}") from e
-
-            estimated_size = len(row)
+            estimated_size = total_size(row, include_duplicates=True)
             if estimated_size > (100 * 2**10):  # 100 KiB
-                logging.warning("Row is larger than 100 KiB: %s", json_row[:1000])
+                logging.warning("Row is larger than 100 KiB: %s", repr(row)[:1000])
 
         errors = self.client.insert_rows(self.get_table(dataset_ref, table_id), rows)
         if errors:

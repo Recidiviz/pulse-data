@@ -17,7 +17,7 @@
 """Defines the table schema to be used when mocking a table in Postgres, with
 helpers to construct from various sources.
 """
-from typing import Dict, List
+from typing import Dict, List, Type
 
 import attr
 import sqlalchemy
@@ -31,7 +31,7 @@ class PostgresTableSchema:
     helpers to construct from various sources.
     """
 
-    data_types: Dict[str, sqltypes.SchemaType] = attr.ib()
+    data_types: Dict[str, Type[sqltypes.TypeEngine]] = attr.ib()
 
     @classmethod
     def from_sqlalchemy_table(cls, table: sqlalchemy.Table) -> "PostgresTableSchema":
@@ -51,13 +51,15 @@ class PostgresTableSchema:
         for field in bq_schema:
             field_type = bigquery.enums.SqlTypeNames(field.field_type)
             if field_type is bigquery.enums.SqlTypeNames.STRING:
-                data_type = sqltypes.String(255)
+                data_type = sqltypes.String
             elif field_type is bigquery.enums.SqlTypeNames.INTEGER:
                 data_type = sqltypes.Integer
             elif field_type is bigquery.enums.SqlTypeNames.FLOAT:
                 data_type = sqltypes.Float
             elif field_type is bigquery.enums.SqlTypeNames.DATE:
                 data_type = sqltypes.Date
+            elif field_type is bigquery.enums.SqlTypeNames.DATETIME:
+                data_type = sqltypes.DateTime
             elif field_type is bigquery.enums.SqlTypeNames.BOOLEAN:
                 data_type = sqltypes.Boolean
             else:

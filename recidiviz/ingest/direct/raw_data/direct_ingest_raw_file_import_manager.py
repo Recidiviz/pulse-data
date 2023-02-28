@@ -941,7 +941,7 @@ class DirectIngestRawFileImportManager:
 
     @staticmethod
     def create_raw_table_schema_from_columns(
-        columns: List[str],
+        columns: Iterable[str],
     ) -> List[bigquery.SchemaField]:
         """Creates schema for use in `to_gbq` based on the provided columns."""
         schema = []
