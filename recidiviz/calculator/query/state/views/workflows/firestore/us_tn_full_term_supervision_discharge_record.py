@@ -77,16 +77,6 @@ WITH latest_sentences AS (
   ON conviction_county = codes.Code
   GROUP BY 1
 ),
-/* TODO(#11164): Because we're not allowing arbitrarily many sentence levels, some later sentences with updated
-    expiration dates are getting omitted from sentence spans. This is a quick fix, but once #11164 is updated it can
-    be removed */
-latest_sentences_all AS (
-    SELECT person_id,
-           MAX(completion_date) AS max_expiration_date
-    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
-    WHERE state_code = 'US_TN'
-    GROUP BY 1
-),
 latest_system_session AS ( # get latest system session date to bring in relevant codes only for this time on supervision
   SELECT person_id,
          start_date AS latest_system_session_start_date
@@ -316,8 +306,6 @@ tes_cte AS (
     USING(person_id)
   LEFT JOIN latest_sentences
     USING(person_id)
-  LEFT JOIN latest_sentences_all
-    USING(person_id)
   INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
     ON tes.person_id = pei.person_id
     AND pei.state_code = 'US_TN'
@@ -331,11 +319,6 @@ tes_cte AS (
     /* TODO(#18327) - Excluding anyone from being surfaced who has a recent TEPE. Add these folks back in and surface
     recent TEPE note in client profile when UX changes can handle this behavior */
   WHERE latest_tepe IS NULL
-    /* TODO(#11164): Because we're not allowing arbitrarily many sentence levels, some later sentences with updated
-    expiration dates are getting omitted from sentence spans. This is a quick fix, but once #11164 is updated it can
-    be removed */
-    AND latest_sentences_all.max_expiration_date <= DATE_ADD(CURRENT_DATE('US/Pacific'), INTERVAL 1 DAY)
-
 """
 
 US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(

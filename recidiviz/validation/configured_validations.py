@@ -217,6 +217,9 @@ from recidiviz.validation.views.state.sessions_validation.sentence_end_dates_bef
 from recidiviz.validation.views.state.sessions_validation.sentences_missing_date_imposed import (
     SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sessions_validation.sentences_undefined_relationship import (
+    SENTENCES_UNDEFINED_RELATIONSHIP_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions_validation.session_liberty_releases_with_no_sentence_completion_date import (
     SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
 )
@@ -475,6 +478,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SENTENCES_UNDEFINED_RELATIONSHIP_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         ExistenceDataValidationCheck(

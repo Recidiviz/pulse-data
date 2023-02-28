@@ -111,20 +111,19 @@ SENTENCE_RELATIONSHIP_QUERY_TEMPLATE = """
     Therefore, the following query excludes the sentence_chain_id field and takes a distinct, so that we are left with 1 record for every sentence id within 
     each sentence group. 
     */
-    SELECT DISTINCT 
-        a.person_id,
-        a.state_code,
-        a.sentence_group_id,
-        a.sentence_level,
-        a.sentence_id,
-        a.sentence_type,
-        a.date_imposed AS parent_sentence_date_imposed,
-        b.date_imposed AS date_imposed,
-        b.session_id_imposed,
-    FROM sentence_chain_cte a
-    JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` b
+    SELECT DISTINCT
+        s.person_id,
+        s.state_code,
+        r.sentence_group_id AS sentence_group_id,
+        r.sentence_level AS sentence_level,
+        s.sentence_id,
+        s.sentence_type,
+        r.date_imposed AS parent_sentence_date_imposed,
+        s.date_imposed AS date_imposed,
+        s.session_id_imposed,
+    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` s
+    LEFT JOIN sentence_chain_cte r
         USING(person_id, state_code, sentence_id, sentence_type)
-    ORDER BY person_id, sentence_group_id, sentence_level
 """
 
 SENTENCE_RELATIONSHIP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
