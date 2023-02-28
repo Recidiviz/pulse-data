@@ -180,6 +180,19 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         ON level_3_incarceration_location_external_id = level_3_id
         -- Exclude the YOS level 2 facility to remove duplicates
         WHERE facility_name != "YOS Facility"
+    ),
+    mo_location_names AS (
+        SELECT 
+             DISTINCT
+                'US_MO' AS state_code,
+                'NOT_APPLICABLE' AS level_3_incarceration_location_external_id,
+                'NOT_APPLICABLE' AS level_3_incarceration_location_name,
+                'NOT_APPLICABLE' AS level_2_incarceration_location_external_id,
+                'NOT_APPLICABLE' AS level_2_incarceration_location_name,
+                incarceration_location_level_1_external_id AS level_1_incarceration_location_external_id,
+                incarceration_location_level_1_name AS level_1_incarceration_location_name,
+                incarceration_location_level_1_external_id AS level_1_incarceration_location_alias
+        FROM `{project_id}.{external_reference_dataset}.us_mo_incarceration_facility_names`
     )
     SELECT * FROM me_location_names
     UNION ALL
@@ -194,6 +207,8 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     SELECT * FROM mi_location_names
     UNION ALL
     SELECT * FROM co_location_names
+    UNION ALL
+    SELECT * FROM mo_location_names
     """
 
 INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
