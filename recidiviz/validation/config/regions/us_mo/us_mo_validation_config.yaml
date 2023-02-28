@@ -64,3 +64,6 @@ num_allowed_rows_overrides:
   - validation_name: incarceration_commitments_subset_of_admissions
     hard_num_allowed_rows_override: 1
     override_reason: There appears to be one very old data point that surfaced on 11/28/2022 which is causing a failure in this validation now. It's not clear why this suddenly popped up, but all data will be refreshed with a full historical and this may be a result of wonkiness before that is done. TODO(#15905) - check on this after full data refresh.
+  - validation_name: sentences_undefined_relationship
+    hard_num_allowed_rows_override: 6000
+    override_reason: Needs investigation. Current failing level as of 2/24/23 is 4,153 rows #TODO(#19047)

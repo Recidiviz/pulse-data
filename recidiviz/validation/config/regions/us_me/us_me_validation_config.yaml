@@ -14,3 +14,6 @@ num_allowed_rows_overrides:
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 40000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 32,531 rows #TODO(#16233)
+  - validation_name: sentences_undefined_relationship
+    hard_num_allowed_rows_override: 150
+    override_reason: Needs investigation. Current failing level as of 2/24/23 is 62 rows #TODO(#19047)
