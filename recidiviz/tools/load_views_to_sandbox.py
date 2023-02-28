@@ -95,7 +95,7 @@ from recidiviz.common.git import (
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override, project_id
-from recidiviz.utils.params import str_to_bool
+from recidiviz.utils.params import str_to_bool, str_to_list
 from recidiviz.view_registry.address_overrides_factory import (
     address_overrides_for_view_builders,
 )
@@ -616,13 +616,6 @@ def parse_arguments() -> argparse.Namespace:
     subparsers.add_parser("all")
 
     return parser.parse_args()
-
-
-def str_to_list(list_str: str) -> List[str]:
-    """
-    Separates strings by commas and returns a list
-    """
-    return list_str.split(",")
 
 
 if __name__ == "__main__":

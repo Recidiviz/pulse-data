@@ -81,7 +81,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
-from recidiviz.tools.load_views_to_sandbox import str_to_list
+from recidiviz.utils.params import str_to_list
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.string import StrictStringFormatter
 

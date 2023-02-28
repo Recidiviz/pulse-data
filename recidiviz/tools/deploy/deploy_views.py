@@ -39,7 +39,7 @@ from recidiviz.big_query.view_update_manager import (
     copy_dataset_schemas_to_sandbox,
     create_managed_dataset_and_deploy_views_for_view_builders,
 )
-from recidiviz.tools.load_views_to_sandbox import str_to_list
+from recidiviz.utils.params import str_to_list
 from recidiviz.tools.utils.script_helpers import interactive_prompt_retry_on_exception
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
