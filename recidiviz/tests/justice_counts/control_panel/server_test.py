@@ -1555,10 +1555,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
             )
             self.assertEqual(
-                response_dict.get("uploaded_by"),
-                "Jane Doe",
-            )
-            self.assertEqual(
                 response_dict.get("uploaded_by_v2"),
                 {"name": self.test_schema_objects.test_user_A.name, "role": None},
             )
@@ -1730,10 +1726,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 self.now_time.timestamp() * 1000,
             )
             self.assertEqual(
-                probation_spreadsheet.get("uploaded_by"),
-                "Jane Doe",
-            )
-            self.assertEqual(
                 probation_spreadsheet.get("uploaded_by_v2"),
                 {"name": self.test_schema_objects.test_user_A.name, "role": None},
             )
@@ -1751,10 +1743,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 parole_spreadsheet.get("uploaded_at"),
                 (self.now_time + (datetime.timedelta(25))).timestamp() * 1000,
             )
-            self.assertEqual(
-                parole_spreadsheet.get("uploaded_by"),
-                self.test_schema_objects.test_user_A.name,
-            )
             self.assertEqual(parole_spreadsheet.get("ingested_at"), None)
             self.assertEqual(parole_spreadsheet.get("status"), "UPLOADED")
             self.assertEqual(parole_spreadsheet.get("system"), "PAROLE")
@@ -1766,10 +1754,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 supervision_spreadsheet.get("uploaded_at"),
                 self.now_time.timestamp() * 1000,
-            )
-            self.assertEqual(
-                supervision_spreadsheet.get("uploaded_by"),
-                self.test_schema_objects.test_user_A.name,
             )
             self.assertEqual(supervision_spreadsheet.get("ingested_at"), None)
             self.assertEqual(supervision_spreadsheet.get("status"), "UPLOADED")

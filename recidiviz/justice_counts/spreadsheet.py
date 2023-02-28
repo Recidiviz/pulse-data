@@ -117,11 +117,6 @@ class SpreadsheetInterface:
                 "id": spreadsheet.id,
                 "name": spreadsheet.original_name,
                 "uploaded_at": spreadsheet.uploaded_at.timestamp() * 1000,
-                "uploaded_by": uploader_id_to_json.get(spreadsheet.uploaded_by).get(  # type: ignore[union-attr]
-                    "name"
-                )
-                if uploader_id_to_json.get(spreadsheet.uploaded_by) is not None
-                else None,
                 "uploaded_by_v2": uploader_id_to_json.get(spreadsheet.uploaded_by),
                 "ingested_at": spreadsheet.ingested_at.timestamp() * 1000
                 if spreadsheet.ingested_at is not None
