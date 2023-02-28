@@ -32,9 +32,6 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     SingleCloudTaskQueueManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    secondary_raw_data_import_enabled_in_state,
-)
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_with_sftp_queue,
 )
@@ -485,17 +482,8 @@ class DirectIngestCloudTaskQueueManager:
             self.get_scheduler_queue_info(region, ingest_instance),
             self.get_ingest_view_materialization_queue_info(region, ingest_instance),
             self.get_extract_and_merge_queue_info(region, ingest_instance),
+            self.get_raw_data_import_queue_info(region, ingest_instance),
         ]
-
-        if (
-            ingest_instance == DirectIngestInstance.PRIMARY
-            or secondary_raw_data_import_enabled_in_state(
-                StateCode(region.region_code.upper())
-            )
-        ):
-            ingest_queue_info.append(
-                self.get_raw_data_import_queue_info(region, ingest_instance)
-            )
 
         # SFTP always writes data to the PRIMARY instance bucket, so only return the SFTP queue if the instance is
         # PRIMARY.
@@ -542,14 +530,6 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
     def _get_raw_data_import_queue_manager(
         self, region: DirectIngestRegion, ingest_instance: DirectIngestInstance
     ) -> SingleCloudTaskQueueManager[RawDataImportCloudTaskQueueInfo]:
-        if (
-            ingest_instance != DirectIngestInstance.PRIMARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(region.region_code.upper())
-            )
-        ):
-            raise ValueError("Raw data import can only be done in PRIMARY.")
-
         queue_name = _queue_name_for_queue_type(
             DirectIngestQueueType.RAW_DATA_IMPORT,
             region.region_code,

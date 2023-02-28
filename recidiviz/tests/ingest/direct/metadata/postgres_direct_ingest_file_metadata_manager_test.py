@@ -37,7 +37,6 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
     PostgresDirectIngestRawFileMetadataManager,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.types.errors import DirectIngestInstanceError
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import (
     convert_schema_object_to_entity,
@@ -471,27 +470,6 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         # Assert
         self.assertEqual([], self.raw_metadata_manager.get_non_invalidated_files())
 
-    # TODO(#15450): Delete when secondary raw data import is enabled for all states.
-    def test_get_unprocessed_raw_files_when_secondary_db(self) -> None:
-        non_enabled_secondary_import_manager = (
-            PostgresDirectIngestRawFileMetadataManager(
-                region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
-            )
-        )
-        # Arrange
-        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
-            "bucket/file_tag.csv",
-        )
-
-        # Act
-        non_enabled_secondary_import_manager.mark_raw_file_as_discovered(
-            raw_unprocessed_path_1
-        )
-
-        # Assert
-        with self.assertRaises(DirectIngestInstanceError):
-            non_enabled_secondary_import_manager.get_unprocessed_raw_files()
-
     @freeze_time(datetime.datetime(2015, 1, 2, 3, 4, 6, tzinfo=pytz.UTC))
     def test_transfer_metadata_to_new_instance_secondary_to_primary(self) -> None:
         raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
@@ -689,3 +667,21 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
 
         self.raw_metadata_manager.mark_instance_data_invalidated()
         self.assertEqual(0, len(self.raw_metadata_manager.get_non_invalidated_files()))
+
+    def test_get_unprocessed_raw_files_when_secondary_db(self) -> None:
+        enabled_secondary_import_manager = PostgresDirectIngestRawFileMetadataManager(
+            region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
+        )
+        # Arrange
+        raw_unprocessed_path_1 = _make_unprocessed_raw_data_path(
+            "bucket/file_tag.csv",
+        )
+
+        # Act
+        enabled_secondary_import_manager.mark_raw_file_as_discovered(
+            raw_unprocessed_path_1
+        )
+
+        self.assertEqual(
+            1, len(enabled_secondary_import_manager.get_unprocessed_raw_files())
+        )

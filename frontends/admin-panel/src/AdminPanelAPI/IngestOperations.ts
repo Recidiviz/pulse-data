@@ -414,18 +414,6 @@ export const transferRawDataMetadataToNewInstance = async (
   );
 };
 
-// Determine if secondary raw data import is enabled in a particular state
-export const secondaryRawDataImportEnabledInState = async (
-  stateCode: string
-): Promise<Response> => {
-  return postWithURLAndBody(
-    "/api/ingest_operations/secondary_raw_data_import_enabled_in_state",
-    {
-      stateCode,
-    }
-  );
-};
-
 // Purge the ingest queues for a given state
 export const purgeIngestQueues = async (
   stateCode: string

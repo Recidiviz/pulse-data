@@ -31,14 +31,9 @@ python -m recidiviz.tools.ingest.operations.copy_raw_state_files_between_project
 """
 import argparse
 import logging
-import sys
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_storage_directory_path_for_state,
-)
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.ingest.operations.operate_on_storage_raw_files_controller import (
@@ -101,19 +96,6 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-
-    if (
-        args.destination_raw_data_instance == DirectIngestInstance.SECONDARY
-        and not secondary_raw_data_import_enabled_in_state(
-            StateCode(args.region.upper())
-        )
-    ):
-        logging.info(
-            "Cannot proceed with copy of raw state files to SECONDARY because raw data import is not yet "
-            "launched in %s. Exiting.",
-            args.region.upper(),
-        )
-        sys.exit()
 
     source_region_storage_dir_path = gcsfs_direct_ingest_storage_directory_path_for_state(
         region_code=args.region,

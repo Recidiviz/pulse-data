@@ -1060,11 +1060,6 @@ def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileCon
     return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
 
 
-# TODO(#15450): Delete once secondary raw data import is live.
-def secondary_raw_data_import_enabled_in_state(state_code: StateCode) -> bool:
-    return state_code in [StateCode.US_OZ, StateCode.US_OR, StateCode.US_MO]
-
-
 # TODO(#12390): Delete once raw data pruning is live.
 def raw_data_pruning_enabled_in_state_and_instance(
     state_code: StateCode,  # pylint: disable=unused-argument

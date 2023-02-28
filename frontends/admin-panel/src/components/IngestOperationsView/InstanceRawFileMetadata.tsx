@@ -25,20 +25,13 @@ interface InstanceRawFileMetadataProps {
   stateCode: string;
   instance: DirectIngestInstance;
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
-  secondaryRawDataImportEnabled: boolean;
 }
 
 const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
   stateCode,
   instance,
   ingestRawFileProcessingStatus: ingestFileProcessingStatus,
-  secondaryRawDataImportEnabled,
 }) => {
-  // TODO(#12387): Update this once secondary reruns are available for all states.
-  const isSecondaryUsingPrimary =
-    instance === DirectIngestInstance.SECONDARY &&
-    !secondaryRawDataImportEnabled;
-
   return (
     <div>
       <p>
@@ -54,9 +47,7 @@ const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
           }
           span={3}
         >
-          {isSecondaryUsingPrimary
-            ? "N/A - ingest in SECONDARY using PRIMARY raw data"
-            : getNumberOfFilesPendingUpload(ingestFileProcessingStatus)}
+          {getNumberOfFilesPendingUpload(ingestFileProcessingStatus)}
         </Descriptions.Item>
         <Descriptions.Item
           label={
@@ -66,9 +57,7 @@ const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
           }
           span={3}
         >
-          {isSecondaryUsingPrimary
-            ? "N/A - ingest in SECONDARY using PRIMARY raw data"
-            : getNumberOfUnrecognizedFiles(ingestFileProcessingStatus)}
+          {getNumberOfUnrecognizedFiles(ingestFileProcessingStatus)}
         </Descriptions.Item>
       </Descriptions>
     </div>

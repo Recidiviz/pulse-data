@@ -18,10 +18,7 @@ import { Card, Col, Descriptions, Spin } from "antd";
 import Title from "antd/lib/typography/Title";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  getIngestRawFileProcessingStatus,
-  secondaryRawDataImportEnabledInState,
-} from "../../AdminPanelAPI/IngestOperations";
+import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
 import NewTabLink from "../NewTabLink";
 import { isAbortException } from "../Utilities/exceptions";
 import { scrollToAnchor } from "../Utilities/GeneralUtilities";
@@ -67,9 +64,6 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   ] = useState<boolean>(true);
   const [ingestRawFileProcessingStatus, setIngestRawFileProcessingStatus] =
     useState<IngestRawFileProcessingStatus[]>([]);
-  // TODO(#13406): Remove flag once raw data can be processed in all states in secondary.
-  const [secondaryRawDataImportEnabled, setSecondaryRawDataImportEnabled] =
-    useState<boolean>(false);
 
   useEffect(() => {
     scrollToAnchor(hash);
@@ -89,10 +83,8 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
           instance,
           abortControllerRef.current
         ),
-        secondaryRawDataImportEnabledInState(stateCode),
       ]);
       setIngestRawFileProcessingStatus(await response[0].json());
-      setSecondaryRawDataImportEnabled(await response[1].json());
     } catch (err) {
       if (!isAbortException(err)) {
         throw err;
@@ -136,7 +128,6 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
             stateCode={stateCode}
             instance={instance}
             ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
-            secondaryRawDataImportEnabled={secondaryRawDataImportEnabled}
           />
           <br />
           <IngestRawFileProcessingStatusTable

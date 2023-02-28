@@ -64,7 +64,6 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
-    secondary_raw_data_import_enabled_in_state,
 )
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_direct_ingest_states_launched_in_env,
@@ -257,16 +256,6 @@ class IngestOperationsStore(AdminPanelStore):
                 "Ingest reruns can only be kicked off for SECONDARY instances."
             )
 
-        if (
-            raw_data_source_instance != DirectIngestInstance.PRIMARY
-            and not secondary_raw_data_import_enabled_in_state(
-                StateCode(formatted_state_code.upper())
-            )
-        ):
-            raise DirectIngestInstanceError(
-                f"Ingest reruns can only have raw data source as PRIMARY for state=[{formatted_state_code.upper}]."
-            )
-
         region = direct_ingest_regions.get_direct_ingest_region(
             region_code=formatted_state_code
         )
@@ -279,12 +268,7 @@ class IngestOperationsStore(AdminPanelStore):
                 "which have remaining tasks."
             )
 
-        if (
-            raw_data_source_instance == DirectIngestInstance.SECONDARY
-            and secondary_raw_data_import_enabled_in_state(
-                StateCode(formatted_state_code.upper())
-            )
-        ):
+        if raw_data_source_instance == DirectIngestInstance.SECONDARY:
             self._verify_clean_secondary_raw_data_state(state_code)
 
         # Confirm that all ingest view metadata / data has been invalidated.
