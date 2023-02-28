@@ -21,4 +21,7 @@ DEFAULT_ARGS = {
     "start_date": datetime.date.today().strftime("%Y-%m-%d"),
     "email": ["alerts@recidiviz.org"],
     "email_on_failure": True,
+    # For most nodes (dataflow), failures are often persisten and retrying is expensive,
+    # so we opt to not retry by default and nodes can override this if needed.
+    "retries": 0,
 }
