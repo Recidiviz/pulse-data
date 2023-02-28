@@ -113,6 +113,7 @@ DROP AGGREGATE first_value_ignore_nulls(anyelement)
 """
 
 
+# TODO(#15020): Delete this once all tests are migrated to the emulator.
 class FakeBigQueryDatabase:
     """A database that can be used for testing BigQuery queries that uses Postgres as
     a backing database. TestCase classes using this class should integrate as follows:

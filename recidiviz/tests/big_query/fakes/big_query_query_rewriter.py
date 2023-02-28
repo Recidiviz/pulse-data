@@ -62,6 +62,7 @@ class _TypeNameGenerator(Iterator[str]):
         return [self._get_name(i) for i in range(self.counter)]
 
 
+# TODO(#15020): Delete this once all tests are migrated to the emulator.
 class BigQueryQueryRewriter:
     """Stores functionality for rewriting BigQuery SQL queries with syntax that will
     run in Postgres.

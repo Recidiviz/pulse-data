@@ -21,6 +21,7 @@ import unittest
 from typing import Any, Dict, Iterable, List
 from unittest.mock import Mock, patch
 
+import pandas as pd
 import pytest
 from google.cloud import bigquery
 
@@ -29,6 +30,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
+from recidiviz.tests.big_query.big_query_test_helper import BigQueryTestHelper
 from recidiviz.tools.utils.script_helpers import does_command_fail, run_command
 
 BQ_EMULATOR_PROJECT_ID = "recidiviz-bq-emulator-project"
@@ -37,7 +39,7 @@ BQ_EMULATOR_PROJECT_ID = "recidiviz-bq-emulator-project"
 # TODO(#15020): Migrate all usages of  BigQueryViewTestCase to use this test case
 #  instead (once the emulator has reached feature parity).
 @pytest.mark.uses_bq_emulator
-class BigQueryEmulatorTestCase(unittest.TestCase):
+class BigQueryEmulatorTestCase(unittest.TestCase, BigQueryTestHelper):
     """An implementation of TestCase that can be used for tests that talk to the
     BigQuery emulator.
 
@@ -97,6 +99,16 @@ class BigQueryEmulatorTestCase(unittest.TestCase):
                 delete_contents=True,
                 not_found_ok=True,
             )
+
+    def query(self, query: str) -> pd.DataFrame:
+        query_job = self.bq_client.run_query_async(
+            query_str=query, use_query_cache=True
+        )
+        contents_iterator: Iterable[Dict[str, Any]] = BigQueryResultsContentsHandle(
+            query_job
+        ).get_contents_iterator()
+
+        return pd.DataFrame(contents_iterator)
 
     def run_query_test(
         self, query_str: str, expected_result: Iterable[Dict[str, Any]]
