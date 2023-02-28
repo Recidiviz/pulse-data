@@ -39,11 +39,9 @@ class _FakeDirectIngestViewBuilder(
     def __init__(
         self,
         ingest_view_name: str,
-        is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
     ):
         self.ingest_view_name = ingest_view_name
-        self.is_detect_row_deletion_view = is_detect_row_deletion_view
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     # pylint: disable=unused-argument
@@ -56,17 +54,12 @@ class _FakeDirectIngestViewBuilder(
         )
 
         query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
-        primary_key_tables_for_entity_deletion = (
-            [] if not self.is_detect_row_deletion_view else ["tagFullHistoricalExport"]
-        )
         return DirectIngestPreProcessedIngestView(
             dataset_id="NO DATASET",
             view_id=self.ingest_view_name,
             view_query_template=query,
             region_raw_table_config=region_config,
             order_by_cols="colA, colC",
-            is_detect_row_deletion_view=self.is_detect_row_deletion_view,
-            primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
             materialize_raw_data_table_views=self.materialize_raw_data_table_views,
         )
 
@@ -83,19 +76,16 @@ class FakeSingleIngestViewCollector(
         self,
         region: DirectIngestRegion,
         ingest_view_name: str,
-        is_detect_row_deletion_view: bool,
         materialize_raw_data_table_views: bool,
     ):
         self.region = region
         self.ingest_view_name = ingest_view_name
-        self.is_detect_row_deletion_view = is_detect_row_deletion_view
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     def collect_view_builders(self) -> List[_FakeDirectIngestViewBuilder]:
         builders = [
             _FakeDirectIngestViewBuilder(
                 ingest_view_name=self.ingest_view_name,
-                is_detect_row_deletion_view=self.is_detect_row_deletion_view,
                 materialize_raw_data_table_views=self.materialize_raw_data_table_views,
             )
         ]

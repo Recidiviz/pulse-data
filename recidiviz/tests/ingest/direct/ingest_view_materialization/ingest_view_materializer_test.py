@@ -262,7 +262,6 @@ class IngestViewMaterializerTest(unittest.TestCase):
     def create_materializer(
         self,
         region: DirectIngestRegion,
-        is_detect_row_deletion_view: bool = False,
         materialize_raw_data_table_views: bool = False,
     ) -> IngestViewMaterializerImpl:
         self.ingest_instance = DirectIngestInstance.SECONDARY
@@ -285,7 +284,6 @@ class IngestViewMaterializerTest(unittest.TestCase):
             view_collector=FakeSingleIngestViewCollector(  # type: ignore[arg-type]
                 region,
                 ingest_view_name="ingest_view",
-                is_detect_row_deletion_view=is_detect_row_deletion_view,
                 materialize_raw_data_table_views=materialize_raw_data_table_views,
             ),
             launched_ingest_views=[ingest_view_name],
@@ -614,127 +612,6 @@ SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019
 )
 ORDER BY colA, colC;"""
 
-        self.assert_materialized_with_query(args, expected_query)
-        self.mock_client.delete_table.assert_has_calls(
-            [
-                mock.call(
-                    dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234",
-                ),
-                mock.call(
-                    dataset_id=_TEMP_DATASET,
-                    table_id="ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234",
-                ),
-            ]
-        )
-
-        expected_metadata = DirectIngestViewMaterializationMetadata(
-            region_code="US_XX",
-            instance=DirectIngestInstance.SECONDARY,
-            ingest_view_name="ingest_view",
-            upper_bound_datetime_inclusive=args.upper_bound_datetime_inclusive,
-            lower_bound_datetime_exclusive=args.lower_bound_datetime_exclusive,
-            job_creation_time=_DATE_4,
-            materialization_time=_DATE_5,
-            is_invalidated=False,
-        )
-
-        with SessionFactory.using_database(
-            self.database_key, autocommit=False
-        ) as assert_session:
-            found_metadata = self.to_entity(
-                one(
-                    assert_session.query(
-                        schema.DirectIngestViewMaterializationMetadata
-                    ).all()
-                )
-            )
-            self.assertEqual(expected_metadata, found_metadata)
-
-    def test_materializeViewForArgs_detectRowDeletionView_noLowerBound(self) -> None:
-        # Arrange
-        region = self.create_fake_region()
-        args = IngestViewMaterializationArgs(
-            ingest_view_name="ingest_view",
-            ingest_instance=_INGEST_INSTANCE,
-            lower_bound_datetime_exclusive=None,
-            upper_bound_datetime_inclusive=_DATE_2,
-        )
-
-        with freeze_time(_DATE_3.isoformat()):
-            ingest_view_materializer = self.create_materializer(
-                region, is_detect_row_deletion_view=True
-            )
-
-        with freeze_time(_DATE_4.isoformat()):
-            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
-                args
-            )
-
-        # Act
-        with freeze_time(_DATE_5.isoformat()):
-            with self.assertRaisesRegex(
-                ValueError,
-                r"Attempting to process reverse date diff view \[ingest_view\] with "
-                r"no lower bound date.",
-            ):
-                ingest_view_materializer.materialize_view_for_args(args)
-
-        # Assert
-        self.mock_client.run_query_async.assert_not_called()
-        self.mock_ingest_view_contents.save_query_results.assert_not_called()
-        self.mock_client.delete_table.assert_not_called()
-
-    def test_materializeViewForArgs_detectRowDeletionView(self) -> None:
-        # Arrange
-        region = self.create_fake_region()
-        args = _BQ_BASED_ARGS
-
-        with freeze_time(_DATE_3.isoformat()):
-            ingest_view_materializer = self.create_materializer(
-                region,
-                is_detect_row_deletion_view=True,
-            )
-
-        with freeze_time(_DATE_4.isoformat()):
-            ingest_view_materializer.metadata_manager.register_ingest_materialization_job(
-                args
-            )
-
-        # Act
-        with freeze_time(_DATE_5.isoformat()):
-            ingest_view_materializer.materialize_view_for_args(args)
-
-        expected_upper_bound_query = StrictStringFormatter().format(
-            _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT,
-            temp_dataset=_TEMP_DATASET,
-        )
-        expected_lower_bound_query = expected_upper_bound_query.replace(
-            "2020_07_20_00_00_00_upper_bound", "2019_07_20_00_00_00_lower_bound"
-        )
-
-        # Assert
-        self.mock_client.run_query_async.assert_has_calls(
-            [
-                mock.call(
-                    query_str=expected_upper_bound_query,
-                    query_parameters=[self.generate_query_params_for_date(_DATE_2)],
-                    use_query_cache=False,
-                ),
-                mock.call(
-                    query_str=expected_lower_bound_query,
-                    query_parameters=[self.generate_query_params_for_date(_DATE_1)],
-                    use_query_cache=False,
-                ),
-            ]
-        )
-        # Lower bound is the first part of the subquery, not upper bound.
-        expected_query = """(
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2019_07_20_00_00_00_lower_bound_abcd1234`
-) EXCEPT DISTINCT (
-SELECT * FROM `recidiviz-456.mock_us_xx_secondary_temp_20220413.ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234`
-)
-ORDER BY colA, colC;"""
         self.assert_materialized_with_query(args, expected_query)
         self.mock_client.delete_table.assert_has_calls(
             [

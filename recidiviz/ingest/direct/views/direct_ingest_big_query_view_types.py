@@ -190,8 +190,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         view_query_template: str,
         region_raw_table_config: DirectIngestRegionRawFileConfig,
         order_by_cols: str,
-        is_detect_row_deletion_view: bool,
-        primary_key_tables_for_entity_deletion: List[str],
         materialize_raw_data_table_views: bool = False,
     ):
         """Builds a view for holding direct ingest pre-processing SQL queries, that can be used to export files for
@@ -203,10 +201,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             region_raw_table_config: (DirectIngestRegionRawFileConfig) Raw table configurations for the region this
                 view corresponds to.
             order_by_cols: (str) A comma-separated string of columns to sort the final results by.
-            is_detect_row_deletion_view: (bool) When true, this view will be built to detect that rows have been deleted
-                since the previous raw data update for this view.
-            primary_key_tables_for_entity_deletion: (str) A list of table names that are used to build the primary keys
-                for this table - must be non-empty when |is_detect_row_deletion_view| is True.
             materialize_raw_data_table_views: (bool) When True, the raw table subqueries for this query will be hydrated
                 as separate, materialized CREATE TEMP TABLE statements. Should be used for queries that are too complex
                 to run otherwise (i.e. they produce a 'too many subqueries' error). This will slow down your query by a
@@ -247,14 +241,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
 
         self._view_query_template = view_query_template
         self._order_by_cols = order_by_cols
-        self._is_detect_row_deletion_view = is_detect_row_deletion_view
         self._materialize_raw_data_table_views = materialize_raw_data_table_views
-        if self._is_detect_row_deletion_view:
-            self._validate_can_detect_row_deletion(
-                raw_configs=self._raw_table_dependency_configs,
-                ingest_view_name=view_id,
-                primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
-            )
 
         if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
             raise ValueError(
@@ -276,24 +263,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def raw_table_dependency_configs(self) -> List[DirectIngestRawFileConfig]:
         """Configs for any raw tables that this view's query depends on."""
         return self._raw_table_dependency_configs
-
-    @property
-    def do_reverse_date_diff(self) -> bool:
-        """True if this view represents a date diff query that must provide the contents from DATE 1 that are not
-        present at, or have changed since, DATE 2. If False does the traditional date diff by looking at contents from
-        DATE 2 that are not present at, or have changed since, DATE 1.
-        """
-        # Do reverse date diff if detecting rows deleted from this ingest view between exports.
-        return self.is_detect_row_deletion_view
-
-    @property
-    def is_detect_row_deletion_view(self) -> bool:
-        """True only if this view should be used to generate rows that are deleted from this ingest view between state
-        exports. This can only be true if we receive full historical exports for all raw data files that are
-        responsible for creating new rows in the ingest view and this query only produces id columns that show the
-        presence or absence of a row.
-        """
-        return self._is_detect_row_deletion_view
 
     @property
     def order_by_cols(self) -> str:
@@ -660,47 +629,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 f"or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`"
             )
 
-    @staticmethod
-    def _validate_can_detect_row_deletion(
-        ingest_view_name: str,
-        primary_key_tables_for_entity_deletion: List[str],
-        raw_configs: List[DirectIngestRawFileConfig],
-    ) -> None:
-        if not primary_key_tables_for_entity_deletion:
-            raise ValueError(
-                f"Ingest view {ingest_view_name} was marked as `is_detect_row_deletion_view`; however no "
-                f"`primary_key_tables_for_entity_deletion` were defined. When the view is constructed, "
-                f"please specify all raw tables necessary for generating the primary key of the to-be-"
-                f"deleted entity into this ingest field."
-            )
-
-        raw_config_file_tags = [r.file_tag for r in raw_configs]
-        for primary_key_table_name in primary_key_tables_for_entity_deletion:
-            if primary_key_table_name not in raw_config_file_tags:
-                raise ValueError(
-                    f"Ingest view {ingest_view_name} has specified {primary_key_table_name} in "
-                    f"`primary_key_tables_for_entity_deletion`, but that raw file tag was not found as a dependency. "
-                    f"Please make sure all tables specified in `primary_key_tables_for_entity_deletion` appear in the "
-                    f"ingest view's query."
-                )
-
-        for raw_config in raw_configs:
-            if raw_config.file_tag not in primary_key_tables_for_entity_deletion:
-                continue
-
-            if not raw_config.always_historical_export:
-                raise ValueError(
-                    f"Ingest view {ingest_view_name} is marked as `is_detect_row_deletion_view` and has table "
-                    f"{raw_config.file_tag} specified in `primary_key_tables_for_entity_deletion`; however the raw "
-                    f"data file is not marked as always being exported as historically. For "
-                    f"`is_detect_row_deletion_view` to be True, we must receive historical exports for all tables "
-                    f"that provide the primary keys of the entity to be deleted. Please ensure that "
-                    f"`primary_key_tables_for_entity_deletion`, and the raw table configs for those specified tables "
-                    f"are up to date. If this is up to date, and we don't receive historical exports for one of the "
-                    f"tables responsible for generating the to be deleted entity's primary key, then we cannot "
-                    f"do row deletion detection."
-                )
-
 
 class DirectIngestPreProcessedIngestViewBuilder(
     BigQueryViewBuilder[DirectIngestPreProcessedIngestView]
@@ -714,18 +642,12 @@ class DirectIngestPreProcessedIngestViewBuilder(
         ingest_view_name: str,
         view_query_template: str,
         order_by_cols: str,
-        is_detect_row_deletion_view: bool = False,
-        primary_key_tables_for_entity_deletion: Optional[List[str]] = None,
         materialize_raw_data_table_views: bool = False,
     ):
         self.region = region
         self.ingest_view_name = ingest_view_name
         self.view_query_template = view_query_template
         self.order_by_cols = order_by_cols
-        self.is_detect_row_deletion_view = is_detect_row_deletion_view
-        self.primary_key_tables_for_entity_deletion = (
-            primary_key_tables_for_entity_deletion or []
-        )
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
         self.materialized_address = None
 
@@ -743,8 +665,6 @@ class DirectIngestPreProcessedIngestViewBuilder(
             view_query_template=self.view_query_template,
             region_raw_table_config=get_region_raw_file_config(self.region),
             order_by_cols=self.order_by_cols,
-            is_detect_row_deletion_view=self.is_detect_row_deletion_view,
-            primary_key_tables_for_entity_deletion=self.primary_key_tables_for_entity_deletion,
             materialize_raw_data_table_views=self.materialize_raw_data_table_views,
         )
 

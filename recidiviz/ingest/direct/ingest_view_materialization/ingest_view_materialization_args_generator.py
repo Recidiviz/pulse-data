@@ -164,14 +164,6 @@ class IngestViewMaterializationArgsGenerator:
                 tz_unaware_upper_bound_datetime_inclusive = (
                     upper_bound_datetime_inclusive.replace(tzinfo=None)
                 )
-                if (
-                    not lower_bound_datetime_exclusive
-                    and ingest_view.do_reverse_date_diff
-                ):
-                    lower_bound_datetime_exclusive = (
-                        tz_unaware_upper_bound_datetime_inclusive
-                    )
-                    continue
 
                 args = IngestViewMaterializationArgs(
                     ingest_view_name=ingest_view_name,
