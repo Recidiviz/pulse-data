@@ -11,14 +11,16 @@ COPY ./recidiviz/calculator/pipeline/dataflow_flex_setup.py ${WORKDIR}/setup.py
 COPY ./recidiviz/calculator/pipeline/flex_pipeline_runner.py ${WORKDIR}/pipeline_runner.py
 
 # Install apache-beam and other dependencies to launch the pipeline
-RUN pip install apache-beam[gcp]
-RUN pip install ${WORKDIR}/.
+# --no-cache-dir means the pip cache won't be used. Using the pip cache makes the image unnecessarily larger,
+# when the docker cache can be used instead. this flag is needed to prevent worker memory/start up issues
+RUN pip install --no-cache-dir apache-beam[gcp]==2.41.0
+RUN pip install --no-cache-dir ${WORKDIR}/.
 
 COPY . ${WORKDIR}
 
 ENV FLEX_TEMPLATE_PYTHON_SETUP_FILE="${WORKDIR}/setup.py"
 ENV FLEX_TEMPLATE_PYTHON_PY_FILE="${WORKDIR}/pipeline_runner.py"
 
-# TODO(#18109): Consider prebuilding the image if we want to speed up our pipelines (or if
-# warmup time is expensive monetarily)
-# https://cloud.google.com/dataflow/docs/guides/using-custom-containers#prebuild
+# PIP_NO_DEPS needs to be set to True to prevent the dependencies from being installed again,
+# this is needed to prevent worker memory/start up issues
+ENV PIP_NO_DEPS=True

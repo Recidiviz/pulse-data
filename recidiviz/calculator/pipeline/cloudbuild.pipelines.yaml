@@ -1,7 +1,7 @@
-# TODO(#18116): replace colin temporary bucket names
 # This file is used to manually trigger and submit a build from the command line.
-# It builds a docker image using the provided Dockerfile recidiviz/calculator/pipeline/Dockerfile.pipeline,
-# and specifies them to be pushed to cloud build to us.gcr.io/recidiviz-staging/colin-test/pipelines:latest.
+# It builds a docker image with tag "us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest" using the provided Dockerfile recidiviz/calculator/pipeline/Dockerfile.pipeline,
+# and specifies it to be pushed to cloud build to us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest.
+# This flow is only used while developing and is triggered manually (not through the regular deploy flow in terraform)
 # Example usage:
 # gcloud builds submit --project=recidiviz-staging --config recidiviz/calculator/pipeline/cloudbuild.pipelines.yaml
 steps:
@@ -10,10 +10,10 @@ steps:
       [
         "build",
         "-t",
-        "us.gcr.io/recidiviz-staging/colin-test/pipelines:latest",
+        "us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest",
         "-f",
         "recidiviz/calculator/pipeline/Dockerfile.pipelines",
         ".",
       ]
 images:
-  - "us.gcr.io/recidiviz-staging/colin-test/pipelines:latest"
+  - "us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest"

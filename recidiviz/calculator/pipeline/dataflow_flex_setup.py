@@ -52,7 +52,7 @@ REQUIRED_PACKAGES = [
     "protobuf==3.20.3",
     # Needed for thefuzz to avoid "Using slow pure-python SequenceMatcher" warning
     "python-Levenshtein",
-    "SQLAlchemy",
+    "SQLAlchemy==1.4.46",
     "thefuzz",
     "us",
 ]
