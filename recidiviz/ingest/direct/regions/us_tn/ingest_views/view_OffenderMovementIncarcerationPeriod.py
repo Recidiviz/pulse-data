@@ -19,7 +19,7 @@ The table contains one row per movement from facility to facility, and this quer
 MovementReason and ultimately maps it into incarceration periods.
 """
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

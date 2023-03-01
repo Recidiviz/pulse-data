@@ -19,7 +19,7 @@ from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_early_discharg
     EarlyDischargeType,
     early_discharge_view_template,
 )
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
