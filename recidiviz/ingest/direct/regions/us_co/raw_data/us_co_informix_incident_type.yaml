@@ -5,6 +5,7 @@ file_description: |-
 data_classification: source
 primary_key_cols:
   - incident_cod
+  - incident_typ
 columns:
   - name: incident_cod
     description: |-

@@ -16,6 +16,8 @@ input_columns:
   - date_created
   - disp_note
   - days_lost
+  - copd_flag
+  - inc_id
 unused_columns: []
 output:
   StatePerson:
@@ -30,6 +32,7 @@ output:
               $values:
                 - docno
                 - incident_num
+                - inc_id
           incident_date: incident_date
           facility: fac_cd
           location_within_facility: location_desc
@@ -168,9 +171,16 @@ output:
                   - Murder/Manslaughter
                   - Sexual Abuse
           incident_details: summary
+          incident_metadata:
+            $json_dict:
+              COPD_TYPE: copd_flag
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:
-                external_id: incident_num
+                external_id:
+                  $concat:
+                    $values:
+                      - incident_num
+                      - inc_id
                 hearing_date: disp_hrg_dtd
                 date_effective: sanc_strt_dtd
                 report_date: date_created

@@ -10,7 +10,13 @@ primary_key_cols:
   - OFFNFIRSTNAME
   - OFFNMIDDLENAME
   - OFFNNAMESUFFIX
-  - COMMITMENTPREFIX
+  - COMMITMENTPREFIX #TODO(#19100): Mark insufficient PK for this table, first 7 provided from CO but all columns don't resolve issue
+  - OFFNSOUNDEXCODE
+  - CURRENTCOMMNAME
+  - DATELASTUPDATE
+  - TIMELASTUPDATE
+  - STAFFLASTUPDATE
+  - CURRENTCOMMDOCNAME
 columns:
   - name: OFFENDERID
     description: |-

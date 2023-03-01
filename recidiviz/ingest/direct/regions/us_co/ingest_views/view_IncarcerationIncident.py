@@ -66,7 +66,13 @@ incident_base AS (
         cntraband,
         s.sanct_ldesc, 
         d.days_lost, 
-        disp_note
+        disp_note, 
+        CASE
+            WHEN 
+                conv_crim_cd LIKE 'II%' THEN 'COPD2: ' || conv_crim_cd
+            WHEN 
+                    conv_crim_cd LIKE 'I%' AND conv_crim_cd NOT LIKE 'II%'  THEN 'COPD1: ' || conv_crim_cd
+        END AS copd_flag
     FROM {informix_displnry}
     LEFT JOIN {informix_dispcrim}
     USING(disp_srl)
@@ -106,7 +112,9 @@ incident_base AS (
         disp_hrg_dtd, 
         date_created, 
         disp_note,
-        days_lost 
+        days_lost,
+        copd_flag,
+        ROW_NUMBER() OVER (PARTITION BY incidents.docno, incidents.incident_num ORDER BY sanc_strt_dtd, date_created, disp_hrg_dtd, sanct_ldesc, days_lost, disp_note, copd_flag) AS inc_id
     FROM incidents
     LEFT JOIN outcome
         ON incidents.incident_num = outcome.incident_num
@@ -119,7 +127,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region="us_co",
     ingest_view_name="IncarcerationIncident",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="docno, incident_num",
+    order_by_cols="docno, incident_num, inc_id",
 )
 
 if __name__ == "__main__":
