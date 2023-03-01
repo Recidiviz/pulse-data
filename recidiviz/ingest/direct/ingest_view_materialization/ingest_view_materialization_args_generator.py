@@ -24,7 +24,6 @@ from typing import Dict, List, Optional, Tuple
 
 import attr
 
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.metadata.direct_ingest_file_metadata_manager import (
     DirectIngestRawFileMetadataManager,
@@ -36,7 +35,9 @@ from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializat
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestView,
-    DirectIngestPreProcessedIngestViewBuilder,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+    DirectIngestPreProcessedIngestViewCollector,
 )
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
@@ -92,9 +93,7 @@ class IngestViewMaterializationArgsGenerator:
         region: DirectIngestRegion,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         raw_file_metadata_manager: DirectIngestRawFileMetadataManager,
-        view_collector: BigQueryViewCollector[
-            DirectIngestPreProcessedIngestViewBuilder
-        ],
+        view_collector: DirectIngestPreProcessedIngestViewCollector,
         launched_ingest_views: List[str],
     ):
 

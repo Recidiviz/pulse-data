@@ -22,7 +22,6 @@ import attr
 from mock import Mock, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -301,9 +300,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
         big_query_client: _MockBigQueryClientForControllerTests,
-        view_collector: BigQueryViewCollector[
-            DirectIngestPreProcessedIngestViewBuilder
-        ],
+        view_collector: DirectIngestPreProcessedIngestViewCollector,
         launched_ingest_views: List[str],
     ):
         self.region = region
@@ -397,7 +394,7 @@ def build_fake_direct_ingest_controller(
 
     if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[
-            BigQueryViewCollector
+            DirectIngestPreProcessedIngestViewCollector
         ] = FakeDirectIngestPreProcessedIngestViewCollector
     else:
         view_collector_cls = DirectIngestPreProcessedIngestViewCollector

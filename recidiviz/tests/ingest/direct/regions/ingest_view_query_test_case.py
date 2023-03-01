@@ -29,7 +29,6 @@ from more_itertools import one
 from pandas.testing import assert_frame_equal
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materializer import (
@@ -47,6 +46,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestPreProcessedIngestView,
     DirectIngestPreProcessedIngestViewBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
@@ -222,7 +222,7 @@ class IngestViewQueryTester:
     ) -> pd.DataFrame:
         """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
         raw data for ingest view tests."""
-        view: BigQueryView = view_builder.build()
+        view: DirectIngestPreProcessedIngestView = view_builder.build()
         lower_bound_datetime_exclusive = (
             DEFAULT_FILE_UPDATE_DATETIME - datetime.timedelta(days=1)
         )
@@ -240,7 +240,7 @@ class IngestViewQueryTester:
             )
         )
 
-        return query_view(self.helper, view.table_for_query, view_query)
+        return query_view(self.helper, view.ingest_view_name, view_query)
 
     @staticmethod
     def fixture_comparison_data_type_for_column(

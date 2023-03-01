@@ -29,7 +29,7 @@ PROJECT_ID_KEY = "project_id"
 
 
 REFERENCED_BQ_ADDRESS_REGEX = re.compile(
-    r"`(?P<project_id_clause>\{project_id\}|[\w-]*)\.(?P<dataset_id>[\w-]*)\.(?P<table_id>[\w-]*)`"
+    r"`(?P<project_id_clause>[\w-]*)\.(?P<dataset_id>[\w-]*)\.(?P<table_id>[\w-]*)`"
 )
 
 
@@ -74,46 +74,6 @@ class BigQueryQueryBuilder:
         return self._apply_overrides_to_query(
             query_no_overrides, self.address_overrides
         )
-
-    def build_no_project_query_template(
-        self, *, query_template: str, query_format_kwargs: Dict[str, Any]
-    ) -> str:
-        """Builds a query *template* from the provided |query|, which has all provided
-        format arguments filled in except the project_id.
-
-        Example:
-            query_template: "SELECT * FROM `{project_id}.{dataset}.table`;"
-            query_format_kwargs: {"dataset": "my_dataset"}
-
-        Output: "SELECT * FROM `{project_id}.my_dataset.table`;"
-        """
-        query_template_no_overrides = self._format_query_without_project_id(
-            query_template, query_format_kwargs
-        )
-
-        if not self.address_overrides:
-            return query_template_no_overrides
-
-        return self._apply_overrides_to_query(
-            query_template_no_overrides, self.address_overrides
-        )
-
-    @classmethod
-    def _format_query_without_project_id(
-        cls,
-        query_template: str,
-        query_format_kwargs: Dict[str, Any],
-    ) -> str:
-        """Formats the given |query_template| string with the given arguments,
-        without injecting a value for the PROJECT_ID_KEY.
-        """
-        cls._check_format_args(query_format_kwargs)
-        query_format_args = {
-            PROJECT_ID_KEY: f"{{{PROJECT_ID_KEY}}}",
-            **query_format_kwargs,
-        }
-
-        return _QUERY_FORMATTER.format(query_template, **query_format_args)
 
     @classmethod
     def _format_query_with_project_id(
@@ -163,13 +123,13 @@ class BigQueryQueryBuilder:
         the same query string, but with overrides applied to all relevant addresses.
         """
         query_with_overrides = query
-        for project_id_str, dataset_id, table_id in re.findall(
+        for project_id, dataset_id, table_id in re.findall(
             REFERENCED_BQ_ADDRESS_REGEX, query
         ):
             parent_table = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
             if override := address_overrides.get_sandbox_address(address=parent_table):
                 query_with_overrides = query_with_overrides.replace(
-                    f"`{project_id_str}.{dataset_id}.{table_id}`",
-                    f"`{project_id_str}.{override.dataset_id}.{override.table_id}`",
+                    f"`{project_id}.{dataset_id}.{table_id}`",
+                    f"`{project_id}.{override.dataset_id}.{override.table_id}`",
                 )
         return query_with_overrides

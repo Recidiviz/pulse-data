@@ -62,17 +62,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         )
         self.assertEqual(result, template)
 
-        # No tables referenced, so the no project templates are also the same
-        result = self.builder_no_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs={}
-        )
-        self.assertEqual(result, template)
-
-        result = self.builder_with_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs={}
-        )
-        self.assertEqual(result, template)
-
     def test_build_no_table(self) -> None:
         template = "SELECT {column_arg} FROM UNNEST([1, 2]);"
 
@@ -91,17 +80,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             project_id=self.project_id,
             query_template=template,
             query_format_kwargs=query_args,
-        )
-        self.assertEqual(result, expected_result)
-
-        # No tables referenced, so the no project templates are also the same
-        result = self.builder_no_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(result, expected_result)
-
-        result = self.builder_with_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
         )
         self.assertEqual(result, expected_result)
 
@@ -126,21 +104,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         )
         self.assertEqual(
             result, "SELECT my_column FROM `recidiviz-456.my_prefix_dataset_1.table_1`;"
-        )
-
-        # No tables referenced, so the no project templates are also the same
-        result = self.builder_no_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.dataset_1.table_1`;"
-        )
-
-        result = self.builder_with_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.my_prefix_dataset_1.table_1`;"
         )
 
     def test_build_simple_inject_dataset_and_table(self) -> None:
@@ -170,21 +133,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             result, "SELECT my_column FROM `recidiviz-456.my_prefix_dataset_1.table_1`;"
         )
 
-        # No tables referenced, so the no project templates are also the same
-        result = self.builder_no_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.dataset_1.table_1`;"
-        )
-
-        result = self.builder_with_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.my_prefix_dataset_1.table_1`;"
-        )
-
     def test_build_no_overrides_apply_to_view(self) -> None:
         template = "SELECT {column_arg} FROM `{project_id}.{dataset_arg}.{table_arg}`;"
 
@@ -201,13 +149,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         )
         self.assertEqual(
             result, "SELECT my_column FROM `recidiviz-456.other_dataset.other_table`;"
-        )
-
-        result = self.builder_with_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.other_dataset.other_table`;"
         )
 
     def test_argument_has_project_id_format_arg(self) -> None:
@@ -235,21 +176,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
             result, "SELECT my_column FROM `recidiviz-456.my_prefix_dataset_1.table_1`;"
         )
 
-        # No tables referenced, so the no project templates are also the same
-        result = self.builder_no_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.dataset_1.table_1`;"
-        )
-
-        result = self.builder_with_overrides.build_no_project_query_template(
-            query_template=template, query_format_kwargs=query_args
-        )
-        self.assertEqual(
-            result, "SELECT my_column FROM `{project_id}.my_prefix_dataset_1.table_1`;"
-        )
-
     def test_argument_has_format_args_test(self) -> None:
         template = "SELECT {column_arg} FROM `{table_clause}`;"
         query_args = {
@@ -264,12 +190,6 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, expected_error_message):
             _ = self.builder_no_overrides.build_query(
                 project_id=self.project_id,
-                query_template=template,
-                query_format_kwargs=query_args,
-            )
-
-        with self.assertRaisesRegex(ValueError, expected_error_message):
-            _ = self.builder_no_overrides.build_no_project_query_template(
                 query_template=template,
                 query_format_kwargs=query_args,
             )

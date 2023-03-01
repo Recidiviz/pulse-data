@@ -22,8 +22,6 @@ from typing import Dict, List, Type, Union
 
 import pandas as pd
 
-from recidiviz.big_query.big_query_address import BigQueryAddress
-
 
 # TODO(#15020): Get rid of this interface once the postgres implementation is deleted.
 class BigQueryTestHelper:
@@ -61,11 +59,10 @@ class BigQueryTestHelper:
 
 
 def query_view(
-    helper: BigQueryTestHelper, table_address: BigQueryAddress, view_query: str
+    helper: BigQueryTestHelper, view_name: str, view_query: str
 ) -> pd.DataFrame:
     """Returns results from view based on the given query"""
     results = helper.query(view_query)
-
     # Log results to debug log level, to see them pass --log-level DEBUG to pytest
-    logging.debug("Results for `%s`:\n%s", table_address, results.to_string())
+    logging.debug("Results for `%s`:\n%s", view_name, results.to_string())
     return results
