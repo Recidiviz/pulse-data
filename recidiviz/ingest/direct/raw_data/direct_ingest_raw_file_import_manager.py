@@ -1050,12 +1050,14 @@ def augment_raw_data_df_with_metadata_columns(
 _RAW_TABLE_CONFIGS_BY_STATE = {}
 
 
-def get_region_raw_file_config(region_code: str) -> DirectIngestRegionRawFileConfig:
+def get_region_raw_file_config(
+    region_code: str, region_module: ModuleType = regions
+) -> DirectIngestRegionRawFileConfig:
     region_code_lower = region_code.lower()
     if region_code_lower not in _RAW_TABLE_CONFIGS_BY_STATE:
         _RAW_TABLE_CONFIGS_BY_STATE[
             region_code_lower
-        ] = DirectIngestRegionRawFileConfig(region_code_lower)
+        ] = DirectIngestRegionRawFileConfig(region_code_lower, region_module)
 
     return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
 

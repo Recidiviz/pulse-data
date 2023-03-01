@@ -55,11 +55,11 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
+    DirectIngestViewQueryBuilder,
     RawTableViewType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.entity.base_entity import Entity
@@ -71,11 +71,11 @@ from recidiviz.utils.string import get_closest_string
 
 def _get_ingest_view(
     region: direct_ingest_regions.DirectIngestRegion, ingest_view_name: str
-) -> DirectIngestPreProcessedIngestView:
-    view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
+) -> DirectIngestViewQueryBuilder:
+    view_collector = DirectIngestViewQueryBuilderCollector(region, [])
 
     ingest_views_by_name = {
-        view.ingest_view_name: view for view in view_collector.collect_view_builders()
+        view.ingest_view_name: view for view in view_collector.collect_query_builders()
     }
     if ingest_view_name not in ingest_views_by_name:
         maybe_name = get_closest_string(
@@ -85,8 +85,7 @@ def _get_ingest_view(
             f"No view found with name '{ingest_view_name}'. Did you mean '{maybe_name}'?"
         )
 
-    ingest_view = ingest_views_by_name[ingest_view_name].build()
-    return ingest_view
+    return ingest_views_by_name[ingest_view_name]
 
 
 def query_ingest_view(
@@ -96,8 +95,8 @@ def query_ingest_view(
     big_query_client = BigQueryClientImpl()
     ingest_view = _get_ingest_view(region, ingest_view_name)
 
-    query = ingest_view.expanded_view_query(
-        config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+    query = ingest_view.build_query(
+        config=DirectIngestViewQueryBuilder.QueryStructureConfig(
             raw_table_view_type=RawTableViewType.LATEST,
         ),
     )

@@ -46,11 +46,10 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.big_query.big_query_emulator_test_case import (
     BigQueryEmulatorTestCase,
@@ -83,12 +82,12 @@ class IngestViewTestBigQueryDatabaseDelegate(BigQueryTestHelper):
     database used for the test."""
 
     @staticmethod
-    def view_builder_for_tag(
+    def ingest_view_for_tag(
         region_code: str, ingest_view_name: str
-    ) -> DirectIngestPreProcessedIngestViewBuilder:
-        return DirectIngestPreProcessedIngestViewCollector(
+    ) -> DirectIngestViewQueryBuilder:
+        return DirectIngestViewQueryBuilderCollector(
             get_direct_ingest_region(region_code), []
-        ).get_view_builder_by_view_name(ingest_view_name)
+        ).get_query_builder_by_view_name(ingest_view_name)
 
     @abc.abstractmethod
     def load_mock_raw_table(
@@ -115,7 +114,7 @@ class IngestViewQueryTester:
         self,
         fixtures_files_name: str,
         region_code: str,
-        view_builder: DirectIngestPreProcessedIngestViewBuilder,
+        ingest_view: DirectIngestViewQueryBuilder,
         query_run_dt: datetime.datetime,
         create_expected: bool,
     ) -> None:
@@ -134,17 +133,17 @@ class IngestViewQueryTester:
         """
         self._create_mock_raw_bq_tables_from_fixtures(
             region_code=region_code,
-            ingest_view_builder=view_builder,
+            ingest_view=ingest_view,
             raw_fixtures_name=fixtures_files_name,
         )
 
         expected_output_fixture_path = direct_ingest_fixture_path(
             region_code=region_code,
             fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
-            file_tag=view_builder.ingest_view_name,
+            file_tag=ingest_view.ingest_view_name,
             file_name=fixtures_files_name,
         )
-        results = self._query_ingest_view_for_builder(view_builder, query_run_dt)
+        results = self._query_ingest_view_for_builder(ingest_view, query_run_dt)
 
         if create_expected:
             results.to_csv(expected_output_fixture_path, index=False)
@@ -164,13 +163,12 @@ class IngestViewQueryTester:
     def _create_mock_raw_bq_tables_from_fixtures(
         self,
         region_code: str,
-        ingest_view_builder: DirectIngestPreProcessedIngestViewBuilder,
+        ingest_view: DirectIngestViewQueryBuilder,
         raw_fixtures_name: str,
     ) -> None:
         """Loads mock raw data tables from fixture files used by the given ingest view.
         All raw fixture files must have names matching |raw_fixtures_name|.
         """
-        ingest_view = ingest_view_builder.build()
         for raw_file_config in ingest_view.raw_table_dependency_configs:
             raw_fixture_path = direct_ingest_fixture_path(
                 region_code=region_code,
@@ -217,22 +215,21 @@ class IngestViewQueryTester:
 
     def _query_ingest_view_for_builder(
         self,
-        view_builder: DirectIngestPreProcessedIngestViewBuilder,
+        ingest_view: DirectIngestViewQueryBuilder,
         query_run_dt: datetime.datetime,
     ) -> pd.DataFrame:
         """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
         raw data for ingest view tests."""
-        view: DirectIngestPreProcessedIngestView = view_builder.build()
         lower_bound_datetime_exclusive = (
             DEFAULT_FILE_UPDATE_DATETIME - datetime.timedelta(days=1)
         )
         upper_bound_datetime_inclusive = query_run_dt
         view_query = str(
             IngestViewMaterializerImpl.debug_query_for_args(
-                ingest_views_by_name={view_builder.ingest_view_name: view},
+                ingest_views_by_name={ingest_view.ingest_view_name: ingest_view},
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 ingest_view_materialization_args=IngestViewMaterializationArgs(
-                    ingest_view_name=view_builder.ingest_view_name,
+                    ingest_view_name=ingest_view.ingest_view_name,
                     lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
                     upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
                     ingest_instance=DirectIngestInstance.PRIMARY,
@@ -240,7 +237,7 @@ class IngestViewQueryTester:
             )
         )
 
-        return query_view(self.helper, view.ingest_view_name, view_query)
+        return query_view(self.helper, ingest_view.ingest_view_name, view_query)
 
     @staticmethod
     def fixture_comparison_data_type_for_column(
@@ -359,7 +356,7 @@ class IngestViewQueryTestCase(
         self.region_code: str
         # TODO(#19137): Get the view builder directly instead of requiring the test to
         # do that.
-        self.view_builder: DirectIngestPreProcessedIngestViewBuilder
+        self.ingest_view: DirectIngestViewQueryBuilder
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
 
         self.tester = IngestViewQueryTester(self)
@@ -370,7 +367,7 @@ class IngestViewQueryTestCase(
         self.tester.run_ingest_view_test(
             fixtures_files_name=fixtures_files_name,
             region_code=self.region_code,
-            view_builder=self.view_builder,
+            ingest_view=self.ingest_view,
             query_run_dt=self.query_run_dt,
             create_expected=create_expected,
         )
@@ -429,7 +426,9 @@ class IngestViewEmulatorQueryTestCase(
     def setUp(self) -> None:
         super().setUp()
         self.region_code: str
-        self.view_builder: DirectIngestPreProcessedIngestViewBuilder
+        # TODO(#19137): Get the view builder directly instead of requiring the test to
+        # do that.
+        self.ingest_view: DirectIngestViewQueryBuilder
         self.query_run_dt = DEFAULT_QUERY_RUN_DATETIME
 
         self.tester = IngestViewQueryTester(self)
@@ -440,7 +439,7 @@ class IngestViewEmulatorQueryTestCase(
         self.tester.run_ingest_view_test(
             fixtures_files_name=fixtures_files_name,
             region_code=self.region_code,
-            view_builder=self.view_builder,
+            ingest_view=self.ingest_view,
             query_run_dt=self.query_run_dt,
             create_expected=create_expected,
         )

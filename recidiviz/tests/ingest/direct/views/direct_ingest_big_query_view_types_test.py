@@ -20,12 +20,9 @@ import unittest
 import attr
 from mock import patch
 
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
-)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DestinationTableType,
-    DirectIngestPreProcessedIngestView,
+    DirectIngestViewQueryBuilder,
     RawTableViewType,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import (
@@ -39,14 +36,12 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
 
     PROJECT_ID = "recidiviz-456"
 
-    DEFAULT_LATEST_CONFIG = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+    DEFAULT_LATEST_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
         raw_table_view_type=RawTableViewType.LATEST
     )
 
-    DEFAULT_PARAMETERIZED_CONFIG = (
-        DirectIngestPreProcessedIngestView.QueryStructureConfig(
-            raw_table_view_type=RawTableViewType.PARAMETERIZED
-        )
+    DEFAULT_PARAMETERIZED_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
+        raw_table_view_type=RawTableViewType.PARAMETERIZED
     )
 
     def setUp(self) -> None:
@@ -58,20 +53,16 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     def test_direct_ingest_preprocessed_view(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
-
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -93,7 +84,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -142,8 +133,8 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+            view.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.PARAMETERIZED,
                     param_name_override="my_update_timestamp_param_name",
                 )
@@ -153,40 +144,35 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
         self,
     ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_ww",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """SELECT * FROM {tagColumnsMissing};"""
 
+        view = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region="us_ww",
+            order_by_cols="any_col",
+            region_module=fake_regions_module,
+        )
         with self.assertRaisesRegex(
             ValueError,
             r"^Found empty set of columns in raw table config \[tagColumnsMissing\]"
             r" in region \[us_ww\].$",
         ):
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols="any_col",
-            )
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN `{{project_id}}.reference_tables.my_table`
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -204,7 +190,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_date_parameterized_view_query = """WITH
@@ -234,8 +220,8 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_date_parameterized_view_query,
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+            view.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.PARAMETERIZED,
                     param_name_override="my_param",
                 )
@@ -243,20 +229,17 @@ ORDER BY col1, col2;"""
         )
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_first}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -274,14 +257,10 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
@@ -289,11 +268,12 @@ SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -316,7 +296,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -366,17 +346,18 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
         )
 
         # Also check that appending whitespace before the WITH prefix produces the same results
         view_query_template = "\n " + view_query_template
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -386,51 +367,47 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_not_in_config}
 USING (col1);"""
 
+        view = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region="us_xx",
+            order_by_cols="any_col",
+            region_module=fake_regions_module,
+        )
+
         with self.assertRaisesRegex(
             ValueError, r"Found unexpected raw table tag \[file_tag_not_in_config\]"
         ):
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name="ingest_view_tag",
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols="any_col",
-            )
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG)
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_subqueries(
         self,
     ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
             materialize_raw_data_table_views=True,
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -451,8 +428,8 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+            view.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                 )
             ),
@@ -502,8 +479,8 @@ USING (col1)
 ORDER BY col1, col2;"""
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+            view.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.PARAMETERIZED,
                     param_name_override="my_update_timestamp_param_name",
                 )
@@ -513,10 +490,6 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(
         self,
     ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """
 CREATE TEMP TABLE my_subquery AS (SELECT * FROM {file_tag_first});
@@ -526,18 +499,15 @@ SELECT * FROM my_subquery;"""
             ValueError,
             "^Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.$",
         ):
-            _ = DirectIngestPreProcessedIngestView(
+            _ = DirectIngestViewQueryBuilder(
                 ingest_view_name="ingest_view_tag",
                 view_query_template=view_query_template,
-                region_raw_table_config=region_config,
+                region="us_xx",
                 order_by_cols="col1, col2",
+                region_module=fake_regions_module,
             )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
@@ -545,12 +515,13 @@ SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
             materialize_raw_data_table_views=True,
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -573,7 +544,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
@@ -623,18 +594,19 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
         )
 
         # Also check that appending whitespace before the WITH prefix produces the same results
         view_query_template = "\n " + view_query_template
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
             materialize_raw_data_table_views=True,
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -644,20 +616,16 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_temp_output_table(
         self,
     ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
@@ -665,12 +633,13 @@ SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
             materialize_raw_data_table_views=True,
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -700,9 +669,7 @@ ORDER BY col1, col2
             destination_table_id="my_destination_table",
             destination_table_type=DestinationTableType.TEMPORARY,
         )
-        self.assertEqual(
-            expected_view_query, view.expanded_view_query(config=latest_config)
-        )
+        self.assertEqual(expected_view_query, view.build_query(config=latest_config))
 
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH filtered_rows AS (
@@ -760,16 +727,12 @@ ORDER BY col1, col2
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(config=parametrized_config),
+            view.build_query(config=parametrized_config),
         )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_permanent_expiring_output_table(
         self,
     ) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = """WITH
 foo AS (SELECT * FROM bar)
@@ -777,11 +740,12 @@ SELECT * FROM {file_tag_first}
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         self.assertEqual(
@@ -817,9 +781,7 @@ ORDER BY col1, col2
             destination_table_id="my_destination_table",
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
         )
-        self.assertEqual(
-            expected_view_query, view.expanded_view_query(config=latest_config)
-        )
+        self.assertEqual(expected_view_query, view.build_query(config=latest_config))
 
         expected_parameterized_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
 CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
@@ -883,23 +845,20 @@ ORDER BY col1, col2
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(config=parametrized_config),
+            view.build_query(config=parametrized_config),
         )
 
     def test_direct_ingest_preprocessed_view_with_update_datetime(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         view_query_template = f"""SELECT * FROM {{file_tag_first}}
         WHERE col1 <= @{UPDATE_DATETIME_PARAM_NAME}"""
 
-        view = DirectIngestPreProcessedIngestView(
+        view = DirectIngestViewQueryBuilder(
             ingest_view_name="ingest_view_tag",
             view_query_template=view_query_template,
-            region_raw_table_config=region_config,
+            region="us_xx",
             order_by_cols="col1, col2",
+            region_module=fake_regions_module,
         )
 
         expected_view_query = """WITH
@@ -912,7 +871,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_view_query,
-            view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG),
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
         )
 
         expected_parameterized_view_query = """WITH
@@ -941,18 +900,14 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+            view.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.PARAMETERIZED
                 )
             ),
         )
 
     def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions_module,
-        )
 
         for current_date_fn in [
             "CURRENT_DATE('US/Eastern')",
@@ -968,10 +923,10 @@ ORDER BY col1, col2;"""
                 "Found CURRENT_DATE function in this query - ingest views cannot contain "
                 "CURRENT_DATE functions. Consider using @update_timestamp instead.",
             ):
-                DirectIngestPreProcessedIngestView(
+                DirectIngestViewQueryBuilder(
                     ingest_view_name="ingest_view_tag",
                     view_query_template=view_query_template,
-                    region_raw_table_config=region_config,
+                    region="us_xx",
                     order_by_cols="col1, col2",
                 )
 
@@ -988,7 +943,7 @@ ORDER BY col1, col2;"""
                     r"^Found null destination_dataset_id \[None\] with destination_table_type "
                     rf"\[{destination_table_type.name}\]$",
                 ):
-                    _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                         raw_table_view_type=RawTableViewType.LATEST,
                         destination_table_type=destination_table_type,
                     )
@@ -1004,7 +959,7 @@ ORDER BY col1, col2;"""
                     r"^Found nonnull destination_dataset_id \[some_dataset\] with destination_table_type "
                     rf"\[{destination_table_type.name}\]$",
                 ):
-                    _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                         raw_table_view_type=RawTableViewType.LATEST,
                         destination_dataset_id="some_dataset",
                         destination_table_type=destination_table_type,
@@ -1019,7 +974,7 @@ ORDER BY col1, col2;"""
                 ValueError,
                 r"^Found null destination_table_id \[None\] with destination_table_type \[PERMANENT_EXPIRING\]$",
             ):
-                _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                     destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
                     destination_dataset_id="some_dataset",
@@ -1029,7 +984,7 @@ ORDER BY col1, col2;"""
                 ValueError,
                 r"^Found null destination_table_id \[None\] with destination_table_type \[TEMPORARY\]$",
             ):
-                _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                     destination_table_type=DestinationTableType.TEMPORARY,
                 )
@@ -1040,7 +995,7 @@ ORDER BY col1, col2;"""
                 ValueError,
                 r"^Found nonnull destination_table_id \[some_table\] with destination_table_type \[NONE\]$",
             ):
-                _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
                     raw_table_view_type=RawTableViewType.LATEST,
                     destination_table_id="some_table",
                     destination_table_type=DestinationTableType.NONE,

@@ -22,7 +22,7 @@ sentence row, as well as a single court case with a single agent (judge).
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import (
     UPDATE_DATETIME_PARAM_NAME,
@@ -280,7 +280,7 @@ LEFT JOIN special_conditions_aggregation JOSpecialConditions
 USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="SentencesChargesAndCourtCases_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,

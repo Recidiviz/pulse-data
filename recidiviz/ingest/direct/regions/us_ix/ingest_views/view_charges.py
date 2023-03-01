@@ -16,7 +16,7 @@
 # =============================================================================
 """Query that generates the state charge entity"""
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -69,7 +69,7 @@ WHERE sentlink.SentenceLinkClassId = '1' -- only look at offense sentence record
     -- and upper(Comments) like '%CONVERSION%' #TODO(#17186): Revisit in 01/2023 to test with non-conversion data
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="charges",
     view_query_template=VIEW_QUERY_TEMPLATE,

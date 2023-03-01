@@ -62,10 +62,10 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
@@ -250,17 +250,15 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         self.imported_paths.append(path)
 
 
-class FakeDirectIngestPreProcessedIngestViewCollector(
-    DirectIngestPreProcessedIngestViewCollector
-):
+class FakeDirectIngestViewQueryBuilderCollector(DirectIngestViewQueryBuilderCollector):
     def __init__(
         self, region: DirectIngestRegion, controller_ingest_view_rank_list: List[str]
     ):
         super().__init__(region, controller_ingest_view_rank_list)
 
-    def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
+    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
         builders = [
-            DirectIngestPreProcessedIngestViewBuilder(
+            DirectIngestViewQueryBuilder(
                 region=self.region.region_code,
                 ingest_view_name=tag,
                 view_query_template=f"SELECT * FROM {{{tag}}}",
@@ -270,7 +268,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
         ]
 
         builders.append(
-            DirectIngestPreProcessedIngestViewBuilder(
+            DirectIngestViewQueryBuilder(
                 ingest_view_name="gatedTagNotInTagsList",
                 region=self.region.region_code,
                 view_query_template="SELECT * FROM {tagBasicData} LEFT OUTER JOIN {tagBasicData} USING (col);",
@@ -300,7 +298,7 @@ class FakeIngestViewMaterializer(IngestViewMaterializer):
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
         big_query_client: _MockBigQueryClientForControllerTests,
-        view_collector: DirectIngestPreProcessedIngestViewCollector,
+        view_collector: DirectIngestViewQueryBuilderCollector,
         launched_ingest_views: List[str],
     ):
         self.region = region
@@ -394,10 +392,10 @@ def build_fake_direct_ingest_controller(
 
     if "TestDirectIngestController" in controller_cls.__name__:
         view_collector_cls: Type[
-            DirectIngestPreProcessedIngestViewCollector
-        ] = FakeDirectIngestPreProcessedIngestViewCollector
+            DirectIngestViewQueryBuilderCollector
+        ] = FakeDirectIngestViewQueryBuilderCollector
     else:
-        view_collector_cls = DirectIngestPreProcessedIngestViewCollector
+        view_collector_cls = DirectIngestViewQueryBuilderCollector
 
     with patch(
         f"{BaseDirectIngestController.__module__}.DirectIngestCloudTaskQueueManagerImpl"
@@ -410,7 +408,7 @@ def build_fake_direct_ingest_controller(
         f"{BaseDirectIngestController.__module__}.IngestViewMaterializerImpl",
         FakeIngestViewMaterializer,
     ), patch(
-        f"{BaseDirectIngestController.__module__}.DirectIngestPreProcessedIngestViewCollector",
+        f"{BaseDirectIngestController.__module__}.DirectIngestViewQueryBuilderCollector",
         view_collector_cls,
     ), patch(
         f"{BaseDirectIngestController.__module__}.InstanceIngestViewContentsImpl",

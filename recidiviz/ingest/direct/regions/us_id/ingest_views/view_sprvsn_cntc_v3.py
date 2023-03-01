@@ -16,7 +16,7 @@
 # =============================================================================
 """Query for supervision contacts for a person."""
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -59,7 +59,7 @@ WHERE
     CAST(cntc_dt AS DATETIME) > CAST('2019-01-01' AS DATETIME) 
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_id",
     ingest_view_name="sprvsn_cntc_v3",
     view_query_template=VIEW_QUERY_TEMPLATE,

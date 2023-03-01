@@ -114,7 +114,7 @@ from recidiviz.ingest.direct.types.errors import (
 )
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema.operations.dao import (
     stale_secondary_raw_data,
@@ -160,7 +160,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         self.big_query_client = BigQueryClientImpl()
 
-        self.view_collector = DirectIngestPreProcessedIngestViewCollector(
+        self.view_collector = DirectIngestViewQueryBuilderCollector(
             self.region, self.get_ingest_view_rank_list()
         )
 

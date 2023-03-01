@@ -17,7 +17,7 @@
 """Query containing information on current supervision early termination dates."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -27,7 +27,7 @@ SELECT SID, EARLY_TERMINATION_DATE
 FROM {docstars_offenders};
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_offenders_early_term",
     view_query_template=VIEW_QUERY_TEMPLATE,

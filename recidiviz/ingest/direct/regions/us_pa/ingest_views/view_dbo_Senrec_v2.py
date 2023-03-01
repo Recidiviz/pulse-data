@@ -17,7 +17,7 @@
 """Query containing sentence information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -55,7 +55,7 @@ LEFT JOIN {offense_codes} offense_codes
     ON sentences.offense_code = offense_codes.Code
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="dbo_Senrec_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,

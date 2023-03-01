@@ -19,7 +19,7 @@ from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragmen
     VIEW_CLIENT_FILTER_CONDITION,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,7 +40,7 @@ VIEW_QUERY_TEMPLATE = f""" # nosec
     WHERE {VIEW_CLIENT_FILTER_CONDITION}
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_me",
     ingest_view_name="CLIENT",
     view_query_template=VIEW_QUERY_TEMPLATE,

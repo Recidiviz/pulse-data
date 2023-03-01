@@ -17,7 +17,7 @@
 """Query containing cases table with officers information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import (
     UPDATE_DATETIME_PARAM_NAME,
@@ -82,7 +82,7 @@ offendercases_with_terminating_and_recent_pos AS (
 SELECT * FROM offendercases_with_terminating_and_recent_pos
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_offendercasestable_with_officers",
     view_query_template=VIEW_QUERY_TEMPLATE,

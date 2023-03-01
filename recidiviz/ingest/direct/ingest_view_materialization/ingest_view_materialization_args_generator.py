@@ -34,10 +34,10 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.entity.operations.entities import (
     DirectIngestRawFileMetadata,
@@ -93,7 +93,7 @@ class IngestViewMaterializationArgsGenerator:
         region: DirectIngestRegion,
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         raw_file_metadata_manager: DirectIngestRawFileMetadataManager,
-        view_collector: DirectIngestPreProcessedIngestViewCollector,
+        view_collector: DirectIngestViewQueryBuilderCollector,
         launched_ingest_views: List[str],
     ):
 
@@ -101,9 +101,9 @@ class IngestViewMaterializationArgsGenerator:
         self.metadata_manager = metadata_manager
         self.raw_file_metadata_manager = raw_file_metadata_manager
         self.ingest_views_by_name = {
-            builder.ingest_view_name: builder.build()
-            for builder in view_collector.collect_view_builders()
-            if builder.ingest_view_name in launched_ingest_views
+            view.ingest_view_name: view
+            for view in view_collector.collect_query_builders()
+            if view.ingest_view_name in launched_ingest_views
         }
 
     def get_ingest_view_materialization_task_args(
@@ -189,7 +189,7 @@ class IngestViewMaterializationArgsGenerator:
         return jobs_to_schedule
 
     def _get_export_state_for_ingest_view(
-        self, ingest_view: DirectIngestPreProcessedIngestView
+        self, ingest_view: DirectIngestViewQueryBuilder
     ) -> _IngestViewExportState:
         """Gets list of all the raw files that are newer than the last export job.
 

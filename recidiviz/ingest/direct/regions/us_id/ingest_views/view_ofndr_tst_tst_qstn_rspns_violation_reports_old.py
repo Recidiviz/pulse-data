@@ -18,14 +18,14 @@
 This is necessary to gather historical violation report info.
 """
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_test_questions import (
     question_numbers_with_descriptive_answers_view_fragment,
 )
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestViewQueryBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = f"""WITH
     {question_numbers_with_descriptive_answers_view_fragment(test_id='204')}
@@ -54,7 +54,7 @@ VIEW_QUERY_TEMPLATE = f"""WITH
       score_by_name
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_id",
     ingest_view_name="ofndr_tst_tst_qstn_rspns_violation_reports_old",
     view_query_template=VIEW_QUERY_TEMPLATE,

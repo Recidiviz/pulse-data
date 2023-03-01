@@ -41,11 +41,11 @@ from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializat
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DestinationTableType,
-    DirectIngestPreProcessedIngestView,
+    DirectIngestViewQueryBuilder,
     RawTableViewType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -85,7 +85,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
         big_query_client: BigQueryClient,
-        view_collector: DirectIngestPreProcessedIngestViewCollector,
+        view_collector: DirectIngestViewQueryBuilderCollector,
         launched_ingest_views: List[str],
     ):
 
@@ -96,9 +96,9 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         self.raw_data_source_instance = raw_data_source_instance
         self.big_query_client = big_query_client
         self.ingest_views_by_name = {
-            builder.ingest_view_name: builder.build()
-            for builder in view_collector.collect_view_builders()
-            if builder.ingest_view_name in launched_ingest_views
+            view.ingest_view_name: view
+            for view in view_collector.collect_query_builders()
+            if view.ingest_view_name in launched_ingest_views
         }
         self.request_id = self._generate_request_id()
 
@@ -112,7 +112,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _generate_ingest_view_query_job_for_date(
         self,
         table_name: str,
-        ingest_view: DirectIngestPreProcessedIngestView,
+        ingest_view: DirectIngestViewQueryBuilder,
         date_bound: datetime.datetime,
     ) -> bigquery.QueryJob:
         """Generates a query for the provided |ingest view| on the given |date bound|
@@ -225,7 +225,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 upper_bound_prev_query=upper_bound_prev_query,
             )
 
-        return DirectIngestPreProcessedIngestView.add_order_by_suffix(
+        return DirectIngestViewQueryBuilder.add_order_by_suffix(
             query=materialization_query, order_by_cols=ingest_view.order_by_cols
         )
 
@@ -357,7 +357,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     @classmethod
     def debug_query_for_args(
         cls,
-        ingest_views_by_name: Dict[str, DirectIngestPreProcessedIngestView],
+        ingest_views_by_name: Dict[str, DirectIngestViewQueryBuilder],
         raw_data_source_instance: DirectIngestInstance,
         ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> str:
@@ -382,7 +382,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     @classmethod
     def _debug_generate_unified_query(
         cls,
-        ingest_view: DirectIngestPreProcessedIngestView,
+        ingest_view: DirectIngestViewQueryBuilder,
         raw_data_source_instance: DirectIngestInstance,
         ingest_view_materialization_args: IngestViewMaterializationArgs,
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
@@ -440,7 +440,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 upper_bound_query=f"SELECT * FROM {upper_bound_table_id}",
                 upper_bound_prev_query=f"SELECT * FROM {lower_bound_table_id}",
             )
-            diff_query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
+            diff_query = DirectIngestViewQueryBuilder.add_order_by_suffix(
                 query=diff_query, order_by_cols=ingest_view.order_by_cols
             )
 
@@ -450,7 +450,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     @staticmethod
     def _generate_ingest_view_query_and_params_for_date(
         *,
-        ingest_view: DirectIngestPreProcessedIngestView,
+        ingest_view: DirectIngestViewQueryBuilder,
         raw_data_source_instance: DirectIngestInstance,
         update_timestamp: datetime.datetime,
         destination_table_type: DestinationTableType,
@@ -466,8 +466,8 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             )
         ]
 
-        query = ingest_view.expanded_view_query(
-            config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+        query = ingest_view.build_query(
+            config=DirectIngestViewQueryBuilder.QueryStructureConfig(
                 raw_table_view_type=RawTableViewType.PARAMETERIZED,
                 raw_data_source_instance=raw_data_source_instance,
                 param_name_override=param_name,
@@ -482,7 +482,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     def _materialize_query_results(
         self,
         args: IngestViewMaterializationArgs,
-        ingest_view: DirectIngestPreProcessedIngestView,
+        ingest_view: DirectIngestViewQueryBuilder,
         query: str,
     ) -> None:
         """Materialized the results of |query| to the appropriate location."""
@@ -506,10 +506,10 @@ if __name__ == "__main__":
 
     with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = direct_ingest_regions.get_direct_ingest_region(region_code_)
-        view_collector_ = DirectIngestPreProcessedIngestViewCollector(region_, [])
+        view_collector_ = DirectIngestViewQueryBuilderCollector(region_, [])
         views_by_name_ = {
-            builder.ingest_view_name: builder.build()
-            for builder in view_collector_.collect_view_builders()
+            view.ingest_view_name: view
+            for view in view_collector_.collect_query_builders()
         }
 
         debug_query = IngestViewMaterializerImpl.debug_query_for_args(

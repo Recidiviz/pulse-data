@@ -64,7 +64,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (
     FakeDirectIngestInstanceStatusManager,
@@ -246,9 +246,9 @@ class DirectIngestRegionDirStructureBase:
                     region_module_override=self.region_module_override,
                 )
 
-                builders = DirectIngestPreProcessedIngestViewCollector(
+                builders = DirectIngestViewQueryBuilderCollector(
                     region, controller.get_ingest_view_rank_list()
-                ).collect_view_builders()
+                ).collect_query_builders()
 
                 raw_file_manager = DirectIngestRegionRawFileConfig(
                     region_code=region_code,
@@ -315,7 +315,7 @@ class DirectIngestRegionDirStructureBase:
             ("build_staging", "recidiviz-staging", GCPEnvironment.STAGING),
         ]
     )
-    def test_collect_and_build_ingest_view_builders(
+    def test_collect_and_print_ingest_views(
         self, _name: str, project_id: str, environment: GCPEnvironment
     ) -> None:
         with patch(
@@ -336,11 +336,11 @@ class DirectIngestRegionDirStructureBase:
                     region_module_override=self.region_module_override,
                 )
 
-                builders = DirectIngestPreProcessedIngestViewCollector(
+                views = DirectIngestViewQueryBuilderCollector(
                     region, controller.get_ingest_view_rank_list()
-                ).collect_view_builders()
-                for builder in builders:
-                    builder.build()
+                ).collect_query_builders()
+                for view in views:
+                    view.build_and_print()
 
     def test_collect_and_build_raw_table_migrations(self) -> None:
         with patch("recidiviz.utils.metadata.project_id", return_value="recidiviz-789"):

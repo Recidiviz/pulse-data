@@ -18,11 +18,13 @@
 import re
 import string
 from enum import Enum, auto
+from types import ModuleType
 from typing import List, Optional
 
 import attr
 
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -91,9 +93,9 @@ class DestinationTableType(Enum):
     PERMANENT_EXPIRING = auto()
 
 
-class DirectIngestPreProcessedIngestView:
-    """Class for holding direct ingest pre-processing SQL queries, that can be used to export files for import into our
-    Postgres DB.
+class DirectIngestViewQueryBuilder:
+    """Class for building SQL queries, that can be used to generate ingest view
+    results in the `us_xx_ingest_view_results*` datasets.
     """
 
     @attr.s
@@ -185,9 +187,10 @@ class DirectIngestPreProcessedIngestView:
         *,
         ingest_view_name: str,
         view_query_template: str,
-        region_raw_table_config: DirectIngestRegionRawFileConfig,
+        region: str,
         order_by_cols: str,
         materialize_raw_data_table_views: bool = False,
+        region_module: ModuleType = regions,
     ):
         """Builds a view for holding direct ingest pre-processing SQL queries, that can be used to export files for
         import into our Postgres DB.
@@ -195,8 +198,7 @@ class DirectIngestPreProcessedIngestView:
         Args:
             ingest_view_name: (str) The name of the view.
             view_query_template: (str) The template for the query, formatted for hydration of raw table views.
-            region_raw_table_config: (DirectIngestRegionRawFileConfig) Raw table configurations for the region this
-                view corresponds to.
+            region: (str) The region this view corresponds to.
             order_by_cols: (str) A comma-separated string of columns to sort the final results by.
             materialize_raw_data_table_views: (bool) When True, the raw table subqueries for this query will be hydrated
                 as separate, materialized CREATE TEMP TABLE statements. Should be used for queries that are too complex
@@ -205,22 +207,23 @@ class DirectIngestPreProcessedIngestView:
                 IMPORTANT NOTE: When this is True, the view query will become a "script" which means it cannot be used
                 in the # Python BigQuery API for a query that sets a destination table
                 (bigquery.QueryJobConfig#destination is not None).
+            region_module: (ModuleType) Module containing all region raw data config files.
         """
-        DirectIngestPreProcessedIngestView._validate_order_by(
+        DirectIngestViewQueryBuilder._validate_order_by(
             ingest_view_name=ingest_view_name, view_query_template=view_query_template
         )
 
-        self._project_id = metadata.project_id()
-        self._region_code = region_raw_table_config.region_code
-        self._raw_table_dependency_configs = self._get_raw_table_dependency_configs(
-            view_query_template, region_raw_table_config
-        )
+        self._region_code = region
+        self._raw_table_dependency_configs: Optional[
+            List[DirectIngestRawFileConfig]
+        ] = None
         self._query_builder = BigQueryQueryBuilder(address_overrides=None)
         self.ingest_view_name = ingest_view_name
 
         self._view_query_template = view_query_template
         self._order_by_cols = order_by_cols
         self._materialize_raw_data_table_views = materialize_raw_data_table_views
+        self._region_module = region_module
 
         if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
             raise ValueError(
@@ -236,6 +239,14 @@ class DirectIngestPreProcessedIngestView:
     @property
     def raw_table_dependency_configs(self) -> List[DirectIngestRawFileConfig]:
         """Configs for any raw tables that this view's query depends on."""
+        if self._raw_table_dependency_configs is None:
+            region_raw_table_config = get_region_raw_file_config(
+                self._region_code, self._region_module
+            )
+            self._raw_table_dependency_configs = self._get_raw_table_dependency_configs(
+                self._view_query_template, region_raw_table_config
+            )
+
         return self._raw_table_dependency_configs
 
     @property
@@ -256,23 +267,51 @@ class DirectIngestPreProcessedIngestView:
         """If True, this query will always materialize raw table views into temporary tables."""
         return self._materialize_raw_data_table_views
 
-    def expanded_view_query(
-        self, config: "DirectIngestPreProcessedIngestView.QueryStructureConfig"
+    def build_query(
+        self, config: "DirectIngestViewQueryBuilder.QueryStructureConfig"
     ) -> str:
         """Formats this view's template according to the provided config, with expanded subqueries for each raw table
         dependency."""
         query = self._format_expanded_view_query(
             region_code=self._region_code,
-            raw_table_dependency_configs=self._raw_table_dependency_configs,
+            raw_table_dependency_configs=self.raw_table_dependency_configs,
             view_query_template=self._view_query_template,
             order_by_cols=self._order_by_cols,
             materialize_raw_data_table_views=self._materialize_raw_data_table_views,
             config=config,
         )
         return self._query_builder.build_query(
-            project_id=self._project_id,
+            project_id=metadata.project_id(),
             query_template=query,
             query_format_kwargs={},
+        )
+
+    def build_and_print(
+        self,
+        raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
+    ) -> None:
+        """For local testing, prints out the parameterized and latest versions of the view's query."""
+        print(
+            "****************************** PARAMETERIZED ******************************"
+        )
+        print(
+            self.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                    raw_data_source_instance=raw_data_source_instance,
+                )
+            )
+        )
+        print(
+            "********************************* LATEST *********************************"
+        )
+        print(
+            self.build_query(
+                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.LATEST,
+                    raw_data_source_instance=raw_data_source_instance,
+                )
+            )
         )
 
     @staticmethod
@@ -332,7 +371,7 @@ class DirectIngestPreProcessedIngestView:
         region_code: str,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
         materialize_raw_data_table_views: bool,
-        config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
+        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
     ) -> Optional[str]:
         """Returns the clause with all the temporary raw data tables that must be created before the final SELECT/CREATE
         statement.
@@ -358,7 +397,7 @@ class DirectIngestPreProcessedIngestView:
         view_query_template: str,
         order_by_cols: str,
         materialize_raw_data_table_views: bool,
-        config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
+        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
     ) -> str:
         """Returns the final SELECT statement that produces the results for this ingest view query. It will either
         pull in raw table data as WITH subqueries or reference materialized temporary tables with raw table data.
@@ -399,7 +438,7 @@ class DirectIngestPreProcessedIngestView:
         view_query_template: str,
         order_by_cols: str,
         materialize_raw_data_table_views: bool,
-        config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
+        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
     ) -> str:
         """Returns the full, formatted ingest view query template that can be injected with format args."""
         raw_materialized_tables_clause = (
@@ -450,7 +489,7 @@ class DirectIngestPreProcessedIngestView:
         view_query_template: str,
         order_by_cols: str,
         materialize_raw_data_table_views: bool,
-        config: "DirectIngestPreProcessedIngestView.QueryStructureConfig",
+        config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
     ) -> str:
         """Formats the given template with expanded subqueries for each raw table dependency according to the given
         config. Does not hydrate the project_id so the result of this function can be passed as a template to the
@@ -472,7 +511,7 @@ class DirectIngestPreProcessedIngestView:
             )
 
         query = self._query_builder.build_query(
-            project_id=self._project_id,
+            project_id=metadata.project_id(),
             query_template=full_query_template,
             query_format_kwargs=format_args,
         )
@@ -594,69 +633,8 @@ class DirectIngestPreProcessedIngestView:
             raise ValueError(
                 f"Found ORDER BY not associated with a WINDOW clause after the final FROM statement in the SQL"
                 f"view_query_template for {ingest_view_name}. Please ensure that all ordering of the final query is"
-                f"done by specifying DirectIngestPreProcessedIngestView.order_by_cols instead of putting an ORDER BY "
-                f"clause in DirectIngestPreProcessingIngestView.view_query_template. If this ORDER BY is a result"
+                f"done by specifying DirectIngestViewQueryBuilder.order_by_cols instead of putting an ORDER BY "
+                f"clause in DirectIngestViewQueryBuilder.view_query_template. If this ORDER BY is a result"
                 f"of an inline subquery in the final SELECT statement, please consider moving alias-ing the subquery "
                 f"or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`"
             )
-
-
-class DirectIngestPreProcessedIngestViewBuilder:
-    """Factory class for building DirectIngestPreProcessedIngestView"""
-
-    def __init__(
-        self,
-        *,
-        region: str,
-        ingest_view_name: str,
-        view_query_template: str,
-        order_by_cols: str,
-        materialize_raw_data_table_views: bool = False,
-    ):
-        self.region = region
-        self.ingest_view_name = ingest_view_name
-        self.view_query_template = view_query_template
-        self.order_by_cols = order_by_cols
-        self.materialize_raw_data_table_views = materialize_raw_data_table_views
-        self.materialized_address = None
-
-        self.ingest_view_name = ingest_view_name
-
-    def build(self) -> DirectIngestPreProcessedIngestView:
-        """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
-        return DirectIngestPreProcessedIngestView(
-            ingest_view_name=self.ingest_view_name,
-            view_query_template=self.view_query_template,
-            region_raw_table_config=get_region_raw_file_config(self.region),
-            order_by_cols=self.order_by_cols,
-            materialize_raw_data_table_views=self.materialize_raw_data_table_views,
-        )
-
-    def build_and_print(
-        self,
-        raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
-    ) -> None:
-        """For local testing, prints out the parameterized and latest versions of the view's query."""
-        view = self.build()
-        print(
-            "****************************** PARAMETERIZED ******************************"
-        )
-        print(
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
-                    raw_data_source_instance=raw_data_source_instance,
-                )
-            )
-        )
-        print(
-            "********************************* LATEST *********************************"
-        )
-        print(
-            view.expanded_view_query(
-                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.LATEST,
-                    raw_data_source_instance=raw_data_source_instance,
-                )
-            )
-        )

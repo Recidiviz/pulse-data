@@ -22,7 +22,7 @@ from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragmen
     TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -149,7 +149,7 @@ VIEW_QUERY_TEMPLATE = f"""
         violation_reports_by.BY_PON = officers_with_recent_role.BDGNO
     """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak028_tak042_tak076_tak024_violation_reports",
     view_query_template=VIEW_QUERY_TEMPLATE,

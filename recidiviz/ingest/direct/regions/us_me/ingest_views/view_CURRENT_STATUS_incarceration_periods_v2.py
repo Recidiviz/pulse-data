@@ -24,7 +24,7 @@ from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragmen
     REGEX_TIMESTAMP_NANOS_FORMAT,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import (
     UPDATE_DATETIME_PARAM_NAME,
@@ -562,7 +562,7 @@ VIEW_QUERY_TEMPLATE = f"""
     FROM incarceration_periods
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_me",
     ingest_view_name="CURRENT_STATUS_incarceration_periods_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,

@@ -17,7 +17,7 @@
 """Query containing ORAS assessments information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -86,7 +86,7 @@ LEFT JOIN duplicate_counts USING(DOC_ID,CREATED_DATE,ASSESSMENT_TYPE)
 WHERE assessment_rank = 1
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="oras_assessments_weekly_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,

@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""An implementation of the BigQueryViewCollector for collecting direct ingest SQL preprocessing views for a given
-region.
-"""
+"""A class that collects all defined ingest view query builders for a given region."""
 
 from typing import List
 
@@ -25,7 +23,7 @@ from more_itertools import one
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 
 _INGEST_VIEWS_SUBDIR_NAME = "ingest_views"
@@ -33,10 +31,8 @@ _INGEST_VIEW_FILE_PREFIX = "view_"
 _VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
 
 
-class DirectIngestPreProcessedIngestViewCollector(ModuleCollectorMixin):
-    """An implementation of the BigQueryViewCollector for collecting direct ingest SQL
-    preprocessing views for a given region.
-    """
+class DirectIngestViewQueryBuilderCollector(ModuleCollectorMixin):
+    """A class that collects all defined ingest view query builders for a given region."""
 
     def __init__(
         self, region: DirectIngestRegion, controller_ingest_view_rank_list: List[str]
@@ -44,7 +40,7 @@ class DirectIngestPreProcessedIngestViewCollector(ModuleCollectorMixin):
         self.region = region
         self.controller_ingest_view_rank_list = controller_ingest_view_rank_list
 
-    def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
+    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
         if self.region.region_module.__file__ is None:
             raise ValueError(f"No file associated with {self.region.region_module}.")
 
@@ -53,7 +49,7 @@ class DirectIngestPreProcessedIngestViewCollector(ModuleCollectorMixin):
             [self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME],
         )
         ingest_view_builders = self.collect_top_level_attributes_in_module(
-            attribute_type=DirectIngestPreProcessedIngestViewBuilder,
+            attribute_type=DirectIngestViewQueryBuilder,
             dir_module=view_dir_module,
             recurse=False,
             file_prefix_filter=_INGEST_VIEW_FILE_PREFIX,
@@ -61,21 +57,21 @@ class DirectIngestPreProcessedIngestViewCollector(ModuleCollectorMixin):
             expect_match_in_all_files=True,
         )
 
-        self._validate_ingest_views(ingest_view_builders)
+        self._validate_query_builders(ingest_view_builders)
 
         return ingest_view_builders
 
-    def get_view_builder_by_view_name(
+    def get_query_builder_by_view_name(
         self, ingest_view_name: str
-    ) -> DirectIngestPreProcessedIngestViewBuilder:
+    ) -> DirectIngestViewQueryBuilder:
         return one(
-            view
-            for view in self.collect_view_builders()
-            if view.ingest_view_name == ingest_view_name
+            builder
+            for builder in self.collect_query_builders()
+            if builder.ingest_view_name == ingest_view_name
         )
 
-    def _validate_ingest_views(
-        self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]
+    def _validate_query_builders(
+        self, ingest_view_builders: List[DirectIngestViewQueryBuilder]
     ) -> None:
         found_ingest_view_names = [
             builder.ingest_view_name for builder in ingest_view_builders
@@ -83,7 +79,8 @@ class DirectIngestPreProcessedIngestViewCollector(ModuleCollectorMixin):
         found_ingest_view_names_set = set(found_ingest_view_names)
         if len(found_ingest_view_names) > len(found_ingest_view_names_set):
             raise ValueError(
-                f"Found duplicate ingest view names in the view directory. Found: [{found_ingest_view_names}]."
+                f"Found duplicate ingest view names in the view directory. Found: "
+                f"[{found_ingest_view_names}]."
             )
 
         controller_view_names_set = set(self.controller_ingest_view_rank_list)

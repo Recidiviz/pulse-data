@@ -20,7 +20,7 @@ each contact and ultimately maps it into SupervisionContacts for a person.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,7 +41,7 @@ SELECT
 FROM contact_note_type_view
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_tn",
     ingest_view_name="SupervisionContacts",
     view_query_template=VIEW_QUERY_TEMPLATE,

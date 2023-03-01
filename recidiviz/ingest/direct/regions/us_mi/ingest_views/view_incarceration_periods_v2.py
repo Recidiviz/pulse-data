@@ -17,7 +17,7 @@
 """Query containing MDOC incarceration period information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -564,7 +564,7 @@ where rnk=1
 """
 
 # TODO(#13970) Add ingest view tests.
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="incarceration_periods_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,

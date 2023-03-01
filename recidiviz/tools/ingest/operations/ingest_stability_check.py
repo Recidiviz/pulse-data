@@ -77,7 +77,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils import metadata
 from recidiviz.utils.context import on_exit
@@ -215,7 +215,7 @@ def verify_ingest_view_determinism(
             region_code=state_code.value, ingest_instance=ingest_instance
         ),
         big_query_client=bq_client,
-        view_collector=DirectIngestPreProcessedIngestViewCollector(
+        view_collector=DirectIngestViewQueryBuilderCollector(
             region,
             controller_ingest_view_rank_list=ingest_view_rank_list,
         ),

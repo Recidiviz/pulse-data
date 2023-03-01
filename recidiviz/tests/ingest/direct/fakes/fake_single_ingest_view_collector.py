@@ -19,43 +19,10 @@
 from typing import List
 
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
-)
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.tests.ingest.direct import fake_regions
-
-
-class _FakeDirectIngestViewBuilder:
-    """Fake BQ View Builder for tests."""
-
-    def __init__(
-        self,
-        ingest_view_name: str,
-        materialize_raw_data_table_views: bool = False,
-    ):
-        self.ingest_view_name = ingest_view_name
-        self.materialize_raw_data_table_views = materialize_raw_data_table_views
-
-    def build(self) -> DirectIngestPreProcessedIngestView:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            region_module=fake_regions,
-        )
-
-        query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
-        return DirectIngestPreProcessedIngestView(
-            ingest_view_name=self.ingest_view_name,
-            view_query_template=query,
-            region_raw_table_config=region_config,
-            order_by_cols="colA, colC",
-            materialize_raw_data_table_views=self.materialize_raw_data_table_views,
-        )
-
-    def build_and_print(self) -> None:
-        self.build()
 
 
 class FakeSingleIngestViewCollector:
@@ -71,11 +38,17 @@ class FakeSingleIngestViewCollector:
         self.ingest_view_name = ingest_view_name
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
-    def collect_view_builders(self) -> List[_FakeDirectIngestViewBuilder]:
+    def collect_query_builders(self) -> List[DirectIngestViewQueryBuilder]:
+        query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
+
         builders = [
-            _FakeDirectIngestViewBuilder(
+            DirectIngestViewQueryBuilder(
                 ingest_view_name=self.ingest_view_name,
+                view_query_template=query,
+                region="us_xx",
+                order_by_cols="colA, colC",
                 materialize_raw_data_table_views=self.materialize_raw_data_table_views,
+                region_module=fake_regions,
             )
         ]
 
