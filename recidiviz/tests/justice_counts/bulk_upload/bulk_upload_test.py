@@ -16,13 +16,15 @@
 # =============================================================================
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
+import itertools
 import os
-from typing import Any, Dict
+from typing import Dict, List
 
 import pandas as pd
 import pytest
 
 from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.law_enforcement import CallType, ForceType
 from recidiviz.justice_counts.dimensions.offense import OffenseType
@@ -32,14 +34,27 @@ from recidiviz.justice_counts.dimensions.prosecution import (
     FundingType,
 )
 from recidiviz.justice_counts.dimensions.supervision import StaffType
-from recidiviz.justice_counts.metricfiles.metricfile_registry import (
-    SYSTEM_TO_FILENAME_TO_METRICFILE,
+from recidiviz.justice_counts.exceptions import (
+    BulkUploadMessageType,
+    JusticeCountsBulkUploadException,
 )
-from recidiviz.justice_counts.metrics import prisons
+from recidiviz.justice_counts.metrics import (
+    law_enforcement,
+    prisons,
+    prosecution,
+    supervision,
+)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import (
+    DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.justice_counts.spreadsheet_helpers import (
+    TEST_EXCEL_FILE,
+    create_excel_file,
+)
 from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
@@ -55,10 +70,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
         self.uploader = BulkUploader()
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
-        self.test_excel_file = os.path.join(
-            os.path.dirname(__file__),
-            "bulk_upload_fixtures/bulk_upload_test.xlsx",
-        )
         user_account = self.test_schema_objects.test_user_A
         law_enforcement_agency = self.test_schema_objects.test_agency_A
         prison_agency = self.test_schema_objects.test_agency_G
@@ -83,94 +94,55 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.supervision_agency_id = supervision_agency.id
             self.user_account_id = user_account.id
 
-    # def test_validation(self) -> None:
-    #     """Test that errors are thrown on invalid inputs."""
-    #     with SessionFactory.using_database(self.database_key) as session:
-    #         user_account = UserAccountInterface.get_user_by_id(
-    #             session=session, user_account_id=self.user_account_id
-    #         )
-    #         _, metric_key_to_errors = self.uploader.upload_excel(
-    #             session=session,
-    #             xls=pd.ExcelFile(self.invalid_excel),
-    #             agency_id=self.prosecution_agency_id,
-    #             system=schema.System.PROSECUTION,
-    #             user_account=user_account,
-    #             metric_key_to_agency_datapoints={},
-    #         )
-    #         self.assertEqual(len(metric_key_to_errors), 7)
-    #         invalid_file_name_error = metric_key_to_errors.get(None, []).pop()
-    #         self.assertTrue(
-    #             "The following sheet names do not correspond to a metric for your agency: gender."
-    #             in invalid_file_name_error.description
-    #         )
-    #         cases_disposed_errors: List[
-    #             JusticeCountsBulkUploadException
-    #         ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Delete excel file.
+        os.remove(TEST_EXCEL_FILE)
 
-    #         self.assertEqual(len(cases_disposed_errors), 1)
-    #         cases_disposed_by_type_error = cases_disposed_errors[0]
+    def test_validation(self) -> None:
+        """Test that errors are thrown on invalid inputs."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            # Create an excel sheet that has an invalid month
+            # in the month column of the cases_disposed metric and a
+            # sheet with an invalid sheet name.
+            create_excel_file(
+                system=schema.System.PROSECUTION,
+                invalid_month_sheetname="cases_disposed_by_type",
+                add_invalid_sheetname=True,
+            )
 
-    #         self.assertTrue(
-    #             (
-    #                 "The valid values for this column are January, February, March, "
-    #                 "April, May, June, July, August, September, October, "
-    #                 "November, December."
-    #             )
-    #             in cases_disposed_by_type_error.description
-    #         )
+            _, metric_key_to_errors = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                agency_id=self.prosecution_agency_id,
+                system=schema.System.PROSECUTION,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
 
-    def clear_spreadsheet(self) -> None:
-        with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-            self.test_excel_file
-        ) as writer:
-            df = pd.DataFrame({})
-            # We can't save an empty excel workbook, so
-            # save one with an empty sheet.
-            df.to_excel(writer, sheet_name="blank")
+            self.assertEqual(len(metric_key_to_errors), 2)
+            invalid_file_name_error = metric_key_to_errors.get(None, []).pop()
+            self.assertTrue(
+                "The following sheet names do not correspond to a metric for your agency: gender."
+                in invalid_file_name_error.description
+            )
+            cases_disposed_errors: List[
+                JusticeCountsBulkUploadException
+            ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
+            self.assertEqual(len(cases_disposed_errors), 2)
+            cases_disposed_by_type_error = cases_disposed_errors[0]
 
-    def _create_dataframe_dict(
-        self, reporting_frequency: schema.ReportingFrequency
-    ) -> Dict[str, Any]:
-        year_col = [2021, 2022, 2023]
-        value_col = [10, 20, 30]
-
-        if reporting_frequency == schema.ReportingFrequency.ANNUAL:
-            return {"year": year_col, "value": value_col}
-
-        # If the metric is reported monthly, add a month column for
-        # January and February of each year.
-        return {
-            "month": [1, 2] * len(value_col),
-            "year": [val for val in year_col for _ in (0, 1)],
-            "value": [val for val in value_col for _ in (0, 1)],
-        }
-
-    def create_excel_file(
-        self,
-        system: schema.System,
-    ) -> None:
-        """Creates an excel file for a system to test BulkUpload.upload_excel()"""
-        filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
-        with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-            self.test_excel_file
-        ) as writer:
-            for filename, metricfile in filename_to_metricfile.items():
-                # For every metric, add a value for 2021, 2022, and 2023
-                dataframe_dict = self._create_dataframe_dict(
-                    reporting_frequency=metricfile.definition.reporting_frequency
+            self.assertTrue(
+                (
+                    "The valid values for this column are January, February, March, "
+                    "April, May, June, July, August, September, October, "
+                    "November, December."
                 )
-                if metricfile.disaggregation_column_name is not None:
-                    # If the metric is has a breakdown, add a column for the breakdown
-                    dimension_list = list(metricfile.disaggregation)  # type: ignore[call-overload, arg-type]
-                    dataframe_dict[metricfile.disaggregation_column_name] = [
-                        dimension_list[x % len(dimension_list)].value
-                        for x in range(0, len(dataframe_dict["value"]))
-                    ]
-                if system == schema.System.SUPERVISION:
-                    # If the metric is for supervision, add a system column
-                    dataframe_dict["system"] = ["all"] * len(dataframe_dict["value"])  # type: ignore[list-item]
-                df = pd.DataFrame(dataframe_dict)
-                df.to_excel(writer, sheet_name=filename)
+                in cases_disposed_by_type_error.description
+            )
 
     def test_prison(self) -> None:
         """Bulk upload prison metrics into an empty database."""
@@ -178,12 +150,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.create_excel_file(
+            create_excel_file(
                 system=schema.System.PRISONS,
             )
             self.uploader.upload_excel(
                 session=session,
-                xls=pd.ExcelFile(self.test_excel_file),
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 agency_id=self.prison_agency_id,
                 system=schema.System.PRISONS,
                 user_account=user_account,
@@ -216,7 +188,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 20,
             )
             self.assertEqual(metrics[1].value, 20)
-            self.clear_spreadsheet()
 
     def test_prosecution(self) -> None:
         """Bulk upload prosecution metrics from excel spreadsheet."""
@@ -224,12 +195,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.create_excel_file(
+            create_excel_file(
                 system=schema.System.PROSECUTION,
             )
             self.uploader.upload_excel(
                 session=session,
-                xls=pd.ExcelFile(self.test_excel_file),
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 agency_id=self.prosecution_agency_id,
                 system=schema.System.PROSECUTION,
                 user_account=user_account,
@@ -243,7 +214,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_prosecution(reports_by_instance=reports_by_instance)
-            self.clear_spreadsheet()
 
     def test_law_enforcement(self) -> None:
         """Bulk upload law_enforcement metrics from excel spreadsheet."""
@@ -252,12 +222,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.create_excel_file(
+            create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
             )
             self.uploader.upload_excel(
                 session=session,
-                xls=pd.ExcelFile(self.test_excel_file),
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 agency_id=self.law_enforcement_agency_id,
                 system=schema.System.LAW_ENFORCEMENT,
                 user_account=user_account,
@@ -271,7 +241,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_law_enforcement(reports_by_instance=reports_by_instance)
-            self.clear_spreadsheet()
 
     def test_supervision(self) -> None:
         """Bulk upload supervision metrics from excel spreadsheet."""
@@ -280,12 +249,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             user_account = UserAccountInterface.get_user_by_id(
                 session=session, user_account_id=self.user_account_id
             )
-            self.create_excel_file(
+            create_excel_file(
                 system=schema.System.SUPERVISION,
             )
             self.uploader.upload_excel(
                 session=session,
-                xls=pd.ExcelFile(self.test_excel_file),
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 agency_id=self.supervision_agency_id,
                 system=schema.System.SUPERVISION,
                 user_account=user_account,
@@ -298,7 +267,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             reports_by_instance = {report.instance: report for report in reports}
             self._test_supervision(reports_by_instance=reports_by_instance)
-            self.clear_spreadsheet()
 
     def _test_prosecution(self, reports_by_instance: Dict[str, schema.Report]) -> None:
         """Spot check an annual and monthly report."""
@@ -383,7 +351,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             supervision_metrics = list(
                 filter(lambda m: "SUPERVISION" in m.key, metrics)
             )
-            self.assertEqual(supervision_metrics[0].key, "SUPERVISION_BUDGET")
+            self.assertEqual(supervision_metrics[0].key, "SUPERVISION_FUNDING")
             self.assertEqual(supervision_metrics[0].value, 10)
             self.assertEqual(supervision_metrics[1].key, "SUPERVISION_EXPENSES")
             self.assertEqual(supervision_metrics[1].value, 10)
@@ -418,7 +386,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             supervision_metrics = list(
                 filter(lambda m: "SUPERVISION" in m.key, metrics)
             )
-            self.assertEqual(supervision_metrics[0].key, "SUPERVISION_BUDGET")
+            self.assertEqual(supervision_metrics[0].key, "SUPERVISION_FUNDING")
             self.assertEqual(supervision_metrics[0].value, 20)
             self.assertEqual(supervision_metrics[1].key, "SUPERVISION_EXPENSES")
             self.assertEqual(supervision_metrics[1].value, 20)
@@ -507,188 +475,263 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 },
             )
 
+    def test_infer_aggregate_value_with_total(
+        self,
+    ) -> None:
+        """Check that bulk upload defers to a aggregate total if it was exported explicitly."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            # This test uploads spreadsheet that will create one report with two metrics:
+            # 1) an arrest metric with an aggregate value that is reported and breakdowns
+            # that do not match the total and 2) a reported_crime_by_type sheet where no
+            # totals are reported.
+            create_excel_file(
+                system=schema.System.LAW_ENFORCEMENT,
+                sheetnames_to_skip={"reported_crime"},
+                sheetnames_to_vary_values={"arrests"},
+            )
 
-# def test_infer_aggregate_value_with_total(
-#     self,
-# ) -> None:
-#     """Check that bulk upload defers to a aggregate total if it was exported explicitly."""
-#     with SessionFactory.using_database(self.database_key) as session:
-#         user_account = UserAccountInterface.get_user_by_id(
-#             session=session, user_account_id=self.user_account_id
-#         )
-#         # This test uploads spreadsheet that will create one report with two metrics:
-#         # 1) an arrest metric with an aggregate value that is reported and breakdowns
-#         # that do not match the total and 2) a reported_crime_by_type sheet where no
-#         # totals are reported.
-#         self.uploader.upload_excel(
-#             session=session,
-#             xls=pd.ExcelFile(self.law_enforcement_excel_mismatched_totals),
-#             agency_id=self.law_enforcement_agency_id,
-#             system=schema.System.LAW_ENFORCEMENT,
-#             user_account=user_account,
-#             metric_key_to_agency_datapoints={},
-#         )
+            self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                agency_id=self.law_enforcement_agency_id,
+                system=schema.System.LAW_ENFORCEMENT,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
 
-#         reports = ReportInterface.get_reports_by_agency_id(
-#             session=session,
-#             agency_id=self.law_enforcement_agency_id,
-#             include_datapoints=True,
-#         )
-#         metrics = sorted(
-#             ReportInterface.get_metrics_by_report(report=reports[0], session=session),
-#             key=lambda x: x.key,
-#         )
-#         self.assertEqual(len(metrics), 3)
-#         # the arrest metric should have the aggregate value that is reported, not any of the inferred
-#         # values from the breakdown
-#         arrest_metric = list(
-#             filter(lambda m: m.key == law_enforcement.arrests.key, metrics)
-#         )[0]
-#         self.assertEqual(arrest_metric.value, 200)
-#         for aggregated_dimension in arrest_metric.aggregated_dimensions:
-#             if aggregated_dimension.dimension_to_value is not None:
-#                 inferred_value = list(
-#                     filter(
-#                         lambda item: item is not None,
-#                         aggregated_dimension.dimension_to_value.values(),
-#                     )
-#                 )
-#                 self.assertNotEqual(sum(inferred_value), 200)
-#         # the reported_crime metric should have the aggregate value that is inferred, since no
-#         # aggregate value was reported explicitly.
-#         reported_crime_metric = list(
-#             filter(lambda m: m.key == law_enforcement.reported_crime.key, metrics)
-#         )[0]
-#         self.assertEqual(reported_crime_metric.value, 1000)
-#         for aggregated_dimension in reported_crime_metric.aggregated_dimensions:
-#             if aggregated_dimension.dimension_to_value is not None:
-#                 inferred_value = list(
-#                     filter(
-#                         lambda item: item is not None,
-#                         aggregated_dimension.dimension_to_value.values(),
-#                     )
-#                 )
-#                 self.assertEqual(sum(inferred_value), 1000)
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=self.law_enforcement_agency_id,
+                include_datapoints=True,
+            )
+            monthly_report = list(
+                filter(
+                    lambda m: m.date_range_start.month != m.date_range_end.month,
+                    reports,
+                )
+            )[0]
+            metrics = sorted(
+                ReportInterface.get_metrics_by_report(
+                    report=monthly_report, session=session
+                ),
+                key=lambda x: x.key,
+            )
+            self.assertEqual(len(metrics), 3)
+            # the arrest metric should have the aggregate value that is reported, not any of the inferred
+            # values from the breakdown
+            arrest_metric = list(
+                filter(lambda m: m.key == law_enforcement.arrests.key, metrics)
+            )[0]
+            self.assertEqual(arrest_metric.value, 30)
+            for aggregated_dimension in arrest_metric.aggregated_dimensions:
+                if aggregated_dimension.dimension_to_value is not None:
+                    inferred_value = list(
+                        filter(
+                            lambda item: item is not None,
+                            aggregated_dimension.dimension_to_value.values(),
+                        )
+                    )
+                    self.assertNotEqual(sum(inferred_value), 10)
+            # the reported_crime metric should have the aggregate value that is inferred, since no
+            # aggregate value was reported explicitly.
+            reported_crime_metric = list(
+                filter(lambda m: m.key == law_enforcement.reported_crime.key, metrics)
+            )[0]
+            self.assertEqual(reported_crime_metric.value, 30)
+            for aggregated_dimension in reported_crime_metric.aggregated_dimensions:
+                if aggregated_dimension.dimension_to_value is not None:
+                    inferred_value = list(
+                        filter(
+                            lambda item: item is not None,
+                            aggregated_dimension.dimension_to_value.values(),
+                        )
+                    )
+                    self.assertEqual(sum(inferred_value), 30)
 
+    def test_missing_total_and_metric_validation(
+        self,
+    ) -> None:
+        """Checks that we warn the user when a metric is missing or a total sheet is missing."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            create_excel_file(
+                system=schema.System.LAW_ENFORCEMENT,
+                sheetnames_to_skip={
+                    "arrests",
+                    "use_of_force",
+                    "use_of_force_by_type",
+                    "staff_by_race",
+                    "staff_by_biological_sex",
+                },
+            )
 
-# def test_missing_total_and_metric_validation(
-#     self,
-# ) -> None:
-#     """Checks that we warn the user when a metric is missing or a total sheet is missing."""
-#     with SessionFactory.using_database(self.database_key) as session:
-#         user_account = UserAccountInterface.get_user_by_id(
-#             session=session, user_account_id=self.user_account_id
-#         )
-#         _, metric_key_to_errors = self.uploader.upload_excel(
-#             session=session,
-#             xls=pd.ExcelFile(self.law_enforcement_missing_metrics),
-#             agency_id=self.law_enforcement_agency_id,
-#             system=schema.System.LAW_ENFORCEMENT,
-#             user_account=user_account,
-#             metric_key_to_agency_datapoints={},
-#         )
+            _, metric_key_to_errors = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                agency_id=self.law_enforcement_agency_id,
+                system=schema.System.LAW_ENFORCEMENT,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
 
-#         self.assertEqual(len(metric_key_to_errors), 3)
-#         arrest_errors = metric_key_to_errors[law_enforcement.arrests.key]
-#         self.assertEqual(len(arrest_errors), 1)
-#         arrest_error = arrest_errors[0]
-#         self.assertEqual(arrest_error.title, "Missing Total Value")
-#         self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
-#         self.assertTrue(
-#             "No total values were provided for this metric" in arrest_error.description,
-#         )
+            self.assertEqual(len(metric_key_to_errors), 3)
+            arrest_errors = metric_key_to_errors[law_enforcement.arrests.key]
+            self.assertEqual(len(arrest_errors), 1)
+            arrest_error = arrest_errors[0]
+            self.assertEqual(arrest_error.title, "Missing Total Value")
+            self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
+            self.assertTrue(
+                "No total values were provided for this metric"
+                in arrest_error.description,
+            )
 
-#         use_of_force_errors = metric_key_to_errors[
-#             law_enforcement.ouse_of_force_incidents.key
-#         ]
-#         self.assertEqual(len(use_of_force_errors), 1)
-#         use_of_force_error = use_of_force_errors[0]
-#         self.assertEqual(use_of_force_error.title, "Missing Metric")
-#         self.assertEqual(use_of_force_error.message_type, BulkUploadMessageType.ERROR)
-#         self.assertTrue(
-#             "No data for the Use of Force Incidents metric was provided. "
-#             in use_of_force_error.description,
-#         )
-#         staff_errors = metric_key_to_errors[law_enforcement.staff.key]
-#         self.assertEqual(len(staff_errors), 2)
-#         for error in staff_errors:
-#             if error.sheet_name == "staff_by_race":
-#                 self.assertEqual(error.title, "Missing Breakdown Sheet")
-#                 self.assertEqual(error.message_type, BulkUploadMessageType.WARNING)
-#                 self.assertTrue(
-#                     "No data for the Race / Ethnicity breakdown was provided. Please provide data in a sheet named staff_by_race"
-#                     in error.description,
-#                 )
-#             elif error.sheet_name == "staff_by_biological_sex":
-#                 self.assertEqual(error.title, "Missing Breakdown Sheet")
-#                 self.assertEqual(
-#                     error.message_type,
-#                     BulkUploadMessageType.WARNING,
-#                 )
-#                 self.assertTrue(
-#                     "No data for the Biological Sex breakdown was provided. Please provide data in a sheet named staff_by_biological_sex"
-#                     in error.description,
-#                 )
-#             else:
-#                 raise ValueError(
-#                     "There should only be errors for the staff_by_race and staff_by_biological_sex sheets."
-#                 )
+            use_of_force_errors = metric_key_to_errors[
+                law_enforcement.use_of_force_incidents.key
+            ]
+            self.assertEqual(len(use_of_force_errors), 1)
+            use_of_force_error = use_of_force_errors[0]
+            self.assertEqual(use_of_force_error.title, "Missing Metric")
+            self.assertEqual(
+                use_of_force_error.message_type, BulkUploadMessageType.WARNING
+            )
+            self.assertTrue(
+                "No data for the Use of Force Incidents metric was provided. "
+                in use_of_force_error.description,
+            )
+            staff_errors = metric_key_to_errors[law_enforcement.staff.key]
+            self.assertEqual(len(staff_errors), 2)
+            for error in staff_errors:
+                if error.sheet_name == "staff_by_race":
+                    self.assertEqual(error.title, "Missing Breakdown Sheet")
+                    self.assertEqual(error.message_type, BulkUploadMessageType.WARNING)
+                    self.assertTrue(
+                        "No data for the Race / Ethnicity breakdown was provided. Please provide data in a sheet named staff_by_race"
+                        in error.description,
+                    )
+                elif error.sheet_name == "staff_by_biological_sex":
+                    self.assertEqual(error.title, "Missing Breakdown Sheet")
+                    self.assertEqual(
+                        error.message_type,
+                        BulkUploadMessageType.WARNING,
+                    )
+                    self.assertTrue(
+                        "No data for the Biological Sex breakdown was provided. Please provide data in a sheet named staff_by_biological_sex"
+                        in error.description,
+                    )
+                else:
+                    raise ValueError(
+                        "There should only be errors for the staff_by_race and staff_by_biological_sex sheets."
+                    )
 
+    def test_missing_metrics_disabled_metrics(
+        self,
+    ) -> None:
+        """Checks that we do not raise Missing Metric errors if
+        the metric is disabled."""
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_A
+            user = self.test_schema_objects.test_user_A
+            session.add_all([user, agency])
 
-# def test_missing_metrics_disabled_metrics(
-#     self,
-# ) -> None:
-#     """Checks that we do not raise Missing Metric errors if
-#     the metric is disabled."""
-#     with SessionFactory.using_database(self.database_key) as session:
-#         agency = self.test_schema_objects.test_agency_A
-#         user = self.test_schema_objects.test_user_A
-#         session.add_all([user, agency])
+            # Turn off calls for service metric.
+            agency_metric = self.test_schema_objects.get_agency_metric_interface(
+                is_metric_enabled=False
+            )
+            DatapointInterface.add_or_update_agency_datapoints(
+                agency_metric=agency_metric,
+                agency=agency,
+                session=session,
+                user_account=user,
+            )
 
-#         # Turn off calls for service metric.
-#         agency_metric = self.test_schema_objects.get_agency_metric_interface(
-#             is_metric_enabled=False
-#         )
-#         DatapointInterface.add_or_update_agency_datapoints(
-#             agency_metric=agency_metric,
-#             agency=agency,
-#             session=session,
-#             user_account=user,
-#         )
+            # Get agency metric and construct metric_key_to_agency_datapoints dict.
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=session, agency_id=agency.id
+            )
+            agency_datapoints_sorted_by_metric_key = sorted(
+                agency_datapoints, key=lambda d: d.metric_definition_key
+            )
+            metric_key_to_agency_datapoints = {
+                k: list(v)
+                for k, v in itertools.groupby(
+                    agency_datapoints_sorted_by_metric_key,
+                    key=lambda d: d.metric_definition_key,
+                )
+            }
 
-#         # Get agency metric and construct metric_key_to_agency_datapoints dict.
-#         agency_datapoints = DatapointInterface.get_agency_datapoints(
-#             session=session, agency_id=agency.id
-#         )
-#         agency_datapoints_sorted_by_metric_key = sorted(
-#             agency_datapoints, key=lambda d: d.metric_definition_key
-#         )
-#         metric_key_to_agency_datapoints = {
-#             k: list(v)
-#             for k, v in itertools.groupby(
-#                 agency_datapoints_sorted_by_metric_key,
-#                 key=lambda d: d.metric_definition_key,
-#             )
-#         }
+            create_excel_file(
+                system=schema.System.LAW_ENFORCEMENT,
+                sheetnames_to_skip={
+                    "calls_for_service",
+                    "calls_for_service_by_type",
+                },
+            )
 
-#         # Upload empty spreadsheet.
-#         user_account = UserAccountInterface.get_user_by_id(
-#             session=session, user_account_id=self.user_account_id
-#         )
-#         _, metric_key_to_errors = self.uploader.upload_excel(
-#             session=session,
-#             xls=pd.ExcelFile(self.law_enforcement_empty_template),
-#             agency_id=self.law_enforcement_agency_id,
-#             system=schema.System.LAW_ENFORCEMENT,
-#             user_account=user_account,
-#             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-#         )
-#         # There should be 7 missing metric warnings, one for each enabled
-#         # metric that is NOT Calls For Service. Since Calls For Service
-#         # is turned off, there should not be a Missing Metric or Missing
-#         # Breakdown error.
-#         self.assertEqual(len(metric_key_to_errors), 7)
-#         for metric_key, errors in metric_key_to_errors.items():
-#             self.assertNotEqual(metric_key, law_enforcement.calls_for_service.key)
-#             self.assertEqual(len(errors), 1)
-#             self.assertEqual(errors[0].title, "Missing Metric")
+            _, metric_key_to_errors = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                agency_id=self.law_enforcement_agency_id,
+                system=schema.System.LAW_ENFORCEMENT,
+                user_account=user,
+                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            )
+            # There should be no errors because calls for service metric is missing
+            # but it is disabled.
+            self.assertEqual(len(metric_key_to_errors), 0)
+
+    def test_metrics_disaggregated_by_supervision(
+        self,
+    ) -> None:
+        """Checks that we ingest the supervision subsystem metrics if metric is
+        disaggregated by supervision."""
+        with SessionFactory.using_database(self.database_key) as session:
+            agency = self.test_schema_objects.test_agency_E
+            user = self.test_schema_objects.test_user_A
+            disaggregation_datapoint = schema.Datapoint(  # Funding metric will be disaggregated by supervision subsystem
+                metric_definition_key=supervision.funding.key,
+                source_id=self.supervision_agency_id,
+                context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
+                dimension_identifier_to_member=None,
+                value=str(True),
+            )
+
+            session.add_all([user, agency, disaggregation_datapoint])
+
+            metric_key_to_agency_datapoints = {
+                supervision.funding.key: [disaggregation_datapoint]
+            }
+
+            create_excel_file(
+                system=schema.System.SUPERVISION,
+                metric_key_to_subsystems={
+                    supervision.funding.key: [
+                        schema.System.PAROLE,
+                        schema.System.PROBATION,
+                    ]
+                },
+            )
+
+            metric_key_to_datapoint_jsons, _ = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                agency_id=self.supervision_agency_id,
+                system=schema.System.SUPERVISION,
+                user_account=user,
+                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            )
+
+            # There should be datapoints for parole and probation funding, but none for supervision
+            self.assertTrue(
+                len(metric_key_to_datapoint_jsons.get("SUPERVISION_FUNDING", [])) == 0
+            )
+            self.assertTrue(
+                len(metric_key_to_datapoint_jsons.get("PAROLE_FUNDING", [])) > 0
+            )
+            self.assertTrue(
+                len(metric_key_to_datapoint_jsons.get("PROBATION_FUNDING", [])) > 0
+            )

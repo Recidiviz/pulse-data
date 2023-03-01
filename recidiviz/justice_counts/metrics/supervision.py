@@ -105,7 +105,7 @@ residents = MetricDefinition(
 
 funding = MetricDefinition(
     system=System.SUPERVISION,
-    metric_type=MetricType.BUDGET,
+    metric_type=MetricType.FUNDING,
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the provision of community supervision and operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
