@@ -16,6 +16,7 @@ mypy = "*"
 bandit = "*"
 coveralls = "*"
 # This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
+# If this version is bumped then the beam version in recidiviz/calculator/pipeline/Dockerfile.pipelines must be as well.
 apache-beam = {extras = ["gcp", "test"],version = "==2.41.0"}
 fakeredis = "*"
 freezegun = "*"
@@ -97,6 +98,8 @@ opencensus-ext-stackdriver = "*"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
 # TODO(#18145): Remove the <2.0.0 pin
+# if this version is bumped or changed, the sqlalchmey versions in recidiviz/calculator/pipeline/dataflow_flex_setup.py
+# and legacy_dataflow_setup.py must be changed as well.
 sqlalchemy = ">=1.4.25, <2.0.0"
 flask = ">=2.0.0"
 Flask-Limiter = "*"

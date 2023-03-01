@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the pulse-data/recidiviz/tools/deploy/legacy_dataflow_setup.py file that specifies required packages
+"""Tests the pulse-data/recidiviz/calculator/pipeline/dataflow_flex_setup.py file that specifies required packages
 for the Dataflow VM workers. """
-# TODO(#17989): delete this file once flex pipeline migration is complete
 import json
 import os
 import unittest
@@ -32,7 +31,7 @@ PIPFILE_LOCK_PATH = os.path.join(
 
 SETUP_PATH = os.path.join(
     os.path.dirname(recidiviz.__file__),
-    "tools/deploy/legacy_dataflow_setup.py",
+    "calculator/pipeline/dataflow_flex_setup.py",
 )
 
 
@@ -40,17 +39,20 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
     """Tests that dependencies pinned at certain versions are pinned at the version in the Pipfile.lock file."""
 
     def test_setup_file_pinned_dependencies(self) -> None:
-        pinned_dependencies = ["protobuf", "dill"]
+        pinned_dependencies = ["protobuf", "dill", "sqlalchemy"]
 
         for dependency in pinned_dependencies:
             pipfile_dependency = pipfile_version_for_dependency(dependency)
+            dependency_found = False
 
             with open(SETUP_PATH, "r", encoding="utf-8") as setup_file:
                 for line in setup_file:
-                    if dependency in line:
+                    if dependency in line.lower():
+                        dependency_found = True
                         # Remove whitespace, quotation marks, and commas
                         dependency_with_version = (
-                            line.strip()
+                            line.lower()
+                            .strip()
                             .replace('"', "")
                             .replace("'", "")
                             .replace(",", "")
@@ -63,9 +65,12 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                         self.assertEqual(
                             pipfile_dependency,
                             dependency_with_version,
-                            "Try verifying the package's version in legacy_dataflow_setup.py or running pipenv sync "
+                            "Try verifying the package's version in dataflow_flex_setup.py or running pipenv sync "
                             "--dev before running this test again.",
                         )
+
+            if not dependency_found:
+                raise ValueError(f"Dependency {dependency} not found.")
 
     def test_setup_file_non_pinned_dependency(self) -> None:
         dependency = "cattrs"
