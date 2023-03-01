@@ -16,6 +16,7 @@
 # =============================================================================
 """This class implements tests for the Justice Counts SpreadsheetInterface."""
 import datetime
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -29,6 +30,10 @@ from recidiviz.justice_counts.utils.constants import (
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.justice_counts.spreadsheet_helpers import (
+    TEST_EXCEL_FILE,
+    create_excel_file,
+)
 from recidiviz.tests.justice_counts.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
@@ -44,6 +49,11 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
         self.bulk_upload_test_files = Path(
             "recidiviz/tests/justice_counts/bulk_upload/bulk_upload_fixtures"
         )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        # Delete excel file.
+        os.remove(TEST_EXCEL_FILE)
 
     def test_ingest_spreadsheet(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -63,10 +73,12 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
             )
             with freeze_time(update_datetime):
-                file = (self.bulk_upload_test_files / "success.xlsx").open("rb")
+                create_excel_file(
+                    system=schema.System.LAW_ENFORCEMENT,
+                )
                 SpreadsheetInterface.ingest_spreadsheet(
                     session=session,
-                    xls=pd.ExcelFile(file),
+                    xls=pd.ExcelFile(TEST_EXCEL_FILE),
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency_id=agency.id,
@@ -87,17 +99,18 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             session.refresh(user)
             session.refresh(agency)
             spreadsheet = self.test_schema_objects.get_test_spreadsheet(
-                system=schema.System.SUPERVISION,
+                system=schema.System.LAW_ENFORCEMENT,
                 user_id=user.auth0_user_id,
                 agency_id=agency.id,
             )
             session.add(spreadsheet)
-            # invalid.xlsx has two rows for the same time period. This will cause the
-            # Too Many Rows error to be raised during ingest.
-            file = (self.bulk_upload_test_files / "invalid.xlsx").open("rb")
+            # Excel workbook will have an invalid sheet.
+            create_excel_file(
+                system=schema.System.LAW_ENFORCEMENT, add_invalid_sheetname=True
+            )
             SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(file),
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
@@ -140,13 +153,22 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             metric_key_to_agency_datapoints = {
                 supervision.funding.key: [disaggregation_datapoint],
             }
-            file = (self.bulk_upload_test_files / "invalid.xlsx").open("rb")
+            # Excel worbook will have an invalid sheet.
+            create_excel_file(
+                system=schema.System.SUPERVISION,
+                metric_key_to_subsystems={
+                    supervision.funding.key: [
+                        schema.System.PAROLE,
+                        schema.System.PROBATION,
+                    ]
+                },
+            )
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(file),
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
