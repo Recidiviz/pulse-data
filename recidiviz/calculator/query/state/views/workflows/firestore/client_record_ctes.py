@@ -214,14 +214,17 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                     CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) as string) || " months since last violation" as milestone_text,
                     "MONTHS_WITHOUT_VIOLATION" as milestone_type,
                     2 AS milestone_priority
-                    FROM (
-                        SELECT
-                        *,
-                        ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
-                        FROM {project_id}.{dataflow_metrics_dataset}.most_recent_violation_with_response_metrics_materialized df
-                        ORDER BY person_id, rn
-                    )
+                FROM (
+                    SELECT
+                    *,
+                    ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
+                    FROM {project_id}.{dataflow_metrics_dataset}.most_recent_violation_with_response_metrics_materialized df
+                    ORDER BY person_id, rn
+                )
+                LEFT JOIN supervision_super_sessions ss
+                USING(person_id)
                 WHERE rn = 1
+                AND violation_date > ss.start_date
                 AND DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) > 0
             )
             UNION ALL
@@ -249,7 +252,10 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
                 FROM employment_info
+                LEFT JOIN supervision_super_sessions ss
+                USING(person_id)
                 WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date[OFFSET(0)], MONTH) > 0
+                AND current_employer_start_date[OFFSET(0)] > ss.start_date
             )
         )
         WHERE state_code in ('US_IX')
