@@ -49,14 +49,19 @@ class IncludesExcludesSet:
     # the default IncludesExcludesSetting
     # (i.e {PrisonsStaffIncludesExcludes.STAFF_ON_LEAVE: IncludesExcludesSetting.YES, ...})
     member_to_default_inclusion_setting: Dict[enum.Enum, IncludesExcludesSetting]
+    # Optional string to store the specific explanation for what the set includes
+    # This will be filled out when there are multiple includes/excludes tables for a given metric
+    description: Optional[str]
 
     def __init__(
         self,
         members: Type[enum.Enum],
         excluded_set: Optional[Set[enum.Enum]] = None,
+        description: Optional[str] = None,
     ):
         self.members = members
         self.member_to_default_inclusion_setting = {}
+        self.description = description
         for member in self.members:
             setting = IncludesExcludesSetting.YES
             if excluded_set is not None and member in excluded_set:
@@ -128,7 +133,7 @@ class AggregatedDimension:
     # the aggregated dimension values. This information
     # is displayed as toggles in the metric settings page.
     dimension_to_includes_excludes: Optional[
-        Dict[DimensionBase, IncludesExcludesSet]
+        Dict[DimensionBase, Optional[List[IncludesExcludesSet]]]
     ] = None
 
     @property
@@ -209,7 +214,7 @@ class MetricDefinition:
     disabled: bool = False
     # Describes what data is included/excluded in the metrics aggregate value.
     # The IncludesExcludesSet is rendered as toggles in the metric settings page.
-    includes_excludes: Optional[IncludesExcludesSet] = None
+    includes_excludes: Optional[List[IncludesExcludesSet]] = None
 
     @property
     def key(self) -> str:

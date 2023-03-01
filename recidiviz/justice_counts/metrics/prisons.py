@@ -46,9 +46,10 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonExpensesContractBedsIncludesExcludes,
     PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
     PrisonExpensesHealthCareIncludesExcludes,
-    PrisonExpensesIncludesExcludes,
     PrisonExpensesPersonnelIncludesExcludes,
+    PrisonExpensesTimeframeAndSpendDownIncludesExcludes,
     PrisonExpensesTrainingIncludesExcludes,
+    PrisonExpensesTypeIncludesExcludes,
     PrisonFundingIncludesExcludes,
     PrisonGrievancesDiscriminationIncludesExcludes,
     PrisonGrievancesHealthCareIncludesExcludes,
@@ -112,15 +113,17 @@ funding = MetricDefinition(
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     # TODO(#17577) Implement multiple includes/excludes tables
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonFundingIncludesExcludes,
-        excluded_set={
-            PrisonFundingIncludesExcludes.JAIL_OPERATIONS,
-            PrisonFundingIncludesExcludes.NON_PRISON_ACTIVITIES,
-            PrisonFundingIncludesExcludes.JUVENILE_JAILS,
-            PrisonFundingIncludesExcludes.LAW_ENFORCEMENT,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonFundingIncludesExcludes,
+            excluded_set={
+                PrisonFundingIncludesExcludes.JAIL_OPERATIONS,
+                PrisonFundingIncludesExcludes.NON_PRISON_ACTIVITIES,
+                PrisonFundingIncludesExcludes.JUVENILE_JAILS,
+                PrisonFundingIncludesExcludes.LAW_ENFORCEMENT,
+            },
+        ),
+    ],
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -136,23 +139,31 @@ funding = MetricDefinition(
                 FundingType.UNKNOWN: "The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated for which the source is not known.",
             },
             dimension_to_includes_excludes={
-                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
-                    members=PrisonsFundingStateAppropriationIncludesExcludes,
-                    excluded_set={
-                        PrisonsFundingStateAppropriationIncludesExcludes.PROPOSED,
-                        PrisonsFundingStateAppropriationIncludesExcludes.PRELIMINARY,
-                        PrisonsFundingStateAppropriationIncludesExcludes.GRANTS,
-                    },
-                ),
-                FundingType.GRANTS: IncludesExcludesSet(
-                    members=PrisonsFundingGrantsIncludesExcludes,
-                ),
-                FundingType.COMMISSARY_AND_FEES: IncludesExcludesSet(
-                    members=PrisonsFundingCommissaryAndFeesIncludesExcludes,
-                ),
-                FundingType.CONTRACT_BEDS: IncludesExcludesSet(
-                    members=PrisonsFundingContractBedsIncludesExcludes,
-                ),
+                FundingType.STATE_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=PrisonsFundingStateAppropriationIncludesExcludes,
+                        excluded_set={
+                            PrisonsFundingStateAppropriationIncludesExcludes.PROPOSED,
+                            PrisonsFundingStateAppropriationIncludesExcludes.PRELIMINARY,
+                            PrisonsFundingStateAppropriationIncludesExcludes.GRANTS,
+                        },
+                    ),
+                ],
+                FundingType.GRANTS: [
+                    IncludesExcludesSet(
+                        members=PrisonsFundingGrantsIncludesExcludes,
+                    ),
+                ],
+                FundingType.COMMISSARY_AND_FEES: [
+                    IncludesExcludesSet(
+                        members=PrisonsFundingCommissaryAndFeesIncludesExcludes,
+                    ),
+                ],
+                FundingType.CONTRACT_BEDS: [
+                    IncludesExcludesSet(
+                        members=PrisonsFundingContractBedsIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -164,13 +175,15 @@ staff = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for the agency for the operation and maintenance of the prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonStaffIncludesExcludes,
-        excluded_set={
-            PrisonStaffIncludesExcludes.VOLUNTEER,
-            PrisonStaffIncludesExcludes.INTERN,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonStaffIncludesExcludes,
+            excluded_set={
+                PrisonStaffIncludesExcludes.VOLUNTEER,
+                PrisonStaffIncludesExcludes.INTERN,
+            },
+        ),
+    ],
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
@@ -187,37 +200,47 @@ staff = MetricDefinition(
                 StaffType.VACANT: "The number of full-time equivalent positions dedicated to the operation and maintenance of prison facilities under the jurisdiction of the agency of any type that are budgeted but not currently filled.",
             },
             dimension_to_includes_excludes={
-                StaffType.SECURITY: IncludesExcludesSet(
-                    members=PrisonSecurityStaffIncludesExcludes,
-                    excluded_set={
-                        PrisonSecurityStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                StaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
-                    members=PrisonManagementAndOperationsStaffIncludesExcludes,
-                    excluded_set={
-                        PrisonManagementAndOperationsStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                StaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
-                    members=PrisonClinicalStaffIncludesExcludes,
-                    excluded_set={
-                        PrisonClinicalStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                StaffType.PROGRAMMATIC: IncludesExcludesSet(
-                    members=PrisonProgrammaticStaffIncludesExcludes,
-                    excluded_set={
-                        PrisonProgrammaticStaffIncludesExcludes.VACANT,
-                        PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER,
-                    },
-                ),
-                StaffType.VACANT: IncludesExcludesSet(
-                    members=VacantPrisonStaffIncludesExcludes,
-                    excluded_set={
-                        VacantPrisonStaffIncludesExcludes.FILLED,
-                    },
-                ),
+                StaffType.SECURITY: [
+                    IncludesExcludesSet(
+                        members=PrisonSecurityStaffIncludesExcludes,
+                        excluded_set={
+                            PrisonSecurityStaffIncludesExcludes.VACANT,
+                        },
+                    ),
+                ],
+                StaffType.MANAGEMENT_AND_OPERATIONS: [
+                    IncludesExcludesSet(
+                        members=PrisonManagementAndOperationsStaffIncludesExcludes,
+                        excluded_set={
+                            PrisonManagementAndOperationsStaffIncludesExcludes.VACANT,
+                        },
+                    ),
+                ],
+                StaffType.CLINICAL_AND_MEDICAL: [
+                    IncludesExcludesSet(
+                        members=PrisonClinicalStaffIncludesExcludes,
+                        excluded_set={
+                            PrisonClinicalStaffIncludesExcludes.VACANT,
+                        },
+                    ),
+                ],
+                StaffType.PROGRAMMATIC: [
+                    IncludesExcludesSet(
+                        members=PrisonProgrammaticStaffIncludesExcludes,
+                        excluded_set={
+                            PrisonProgrammaticStaffIncludesExcludes.VACANT,
+                            PrisonProgrammaticStaffIncludesExcludes.VOLUNTEER,
+                        },
+                    ),
+                ],
+                StaffType.VACANT: [
+                    IncludesExcludesSet(
+                        members=VacantPrisonStaffIncludesExcludes,
+                        excluded_set={
+                            VacantPrisonStaffIncludesExcludes.FILLED,
+                        },
+                    ),
+                ],
             },
         )
     ],
@@ -232,15 +255,22 @@ expenses = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     category=MetricCategory.CAPACITY_AND_COST,
     # TODO(#17577) Implement multiple includes/excludes tables
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonExpensesIncludesExcludes,
-        excluded_set={
-            PrisonExpensesIncludesExcludes.JAIL_FACILITY,
-            PrisonExpensesIncludesExcludes.JUVENILE_JAIL,
-            PrisonExpensesIncludesExcludes.LAW_ENFORCEMENT,
-            PrisonExpensesIncludesExcludes.NON_PRISON_ACTIVITIES,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonExpensesTimeframeAndSpendDownIncludesExcludes,
+            description="Expenses timeframe and spend-down.",
+        ),
+        IncludesExcludesSet(
+            members=PrisonExpensesTypeIncludesExcludes,
+            description="Expense type.",
+            excluded_set={
+                PrisonExpensesTypeIncludesExcludes.JAIL_FACILITY,
+                PrisonExpensesTypeIncludesExcludes.JUVENILE_JAIL,
+                PrisonExpensesTypeIncludesExcludes.LAW_ENFORCEMENT,
+                PrisonExpensesTypeIncludesExcludes.NON_PRISON_ACTIVITIES,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ExpenseType,
@@ -255,28 +285,38 @@ expenses = MetricDefinition(
                 ExpenseType.UNKNOWN: "The amount spent by the agency on costs relating to the operation and maintenance of prison facilities and the care of people who are incarcerated for a purpose that is not known.",
             },
             dimension_to_includes_excludes={
-                ExpenseType.PERSONNEL: IncludesExcludesSet(
-                    members=PrisonExpensesPersonnelIncludesExcludes,
-                    excluded_set={
-                        PrisonExpensesPersonnelIncludesExcludes.COMPANIES_AND_SERVICES
-                    },
-                ),
-                ExpenseType.TRAINING: IncludesExcludesSet(
-                    members=PrisonExpensesTrainingIncludesExcludes,
-                    excluded_set={PrisonExpensesTrainingIncludesExcludes.NO_COST},
-                ),
-                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
-                    members=PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
-                ),
-                ExpenseType.HEALTH_CARE: IncludesExcludesSet(
-                    members=PrisonExpensesHealthCareIncludesExcludes,
-                    excluded_set={
-                        PrisonExpensesHealthCareIncludesExcludes.TRANSPORTATION
-                    },
-                ),
-                ExpenseType.CONTRACT_BEDS: IncludesExcludesSet(
-                    members=PrisonExpensesContractBedsIncludesExcludes,
-                ),
+                ExpenseType.PERSONNEL: [
+                    IncludesExcludesSet(
+                        members=PrisonExpensesPersonnelIncludesExcludes,
+                        excluded_set={
+                            PrisonExpensesPersonnelIncludesExcludes.COMPANIES_AND_SERVICES
+                        },
+                    ),
+                ],
+                ExpenseType.TRAINING: [
+                    IncludesExcludesSet(
+                        members=PrisonExpensesTrainingIncludesExcludes,
+                        excluded_set={PrisonExpensesTrainingIncludesExcludes.NO_COST},
+                    ),
+                ],
+                ExpenseType.FACILITIES_AND_EQUIPMENT: [
+                    IncludesExcludesSet(
+                        members=PrisonExpensesFacilitiesAndEquipmentIncludesExcludes,
+                    ),
+                ],
+                ExpenseType.HEALTH_CARE: [
+                    IncludesExcludesSet(
+                        members=PrisonExpensesHealthCareIncludesExcludes,
+                        excluded_set={
+                            PrisonExpensesHealthCareIncludesExcludes.TRANSPORTATION
+                        },
+                    ),
+                ],
+                ExpenseType.CONTRACT_BEDS: [
+                    IncludesExcludesSet(
+                        members=PrisonExpensesContractBedsIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -291,17 +331,19 @@ readmissions = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#18071) Implement repeated/reused includes/excludes
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonAdmissionsIncludesExcludes,
-        excluded_set={
-            PrisonAdmissionsIncludesExcludes.TEMPORARY_ABSENCES,
-            PrisonAdmissionsIncludesExcludes.TRANSER_SAME_STATE,
-            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_US_MARSHALS_SERVICE,
-            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_TRIBAL,
-            PrisonAdmissionsIncludesExcludes.AWAITING_HEARINGS,
-            PrisonAdmissionsIncludesExcludes.FAILURE_TO_PAY,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonAdmissionsIncludesExcludes,
+            excluded_set={
+                PrisonAdmissionsIncludesExcludes.TEMPORARY_ABSENCES,
+                PrisonAdmissionsIncludesExcludes.TRANSER_SAME_STATE,
+                PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_US_MARSHALS_SERVICE,
+                PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_TRIBAL,
+                PrisonAdmissionsIncludesExcludes.AWAITING_HEARINGS,
+                PrisonAdmissionsIncludesExcludes.FAILURE_TO_PAY,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ReadmissionType,
@@ -315,22 +357,30 @@ readmissions = MetricDefinition(
                 ReadmissionType.UNKNOWN: "The number of reincarceration events for an unknown reason, to the agency’s prison jurisdiction of people who were incarcerated in the agency’s jurisdiction within three years (1,096 days) prior to their current admission.",
             },
             dimension_to_includes_excludes={
-                ReadmissionType.NEW_CONVICTION: IncludesExcludesSet(
-                    members=PrisonReadmissionsNewConvictionIncludesExcludes,
-                    excluded_set={
-                        PrisonReadmissionsNewConvictionIncludesExcludes.REVOKED_NEW_OFFENSE,
-                        PrisonReadmissionsNewConvictionIncludesExcludes.REVOKED_NEW_CONVICTION,
-                    },
-                ),
-                ReadmissionType.RETURN_FROM_PROBATION: IncludesExcludesSet(
-                    members=PrisonReadmissionsProbationIncludesExcludes,
-                ),
-                ReadmissionType.RETURN_FROM_PAROLE: IncludesExcludesSet(
-                    members=PrisonReadmissionsParoleIncludesExcludes,
-                ),
-                ReadmissionType.OTHER_COMMUNITY_SUPERVISION: IncludesExcludesSet(
-                    members=PrisonReadmissionsOtherCommunitySupervisionIncludesExcludes,
-                ),
+                ReadmissionType.NEW_CONVICTION: [
+                    IncludesExcludesSet(
+                        members=PrisonReadmissionsNewConvictionIncludesExcludes,
+                        excluded_set={
+                            PrisonReadmissionsNewConvictionIncludesExcludes.REVOKED_NEW_OFFENSE,
+                            PrisonReadmissionsNewConvictionIncludesExcludes.REVOKED_NEW_CONVICTION,
+                        },
+                    ),
+                ],
+                ReadmissionType.RETURN_FROM_PROBATION: [
+                    IncludesExcludesSet(
+                        members=PrisonReadmissionsProbationIncludesExcludes,
+                    ),
+                ],
+                ReadmissionType.RETURN_FROM_PAROLE: [
+                    IncludesExcludesSet(
+                        members=PrisonReadmissionsParoleIncludesExcludes,
+                    ),
+                ],
+                ReadmissionType.OTHER_COMMUNITY_SUPERVISION: [
+                    IncludesExcludesSet(
+                        members=PrisonReadmissionsOtherCommunitySupervisionIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -344,17 +394,19 @@ admissions = MetricDefinition(
     description="The number of admission events to agency’s prison jurisdiction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonAdmissionsIncludesExcludes,
-        excluded_set={
-            PrisonAdmissionsIncludesExcludes.TEMPORARY_ABSENCES,
-            PrisonAdmissionsIncludesExcludes.TRANSER_SAME_STATE,
-            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_US_MARSHALS_SERVICE,
-            PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_TRIBAL,
-            PrisonAdmissionsIncludesExcludes.AWAITING_HEARINGS,
-            PrisonAdmissionsIncludesExcludes.FAILURE_TO_PAY,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonAdmissionsIncludesExcludes,
+            excluded_set={
+                PrisonAdmissionsIncludesExcludes.TEMPORARY_ABSENCES,
+                PrisonAdmissionsIncludesExcludes.TRANSER_SAME_STATE,
+                PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_US_MARSHALS_SERVICE,
+                PrisonAdmissionsIncludesExcludes.FEDERAL_HOLD_TRIBAL,
+                PrisonAdmissionsIncludesExcludes.AWAITING_HEARINGS,
+                PrisonAdmissionsIncludesExcludes.FAILURE_TO_PAY,
+            },
+        ),
+    ],
     # TODO(#18071) Implement repeated/reused includes/excludes
     aggregated_dimensions=[
         AggregatedDimension(
@@ -369,30 +421,40 @@ admissions = MetricDefinition(
                 OffenseType.UNKNOWN: "The number of admission events to the jurisdiction of the prison agency for which the most serious offense is not known.",
             },
             dimension_to_includes_excludes={
-                OffenseType.PERSON: IncludesExcludesSet(
-                    members=PersonOffenseIncludesExcludes,
-                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
-                ),
-                OffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PropertyOffenseIncludesExcludes,
-                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
-                ),
-                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PublicOrderOffenseIncludesExcludes,
-                    excluded_set={
-                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
-                    },
-                ),
-                OffenseType.DRUG: IncludesExcludesSet(
-                    members=DrugOffenseIncludesExcludes,
-                ),
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(
+                        members=DrugOffenseIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -406,12 +468,14 @@ daily_population = MetricDefinition(
     description="A single day count of the number of people incarcerated under the jurisdiction of the prison agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=PopulationIncludesExcludes,
-        excluded_set={
-            PopulationIncludesExcludes.NOT_CONVICTED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PopulationIncludesExcludes,
+            excluded_set={
+                PopulationIncludesExcludes.NOT_CONVICTED,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         # TODO(#18071) Implement repeated/reused global includes/excludes
         # TODO(#17579) Implement Y/N tables
@@ -424,14 +488,18 @@ daily_population = MetricDefinition(
                 BiologicalSex.UNKNOWN: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is not known.",
             },
             dimension_to_includes_excludes={
-                BiologicalSex.MALE: IncludesExcludesSet(
-                    members=MaleBiologicalSexIncludesExcludes,
-                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
-                BiologicalSex.FEMALE: IncludesExcludesSet(
-                    members=FemaleBiologicalSexIncludesExcludes,
-                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
             },
         ),
         # TODO(#18071) Implement repeated/reused global includes/excludes
@@ -450,32 +518,40 @@ daily_population = MetricDefinition(
                 OffenseType.UNKNOWN: "A single day count of the number of people incarcerated under the jurisdiction of the prison agency whose most serious offense was unknown.",
             },
             dimension_to_includes_excludes={
-                OffenseType.PERSON: IncludesExcludesSet(
-                    members=PersonOffenseIncludesExcludes,
-                    excluded_set={
-                        PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
-                    },
-                ),
-                OffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PropertyOffenseIncludesExcludes,
-                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
-                ),
-                OffenseType.DRUG: IncludesExcludesSet(
-                    members=DrugOffenseIncludesExcludes,
-                ),
-                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PublicOrderOffenseIncludesExcludes,
-                    excluded_set={
-                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
-                    },
-                ),
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE,
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(
+                        members=DrugOffenseIncludesExcludes,
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
             },
         ),
     ],
@@ -489,14 +565,16 @@ releases = MetricDefinition(
     description="The number of release events from the jurisdiction of the prison agency following a period of incarceration.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonReleasesIncludesExcludes,
-        excluded_set={
-            PrisonReleasesIncludesExcludes.TRANSFERRED_WITHIN,
-            PrisonReleasesIncludesExcludes.TEMPORARILY_TRANSFERRED,
-            PrisonReleasesIncludesExcludes.TEMPORARILY_ABSENT,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonReleasesIncludesExcludes,
+            excluded_set={
+                PrisonReleasesIncludesExcludes.TRANSFERRED_WITHIN,
+                PrisonReleasesIncludesExcludes.TEMPORARILY_TRANSFERRED,
+                PrisonReleasesIncludesExcludes.TEMPORARILY_ABSENT,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ReleaseType,
@@ -512,21 +590,31 @@ releases = MetricDefinition(
             },
             # TODO(#18071) Implement repeated/reused global includes/excludes
             dimension_to_includes_excludes={
-                ReleaseType.TO_PROBATION_SUPERVISION: IncludesExcludesSet(
-                    members=PrisonReleasesToProbationIncludesExcludes,
-                ),
-                ReleaseType.TO_PAROLE_SUPERVISION: IncludesExcludesSet(
-                    members=PrisonReleasesToParoleIncludesExcludes,
-                ),
-                ReleaseType.TO_COMMUNITY_SUPERVISION: IncludesExcludesSet(
-                    members=PrisonReleasesCommunitySupervisionIncludesExcludes,
-                ),
-                ReleaseType.NO_CONTROL: IncludesExcludesSet(
-                    members=PrisonReleasesNoControlIncludesExcludes,
-                ),
-                ReleaseType.DEATH: IncludesExcludesSet(
-                    members=PrisonReleasesDeathIncludesExcludes,
-                ),
+                ReleaseType.TO_PROBATION_SUPERVISION: [
+                    IncludesExcludesSet(
+                        members=PrisonReleasesToProbationIncludesExcludes,
+                    ),
+                ],
+                ReleaseType.TO_PAROLE_SUPERVISION: [
+                    IncludesExcludesSet(
+                        members=PrisonReleasesToParoleIncludesExcludes,
+                    ),
+                ],
+                ReleaseType.TO_COMMUNITY_SUPERVISION: [
+                    IncludesExcludesSet(
+                        members=PrisonReleasesCommunitySupervisionIncludesExcludes,
+                    ),
+                ],
+                ReleaseType.NO_CONTROL: [
+                    IncludesExcludesSet(
+                        members=PrisonReleasesNoControlIncludesExcludes,
+                    ),
+                ],
+                ReleaseType.DEATH: [
+                    IncludesExcludesSet(
+                        members=PrisonReleasesDeathIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -540,10 +628,12 @@ staff_use_of_force_incidents = MetricDefinition(
     description="The number of incidents in which agency staff use physical force to gain compliance from or control of a person who is under the agency’s jurisdiction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonUseOfForceIncludesExcludes,
-        excluded_set={PrisonUseOfForceIncludesExcludes.ROUTINE},
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonUseOfForceIncludesExcludes,
+            excluded_set={PrisonUseOfForceIncludesExcludes.ROUTINE},
+        ),
+    ],
 )
 
 grievances_upheld = MetricDefinition(
@@ -554,17 +644,19 @@ grievances_upheld = MetricDefinition(
     description="The number of complaints from people who are incarcerated under the agency’s prison jurisdiction received via the process described in the institution’s grievance policy, which were resolved in a way that affirmed the complaint.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=PrisonGrievancesIncludesExcludes,
-        excluded_set={
-            PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED,
-            PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION,
-            PrisonGrievancesIncludesExcludes.INFORMAL,
-            PrisonGrievancesIncludesExcludes.DUPLICATE,
-            PrisonGrievancesIncludesExcludes.FILED_BY_VISITOR,
-            PrisonGrievancesIncludesExcludes.FILED_BY_STAFF,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PrisonGrievancesIncludesExcludes,
+            excluded_set={
+                PrisonGrievancesIncludesExcludes.UNSUBSTANTIATED,
+                PrisonGrievancesIncludesExcludes.PENDING_RESOLUTION,
+                PrisonGrievancesIncludesExcludes.INFORMAL,
+                PrisonGrievancesIncludesExcludes.DUPLICATE,
+                PrisonGrievancesIncludesExcludes.FILED_BY_VISITOR,
+                PrisonGrievancesIncludesExcludes.FILED_BY_STAFF,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=GrievancesUpheldType,
@@ -579,21 +671,31 @@ grievances_upheld = MetricDefinition(
                 GrievancesUpheldType.UNKNOWN: "The number of grievances upheld that relate to an issue or concern that is not known.",
             },
             dimension_to_includes_excludes={
-                GrievancesUpheldType.LIVING_CONDITIONS: IncludesExcludesSet(
-                    members=PrisonGrievancesLivingConditionsIncludesExcludes,
-                ),
-                GrievancesUpheldType.PERSONAL_SAFETY: IncludesExcludesSet(
-                    members=PrisonGrievancesPersonalSafetyIncludesExcludes,
-                ),
-                GrievancesUpheldType.DISCRIMINATION: IncludesExcludesSet(
-                    members=PrisonGrievancesDiscriminationIncludesExcludes,
-                ),
-                GrievancesUpheldType.ACCESS_TO_HEALTH_CARE: IncludesExcludesSet(
-                    members=PrisonGrievancesHealthCareIncludesExcludes,
-                ),
-                GrievancesUpheldType.LEGAL: IncludesExcludesSet(
-                    members=PrisonGrievancesLegalIncludesExcludes,
-                ),
+                GrievancesUpheldType.LIVING_CONDITIONS: [
+                    IncludesExcludesSet(
+                        members=PrisonGrievancesLivingConditionsIncludesExcludes,
+                    ),
+                ],
+                GrievancesUpheldType.PERSONAL_SAFETY: [
+                    IncludesExcludesSet(
+                        members=PrisonGrievancesPersonalSafetyIncludesExcludes,
+                    ),
+                ],
+                GrievancesUpheldType.DISCRIMINATION: [
+                    IncludesExcludesSet(
+                        members=PrisonGrievancesDiscriminationIncludesExcludes,
+                    ),
+                ],
+                GrievancesUpheldType.ACCESS_TO_HEALTH_CARE: [
+                    IncludesExcludesSet(
+                        members=PrisonGrievancesHealthCareIncludesExcludes,
+                    ),
+                ],
+                GrievancesUpheldType.LEGAL: [
+                    IncludesExcludesSet(
+                        members=PrisonGrievancesLegalIncludesExcludes,
+                    ),
+                ],
             },
         ),
     ],

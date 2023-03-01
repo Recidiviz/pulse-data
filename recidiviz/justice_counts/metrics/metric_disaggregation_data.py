@@ -217,17 +217,18 @@ class MetricAggregatedDimensionData:
                 )
             )
             if includes_excludes_set is not None:
-                for member in includes_excludes_set.members:
-                    setting = member_to_actual_inclusion_setting.get(member.name)
-                    member_to_include_excludes_setting[member] = (
-                        IncludesExcludesSetting(setting)
-                        if setting
-                        in {
-                            IncludesExcludesSetting.YES.value,
-                            IncludesExcludesSetting.NO.value,
-                        }
-                        else None
-                    )
+                for includes_excludes in includes_excludes_set:
+                    for member in includes_excludes.members:
+                        setting = member_to_actual_inclusion_setting.get(member.name)
+                        member_to_include_excludes_setting[member] = (
+                            IncludesExcludesSetting(setting)
+                            if setting
+                            in {
+                                IncludesExcludesSetting.YES.value,
+                                IncludesExcludesSetting.NO.value,
+                            }
+                            else None
+                        )
                 dimension_to_includes_excludes_member_to_setting[
                     dimension
                 ] = member_to_include_excludes_setting
@@ -247,7 +248,7 @@ class MetricAggregatedDimensionData:
         dimension_member_to_datapoints_json: Optional[
             Dict[str, List[DatapointJson]]
         ] = None,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Dict[str, List[Dict[str, Any]]]]:
         """This method would be called in two scenarios: 1) We are getting the json of
         a report metric which will have both dimension_to_enabled_status and dimension_to_value
         populated or 2) We are getting the json of an agency metric which will only have
@@ -298,12 +299,21 @@ class MetricAggregatedDimensionData:
                     dimension_to_includes_excludes is not None
                     and entry_point == DatapointGetRequestEntryPoint.METRICS_TAB
                 ):
-                    json["settings"] = self.to_included_excluded_json(
+                    includes_excluded_json = self.to_included_excluded_json(
                         dimension=dimension,
-                        includes_excludes_definition=dimension_to_includes_excludes.get(
+                        includes_excludes_set_lst=dimension_to_includes_excludes.get(
                             dimension
                         ),
                     )
+                    json["settings"] = []
+                    # TODO(#19144) remove deprecated settings key
+                    # the 'settings' key is for backwards compataibilty
+                    # this key will be deprecated and replaced by the 'includes_excludes'
+                    # key once the frontend is updated
+                    for includes_excludes in includes_excluded_json:
+                        for setting in includes_excludes["settings"]:
+                            json["settings"].append(setting)
+                    json["includes_excludes"] = includes_excluded_json
                 if (
                     self.dimension_to_value is not None
                     and entry_point == DatapointGetRequestEntryPoint.REPORT_PAGE
@@ -338,12 +348,12 @@ class MetricAggregatedDimensionData:
     def to_included_excluded_json(
         self,
         dimension: DimensionBase,
-        includes_excludes_definition: Optional[IncludesExcludesSet] = None,
+        includes_excludes_set_lst: Optional[List[IncludesExcludesSet]] = None,
     ) -> List[Dict[str, Any]]:
         """Returns a json list of include_exclude settings for a dimension."""
 
         includes_excludes_list: List[Dict[str, str]] = []
-        if includes_excludes_definition is None:
+        if includes_excludes_set_lst is None:
             return includes_excludes_list
 
         # Example: {SettingEnum.SETTING_1: IncludesExcludesSetting.YES,
@@ -352,21 +362,27 @@ class MetricAggregatedDimensionData:
             self.dimension_to_includes_excludes_member_to_setting.get(dimension, {})
         )
 
-        for (
-            member,
-            default_setting,
-        ) in includes_excludes_definition.member_to_default_inclusion_setting.items():
-            included = actual_member_to_includes_excludes_setting.get(member)
-            includes_excludes_list.append(
-                {
-                    "key": member.name,
-                    "label": member.value,
-                    "included": included.value
-                    if included is not None
-                    else default_setting.value,
-                    "default": default_setting.value,
-                }
-            )
+        for includes_excludes_set in includes_excludes_set_lst:
+            includes_excludes_dict: Dict[str, Any] = {
+                "settings": [],
+                "description": includes_excludes_set.description,
+            }
+            for (
+                member,
+                default_setting,
+            ) in includes_excludes_set.member_to_default_inclusion_setting.items():
+                included = actual_member_to_includes_excludes_setting.get(member)
+                includes_excludes_dict["settings"].append(
+                    {
+                        "key": member.name,
+                        "label": member.value,
+                        "included": included.value
+                        if included is not None
+                        else default_setting.value,
+                        "default": default_setting.value,
+                    }
+                )
+            includes_excludes_list.append(includes_excludes_dict)
         return includes_excludes_list
 
     ### Validations ###

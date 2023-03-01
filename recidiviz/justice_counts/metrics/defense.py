@@ -103,10 +103,12 @@ funding = MetricDefinition(
     description="The amount of funding for the operation and maintenance of defense providers and criminal public defense services.",
     measurement_type=MeasurementType.INSTANT,
     # TODO(#17577) implement multiple includes/excludes tables
-    includes_excludes=IncludesExcludesSet(
-        members=DefenseFundingIncludesExcludes,
-        excluded_set={DefenseFundingIncludesExcludes.NON_CRIMINAL_CASES},
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=DefenseFundingIncludesExcludes,
+            excluded_set={DefenseFundingIncludesExcludes.NON_CRIMINAL_CASES},
+        ),
+    ],
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
         AggregatedDimension(
@@ -121,27 +123,35 @@ funding = MetricDefinition(
                 FundingType.UNKNOWN: "The amount of funding to be used for the operation and maintenance of defense providers and criminal public defense services for which the source is not known.",
             },
             dimension_to_includes_excludes={
-                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
-                    members=StateAppropriationIncludesExcludes,
-                    excluded_set={
-                        StateAppropriationIncludesExcludes.PROPOSED,
-                        StateAppropriationIncludesExcludes.PRELIMINARY,
-                        StateAppropriationIncludesExcludes.GRANTS,
-                    },
-                ),
-                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
-                    members=CountyOrMunicipalAppropriationIncludesExcludes,
-                    excluded_set={
-                        CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
-                        CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
-                    },
-                ),
-                FundingType.GRANTS: IncludesExcludesSet(
-                    members=GrantsIncludesExcludes,
-                ),
-                FundingType.FEES: IncludesExcludesSet(
-                    members=FeesFundingIncludesExcludes,
-                ),
+                FundingType.STATE_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=StateAppropriationIncludesExcludes,
+                        excluded_set={
+                            StateAppropriationIncludesExcludes.PROPOSED,
+                            StateAppropriationIncludesExcludes.PRELIMINARY,
+                            StateAppropriationIncludesExcludes.GRANTS,
+                        },
+                    ),
+                ],
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=CountyOrMunicipalAppropriationIncludesExcludes,
+                        excluded_set={
+                            CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
+                            CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                        },
+                    ),
+                ],
+                FundingType.GRANTS: [
+                    IncludesExcludesSet(
+                        members=GrantsIncludesExcludes,
+                    ),
+                ],
+                FundingType.FEES: [
+                    IncludesExcludesSet(
+                        members=FeesFundingIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -156,10 +166,12 @@ expenses = MetricDefinition(
     description="The amount spent for the operation and maintenance of defense providers and criminal public defense services.",
     measurement_type=MeasurementType.INSTANT,
     # TODO(#17577) implement multiple includes/excludes tables
-    includes_excludes=IncludesExcludesSet(
-        members=DefenseExpensesIncludesExcludes,
-        excluded_set={DefenseExpensesIncludesExcludes.NON_CRIMINAL_CASES},
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=DefenseExpensesIncludesExcludes,
+            excluded_set={DefenseExpensesIncludesExcludes.NON_CRIMINAL_CASES},
+        ),
+    ],
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     aggregated_dimensions=[
         AggregatedDimension(
@@ -173,19 +185,27 @@ expenses = MetricDefinition(
                 ExpenseType.UNKNOWN: "he amount spent on other costs relating the operation and maintenance of criminal defense providers and the representation of people who are clients of those providers that are for an unknown purpose.",
             },
             dimension_to_includes_excludes={
-                ExpenseType.PERSONNEL: IncludesExcludesSet(
-                    members=DefensePersonnelExpensesIncludesExcludes,
-                    excluded_set={
-                        DefensePersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED
-                    },
-                ),
-                ExpenseType.TRAINING: IncludesExcludesSet(
-                    members=DefenseTrainingExpensesIncludesExcludes,
-                    excluded_set={DefenseTrainingExpensesIncludesExcludes.FREE_COURSES},
-                ),
-                ExpenseType.FACILITIES_AND_EQUIPMENT: IncludesExcludesSet(
-                    members=FacilitiesAndEquipmentExpensesIncludesExcludes,
-                ),
+                ExpenseType.PERSONNEL: [
+                    IncludesExcludesSet(
+                        members=DefensePersonnelExpensesIncludesExcludes,
+                        excluded_set={
+                            DefensePersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED
+                        },
+                    ),
+                ],
+                ExpenseType.TRAINING: [
+                    IncludesExcludesSet(
+                        members=DefenseTrainingExpensesIncludesExcludes,
+                        excluded_set={
+                            DefenseTrainingExpensesIncludesExcludes.FREE_COURSES
+                        },
+                    ),
+                ],
+                ExpenseType.FACILITIES_AND_EQUIPMENT: [
+                    IncludesExcludesSet(
+                        members=FacilitiesAndEquipmentExpensesIncludesExcludes,
+                    ),
+                ],
             },
         )
     ],
@@ -199,10 +219,15 @@ staff = MetricDefinition(
     description="The number of full-time equivalent positions budgeted for the provider for criminal defense services.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=StaffIncludesExcludes,
-        excluded_set={StaffIncludesExcludes.VOLUNTEER, StaffIncludesExcludes.INTERN},
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=StaffIncludesExcludes,
+            excluded_set={
+                StaffIncludesExcludes.VOLUNTEER,
+                StaffIncludesExcludes.INTERN,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=StaffType,
@@ -216,26 +241,36 @@ staff = MetricDefinition(
                 StaffType.VACANT: "The number of full-time equivalent positions that provide or support criminal defense services of any type that are budgeted but not currently filled.",
             },
             dimension_to_includes_excludes={
-                StaffType.LEGAL: IncludesExcludesSet(
-                    members=DefenseLegalStaffIncludesExcludes,
-                    excluded_set={DefenseLegalStaffIncludesExcludes.CURRENTLY_VACANT},
-                ),
-                StaffType.ADMINISTRATIVE: IncludesExcludesSet(
-                    members=DefenseAdministrativeStaffIncludesExcludes,
-                    excluded_set={
-                        DefenseAdministrativeStaffIncludesExcludes.CURRENTLY_VACANT
-                    },
-                ),
-                StaffType.INVESTIGATIVE: IncludesExcludesSet(
-                    members=DefenseInvestigativeStaffIncludesExcludes,
-                    excluded_set={
-                        DefenseInvestigativeStaffIncludesExcludes.CURRENTLY_VACANT
-                    },
-                ),
-                StaffType.VACANT: IncludesExcludesSet(
-                    members=DefenseVacantStaffIncludesExcludes,
-                    excluded_set={DefenseVacantStaffIncludesExcludes.FILLED},
-                ),
+                StaffType.LEGAL: [
+                    IncludesExcludesSet(
+                        members=DefenseLegalStaffIncludesExcludes,
+                        excluded_set={
+                            DefenseLegalStaffIncludesExcludes.CURRENTLY_VACANT
+                        },
+                    ),
+                ],
+                StaffType.ADMINISTRATIVE: [
+                    IncludesExcludesSet(
+                        members=DefenseAdministrativeStaffIncludesExcludes,
+                        excluded_set={
+                            DefenseAdministrativeStaffIncludesExcludes.CURRENTLY_VACANT
+                        },
+                    ),
+                ],
+                StaffType.INVESTIGATIVE: [
+                    IncludesExcludesSet(
+                        members=DefenseInvestigativeStaffIncludesExcludes,
+                        excluded_set={
+                            DefenseInvestigativeStaffIncludesExcludes.CURRENTLY_VACANT
+                        },
+                    ),
+                ],
+                StaffType.VACANT: [
+                    IncludesExcludesSet(
+                        members=DefenseVacantStaffIncludesExcludes,
+                        excluded_set={DefenseVacantStaffIncludesExcludes.FILLED},
+                    ),
+                ],
             },
         )
     ],
@@ -249,13 +284,15 @@ cases_appointed_counsel = MetricDefinition(
     description="The number of criminal cases opened by the provider.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=DefenseCasesAppointedCounselIncludesExcludes,
-        excluded_set={
-            DefenseCasesAppointedCounselIncludesExcludes.INACTIVE,
-            DefenseCasesAppointedCounselIncludesExcludes.TRANSFERRED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=DefenseCasesAppointedCounselIncludesExcludes,
+            excluded_set={
+                DefenseCasesAppointedCounselIncludesExcludes.INACTIVE,
+                DefenseCasesAppointedCounselIncludesExcludes.TRANSFERRED,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
@@ -268,17 +305,21 @@ cases_appointed_counsel = MetricDefinition(
                 CaseAppointedSeverityType.UNKNOWN: "The number of criminal cases appointed for representation by attorneys employed by the provider in which the leading charge was of unknown severity.",
             },
             dimension_to_includes_excludes={
-                CaseAppointedSeverityType.FELONY: IncludesExcludesSet(
-                    members=FelonyCasesIncludesExcludes,
-                    excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
-                ),
-                CaseAppointedSeverityType.MISDEMEANOR: IncludesExcludesSet(
-                    members=MisdemeanorCasesIncludesExcludes,
-                    excluded_set={
-                        MisdemeanorCasesIncludesExcludes.FELONY,
-                        MisdemeanorCasesIncludesExcludes.INFRACTION,
-                    },
-                ),
+                CaseAppointedSeverityType.FELONY: [
+                    IncludesExcludesSet(
+                        members=FelonyCasesIncludesExcludes,
+                        excluded_set={FelonyCasesIncludesExcludes.MISDEMEANOR},
+                    ),
+                ],
+                CaseAppointedSeverityType.MISDEMEANOR: [
+                    IncludesExcludesSet(
+                        members=MisdemeanorCasesIncludesExcludes,
+                        excluded_set={
+                            MisdemeanorCasesIncludesExcludes.FELONY,
+                            MisdemeanorCasesIncludesExcludes.INFRACTION,
+                        },
+                    ),
+                ],
             },
         )
     ],
@@ -292,10 +333,12 @@ caseload_numerator = MetricDefinition(
     description="The number of people with open criminal cases carried by the provider (used as the numerator in the calculation of the caseload metric).",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=CaseloadNumeratorIncludesExcludes,
-        excluded_set={CaseloadNumeratorIncludesExcludes.NOT_ASSIGNED},
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=CaseloadNumeratorIncludesExcludes,
+            excluded_set={CaseloadNumeratorIncludesExcludes.NOT_ASSIGNED},
+        ),
+    ],
     aggregated_dimensions=[
         # TODO(#18071)
         AggregatedDimension(
@@ -309,25 +352,31 @@ caseload_numerator = MetricDefinition(
                 CaseSeverityType.UNKNOWN: "The number of people with open criminal cases of unknown severity.",
             },
             dimension_to_includes_excludes={
-                CaseSeverityType.FELONY: IncludesExcludesSet(
-                    members=FelonyCaseloadNumeratorIncludesExcludes,
-                    excluded_set={
-                        FelonyCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
-                    },
-                ),
-                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
-                    members=MisdemeanorCaseloadNumeratorIncludesExcludes,
-                    excluded_set={
-                        MisdemeanorCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
-                    },
-                ),
-                CaseSeverityType.MIXED: IncludesExcludesSet(
-                    members=MixedCaseloadNumeratorIncludesExcludes,
-                    excluded_set={
-                        MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_FELONY_CASES,
-                        MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
-                    },
-                ),
+                CaseSeverityType.FELONY: [
+                    IncludesExcludesSet(
+                        members=FelonyCaseloadNumeratorIncludesExcludes,
+                        excluded_set={
+                            FelonyCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
+                        },
+                    ),
+                ],
+                CaseSeverityType.MISDEMEANOR: [
+                    IncludesExcludesSet(
+                        members=MisdemeanorCaseloadNumeratorIncludesExcludes,
+                        excluded_set={
+                            MisdemeanorCaseloadNumeratorIncludesExcludes.UNASSIGNED_CASES,
+                        },
+                    ),
+                ],
+                CaseSeverityType.MIXED: [
+                    IncludesExcludesSet(
+                        members=MixedCaseloadNumeratorIncludesExcludes,
+                        excluded_set={
+                            MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_FELONY_CASES,
+                            MixedCaseloadNumeratorIncludesExcludes.UNASSIGNED_MISDEMEANOR_CASES,
+                        },
+                    ),
+                ],
             },
         )
     ],
@@ -341,12 +390,14 @@ caseload_denominator = MetricDefinition(
     description="The number of legal staff carrying a criminal caseload (used as the denominator in the calculation of the caseload metric).",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=DefenseCaseloadDenominatorIncludesExcludes,
-        excluded_set={
-            DefenseCaseloadDenominatorIncludesExcludes.ON_LEAVE,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=DefenseCaseloadDenominatorIncludesExcludes,
+            excluded_set={
+                DefenseCaseloadDenominatorIncludesExcludes.ON_LEAVE,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         # TODO(#18071)
         AggregatedDimension(
@@ -360,25 +411,31 @@ caseload_denominator = MetricDefinition(
                 CaseSeverityType.UNKNOWN: "The number of staff carrying a criminal caseload of unknown severity.",
             },
             dimension_to_includes_excludes={
-                CaseSeverityType.FELONY: IncludesExcludesSet(
-                    members=DefenseFelonyCaseloadDenominatorIncludesExcludes,
-                    excluded_set={
-                        DefenseFelonyCaseloadDenominatorIncludesExcludes.MIXED,
-                    },
-                ),
-                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
-                    members=DefenseMisdemeanorCaseloadDenominatorIncludesExcludes,
-                    excluded_set={
-                        DefenseMisdemeanorCaseloadDenominatorIncludesExcludes.MIXED,
-                    },
-                ),
-                CaseSeverityType.MIXED: IncludesExcludesSet(
-                    members=DefenseMixedCaseloadDenominatorIncludesExcludes,
-                    excluded_set={
-                        DefenseMixedCaseloadDenominatorIncludesExcludes.FELONY_ONLY,
-                        DefenseMixedCaseloadDenominatorIncludesExcludes.MISDEMEANOR_ONLY,
-                    },
-                ),
+                CaseSeverityType.FELONY: [
+                    IncludesExcludesSet(
+                        members=DefenseFelonyCaseloadDenominatorIncludesExcludes,
+                        excluded_set={
+                            DefenseFelonyCaseloadDenominatorIncludesExcludes.MIXED,
+                        },
+                    ),
+                ],
+                CaseSeverityType.MISDEMEANOR: [
+                    IncludesExcludesSet(
+                        members=DefenseMisdemeanorCaseloadDenominatorIncludesExcludes,
+                        excluded_set={
+                            DefenseMisdemeanorCaseloadDenominatorIncludesExcludes.MIXED,
+                        },
+                    ),
+                ],
+                CaseSeverityType.MIXED: [
+                    IncludesExcludesSet(
+                        members=DefenseMixedCaseloadDenominatorIncludesExcludes,
+                        excluded_set={
+                            DefenseMixedCaseloadDenominatorIncludesExcludes.FELONY_ONLY,
+                            DefenseMixedCaseloadDenominatorIncludesExcludes.MISDEMEANOR_ONLY,
+                        },
+                    ),
+                ],
             },
         )
     ],
@@ -392,13 +449,15 @@ cases_disposed = MetricDefinition(
     description="The number of criminal cases for which representation by the provider ended during the time period.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=DefenseCasesDisposedIncludesExcludes,
-        excluded_set={
-            DefenseCasesDisposedIncludesExcludes.INACTIVE,
-            DefenseCasesDisposedIncludesExcludes.PENDING,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=DefenseCasesDisposedIncludesExcludes,
+            excluded_set={
+                DefenseCasesDisposedIncludesExcludes.INACTIVE,
+                DefenseCasesDisposedIncludesExcludes.PENDING,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=DispositionType,
@@ -411,15 +470,15 @@ cases_disposed = MetricDefinition(
                 DispositionType.UNKNOWN: "The number of criminal cases disposed by the provider for which the disposition method is unknown.",
             },
             dimension_to_includes_excludes={
-                DispositionType.DISMISSAL: IncludesExcludesSet(
-                    members=CasesDismissedIncludesExcludes
-                ),
-                DispositionType.PLEA: IncludesExcludesSet(
-                    members=CasesResolvedByPleaIncludesExcludes
-                ),
-                DispositionType.TRIAL: IncludesExcludesSet(
-                    members=CasesResolvedAtTrialIncludesExcludes
-                ),
+                DispositionType.DISMISSAL: [
+                    IncludesExcludesSet(members=CasesDismissedIncludesExcludes),
+                ],
+                DispositionType.PLEA: [
+                    IncludesExcludesSet(members=CasesResolvedByPleaIncludesExcludes),
+                ],
+                DispositionType.TRIAL: [
+                    IncludesExcludesSet(members=CasesResolvedAtTrialIncludesExcludes),
+                ],
             },
         ),
         AggregatedDimension(
@@ -432,14 +491,18 @@ cases_disposed = MetricDefinition(
                 BiologicalSex.UNKNOWN: "The number of criminal cases disposed in which the defendant’s biological sex is unknown.",
             },
             dimension_to_includes_excludes={
-                BiologicalSex.MALE: IncludesExcludesSet(
-                    members=MaleBiologicalSexIncludesExcludes,
-                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
-                BiologicalSex.FEMALE: IncludesExcludesSet(
-                    members=FemaleBiologicalSexIncludesExcludes,
-                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
             },
         ),
         # TODO(#18071)
@@ -455,13 +518,15 @@ client_complaints_sustained = MetricDefinition(
     description="The number of formal, written complaints made against criminal defense counsel that were subsequently sustained by the disciplinary board.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=DefenseComplaintsIncludesExcludes,
-        excluded_set={
-            DefenseComplaintsIncludesExcludes.DUPLICATE,
-            DefenseComplaintsIncludesExcludes.INFORMAL,
-            DefenseComplaintsIncludesExcludes.PENDING,
-            DefenseComplaintsIncludesExcludes.UNSUBSTANTIATED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=DefenseComplaintsIncludesExcludes,
+            excluded_set={
+                DefenseComplaintsIncludesExcludes.DUPLICATE,
+                DefenseComplaintsIncludesExcludes.INFORMAL,
+                DefenseComplaintsIncludesExcludes.PENDING,
+                DefenseComplaintsIncludesExcludes.UNSUBSTANTIATED,
+            },
+        ),
+    ],
 )

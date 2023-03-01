@@ -123,28 +123,45 @@ class MetricInterface:
         }
 
         frequency = self.metric_definition.reporting_frequency.value
+        # TODO(#19144) remove deprecated settings key
         settings_json = []
+        includes_excludes_json_lst = []
         if (
             entry_point is DatapointGetRequestEntryPoint.METRICS_TAB
             and self.metric_definition.includes_excludes
         ):
-            for (
-                member,
-                default_setting,
-            ) in (
-                self.metric_definition.includes_excludes.member_to_default_inclusion_setting.items()
-            ):
-                included = self.includes_excludes_member_to_setting.get(member)
-                settings_json.append(
-                    {
-                        "key": member.name,
-                        "label": member.value,
-                        "included": included.value
-                        if included is not None
-                        else default_setting.value,
-                        "default": default_setting.value,
-                    }
-                )
+            for includes_excludes in self.metric_definition.includes_excludes:
+                includes_excludes_json: Dict[str, Any] = {
+                    "description": includes_excludes.description,
+                    "settings": [],
+                }
+                for (
+                    member,
+                    default_setting,
+                ) in includes_excludes.member_to_default_inclusion_setting.items():
+                    included = self.includes_excludes_member_to_setting.get(member)
+                    # TODO(#19144) remove deprecated settings key
+                    settings_json.append(
+                        {
+                            "key": member.name,
+                            "label": member.value,
+                            "included": included.value
+                            if included is not None
+                            else default_setting.value,
+                            "default": default_setting.value,
+                        }
+                    )
+                    includes_excludes_json["settings"].append(
+                        {
+                            "key": member.name,
+                            "label": member.value,
+                            "included": included.value
+                            if included is not None
+                            else default_setting.value,
+                            "default": default_setting.value,
+                        }
+                    )
+                includes_excludes_json_lst.append(includes_excludes_json)
 
         metric_filenames = [
             metric_file.canonical_filename for metric_file in self.metric_files
@@ -162,7 +179,9 @@ class MetricInterface:
             "description": self.metric_definition.description,
             "reporting_note": self.metric_definition.reporting_note,
             "value": self.value,
+            # TODO(#19144) remove deprecated settings key
             "settings": settings_json,
+            "includes_excludes": includes_excludes_json_lst,
             "unit": self.metric_definition.metric_type.unit,
             "category": self.metric_definition.category.human_readable_string,
             "label": self.metric_definition.display_name,
@@ -218,20 +237,23 @@ class MetricInterface:
         ):
             actual_includes_excludes_list = json.get("settings", [])
             actual_includes_excludes_member_to_setting = {
-                setting["key"]: setting["included"]
-                for setting in actual_includes_excludes_list
+                actual_includes_excludes["key"]: actual_includes_excludes["included"]
+                for actual_includes_excludes in actual_includes_excludes_list
             }
-            for member in metric_definition.includes_excludes.members:
-                setting = actual_includes_excludes_member_to_setting.get(member.name)
-                includes_excludes_member_to_setting[member] = (
-                    IncludesExcludesSetting(setting)
-                    if setting
-                    in {
-                        IncludesExcludesSetting.YES.value,
-                        IncludesExcludesSetting.NO.value,
-                    }
-                    else None
-                )
+            for includes_excludes in metric_definition.includes_excludes:
+                for member in includes_excludes.members:
+                    setting = actual_includes_excludes_member_to_setting.get(
+                        member.name
+                    )
+                    includes_excludes_member_to_setting[member] = (
+                        IncludesExcludesSetting(setting)
+                        if setting
+                        in {
+                            IncludesExcludesSetting.YES.value,
+                            IncludesExcludesSetting.NO.value,
+                        }
+                        else None
+                    )
 
         disaggregations = []
         dimension_id_to_definition = (

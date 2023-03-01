@@ -163,14 +163,14 @@ class DatapointsForMetric:
 
     def get_includes_excludes_dict(
         self,
-        includes_excludes_set: Optional[IncludesExcludesSet] = None,
+        includes_excludes_set_lst: Optional[List[IncludesExcludesSet]] = None,
         dimension: Optional[DimensionBase] = None,
     ) -> Dict[enum.Enum, Optional[IncludesExcludesSetting]]:
         """Returns the includes/excludes dicts. This is used to populate
         the includes_excludes dict at the metric level and at the
         dimension level."""
         includes_excludes_dict: Dict[enum.Enum, Optional[IncludesExcludesSetting]] = {}
-        if includes_excludes_set is None:
+        if includes_excludes_set_lst is None:
             return includes_excludes_dict
 
         if dimension is None and self.includes_excludes_key_to_datapoint is None:
@@ -188,25 +188,26 @@ class DatapointsForMetric:
             if dimension is None
             else self.dimension_to_includes_excludes_key_to_datapoint.get(dimension)
         )
-        for (
-            member,
-            default,
-        ) in includes_excludes_set.member_to_default_inclusion_setting.items():
-            datapoint = assert_type(includes_excludes_key_to_datapoint, dict).get(
-                member.name
-            )
-            includes_excludes_dict[member] = (
-                IncludesExcludesSetting(datapoint.value)
-                if datapoint is not None
-                and (
-                    datapoint.value
-                    in {
-                        IncludesExcludesSetting.YES.value,
-                        IncludesExcludesSetting.NO.value,
-                    }
+        for includes_excludes in includes_excludes_set_lst:
+            for (
+                member,
+                default,
+            ) in includes_excludes.member_to_default_inclusion_setting.items():
+                datapoint = assert_type(includes_excludes_key_to_datapoint, dict).get(
+                    member.name
                 )
-                else default
-            )
+                includes_excludes_dict[member] = (
+                    IncludesExcludesSetting(datapoint.value)
+                    if datapoint is not None
+                    and (
+                        datapoint.value
+                        in {
+                            IncludesExcludesSetting.YES.value,
+                            IncludesExcludesSetting.NO.value,
+                        }
+                    )
+                    else default
+                )
         return includes_excludes_dict
 
     ### Helpers ###
@@ -226,7 +227,7 @@ class DatapointsForMetric:
         for dimension in DIMENSION_IDENTIFIER_TO_DIMENSION[
             aggregated_dimension_definition.dimension_identifier()
         ]:  # type: ignore[attr-defined]
-            includes_excludes_set = (
+            includes_excludes_set_lst = (
                 aggregated_dimension_definition.dimension_to_includes_excludes.get(
                     dimension
                 )
@@ -234,7 +235,7 @@ class DatapointsForMetric:
             dimension_to_includes_excludes_member_to_setting[
                 dimension
             ] = self.get_includes_excludes_dict(
-                includes_excludes_set=includes_excludes_set,
+                includes_excludes_set_lst=includes_excludes_set_lst,
                 dimension=dimension,
             )
 

@@ -111,47 +111,57 @@ funding = MetricDefinition(
     description="The amount of funding for the provision of community supervision and operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        # TODO(#17577)
-        members=SupervisionFundingIncludesExcludes,
-        excluded_set={
-            SupervisionFundingIncludesExcludes.STIPENDS_JAIL,
-            SupervisionFundingIncludesExcludes.STIPENDS_PRISON,
-            SupervisionFundingIncludesExcludes.JAIL_MAINTENANCE,
-            SupervisionFundingIncludesExcludes.PRISON_MAINTENANCE,
-            SupervisionFundingIncludesExcludes.JUVENILE_SUPERVISION,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            # TODO(#17577)
+            members=SupervisionFundingIncludesExcludes,
+            excluded_set={
+                SupervisionFundingIncludesExcludes.STIPENDS_JAIL,
+                SupervisionFundingIncludesExcludes.STIPENDS_PRISON,
+                SupervisionFundingIncludesExcludes.JAIL_MAINTENANCE,
+                SupervisionFundingIncludesExcludes.PRISON_MAINTENANCE,
+                SupervisionFundingIncludesExcludes.JUVENILE_SUPERVISION,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=FundingType,
             required=False,
             dimension_to_includes_excludes={
-                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
-                    members=SupervisionStateAppropriationIncludesExcludes,
-                    excluded_set={
-                        SupervisionStateAppropriationIncludesExcludes.PROPOSED,
-                        SupervisionStateAppropriationIncludesExcludes.PRELIMINARY,
-                        SupervisionStateAppropriationIncludesExcludes.GRANTS_NOT_BUDGET,
-                    },
-                ),
-                FundingType.COUNTY_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
-                    members=SupervisionCountyMunicipalAppropriationIncludesExcludes,
-                    excluded_set={
-                        SupervisionCountyMunicipalAppropriationIncludesExcludes.PROPOSED,
-                        SupervisionCountyMunicipalAppropriationIncludesExcludes.PRELIMINARY,
-                    },
-                ),
-                FundingType.GRANTS: IncludesExcludesSet(
-                    members=SupervisionGrantsIncludesExcludes,
-                ),
-                FundingType.FINES_FEES: IncludesExcludesSet(
-                    members=SupervisionFinesFeesIncludesExcludes,
-                    excluded_set={
-                        SupervisionFinesFeesIncludesExcludes.RESTITUTION,
-                        SupervisionFinesFeesIncludesExcludes.LEGAL_OBLIGATIONS,
-                    },
-                ),
+                FundingType.STATE_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=SupervisionStateAppropriationIncludesExcludes,
+                        excluded_set={
+                            SupervisionStateAppropriationIncludesExcludes.PROPOSED,
+                            SupervisionStateAppropriationIncludesExcludes.PRELIMINARY,
+                            SupervisionStateAppropriationIncludesExcludes.GRANTS_NOT_BUDGET,
+                        },
+                    ),
+                ],
+                FundingType.COUNTY_MUNICIPAL_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=SupervisionCountyMunicipalAppropriationIncludesExcludes,
+                        excluded_set={
+                            SupervisionCountyMunicipalAppropriationIncludesExcludes.PROPOSED,
+                            SupervisionCountyMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                        },
+                    ),
+                ],
+                FundingType.GRANTS: [
+                    IncludesExcludesSet(
+                        members=SupervisionGrantsIncludesExcludes,
+                    ),
+                ],
+                FundingType.FINES_FEES: [
+                    IncludesExcludesSet(
+                        members=SupervisionFinesFeesIncludesExcludes,
+                        excluded_set={
+                            SupervisionFinesFeesIncludesExcludes.RESTITUTION,
+                            SupervisionFinesFeesIncludesExcludes.LEGAL_OBLIGATIONS,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the provision of community supervision and the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
@@ -173,34 +183,42 @@ expenses = MetricDefinition(
     description="The amount spent by the agency for the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        # TODO(#17577)
-        members=SupervisionExpensesIncludesExcludes,
-        excluded_set={
-            SupervisionExpensesIncludesExcludes.STIPENDS_JAILS,
-            SupervisionExpensesIncludesExcludes.STIPENDS_PRISONS,
-            SupervisionExpensesIncludesExcludes.JAILS,
-            SupervisionExpensesIncludesExcludes.PRISONS,
-            SupervisionExpensesIncludesExcludes.JUVENILE_SUPERVISION,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            # TODO(#17577)
+            members=SupervisionExpensesIncludesExcludes,
+            excluded_set={
+                SupervisionExpensesIncludesExcludes.STIPENDS_JAILS,
+                SupervisionExpensesIncludesExcludes.STIPENDS_PRISONS,
+                SupervisionExpensesIncludesExcludes.JAILS,
+                SupervisionExpensesIncludesExcludes.PRISONS,
+                SupervisionExpensesIncludesExcludes.JUVENILE_SUPERVISION,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ExpenseType,
             required=True,
             dimension_to_includes_excludes={
-                ExpenseType.PERSONNEL: IncludesExcludesSet(
-                    members=SupervisionPersonnelExpensesIncludesExcludes,
-                    excluded_set={
-                        SupervisionPersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED,
-                    },
-                ),
-                ExpenseType.TRAINING: IncludesExcludesSet(
-                    members=SupervisionTrainingExpensesIncludesExcludes,
-                ),
-                ExpenseType.FACILITIES: IncludesExcludesSet(
-                    members=SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
-                ),
+                ExpenseType.PERSONNEL: [
+                    IncludesExcludesSet(
+                        members=SupervisionPersonnelExpensesIncludesExcludes,
+                        excluded_set={
+                            SupervisionPersonnelExpensesIncludesExcludes.COMPANIES_CONTRACTED,
+                        },
+                    ),
+                ],
+                ExpenseType.TRAINING: [
+                    IncludesExcludesSet(
+                        members=SupervisionTrainingExpensesIncludesExcludes,
+                    ),
+                ],
+                ExpenseType.FACILITIES: [
+                    IncludesExcludesSet(
+                        members=SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in the provision of community supervision or the operation and maintenance of community supervision facilities under the jurisdiction of the agency.",
@@ -226,35 +244,45 @@ total_staff = MetricDefinition(
             dimension=StaffType,
             required=False,
             dimension_to_includes_excludes={
-                StaffType.SUPERVISION: IncludesExcludesSet(
-                    members=SupervisionStaffDimIncludesExcludes,
-                    excluded_set={SupervisionStaffDimIncludesExcludes.VACANT},
-                ),
-                StaffType.MANAGEMENT_AND_OPERATIONS: IncludesExcludesSet(
-                    members=SupervisionManagementOperationsStaffIncludesExcludes,
-                    excluded_set={
-                        SupervisionManagementOperationsStaffIncludesExcludes.VACANT
-                    },
-                ),
-                StaffType.CLINICAL_AND_MEDICAL: IncludesExcludesSet(
-                    members=SupervisionClinicalMedicalStaffIncludesExcludes,
-                    excluded_set={
-                        SupervisionClinicalMedicalStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                StaffType.PROGRAMMATIC: IncludesExcludesSet(
-                    members=SupervisionProgrammaticStaffIncludesExcludes,
-                    excluded_set={
-                        SupervisionProgrammaticStaffIncludesExcludes.VOLUNTEER,
-                        SupervisionProgrammaticStaffIncludesExcludes.VACANT,
-                    },
-                ),
-                StaffType.VACANT: IncludesExcludesSet(
-                    members=SupervisionVacantStaffIncludesExcludes,
-                    excluded_set={
-                        SupervisionVacantStaffIncludesExcludes.FILLED,
-                    },
-                ),
+                StaffType.SUPERVISION: [
+                    IncludesExcludesSet(
+                        members=SupervisionStaffDimIncludesExcludes,
+                        excluded_set={SupervisionStaffDimIncludesExcludes.VACANT},
+                    ),
+                ],
+                StaffType.MANAGEMENT_AND_OPERATIONS: [
+                    IncludesExcludesSet(
+                        members=SupervisionManagementOperationsStaffIncludesExcludes,
+                        excluded_set={
+                            SupervisionManagementOperationsStaffIncludesExcludes.VACANT
+                        },
+                    ),
+                ],
+                StaffType.CLINICAL_AND_MEDICAL: [
+                    IncludesExcludesSet(
+                        members=SupervisionClinicalMedicalStaffIncludesExcludes,
+                        excluded_set={
+                            SupervisionClinicalMedicalStaffIncludesExcludes.VACANT,
+                        },
+                    ),
+                ],
+                StaffType.PROGRAMMATIC: [
+                    IncludesExcludesSet(
+                        members=SupervisionProgrammaticStaffIncludesExcludes,
+                        excluded_set={
+                            SupervisionProgrammaticStaffIncludesExcludes.VOLUNTEER,
+                            SupervisionProgrammaticStaffIncludesExcludes.VACANT,
+                        },
+                    ),
+                ],
+                StaffType.VACANT: [
+                    IncludesExcludesSet(
+                        members=SupervisionVacantStaffIncludesExcludes,
+                        excluded_set={
+                            SupervisionVacantStaffIncludesExcludes.FILLED,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 StaffType.SUPERVISION: "The number of full-time equivalent positions that work directly with people who are on supervision and are responsible for their supervision and case management.",
@@ -267,13 +295,15 @@ total_staff = MetricDefinition(
             },
         ),
     ],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionStaffIncludesExcludes,
-        excluded_set={
-            SupervisionStaffIncludesExcludes.VOLUNTEER,
-            SupervisionStaffIncludesExcludes.INTERN,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionStaffIncludesExcludes,
+            excluded_set={
+                SupervisionStaffIncludesExcludes.VOLUNTEER,
+                SupervisionStaffIncludesExcludes.INTERN,
+            },
+        ),
+    ],
 )
 
 violations = MetricDefinition(
@@ -284,29 +314,37 @@ violations = MetricDefinition(
     description="The number of incidents in which conditions of supervision were violated. Incidents may include multiple violations that are reported by the agency at the same time, commonly called violation reports.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionViolationsIncludesExcludes,
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionViolationsIncludesExcludes,
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ViolationType,
             required=True,
             dimension_to_includes_excludes={
-                ViolationType.TECHNICAL: IncludesExcludesSet(
-                    members=SupervisionTechnicalViolationsIncludesExcludes,
-                    excluded_set={
-                        SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
-                        SupervisionTechnicalViolationsIncludesExcludes.ARREST,
-                        SupervisionTechnicalViolationsIncludesExcludes.CONVICTION,
-                        SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
-                    },
-                ),
-                ViolationType.ABSCONDING: IncludesExcludesSet(
-                    members=SupervisionAbscondingViolationsIncludesExcludes,
-                ),
-                ViolationType.NEW_OFFENSE: IncludesExcludesSet(
-                    members=SupervisionNewOffenseViolationsIncludesExcludes,
-                ),
+                ViolationType.TECHNICAL: [
+                    IncludesExcludesSet(
+                        members=SupervisionTechnicalViolationsIncludesExcludes,
+                        excluded_set={
+                            SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
+                            SupervisionTechnicalViolationsIncludesExcludes.ARREST,
+                            SupervisionTechnicalViolationsIncludesExcludes.CONVICTION,
+                            SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
+                        },
+                    ),
+                ],
+                ViolationType.ABSCONDING: [
+                    IncludesExcludesSet(
+                        members=SupervisionAbscondingViolationsIncludesExcludes,
+                    ),
+                ],
+                ViolationType.NEW_OFFENSE: [
+                    IncludesExcludesSet(
+                        members=SupervisionNewOffenseViolationsIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ViolationType.TECHNICAL: "The number of people who violated conditions of supervision in which the most serious violation was defined as “technical” within the supervision agency.",
@@ -327,42 +365,54 @@ new_cases = MetricDefinition(
     description="The number of people with new community supervision cases referred to the agency as the result of a legal decision made by the courts or another authority, such as a parole board.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionNewCasesIncludesExcludes,
-        excluded_set={
-            SupervisionNewCasesIncludesExcludes.TRANSFERRED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionNewCasesIncludesExcludes,
+            excluded_set={
+                SupervisionNewCasesIncludesExcludes.TRANSFERRED,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=OffenseType,
             required=False,
             # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
-                OffenseType.PERSON: IncludesExcludesSet(
-                    members=PersonOffenseIncludesExcludes,
-                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
-                ),
-                OffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PropertyOffenseIncludesExcludes,
-                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
-                ),
-                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PublicOrderOffenseIncludesExcludes,
-                    excluded_set={
-                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
-                    },
-                ),
-                OffenseType.DRUG: IncludesExcludesSet(
-                    members=DrugOffenseIncludesExcludes,
-                ),
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(
+                        members=DrugOffenseIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 OffenseType.PERSON: "The number of people with new community supervision cases referred to the agency in which the most serious originating offense was a crime against a person.",
@@ -390,24 +440,32 @@ daily_population = MetricDefinition(
             required=True,
             # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
-                DailyPopulationType.ACTIVE: IncludesExcludesSet(
-                    members=PeopleOnActiveSupervisionIncludesExcludes,
-                    excluded_set={
-                        PeopleOnActiveSupervisionIncludesExcludes.TELEPHONE_MAIL_CONTACTS
-                    },
-                ),
-                DailyPopulationType.ADMINISTRATIVE: IncludesExcludesSet(
-                    members=PeopleOnAdministrativeSupervisionIncludesExcludes,
-                ),
-                DailyPopulationType.ABSCONDED: IncludesExcludesSet(
-                    members=PeopleAbscondedSupervisionIncludesExcludes,
-                ),
-                DailyPopulationType.HOLD_OR_SANCTION: IncludesExcludesSet(
-                    members=PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes,
-                    excluded_set={
-                        PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes.REVOKED_TO_PRISON_JAIL,
-                    },
-                ),
+                DailyPopulationType.ACTIVE: [
+                    IncludesExcludesSet(
+                        members=PeopleOnActiveSupervisionIncludesExcludes,
+                        excluded_set={
+                            PeopleOnActiveSupervisionIncludesExcludes.TELEPHONE_MAIL_CONTACTS
+                        },
+                    ),
+                ],
+                DailyPopulationType.ADMINISTRATIVE: [
+                    IncludesExcludesSet(
+                        members=PeopleOnAdministrativeSupervisionIncludesExcludes,
+                    ),
+                ],
+                DailyPopulationType.ABSCONDED: [
+                    IncludesExcludesSet(
+                        members=PeopleAbscondedSupervisionIncludesExcludes,
+                    ),
+                ],
+                DailyPopulationType.HOLD_OR_SANCTION: [
+                    IncludesExcludesSet(
+                        members=PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes,
+                        excluded_set={
+                            PeopleIncarceratedOnHoldSanctionSupervisionIncludesExcludes.REVOKED_TO_PRISON_JAIL,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 DailyPopulationType.ACTIVE: "The number of people who are supervised by the agency on active status.",
@@ -431,14 +489,18 @@ daily_population = MetricDefinition(
             },
             # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
-                BiologicalSex.MALE: IncludesExcludesSet(
-                    members=MaleBiologicalSexIncludesExcludes,
-                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
-                BiologicalSex.FEMALE: IncludesExcludesSet(
-                    members=FemaleBiologicalSexIncludesExcludes,
-                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
             },
         ),
     ],
@@ -452,50 +514,58 @@ discharges = MetricDefinition(
     description="The number of people who had a supervision term that ended.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionDischargesIncludesExcludes,
-        excluded_set={
-            SupervisionDischargesIncludesExcludes.TRANSFERRED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionDischargesIncludesExcludes,
+            excluded_set={
+                SupervisionDischargesIncludesExcludes.TRANSFERRED,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=DischargeType,
             required=True,
             dimension_to_includes_excludes={
-                DischargeType.SUCCESSFUL: IncludesExcludesSet(
-                    members=SupervisionSuccessfulCompletionIncludesExcludes,
-                    excluded_set={
-                        SupervisionSuccessfulCompletionIncludesExcludes.OUTSTANDING_VIOLATIONS,
-                        SupervisionSuccessfulCompletionIncludesExcludes.ABSCONSCION,
-                        SupervisionSuccessfulCompletionIncludesExcludes.DIED,
-                        SupervisionSuccessfulCompletionIncludesExcludes.INCARCERATION,
-                        SupervisionSuccessfulCompletionIncludesExcludes.REVOKED,
-                        SupervisionSuccessfulCompletionIncludesExcludes.TERMINATED,
-                    },
-                ),
-                DischargeType.NEUTRAL: IncludesExcludesSet(
-                    members=SupervisionNeutralDischargeIncludesExcludes,
-                    excluded_set={
-                        SupervisionNeutralDischargeIncludesExcludes.INCARCERATION,
-                        SupervisionNeutralDischargeIncludesExcludes.REVOKED,
-                        SupervisionNeutralDischargeIncludesExcludes.TERMINATED,
-                        SupervisionNeutralDischargeIncludesExcludes.COMPLETED_REQUIREMENTS,
-                        SupervisionNeutralDischargeIncludesExcludes.EARLY_RELEASE,
-                        SupervisionNeutralDischargeIncludesExcludes.END_OF_TERM,
-                    },
-                ),
-                DischargeType.UNSUCCESSFUL: IncludesExcludesSet(
-                    members=SupervisionUnsuccessfulDischargeIncludesExcludes,
-                    excluded_set={
-                        SupervisionUnsuccessfulDischargeIncludesExcludes.OUTSTANDING_VIOLATIONS,
-                        SupervisionUnsuccessfulDischargeIncludesExcludes.ABSCONSCION,
-                        SupervisionUnsuccessfulDischargeIncludesExcludes.DIED,
-                        SupervisionUnsuccessfulDischargeIncludesExcludes.COMPLETED_REQUIREMENTS,
-                        SupervisionUnsuccessfulDischargeIncludesExcludes.EARLY_RELEASE,
-                        SupervisionUnsuccessfulDischargeIncludesExcludes.END_OF_TERM,
-                    },
-                ),
+                DischargeType.SUCCESSFUL: [
+                    IncludesExcludesSet(
+                        members=SupervisionSuccessfulCompletionIncludesExcludes,
+                        excluded_set={
+                            SupervisionSuccessfulCompletionIncludesExcludes.OUTSTANDING_VIOLATIONS,
+                            SupervisionSuccessfulCompletionIncludesExcludes.ABSCONSCION,
+                            SupervisionSuccessfulCompletionIncludesExcludes.DIED,
+                            SupervisionSuccessfulCompletionIncludesExcludes.INCARCERATION,
+                            SupervisionSuccessfulCompletionIncludesExcludes.REVOKED,
+                            SupervisionSuccessfulCompletionIncludesExcludes.TERMINATED,
+                        },
+                    ),
+                ],
+                DischargeType.NEUTRAL: [
+                    IncludesExcludesSet(
+                        members=SupervisionNeutralDischargeIncludesExcludes,
+                        excluded_set={
+                            SupervisionNeutralDischargeIncludesExcludes.INCARCERATION,
+                            SupervisionNeutralDischargeIncludesExcludes.REVOKED,
+                            SupervisionNeutralDischargeIncludesExcludes.TERMINATED,
+                            SupervisionNeutralDischargeIncludesExcludes.COMPLETED_REQUIREMENTS,
+                            SupervisionNeutralDischargeIncludesExcludes.EARLY_RELEASE,
+                            SupervisionNeutralDischargeIncludesExcludes.END_OF_TERM,
+                        },
+                    ),
+                ],
+                DischargeType.UNSUCCESSFUL: [
+                    IncludesExcludesSet(
+                        members=SupervisionUnsuccessfulDischargeIncludesExcludes,
+                        excluded_set={
+                            SupervisionUnsuccessfulDischargeIncludesExcludes.OUTSTANDING_VIOLATIONS,
+                            SupervisionUnsuccessfulDischargeIncludesExcludes.ABSCONSCION,
+                            SupervisionUnsuccessfulDischargeIncludesExcludes.DIED,
+                            SupervisionUnsuccessfulDischargeIncludesExcludes.COMPLETED_REQUIREMENTS,
+                            SupervisionUnsuccessfulDischargeIncludesExcludes.EARLY_RELEASE,
+                            SupervisionUnsuccessfulDischargeIncludesExcludes.END_OF_TERM,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 DischargeType.SUCCESSFUL: "The number of people who had a term of supervision end due to successful completion of required terms or timeframe.",
@@ -516,12 +586,14 @@ reconvictions = MetricDefinition(
     description="The number of people convicted of a new crime while serving a term of supervision.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionReconvictionsIncludesExcludes,
-        excluded_set={
-            SupervisionReconvictionsIncludesExcludes.NEW_INFRACTION,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionReconvictionsIncludesExcludes,
+            excluded_set={
+                SupervisionReconvictionsIncludesExcludes.NEW_INFRACTION,
+            },
+        ),
+    ],
 )
 
 caseload_numerator = MetricDefinition(
@@ -532,9 +604,11 @@ caseload_numerator = MetricDefinition(
     description="The number of people with open cases under the jurisdiction of the supervision agency (used as the numerator in the calculation of the caseloads metric).",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionCaseloadNumeratorIncludesExcludes,
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionCaseloadNumeratorIncludesExcludes,
+        ),
+    ],
 )
 
 caseload_denominator = MetricDefinition(
@@ -545,12 +619,14 @@ caseload_denominator = MetricDefinition(
     description="The number of staff carrying a supervision caseload (used as the denominator in the calculation of the caseloads metric).",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionCaseloadDenominatorIncludesExcludes,
-        excluded_set={
-            SupervisionCaseloadDenominatorIncludesExcludes.STAFF_ON_LEAVE,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionCaseloadDenominatorIncludesExcludes,
+            excluded_set={
+                SupervisionCaseloadDenominatorIncludesExcludes.STAFF_ON_LEAVE,
+            },
+        ),
+    ],
 )
 
 revocations = MetricDefinition(
@@ -562,31 +638,37 @@ revocations = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#17579)
-    includes_excludes=IncludesExcludesSet(
-        members=SupervisionRevocationsIncludesExcludes,
-        excluded_set={
-            SupervisionRevocationsIncludesExcludes.TERMINATION,
-            SupervisionRevocationsIncludesExcludes.SHORT_TERM_INCARCERATION,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SupervisionRevocationsIncludesExcludes,
+            excluded_set={
+                SupervisionRevocationsIncludesExcludes.TERMINATION,
+                SupervisionRevocationsIncludesExcludes.SHORT_TERM_INCARCERATION,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=RevocationType,
             required=True,
             # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
             dimension_to_includes_excludes={
-                RevocationType.TECHNICAL: IncludesExcludesSet(
-                    members=SupervisionTechnicalViolationsIncludesExcludes,
-                    excluded_set={
-                        SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
-                        SupervisionTechnicalViolationsIncludesExcludes.ARREST,
-                        SupervisionTechnicalViolationsIncludesExcludes.CONVICTION,
-                        SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
-                    },
-                ),
-                RevocationType.NEW_OFFENSE: IncludesExcludesSet(
-                    members=SupervisionNewOffenseViolationsIncludesExcludes,
-                ),
+                RevocationType.TECHNICAL: [
+                    IncludesExcludesSet(
+                        members=SupervisionTechnicalViolationsIncludesExcludes,
+                        excluded_set={
+                            SupervisionTechnicalViolationsIncludesExcludes.CRIMINAL_OFFENSE,
+                            SupervisionTechnicalViolationsIncludesExcludes.ARREST,
+                            SupervisionTechnicalViolationsIncludesExcludes.CONVICTION,
+                            SupervisionTechnicalViolationsIncludesExcludes.ABSCONDING,
+                        },
+                    ),
+                ],
+                RevocationType.NEW_OFFENSE: [
+                    IncludesExcludesSet(
+                        members=SupervisionNewOffenseViolationsIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 RevocationType.TECHNICAL: "The number of people revoked from supervision whose most serious violation was defined as technical.",
