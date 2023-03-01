@@ -30,23 +30,7 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
     }
   }
 
-  build {
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "build",
-        "-t",
-        "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
-        "-f",
-        "recidiviz/calculator/pipeline/Dockerfile.pipelines",
-        "."
-      ]
-    }
-    # In the build step above the image is tagged with us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA
-    # and below in the images param we specify the tags of images that we want to be pushed.
-    images  = ["us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"]
-    timeout = "3600s"
-  }
+  filename = "recidiviz/calculator/pipeline/cloudbuild.pipelines.yaml"
 
 }
 
