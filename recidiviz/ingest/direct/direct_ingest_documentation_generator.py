@@ -38,7 +38,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -106,7 +106,7 @@ class DirectIngestDocumentationGenerator:
 
         region = direct_ingest_regions.get_direct_ingest_region(region_code=region_code)
 
-        view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
+        view_collector = DirectIngestViewQueryBuilderCollector(region, [])
         views_by_raw_file = self.get_referencing_views(view_collector)
         touched_configs = self._get_touched_raw_data_configs(
             region_config.yaml_config_file_dir
@@ -218,7 +218,7 @@ class DirectIngestDocumentationGenerator:
                     if file_tag in file_tags_with_raw_file_configs
                     else f"{file_tag}"
                 ),
-                ",<br />".join(views_by_raw_file[file_tag]),
+                ",<br />".join(sorted(views_by_raw_file[file_tag])),
                 self._get_last_updated(
                     config_paths_by_file_tag[file_tag], touched_configs
                 ),
@@ -277,13 +277,12 @@ class DirectIngestDocumentationGenerator:
 
     @staticmethod
     def get_referencing_views(
-        view_collector: DirectIngestPreProcessedIngestViewCollector,
+        view_collector: DirectIngestViewQueryBuilderCollector,
     ) -> Dict[str, List[str]]:
         """Generates a dictionary mapping raw files to ingest views that reference them"""
         views_by_raw_file = defaultdict(list)
 
-        for builder in view_collector.collect_view_builders():
-            ingest_view = builder.build()
+        for ingest_view in view_collector.collect_query_builders():
             dependency_configs = ingest_view.raw_table_dependency_configs
             for config in dependency_configs:
                 views_by_raw_file[config.file_tag].append(ingest_view.ingest_view_name)

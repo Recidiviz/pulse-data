@@ -26,7 +26,7 @@ from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragmen
     VIEW_SENTENCE_COLUMN_SELECTIONS,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import (
     UPDATE_DATETIME_PARAM_NAME,
@@ -64,7 +64,7 @@ sentences as (
 {VIEW_SENTENCE_COLUMN_SELECTIONS}
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_me",
     ingest_view_name="supervision_sentences",
     view_query_template=VIEW_QUERY_TEMPLATE,

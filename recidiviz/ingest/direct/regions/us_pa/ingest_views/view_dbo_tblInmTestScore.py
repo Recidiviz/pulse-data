@@ -17,7 +17,7 @@
 """Query containing information about various assessments."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -69,7 +69,7 @@ SELECT *
 FROM all_test_scores
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="dbo_tblInmTestScore",
     view_query_template=VIEW_QUERY_TEMPLATE,

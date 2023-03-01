@@ -27,7 +27,7 @@ The Common_Statute_Number field is populated in the raw data if and only if the 
 is used, so it can be used to determine if a given row uses the legacy or CST system."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -66,7 +66,7 @@ COALESCE(Common_Statute_NCIC_Code, CODE) as ncic_code
 FROM offenses_with_violence_flag
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="docstars_offensestable",
     view_query_template=VIEW_QUERY_TEMPLATE,

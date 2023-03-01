@@ -20,7 +20,7 @@ from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragmen
     ALL_OFFICERS_FRAGMENT,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -558,7 +558,7 @@ WITH field_assignments_ce AS (
             end_statuses.STATUSES_DATE
     """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,

@@ -15,19 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for supervision sentences."""
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_sentences import (
-    sentence_view_template,
     SentenceType,
+    sentence_view_template,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = sentence_view_template(sentence_type=SentenceType.SUPERVISION)
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_id",
     ingest_view_name="mittimus_judge_sentence_offense_sentprob_supervision_sentences",
     view_query_template=VIEW_QUERY_TEMPLATE,

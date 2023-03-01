@@ -17,7 +17,7 @@
 """Query containing offense in custody and POS report information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -68,7 +68,7 @@ SELECT
     '' AS ALIAS_NAME_TYPE,    
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_nd",
     ingest_view_name="elite_offense_in_custody_and_pos_report_data",
     view_query_template=VIEW_QUERY_TEMPLATE,

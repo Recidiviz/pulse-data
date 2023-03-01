@@ -24,7 +24,7 @@ that their internal logic relies on the results of assessments from both tables.
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -89,7 +89,7 @@ LEFT JOIN lsi_ratings lr on aa.Lsi_Rating_Cd = lr.Lsi_Rating_Cd
 LEFT JOIN {CIS_900_EMPLOYEE} emp on aa.Conductor_Id = emp.Employee_Id
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_me",
     ingest_view_name="assessments",
     view_query_template=VIEW_QUERY_TEMPLATE,

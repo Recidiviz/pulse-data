@@ -28,7 +28,7 @@ set of periods from those edges. The edges come from two sources:
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -532,7 +532,7 @@ FROM supervision_periods
 WHERE open_count != 0
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_pa",
     ingest_view_name="supervision_period_v4",
     view_query_template=VIEW_QUERY_TEMPLATE,

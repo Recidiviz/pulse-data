@@ -40,7 +40,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
-    DirectIngestPreProcessedIngestViewCollector,
+    DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.tests.ingest.direct.fixture_util import (
@@ -115,13 +115,11 @@ class RawDataFixturesGenerator:
 
         self.bq_client = BigQueryClientImpl(project_id=project_id)
 
-        view_builder = DirectIngestPreProcessedIngestViewCollector(
+        view = DirectIngestViewQueryBuilderCollector(
             get_direct_ingest_region(region_code), []
-        ).get_view_builder_by_view_name(ingest_view_tag)
+        ).get_query_builder_by_view_name(ingest_view_tag)
 
-        self.ingest_view_raw_table_configs = (
-            view_builder.build().raw_table_dependency_configs
-        )
+        self.ingest_view_raw_table_configs = view.raw_table_dependency_configs
 
         # TODO(#12178) Rely only on pii fields once all states have labeled PII fields.
         self.columns_to_randomize = [

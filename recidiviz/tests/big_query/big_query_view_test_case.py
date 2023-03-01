@@ -24,7 +24,7 @@ import pytest
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.tests.big_query.big_query_test_helper import (
     BigQueryTestHelper,
@@ -107,7 +107,7 @@ class BigQueryViewTestCase(unittest.TestCase, BigQueryTestHelper):
         data_types: Dict[str, Union[Type, str]],
         dimensions: List[str],
     ) -> pd.DataFrame:
-        if isinstance(view_builder, DirectIngestPreProcessedIngestViewBuilder):
+        if isinstance(view_builder, DirectIngestViewQueryBuilder):
             raise ValueError(
                 f"Found view builder type [{type(view_builder)}] - use "
                 f"query_ingest_view_for_builder() for this type instead."

@@ -20,7 +20,7 @@ from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragmen
     NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -354,7 +354,7 @@ VIEW_QUERY_TEMPLATE = f"""
         most_recent_fso_and_status_for_sentence.MOST_RECENT_SENTENCE_STATUS_SSO = shock_sentence.BW_SSO
     """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="offender_sentence_supervision",
     view_query_template=VIEW_QUERY_TEMPLATE,

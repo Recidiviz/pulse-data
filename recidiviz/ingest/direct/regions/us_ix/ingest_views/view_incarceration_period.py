@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.regions.us_ix.ingest_views.query_fragments import (
     TRANSFER_PERIODS_INCARCERATION_CTE,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -117,7 +117,7 @@ FROM incarceration_periods
 """
 
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="incarceration_period",
     view_query_template=VIEW_QUERY_TEMPLATE,

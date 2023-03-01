@@ -21,7 +21,7 @@ from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragmen
     TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT,
 )
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -98,7 +98,7 @@ VIEW_QUERY_TEMPLATE = f"""
         AND citations_with_multiple_violations_jt.JT_CSQ = finally_formed_citations_e6.E6_DOS
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak291_tak292_tak024_citations",
     view_query_template=VIEW_QUERY_TEMPLATE,

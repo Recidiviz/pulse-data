@@ -17,7 +17,7 @@
 """Query that generates the state person entity using the following tables: ind_Offender, ind_Offender_Address,
 ref_Address, ref_AddressType, ind_AliasName, ind_AliasNameType, ref_NameSuffixType, ind_Race, ind_Gender, ind_EthnicOrigin"""
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -136,7 +136,7 @@ VIEW_QUERY_TEMPLATE = """
         ON o.OffenderId = p.OffenderId
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="person",
     view_query_template=VIEW_QUERY_TEMPLATE,

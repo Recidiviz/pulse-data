@@ -18,7 +18,7 @@
 """
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -41,7 +41,7 @@ LEFT JOIN {CIS_4009_SENT_CALC_SYS} served_at on violation.Cis_4009_Served_At_Cd 
 WHERE violation.Logical_Delete_Ind = 'N'
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_me",
     ingest_view_name="supervision_violations",
     view_query_template=VIEW_QUERY_TEMPLATE,

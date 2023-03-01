@@ -17,7 +17,7 @@
 """Query containing MDOC supervision violation information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -133,7 +133,7 @@ VIEW_QUERY_TEMPLATE = """,
     INNER JOIN {ADH_OFFENDER_BOOKING} b on v.offender_booking_id = b.offender_booking_id
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="supervision_violations",
     view_query_template=VIEW_QUERY_TEMPLATE,

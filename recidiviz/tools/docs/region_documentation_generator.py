@@ -190,7 +190,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             touched_raw_data_regions = get_touched_raw_data_regions(args.filenames)
         else:
             touched_raw_data_regions = get_existing_region_codes()
-        for region_code in touched_raw_data_regions:
+        for region_code in sorted(touched_raw_data_regions):
             if not StateCode.is_state_code(region_code):
                 logging.info(
                     "Skipping raw data documentation for non-state region [%s]",

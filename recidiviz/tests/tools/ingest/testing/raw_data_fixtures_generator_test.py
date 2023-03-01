@@ -46,7 +46,7 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             return_value=mock.MagicMock(build=lambda x: x, return_value=[])
         )
         self.view_builder_patcher = mock.patch(
-            "recidiviz.tools.ingest.testing.raw_data_fixtures_generator.DirectIngestPreProcessedIngestViewCollector",
+            "recidiviz.tools.ingest.testing.raw_data_fixtures_generator.DirectIngestViewQueryBuilderCollector",
             get_view_builder_by_view_name=self.mock_get_view_builder,
         ).start()
         self.view_collector = self.view_builder_patcher()

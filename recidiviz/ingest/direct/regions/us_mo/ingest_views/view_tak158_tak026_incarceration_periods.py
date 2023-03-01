@@ -17,7 +17,7 @@
 """Query containing incarceration period from sentence information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -413,7 +413,7 @@ WITH status_bw AS (
     WHERE DOC IS NOT NULL
     """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mo",
     ingest_view_name="tak158_tak026_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,

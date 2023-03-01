@@ -16,7 +16,7 @@
 # =============================================================================
 """Query that generates the state supervision_violation entity using the following tables: [ARS]"""
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -71,7 +71,7 @@ SELECT
 FROM state_violation
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ix",
     ingest_view_name="supervision_violation",
     view_query_template=VIEW_QUERY_TEMPLATE,

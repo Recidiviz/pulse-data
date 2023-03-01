@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query that generates incarceration periods."""
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestViewBuilder,
-)
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import (
-    get_all_periods_query_fragment,
     PeriodType,
+    get_all_periods_query_fragment,
+)
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+    DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -43,7 +43,7 @@ WHERE
 # TODO(#3509): Consider tracking escape incarceration periods in the same way we track absconscion.
 """
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
+VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_id",
     ingest_view_name="movement_facility_location_offstat_incarceration_periods",
     view_query_template=VIEW_QUERY_TEMPLATE,

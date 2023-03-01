@@ -29,8 +29,8 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 )
 from recidiviz.tests.ingest.direct import fake_regions
 from recidiviz.tests.ingest.direct.fakes.fake_direct_ingest_controller import (
-    FakeDirectIngestPreProcessedIngestViewCollector,
     FakeDirectIngestRegionRawFileConfig,
+    FakeDirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -179,7 +179,7 @@ tagPrimaryKeyColsMissing file description
         mock_config_fn.return_value = FakeDirectIngestRegionRawFileConfig("US_XX")
         documentation_generator = DirectIngestDocumentationGenerator()
         tags = ["tagFullyEmptyFile", "tagHeadersNoContents", "tagBasicData"]
-        my_collector = FakeDirectIngestPreProcessedIngestViewCollector(
+        my_collector = FakeDirectIngestViewQueryBuilderCollector(
             region=fake_region(), controller_ingest_view_rank_list=tags
         )
         expected_referencing_views = {
