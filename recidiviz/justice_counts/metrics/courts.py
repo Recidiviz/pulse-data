@@ -105,37 +105,45 @@ funding = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#17577) implement multiple includes/excludes tables
-    includes_excludes=IncludesExcludesSet(
-        members=FundingIncludesExcludes,
-        excluded_set={
-            FundingIncludesExcludes.SUPERVISION_OPERATIONS,
-            FundingIncludesExcludes.JUVENILE,
-            FundingIncludesExcludes.NON_COURT_FUNCTIONS,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=FundingIncludesExcludes,
+            excluded_set={
+                FundingIncludesExcludes.SUPERVISION_OPERATIONS,
+                FundingIncludesExcludes.JUVENILE,
+                FundingIncludesExcludes.NON_COURT_FUNCTIONS,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=FundingType,
             required=True,
             dimension_to_includes_excludes={
-                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
-                    members=StateAppropriationIncludesExcludes,
-                    excluded_set={
-                        StateAppropriationIncludesExcludes.PROPOSED,
-                        StateAppropriationIncludesExcludes.PRELIMINARY,
-                        StateAppropriationIncludesExcludes.GRANTS,
-                    },
-                ),
-                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: IncludesExcludesSet(
-                    members=CountyOrMunicipalAppropriationIncludesExcludes,
-                    excluded_set={
-                        CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
-                        CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
-                    },
-                ),
-                FundingType.GRANTS: IncludesExcludesSet(
-                    members=GrantsIncludesExcludes,
-                ),
+                FundingType.STATE_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=StateAppropriationIncludesExcludes,
+                        excluded_set={
+                            StateAppropriationIncludesExcludes.PROPOSED,
+                            StateAppropriationIncludesExcludes.PRELIMINARY,
+                            StateAppropriationIncludesExcludes.GRANTS,
+                        },
+                    ),
+                ],
+                FundingType.COUNTY_OR_MUNICIPAL_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=CountyOrMunicipalAppropriationIncludesExcludes,
+                        excluded_set={
+                            CountyOrMunicipalAppropriationIncludesExcludes.PROPOSED,
+                            CountyOrMunicipalAppropriationIncludesExcludes.PRELIMINARY,
+                        },
+                    ),
+                ],
+                FundingType.GRANTS: [
+                    IncludesExcludesSet(
+                        members=GrantsIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for the operation and maintenance of the court system’s criminal case processing.",
@@ -157,34 +165,42 @@ expenses = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#17577) implement multiple includes/excludes tables
-    includes_excludes=IncludesExcludesSet(
-        members=ExpensesIncludesExcludes,
-        excluded_set={
-            ExpensesIncludesExcludes.COMMUNITY_SUPERVISION_OPERATIONS,
-            ExpensesIncludesExcludes.JUVENILE,
-            ExpensesIncludesExcludes.NON_COURT_FUNCTIONS,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=ExpensesIncludesExcludes,
+            excluded_set={
+                ExpensesIncludesExcludes.COMMUNITY_SUPERVISION_OPERATIONS,
+                ExpensesIncludesExcludes.JUVENILE,
+                ExpensesIncludesExcludes.NON_COURT_FUNCTIONS,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ExpenseType,
             required=True,
             dimension_to_includes_excludes={
-                ExpenseType.PERSONNEL: IncludesExcludesSet(
-                    members=ExpensesPersonnelIncludesExcludes,
-                    excluded_set={
-                        ExpensesPersonnelIncludesExcludes.COMPANIES_CONTRACTED,
-                    },
-                ),
-                ExpenseType.TRAINING: IncludesExcludesSet(
-                    members=ExpensesTrainingIncludesExcludes,
-                    excluded_set={
-                        ExpensesTrainingIncludesExcludes.NO_COST_COURSES,
-                    },
-                ),
-                ExpenseType.FACILITIES: IncludesExcludesSet(
-                    members=ExpensesFacilitiesAndEquipmentIncludesExcludes,
-                ),
+                ExpenseType.PERSONNEL: [
+                    IncludesExcludesSet(
+                        members=ExpensesPersonnelIncludesExcludes,
+                        excluded_set={
+                            ExpensesPersonnelIncludesExcludes.COMPANIES_CONTRACTED,
+                        },
+                    ),
+                ],
+                ExpenseType.TRAINING: [
+                    IncludesExcludesSet(
+                        members=ExpensesTrainingIncludesExcludes,
+                        excluded_set={
+                            ExpensesTrainingIncludesExcludes.NO_COST_COURSES,
+                        },
+                    ),
+                ],
+                ExpenseType.FACILITIES: [
+                    IncludesExcludesSet(
+                        members=ExpensesFacilitiesAndEquipmentIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent by the court to employ personnel involved in the operation and maintenance of the court for the processing of criminal cases.",
@@ -205,48 +221,62 @@ judges_and_staff = MetricDefinition(
     description="The number of full-time equivalent positions budgeted and paid for by the court system for criminal case processing.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=StaffIncludesExcludes,
-        excluded_set={
-            StaffIncludesExcludes.VOLUNTEER,
-            StaffIncludesExcludes.INTERN,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=StaffIncludesExcludes,
+            excluded_set={
+                StaffIncludesExcludes.VOLUNTEER,
+                StaffIncludesExcludes.INTERN,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=StaffType,
             required=False,
             dimension_to_includes_excludes={
-                StaffType.JUDGES: IncludesExcludesSet(
-                    members=JudgesIncludesExcludes,
-                    excluded_set={
-                        JudgesIncludesExcludes.WITHOUT_CRIMINAL_CASE,
-                    },
-                ),
-                StaffType.LEGAL: IncludesExcludesSet(
-                    members=LegalStaffIncludesExcludes,
-                    excluded_set={
-                        LegalStaffIncludesExcludes.JUDGES,
-                    },
-                ),
-                StaffType.SECURITY: IncludesExcludesSet(
-                    members=SecurityStaffIncludesExcludes,
-                ),
-                StaffType.ADMINISTRATIVE: IncludesExcludesSet(
-                    members=SupportOrAdministrativeStaffIncludesExcludes,
-                ),
-                StaffType.ADVOCATE: IncludesExcludesSet(
-                    members=VictimAdvocateStaffIncludesExcludes,
-                    excluded_set={
-                        VictimAdvocateStaffIncludesExcludes.NOT_FULL_TIME,
-                    },
-                ),
-                StaffType.VACANT: IncludesExcludesSet(
-                    members=VacantPositionsIncludesExcludes,
-                    excluded_set={
-                        VacantPositionsIncludesExcludes.FILLED,
-                    },
-                ),
+                StaffType.JUDGES: [
+                    IncludesExcludesSet(
+                        members=JudgesIncludesExcludes,
+                        excluded_set={
+                            JudgesIncludesExcludes.WITHOUT_CRIMINAL_CASE,
+                        },
+                    ),
+                ],
+                StaffType.LEGAL: [
+                    IncludesExcludesSet(
+                        members=LegalStaffIncludesExcludes,
+                        excluded_set={
+                            LegalStaffIncludesExcludes.JUDGES,
+                        },
+                    ),
+                ],
+                StaffType.SECURITY: [
+                    IncludesExcludesSet(
+                        members=SecurityStaffIncludesExcludes,
+                    ),
+                ],
+                StaffType.ADMINISTRATIVE: [
+                    IncludesExcludesSet(
+                        members=SupportOrAdministrativeStaffIncludesExcludes,
+                    ),
+                ],
+                StaffType.ADVOCATE: [
+                    IncludesExcludesSet(
+                        members=VictimAdvocateStaffIncludesExcludes,
+                        excluded_set={
+                            VictimAdvocateStaffIncludesExcludes.NOT_FULL_TIME,
+                        },
+                    ),
+                ],
+                StaffType.VACANT: [
+                    IncludesExcludesSet(
+                        members=VacantPositionsIncludesExcludes,
+                        excluded_set={
+                            VacantPositionsIncludesExcludes.FILLED,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 StaffType.JUDGES: "The number of full-time equivalent positions for judges for criminal case processing.",
@@ -270,35 +300,43 @@ pretrial_releases = MetricDefinition(
     description="The number of people released while awaiting disposition in a criminal case.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=PretrialReleasesIncludesExcludes,
-        excluded_set={
-            PretrialReleasesIncludesExcludes.AWAITING_DISPOSITION,
-            PretrialReleasesIncludesExcludes.TRANSFERRED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=PretrialReleasesIncludesExcludes,
+            excluded_set={
+                PretrialReleasesIncludesExcludes.AWAITING_DISPOSITION,
+                PretrialReleasesIncludesExcludes.TRANSFERRED,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ReleaseType,
             required=False,
             dimension_to_includes_excludes={
-                ReleaseType.ON_OWN: IncludesExcludesSet(
-                    members=PretrialReleasesOnOwnRecognizanceIncludesExcludes,
-                    excluded_set={
-                        PretrialReleasesOnOwnRecognizanceIncludesExcludes.BEFORE_BAIL_HEARING,
-                        PretrialReleasesOnOwnRecognizanceIncludesExcludes.AWAITING_DISPOSITION,
-                        PretrialReleasesOnOwnRecognizanceIncludesExcludes.TRANSFERRED,
-                    },
-                ),
-                ReleaseType.MONETARY_BAIL: IncludesExcludesSet(
-                    members=PretrialReleasesMonetaryBailIncludesExcludes,
-                    excluded_set={
-                        PretrialReleasesMonetaryBailIncludesExcludes.BEFORE_BAIL_HEARING,
-                    },
-                ),
-                ReleaseType.NON_MONETARY_BAIL: IncludesExcludesSet(
-                    members=PretrialReleasesNonMonetaryBailIncludesExcludes,
-                ),
+                ReleaseType.ON_OWN: [
+                    IncludesExcludesSet(
+                        members=PretrialReleasesOnOwnRecognizanceIncludesExcludes,
+                        excluded_set={
+                            PretrialReleasesOnOwnRecognizanceIncludesExcludes.BEFORE_BAIL_HEARING,
+                            PretrialReleasesOnOwnRecognizanceIncludesExcludes.AWAITING_DISPOSITION,
+                            PretrialReleasesOnOwnRecognizanceIncludesExcludes.TRANSFERRED,
+                        },
+                    ),
+                ],
+                ReleaseType.MONETARY_BAIL: [
+                    IncludesExcludesSet(
+                        members=PretrialReleasesMonetaryBailIncludesExcludes,
+                        excluded_set={
+                            PretrialReleasesMonetaryBailIncludesExcludes.BEFORE_BAIL_HEARING,
+                        },
+                    ),
+                ],
+                ReleaseType.NON_MONETARY_BAIL: [
+                    IncludesExcludesSet(
+                        members=PretrialReleasesNonMonetaryBailIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ReleaseType.ON_OWN: "The number of people released without conditions awaiting disposition in a criminal case.",
@@ -320,54 +358,68 @@ sentences_imposed = MetricDefinition(
     description="The number of cases in which the court imposed a sentence as a result of a criminal conviction.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=SentencesImposedIncludesExcludes,
-        excluded_set={
-            SentencesImposedIncludesExcludes.TRANSFERRED,
-            SentencesImposedIncludesExcludes.REINSTATED,
-            SentencesImposedIncludesExcludes.CHANGING_PAROLE_STATUS,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=SentencesImposedIncludesExcludes,
+            excluded_set={
+                SentencesImposedIncludesExcludes.TRANSFERRED,
+                SentencesImposedIncludesExcludes.REINSTATED,
+                SentencesImposedIncludesExcludes.CHANGING_PAROLE_STATUS,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=SentenceType,
             required=False,
             dimension_to_includes_excludes={
-                SentenceType.PRISON: IncludesExcludesSet(
-                    members=PrisonSentencesIncludesExcludes,
-                    excluded_set={
-                        PrisonSentencesIncludesExcludes.RETURNS_TO_PRISON,
-                        PrisonSentencesIncludesExcludes.SPLIT_SENTENCE,
-                    },
-                ),
-                SentenceType.JAIL: IncludesExcludesSet(
-                    members=JailSentencesIncludesExcludes,
-                    excluded_set={
-                        JailSentencesIncludesExcludes.RETURNS_TO_JAIL,
-                        JailSentencesIncludesExcludes.SPLIT_SENTENCE,
-                    },
-                ),
-                SentenceType.SPLIT: IncludesExcludesSet(
-                    members=SplitSentencesIncludesExcludes,
-                ),
-                SentenceType.SUSPENDED: IncludesExcludesSet(
-                    members=SuspendedSentencesIncludesExcludes,
-                ),
-                SentenceType.COMMUNITY_SUPERVISION: IncludesExcludesSet(
-                    members=CommunitySupervisionOnlySentencesIncludesExcludes,
-                    excluded_set={
-                        CommunitySupervisionOnlySentencesIncludesExcludes.SPLIT_SENTENCE,
-                        CommunitySupervisionOnlySentencesIncludesExcludes.SUSPENDED_SENTENCE,
-                    },
-                ),
-                SentenceType.FINES_FEES: IncludesExcludesSet(
-                    members=FinesOrFeesOnlySentencesIncludesExcludes,
-                    excluded_set={
-                        FinesOrFeesOnlySentencesIncludesExcludes.CASE_FEES,
-                        FinesOrFeesOnlySentencesIncludesExcludes.MONETARY_SANCTIONS,
-                        FinesOrFeesOnlySentencesIncludesExcludes.OTHER_FINANCIAL_OBLIGATIONS,
-                    },
-                ),
+                SentenceType.PRISON: [
+                    IncludesExcludesSet(
+                        members=PrisonSentencesIncludesExcludes,
+                        excluded_set={
+                            PrisonSentencesIncludesExcludes.RETURNS_TO_PRISON,
+                            PrisonSentencesIncludesExcludes.SPLIT_SENTENCE,
+                        },
+                    ),
+                ],
+                SentenceType.JAIL: [
+                    IncludesExcludesSet(
+                        members=JailSentencesIncludesExcludes,
+                        excluded_set={
+                            JailSentencesIncludesExcludes.RETURNS_TO_JAIL,
+                            JailSentencesIncludesExcludes.SPLIT_SENTENCE,
+                        },
+                    ),
+                ],
+                SentenceType.SPLIT: [
+                    IncludesExcludesSet(
+                        members=SplitSentencesIncludesExcludes,
+                    ),
+                ],
+                SentenceType.SUSPENDED: [
+                    IncludesExcludesSet(
+                        members=SuspendedSentencesIncludesExcludes,
+                    ),
+                ],
+                SentenceType.COMMUNITY_SUPERVISION: [
+                    IncludesExcludesSet(
+                        members=CommunitySupervisionOnlySentencesIncludesExcludes,
+                        excluded_set={
+                            CommunitySupervisionOnlySentencesIncludesExcludes.SPLIT_SENTENCE,
+                            CommunitySupervisionOnlySentencesIncludesExcludes.SUSPENDED_SENTENCE,
+                        },
+                    ),
+                ],
+                SentenceType.FINES_FEES: [
+                    IncludesExcludesSet(
+                        members=FinesOrFeesOnlySentencesIncludesExcludes,
+                        excluded_set={
+                            FinesOrFeesOnlySentencesIncludesExcludes.CASE_FEES,
+                            FinesOrFeesOnlySentencesIncludesExcludes.MONETARY_SANCTIONS,
+                            FinesOrFeesOnlySentencesIncludesExcludes.OTHER_FINANCIAL_OBLIGATIONS,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 SentenceType.PRISON: "The number of cases disposed with a criminal conviction for which the most serious sentence imposed was incarceration in state prison.",
@@ -389,18 +441,22 @@ sentences_imposed = MetricDefinition(
             dimension=BiologicalSex,
             required=False,
             dimension_to_includes_excludes={
-                BiologicalSex.MALE: IncludesExcludesSet(
-                    members=MaleBiologicalSexIncludesExcludes,
-                    excluded_set={
-                        MaleBiologicalSexIncludesExcludes.UNKNOWN,
-                    },
-                ),
-                BiologicalSex.FEMALE: IncludesExcludesSet(
-                    members=FemaleBiologicalSexIncludesExcludes,
-                    excluded_set={
-                        FemaleBiologicalSexIncludesExcludes.UNKNOWN,
-                    },
-                ),
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={
+                            MaleBiologicalSexIncludesExcludes.UNKNOWN,
+                        },
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={
+                            FemaleBiologicalSexIncludesExcludes.UNKNOWN,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 BiologicalSex.MALE: "A single day count of the number of people who are incarcerated under the jurisdiction of the prison agency whose biological sex is male.",
@@ -419,26 +475,32 @@ criminal_case_filings = MetricDefinition(
     description="The number of criminal cases filed with the court.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=CriminalCaseFilingsIncludesExcludes,
-        excluded_set={
-            CriminalCaseFilingsIncludesExcludes.VIOLATIONS,
-            CriminalCaseFilingsIncludesExcludes.REVOCATIONS,
-            CriminalCaseFilingsIncludesExcludes.REOPENED,
-            CriminalCaseFilingsIncludesExcludes.TRANSFERRED_INTERNAL,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=CriminalCaseFilingsIncludesExcludes,
+            excluded_set={
+                CriminalCaseFilingsIncludesExcludes.VIOLATIONS,
+                CriminalCaseFilingsIncludesExcludes.REVOCATIONS,
+                CriminalCaseFilingsIncludesExcludes.REOPENED,
+                CriminalCaseFilingsIncludesExcludes.TRANSFERRED_INTERNAL,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=CaseSeverityType,
             required=False,
             dimension_to_includes_excludes={
-                CaseSeverityType.FELONY: IncludesExcludesSet(
-                    members=FelonyCriminalCaseFilingsIncludesExcludes,
-                ),
-                CaseSeverityType.MISDEMEANOR: IncludesExcludesSet(
-                    members=MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
-                ),
+                CaseSeverityType.FELONY: [
+                    IncludesExcludesSet(
+                        members=FelonyCriminalCaseFilingsIncludesExcludes,
+                    ),
+                ],
+                CaseSeverityType.MISDEMEANOR: [
+                    IncludesExcludesSet(
+                        members=MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 CaseSeverityType.FELONY: "The number of criminal cases filed with the court in which the leading charge was for a felony offense.",
@@ -459,13 +521,15 @@ new_offenses_while_on_pretrial_release = MetricDefinition(
     description="The number of new arrests involving a person awaiting criminal trial in the community that are unrelated to their pending disposition.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=NewOffensesWhileOnPretrialReleaseIncludesExcludes,
-        excluded_set={
-            NewOffensesWhileOnPretrialReleaseIncludesExcludes.AWAITING_DISPOSITION,
-            NewOffensesWhileOnPretrialReleaseIncludesExcludes.TRANSFERRED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=NewOffensesWhileOnPretrialReleaseIncludesExcludes,
+            excluded_set={
+                NewOffensesWhileOnPretrialReleaseIncludesExcludes.AWAITING_DISPOSITION,
+                NewOffensesWhileOnPretrialReleaseIncludesExcludes.TRANSFERRED,
+            },
+        ),
+    ],
 )
 
 cases_overturned = MetricDefinition(
@@ -476,10 +540,12 @@ cases_overturned = MetricDefinition(
     description="The number of criminal cases that were overturned on appeal.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=CasesOverturnedOnAppealIncludesExcludes,
-        excluded_set={
-            CasesOverturnedOnAppealIncludesExcludes.INTERLOCUTORY_APPEAL,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=CasesOverturnedOnAppealIncludesExcludes,
+            excluded_set={
+                CasesOverturnedOnAppealIncludesExcludes.INTERLOCUTORY_APPEAL,
+            },
+        ),
+    ],
 )

@@ -92,12 +92,15 @@ class PrisonsFundingContractBedsIncludesExcludes(Enum):
 
 
 # Expenses
-class PrisonExpensesIncludesExcludes(Enum):
+class PrisonExpensesTimeframeAndSpendDownIncludesExcludes(Enum):
     SINGLE_YEAR = "Expenses for single fiscal year"
     BIENNNIUM_EXPENSES = "Biennium funding appropriated during the time period"
     MULTI_YEAR = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class PrisonExpensesTypeIncludesExcludes(Enum):
     PRISON_FACILITY = "Expenses for prison facility operations and maintenance"
     OPERATIONS_AND_MAINTENANCE = "Expenses for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
     CONSTRUCTION = "Expenses for construction or rental of new prison facilities"

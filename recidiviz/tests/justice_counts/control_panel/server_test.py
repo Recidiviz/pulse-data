@@ -225,6 +225,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # Total Staff metric has two includes/excludes settings that
         # are different from the default.
         self.assertEqual(metrics[2]["key"], prisons.staff.key)
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[2]["settings"],
             [
@@ -280,7 +281,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         # Admissions metric is enabled but OffenseType
         # disaggregation is disabled
-        dimension_to_includes_excludes = assert_type(
+        dimension_to_includes_excludes_lst = assert_type(
             prisons.admissions.aggregated_dimensions, list
         )[0].dimension_to_includes_excludes
         self.assertEqual(metrics[3]["key"], prisons.admissions.key)
@@ -302,6 +303,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][0]["key"],
             OffenseType.PERSON.value,
         )
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][0]["settings"],
             [
@@ -311,9 +313,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "included": default_setting.value,
                     "default": default_setting.value,
                 }
-                for member, default_setting in dimension_to_includes_excludes[
+                for includes_excludes in dimension_to_includes_excludes_lst[
                     OffenseType.PERSON
-                ].member_to_default_inclusion_setting.items()
+                ]
+                for member, default_setting in includes_excludes.member_to_default_inclusion_setting.items()
             ],
         )
 
@@ -328,6 +331,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][1]["key"],
             OffenseType.PROPERTY.value,
         )
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][1]["settings"],
             [
@@ -337,9 +341,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "included": default_setting.value,
                     "default": default_setting.value,
                 }
-                for member, default_setting in dimension_to_includes_excludes[
+                for includes_excludes in dimension_to_includes_excludes_lst[
                     OffenseType.PROPERTY
-                ].member_to_default_inclusion_setting.items()
+                ]
+                for member, default_setting in includes_excludes.member_to_default_inclusion_setting.items()
             ],
         )
 
@@ -354,6 +359,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][2]["key"],
             OffenseType.DRUG.value,
         )
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][2]["settings"],
             [
@@ -363,9 +369,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "included": default_setting.value,
                     "default": default_setting.value,
                 }
-                for member, default_setting in dimension_to_includes_excludes[
+                for includes_excludes in dimension_to_includes_excludes_lst[
                     OffenseType.DRUG
-                ].member_to_default_inclusion_setting.items()
+                ]
+                for member, default_setting in includes_excludes.member_to_default_inclusion_setting.items()
             ],
         )
 
@@ -380,6 +387,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][3]["key"],
             OffenseType.PUBLIC_ORDER.value,
         )
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][3]["settings"],
             [
@@ -389,9 +397,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "included": default_setting.value,
                     "default": default_setting.value,
                 }
-                for member, default_setting in dimension_to_includes_excludes[
+                for includes_excludes in dimension_to_includes_excludes_lst[
                     OffenseType.PUBLIC_ORDER
-                ].member_to_default_inclusion_setting.items()
+                ]
+                for member, default_setting in includes_excludes.member_to_default_inclusion_setting.items()
             ],
         )
 
@@ -406,6 +415,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][4]["key"],
             OffenseType.OTHER.value,
         )
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][4]["settings"],
             [],
@@ -422,6 +432,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][5]["key"],
             OffenseType.UNKNOWN.value,
         )
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[3]["disaggregations"][0]["dimensions"][5]["settings"],
             [],
@@ -431,6 +442,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # For the release metric, two settings are excluded from the parole to supervision
         # disaggregation.
         self.assertEqual(metrics[5]["key"], prisons.releases.key)
+        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
             metrics[5]["disaggregations"][0]["dimensions"][1]["settings"],
             [
@@ -1233,6 +1245,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             dimension_enum = dimension_class(
                                 dimension["key"]
                             )  # type: ignore[abstract]
+                            # TODO(#19144) remove deprecated settings key
                             includes_excludes = dimension.get("settings", [])
                             if (
                                 dimension_enum.name.strip() == "OTHER"  # type: ignore[attr-defined]
@@ -1419,32 +1432,33 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             # All includes/excludes that were set to YES should have a datapoint
             # with a dimension_identifier_to_member.
-            for dimension, includes_excludes in assert_type(
+            for dimension, includes_excludes_lst in assert_type(
                 prisons.staff.aggregated_dimensions, list
             )[0].dimension_to_includes_excludes.items():
-                for (
-                    member,
-                    default_includes_excludes_setting,
-                ) in includes_excludes.member_to_default_inclusion_setting.items():
-                    if (
-                        default_includes_excludes_setting
-                        is not IncludesExcludesSetting.YES
-                    ):
-                        saved_datapoint = (
-                            includes_excludes_key_and_dimension_to_datapoint[
-                                (member.name, dimension.name)
-                            ]
-                        )
-                        self.assertEqual(
-                            saved_datapoint.value,
-                            "Yes",
-                        )
-                        self.assertEqual(
-                            saved_datapoint.dimension_identifier_to_member,
-                            {
-                                dimension.dimension_identifier(): dimension.dimension_name
-                            },
-                        )
+                for includes_excludes in includes_excludes_lst:
+                    for (
+                        member,
+                        default_includes_excludes_setting,
+                    ) in includes_excludes.member_to_default_inclusion_setting.items():
+                        if (
+                            default_includes_excludes_setting
+                            is not IncludesExcludesSetting.YES
+                        ):
+                            saved_datapoint = (
+                                includes_excludes_key_and_dimension_to_datapoint[
+                                    (member.name, dimension.name)
+                                ]
+                            )
+                            self.assertEqual(
+                                saved_datapoint.value,
+                                "Yes",
+                            )
+                            self.assertEqual(
+                                saved_datapoint.dimension_identifier_to_member,
+                                {
+                                    dimension.dimension_identifier(): dimension.dimension_name
+                                },
+                            )
             # Reset includes/excludes settings at the metric setting back to
             # their default.
             update_request_body = (

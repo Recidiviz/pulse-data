@@ -462,7 +462,7 @@ class DatapointInterface:
                     key=metric_definition.key,
                     is_metric_enabled=enabled,
                     includes_excludes_member_to_setting=datapoints.get_includes_excludes_dict(
-                        includes_excludes_set=metric_definition.includes_excludes
+                        includes_excludes_set_lst=metric_definition.includes_excludes
                     ),
                     contexts=datapoints.get_agency_contexts(
                         # convert context datapoints to MetricContextData
@@ -540,7 +540,7 @@ class DatapointInterface:
         # 3. Set top-level includes/excludes
         if (
             agency_metric.metric_definition.includes_excludes is not None
-            and agency_metric.includes_excludes_member_to_setting is not None
+            and agency_metric.includes_excludes_member_to_setting != {}
         ):
             # Create new datapoint for each includes_excludes setting
             # at the metric level.

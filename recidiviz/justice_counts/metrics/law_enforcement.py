@@ -117,38 +117,48 @@ funding = MetricDefinition(
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#17577)
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementFundingIncludesExcludes,
-        excluded_set={
-            LawEnforcementFundingIncludesExcludes.JAIL_OPERATIONS,
-            LawEnforcementFundingIncludesExcludes.SUPERVISION_SERVICES,
-            LawEnforcementFundingIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementFundingIncludesExcludes,
+            excluded_set={
+                LawEnforcementFundingIncludesExcludes.JAIL_OPERATIONS,
+                LawEnforcementFundingIncludesExcludes.SUPERVISION_SERVICES,
+                LawEnforcementFundingIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=FundingType,
             dimension_to_includes_excludes={
-                FundingType.STATE_APPROPRIATION: IncludesExcludesSet(
-                    members=LawEnforcementStateAppropriationIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementStateAppropriationIncludesExcludes.PRELIMINARY,
-                        LawEnforcementStateAppropriationIncludesExcludes.PROPOSED,
-                    },
-                ),
-                FundingType.COUNTY_APPROPRIATION: IncludesExcludesSet(
-                    members=LawEnforcementStateAppropriationIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementCountyOrMunicipalAppropriation.PRELIMINARY,
-                        LawEnforcementCountyOrMunicipalAppropriation.PROPOSED,
-                    },
-                ),
-                FundingType.ASSET_FORFEITURE: IncludesExcludesSet(
-                    members=LawEnforcementAssetForfeitureIncludesExcludes,
-                ),
-                FundingType.GRANTS: IncludesExcludesSet(
-                    members=LawEnforcementGrantsIncludesExcludes,
-                ),
+                FundingType.STATE_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementStateAppropriationIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementStateAppropriationIncludesExcludes.PRELIMINARY,
+                            LawEnforcementStateAppropriationIncludesExcludes.PROPOSED,
+                        },
+                    ),
+                ],
+                FundingType.COUNTY_APPROPRIATION: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementStateAppropriationIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementCountyOrMunicipalAppropriation.PRELIMINARY,
+                            LawEnforcementCountyOrMunicipalAppropriation.PROPOSED,
+                        },
+                    ),
+                ],
+                FundingType.ASSET_FORFEITURE: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementAssetForfeitureIncludesExcludes,
+                    ),
+                ],
+                FundingType.GRANTS: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementGrantsIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 FundingType.STATE_APPROPRIATION: "The amount of funding appropriated by the state for agency law enforcement activities.",
@@ -172,32 +182,40 @@ expenses = MetricDefinition(
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     # TODO(#17577)
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementExpensesIncludesExcludes,
-        excluded_set={
-            LawEnforcementExpensesIncludesExcludes.JAILS,
-            LawEnforcementExpensesIncludesExcludes.SUPERVISION,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementExpensesIncludesExcludes,
+            excluded_set={
+                LawEnforcementExpensesIncludesExcludes.JAILS,
+                LawEnforcementExpensesIncludesExcludes.SUPERVISION,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ExpenseType,
             dimension_to_includes_excludes={
-                ExpenseType.TRAINING: IncludesExcludesSet(
-                    members=LawEnforcementTrainingIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementTrainingIncludesExcludes.FREE,
-                    },
-                ),
-                ExpenseType.PERSONNEL: IncludesExcludesSet(
-                    members=LawEnforcementPersonnelIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementPersonnelIncludesExcludes.COMPANY_CONTRACTS,
-                    },
-                ),
-                ExpenseType.FACILITIES: IncludesExcludesSet(
-                    members=LawEnforcementFacilitiesIncludesExcludes,
-                ),
+                ExpenseType.TRAINING: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementTrainingIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementTrainingIncludesExcludes.FREE,
+                        },
+                    ),
+                ],
+                ExpenseType.PERSONNEL: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementPersonnelIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementPersonnelIncludesExcludes.COMPANY_CONTRACTS,
+                        },
+                    ),
+                ],
+                ExpenseType.FACILITIES: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementFacilitiesIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ExpenseType.PERSONNEL: "The amount spent by the agency to employ personnel involved in law enforcement activities.",
@@ -219,25 +237,31 @@ calls_for_service = MetricDefinition(
     description="The number of calls for police assistance received by the agency.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
-    includes_excludes=IncludesExcludesSet(
-        members=CallsForServiceIncludesExcludes,
-        excluded_set={
-            CallsForServiceIncludesExcludes.FIRE_SERVICE,
-            CallsForServiceIncludesExcludes.EMS,
-            CallsForServiceIncludesExcludes.NON_POLICE_SERVICE,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=CallsForServiceIncludesExcludes,
+            excluded_set={
+                CallsForServiceIncludesExcludes.FIRE_SERVICE,
+                CallsForServiceIncludesExcludes.EMS,
+                CallsForServiceIncludesExcludes.NON_POLICE_SERVICE,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=CallType,
             required=True,
             dimension_to_includes_excludes={
-                CallType.EMERGENCY: IncludesExcludesSet(
-                    members=CallsForServiceEmergencyCallsIncludesExcludes
-                ),
-                CallType.NON_EMERGENCY: IncludesExcludesSet(
-                    members=CallsForServiceNonEmergencyCallsIncludesExcludes
-                ),
+                CallType.EMERGENCY: [
+                    IncludesExcludesSet(
+                        members=CallsForServiceEmergencyCallsIncludesExcludes
+                    ),
+                ],
+                CallType.NON_EMERGENCY: [
+                    IncludesExcludesSet(
+                        members=CallsForServiceNonEmergencyCallsIncludesExcludes
+                    ),
+                ],
             },
             dimension_to_description={
                 CallType.EMERGENCY: "The number of calls for police assistance received by the agency that require immediate response.",
@@ -253,14 +277,16 @@ staff = MetricDefinition(
     system=System.LAW_ENFORCEMENT,
     metric_type=MetricType.TOTAL_STAFF,
     category=MetricCategory.CAPACITY_AND_COST,
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementStaffIncludesExcludes,
-        excluded_set={
-            LawEnforcementStaffIncludesExcludes.INTERN,
-            LawEnforcementStaffIncludesExcludes.VOLUNTEER,
-            LawEnforcementStaffIncludesExcludes.NOT_FUNDED,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementStaffIncludesExcludes,
+            excluded_set={
+                LawEnforcementStaffIncludesExcludes.INTERN,
+                LawEnforcementStaffIncludesExcludes.VOLUNTEER,
+                LawEnforcementStaffIncludesExcludes.NOT_FUNDED,
+            },
+        ),
+    ],
     display_name="Staff",
     description="The number of full-time equivalent positions budgeted for and paid by the agency for law enforcement activities.",
     measurement_type=MeasurementType.INSTANT,
@@ -270,35 +296,45 @@ staff = MetricDefinition(
             dimension=StaffType,
             required=False,
             dimension_to_includes_excludes={
-                StaffType.LAW_ENFORCEMENT_OFFICERS: IncludesExcludesSet(
-                    members=LawEnforcementPoliceOfficersIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementPoliceOfficersIncludesExcludes.CRISIS_INTERVENTION,
-                        LawEnforcementPoliceOfficersIncludesExcludes.VACANT,
-                        LawEnforcementPoliceOfficersIncludesExcludes.VICTIM_ADVOCATE,
-                    },
-                ),
-                StaffType.CIVILIAN_STAFF: IncludesExcludesSet(
-                    members=LawEnforcementCivilianStaffIncludesExcludes,
-                ),
-                StaffType.MENTAL_HEALTH: IncludesExcludesSet(
-                    members=LawEnforcementMentalHealthStaffIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementMentalHealthStaffIncludesExcludes.PART_TIME,
-                    },
-                ),
-                StaffType.VICTIM_ADVOCATES: IncludesExcludesSet(
-                    members=LawEnforcementVictimAdvocateStaffIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementVictimAdvocateStaffIncludesExcludes.PART_TIME,
-                    },
-                ),
-                StaffType.VACANT: IncludesExcludesSet(
-                    members=LawEnforcementVacantStaffIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementVacantStaffIncludesExcludes.FILLED,
-                    },
-                ),
+                StaffType.LAW_ENFORCEMENT_OFFICERS: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementPoliceOfficersIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementPoliceOfficersIncludesExcludes.CRISIS_INTERVENTION,
+                            LawEnforcementPoliceOfficersIncludesExcludes.VACANT,
+                            LawEnforcementPoliceOfficersIncludesExcludes.VICTIM_ADVOCATE,
+                        },
+                    ),
+                ],
+                StaffType.CIVILIAN_STAFF: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementCivilianStaffIncludesExcludes,
+                    ),
+                ],
+                StaffType.MENTAL_HEALTH: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementMentalHealthStaffIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementMentalHealthStaffIncludesExcludes.PART_TIME,
+                        },
+                    ),
+                ],
+                StaffType.VICTIM_ADVOCATES: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementVictimAdvocateStaffIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementVictimAdvocateStaffIncludesExcludes.PART_TIME,
+                        },
+                    ),
+                ],
+                StaffType.VACANT: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementVacantStaffIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementVacantStaffIncludesExcludes.FILLED,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 StaffType.LAW_ENFORCEMENT_OFFICERS: "The number of full-time equivalent positions that perform law enforcement activities and ordinarily carry a firearm and a badge.",
@@ -322,14 +358,18 @@ staff = MetricDefinition(
             dimension=BiologicalSex,
             required=False,
             dimension_to_includes_excludes={
-                BiologicalSex.MALE: IncludesExcludesSet(
-                    members=MaleBiologicalSexIncludesExcludes,
-                    excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
-                BiologicalSex.FEMALE: IncludesExcludesSet(
-                    members=FemaleBiologicalSexIncludesExcludes,
-                    excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
-                ),
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={MaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={FemaleBiologicalSexIncludesExcludes.UNKNOWN},
+                    ),
+                ],
             },
             dimension_to_description={
                 BiologicalSex.MALE: "A single day count of the number of people in filled staff positions whose biological sex is male.",
@@ -345,12 +385,14 @@ reported_crime = MetricDefinition(
     metric_type=MetricType.REPORTED_CRIME,
     category=MetricCategory.POPULATIONS,
     display_name="Reported Crime",
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementReportedCrimeIncludesExcludes,
-        excluded_set={
-            LawEnforcementReportedCrimeIncludesExcludes.REFERRED_TO_OTHER_AGENCY
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementReportedCrimeIncludesExcludes,
+            excluded_set={
+                LawEnforcementReportedCrimeIncludesExcludes.REFERRED_TO_OTHER_AGENCY
+            },
+        ),
+    ],
     description="The number of criminal incidents made known to the agency.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
@@ -360,30 +402,38 @@ reported_crime = MetricDefinition(
             dimension=OffenseType,
             required=True,
             dimension_to_includes_excludes={
-                OffenseType.PERSON: IncludesExcludesSet(
-                    members=PersonOffenseIncludesExcludes,
-                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
-                ),
-                OffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PropertyOffenseIncludesExcludes,
-                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
-                ),
-                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PublicOrderOffenseIncludesExcludes,
-                    excluded_set={
-                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
-                    },
-                ),
-                OffenseType.DRUG: IncludesExcludesSet(
-                    members=DrugOffenseIncludesExcludes
-                ),
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(members=DrugOffenseIncludesExcludes),
+                ],
             },
             dimension_to_description={
                 OffenseType.DRUG: "The number of reported crime incidents received by the agency in which the most serious offense was a drug offense.",
@@ -404,10 +454,12 @@ arrests = MetricDefinition(
     display_name="Arrests",
     description="The number of arrests, citations, and summonses made by the agency.",
     measurement_type=MeasurementType.DELTA,
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementArrestsIncludesExcludes,
-        excluded_set={LawEnforcementArrestsIncludesExcludes.OUTSIDE_JURISDICTION},
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementArrestsIncludesExcludes,
+            excluded_set={LawEnforcementArrestsIncludesExcludes.OUTSIDE_JURISDICTION},
+        ),
+    ],
     reporting_frequencies=[ReportingFrequency.MONTHLY],
     # TODO(#18071) Replace this with reference to Global Includes/Excludes once those are implemented
     aggregated_dimensions=[
@@ -423,30 +475,38 @@ arrests = MetricDefinition(
                 OffenseType.UNKNOWN: "The number of arrests, citations, or summonses made by the agency in which the most serious offense is not known.",
             },
             dimension_to_includes_excludes={
-                OffenseType.PERSON: IncludesExcludesSet(
-                    members=PersonOffenseIncludesExcludes,
-                    excluded_set={PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE},
-                ),
-                OffenseType.PROPERTY: IncludesExcludesSet(
-                    members=PropertyOffenseIncludesExcludes,
-                    excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
-                ),
-                OffenseType.PUBLIC_ORDER: IncludesExcludesSet(
-                    members=PublicOrderOffenseIncludesExcludes,
-                    excluded_set={
-                        PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SALES,
-                        PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
-                        PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
-                        PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
-                    },
-                ),
-                OffenseType.DRUG: IncludesExcludesSet(
-                    members=DrugOffenseIncludesExcludes
-                ),
+                OffenseType.PERSON: [
+                    IncludesExcludesSet(
+                        members=PersonOffenseIncludesExcludes,
+                        excluded_set={
+                            PersonOffenseIncludesExcludes.JUSTIFIABLE_HOMICIDE
+                        },
+                    ),
+                ],
+                OffenseType.PROPERTY: [
+                    IncludesExcludesSet(
+                        members=PropertyOffenseIncludesExcludes,
+                        excluded_set={PropertyOffenseIncludesExcludes.ROBBERY},
+                    ),
+                ],
+                OffenseType.PUBLIC_ORDER: [
+                    IncludesExcludesSet(
+                        members=PublicOrderOffenseIncludesExcludes,
+                        excluded_set={
+                            PublicOrderOffenseIncludesExcludes.DRUG_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_EQUIPMENT_VIOLATIONS,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SALES,
+                            PublicOrderOffenseIncludesExcludes.DRUG_DISTRIBUTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_MANUFACTURING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_SMUGGLING,
+                            PublicOrderOffenseIncludesExcludes.DRUG_PRODUCTION,
+                            PublicOrderOffenseIncludesExcludes.DRUG_POSSESSION,
+                        },
+                    ),
+                ],
+                OffenseType.DRUG: [
+                    IncludesExcludesSet(members=DrugOffenseIncludesExcludes),
+                ],
             },
         ),
         # TODO(#17579)
@@ -458,18 +518,22 @@ arrests = MetricDefinition(
             dimension=BiologicalSex,
             required=True,
             dimension_to_includes_excludes={
-                BiologicalSex.MALE: IncludesExcludesSet(
-                    members=MaleBiologicalSexIncludesExcludes,
-                    excluded_set={
-                        MaleBiologicalSexIncludesExcludes.UNKNOWN,
-                    },
-                ),
-                BiologicalSex.FEMALE: IncludesExcludesSet(
-                    members=FemaleBiologicalSexIncludesExcludes,
-                    excluded_set={
-                        FemaleBiologicalSexIncludesExcludes.UNKNOWN,
-                    },
-                ),
+                BiologicalSex.MALE: [
+                    IncludesExcludesSet(
+                        members=MaleBiologicalSexIncludesExcludes,
+                        excluded_set={
+                            MaleBiologicalSexIncludesExcludes.UNKNOWN,
+                        },
+                    ),
+                ],
+                BiologicalSex.FEMALE: [
+                    IncludesExcludesSet(
+                        members=FemaleBiologicalSexIncludesExcludes,
+                        excluded_set={
+                            FemaleBiologicalSexIncludesExcludes.UNKNOWN,
+                        },
+                    ),
+                ],
             },
             dimension_to_description={
                 BiologicalSex.MALE: "The number of arrests, citations, and summonses by the agency of people whose biological sex is male.",
@@ -488,34 +552,44 @@ use_of_force_incidents = MetricDefinition(
     description="The number of incidents in which agency staff used physical coercion to gain compliance from a person.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementUseOfForceIncidentsIncludesExcludes,
-        excluded_set={
-            LawEnforcementUseOfForceIncidentsIncludesExcludes.NOT_INTENTED_INJURY,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementUseOfForceIncidentsIncludesExcludes,
+            excluded_set={
+                LawEnforcementUseOfForceIncidentsIncludesExcludes.NOT_INTENTED_INJURY,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ForceType,
             dimension_to_includes_excludes={
-                ForceType.PHYSICAL: IncludesExcludesSet(
-                    members=LawEnforcementPhysicalForceIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementPhysicalForceIncludesExcludes.WITHOUT_SUFFICIENT_FORCE,
-                    },
-                ),
-                ForceType.RESTRAINT: IncludesExcludesSet(
-                    members=LawEnforcementRestraintIncludesExcludes,
-                ),
-                ForceType.FIREARM: IncludesExcludesSet(
-                    members=LawEnforcementFirearmIncludesExcludes,
-                    excluded_set={
-                        LawEnforcementFirearmIncludesExcludes.DISPLAYING_FIREARM,
-                    },
-                ),
-                ForceType.OTHER_WEAPON: IncludesExcludesSet(
-                    members=LawEnforcementOtherWeaponIncludesExcludes,
-                ),
+                ForceType.PHYSICAL: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementPhysicalForceIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementPhysicalForceIncludesExcludes.WITHOUT_SUFFICIENT_FORCE,
+                        },
+                    ),
+                ],
+                ForceType.RESTRAINT: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementRestraintIncludesExcludes,
+                    ),
+                ],
+                ForceType.FIREARM: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementFirearmIncludesExcludes,
+                        excluded_set={
+                            LawEnforcementFirearmIncludesExcludes.DISPLAYING_FIREARM,
+                        },
+                    ),
+                ],
+                ForceType.OTHER_WEAPON: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementOtherWeaponIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ForceType.PHYSICAL: "The number of incidents in which agency staff used physical force to gain compliance from a person.",
@@ -538,29 +612,35 @@ civilian_complaints_sustained = MetricDefinition(
     description="The number of allegations of misconduct filed against agency staff that were sustained by an internal affairs unit or review board.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=IncludesExcludesSet(
-        members=LawEnforcementCivilianComplaintsSustainedIncludesExcludes,
-        excluded_set={
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.NOT_SUSTAINED,
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.UNFOUNDED,
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.POLICY_VIOLATION,
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.LAWFUL,
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.NOT_RESOLVED,
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.INFORMAL,
-            LawEnforcementCivilianComplaintsSustainedIncludesExcludes.DUPLICATE,
-        },
-    ),
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=LawEnforcementCivilianComplaintsSustainedIncludesExcludes,
+            excluded_set={
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.NOT_SUSTAINED,
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.UNFOUNDED,
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.POLICY_VIOLATION,
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.LAWFUL,
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.NOT_RESOLVED,
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.INFORMAL,
+                LawEnforcementCivilianComplaintsSustainedIncludesExcludes.DUPLICATE,
+            },
+        ),
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=ComplaintType,
             required=False,
             dimension_to_includes_excludes={
-                ComplaintType.EXCESSIVE_USES_OF_FORCE: IncludesExcludesSet(
-                    members=LawEnforcementExcessiveUsesOfForceIncludesExcludes,
-                ),
-                ComplaintType.DISCRIMINATION: IncludesExcludesSet(
-                    members=LawEnforcementDiscriminationOrRacialBiasIncludesExcludes,
-                ),
+                ComplaintType.EXCESSIVE_USES_OF_FORCE: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementExcessiveUsesOfForceIncludesExcludes,
+                    ),
+                ],
+                ComplaintType.DISCRIMINATION: [
+                    IncludesExcludesSet(
+                        members=LawEnforcementDiscriminationOrRacialBiasIncludesExcludes,
+                    ),
+                ],
             },
             dimension_to_description={
                 ComplaintType.EXCESSIVE_USES_OF_FORCE: "The number of allegations of misconduct filed against agency staff relating to excessive uses of force that were sustained by an internal affairs unit or conduct review board.",
