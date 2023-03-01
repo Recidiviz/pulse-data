@@ -22,6 +22,7 @@ from typing import Callable, Dict, Optional
 from unittest import TestCase, mock
 from unittest.mock import MagicMock, patch
 
+import responses
 from flask import Flask
 from flask.testing import FlaskClient
 from freezegun import freeze_time
@@ -29,6 +30,7 @@ from freezegun import freeze_time
 from recidiviz.case_triage.error_handlers import register_error_handlers
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
+    on_successful_authorization_recidiviz_only,
 )
 from recidiviz.case_triage.workflows.workflows_routes import (
     create_workflows_api_blueprint,
@@ -69,8 +71,11 @@ class WorkflowsBlueprintTestCase(TestCase):
         self.auth_patcher.stop()
 
     @staticmethod
-    def auth_side_effect(state_code: str) -> Callable:
-        return lambda: on_successful_authorization(
+    def auth_side_effect(
+        state_code: str,
+        successful_authorization_handler: Callable = on_successful_authorization,
+    ) -> Callable:
+        return lambda: successful_authorization_handler(
             {
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
                     "state_code": f"{state_code.lower()}"
@@ -87,9 +92,95 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         self.old_auth_claim_namespace = os.environ.get("AUTH0_CLAIM_NAMESPACE", None)
         os.environ["AUTH0_CLAIM_NAMESPACE"] = "https://recidiviz-test"
+        self.fake_url = "http://fake-url.com"
 
     def tearDown(self) -> None:
         super().tearDown()
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_proxy_defaults(self, mock_get_secret: MagicMock) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", on_successful_authorization_recidiviz_only
+        )
+
+        mock_get_secret.return_value = self.fake_url
+        proxy_response = "test response"
+        timeout = 360  # default defined in api_schemas.py
+
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(
+                responses.GET,
+                self.fake_url,
+                body=proxy_response,
+                match=[responses.matchers.request_kwargs_matcher({"timeout": timeout})],
+            )
+            response = self.test_client.post(
+                "/workflows/proxy",
+                json={"url_secret": "foo", "method": "GET"},
+            )
+            self.assertEqual(response.get_data(as_text=True), proxy_response)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_proxy(self, mock_get_secret: MagicMock) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", on_successful_authorization_recidiviz_only
+        )
+
+        mock_get_secret.return_value = self.fake_url
+        proxy_response = "test response"
+        timeout = 99
+        headers = {"header_key": "header_value"}
+
+        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+            rsps.add(
+                responses.PUT,
+                self.fake_url,
+                body=proxy_response,
+                match=[
+                    responses.matchers.request_kwargs_matcher({"timeout": timeout}),
+                    responses.matchers.header_matcher(headers),
+                ],
+            )
+            response = self.test_client.post(
+                "/workflows/proxy",
+                json={
+                    "url_secret": "foo",
+                    "method": "PUT",
+                    "json": {"key": "value"},
+                    "headers": headers,
+                    "timeout": timeout,
+                },
+            )
+            self.assertEqual(response.get_data(as_text=True), proxy_response)
+
+    @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
+    def test_proxy_missing_secret(self, mock_get_secret: MagicMock) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "recidiviz", on_successful_authorization_recidiviz_only
+        )
+
+        mock_get_secret.return_value = None
+
+        response = self.test_client.post(
+            "/workflows/proxy",
+            json={"url_secret": "foo", "method": "GET"},
+        )
+        self.assertEqual(response.status_code, 404, response.get_data(as_text=True))
+
+    def test_proxy_not_authorized(self) -> None:
+        self.mock_authorization_handler.side_effect = self.auth_side_effect(
+            "us_id", on_successful_authorization_recidiviz_only
+        )
+
+        response = self.test_client.post(
+            "/workflows/proxy",
+            json={"url_secret": "foo", "method": "GET"},
+        )
+        self.assertEqual(
+            response.status_code,
+            HTTPStatus.UNAUTHORIZED,
+            response.get_data(as_text=True),
+        )
 
     def test_init(self) -> None:
         self.mock_authorization_handler.side_effect = self.auth_side_effect("recidiviz")
