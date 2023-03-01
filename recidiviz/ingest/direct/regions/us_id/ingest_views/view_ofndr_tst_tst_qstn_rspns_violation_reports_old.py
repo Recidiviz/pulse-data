@@ -21,7 +21,7 @@ This is necessary to gather historical violation report info.
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_test_questions import (
     question_numbers_with_descriptive_answers_view_fragment,
 )
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

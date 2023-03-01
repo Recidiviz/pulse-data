@@ -16,7 +16,7 @@
 # =============================================================================
 """Query containing charge and court information from the elite tables."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

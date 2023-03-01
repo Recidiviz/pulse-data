@@ -23,7 +23,7 @@ outcomes of the assessment in columns that are named for LSI ratings, as a resul
 that their internal logic relies on the results of assessments from both tables.
 """
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

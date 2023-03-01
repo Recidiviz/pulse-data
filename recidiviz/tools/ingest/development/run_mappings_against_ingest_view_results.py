@@ -54,11 +54,11 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
     to_string_value_converter,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
     RawTableViewType,
 )
-from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema_type import SchemaType

@@ -23,7 +23,7 @@ from recidiviz.ingest.direct.regions.us_me.ingest_views.us_me_view_query_fragmen
     MOVEMENT_TYPE_ORDER_BY,
     REGEX_TIMESTAMP_NANOS_FORMAT,
 )
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import (

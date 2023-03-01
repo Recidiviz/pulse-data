@@ -63,7 +63,7 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.errors import DirectIngestError
-from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.tests.big_query.fakes.fake_direct_ingest_instance_status_manager import (

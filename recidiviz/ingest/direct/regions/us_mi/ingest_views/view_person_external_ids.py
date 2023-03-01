@@ -16,7 +16,7 @@
 # =============================================================================
 """Query for all external ids ever associated with any person in the MDOC systems."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

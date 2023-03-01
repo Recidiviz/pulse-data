@@ -19,7 +19,7 @@
 from typing import List
 
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.tests.ingest.direct import fake_regions

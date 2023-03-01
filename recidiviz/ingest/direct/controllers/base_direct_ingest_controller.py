@@ -113,7 +113,7 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestErrorType,
 )
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.persistence.database.schema.operations.dao import (

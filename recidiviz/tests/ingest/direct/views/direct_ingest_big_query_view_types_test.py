@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for types defined in direct_ingest_big_query_view_types_test.py"""
+"""Tests for types defined in direct_ingest_view_query_builder.py"""
 import unittest
 
 import attr
 from mock import patch
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DestinationTableType,
     DirectIngestViewQueryBuilder,
     RawTableViewType,
@@ -32,7 +32,7 @@ from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 
 
 class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
-    """Tests for types defined in direct_ingest_big_query_view_types_test.py"""
+    """Tests for types defined in direct_ingest_view_query_builder.py"""
 
     PROJECT_ID = "recidiviz-456"
 

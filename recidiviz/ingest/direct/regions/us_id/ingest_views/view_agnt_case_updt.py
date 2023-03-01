@@ -16,7 +16,7 @@
 # =============================================================================
 """Query for case notes, from which treatment program assignments,
 certain violations, and supervision/incarceration-related events will be parsed."""
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

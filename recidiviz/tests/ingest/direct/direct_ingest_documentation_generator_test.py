@@ -169,7 +169,7 @@ tagPrimaryKeyColsMissing file description
             documentation_generator.generate_raw_file_docs_for_region("US_NOT_REAL")
 
     @patch(
-        "recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"
+        "recidiviz.ingest.direct.views.direct_ingest_view_query_builder"
         ".get_region_raw_file_config"
     )
     def test_get_referencing_views(

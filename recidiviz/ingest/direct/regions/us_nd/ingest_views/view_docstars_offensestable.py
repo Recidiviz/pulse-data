@@ -26,7 +26,7 @@ CST codes is populated in the view; info for legacy NCIC codes is populated in t
 The Common_Statute_Number field is populated in the raw data if and only if the CST code
 is used, so it can be used to determine if a given row uses the legacy or CST system."""
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

@@ -39,12 +39,12 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DestinationTableType,
     DirectIngestViewQueryBuilder,
     RawTableViewType,
 )
-from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
