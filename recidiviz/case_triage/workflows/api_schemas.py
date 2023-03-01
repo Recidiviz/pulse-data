@@ -17,7 +17,7 @@
 """ Contains Marshmallow schemas for Workflows API """
 from typing import Dict, List
 
-from marshmallow import ValidationError, fields
+from marshmallow import Schema, ValidationError, fields
 from marshmallow_enum import EnumField
 
 from recidiviz.case_triage.api_schemas_utils import CamelOrSnakeCaseSchema
@@ -77,3 +77,11 @@ class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelOrSnakeCaseSchema):
     )
     voters_rights_code = EnumField(WorkflowsUsTnVotersRightsCode, by_value=True)
     should_queue_task = fields.Boolean(load_default=True, load_only=True)
+
+
+class ProxySchema(Schema):
+    url_secret = fields.Str(required=True)
+    method = fields.Str(required=True)
+    headers = fields.Dict()
+    json = fields.Dict()
+    timeout = fields.Integer(load_default=360)

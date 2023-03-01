@@ -30,6 +30,7 @@ from werkzeug.http import parse_set_header
 from recidiviz.case_triage.api_schemas_utils import load_api_schema, requires_api_schema
 from recidiviz.case_triage.authorization_utils import build_authorization_handler
 from recidiviz.case_triage.workflows.api_schemas import (
+    ProxySchema,
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
 from recidiviz.case_triage.workflows.constants import ExternalSystemRequestStatus
@@ -38,6 +39,7 @@ from recidiviz.case_triage.workflows.interface import (
 )
 from recidiviz.case_triage.workflows.workflows_authorization import (
     on_successful_authorization,
+    on_successful_authorization_recidiviz_only,
 )
 from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     CloudTaskQueueInfo,
@@ -47,6 +49,7 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 from recidiviz.firestore.firestore_client import FirestoreClientImpl
 from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import CloudRunMetadata
+from recidiviz.utils.secrets import get_secret
 
 if in_gcp():
     cloud_run_metadata = CloudRunMetadata.build_from_metadata_server("case-triage-web")
@@ -75,18 +78,31 @@ WORKFLOWS_ALLOWED_ORIGINS = [
 def create_workflows_api_blueprint() -> Blueprint:
     """Creates the API blueprint for Workflows"""
     workflows_api = Blueprint("workflows", __name__)
+    proxy_endpoint = "workflows.proxy"
 
     handle_authorization = build_authorization_handler(
         on_successful_authorization, "dashboard_auth0"
     )
+    handle_recidiviz_only_authorization = build_authorization_handler(
+        on_successful_authorization_recidiviz_only, "dashboard_auth0"
+    )
 
     @workflows_api.before_request
     def validate_request() -> None:
-        if request.method != "OPTIONS":
-            handle_authorization()
+        if request.method == "OPTIONS":
+            return
+        if request.endpoint == proxy_endpoint:
+            handle_recidiviz_only_authorization()
+            return
+        handle_authorization()
 
     @workflows_api.before_request
     def validate_cors() -> Optional[Response]:
+        if request.endpoint == proxy_endpoint:
+            # Proxy requests will generally be sent from a developer's machine and not a browser,
+            # so there is no origin to check against.
+            return None
+
         is_allowed = any(
             re.match(allowed_origin, request.origin)
             for allowed_origin in WORKFLOWS_ALLOWED_ORIGINS
@@ -117,6 +133,22 @@ def create_workflows_api_blueprint() -> Blueprint:
     @workflows_api.route("/<state>/init")
     def init(state: str) -> Response:  # pylint: disable=unused-argument
         return jsonify({"csrf": generate_csrf(current_app.secret_key)})
+
+    @workflows_api.post("/proxy")
+    @requires_api_schema(ProxySchema)
+    def proxy() -> Response:
+        url_secret = g.api_data["url_secret"]
+        if (url := get_secret(url_secret)) is None:
+            return make_response(f"Secret {url_secret} not found", HTTPStatus.NOT_FOUND)
+
+        response = requests.request(
+            url=url,
+            method=g.api_data.get("method"),
+            headers=g.api_data.get("headers"),
+            json=g.api_data.get("json"),
+            timeout=g.api_data.get("timeout"),
+        )
+        return make_response(response.text, response.status_code)
 
     @workflows_api.post("/external_request/<state>/insert_tepe_contact_note")
     @requires_api_schema(WorkflowsUsTnInsertTEPEContactNoteSchema)

@@ -26,6 +26,17 @@ from recidiviz.utils.auth.auth0 import AuthorizationError
 from recidiviz.utils.flask_exception import FlaskException
 
 
+def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
+    """Only allows users whose state code is RECIDIVIZ"""
+    app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
+    user_state_code = app_metadata["state_code"].upper()
+
+    if user_state_code == "RECIDIVIZ":
+        return
+
+    raise AuthorizationError(code="not_authorized", description="Access denied")
+
+
 def on_successful_authorization(claims: Dict[str, Any]) -> None:
     """
     No-ops if:
