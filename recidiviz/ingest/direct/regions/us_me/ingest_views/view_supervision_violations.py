@@ -38,6 +38,7 @@ LEFT JOIN {CIS_4800_VIOLATION_FINDING} violation_finding ON violation.Cis_4800_V
 LEFT JOIN {CIS_4009_SENT_CALC_SYS} violation_type ON violation.Cis_4009_Violation_Type_Cd = violation_type.Sent_Calc_Sys_Cd
 LEFT JOIN {CIS_4009_SENT_CALC_SYS} disposition on violation.Cis_4009_Disposition_Cd = disposition.Sent_Calc_Sys_Cd
 LEFT JOIN {CIS_4009_SENT_CALC_SYS} served_at on violation.Cis_4009_Served_At_Cd = served_at.Sent_Calc_Sys_Cd
+WHERE violation.Logical_Delete_Ind = 'N'
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
