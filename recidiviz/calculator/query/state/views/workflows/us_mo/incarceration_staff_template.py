@@ -22,19 +22,21 @@ US_MO_INCARCERATION_STAFF_TEMPLATE = """
     -- In MO, we treat facilities as staff with caseloads instead of using individual case managers.
     caseload_staff AS (
         SELECT DISTINCT
-            facility_id AS id,
-            state_code,
-            -- TODO(#18886) Use facility name as name instead of ID
-            facility_id AS name,
+            rr.facility_id AS id,
+            rr.state_code,
+            IFNULL(locations.level_1_incarceration_location_name, rr.facility_id) AS name,
             -- TODO(#19062) Make it more clear where facility IDs go
-            facility_id AS district,
+            rr.facility_id AS district,
             CAST(NULL AS STRING) AS email,
             false AS has_caseload,
             true AS has_facility_caseload,
-            facility_id as given_names,
+            IFNULL(locations.level_1_incarceration_location_name, rr.facility_id) AS given_names,
             "" as surname,
-        FROM `{project_id}.{workflows_dataset}.resident_record_materialized`
-        WHERE state_code = "US_MO"
+        FROM `{project_id}.{workflows_dataset}.resident_record_materialized` rr
+        LEFT JOIN `{project_id}.{reference_views_dataset}.incarceration_location_ids_to_names` locations
+        ON rr.facility_id = locations.level_1_incarceration_location_external_id
+          AND rr.state_code = locations.state_code
+        WHERE rr.state_code = "US_MO"
         AND facility_id IS NOT NULL
     ),
     staff_without_caseloads AS (
