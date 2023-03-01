@@ -206,13 +206,15 @@ class PretrialReleasesNonMonetaryBailIncludesExcludes(enum.Enum):
 
 
 # Funding
-# TODO(#17577) implement multiple includes/excludes tables
-class FundingIncludesExcludes(enum.Enum):
+class FundingTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
     BIENNIUM = "Biennium funding appropriated during the time period"
     MULTI_YEAR = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class FundingPurposeIncludesExcludes(enum.Enum):
     FACILITY_OPERATIONS_MAINTENANCE = (
         "Funding for court system facility operations and maintenance"
     )
@@ -234,11 +236,13 @@ class FundingIncludesExcludes(enum.Enum):
 
 
 # Expenses
-# TODO(#17577) implement multiple includes/excludes tables
-class ExpensesIncludesExcludes(enum.Enum):
+class ExpensesTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Expenses for single fiscal year"
     BIENNIUM = "Biennium expenses allocated during the time period"
     MULTI_YEAR = "Multi-year expenses allocated during the time period"
+
+
+class ExpensesPurposeIncludesExcludes(enum.Enum):
     OPERATIONS_MAINTENANCE = (
         "Expenses for court system facility operations and maintenance"
     )

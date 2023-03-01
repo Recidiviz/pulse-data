@@ -20,13 +20,15 @@ import enum
 
 
 # Funding
-class ProsecutionFundingIncludesExcludes(enum.Enum):
-    # TODO(#17577)
+class ProsecutionFundingTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
     BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that are allocated during the time period"
     )
+
+
+class ProsecutionFundingPurposeIncludesExcludes(enum.Enum):
     OFFICE_OPERATIONS = "Funding for office operations and maintenance"
     SERVICES = (
         "Funding for services provided through the office, including victim assistance"
@@ -59,13 +61,15 @@ class ProsecutionFundingGrantsIncludesExcludes(enum.Enum):
 
 
 # Expenses
-# TODO(#17577) Implement multiple includes/excludes tables
-class ProsecutionExpensesIncludesExcludes(enum.Enum):
+class ProsecutionExpensesTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Expenses for single fiscal year"
     BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that are allocated during the time period"
     )
+
+
+class ProsecutionExpensesPurposeIncludesExcludes(enum.Enum):
     OFFICE_OPERATIONS_AND_MAINTENANCE = "Expenses for office operations and maintenance"
     SERVICES_PROVIDED = (
         "Expenses for services provided through the office, including victim assistance"

@@ -52,10 +52,12 @@ from recidiviz.justice_counts.includes_excludes.supervision import (
     SupervisionClinicalMedicalStaffIncludesExcludes,
     SupervisionCountyMunicipalAppropriationIncludesExcludes,
     SupervisionDischargesIncludesExcludes,
-    SupervisionExpensesIncludesExcludes,
+    SupervisionExpensesPurposeIncludesExcludes,
+    SupervisionExpensesTimeframeIncludesExcludes,
     SupervisionFacilitiesEquipmentExpensesIncludesExcludes,
     SupervisionFinesFeesIncludesExcludes,
-    SupervisionFundingIncludesExcludes,
+    SupervisionFundingPurposeIncludesExcludes,
+    SupervisionFundingTimeframeIncludesExcludes,
     SupervisionGrantsIncludesExcludes,
     SupervisionManagementOperationsStaffIncludesExcludes,
     SupervisionNeutralDischargeIncludesExcludes,
@@ -113,14 +115,18 @@ funding = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
         IncludesExcludesSet(
-            # TODO(#17577)
-            members=SupervisionFundingIncludesExcludes,
+            members=SupervisionFundingTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=SupervisionFundingPurposeIncludesExcludes,
+            description="Funding purpose",
             excluded_set={
-                SupervisionFundingIncludesExcludes.STIPENDS_JAIL,
-                SupervisionFundingIncludesExcludes.STIPENDS_PRISON,
-                SupervisionFundingIncludesExcludes.JAIL_MAINTENANCE,
-                SupervisionFundingIncludesExcludes.PRISON_MAINTENANCE,
-                SupervisionFundingIncludesExcludes.JUVENILE_SUPERVISION,
+                SupervisionFundingPurposeIncludesExcludes.STIPENDS_JAIL,
+                SupervisionFundingPurposeIncludesExcludes.STIPENDS_PRISON,
+                SupervisionFundingPurposeIncludesExcludes.JAIL_MAINTENANCE,
+                SupervisionFundingPurposeIncludesExcludes.PRISON_MAINTENANCE,
+                SupervisionFundingPurposeIncludesExcludes.JUVENILE_SUPERVISION,
             },
         ),
     ],
@@ -185,14 +191,18 @@ expenses = MetricDefinition(
     reporting_frequencies=[ReportingFrequency.ANNUAL],
     includes_excludes=[
         IncludesExcludesSet(
-            # TODO(#17577)
-            members=SupervisionExpensesIncludesExcludes,
+            members=SupervisionExpensesTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=SupervisionExpensesPurposeIncludesExcludes,
+            description="Funding purpose",
             excluded_set={
-                SupervisionExpensesIncludesExcludes.STIPENDS_JAILS,
-                SupervisionExpensesIncludesExcludes.STIPENDS_PRISONS,
-                SupervisionExpensesIncludesExcludes.JAILS,
-                SupervisionExpensesIncludesExcludes.PRISONS,
-                SupervisionExpensesIncludesExcludes.JUVENILE_SUPERVISION,
+                SupervisionExpensesPurposeIncludesExcludes.STIPENDS_JAILS,
+                SupervisionExpensesPurposeIncludesExcludes.STIPENDS_PRISONS,
+                SupervisionExpensesPurposeIncludesExcludes.JAILS,
+                SupervisionExpensesPurposeIncludesExcludes.PRISONS,
+                SupervisionExpensesPurposeIncludesExcludes.JUVENILE_SUPERVISION,
             },
         ),
     ],

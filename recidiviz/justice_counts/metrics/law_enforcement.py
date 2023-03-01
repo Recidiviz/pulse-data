@@ -42,10 +42,12 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     LawEnforcementCountyOrMunicipalAppropriation,
     LawEnforcementDiscriminationOrRacialBiasIncludesExcludes,
     LawEnforcementExcessiveUsesOfForceIncludesExcludes,
-    LawEnforcementExpensesIncludesExcludes,
+    LawEnforcementExpensesTimeframeIncludesExcludes,
+    LawEnforcementExpensesTypeIncludesExcludes,
     LawEnforcementFacilitiesIncludesExcludes,
     LawEnforcementFirearmIncludesExcludes,
-    LawEnforcementFundingIncludesExcludes,
+    LawEnforcementFundingPurposeIncludesExcludes,
+    LawEnforcementFundingTimeframeIncludesExcludes,
     LawEnforcementGrantsIncludesExcludes,
     LawEnforcementMentalHealthStaffIncludesExcludes,
     LawEnforcementOtherWeaponIncludesExcludes,
@@ -116,14 +118,18 @@ funding = MetricDefinition(
     description="The amount of funding for agency law enforcement activities.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    # TODO(#17577)
     includes_excludes=[
         IncludesExcludesSet(
-            members=LawEnforcementFundingIncludesExcludes,
+            members=LawEnforcementFundingTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=LawEnforcementFundingPurposeIncludesExcludes,
+            description="Funding purpose",
             excluded_set={
-                LawEnforcementFundingIncludesExcludes.JAIL_OPERATIONS,
-                LawEnforcementFundingIncludesExcludes.SUPERVISION_SERVICES,
-                LawEnforcementFundingIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
+                LawEnforcementFundingPurposeIncludesExcludes.JAIL_OPERATIONS,
+                LawEnforcementFundingPurposeIncludesExcludes.SUPERVISION_SERVICES,
+                LawEnforcementFundingPurposeIncludesExcludes.JUVENILE_JAIL_OPERATIONS,
             },
         ),
     ],
@@ -181,13 +187,17 @@ expenses = MetricDefinition(
     description="The amount spent by the agency for law enforcement activities.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    # TODO(#17577)
     includes_excludes=[
         IncludesExcludesSet(
-            members=LawEnforcementExpensesIncludesExcludes,
+            members=LawEnforcementExpensesTimeframeIncludesExcludes,
+            description="Expenses timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=LawEnforcementExpensesTypeIncludesExcludes,
+            description="Expense type",
             excluded_set={
-                LawEnforcementExpensesIncludesExcludes.JAILS,
-                LawEnforcementExpensesIncludesExcludes.SUPERVISION,
+                LawEnforcementExpensesTypeIncludesExcludes.JAILS,
+                LawEnforcementExpensesTypeIncludesExcludes.SUPERVISION,
             },
         ),
     ],

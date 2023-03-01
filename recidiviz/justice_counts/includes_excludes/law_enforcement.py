@@ -20,12 +20,15 @@ import enum
 
 
 # Expenses
-class LawEnforcementExpensesIncludesExcludes(enum.Enum):
+class LawEnforcementExpensesTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Expenses for single fiscal year"
     BIENNIUM_FUNDING = "Biennium funding allocated during the time period"
     MULTI_YEAR_EXPENSES = (
         "Multi-year appropriations that are allocated in during the time period"
     )
+
+
+class LawEnforcementExpensesTypeIncludesExcludes(enum.Enum):
     STAFF_FUNDING = "Expenses for agency staff"
     EQUIPMENT = "Expenses for the purchase of law enforcement equipment"
     CONSTRUCTION = "Expenses for construction of law enforcement facilities (e.g., offices, temporary detention facilities, garages, etc.)"
@@ -72,14 +75,15 @@ class LawEnforcementFacilitiesIncludesExcludes(enum.Enum):
 
 
 # Funding
-
-
-class LawEnforcementFundingIncludesExcludes(enum.Enum):
+class LawEnforcementFundingTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
     BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class LawEnforcementFundingPurposeIncludesExcludes(enum.Enum):
     STAFF_FUNDING = "Funding for agency staff"
     EQUIPMENT = "Funding for the purchase of law enforcement equipment"
     FACILITIES = "Funding for construction of law enforcement facilities (e.g., offices, temporary detention facilities, garages, etc.)"

@@ -50,7 +50,8 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
     PrisonExpensesTimeframeAndSpendDownIncludesExcludes,
     PrisonExpensesTrainingIncludesExcludes,
     PrisonExpensesTypeIncludesExcludes,
-    PrisonFundingIncludesExcludes,
+    PrisonFundingPurposeIncludesExcludes,
+    PrisonFundingTimeframeIncludesExcludes,
     PrisonGrievancesDiscriminationIncludesExcludes,
     PrisonGrievancesHealthCareIncludesExcludes,
     PrisonGrievancesIncludesExcludes,
@@ -112,15 +113,19 @@ funding = MetricDefinition(
     category=MetricCategory.CAPACITY_AND_COST,
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of prison facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
-    # TODO(#17577) Implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=PrisonFundingIncludesExcludes,
+            members=PrisonFundingTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=PrisonFundingPurposeIncludesExcludes,
+            description="Funding purpose",
             excluded_set={
-                PrisonFundingIncludesExcludes.JAIL_OPERATIONS,
-                PrisonFundingIncludesExcludes.NON_PRISON_ACTIVITIES,
-                PrisonFundingIncludesExcludes.JUVENILE_JAILS,
-                PrisonFundingIncludesExcludes.LAW_ENFORCEMENT,
+                PrisonFundingPurposeIncludesExcludes.JAIL_OPERATIONS,
+                PrisonFundingPurposeIncludesExcludes.NON_PRISON_ACTIVITIES,
+                PrisonFundingPurposeIncludesExcludes.JUVENILE_JAILS,
+                PrisonFundingPurposeIncludesExcludes.LAW_ENFORCEMENT,
             },
         ),
     ],
@@ -254,15 +259,14 @@ expenses = MetricDefinition(
     display_name="Expenses",
     measurement_type=MeasurementType.DELTA,
     category=MetricCategory.CAPACITY_AND_COST,
-    # TODO(#17577) Implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
             members=PrisonExpensesTimeframeAndSpendDownIncludesExcludes,
-            description="Expenses timeframe and spend-down.",
+            description="Expenses timeframe and spend-down",
         ),
         IncludesExcludesSet(
             members=PrisonExpensesTypeIncludesExcludes,
-            description="Expense type.",
+            description="Expense type",
             excluded_set={
                 PrisonExpensesTypeIncludesExcludes.JAIL_FACILITY,
                 PrisonExpensesTypeIncludesExcludes.JUVENILE_JAIL,
