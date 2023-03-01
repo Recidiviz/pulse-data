@@ -37,12 +37,15 @@ class PopulationIncludesExcludes(Enum):
 
 
 # Funding
-class PrisonFundingIncludesExcludes(Enum):
+class PrisonFundingTimeframeIncludesExcludes(Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
     BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class PrisonFundingPurposeIncludesExcludes(Enum):
     FACILITY_MAINTENANCE = "Funding for prison facility operations and maintenance"
     OPERATIONS = (
         "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)",

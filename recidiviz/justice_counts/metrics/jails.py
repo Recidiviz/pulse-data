@@ -43,9 +43,11 @@ from recidiviz.justice_counts.includes_excludes.jails import (
     ContractBedsExpensesIncludesExcludes,
     ContractBedsFundingIncludesExcludes,
     DiscriminationRacialBiasReligiousIncludesExcludes,
-    ExpensesIncludesExcludes,
+    ExpensesTimeframeIncludesExcludes,
+    ExpensesTypeIncludesExcludes,
     FacilitiesAndEquipmentIncludesExcludes,
-    FundingIncludesExcludes,
+    FundingPurposeIncludesExcludes,
+    FundingTimeframeIncludesExcludes,
     GrievancesUpheldIncludesExcludes,
     HealthCareForPeopleWhoAreIncarceratedIncludesExcludes,
     LegalIncludesExcludes,
@@ -119,15 +121,19 @@ funding = MetricDefinition(
     description="The amount of funding for the operation and maintenance of jail facilities and the care of people who are incarcerated under the jurisdiction of the agency.",
     measurement_type=MeasurementType.DELTA,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    # TODO(#17577) implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=FundingIncludesExcludes,
+            members=FundingTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=FundingPurposeIncludesExcludes,
+            description="Funding purpose",
             excluded_set={
-                FundingIncludesExcludes.OPERATIONS_MAINTENANCE,
-                FundingIncludesExcludes.JUVENILE,
-                FundingIncludesExcludes.NON_JAIL_ACTIVITIES,
-                FundingIncludesExcludes.LAW_ENFORCEMENT,
+                FundingPurposeIncludesExcludes.OPERATIONS_MAINTENANCE,
+                FundingPurposeIncludesExcludes.JUVENILE,
+                FundingPurposeIncludesExcludes.NON_JAIL_ACTIVITIES,
+                FundingPurposeIncludesExcludes.LAW_ENFORCEMENT,
             },
         ),
     ],
@@ -192,15 +198,19 @@ expenses = MetricDefinition(
     display_name="Expenses",
     measurement_type=MeasurementType.DELTA,
     category=MetricCategory.CAPACITY_AND_COST,
-    # TODO(#17577) Implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=ExpensesIncludesExcludes,
+            members=ExpensesTimeframeIncludesExcludes,
+            description="Expenses timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=ExpensesTypeIncludesExcludes,
+            description="Expense type",
             excluded_set={
-                ExpensesIncludesExcludes.OPERATIONS_MAINTENANCE,
-                ExpensesIncludesExcludes.JUVENILE,
-                ExpensesIncludesExcludes.NON_JAIL_ACTIVITIES,
-                ExpensesIncludesExcludes.LAW_ENFORCEMENT,
+                ExpensesTypeIncludesExcludes.OPERATIONS_MAINTENANCE,
+                ExpensesTypeIncludesExcludes.JUVENILE,
+                ExpensesTypeIncludesExcludes.NON_JAIL_ACTIVITIES,
+                ExpensesTypeIncludesExcludes.LAW_ENFORCEMENT,
             },
         ),
     ],

@@ -16,8 +16,9 @@
 # =============================================================================
 """This class implements tests for Justice Counts MetricInterface class."""
 
+import enum
 from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Optional
 from unittest import TestCase
 
 from recidiviz.common.constants.justice_counts import ContextKey
@@ -33,7 +34,8 @@ from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceIncludesExcludes,
     CallsForServiceNonEmergencyCallsIncludesExcludes,
     LawEnforcementArrestsIncludesExcludes,
-    LawEnforcementFundingIncludesExcludes,
+    LawEnforcementFundingPurposeIncludesExcludes,
+    LawEnforcementFundingTimeframeIncludesExcludes,
     LawEnforcementReportedCrimeIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.offense import (
@@ -684,6 +686,13 @@ class TestMetricInterface(TestCase):
             "key": metric_definition.key,
             "enabled": False,
         }
+        includes_excludes_member_to_setting: Dict[
+            enum.Enum, Optional[IncludesExcludesSetting]
+        ] = {}
+        for timeframe_member in LawEnforcementFundingTimeframeIncludesExcludes:
+            includes_excludes_member_to_setting[timeframe_member] = None
+        for purpose_member in LawEnforcementFundingPurposeIncludesExcludes:
+            includes_excludes_member_to_setting[purpose_member] = None
         self.assertEqual(
             MetricInterface.from_json(
                 json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
@@ -694,9 +703,7 @@ class TestMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=False,
-                includes_excludes_member_to_setting={
-                    member: None for member in LawEnforcementFundingIncludesExcludes
-                },
+                includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             ),
         )
 
@@ -2884,7 +2891,13 @@ class TestMetricInterface(TestCase):
             "key": metric_definition.key,
             "enabled": False,
         }
-
+        includes_excludes_member_to_setting: Dict[
+            enum.Enum, Optional[IncludesExcludesSetting]
+        ] = {}
+        for timeframe_member in LawEnforcementFundingTimeframeIncludesExcludes:
+            includes_excludes_member_to_setting[timeframe_member] = None
+        for purpose_member in LawEnforcementFundingPurposeIncludesExcludes:
+            includes_excludes_member_to_setting[purpose_member] = None
         self.assertEqual(
             MetricInterface.from_json(
                 json=metric_json, entry_point=DatapointGetRequestEntryPoint.METRICS_TAB
@@ -2895,9 +2908,7 @@ class TestMetricInterface(TestCase):
                 value=None,
                 aggregated_dimensions=[],
                 is_metric_enabled=False,
-                includes_excludes_member_to_setting={
-                    member: None for member in LawEnforcementFundingIncludesExcludes
-                },
+                includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             ),
         )
 
@@ -3530,7 +3541,7 @@ class TestMetricInterface(TestCase):
             ],
             "includes_excludes": [
                 {
-                    "description": "Expenses timeframe and spend-down.",
+                    "description": "Expenses timeframe and spend-down",
                     "settings": [
                         {
                             "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.SINGLE_YEAR.name,
@@ -3553,7 +3564,7 @@ class TestMetricInterface(TestCase):
                     ],
                 },
                 {
-                    "description": "Expense type.",
+                    "description": "Expense type",
                     "settings": [
                         {
                             "key": PrisonExpensesTypeIncludesExcludes.PRISON_FACILITY.name,
@@ -3652,16 +3663,24 @@ class TestMetricInterface(TestCase):
         )
 
     def test_custom_reporting_frequency(self) -> None:
+        includes_excludes_member_to_setting: Dict[
+            enum.Enum, Optional[IncludesExcludesSetting]
+        ] = {}
+        for timeframe_member in LawEnforcementFundingTimeframeIncludesExcludes:
+            includes_excludes_member_to_setting[
+                timeframe_member
+            ] = IncludesExcludesSetting.YES
+        for purpose_member in LawEnforcementFundingPurposeIncludesExcludes:
+            includes_excludes_member_to_setting[
+                purpose_member
+            ] = IncludesExcludesSetting.YES
         metric_interface = MetricInterface(
             key=law_enforcement.funding.key,
             is_metric_enabled=True,
             custom_reporting_frequency=CustomReportingFrequency(
                 frequency=ReportingFrequency.ANNUAL, starting_month=1
             ),
-            includes_excludes_member_to_setting={
-                member: IncludesExcludesSetting.YES
-                for member in LawEnforcementFundingIncludesExcludes
-            },
+            includes_excludes_member_to_setting=includes_excludes_member_to_setting,
             aggregated_dimensions=[],
             contexts=[],
         )
@@ -3760,7 +3779,7 @@ class TestMetricInterface(TestCase):
             ],
             "includes_excludes": [
                 {
-                    "description": None,
+                    "description": "Funding timeframe and spend-down",
                     "settings": [
                         {
                             "default": "Yes",
@@ -3780,6 +3799,11 @@ class TestMetricInterface(TestCase):
                             "key": "MULTI_YEAR_APPROPRIATIONS",
                             "label": "Multi-year appropriations that are appropriated in during the time period",
                         },
+                    ],
+                },
+                {
+                    "description": "Funding purpose",
+                    "settings": [
                         {
                             "default": "Yes",
                             "included": "Yes",

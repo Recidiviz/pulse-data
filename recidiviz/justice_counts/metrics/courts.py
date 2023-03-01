@@ -40,12 +40,14 @@ from recidiviz.justice_counts.includes_excludes.courts import (
     CommunitySupervisionOnlySentencesIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
     ExpensesFacilitiesAndEquipmentIncludesExcludes,
-    ExpensesIncludesExcludes,
     ExpensesPersonnelIncludesExcludes,
+    ExpensesPurposeIncludesExcludes,
+    ExpensesTimeframeIncludesExcludes,
     ExpensesTrainingIncludesExcludes,
     FelonyCriminalCaseFilingsIncludesExcludes,
     FinesOrFeesOnlySentencesIncludesExcludes,
-    FundingIncludesExcludes,
+    FundingPurposeIncludesExcludes,
+    FundingTimeframeIncludesExcludes,
     JailSentencesIncludesExcludes,
     JudgesIncludesExcludes,
     LegalStaffIncludesExcludes,
@@ -104,14 +106,18 @@ funding = MetricDefinition(
     description="The amount of funding for the operation and maintenance of the court system to process criminal cases.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    # TODO(#17577) implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=FundingIncludesExcludes,
+            members=FundingTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=FundingPurposeIncludesExcludes,
+            description="Funding purpose",
             excluded_set={
-                FundingIncludesExcludes.SUPERVISION_OPERATIONS,
-                FundingIncludesExcludes.JUVENILE,
-                FundingIncludesExcludes.NON_COURT_FUNCTIONS,
+                FundingPurposeIncludesExcludes.SUPERVISION_OPERATIONS,
+                FundingPurposeIncludesExcludes.JUVENILE,
+                FundingPurposeIncludesExcludes.NON_COURT_FUNCTIONS,
             },
         ),
     ],
@@ -164,14 +170,18 @@ expenses = MetricDefinition(
     description="The amount spent by the court system for the operation and maintenance of the court system to process criminal cases.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.ANNUAL],
-    # TODO(#17577) implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=ExpensesIncludesExcludes,
+            members=ExpensesTimeframeIncludesExcludes,
+            description="Expenses timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=ExpensesPurposeIncludesExcludes,
+            description="Expense purpose",
             excluded_set={
-                ExpensesIncludesExcludes.COMMUNITY_SUPERVISION_OPERATIONS,
-                ExpensesIncludesExcludes.JUVENILE,
-                ExpensesIncludesExcludes.NON_COURT_FUNCTIONS,
+                ExpensesPurposeIncludesExcludes.COMMUNITY_SUPERVISION_OPERATIONS,
+                ExpensesPurposeIncludesExcludes.JUVENILE,
+                ExpensesPurposeIncludesExcludes.NON_COURT_FUNCTIONS,
             },
         ),
     ],

@@ -51,9 +51,11 @@ from recidiviz.justice_counts.includes_excludes.defense import (
     DefenseCasesAppointedCounselIncludesExcludes,
     DefenseCasesDisposedIncludesExcludes,
     DefenseComplaintsIncludesExcludes,
-    DefenseExpensesIncludesExcludes,
+    DefenseExpensesTimeframeIncludesExcludes,
+    DefenseExpensesTypeIncludesExcludes,
     DefenseFelonyCaseloadDenominatorIncludesExcludes,
-    DefenseFundingIncludesExcludes,
+    DefenseFundingPurposeIncludesExcludes,
+    DefenseFundingTimeframeIncludesExcludes,
     DefenseInvestigativeStaffIncludesExcludes,
     DefenseLegalStaffIncludesExcludes,
     DefenseMisdemeanorCaseloadDenominatorIncludesExcludes,
@@ -102,11 +104,15 @@ funding = MetricDefinition(
     display_name="Funding",
     description="The amount of funding for the operation and maintenance of defense providers and criminal public defense services.",
     measurement_type=MeasurementType.INSTANT,
-    # TODO(#17577) implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=DefenseFundingIncludesExcludes,
-            excluded_set={DefenseFundingIncludesExcludes.NON_CRIMINAL_CASES},
+            members=DefenseFundingTimeframeIncludesExcludes,
+            description="Funding timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=DefenseFundingPurposeIncludesExcludes,
+            description="Funding purpose",
+            excluded_set={DefenseFundingPurposeIncludesExcludes.NON_CRIMINAL_CASES},
         ),
     ],
     reporting_frequencies=[ReportingFrequency.ANNUAL],
@@ -165,11 +171,15 @@ expenses = MetricDefinition(
     display_name="Expenses",
     description="The amount spent for the operation and maintenance of defense providers and criminal public defense services.",
     measurement_type=MeasurementType.INSTANT,
-    # TODO(#17577) implement multiple includes/excludes tables
     includes_excludes=[
         IncludesExcludesSet(
-            members=DefenseExpensesIncludesExcludes,
-            excluded_set={DefenseExpensesIncludesExcludes.NON_CRIMINAL_CASES},
+            members=DefenseExpensesTimeframeIncludesExcludes,
+            description="Expenses timeframe and spend-down",
+        ),
+        IncludesExcludesSet(
+            members=DefenseExpensesTypeIncludesExcludes,
+            description="Expense type",
+            excluded_set={DefenseExpensesTypeIncludesExcludes.NON_CRIMINAL_CASES},
         ),
     ],
     reporting_frequencies=[ReportingFrequency.ANNUAL],

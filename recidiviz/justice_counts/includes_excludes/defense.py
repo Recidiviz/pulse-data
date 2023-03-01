@@ -18,15 +18,17 @@
 
 import enum
 
+
 # Funding
-
-
-class DefenseFundingIncludesExcludes(enum.Enum):
+class DefenseFundingTimeframeIncludesExcludes(enum.Enum):
     FISCAL_YEAR = "Funding for single fiscal year"
     BIENNIUM_FUNDING = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that are allocated during the time period"
     )
+
+
+class DefenseFundingPurposeIncludesExcludes(enum.Enum):
     FACILITY_AND_OPERATIONS = (
         "Funding for criminal defense provider facility operations and maintenance"
     )
@@ -44,14 +46,15 @@ class FeesFundingIncludesExcludes(enum.Enum):
 
 
 # Expenses
-
-
-class DefenseExpensesIncludesExcludes(enum.Enum):
+class DefenseExpensesTimeframeIncludesExcludes(enum.Enum):
     SINGLE_YEAR = "Expenses for single fiscal year"
     BIENNIUM = "Biennium funding appropriated during the time period"
     MULTI_YEAR = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class DefenseExpensesTypeIncludesExcludes(enum.Enum):
     OPERATIONS = (
         "Expenses for provider facility construction, operations, and maintenance"
     )

@@ -25,13 +25,15 @@ SUPERVISION_PRETRIAL_BREAKDOWN_DESCRIPTION = "People who are supervised while aw
 SUPERVISION_OTHER_COMMUNITY_BREAKDOWN_DESCRIPTION = "People who are under a type of community supervision, by a public or private agency, that is not probation, parole, or pretrial."
 
 # Funding
-# TODO(#17577)
-class SupervisionFundingIncludesExcludes(Enum):
+class SupervisionFundingTimeframeIncludesExcludes(Enum):
     SINGLE_FISCAL_YEAR = "Funding for single fiscal year"
     BIENNIUM = "Biennium funding appropriated during the time period"
     MULTI_YEAR_APPROPRIATIONS = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class SupervisionFundingPurposeIncludesExcludes(Enum):
     COMMUNITY_SUPERVISION_OFFICE = (
         "Funding for community supervision office facility operations and maintenance"
     )
@@ -86,13 +88,15 @@ class SupervisionFinesFeesIncludesExcludes(Enum):
 
 
 # Expenses
-# TODO(#17577)
-class SupervisionExpensesIncludesExcludes(Enum):
+class SupervisionExpensesTimeframeIncludesExcludes(Enum):
     """Includes/Excludes class for Supervision Expenses"""
 
     SINGLE_YEAR = ("Expenses for single fiscal year",)
     BIENNIUM = ("Biennium funding allocated during the time period",)
     MULTI_YEAR = ("Multi-year appropriations allocated in during the time period",)
+
+
+class SupervisionExpensesPurposeIncludesExcludes(Enum):
     FACILITY_MAINTENANCE = (
         "Expenses for community supervision office facility operations and maintenance",
     )

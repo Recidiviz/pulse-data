@@ -20,13 +20,15 @@ from enum import Enum
 
 
 # Funding
-# TODO(#17577) implement multiple includes/excludes tables
-class FundingIncludesExcludes(Enum):
+class FundingTimeframeIncludesExcludes(Enum):
     SINGLE_YEAR = "Funding for single fiscal year"
     BIENNIUM = "Biennium funding appropriated during the time period"
     MULTI_YEAR = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class FundingPurposeIncludesExcludes(Enum):
     FACILITY_OPERATIONS = "Funding for jail facility operations and maintenance"
     OTHER_FACILITIES = "Funding for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
     CONSTRUCTION = "Funding for construction or rental of new jail facilities"
@@ -58,13 +60,15 @@ class ContractBedsFundingIncludesExcludes(Enum):
 
 
 # Expenses
-# TODO(#17577) Implement multiple includes/excludes tables
-class ExpensesIncludesExcludes(Enum):
+class ExpensesTimeframeIncludesExcludes(Enum):
     SINGLE_YEAR = "Expenses for single fiscal year"
     BIENNIUM = "Biennium funding appropriated during the time period"
     MULTI_YEAR = (
         "Multi-year appropriations that are appropriated in during the time period"
     )
+
+
+class ExpensesTypeIncludesExcludes(Enum):
     FACILITY_OPERATIONS = "Expenses for jail facility operations and maintenance"
     OTHER_FACILITIES = "Expenses for operations and maintenance of other facilities within the agency’s jurisdiction (e.g., transitional housing facilities, treatment facilities, etc.)"
     CONSTRUCTION = "Expenses for construction or rental of new jail facilities"
