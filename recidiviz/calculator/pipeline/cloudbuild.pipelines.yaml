@@ -1,7 +1,7 @@
 # This file is used to manually trigger and submit a build from the command line.
-# It builds a docker image with tag "us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest" using the provided Dockerfile recidiviz/calculator/pipeline/Dockerfile.pipeline,
-# and specifies it to be pushed to cloud build to us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest.
-# This flow is only used while developing and is triggered manually (not through the regular deploy flow in terraform)
+# It builds a docker image with tag "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA" using the provided Dockerfile recidiviz/calculator/pipeline/Dockerfile.pipeline,
+# and specifies it to be pushed to cloud build to "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA".
+# This file is used by the terraform build trigger, and also can be used to manually submit a build via gcloud builds submit
 # Example usage:
 # gcloud builds submit --project=recidiviz-staging --config recidiviz/calculator/pipeline/cloudbuild.pipelines.yaml
 steps:
@@ -10,10 +10,10 @@ steps:
       [
         "build",
         "-t",
-        "us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest",
+        "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
         "-f",
         "recidiviz/calculator/pipeline/Dockerfile.pipelines",
         ".",
       ]
 images:
-  - "us-docker.pkg.dev/recidiviz-staging/pipelines/recidiviz-pipelines:latest"
+  - "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"
