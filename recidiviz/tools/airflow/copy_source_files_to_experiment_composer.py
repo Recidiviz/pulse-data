@@ -19,7 +19,7 @@ source files to the Airflow experiment environment in staging.
 
     to copy all files (to go/airflow-experiment):
     python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer
-        --environment experiment-v2 --dry-run False
+        --environment experiment --dry-run False
 
     to copy all files (to go/airflow-experiment-2):
     python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer
@@ -27,7 +27,7 @@ source files to the Airflow experiment environment in staging.
 
     to copy only specific files:
     python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer
-       --dry-run False --environment experiment-v2
+       --dry-run False --environment experiment
        --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
 """
 import argparse
@@ -58,7 +58,7 @@ OTHER_SOURCE_FILES = os.path.join(
 
 SOURCE_FILE_YAML_PATHS = [AIRFLOW_SOURCE_FILES, OTHER_SOURCE_FILES]
 
-EXPERIMENT_V2 = "us-east1-experiment-v2-fbddbedc-bucket"
+EXPERIMENT = "us-central1-experiment-eecbc35e-bucket"
 EXPERIMENT_2 = "us-central1-experiment-2-8bb6ce5a-bucket"
 
 
@@ -70,7 +70,6 @@ def gcloud_path_for_local_path(local_path: str) -> str:
     else:
         prefix_to_replace = f"{ROOT}/"
         prefix_to_replace_with = "recidiviz/"
-
     return os.path.join(prefix_to_replace_with, local_path[len(prefix_to_replace) :])
 
 
@@ -78,13 +77,15 @@ def main(files: list[str], environment: str, dry_run: bool) -> None:
     """
     Takes in arguments and copies appropriate files to the appropriate environment.
     """
-    experiment_cloud_composer_bucket = EXPERIMENT_V2
+    experiment_cloud_composer_bucket = EXPERIMENT
 
     if environment == "experiment-2":
         experiment_cloud_composer_bucket = EXPERIMENT_2
 
     if files:
-        local_path_list = files
+        local_path_list = [
+            f"{ROOT}/{file.removeprefix('recidiviz/')}" for file in files
+        ]
     else:
         local_path_list = []
         for source_file_yaml in SOURCE_FILE_YAML_PATHS:
@@ -129,9 +130,9 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--environment",
-        default="experiment-v2",
+        default="experiment",
         required=True,
-        choices=["experiment-v2", "experiment-2"],
+        choices=["experiment", "experiment-2"],
         help="Specifies which experiment environment to copy files to. 'experiment-v2' points to go/airflow-experiment and 'experiment-2' points to go/airflow-experiment-2",
     )
 
