@@ -13,6 +13,9 @@ input_columns:
   - verified_employment
   - resulted_in_arrest
   - StaffId #contact_agent_id
+  - FirstName
+  - MiddleName
+  - LastName
 unused_columns: []
 output:
   StatePerson:
@@ -25,6 +28,11 @@ output:
           contacted_agent:
             StateAgent:
               external_id: StaffId
+              full_name:
+                $person_name:
+                  $given_names: FirstName
+                  $surname: LastName
+                  $middle_names: MiddleName
               agent_type: $literal_enum(StateAgentType.SUPERVISION_OFFICER)
           external_id:
             $concat:

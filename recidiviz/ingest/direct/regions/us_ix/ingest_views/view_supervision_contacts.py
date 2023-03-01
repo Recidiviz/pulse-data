@@ -42,6 +42,9 @@ WITH contact_modes AS (
         -- Some of the converted notes have a placeholder employee in `StaffId`, but the
         -- actual agent that performed the contact is in `InsertUserId`.
         IFNULL(staff_employee.StaffId, insert_employee.StaffId) AS StaffId,
+        IFNULL(staff_employee.FirstName, insert_employee.FirstName) AS FirstName,
+        IFNULL(staff_employee.MiddleName, insert_employee.MiddleName) AS MiddleName,
+        IFNULL(staff_employee.LastName, insert_employee.LastName) AS LastName,
     FROM {ind_OffenderNote}
     LEFT JOIN {ind_OffenderNoteInfo} oni
         USING (OffenderNoteInfoId)
@@ -72,6 +75,9 @@ atlas_group_contact_modes AS (
         NoteDate,
         NoteTypeId, -- filter for only Id = 3 to get "Supervision Notes"
         e.StaffId,  -- contact_agent_id
+        e.FirstName,
+        e.MiddleName,
+        e.LastName,
         ContactModeIds -- contact_type
     FROM {ind_OffenderNoteInfo} oni
     LEFT JOIN contact_modes
@@ -165,7 +171,10 @@ atlas_contacts AS (
          ) ORDER BY mode LIMIT 1
         ) AS verified_employment,
         '0' AS resulted_in_arrest, -- Currently, no way in new Atlas data to identify this in ContactModes  - Will update after discussion with ID about if there is a way to ID it and how
-        StaffId -- contact_agent_id
+        StaffId, -- contact_agent_id
+        FirstName,
+        MiddleName,
+        LastName
     FROM atlas_group_contact_modes
 )
 SELECT
@@ -178,7 +187,10 @@ SELECT
     contact_result,
     verified_employment,
     resulted_in_arrest,
-    StaffId
+    StaffId,
+    FirstName,
+    MiddleName,
+    LastName
 FROM legacy_contacts
 UNION ALL
 SELECT
@@ -191,7 +203,10 @@ SELECT
     contact_result,
     verified_employment,
     resulted_in_arrest,
-    StaffId
+    StaffId,
+    FirstName,
+    MiddleName,
+    LastName
 FROM atlas_contacts
 """
 
