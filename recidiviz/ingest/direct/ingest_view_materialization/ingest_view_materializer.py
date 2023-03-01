@@ -26,7 +26,6 @@ from typing import Dict, List, Optional, Tuple
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
@@ -43,7 +42,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DestinationTableType,
     DirectIngestPreProcessedIngestView,
-    DirectIngestPreProcessedIngestViewBuilder,
     RawTableViewType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_collector import (
@@ -87,9 +85,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         metadata_manager: DirectIngestViewMaterializationMetadataManager,
         ingest_view_contents: InstanceIngestViewContents,
         big_query_client: BigQueryClient,
-        view_collector: BigQueryViewCollector[
-            DirectIngestPreProcessedIngestViewBuilder
-        ],
+        view_collector: DirectIngestPreProcessedIngestViewCollector,
         launched_ingest_views: List[str],
     ):
 

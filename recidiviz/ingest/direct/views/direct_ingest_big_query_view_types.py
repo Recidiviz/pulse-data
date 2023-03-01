@@ -22,9 +22,7 @@ from typing import List, Optional
 
 import attr
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
@@ -93,7 +91,7 @@ class DestinationTableType(Enum):
     PERMANENT_EXPIRING = auto()
 
 
-class DirectIngestPreProcessedIngestView(BigQueryView):
+class DirectIngestPreProcessedIngestView:
     """Class for holding direct ingest pre-processing SQL queries, that can be used to export files for import into our
     Postgres DB.
     """
@@ -185,8 +183,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def __init__(
         self,
         *,
-        dataset_id: str,
-        view_id: str,
+        ingest_view_name: str,
         view_query_template: str,
         region_raw_table_config: DirectIngestRegionRawFileConfig,
         order_by_cols: str,
@@ -210,34 +207,16 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 (bigquery.QueryJobConfig#destination is not None).
         """
         DirectIngestPreProcessedIngestView._validate_order_by(
-            ingest_view_name=view_id, view_query_template=view_query_template
+            ingest_view_name=ingest_view_name, view_query_template=view_query_template
         )
 
+        self._project_id = metadata.project_id()
         self._region_code = region_raw_table_config.region_code
         self._raw_table_dependency_configs = self._get_raw_table_dependency_configs(
             view_query_template, region_raw_table_config
         )
-
-        latest_view_query = self._format_expanded_view_query(
-            region_code=self._region_code,
-            raw_table_dependency_configs=self._raw_table_dependency_configs,
-            view_query_template=view_query_template,
-            order_by_cols=order_by_cols,
-            materialize_raw_data_table_views=materialize_raw_data_table_views,
-            config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
-                raw_table_view_type=RawTableViewType.LATEST,
-                # THIS IS NEVER USED so we can use PRIMARY
-                raw_data_source_instance=DirectIngestInstance.PRIMARY,
-            ),
-        )
-
-        # This view is never saved to BQ because it has query params
-        super().__init__(
-            dataset_id=dataset_id,
-            view_id=view_id,
-            description=f"{view_id} ingest view",
-            view_query_template=latest_view_query,
-        )
+        self._query_builder = BigQueryQueryBuilder(address_overrides=None)
+        self.ingest_view_name = ingest_view_name
 
         self._view_query_template = view_query_template
         self._order_by_cols = order_by_cols
@@ -253,11 +232,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 "Found CURRENT_DATE function in this query - ingest views cannot contain CURRENT_DATE functions. "
                 f"Consider using @{UPDATE_DATETIME_PARAM_NAME} instead."
             )
-
-    @property
-    def ingest_view_name(self) -> str:
-        """The file tag that should be written to any file export of this query."""
-        return self.view_id
 
     @property
     def raw_table_dependency_configs(self) -> List[DirectIngestRawFileConfig]:
@@ -295,8 +269,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             materialize_raw_data_table_views=self._materialize_raw_data_table_views,
             config=config,
         )
-        return self.query_builder.build_query(
-            project_id=self.project,
+        return self._query_builder.build_query(
+            project_id=self._project_id,
             query_template=query,
             query_format_kwargs={},
         )
@@ -469,9 +443,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             f"Unsupported destination_table_type: [{config.destination_table_type.name}]"
         )
 
-    @classmethod
     def _format_expanded_view_query(
-        cls,
+        self,
         region_code: str,
         raw_table_dependency_configs: List[DirectIngestRawFileConfig],
         view_query_template: str,
@@ -483,7 +456,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         config. Does not hydrate the project_id so the result of this function can be passed as a template to the
         superclass constructor.
         """
-        full_query_template = cls._get_full_query_template(
+        full_query_template = self._get_full_query_template(
             region_code=region_code,
             raw_table_dependency_configs=raw_table_dependency_configs,
             view_query_template=view_query_template,
@@ -494,14 +467,12 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
 
         format_args = {}
         for raw_table_config in raw_table_dependency_configs:
-            format_args[raw_table_config.file_tag] = cls._table_subbquery_name(
+            format_args[raw_table_config.file_tag] = self._table_subbquery_name(
                 raw_table_config, config.raw_table_subquery_name_prefix
             )
 
-        # We don't want to inject the project_id outside of the BigQueryView initializer
-        query = BigQueryQueryBuilder(
-            address_overrides=None
-        ).build_no_project_query_template(
+        query = self._query_builder.build_query(
+            project_id=self._project_id,
             query_template=full_query_template,
             query_format_kwargs=format_args,
         )
@@ -630,9 +601,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             )
 
 
-class DirectIngestPreProcessedIngestViewBuilder(
-    BigQueryViewBuilder[DirectIngestPreProcessedIngestView]
-):
+class DirectIngestPreProcessedIngestViewBuilder:
     """Factory class for building DirectIngestPreProcessedIngestView"""
 
     def __init__(
@@ -651,17 +620,12 @@ class DirectIngestPreProcessedIngestViewBuilder(
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
         self.materialized_address = None
 
-        self.dataset_id = "NO DATASET"
-        self.view_id = ingest_view_name
+        self.ingest_view_name = ingest_view_name
 
-    # pylint: disable=unused-argument
-    def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
-    ) -> DirectIngestPreProcessedIngestView:
+    def build(self) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(
-            dataset_id=self.dataset_id,
-            view_id=self.view_id,
+            ingest_view_name=self.ingest_view_name,
             view_query_template=self.view_query_template,
             region_raw_table_config=get_region_raw_file_config(self.region),
             order_by_cols=self.order_by_cols,

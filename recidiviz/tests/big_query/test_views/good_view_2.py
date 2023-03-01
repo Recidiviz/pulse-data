@@ -15,29 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A test view builder file for big_query_view_collector_test.py"""
-
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRegionRawFileConfig,
-)
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
-)
+from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 from recidiviz.tests.big_query.fake_big_query_view_builder import (
     FakeBigQueryViewBuilder,
 )
 from recidiviz.utils.metadata import local_project_id_override
 
 with local_project_id_override("my-project-id"):
-    GOOD_VIEW_2 = DirectIngestPreProcessedIngestView(
-        dataset_id="NO DATASET",
-        view_id="ingest_view_name",
-        view_query_template="SELECT * FROM table1",
-        region_raw_table_config=DirectIngestRegionRawFileConfig(
-            region_code="us_xx",
-            yaml_config_file_dir="/a/path/to/a/dir",
-            raw_file_configs={},
+    GOOD_VIEW_2 = MetricBigQueryView(
+        dataset_id="fake_metrics_dataset",
+        view_id="fake_metric_view",
+        description="My metric description",
+        view_query_template="SELECT * FROM table2",
+        materialized_address=BigQueryAddress(
+            dataset_id="fake_metrics_dataset", table_id="fake_metric_view_materialized"
         ),
-        order_by_cols="some_col, another_col",
+        dimensions=("dimension_col",),
+        address_overrides=None,
     )
 
 VIEW_BUILDER = FakeBigQueryViewBuilder(GOOD_VIEW_2)

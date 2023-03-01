@@ -18,13 +18,11 @@
 region.
 """
 
-import os
 from typing import List
 
 from more_itertools import one
 
-import recidiviz
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
     DirectIngestPreProcessedIngestViewBuilder,
@@ -32,11 +30,10 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 
 _INGEST_VIEWS_SUBDIR_NAME = "ingest_views"
 _INGEST_VIEW_FILE_PREFIX = "view_"
+_VIEW_BUILDER_EXPECTED_NAME = "VIEW_BUILDER"
 
 
-class DirectIngestPreProcessedIngestViewCollector(
-    BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder]
-):
+class DirectIngestPreProcessedIngestViewCollector(ModuleCollectorMixin):
     """An implementation of the BigQueryViewCollector for collecting direct ingest SQL
     preprocessing views for a given region.
     """
@@ -50,18 +47,18 @@ class DirectIngestPreProcessedIngestViewCollector(
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
         if self.region.region_module.__file__ is None:
             raise ValueError(f"No file associated with {self.region.region_module}.")
-        relative_dir = os.path.relpath(
-            os.path.dirname(self.region.region_module.__file__),
-            os.path.dirname(recidiviz.__file__),
-        )
-        relative_dir_path = os.path.join(
-            relative_dir, self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME
-        )
 
-        ingest_view_builders = self.collect_view_builders_in_dir(
-            builder_type=DirectIngestPreProcessedIngestViewBuilder,
-            relative_dir_path=relative_dir_path,
-            view_file_prefix_filter=_INGEST_VIEW_FILE_PREFIX,
+        view_dir_module = self.get_relative_module(
+            self.region.region_module,
+            [self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME],
+        )
+        ingest_view_builders = self.collect_top_level_attributes_in_module(
+            attribute_type=DirectIngestPreProcessedIngestViewBuilder,
+            dir_module=view_dir_module,
+            recurse=False,
+            file_prefix_filter=_INGEST_VIEW_FILE_PREFIX,
+            attribute_name_regex=_VIEW_BUILDER_EXPECTED_NAME,
+            expect_match_in_all_files=True,
         )
 
         self._validate_ingest_views(ingest_view_builders)

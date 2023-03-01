@@ -26,10 +26,7 @@ from mock import patch
 import recidiviz
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
-    DirectIngestPreProcessedIngestView,
-    DirectIngestPreProcessedIngestViewBuilder,
-)
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 from recidiviz.tests.big_query import test_views
 from recidiviz.tests.big_query.fake_big_query_view_builder import (
     FakeBigQueryViewBuilder,
@@ -65,11 +62,11 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             view_query="SELECT * FROM table1",
         )
         cls.good_view_2 = cls.DeflatedView(
-            clazz=DirectIngestPreProcessedIngestView,
+            clazz=MetricBigQueryView,
             project="project-id",
-            dataset_id="NO DATASET",
-            view_id="ingest_view_name",
-            view_query="WITH\n\nSELECT * FROM table1\nORDER BY some_col, another_col;",
+            dataset_id="fake_metrics_dataset",
+            view_id="fake_metric_view",
+            view_query="SELECT * FROM table2",
         )
         cls.good_view_3 = cls.DeflatedView(
             clazz=BigQueryView,
@@ -102,9 +99,9 @@ class BigQueryViewCollectorTest(unittest.TestCase):
         ]
 
     def test_collect_view_builders(self) -> None:
-        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
             builder_type=FakeBigQueryViewBuilder,
-            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_dir_module=test_views,
             view_file_prefix_filter="good_",
         )
         views: List[BigQueryView] = [builder.build() for builder in builders]
@@ -117,9 +114,9 @@ class BigQueryViewCollectorTest(unittest.TestCase):
         )
 
     def test_collect_view_builders_recursive(self) -> None:
-        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
             builder_type=FakeBigQueryViewBuilder,
-            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_dir_module=test_views,
             recurse=True,
             view_file_prefix_filter="good_",
         )
@@ -138,19 +135,19 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             ValueError,
             r"Unexpected type \[FakeBigQueryViewBuilder\] for attribute \[VIEW_BUILDER\] "
             r"in file \[.*good_view_1.py\]. Expected type "
-            r"\[DirectIngestPreProcessedIngestViewBuilder\].",
+            r"\[MetricBigQueryView\].",
         ):
-            # One of the views is only a BigQueryView, not a DirectIngestPreProcessedIngestView
-            _ = BigQueryViewCollector.collect_view_builders_in_dir(
-                builder_type=DirectIngestPreProcessedIngestViewBuilder,
-                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            # One of the views is only a BigQueryView, not a MetricBigQueryView
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
+                builder_type=MetricBigQueryView,
+                view_dir_module=test_views,
                 view_file_prefix_filter="good_",
             )
 
     def test_collect_views_narrow_view_type_ok(self) -> None:
-        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
             builder_type=FakeBigQueryViewBuilder,
-            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_dir_module=test_views,
             view_file_prefix_filter="good_view_2",
         )
 
@@ -165,9 +162,9 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             r"File \[.*bad_view_no_builder.py\] has no top-level attribute matching "
             r"\[VIEW_BUILDER\]",
         ):
-            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
                 builder_type=FakeBigQueryViewBuilder,
-                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_dir_module=test_views,
                 view_file_prefix_filter="bad_view_no_builder",
             )
 
@@ -177,16 +174,16 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             r"File \[.*view_builder_alternate_name.py\] has no top-level attribute "
             r"matching \[VIEW_BUILDER\]",
         ):
-            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
                 builder_type=FakeBigQueryViewBuilder,
-                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_dir_module=test_views,
                 view_file_prefix_filter="view_builder_alternate_name",
             )
 
     def test_collect_views_regex_name_match(self) -> None:
-        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
             builder_type=FakeBigQueryViewBuilder,
-            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_dir_module=test_views,
             view_file_prefix_filter="view_builder_alternate_name",
             view_builder_attribute_name_regex="[A-Z]{2}_VIEW_BUILDER",
         )
@@ -202,9 +199,9 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             r"File \[.*good_view_1.py\] has no top-level attribute "
             r"matching \[VIEW_BUILDER_\.\*\]",
         ):
-            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
                 builder_type=FakeBigQueryViewBuilder,
-                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_dir_module=test_views,
                 view_file_prefix_filter="good_view_1",
                 view_builder_attribute_name_regex=r"VIEW_BUILDER_.*",
             )
@@ -215,17 +212,17 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             r"File \[.*good_view_1.py\] has no top-level attribute "
             r"matching \[VIEW]",
         ):
-            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
                 builder_type=FakeBigQueryViewBuilder,
-                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_dir_module=test_views,
                 view_file_prefix_filter="good_view_1",
                 view_builder_attribute_name_regex=r"VIEW",
             )
 
     def test_file_builder_wrong_name_do_not_expect(self) -> None:
-        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+        builders = BigQueryViewCollector.collect_view_builders_in_module(
             builder_type=FakeBigQueryViewBuilder,
-            relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+            view_dir_module=test_views,
             view_file_prefix_filter="good_view_1",
             view_builder_attribute_name_regex=r"VIEW",
             expect_builders_in_all_files=False,
@@ -239,8 +236,8 @@ class BigQueryViewCollectorTest(unittest.TestCase):
             r"in file \[.*bad_view_builder_wrong_type.py\]. Expected type "
             r"\[FakeBigQueryViewBuilder\].",
         ):
-            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+            _ = BigQueryViewCollector.collect_view_builders_in_module(
                 builder_type=FakeBigQueryViewBuilder,
-                relative_dir_path=VIEWS_DIR_RELATIVE_PATH,
+                view_dir_module=test_views,
                 view_file_prefix_filter="bad_view_builder_wrong_type",
             )

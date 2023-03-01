@@ -16,11 +16,8 @@
 # =============================================================================
 """Fake ingest view ViewCollector for tests."""
 
-from typing import List, Optional
+from typing import List
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
@@ -31,9 +28,7 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import (
 from recidiviz.tests.ingest.direct import fake_regions
 
 
-class _FakeDirectIngestViewBuilder(
-    BigQueryViewBuilder[DirectIngestPreProcessedIngestView]
-):
+class _FakeDirectIngestViewBuilder:
     """Fake BQ View Builder for tests."""
 
     def __init__(
@@ -44,10 +39,7 @@ class _FakeDirectIngestViewBuilder(
         self.ingest_view_name = ingest_view_name
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
-    # pylint: disable=unused-argument
-    def _build(
-        self, *, address_overrides: Optional[BigQueryAddressOverrides] = None
-    ) -> DirectIngestPreProcessedIngestView:
+    def build(self) -> DirectIngestPreProcessedIngestView:
         region_config = DirectIngestRegionRawFileConfig(
             region_code="us_xx",
             region_module=fake_regions,
@@ -55,8 +47,7 @@ class _FakeDirectIngestViewBuilder(
 
         query = "select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)"
         return DirectIngestPreProcessedIngestView(
-            dataset_id="NO DATASET",
-            view_id=self.ingest_view_name,
+            ingest_view_name=self.ingest_view_name,
             view_query_template=query,
             region_raw_table_config=region_config,
             order_by_cols="colA, colC",
@@ -67,9 +58,7 @@ class _FakeDirectIngestViewBuilder(
         self.build()
 
 
-class FakeSingleIngestViewCollector(
-    BigQueryViewCollector[_FakeDirectIngestViewBuilder]
-):
+class FakeSingleIngestViewCollector:
     """Fake ingest view ViewCollector for tests that returns a single ingest view."""
 
     def __init__(

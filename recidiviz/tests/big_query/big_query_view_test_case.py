@@ -114,7 +114,7 @@ class BigQueryViewTestCase(unittest.TestCase, BigQueryTestHelper):
             )
 
         view: BigQueryView = view_builder.build()
-        results = query_view(self, view.table_for_query, view.view_query)
+        results = query_view(self, view.address.to_str(), view.view_query)
 
         # TODO(#5533): If we add `dimensions` to all `BigQueryViewBuilder`, instead of
         # just `MetricBigQueryViewBuilder`, then we can reuse that here instead of
