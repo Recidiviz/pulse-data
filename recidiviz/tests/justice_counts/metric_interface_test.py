@@ -246,7 +246,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -261,7 +261,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -401,7 +401,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -416,7 +416,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -431,7 +431,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -446,7 +446,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                             },
@@ -868,7 +868,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -988,7 +988,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -1266,7 +1266,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -1386,7 +1386,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -1664,7 +1664,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -1784,7 +1784,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -2078,7 +2078,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -2197,7 +2197,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -2618,7 +2618,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
@@ -2753,7 +2753,7 @@ class TestMetricInterface(TestCase):
                                     {
                                         "key": "INCLUDES_EXCLUDES_DESCRIPTION",
                                         "value": None,
-                                        "label": "If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                                        "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
                                 # TODO(#19144) remove deprecated settings key
