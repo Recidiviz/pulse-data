@@ -67,6 +67,7 @@ terms as (
         Early_Cust_Rel_Date,
         Max_Cust_Rel_Date,
         Comm_Rel_Date,
+        Curr_Cust_Rel_Date,
     FROM {CIS_319_TERM} term
     LEFT JOIN {CIS_1200_TERM_STATUS} term_status on term.Cis_1200_Term_Status_Cd = term_status.Term_Status_Cd
 ),
@@ -114,6 +115,7 @@ SELECT
     term.Early_Cust_Rel_Date as Term_Early_Cust_Rel_Date,
     term.Max_Cust_Rel_Date as Term_Max_Cust_Rel_Date,
     term.Comm_Rel_Date as Term_Comm_Rel_Date,
+    term.Curr_Cust_Rel_Date AS Term_Curr_Cust_Rel_Date,
 FROM sentences sentence
 LEFT JOIN charges charge on sentence.Charge_Id = charge.Charge_Id
 LEFT JOIN terms term on sentence.Term_Id = term.Term_Id

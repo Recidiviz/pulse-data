@@ -48,6 +48,7 @@ input_columns:
   - Term_Early_Cust_Rel_Date
   - Term_Max_Cust_Rel_Date
   - Term_Comm_Rel_Date
+  - Term_Curr_Cust_Rel_Date
 unused_columns:
   - E_Professional_Type_Desc
   - Court_Finding_Date
@@ -232,3 +233,22 @@ output:
                         $person_name:
                           $given_names: First_Name
                           $surname: Last_Name
+    task_deadlines:
+      - $conditional:
+          - $if:
+              $not_null: Term_Curr_Cust_Rel_Date
+            $then:
+              StateTaskDeadline:
+                task_type: $literal_enum(StateTaskType.DISCHARGE_FROM_INCARCERATION)
+                eligible_date: Term_Curr_Cust_Rel_Date
+                update_datetime:
+                  $env: results_update_datetime
+                task_metadata:
+                  $json_dict:
+                    external_id:
+                      $concat:
+                        $values:
+                          - Client_Id
+                          - Term_Id
+                          - Court_Order_Id
+                    sentence_type: $literal("INCARCERATION")
