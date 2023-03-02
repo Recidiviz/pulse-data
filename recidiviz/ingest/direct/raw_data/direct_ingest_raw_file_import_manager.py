@@ -61,6 +61,7 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collecto
 )
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     FILE_ID_COL_NAME,
+    IS_DELETED_COL_NAME,
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -954,6 +955,10 @@ class DirectIngestRawFileImportManager:
             if name == UPDATE_DATETIME_COL_NAME:
                 mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.DATETIME.value
+            if name == IS_DELETED_COL_NAME:
+                # TODO(#18954): Change to `REQUIRED` once is_deleted is populated for every table.
+                mode = "NULLABLE"
+                typ_str = bigquery.enums.SqlTypeNames.BOOLEAN.value
             schema.append(
                 bigquery.SchemaField(name=name, field_type=typ_str, mode=mode)
             )

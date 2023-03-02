@@ -19,3 +19,4 @@
 # Recidiviz-managed raw data columns
 UPDATE_DATETIME_COL_NAME = "update_datetime"
 FILE_ID_COL_NAME = "file_id"
+IS_DELETED_COL_NAME = "is_deleted"
