@@ -1033,3 +1033,25 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         )
 
         self.assertEqual(expected_result, result)
+
+    def test_deserialize_StateStaffLocationPeriod(self) -> None:
+        result = (
+            deserialize_entity_factories.StateStaffLocationPeriodFactory.deserialize(
+                external_id="123a",
+                state_code="us_xx",
+                start_date="2022-05-08",
+                end_date="2022-05-10",
+                location_external_id="abc123",
+            )
+        )
+
+        # Assert
+        expected_result = entities.StateStaffLocationPeriod(
+            state_code="US_XX",
+            external_id="123A",
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            location_external_id="ABC123",
+        )
+
+        self.assertEqual(expected_result, result)

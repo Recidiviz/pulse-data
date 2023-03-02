@@ -3182,7 +3182,11 @@ class StateStaffRolePeriod(StateBase, _ReferencesStateStaffSharedColumns):
     start_date = Column(
         Date,
         nullable=False,
-        comment="The date on which the staff member started serving this role.",
+        comment=(
+            "The date on which the staff member started serving this role."
+            "This is an inclusive start date, meaning the staff member had this role "
+            "on this day."
+        ),
     )
     end_date = Column(
         Date,
@@ -3254,14 +3258,18 @@ class StateStaffSupervisorPeriod(StateBase, _ReferencesStateStaffSharedColumns):
     start_date = Column(
         Date,
         nullable=False,
-        comment="The date on which the staff member started serving this role.",
+        comment=(
+            "The date on which the staff member started working under this supervisor."
+            "This is an inclusive start date, meaning the staff member had this "
+            "supervisor on this day."
+        ),
     )
     end_date = Column(
         Date,
         comment=(
-            "The date on which the staff member stopped serving this role. This is an "
-            "exclusive end date, meaning this staff member is no longer considered to "
-            "have this role on this day."
+            "The date on which the staff member stopped working under this supervisor. "
+            "This is an exclusive end date, meaning this staff member is no longer "
+            "considered to have this role on this day."
         ),
     )
     supervisor_staff_external_id = Column(
@@ -3273,4 +3281,73 @@ class StateStaffSupervisorPeriod(StateBase, _ReferencesStateStaffSharedColumns):
         String(255),
         nullable=False,
         comment="The id type associated with the supervisor_staff_external_id field.",
+    )
+
+
+class StateStaffLocationPeriod(StateBase, _ReferencesStateStaffSharedColumns):
+    """Represents a StateStaffLocationPeriod in the SQL schema"""
+
+    __tablename__ = "state_staff_location_period"
+    __table_args__ = (
+        UniqueConstraint(
+            "state_code",
+            "external_id",
+            name="staff_location_periods_unique_within_region",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        {
+            "comment": (
+                "The StateStaffLocationPeriod models a period of time during which a "
+                "staff member has a given assigned location. For now, this should be "
+                "used to designate the staff member’s primary location, but may in the "
+                "future be expanded to allow for multiple overlapping location periods "
+                "for cases where staff members have primary, secondary etc locations."
+            )
+        },
+    )
+
+    staff_location_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE, object_name="staff member location period"
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateStaffLocationPeriod"
+        ),
+    )
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+    start_date = Column(
+        Date,
+        nullable=False,
+        comment=(
+            "The date on which the staff member started working at this location. "
+            "This is an inclusive start date, meaning the staff member was working at "
+            "this location on this day."
+        ),
+    )
+    end_date = Column(
+        Date,
+        comment=(
+            "The date on which the staff member stopped working at this location. This "
+            "is an exclusive end date, meaning this staff member is no longer "
+            "considered to be associated with this location on this day."
+        ),
+    )
+    location_external_id = Column(
+        String(255),
+        nullable=False,
+        comment="The state-issued stable id associated with this location.",
     )

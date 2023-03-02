@@ -250,6 +250,10 @@ PLACEHOLDER_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = 
     ],
     schema.StateStaff: [schema.StateStaff(state_code=StateCode.US_XX.value)],
     schema.StateStaffExternalId: [],
+    schema.StateStaffLocationPeriod: [
+        # StateStaffSupervisorPeriod cannot be placeholders - must always have an
+        # external_id and start_date.
+    ],
     schema.StateStaffRolePeriod: [
         # StateStaffRolePeriod cannot be placeholders - must always have an external_id
         # and start_date.
@@ -410,6 +414,10 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
         )
     ],
     schema.StateStaffExternalId: [],
+    schema.StateStaffLocationPeriod: [
+        # StateStaffLocationPeriod cannot be reference entities - must always have a
+        # start_date.
+    ],
     schema.StateStaffRolePeriod: [
         # StateStaffRolePeriod cannot be reference entities - must always have a
         # start_date.
@@ -702,6 +710,15 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
     schema.StateStaffExternalId: [
         schema.StateStaffExternalId(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID, id_type=_ID_TYPE
+        )
+    ],
+    schema.StateStaffLocationPeriod: [
+        schema.StateStaffLocationPeriod(
+            state_code=StateCode.US_XX.value,
+            external_id=_EXTERNAL_ID,
+            start_date=datetime.date(2022, 5, 8),
+            end_date=datetime.date(2022, 5, 10),
+            location_external_id="ABC123",
         )
     ],
     schema.StateStaffRolePeriod: [

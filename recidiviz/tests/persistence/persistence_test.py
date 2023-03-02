@@ -61,6 +61,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaff,
     StateStaffExternalId,
     StateStaffRolePeriod,
+    StateStaffSupervisorPeriod,
 )
 from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
@@ -202,8 +203,16 @@ STAFF_STATE_2_ENTITY = StateStaff(
             role_subtype=StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER,
             start_date=DATE,
         )
-    ]
-    # TODO(#15049): Add StateStaffSupervisorPeriod (? naming TBD) once that entity exists
+    ],
+    supervisor_periods=[
+        StateStaffSupervisorPeriod(
+            state_code="US_XX",
+            external_id="123A",
+            start_date=DATE,
+            supervisor_staff_external_id="ABC",
+            supervisor_staff_external_id_type="US_XX_STAFF_ID",
+        )
+    ],
 )
 
 
@@ -464,7 +473,15 @@ class MultipleStateTestMixin:
             )
         )
         staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
-        # TODO(#15049): Add StateStaffSupervisorPeriod (? naming TBD) to staff_state_2 once that entity exists
+        staff_state_2.supervisor_periods.append(
+            StateStaffSupervisorPeriod(
+                state_code="US_XX",
+                external_id="123A-2",
+                start_date=DATE_2,
+                supervisor_staff_external_id="DEF",
+                supervisor_staff_external_id_type="US_XX_STAFF_ID",
+            )
+        )
 
         self.run_transactions([person_state_1], [person_state_2])
         self.run_transactions([staff_state_1], [staff_state_2])
@@ -499,7 +516,7 @@ class MultipleStateTestMixin:
         assert (
             staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
         )
-        # TODO(#15049): Check staff_result[1] supervisor periods length has changed
+        assert len(staff_result[1].supervisor_periods) == 2
 
     def test_updateOverlappingTypes_succeeds(self):
         # Arrange
@@ -607,7 +624,7 @@ class MultipleStateTestMixin:
         staff_state_1.role_periods[0].start_date = DATE_2
 
         staff_state_2 = deepcopy(STAFF_STATE_2_ENTITY)
-        # TODO(#15049): Update StateStaffSupervisorPeriod (? naming TBD) on staff_state_2 once that entity exists
+        staff_state_2.supervisor_periods[0].start_date = DATE_2
 
         self.run_transactions([person_state_1], [person_state_2])
         self.run_transactions([staff_state_1], [staff_state_2])
@@ -645,7 +662,7 @@ class MultipleStateTestMixin:
         assert (
             staff_result[1].full_name == '{"given_names": "NED", "surname": "FLANDERS"}'
         )
-        # TODO(#15049): Check staff_result[1] supervisor periods info has changed
+        assert len(staff_result[1].supervisor_periods) == 1
 
 
 @pytest.mark.uses_db

@@ -1839,3 +1839,35 @@ class StateStaffSupervisorPeriod(HasExternalIdEntity, BuildableAttr, Defaultable
 
     # Cross-entity relationships
     staff: Optional["StateStaff"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Represents information about a period of time during which a staff member has
+    a given assigned location.
+    """
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    external_id: str = attr.ib(validator=attr_validators.is_str)
+
+    # Attributes
+    #   - When
+    start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
+    end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
+
+    #   - What
+    location_external_id: str = attr.ib(default=None, validator=attr_validators.is_str)
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    staff_location_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    staff: Optional["StateStaff"] = attr.ib(default=None)
