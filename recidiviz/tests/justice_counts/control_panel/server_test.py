@@ -158,6 +158,113 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             b"window.APP_CONFIG = {'audience': 'http://localhost', 'clientId': 'test_client_id', 'domain': 'auth0.localhost'}; window.SEGMENT_KEY = 'fake_segment_key';",
         )
 
+    def test_get_guidance_progress(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        agency_A = self.test_schema_objects.test_agency_A
+        current_association = schema.AgencyUserAccountAssociation(
+            user_account=user_A, agency=agency_A
+        )
+        current_association.guidance_progress = [
+            {"topicID": "WELCOME", "topicCompleted": True},
+            {"topicID": "AGENCY_SETUP", "topicCompleted": True},
+            {"topicID": "METRIC_CONFIG", "topicCompleted": True},
+            {"topicID": "ADD_DATA", "topicCompleted": False},
+            {"topicID": "PUBLISH_DATA", "topicCompleted": False},
+        ]
+
+        self.session.add(current_association)
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.get(f"/api/users/agencies/{agency_A.id}/guidance")
+
+        response_json = assert_type(response.json, dict)
+        guidance_progress = assert_type(response_json.get("guidance_progress"), list)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            guidance_progress[0], {"topicID": "WELCOME", "topicCompleted": True}
+        )
+        self.assertEqual(
+            guidance_progress[1], {"topicID": "AGENCY_SETUP", "topicCompleted": True}
+        )
+        self.assertEqual(
+            guidance_progress[2], {"topicID": "METRIC_CONFIG", "topicCompleted": True}
+        )
+        self.assertEqual(
+            guidance_progress[3], {"topicID": "ADD_DATA", "topicCompleted": False}
+        )
+        self.assertEqual(
+            guidance_progress[4], {"topicID": "PUBLISH_DATA", "topicCompleted": False}
+        )
+
+    def test_get_new_user_guidance_progress(self) -> None:
+        user_B = self.test_schema_objects.test_user_B
+        agency_B = self.test_schema_objects.test_agency_B
+        current_association = schema.AgencyUserAccountAssociation(
+            user_account=user_B, agency=agency_B
+        )
+        current_association.guidance_progress = None
+
+        self.session.add(current_association)
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_B.auth0_user_id)
+            response = self.client.get(f"/api/users/agencies/{agency_B.id}/guidance")
+
+        response_json = assert_type(response.json, dict)
+        guidance_progress = assert_type(response_json.get("guidance_progress"), list)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            guidance_progress[0], {"topicID": "WELCOME", "topicCompleted": False}
+        )
+        self.assertEqual(
+            guidance_progress[1], {"topicID": "AGENCY_SETUP", "topicCompleted": False}
+        )
+        self.assertEqual(
+            guidance_progress[2], {"topicID": "METRIC_CONFIG", "topicCompleted": False}
+        )
+        self.assertEqual(
+            guidance_progress[3], {"topicID": "ADD_DATA", "topicCompleted": False}
+        )
+        self.assertEqual(
+            guidance_progress[4], {"topicID": "PUBLISH_DATA", "topicCompleted": False}
+        )
+
+    def test_update_guidance_progress(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        agency_A = self.test_schema_objects.test_agency_A
+        current_association = schema.AgencyUserAccountAssociation(
+            user_account=user_A, agency=agency_A
+        )
+        current_association.guidance_progress = [
+            {"topicID": "WELCOME", "topicCompleted": False},
+            {"topicID": "AGENCY_SETUP", "topicCompleted": False},
+            {"topicID": "METRIC_CONFIG", "topicCompleted": False},
+            {"topicID": "ADD_DATA", "topicCompleted": False},
+            {"topicID": "PUBLISH_DATA", "topicCompleted": False},
+        ]
+        self.session.add(current_association)
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.put(
+                f"/api/users/agencies/{agency_A.id}/guidance",
+                json={"updated_topic": {"topicID": "WELCOME", "topicCompleted": True}},
+            )
+
+        response_json = assert_type(response.json, dict)
+        guidance_progress = assert_type(response_json.get("guidance_progress"), list)
+        self.assertEqual(guidance_progress[0]["topicCompleted"], True)
+        self.assertEqual(guidance_progress[1]["topicCompleted"], False)
+        self.assertEqual(guidance_progress[2]["topicCompleted"], False)
+        self.assertEqual(guidance_progress[3]["topicCompleted"], False)
+        self.assertEqual(guidance_progress[4]["topicCompleted"], False)
+
     def test_get_all_reports(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
@@ -242,37 +349,37 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": "FILLED",
                     "label": PrisonStaffIncludesExcludes.FILLED.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
                     "key": "VACANT",
                     "label": PrisonStaffIncludesExcludes.VACANT.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
                     "key": "FULL_TIME",
                     "label": PrisonStaffIncludesExcludes.FULL_TIME.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
                     "key": "PART_TIME",
                     "label": PrisonStaffIncludesExcludes.PART_TIME.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
                     "key": "CONTRACTED",
                     "label": PrisonStaffIncludesExcludes.CONTRACTED.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
                     "key": "TEMPORARY",
                     "label": PrisonStaffIncludesExcludes.TEMPORARY.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
@@ -295,7 +402,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             prisons.admissions.aggregated_dimensions, list
         )[0].dimension_to_includes_excludes
         self.assertEqual(metrics[3]["key"], prisons.admissions.key)
-        self.assertEqual(metrics[3]["enabled"], True)
+        self.assertEqual(metrics[3]["enabled"], None)
         self.assertEqual(
             metrics[3]["disaggregations"][0]["key"],
             OffenseType.dimension_identifier(),
@@ -320,7 +427,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": member.name,
                     "label": member.value,
-                    "included": default_setting.value,
+                    "included": None,
                     "default": default_setting.value,
                 }
                 for includes_excludes in dimension_to_includes_excludes_lst[
@@ -348,7 +455,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": member.name,
                     "label": member.value,
-                    "included": default_setting.value,
+                    "included": None,
                     "default": default_setting.value,
                 }
                 for includes_excludes in dimension_to_includes_excludes_lst[
@@ -376,7 +483,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": member.name,
                     "label": member.value,
-                    "included": default_setting.value,
+                    "included": None,
                     "default": default_setting.value,
                 }
                 for includes_excludes in dimension_to_includes_excludes_lst[
@@ -404,7 +511,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": member.name,
                     "label": member.value,
-                    "included": default_setting.value,
+                    "included": None,
                     "default": default_setting.value,
                 }
                 for includes_excludes in dimension_to_includes_excludes_lst[
@@ -471,13 +578,13 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 {
                     "key": "COMMUTED_SENTENCE",
                     "label": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
                 {
                     "key": "RELEASE_TO_PAROLE",
                     "label": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.value,
-                    "included": "Yes",
+                    "included": None,
                     "default": "Yes",
                 },
             ],
@@ -667,7 +774,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(metrics[8]["datapoints"], None)
 
         self.assertEqual(metrics[3]["key"], prisons.admissions.key)
-        self.assertEqual(metrics[3]["enabled"], True)
+        self.assertEqual(metrics[3]["enabled"], None)
         self.assertEqual(
             metrics[3]["disaggregations"][0]["key"],
             OffenseType.dimension_identifier(),

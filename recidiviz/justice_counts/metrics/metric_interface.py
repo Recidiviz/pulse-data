@@ -147,7 +147,7 @@ class MetricInterface:
                             "label": member.value,
                             "included": included.value
                             if included is not None
-                            else default_setting.value,
+                            else None,
                             "default": default_setting.value,
                         }
                     )
@@ -157,7 +157,7 @@ class MetricInterface:
                             "label": member.value,
                             "included": included.value
                             if included is not None
-                            else default_setting.value,
+                            else None,
                             "default": default_setting.value,
                         }
                     )
@@ -185,9 +185,7 @@ class MetricInterface:
             "unit": self.metric_definition.metric_type.unit,
             "category": self.metric_definition.category.human_readable_string,
             "label": self.metric_definition.display_name,
-            "enabled": self.is_metric_enabled
-            if self.is_metric_enabled is not None
-            else True,
+            "enabled": self.is_metric_enabled,
             "frequency": frequency,
             "custom_frequency": self.custom_reporting_frequency.frequency.value
             if self.custom_reporting_frequency.frequency is not None
