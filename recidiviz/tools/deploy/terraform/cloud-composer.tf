@@ -81,22 +81,22 @@ resource "google_composer_environment" "default_v2" {
 
     workloads_config {
       scheduler {
-        count      = 1
-        cpu        = 0.5
-        memory_gb  = 1.875
-        storage_gb = 1
+        count      = 2
+        cpu        = 4
+        memory_gb  = 15
+        storage_gb = 10
       }
       web_server {
-        cpu        = 0.5
-        memory_gb  = 1.875
-        storage_gb = 1
+        cpu        = 2
+        memory_gb  = 7.5
+        storage_gb = 10
       }
       worker {
-        cpu        = 0.5
-        memory_gb  = 1.875
-        storage_gb = 1
-        min_count  = 2
-        max_count  = 6
+        cpu        = 4
+        memory_gb  = 15
+        storage_gb = 10
+        min_count  = 8
+        max_count  = 20
       }
     }
 
