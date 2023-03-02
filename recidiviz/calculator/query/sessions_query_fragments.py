@@ -56,68 +56,29 @@ periods_cte AS (
     FROM {table_name} input
 ),
 /*
-Start creating the new smaller sub-sessions with boundaries for every session date.
-Generate the full list of the new sub-session start dates including all unique start
-dates and any end dates that overlap another session.
+Generates a set of unique period boundary dates based on the start and end dates of periods.
 */
-start_dates AS (
+period_boundary_dates AS (
     SELECT DISTINCT
         state_code,
         person_id,
-        start_date,
-    FROM periods_cte
-    UNION DISTINCT
-    SELECT DISTINCT
-        orig.state_code,
-        orig.person_id,
-        new_start_dates.{end_date_field_name} AS start_date,
-    FROM periods_cte orig
-    INNER JOIN periods_cte new_start_dates
-        ON orig.state_code = new_start_dates.state_code
-        AND orig.person_id = new_start_dates.person_id
-        AND new_start_dates.{end_date_field_name}
-            BETWEEN orig.start_date AND DATE_SUB(orig.{end_date_field_name}, INTERVAL 1 DAY)
+        boundary_date,
+    FROM periods_cte,
+    UNNEST([start_date, {end_date_field_name}]) AS boundary_date
 ),
 /*
-Generate the full list of the new sub-session end dates including all unique end dates
-and any start dates that overlap another session.
-*/
-end_dates AS (
-    SELECT DISTINCT
-        state_code,
-        person_id,
-        {end_date_field_name},
-    FROM periods_cte
-    UNION DISTINCT
-    SELECT DISTINCT
-        orig.state_code,
-        orig.person_id,
-        new_end_dates.start_date AS {end_date_field_name},
-    FROM periods_cte orig
-    INNER JOIN periods_cte new_end_dates
-        ON orig.state_code = new_end_dates.state_code
-        AND orig.person_id = new_end_dates.person_id
-        AND new_end_dates.start_date
-            BETWEEN orig.start_date AND DATE_SUB(orig.{end_date_field_name}, INTERVAL 1 DAY)
-),
-/*
-Join start and end dates together to create smaller sub-sessions. Each start date gets
-matched to the closest following end date for each person. Note that this does not
-associate zero-day (same day start and end sessions) as these sessions are added
-separately in a subsequent CTE.
+Generates sub-sessions based on each boundary date and its subsequent date. 
+Note that this does not associate zero-day (same day start and end sessions) as 
+these sessions are added separately in a subsequent CTE.
 */
 sub_sessions AS (
     SELECT
-        start_dates.state_code,
-        start_dates.person_id,
-        start_dates.start_date,
-        MIN(end_dates.{end_date_field_name}) AS {end_date_field_name},
-    FROM start_dates
-    INNER JOIN end_dates
-        ON start_dates.state_code = end_dates.state_code
-        AND start_dates.person_id = end_dates.person_id
-        AND start_dates.start_date < end_dates.{end_date_field_name}
-    GROUP BY state_code, person_id, start_date
+        state_code,
+        person_id,
+        boundary_date AS start_date,
+        LEAD(boundary_date) OVER (PARTITION BY state_code, person_id ORDER BY boundary_date) AS {end_date_field_name},
+    FROM
+        period_boundary_dates
 ),
 /*
 Add the attributes from the original periods to the overlapping sub-sessions and union
