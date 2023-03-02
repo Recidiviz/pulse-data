@@ -60,7 +60,7 @@ def _query_template_and_format_args(
             aggregation_level.level_type
             == MetricAggregationLevelType.SUPERVISION_OFFICER
         ):
-            group_by_range = range(1, len(aggregation_level.index_columns) + 6)
+            group_by_range = range(1, len(aggregation_level.index_columns) + 8)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             query_template = f"""
 SELECT
@@ -70,6 +70,8 @@ SELECT
     population_end_date AS end_date,
     district AS primary_district,
     office AS primary_office,
+    level_2_supervision_location_external_id AS current_district,
+    level_1_supervision_location_external_id AS current_office,
     -- Proportion of the analysis period where officer has a valid caseload size
     SUM(
         IF(
@@ -124,6 +126,10 @@ LEFT JOIN (
     )
 USING 
     ({aggregation_level.get_index_columns_query_string()}, population_start_date)
+LEFT JOIN 
+    `{{project_id}}.{{analyst_views_dataset}}.current_staff_supervision_locations_materialized` r
+USING
+    (officer_id, state_code)
 GROUP BY {group_by_range_str}
 """
             return query_template, {

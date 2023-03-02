@@ -21,6 +21,9 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.agent_supervisor_preprocessed import (
     AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.current_staff_supervision_locations import (
+    CURRENT_STAFF_SUPERVISION_LOCATIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
 )
@@ -250,6 +253,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_PA_AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
         AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
         US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
+        CURRENT_STAFF_SUPERVISION_LOCATIONS_VIEW_BUILDER,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS
