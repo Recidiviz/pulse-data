@@ -1,0 +1,24 @@
+{
+  "name": "Normalization",
+  "description": "Flex template for normalization pipeline",
+  "parameters": [
+    {
+      "name": "pipeline",
+      "label": "Dataflow pipeline name",
+      "helpText": "Name of the dataflow pipeline to run.",
+    },
+    {
+      "name": "state_code",
+      "label": "State code",
+      "helpText": "State that the pipeline is running for.",
+      "regexes": ["us_[a-z]{2}"]
+    },
+    {
+      "name": "output",
+      "label": "Test output dataset",
+      "helpText": "If specified, the pipeline will write to this test dataset.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    }
+  ]
+}
