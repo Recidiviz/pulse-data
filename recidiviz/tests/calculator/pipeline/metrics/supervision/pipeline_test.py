@@ -889,7 +889,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             external_id="ss1",
             status=StateSentenceStatus.COMPLETED,
             supervision_type=StateSupervisionSentenceSupervisionType.PROBATION,
-            start_date=date(2016, 3, 1),
             effective_date=date(2016, 3, 1),
             projected_completion_date=date(2017, 12, 31),
             completion_date=date(2016, 12, 29),

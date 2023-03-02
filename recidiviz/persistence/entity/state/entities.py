@@ -561,10 +561,6 @@ class StateSupervisionSentence(HasExternalIdEntity, BuildableAttr, DefaultableAt
         default=None, validator=attr_validators.is_opt_date
     )
 
-    # The date the person actually started serving this sentence
-    start_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
     # The date on which a sentence effectively begins being served, including any pre-trial jail detention time if applicable.
     effective_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date
@@ -652,10 +648,6 @@ class StateIncarcerationSentence(HasExternalIdEntity, BuildableAttr, Defaultable
         default=None, validator=attr_validators.is_opt_date
     )
 
-    # The date the person actually started serving this sentence
-    start_date: Optional[datetime.date] = attr.ib(
-        default=None, validator=attr_validators.is_opt_date
-    )
     # The date on which a sentence effectively begins being served, including any pre-trial jail detention time if applicable.
     effective_date: Optional[datetime.date] = attr.ib(
         default=None, validator=attr_validators.is_opt_date

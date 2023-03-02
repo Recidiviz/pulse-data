@@ -148,7 +148,6 @@ output:
               $include_nulls: true
           county_code: cnty_sdesc
           projected_completion_date: prob_end_dtd
-          start_date: prob_strt_dtd
           effective_date: prob_strt_dtd
           status:
             $enum_mapping:

@@ -26,6 +26,8 @@ from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
 from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
+
+# pylint: disable=no-name-in-module
 from recidiviz.ingest.models.ingest_info_pb2 import StateSupervisionSentence
 from recidiviz.persistence.entity.state import entities
 
@@ -67,7 +69,6 @@ def copy_fields_to_builder(
         else state_supervision_sentence_id
     )
     new.date_imposed = getattr(proto, "date_imposed")
-    new.start_date = getattr(proto, "start_date")
     new.completion_date = getattr(proto, "completion_date")
     new.projected_completion_date = getattr(proto, "projected_completion_date")
     new.state_code = metadata.region

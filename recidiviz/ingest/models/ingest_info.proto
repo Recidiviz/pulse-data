@@ -135,7 +135,6 @@ message StateSupervisionSentence {
     optional string status = 2;
     optional string supervision_type = 3;
     optional string date_imposed = 4;
-    optional string start_date = 5;
     optional string projected_completion_date = 6;
     optional string completion_date = 7;
     optional string state_code = 8;
@@ -152,7 +151,6 @@ message StateIncarcerationSentence {
     optional string status = 2;
     optional string incarceration_type = 3;
     optional string date_imposed = 4;
-    optional string start_date = 5;
     optional string projected_min_release_date = 6;
     optional string projected_max_release_date = 7;
     optional string completion_date = 8;

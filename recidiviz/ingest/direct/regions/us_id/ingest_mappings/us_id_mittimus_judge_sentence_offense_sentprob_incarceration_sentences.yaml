@@ -136,7 +136,6 @@ output:
             $equal:
               - lifer
               - $literal("L")
-          start_date: sent_beg_dtd
           effective_date: sent_beg_dtd
           status:
             $enum_mapping:

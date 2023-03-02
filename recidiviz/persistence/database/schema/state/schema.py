@@ -1370,9 +1370,6 @@ class StateSupervisionSentence(StateBase, _ReferencesStatePersonSharedColumns):
         comment="The date this sentence was imposed, e.g. the date of actual sentencing, but not necessarily "
         "the date the person started serving the sentence.",
     )
-    start_date = Column(
-        Date, comment="The date the person started serving the sentence."
-    )
     effective_date = Column(
         Date,
         comment="The date on which a sentence effectively begins being served, including any pre-trial jail detention time if applicable.",
@@ -1492,7 +1489,6 @@ class StateIncarcerationSentence(StateBase, _ReferencesStatePersonSharedColumns)
         comment="The date this sentence was imposed, e.g. the date of actual sentencing, but not necessarily the "
         "date the person started serving the sentence",
     )
-    start_date = Column(Date, comment="The date this sentence started.")
     effective_date = Column(
         Date,
         comment="The date on which a sentence effectively begins being served, including any pre-trial jail detention time if applicable.",
