@@ -22,6 +22,7 @@ from typing import Any, Dict
 
 from airflow.providers.google.cloud.hooks.dataflow import DataflowHook
 from airflow.providers.google.cloud.operators.dataflow import (
+    DataflowStartFlexTemplateOperator,
     DataflowTemplatedJobStartOperator,
 )
 from airflow.utils.context import Context
@@ -73,4 +74,44 @@ class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
             dataflow_template=self.template,
             project_id=self.project_id,
             append_job_name=False,
+        )
+
+
+class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
+    """A custom implementation of the DataflowStartFlexTemplateOperator for flex templates."""
+
+    def execute(
+        self,
+        # Some context about the context: https://bcb.github.io/airflow/execute-context
+        context: Context,  # pylint: disable=unused-argument
+    ) -> Dict[Any, Any]:
+        """Checks if a Dataflow job is running (in case of task retry), otherwise starts
+        the job. Polls the status of the job until it's finished or failed."""
+
+        hook = DataflowHook(
+            gcp_conn_id=self.gcp_conn_id,
+            delegate_to=self.delegate_to,
+        )
+
+        # If the operator is on a retry loop, we ignore the start operation by checking
+        # if the job is running.
+        region = self.location
+        if hook.is_job_dataflow_running(
+            name=self.task_id, project_id=self.project_id, location=region
+        ):
+            hook.wait_for_done(
+                job_name=self.task_id,
+                project_id=self.project_id,
+                location=region,
+            )
+            return hook.get_job(
+                job_id=self.task_id,
+                project_id=self.project_id,
+                location=region,
+            )
+
+        return hook.start_flex_template(
+            location=self.location,
+            project_id=self.project_id,
+            body=self.body,
         )

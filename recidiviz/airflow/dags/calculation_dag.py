@@ -49,10 +49,12 @@ try:
     )
     from operators.iap_httprequest_sensor import IAPHTTPRequestSensor  # type: ignore
     from operators.recidiviz_dataflow_operator import (  # type: ignore
+        RecidivizDataflowFlexTemplateOperator,
         RecidivizDataflowTemplateOperator,
     )
     from utils.default_args import DEFAULT_ARGS  # type: ignore
     from utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS  # type: ignore
+    from utils.pipeline_parameters import PipelineParameters  # type: ignore
 except ImportError:
     from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
         FinishedCloudTaskQueryGenerator,
@@ -67,12 +69,16 @@ except ImportError:
         IAPHTTPRequestOperator,
     )
     from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
+        RecidivizDataflowFlexTemplateOperator,
         RecidivizDataflowTemplateOperator,
     )
     from recidiviz.airflow.dags.operators.iap_httprequest_sensor import (
         IAPHTTPRequestSensor,
     )
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
+    from recidiviz.airflow.dags.utils.pipeline_parameters import (
+        PipelineParameters,
+    )
 
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
@@ -147,6 +153,48 @@ def dataflow_operator_for_pipeline(
         template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_args.pipeline_name}",
         job_name=pipeline_args.pipeline_name,
         dataflow_default_options=dataflow_default_args,
+        task_group=task_group,
+    )
+
+
+def flex_dataflow_operator_for_pipeline(
+    pipeline_parameters: PipelineParameters,
+    task_group: Optional[TaskGroup] = None,
+) -> RecidivizDataflowFlexTemplateOperator:
+
+    template_path = f"gs://{project_id}-dataflow-flex-templates/template_metadata/{pipeline_parameters.flex_template_name}.json"
+
+    region = pipeline_parameters.region
+
+    # TODO(#19131): remove -flex
+    task_id = f"{pipeline_parameters.job_name}-flex"
+    return RecidivizDataflowFlexTemplateOperator(
+        task_id=task_id,
+        location=region,
+        body={
+            "launchParameter": {
+                "containerSpecGcsPath": template_path,
+                "jobName": task_id,
+                "parameters": pipeline_parameters.template_parameters(),
+                # DEFAULTS
+                "environment": {
+                    "machineType": pipeline_parameters.machine_type,
+                    "diskSizeGb": pipeline_parameters.disk_gb_size,
+                    "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
+                    "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
+                    "additionalExperiments": [
+                        "shuffle-mode=service",
+                        "use-beam-bq-sink",
+                        "use-runner-v2",
+                        "enable_google_cloud_profiler",
+                    ],
+                    "network": "default",
+                    "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{region}/subnetworks/default",
+                    "ipConfiguration": "WORKER_IP_PRIVATE",
+                },
+            }
+        },
+        project_id=project_id,
         task_group=task_group,
     )
 
