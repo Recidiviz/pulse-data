@@ -32,6 +32,9 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    TaskCompletionEventType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -63,11 +66,13 @@ ELIGIBILITY_QUERY_CONFIGS = [
         "US_ME",
         "usMeSCCP",
         "us_me_complete_transfer_to_sccp_form_record_materialized",
+        TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
     ),
     EligibilityQueryConfig(
         "US_MO",
         "usMoRestrictiveHousingStatusHearing",
         "us_mo_upcoming_restrictive_housing_hearing_record_materialized",
+        TaskCompletionEventType.HEARING_OCCURRED_OR_PAST_REVIEW_DATE,
     ),
 ]
 

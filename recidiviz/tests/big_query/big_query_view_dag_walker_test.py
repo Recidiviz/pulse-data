@@ -1602,6 +1602,10 @@ The following views have less restrictive projects_to_deploy than their parents:
             ),
             BigQueryAddress(
                 dataset_id="reference_views",
+                table_id="opportunity_to_completion_event",
+            ),
+            BigQueryAddress(
+                dataset_id="reference_views",
                 table_id="task_to_completion_event",
             ),
             # Generate data using pure date functions
