@@ -45,13 +45,13 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1003"
-        expression  = "evaluatePreconfiguredWaf('rfi-v33-stable', {'sensitivity': 2})"
+        expression  = "evaluatePreconfiguredWaf('rfi-v33-stable', {'sensitivity': 1})"
         description = "Remote file inclusion"
       },
       {
         action      = "deny(403)"
         priority    = "1004"
-        expression  = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 3, 'opt_out_rule_ids': ['owasp-crs-v030301-id932200-rce']})"
+        expression  = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id932200-rce']})"
         description = "Remote code execution"
       },
       {
@@ -69,13 +69,13 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1007"
-        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 3, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack']})"
+        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack']})"
         description = "Protocol attack"
       },
       {
         action      = "deny(403)"
         priority    = "1008"
-        expression  = "evaluatePreconfiguredWaf('php-v33-stable', {'sensitivity': 3})"
+        expression  = "evaluatePreconfiguredWaf('php-v33-stable', {'sensitivity': 1})"
         description = "PHP injection attack"
       },
       {
@@ -87,7 +87,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1010"
-        expression  = "evaluatePreconfiguredWaf('java-v33-stable', {'sensitivity': 3})"
+        expression  = "evaluatePreconfiguredWaf('java-v33-stable', {'sensitivity': 1})"
         description = "Java attack"
       },
       {
@@ -99,7 +99,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1012"
-        expression  = "evaluatePreconfiguredWaf('cve-canary', {'sensitivity': 3})"
+        expression  = "evaluatePreconfiguredWaf('cve-canary', {'sensitivity': 1})"
         description = "Newly discovered vulnerabilities"
       }
     ]
