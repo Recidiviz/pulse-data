@@ -112,7 +112,7 @@ products:
       - state_code: US_MO
         environment: production
       - state_code: US_IX
-        environment: staging
+        environment: production
   - name: Pathways Prison Module
     description: Prison populations over time which can be drilled down by geographic region, demographic categories, time period, etc.
     exports:
