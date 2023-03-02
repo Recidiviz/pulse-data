@@ -53,7 +53,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             THEN 'OUT_OF_STATE'
           -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
           ELSE 'INCARCERATION' END AS sentence_sub_type,
-        sis.start_date AS effective_date,
+        sis.effective_date,
         sis.date_imposed,
         sis.completion_date,
         sis.status,
@@ -99,9 +99,9 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
                 THEN 'OUT_OF_STATE'
             -- TODO(#16113): Add in TREATMENT subtype when methodology for this is resolved
             ELSE sss.supervision_type END AS sentence_sub_type,
-        sss.start_date AS effective_date,
+        sss.effective_date,
         -- TODO(#14091): hydrate `date_imposed` for US_MO supervision sentences
-        IF(sss.state_code = 'US_MO', COALESCE(sss.date_imposed, sss.start_date), sss.date_imposed) AS date_imposed,
+        IF(sss.state_code = 'US_MO', COALESCE(sss.date_imposed, sss.effective_date), sss.date_imposed) AS date_imposed,
         sss.completion_date,
         sss.status,
         sss.status_raw_text,
