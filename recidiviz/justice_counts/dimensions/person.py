@@ -124,43 +124,43 @@ class Ethnicity(Dimension):
 class RaceAndEthnicity(DimensionBase, enum.Enum):
     """Class for Justice Counts Race and Ethnicity breakdowns"""
 
-    # Hispanic
+    # Hispanic or Latino
     HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE = (
-        "American Indian / Alaskan Native / Hispanic"
+        "American Indian or Alaska Native / Hispanic or Latino"
     )
-    HISPANIC_ASIAN = "Asian / Hispanic"
-    HISPANIC_BLACK = "Black / Hispanic"
-    HISPANIC_MORE_THAN_ONE_RACE = "More than one race / Hispanic"
+    HISPANIC_ASIAN = "Asian / Hispanic or Latino"
+    HISPANIC_BLACK = "Black / Hispanic or Latino"
+    HISPANIC_MORE_THAN_ONE_RACE = "More than one race / Hispanic or Latino"
     HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER = (
-        "Native Hawaiian / Pacific Islander / Hispanic"
+        "Native Hawaiian or Pacific Islander / Hispanic or Latino"
     )
-    HISPANIC_WHITE = "White / Hispanic"
-    HISPANIC_OTHER = "Other / Hispanic"
-    HISPANIC_UNKNOWN = "Unknown / Hispanic"
+    HISPANIC_WHITE = "White / Hispanic or Latino"
+    HISPANIC_OTHER = "Other / Hispanic or Latino"
+    HISPANIC_UNKNOWN = "Unknown / Hispanic or Latino"
 
-    # Not Hispanic
+    # Not Hispanic or Latino
     NOT_HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE = (
-        "American Indian / Alaskan Native / Not Hispanic"
+        "American Indian or Alaska Native / Not Hispanic or Latino"
     )
-    NOT_HISPANIC_ASIAN = "Asian / Not Hispanic"
-    NOT_HISPANIC_BLACK = "Black / Not Hispanic"
-    NOT_HISPANIC_MORE_THAN_ONE_RACE = "More than one race / Not Hispanic"
+    NOT_HISPANIC_ASIAN = "Asian / Not Hispanic or Latino"
+    NOT_HISPANIC_BLACK = "Black / Not Hispanic or Latino"
+    NOT_HISPANIC_MORE_THAN_ONE_RACE = "More than one race / Not Hispanic or Latino"
     NOT_HISPANIC_NATIVE_HAWAIIAN_PACIFIC_ISLANDER = (
-        "Native Hawaiian / Pacific Islander / Not Hispanic"
+        "Native Hawaiian or Pacific Islander / Not Hispanic or Latino"
     )
-    NOT_HISPANIC_WHITE = "White / Not Hispanic"
-    NOT_HISPANIC_OTHER = "Other / Not Hispanic"
-    NOT_HISPANIC_UNKNOWN = "Unknown / Not Hispanic"
+    NOT_HISPANIC_WHITE = "White / Not Hispanic or Latino"
+    NOT_HISPANIC_OTHER = "Other / Not Hispanic or Latino"
+    NOT_HISPANIC_UNKNOWN = "Unknown / Not Hispanic or Latino"
 
     # Unknown Ethnicity
     UNKNOWN_ETHNICITY_AMERICAN_INDIAN_ALASKAN_NATIVE = (
-        "American Indian / Alaskan Native / Unknown Ethnicity"
+        "American Indian or Alaska Native / Unknown Ethnicity"
     )
     UNKNOWN_ETHNICITY_ASIAN = "Asian / Unknown Ethnicity"
     UNKNOWN_ETHNICITY_BLACK = "Black / Unknown Ethnicity"
     UNKNOWN_ETHNICITY_MORE_THAN_ONE_RACE = "More than one race / Unknown Ethnicity"
     UNKNOWN_ETHNICITY_NATIVE_HAWAIIAN_PACIFIC_ISLANDER = (
-        "Native Hawaiian / Pacific Islander / Unknown Ethnicity"
+        "Native Hawaiian or Pacific Islander / Unknown Ethnicity"
     )
     UNKNOWN_ETHNICITY_WHITE = "White / Unknown Ethnicity"
     UNKNOWN_ETHNICITY_OTHER = "Other / Unknown Ethnicity"
@@ -181,7 +181,7 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
     @property
     def race(self) -> str:
         if "AMERICAN_INDIAN_ALASKAN_NATIVE" in self.name:
-            return "American Indian / Alaskan Native"
+            return "American Indian or Alaska Native"
         if "ASIAN" in self.name:
             return "Asian"
         if "BLACK" in self.name:
@@ -189,7 +189,7 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
         if "MORE_THAN_ONE_RACE" in self.name:
             return "More than one race"
         if "NATIVE_HAWAIIAN_PACIFIC_ISLANDER" in self.name:
-            return "Native Hawaiian / Pacific Islander"
+            return "Native Hawaiian or Pacific Islander"
         if "OTHER" in self.name:
             return "Other"
         if "WHITE" in self.name:
@@ -199,9 +199,9 @@ class RaceAndEthnicity(DimensionBase, enum.Enum):
     @property
     def ethnicity(self) -> str:
         if "NOT_HISPANIC" in self.name:
-            return "Not Hispanic"
+            return "Not Hispanic or Latino"
         if "HISPANIC" in self.name:
-            return "Hispanic"
+            return "Hispanic or Latino"
         return "Unknown Ethnicity"
 
 
