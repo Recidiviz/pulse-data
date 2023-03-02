@@ -31,6 +31,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ct
 from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_clients_template import (
     US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
 )
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    TaskCompletionEventType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -63,6 +66,7 @@ class EligibilityQueryConfig:
     state_code: str = attr.ib()
     opportunity_name: str = attr.ib()
     opportunity_record_view: str = attr.ib()
+    task_completion_event: TaskCompletionEventType = attr.ib()
 
     def eligibility_cte_name(self) -> str:
         return f"{self.state_code.lower()}_{self.opportunity_name}_eligibility"
@@ -70,44 +74,34 @@ class EligibilityQueryConfig:
 
 ELIGIBILITY_QUERY_CONFIGS = [
     EligibilityQueryConfig(
-        "US_ID",
-        "LSU",
-        "us_id_complete_transfer_to_limited_supervision_form_record_materialized",
-    ),
-    EligibilityQueryConfig(
-        "US_ID",
-        "earnedDischarge",
-        "us_id_complete_discharge_early_from_supervision_request_record_materialized",
-    ),
-    EligibilityQueryConfig(
-        "US_ID",
-        "pastFTRD",
-        "us_id_complete_full_term_discharge_from_supervision_request_record_materialized",
-    ),
-    EligibilityQueryConfig(
         "US_IX",
         "LSU",
         "us_ix_complete_transfer_to_limited_supervision_form_record_materialized",
+        TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
     ),
     EligibilityQueryConfig(
         "US_IX",
         "earnedDischarge",
         "us_ix_complete_discharge_early_from_supervision_request_record_materialized",
+        TaskCompletionEventType.EARLY_DISCHARGE,
     ),
     EligibilityQueryConfig(
         "US_IX",
         "pastFTRD",
         "us_ix_complete_full_term_discharge_from_supervision_request_record_materialized",
+        TaskCompletionEventType.FULL_TERM_DISCHARGE,
     ),
     EligibilityQueryConfig(
         "US_IX",
         "usIdSupervisionLevelDowngrade",
         "us_ix_supervision_level_downgrade_record_materialized",
+        TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
     ),
     EligibilityQueryConfig(
         "US_ND",
         "earlyTermination",
         "us_nd_complete_discharge_early_from_supervision_record_materialized",
+        TaskCompletionEventType.EARLY_DISCHARGE,
     ),
 ]
 
@@ -167,9 +161,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_id_type=state_specific_query_strings.state_specific_external_id_type(
         "sessions"
     ),
-    workflows_supervision_states=list_to_query_string(
-        ["US_ID", "US_ND", "US_IX"], quoted=True
-    ),
+    workflows_supervision_states=list_to_query_string(["US_ND", "US_IX"], quoted=True),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 

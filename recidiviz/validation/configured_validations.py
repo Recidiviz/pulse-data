@@ -279,6 +279,12 @@ from recidiviz.validation.views.state.workflows.client_record_duplicate_person_e
 from recidiviz.validation.views.state.workflows.compliant_reporting_referral_record_archive_missing_days import (
     COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_MISSING_DAYS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.current_impact_funnel_status_duplicate_external_ids import (
+    CURRENT_IMPACT_FUNNEL_STATUS_DUPLICATE_EXTERNAL_IDS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.workflows.current_impact_funnel_status_no_records import (
+    CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.configured_validations import (
     get_all_task_eligibility_validations,
 )
@@ -486,6 +492,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=CURRENT_IMPACT_FUNNEL_STATUS_DUPLICATE_EXTERNAL_IDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(

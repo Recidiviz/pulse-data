@@ -60,6 +60,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_surfaced import (
 from recidiviz.calculator.query.state.views.workflows.compliant_reporting_referral_record_archive import (
     COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.current_impact_funnel_status import (
+    CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views import (
     FIRESTORE_VIEW_BUILDERS,
 )
@@ -88,4 +91,5 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_FORM_FIRST_EDITED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_PRINTED_VIEW_BUILDER,
     CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
+    CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 ]
