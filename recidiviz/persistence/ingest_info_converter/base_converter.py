@@ -16,7 +16,7 @@
 # ============================================================================
 
 """Converts scraped IngestInfo data to the persistence layer entity."""
-
+# pylint: disable=no-name-in-module
 import copy
 import logging
 from abc import abstractmethod

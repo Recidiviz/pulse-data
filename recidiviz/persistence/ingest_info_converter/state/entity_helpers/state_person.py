@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto StatePerson to a persistence entity."""
-
+# pylint: disable=no-name-in-module
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
     DefaultingAndNormalizingEnumParser,
 )

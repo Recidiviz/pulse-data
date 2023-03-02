@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
+# pylint: disable=no-name-in-module
 """Converts an ingest_info proto StateSupervisionPeriod to a persistence entity."""
 from recidiviz.common import common_utils
 from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (

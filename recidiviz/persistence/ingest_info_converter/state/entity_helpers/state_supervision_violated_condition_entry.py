@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 # pylint: skip-file
+# pylint: disable=no-name-in-module
 """Converts an ingest_info proto StateSupervisionViolatedConditionEntry to a
 persistence entity."""
 

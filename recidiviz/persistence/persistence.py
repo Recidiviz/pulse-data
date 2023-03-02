@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic for communicating with the persistence layer."""
+# pylint: disable=no-name-in-module
 import logging
 from typing import Callable, Dict, Optional, Union
 

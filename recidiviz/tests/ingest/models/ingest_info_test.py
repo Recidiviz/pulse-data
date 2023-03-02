@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Tests for ingest_info"""
-
+# pylint: disable=no-name-in-module
 import unittest
 from typing import List, Optional, Type
 

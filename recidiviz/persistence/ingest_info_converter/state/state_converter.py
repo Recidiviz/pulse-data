@@ -16,7 +16,7 @@
 # ============================================================================
 
 """Converts ingested IngestInfo data to the persistence layer entities."""
-
+# pylint: disable=no-name-in-module
 from recidiviz.ingest.models.ingest_info_pb2 import (
     StateAssessment,
     StateCharge,

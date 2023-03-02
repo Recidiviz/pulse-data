@@ -18,6 +18,7 @@
 
 import unittest
 
+# pylint: disable=no-name-in-module
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo, StatePerson
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.ingest_info_validator.ingest_info_validator import (

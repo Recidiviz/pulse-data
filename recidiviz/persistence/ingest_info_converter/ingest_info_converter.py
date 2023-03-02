@@ -19,6 +19,7 @@
 TODO(#8905): Delete this file once all states have been migrated to v2 ingest
  mappings.
 """
+# pylint: disable=no-name-in-module
 
 from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
