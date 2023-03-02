@@ -433,6 +433,100 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    ### Guidance ###
+
+    @api_blueprint.route("/users/agencies/<agency_id>/guidance", methods=["GET"])
+    @auth_decorator
+    def get_guidance_progress(agency_id: int) -> Response:
+        try:
+            request_json = assert_type(request.values, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            current_association, *_ = [
+                assoc
+                for assoc in user.agency_assocs
+                if assoc.agency_id == int(agency_id)
+            ]
+
+            if (
+                current_association.guidance_progress is None
+                or len(current_association.guidance_progress) == 0
+            ):
+                current_association.guidance_progress = [
+                    {"topicID": "WELCOME", "topicCompleted": False},
+                    {"topicID": "AGENCY_SETUP", "topicCompleted": False},
+                    {"topicID": "METRIC_CONFIG", "topicCompleted": False},
+                    {"topicID": "ADD_DATA", "topicCompleted": False},
+                    {"topicID": "PUBLISH_DATA", "topicCompleted": False},
+                ]
+                current_session.add(current_association)
+                current_session.commit()
+
+            return jsonify({"guidance_progress": current_association.guidance_progress})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/users/agencies/<agency_id>/guidance", methods=["PUT"])
+    @auth_decorator
+    def update_guidance_progress(agency_id: int) -> Response:
+        """
+        `updated_topic` {dictionary} - provides a single dictionary status update for a guidance topic
+        Structure: { "topicID": String, "topicCompleted": Boolean }
+        Example: { "topicID": "ADD_DATA", "topicCompleted": True } indicates user has completed the ADD_DATA
+                                                                    step of the guidance flow
+
+        ---
+
+        `current_association.guidance_progress` {list of dictionaries} - provides a list of all guidance topics and a user's
+                                                            status for each topic
+        Structure of dictionary item: { "topicID": String, "topicCompleted": Boolean }
+        Example (user is currently on the ADD_DATA step):
+            [
+                { "topicID": "WELCOME", "topicCompleted": True },
+                { "topicID": "AGENCY_SETUP", "topicCompleted": True },
+                { "topicID": "METRIC_CONFIG", "topicCompleted": True },
+                { "topicID": "ADD_DATA", "topicCompleted": False },
+                { "topicID": "PUBLISH_DATA", "topicCompleted": False },
+            ]
+        """
+        try:
+            request_dict = assert_type(request.json, dict)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_dict),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            updated_topic = assert_type(request_dict.get("updated_topic"), dict)
+
+            current_association, *_ = [
+                assoc
+                for assoc in user.agency_assocs
+                if assoc.agency_id == int(agency_id)
+            ]
+
+            # Updates a topic status within the `guidance_progress` list of dictionaries with the `updated_topic`
+            updated_guidance_progress = [
+                updated_topic
+                if topic.get("topicID") == updated_topic.get("topicID")
+                else topic
+                for topic in current_association.guidance_progress
+            ]
+
+            current_association.guidance_progress = updated_guidance_progress
+            current_session.add(current_association)
+            current_session.commit()
+
+            return jsonify({"guidance_progress": updated_guidance_progress})
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     ### Reports Overview ###
 
     @api_blueprint.route("/agencies/<agency_id>/reports", methods=["GET"])

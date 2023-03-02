@@ -749,10 +749,10 @@ class JusticeCountsSchemaTestObjects:
                         else None,
                     },
                     dimension_to_enabled_status={
-                        CallType.EMERGENCY: True,
-                        CallType.NON_EMERGENCY: True,
-                        CallType.UNKNOWN: True,
-                        CallType.OTHER: True,
+                        CallType.EMERGENCY: None,
+                        CallType.NON_EMERGENCY: None,
+                        CallType.UNKNOWN: None,
+                        CallType.OTHER: None,
                     },
                     dimension_to_includes_excludes_member_to_setting={
                         dimension: {} for dimension in CallType

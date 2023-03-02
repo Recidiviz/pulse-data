@@ -188,10 +188,11 @@ class DatapointsForMetric:
             if dimension is None
             else self.dimension_to_includes_excludes_key_to_datapoint.get(dimension)
         )
+
         for includes_excludes in includes_excludes_set_lst:
             for (
                 member,
-                default,
+                _,
             ) in includes_excludes.member_to_default_inclusion_setting.items():
                 datapoint = assert_type(includes_excludes_key_to_datapoint, dict).get(
                     member.name
@@ -206,7 +207,7 @@ class DatapointsForMetric:
                             IncludesExcludesSetting.NO.value,
                         }
                     )
-                    else default
+                    else None
                 )
         return includes_excludes_dict
 
@@ -274,7 +275,7 @@ class DatapointsForMetric:
             str, Dict[DimensionBase, Optional[Any]]
         ] = {
             aggregated_dimension.dimension_identifier(): {
-                d: None if create_dimension_to_value_dict else True
+                d: None
                 for d in DIMENSION_IDENTIFIER_TO_DIMENSION[
                     aggregated_dimension.dimension_identifier()
                 ]  # type: ignore[attr-defined]

@@ -269,6 +269,8 @@ class AgencyUserAccountAssociation(JusticeCountsBase):
     user_account_id = Column(ForeignKey("user_account.id"), primary_key=True)
     invitation_status = Column(Enum(UserAccountInvitationStatus), nullable=True)
     role = Column(Enum(UserAccountRole), nullable=True)
+    # Tracks progress during guidance/onboarding flow
+    guidance_progress = Column(JSONB, nullable=True)
 
     agency = relationship("Agency", back_populates="user_account_assocs")
     user_account = relationship("UserAccount", back_populates="agency_assocs")
@@ -416,6 +418,9 @@ class UserAccount(JusticeCountsBase):
     # Nullable so that we can create users manually first, and fill in their Auth0 id
     # after they sign in for the first time
     auth0_user_id = Column(String(255), nullable=True)
+
+    # (DEPRECATED - moved to AgencyUserAccountAssociation table) Tracks progress during guidance/onboarding flow
+    guidance_progress = Column(JSONB, nullable=True)
 
     agency_assocs = relationship(
         "AgencyUserAccountAssociation",

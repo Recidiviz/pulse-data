@@ -86,10 +86,16 @@ class MetricAggregatedDimensionData:
             DefaultDict[str, List[DatapointJson]]
         ] = None,
     ) -> Dict[str, Any]:
-        is_disaggregation_enabled = (
-            self.dimension_to_enabled_status is not None
-            and any(list(self.dimension_to_enabled_status.values()))
-        )  # A disaggregation is enabled if at least one of it's dimensions is enabled.
+        # A disaggregation is enabled if at least one of its dimensions is enabled OR disabled.
+        # A disaggregation is disabled if ALL of its dimensions are disabled.
+        # If all dimensions are None, the disaggregation will be None.
+        is_disaggregation_enabled = None
+        if self.dimension_to_enabled_status is not None:
+            enabled_statuses = self.dimension_to_enabled_status.values()
+            if all(dim is False for dim in enabled_statuses):
+                is_disaggregation_enabled = False
+            elif any(dim is not None for dim in enabled_statuses):
+                is_disaggregation_enabled = True
 
         return {
             "key": dimension_definition.dimension.dimension_identifier(),
@@ -352,7 +358,7 @@ class MetricAggregatedDimensionData:
     ) -> List[Dict[str, Any]]:
         """Returns a json list of include_exclude settings for a dimension."""
 
-        includes_excludes_list: List[Dict[str, str]] = []
+        includes_excludes_list: List[Dict[str, Optional[str]]] = []
         if includes_excludes_set_lst is None:
             return includes_excludes_list
 
@@ -376,9 +382,7 @@ class MetricAggregatedDimensionData:
                     {
                         "key": member.name,
                         "label": member.value,
-                        "included": included.value
-                        if included is not None
-                        else default_setting.value,
+                        "included": included.value if included is not None else None,
                         "default": default_setting.value,
                     }
                 )
