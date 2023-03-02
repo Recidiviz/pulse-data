@@ -842,7 +842,6 @@ class StateSupervisionSentence(google.protobuf.message.Message):
     STATUS_FIELD_NUMBER: builtins.int
     SUPERVISION_TYPE_FIELD_NUMBER: builtins.int
     DATE_IMPOSED_FIELD_NUMBER: builtins.int
-    START_DATE_FIELD_NUMBER: builtins.int
     PROJECTED_COMPLETION_DATE_FIELD_NUMBER: builtins.int
     COMPLETION_DATE_FIELD_NUMBER: builtins.int
     STATE_CODE_FIELD_NUMBER: builtins.int
@@ -855,7 +854,6 @@ class StateSupervisionSentence(google.protobuf.message.Message):
     status: typing.Text = ...
     supervision_type: typing.Text = ...
     date_imposed: typing.Text = ...
-    start_date: typing.Text = ...
     projected_completion_date: typing.Text = ...
     completion_date: typing.Text = ...
     state_code: typing.Text = ...
@@ -881,7 +879,6 @@ class StateSupervisionSentence(google.protobuf.message.Message):
         status: typing.Optional[typing.Text] = ...,
         supervision_type: typing.Optional[typing.Text] = ...,
         date_imposed: typing.Optional[typing.Text] = ...,
-        start_date: typing.Optional[typing.Text] = ...,
         projected_completion_date: typing.Optional[typing.Text] = ...,
         completion_date: typing.Optional[typing.Text] = ...,
         state_code: typing.Optional[typing.Text] = ...,
@@ -906,8 +903,6 @@ class StateSupervisionSentence(google.protobuf.message.Message):
             b"min_length",
             "projected_completion_date",
             b"projected_completion_date",
-            "start_date",
-            b"start_date",
             "state_code",
             b"state_code",
             "state_supervision_sentence_id",
@@ -933,8 +928,6 @@ class StateSupervisionSentence(google.protobuf.message.Message):
             b"min_length",
             "projected_completion_date",
             b"projected_completion_date",
-            "start_date",
-            b"start_date",
             "state_charge_ids",
             b"state_charge_ids",
             "state_code",
@@ -958,7 +951,6 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
     STATUS_FIELD_NUMBER: builtins.int
     INCARCERATION_TYPE_FIELD_NUMBER: builtins.int
     DATE_IMPOSED_FIELD_NUMBER: builtins.int
-    START_DATE_FIELD_NUMBER: builtins.int
     PROJECTED_MIN_RELEASE_DATE_FIELD_NUMBER: builtins.int
     PROJECTED_MAX_RELEASE_DATE_FIELD_NUMBER: builtins.int
     COMPLETION_DATE_FIELD_NUMBER: builtins.int
@@ -979,7 +971,6 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
     status: typing.Text = ...
     incarceration_type: typing.Text = ...
     date_imposed: typing.Text = ...
-    start_date: typing.Text = ...
     projected_min_release_date: typing.Text = ...
     projected_max_release_date: typing.Text = ...
     completion_date: typing.Text = ...
@@ -1013,7 +1004,6 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
         status: typing.Optional[typing.Text] = ...,
         incarceration_type: typing.Optional[typing.Text] = ...,
         date_imposed: typing.Optional[typing.Text] = ...,
-        start_date: typing.Optional[typing.Text] = ...,
         projected_min_release_date: typing.Optional[typing.Text] = ...,
         projected_max_release_date: typing.Optional[typing.Text] = ...,
         completion_date: typing.Optional[typing.Text] = ...,
@@ -1064,8 +1054,6 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
             b"projected_max_release_date",
             "projected_min_release_date",
             b"projected_min_release_date",
-            "start_date",
-            b"start_date",
             "state_code",
             b"state_code",
             "state_incarceration_sentence_id",
@@ -1107,8 +1095,6 @@ class StateIncarcerationSentence(google.protobuf.message.Message):
             b"projected_max_release_date",
             "projected_min_release_date",
             b"projected_min_release_date",
-            "start_date",
-            b"start_date",
             "state_charge_ids",
             b"state_charge_ids",
             "state_code",

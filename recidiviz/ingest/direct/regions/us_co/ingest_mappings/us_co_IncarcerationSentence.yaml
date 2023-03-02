@@ -87,7 +87,6 @@ output:
                 StateIncarcerationType.OUT_OF_STATE:
                   - IC # Interstate Compact
           date_imposed: SENTENCEFINDINGDATE
-          start_date: COMPONENTEFFECTIVEDATE
           effective_date: COMPONENTEFFECTIVEDATE
           projected_min_release_date: PROJ_MIN_RELEASE #PAROLEELIGIBILITYDATE
           projected_max_release_date: PROJ_MAX_RELEASE #PROJRELEASEDTACTUAL

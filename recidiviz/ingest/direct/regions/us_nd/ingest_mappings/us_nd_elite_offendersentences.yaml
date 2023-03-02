@@ -52,7 +52,6 @@ output:
                 - SENTENCE_SEQ
           status: $literal_enum(StateSentenceStatus.PRESENT_WITHOUT_INFO)
           incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
-          start_date: START_DATE
           effective_date: START_DATE
           is_life:
             $equal:

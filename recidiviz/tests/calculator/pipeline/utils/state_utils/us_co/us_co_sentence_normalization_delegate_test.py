@@ -42,14 +42,12 @@ class TestUsCoSentenceNormalizationDelegate(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
             date_imposed=datetime.date(1000, 1, 1),
-            start_date=datetime.date(934, 3, 3),
             effective_date=datetime.date(934, 3, 3),
             completion_date=datetime.date(1000, 1, 1),
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
         result = self.delegate.update_incarceration_sentence(incarceration_sentence)
         self.assertIsNone(result.date_imposed)
-        self.assertIsNone(result.start_date)
         self.assertIsNone(result.effective_date)
         self.assertIsNone(result.completion_date)
 

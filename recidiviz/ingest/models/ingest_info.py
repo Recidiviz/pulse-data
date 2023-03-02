@@ -585,7 +585,6 @@ class StateSupervisionSentence(IngestObject):
         status=None,
         supervision_type=None,
         date_imposed=None,
-        start_date=None,
         projected_completion_date=None,
         completion_date=None,
         state_code=None,
@@ -601,7 +600,6 @@ class StateSupervisionSentence(IngestObject):
         self.status: Optional[str] = status
         self.supervision_type: Optional[str] = supervision_type
         self.date_imposed: Optional[str] = date_imposed
-        self.start_date: Optional[str] = start_date
         self.projected_completion_date: Optional[str] = projected_completion_date
         self.completion_date: Optional[str] = completion_date
         self.state_code: Optional[str] = state_code
@@ -663,7 +661,6 @@ class StateIncarcerationSentence(IngestObject):
         status=None,
         incarceration_type=None,
         date_imposed=None,
-        start_date=None,
         projected_min_release_date=None,
         projected_max_release_date=None,
         completion_date=None,
@@ -687,7 +684,6 @@ class StateIncarcerationSentence(IngestObject):
         self.status: Optional[str] = status
         self.incarceration_type: Optional[str] = incarceration_type
         self.date_imposed: Optional[str] = date_imposed
-        self.start_date: Optional[str] = start_date
         self.projected_min_release_date: Optional[str] = projected_min_release_date
         self.projected_max_release_date: Optional[str] = projected_max_release_date
         self.completion_date: Optional[str] = completion_date

@@ -157,11 +157,6 @@ output:
               $function: us_mo_custom_parsers.null_if_magic_date
               $args:
                 date: BU_SF
-          start_date:
-            $custom:
-              $function: us_mo_custom_parsers.null_if_magic_date
-              $args:
-                date: BU_SF
           effective_date:
             $custom:
               $function: us_mo_custom_parsers.null_if_magic_date

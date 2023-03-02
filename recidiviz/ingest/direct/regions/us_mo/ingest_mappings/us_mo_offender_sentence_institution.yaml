@@ -133,21 +133,6 @@ output:
               $args:
                 date: BT_PC
           date_imposed: BT_SD
-          start_date: # TODO(#9185): [US_MO] Ensure correct handling of magic date in start_date of incarceration sentence
-            $conditional:
-              - $if:
-                  $in:
-                    $value: BT_EM
-                    $options:
-                      - $literal("0")
-                      - $literal("19000000")
-                      - $literal("20000000")
-                      - $literal("66666666")
-                      - $literal("77777777")
-                      - $literal("88888888")
-                      - $literal("99999999")
-                $then: BT_SD
-              - $else: BT_EM
           effective_date: # TODO(#9185): [US_MO] Ensure correct handling of magic date in effective_date of incarceration sentence
             $conditional:
               - $if:

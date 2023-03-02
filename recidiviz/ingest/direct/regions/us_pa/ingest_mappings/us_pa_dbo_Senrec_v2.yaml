@@ -115,7 +115,6 @@ output:
                 # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
                 - "'"
           date_imposed: sent_date
-          start_date: sent_start_date
           effective_date: sent_start_date
           completion_date: sent_stop_date
           projected_min_release_date: min_expir_date

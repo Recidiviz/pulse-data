@@ -46,9 +46,6 @@ class UsCoSentenceNormalizationDelegate(StateSpecificSentenceNormalizationDelega
             date_imposed=incarceration_sentence.date_imposed
             if self._is_date_valid(incarceration_sentence.date_imposed)
             else None,
-            start_date=incarceration_sentence.start_date
-            if self._is_date_valid(incarceration_sentence.start_date)
-            else None,
             effective_date=incarceration_sentence.effective_date
             if self._is_date_valid(incarceration_sentence.effective_date)
             else None,

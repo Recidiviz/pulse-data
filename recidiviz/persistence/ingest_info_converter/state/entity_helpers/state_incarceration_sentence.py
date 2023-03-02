@@ -24,6 +24,8 @@ from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
+
+# pylint: disable=no-name-in-module
 from recidiviz.ingest.models.ingest_info_pb2 import StateIncarcerationSentence
 from recidiviz.persistence.entity.state import entities
 
@@ -64,7 +66,6 @@ def copy_fields_to_builder(
         else state_incarceration_sentence_id
     )
     new.date_imposed = getattr(proto, "date_imposed")
-    new.start_date = getattr(proto, "start_date")
     new.projected_min_release_date = getattr(proto, "projected_min_release_date")
     new.projected_max_release_date = getattr(proto, "projected_max_release_date")
     new.completion_date = getattr(proto, "completion_date")
