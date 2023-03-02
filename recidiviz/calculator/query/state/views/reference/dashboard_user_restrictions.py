@@ -95,7 +95,9 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                         system_supervisionToPrison,
                         workflows
                     ))
-                ELSE TO_JSON_STRING(NULL)
+                ELSE TO_JSON_STRING(STRUCT(
+                    TRUE AS workflows
+                ))
             END AS routes,
         FROM
             `{project_id}.{static_reference_dataset_id}.us_id_leadership_users` leadership
@@ -138,7 +140,9 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                         system_supervisionToPrison,
                         workflows
                     ))
-                ELSE TO_JSON_STRING(NULL)
+                ELSE TO_JSON_STRING(STRUCT(
+                    TRUE AS workflows
+                ))
             END AS routes,
         FROM
             `{project_id}.{static_reference_dataset_id}.us_ix_leadership_users` leadership
