@@ -51,6 +51,7 @@ class RawDataConfigWriterTest(unittest.TestCase):
                     default_separator=",",
                     default_ignore_quotes=False,
                     default_always_historical_export=False,
+                    default_no_valid_primary_keys=False,
                     output_path=test_output_path,
                     raw_file_config=config,
                     default_line_terminator="‡\n",

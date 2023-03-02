@@ -101,6 +101,10 @@
       "description": "If true, means that we **always** will get a historical version of this raw data file from the state and will never change to incremental uploads (for example, because we need to detect row deletions).",
       "type": "boolean"
     },
+    "no_valid_primary_keys": {
+      "description": "If true, means that the primary keys for this raw data file are unstable over time",
+      "type": "boolean"
+    },
     "import_chunk_size_rows": {
       "description": "Defines the number of rows in each chunk we will read one at a time from the original raw data file and write back to GCS files before loading into BQ. Increasing this value may increase import speed, but should only be done carefully - if the table has too much data in a row, increasing the number of rows per chunk may push us over VM memory limits. Defaults to 250,000 rows per chunk.",
       "type": "integer"

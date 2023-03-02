@@ -91,6 +91,7 @@ class RawDataConfigWriter:
         default_separator: str,
         default_ignore_quotes: bool,
         default_always_historical_export: bool,
+        default_no_valid_primary_keys: bool,
         default_line_terminator: Optional[str],
     ) -> None:
         """Writes a yaml config file to the given path for a given raw file config"""
@@ -126,6 +127,12 @@ class RawDataConfigWriter:
         # we need to include it in the config
         if raw_file_config.always_historical_export != default_always_historical_export:
             config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
+        # If whether to treat raw files as having unstable primary keys is not the default,
+        # we need to include it in the config
+        if raw_file_config.no_valid_primary_keys != default_no_valid_primary_keys:
+            config += (
+                f"no_valid_primary_keys: {raw_file_config.no_valid_primary_keys}\n"
+            )
         if raw_file_config.custom_line_terminator != default_line_terminator:
             # Convert newline, etc. to escape sequences
             custom_line_terminator_for_yaml = repr(
