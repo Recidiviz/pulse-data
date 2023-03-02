@@ -44,7 +44,7 @@ class TestAggregatedDimension(TestCase):
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
                             value_type=ValueType.TEXT,
-                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                             required=False,
                         )
                     ],
@@ -52,7 +52,7 @@ class TestAggregatedDimension(TestCase):
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
                             value_type=ValueType.TEXT,
-                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                             required=False,
                         )
                     ],
@@ -60,7 +60,7 @@ class TestAggregatedDimension(TestCase):
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
                             value_type=ValueType.TEXT,
-                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                             required=False,
                         )
                     ],
@@ -68,7 +68,7 @@ class TestAggregatedDimension(TestCase):
                         Context(
                             key=ContextKey.INCLUDES_EXCLUDES_DESCRIPTION,
                             value_type=ValueType.TEXT,
-                            label="If the listed categories do not adequately describe your metric, please describe additional data elements included in your agency’s definition.",
+                            label="If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                             required=False,
                         )
                     ],
