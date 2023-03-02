@@ -138,6 +138,7 @@ def _update_enum_known_values(
         ignore_quotes=original_config.ignore_quotes,
         supplemental_order_by_clause=original_config.supplemental_order_by_clause,
         always_historical_export=original_config.always_historical_export,
+        no_valid_primary_keys=original_config.no_valid_primary_keys,
         import_chunk_size_rows=original_config.import_chunk_size_rows,
         infer_columns_from_config=original_config.infer_columns_from_config,
     )
@@ -184,6 +185,7 @@ def main(
             default_config.default_separator,
             default_config.default_ignore_quotes,
             default_config.default_always_historical_export,
+            default_config.default_no_valid_primary_keys,
             default_config.default_line_terminator,
         )
 

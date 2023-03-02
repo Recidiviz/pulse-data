@@ -121,6 +121,7 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
             custom_line_terminator=None,
             ignore_quotes=False,
             always_historical_export=False,
+            no_valid_primary_keys=False,
             import_chunk_size_rows=10,
             infer_columns_from_config=False,
         )

@@ -3,6 +3,7 @@ file_description: |-
   tagNotHistorical file description
 data_classification: source
 always_historical_export: False
+no_valid_primary_keys: True
 primary_key_cols:
   - column_1
 columns:

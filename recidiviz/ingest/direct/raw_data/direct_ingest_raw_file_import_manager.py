@@ -235,6 +235,9 @@ class DirectIngestRawFileConfig:
     # are defined in, as the column names. By default, False.
     infer_columns_from_config: bool = attr.ib()
 
+    # If true, that means that the primary keys for this table are unstable over time.
+    no_valid_primary_keys: bool = attr.ib()
+
     @property
     def primary_key_str(self) -> str:
         """A comma-separated string representation of the primary keys"""
@@ -309,6 +312,7 @@ class DirectIngestRawFileConfig:
         default_line_terminator: Optional[str],
         default_ignore_quotes: bool,
         default_always_historical_export: bool,
+        default_no_valid_primary_keys: bool,
         default_infer_columns_from_config: Optional[bool],
         file_config_dict: YAMLDict,
         yaml_filename: str,
@@ -341,6 +345,9 @@ class DirectIngestRawFileConfig:
         )
         always_historical_export = file_config_dict.pop_optional(
             "always_historical_export", bool
+        )
+        no_valid_primary_keys = file_config_dict.pop_optional(
+            "no_valid_primary_keys", bool
         )
         import_chunk_size_rows = file_config_dict.pop_optional(
             "import_chunk_size_rows", int
@@ -395,6 +402,9 @@ class DirectIngestRawFileConfig:
             always_historical_export=always_historical_export
             if always_historical_export is not None
             else default_always_historical_export,
+            no_valid_primary_keys=no_valid_primary_keys
+            if no_valid_primary_keys is not None
+            else default_no_valid_primary_keys,
             import_chunk_size_rows=import_chunk_size_rows
             if import_chunk_size_rows is not None
             else _DEFAULT_BQ_UPLOAD_CHUNK_SIZE,
@@ -422,6 +432,8 @@ class DirectIngestRawFileDefaultConfig:
     default_ignore_quotes: bool = attr.ib(validator=attr_validators.is_bool)
     # The default setting for whether to always treat raw files as historical exports
     default_always_historical_export: bool = attr.ib(validator=attr_validators.is_bool)
+    # The default value for whether tables in a region have unstable primary keys
+    default_no_valid_primary_keys: bool = attr.ib(validator=attr_validators.is_bool)
     # The default line terminator for raw files from this region
     default_line_terminator: Optional[str] = attr.ib(
         default=None,
@@ -466,6 +478,9 @@ class DirectIngestRegionRawFileConfig:
         default_always_historical_export = default_contents.pop(
             "default_always_historical_export", bool
         )
+        default_no_valid_primary_keys = default_contents.pop(
+            "default_no_valid_primary_keys", bool
+        )
         default_infer_columns_from_config = default_contents.pop_optional(
             "default_infer_columns_from_config", bool
         )
@@ -478,6 +493,7 @@ class DirectIngestRegionRawFileConfig:
             default_ignore_quotes=default_ignore_quotes,
             default_infer_columns_from_config=default_infer_columns_from_config,
             default_always_historical_export=default_always_historical_export,
+            default_no_valid_primary_keys=default_no_valid_primary_keys,
         )
 
     def _region_ingest_dir(self) -> str:
@@ -546,6 +562,7 @@ class DirectIngestRegionRawFileConfig:
                 default_config.default_line_terminator,
                 default_config.default_ignore_quotes,
                 default_config.default_always_historical_export,
+                default_config.default_no_valid_primary_keys,
                 default_config.default_infer_columns_from_config,
                 yaml_contents,
                 filename,
