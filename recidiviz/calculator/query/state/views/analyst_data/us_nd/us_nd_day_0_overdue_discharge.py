@@ -79,7 +79,7 @@ sentence_count AS (
         COUNT(*) AS sentence_count,
     FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
     WHERE state_code = 'US_ND'
-        AND CURRENT_DATE('US/Central') >= start_date
+        AND CURRENT_DATE('US/Central') >= effective_date
         AND completion_date IS NULL
     GROUP BY 1
 )

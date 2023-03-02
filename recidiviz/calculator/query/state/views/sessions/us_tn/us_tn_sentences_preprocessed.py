@@ -84,7 +84,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         missing because we only get imposed date from that table so all those get over-written.
         TODO(#18363) - Update effective_date for ISC sentences to use ISCPretrialCredits once ingested 
         */
-        COALESCE(sis.start_date, sis.date_imposed) AS effective_date,
+        COALESCE(sis.effective_date, sis.date_imposed) AS effective_date,
         sis.date_imposed,
         sis.completion_date,
         sis.status,
@@ -143,7 +143,7 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         missing because we only get imposed date from that table so all those get over-written.
         TODO(#18363) - Update effective_date for ISC sentences to use ISCPretrialCredits once ingested 
         */
-        COALESCE(sss.start_date, sss.date_imposed) AS effective_date,
+        COALESCE(sss.effective_date, sss.date_imposed) AS effective_date,
         sss.date_imposed,
         sss.completion_date,
         sss.status,

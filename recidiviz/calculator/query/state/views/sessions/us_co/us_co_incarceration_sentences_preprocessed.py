@@ -63,7 +63,7 @@ US_CO_INCARCERATION_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         sis.external_id AS external_id,
         'INCARCERATION' AS sentence_type,
         'INCARCERATION' AS sentence_sub_type,
-        sis.start_date AS effective_date,
+        sis.effective_date,
         di.date_imposed,
         -- Update when `completion_date` is no longer the same as `effective_date`
         CAST(NULL AS DATE) AS completion_date,
