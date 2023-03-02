@@ -226,7 +226,6 @@ metric_pipelines:
   - pipeline: supervision_metrics
     job_name: full-us-me-supervision-metrics
     state_code: US_ME
-    calculation_month_count: 36
     metric_types: SUPERVISION_START SUPERVISION_TERMINATION
     region: us-west3
   - pipeline: violation_metrics
