@@ -119,7 +119,8 @@ def _schema_column_type_for_sqlalchemy_column(column: Column) -> str:
 
 
 def schema_for_sqlalchemy_table(
-    table: sqlalchemy.Table, add_state_code_field: bool = False
+    table: sqlalchemy.Table,
+    add_state_code_field: bool = False,
 ) -> List[bigquery.SchemaField]:
     """Returns the necessary BigQuery schema for storing the contents of the
     table in BigQuery, which is a list of SchemaField objects containing the

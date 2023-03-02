@@ -107,6 +107,12 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
                 field_type=bigquery.enums.SqlTypeNames.DATETIME.value,
                 mode="REQUIRED",
             ),
+            bigquery.SchemaField(
+                name="is_deleted",
+                field_type=bigquery.enums.SqlTypeNames.BOOLEAN.value,
+                # TODO(#18954): Change to `REQUIRED` once is_deleted is populated for every table.
+                mode="NULLABLE",
+            ),
         ]
 
         self.project_id_patcher = patch("recidiviz.utils.metadata.project_id")
