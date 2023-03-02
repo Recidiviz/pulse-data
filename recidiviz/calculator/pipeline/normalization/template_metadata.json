@@ -5,7 +5,7 @@
     {
       "name": "pipeline",
       "label": "Dataflow pipeline name",
-      "helpText": "Name of the dataflow pipeline to run.",
+      "helpText": "Name of the dataflow pipeline to run."
     },
     {
       "name": "state_code",
