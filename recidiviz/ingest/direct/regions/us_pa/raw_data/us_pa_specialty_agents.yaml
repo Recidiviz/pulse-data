@@ -38,3 +38,6 @@ columns:
     is_pii: True
     description: |-
       Unique ID for each Agent
+  - name: date_received
+    description: |-
+      Date that the row from this file was received from PA
