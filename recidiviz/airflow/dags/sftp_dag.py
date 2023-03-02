@@ -142,6 +142,8 @@ QUEUE_LOCATION = "us-east1"
 # generated. This prevents the scheduler and all workers from being overloaded.
 MAX_TASKS_TO_RUN_IN_PARALLEL = 8
 
+TASK_RETRIES = 3
+
 
 def sftp_enabled_states() -> List[str]:
     enabled_states = []
@@ -282,6 +284,7 @@ def sftp_dag() -> None:
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
+                    retries=TASK_RETRIES,
                 ).expand_kwargs(gather_discovered_remote_files.output)
                 post_process_downloaded_files = RecidivizGcsFileTransformOperator.partial(
                     task_id="post_process_downloaded_files",
@@ -292,6 +295,7 @@ def sftp_dag() -> None:
                     # tasks. We need to wait until downloads are finished in order
                     # to decide what to post process.
                     trigger_rule=TriggerRule.ALL_DONE,
+                    retries=TASK_RETRIES,
                 ).expand_kwargs(
                     download_sftp_files.output
                 )
@@ -372,6 +376,7 @@ def sftp_dag() -> None:
                     project_id=project_id,
                     region_code=state_code,
                     max_active_tis_per_dag=MAX_TASKS_TO_RUN_IN_PARALLEL,
+                    retries=TASK_RETRIES,
                 ).expand_kwargs(gather_discovered_ingest_ready_files.output)
                 check_ingest_ready_files_uploaded = ShortCircuitOperator(
                     task_id="check_ingest_ready_files_uploaded",
