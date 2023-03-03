@@ -118,12 +118,14 @@ def main() -> None:
     project_id = parser.parse_args().project_id
     with local_project_id_override(project_id):
         state_codes = get_direct_ingest_states_existing_in_env()
+        bq_client = BigQueryClientImpl()
         logging.info("Getting raw file configs...")
         file_kwargs = [
             {
                 "state_code": state_code,
                 "raw_file_tag": raw_file_tag,
                 "instance": instance,
+                "big_query_client": bq_client,
             }
             for state_code in state_codes
             for instance in DirectIngestInstance
@@ -131,7 +133,6 @@ def main() -> None:
                 state_code.value
             ).raw_file_configs
         ]
-        bq_client = BigQueryClientImpl()
         create_states_raw_data_datasets_if_necessary(
             state_codes=state_codes, bq_client=bq_client
         )

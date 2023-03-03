@@ -18,10 +18,11 @@
 
 import unittest
 from typing import List
-from unittest.mock import patch
+from unittest.mock import create_autospec, patch
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -121,10 +122,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
         self.project_number_patcher = patch("recidiviz.utils.metadata.project_number")
         self.project_number_patcher.start().return_value = "123456789"
 
-        self.bq_client_patcher = patch(
-            "recidiviz.ingest.direct.raw_data_table_schema_utils.BigQueryClientImpl"
-        )
-        self.mock_client = self.bq_client_patcher.start().return_value
+        self.mock_client = create_autospec(BigQueryClient)
 
         self.region_config_patcher = patch(
             "recidiviz.ingest.direct.raw_data_table_schema_utils.get_region_raw_file_config"
@@ -132,7 +130,6 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
         self.region_config_patcher.start().return_value = self.region_config
 
     def tearDown(self) -> None:
-        self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
         self.region_config_patcher.stop()
@@ -144,6 +141,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
             state_code=self.fake_state,
             raw_file_tag="raw_data_table",
             instance=DirectIngestInstance.PRIMARY,
+            big_query_client=self.mock_client,
         )
 
         self.mock_client.create_table_with_schema.assert_called()
@@ -162,6 +160,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
             state_code=self.fake_state,
             raw_file_tag="raw_data_table",
             instance=DirectIngestInstance.PRIMARY,
+            big_query_client=self.mock_client,
         )
 
         self.mock_client.update_schema.assert_called()

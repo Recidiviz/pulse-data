@@ -26,12 +26,12 @@ import attr
 import cattr
 import google_crc32c
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import (
     GcsfsBucketPath,
     GcsfsDirectoryPath,
@@ -46,6 +46,9 @@ from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileImportManager,
     DirectIngestRegionRawFileConfig,
+)
+from recidiviz.ingest.direct.raw_data_table_schema_utils import (
+    update_raw_data_table_schema,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
@@ -131,6 +134,8 @@ def import_raw_files_to_bq_sandbox(
     source_bucket: GcsfsBucketPath,
     file_tag_filters: Optional[List[str]],
     allow_incomplete_configs: bool,
+    big_query_client: BigQueryClient,
+    gcsfs: GCSFileSystem,
 ) -> SandboxRawFileImportResult:
     """Imports a set of raw data files in the given source bucket into a sandbox
     dataset. If |file_tag_filters| is set, then will only import files with that set
@@ -138,34 +143,37 @@ def import_raw_files_to_bq_sandbox(
     """
 
     file_status_list = []
-    csv_reader = GcsfsCsvReader(GcsfsFactory.build())
+    csv_reader = GcsfsCsvReader(gcsfs)
+    fs = DirectIngestGCSFileSystem(gcsfs)
 
     try:
         region_code = state_code.value.lower()
+        region = get_direct_ingest_region(region_code)
+
         import_manager = DirectIngestRawFileImportManager(
-            region=get_direct_ingest_region(region_code),
-            fs=DirectIngestGCSFileSystem(GcsfsFactory.build()),
+            region=region,
+            fs=fs,
             temp_output_directory_path=GcsfsDirectoryPath.from_dir_and_subdir(
                 source_bucket, "temp_raw_data"
             ),
             csv_reader=csv_reader,
-            big_query_client=BigQueryClientImpl(),
+            big_query_client=big_query_client,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
             allow_incomplete_configs=allow_incomplete_configs,
             # Sandbox instance can be primary
             instance=DirectIngestInstance.PRIMARY,
         )
 
-        bq_client = BigQueryClientImpl()
-
         # Create the dataset up front with table expiration
-        bq_client.create_dataset_if_necessary(
-            bq_client.dataset_ref_for_id(dataset_id=import_manager.raw_tables_dataset),
+        big_query_client.create_dataset_if_necessary(
+            big_query_client.dataset_ref_for_id(
+                dataset_id=import_manager.raw_tables_dataset
+            ),
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
 
         raw_files_to_import = get_unprocessed_raw_files_in_bucket(
-            fs=import_manager.fs,
+            fs=fs,
             bucket_path=source_bucket,
             region_raw_file_config=import_manager.region_raw_file_config,
         )
@@ -176,6 +184,7 @@ def import_raw_files_to_bq_sandbox(
         ) from error
 
     failures_by_exception = defaultdict(list)
+    seen_tags = set()
 
     for file_path in raw_files_to_import:
         parts = filename_parts_from_path(file_path)
@@ -191,6 +200,17 @@ def import_raw_files_to_bq_sandbox(
             continue
 
         logging.info("Running file with tag [%s]", parts.file_tag)
+
+        # Update the schema if this is the first file with this tag.
+        if parts.file_tag not in seen_tags:
+            update_raw_data_table_schema(
+                state_code=state_code,
+                instance=DirectIngestInstance.PRIMARY,
+                raw_file_tag=parts.file_tag,
+                big_query_client=big_query_client,
+                sandbox_dataset_prefix=sandbox_dataset_prefix,
+            )
+            seen_tags.add(parts.file_tag)
 
         try:
             import_manager.import_raw_file_to_big_query(

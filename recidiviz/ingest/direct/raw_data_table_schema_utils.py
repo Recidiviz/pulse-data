@@ -16,11 +16,11 @@
 #  =============================================================================
 """Utilities to update raw data table schemas."""
 import logging
-from typing import List
+from typing import List, Optional
 
 from google.cloud import bigquery
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
@@ -42,22 +42,24 @@ def _update_raw_data_table_schema_to_new_schema(
     instance: DirectIngestInstance,
     raw_file_tag: str,
     schema: List[bigquery.SchemaField],
+    big_query_client: BigQueryClient,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """Update the schema of a given raw data table to match the passed in `schema`."""
-    bq_client = BigQueryClientImpl()
-
     raw_data_dataset_id = raw_tables_dataset_for_region(
-        state_code=state_code, instance=instance
+        state_code=state_code,
+        instance=instance,
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
     )
-    raw_data_dataset_ref = bq_client.dataset_ref_for_id(raw_data_dataset_id)
+    raw_data_dataset_ref = big_query_client.dataset_ref_for_id(raw_data_dataset_id)
 
     try:
-        if bq_client.table_exists(raw_data_dataset_ref, raw_file_tag):
-            bq_client.update_schema(
+        if big_query_client.table_exists(raw_data_dataset_ref, raw_file_tag):
+            big_query_client.update_schema(
                 raw_data_dataset_id, raw_file_tag, schema, allow_field_deletions=False
             )
         else:
-            bq_client.create_table_with_schema(
+            big_query_client.create_table_with_schema(
                 raw_data_dataset_id,
                 raw_file_tag,
                 schema,
@@ -74,7 +76,7 @@ def _update_raw_data_table_schema_to_new_schema(
 
 def _get_raw_data_table_schema(
     state_code: StateCode, raw_file_tag: str
-) -> bigquery.SchemaField:
+) -> List[bigquery.SchemaField]:
     """Retrieve the raw data BQ schema for a given raw file tag."""
     region_config = get_region_raw_file_config(state_code.value.lower())
     region_raw_file_config = region_config.raw_file_configs
@@ -93,7 +95,11 @@ def _get_raw_data_table_schema(
 
 
 def update_raw_data_table_schema(
-    state_code: StateCode, instance: DirectIngestInstance, raw_file_tag: str
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    raw_file_tag: str,
+    big_query_client: BigQueryClient,
+    sandbox_dataset_prefix: Optional[str] = None,
 ) -> None:
     """Update the raw data table for a given state, instance, and raw file tag by obtaining the appropriate raw file
     config updating the schema based on the columns defined in the YAML."""
@@ -102,4 +108,6 @@ def update_raw_data_table_schema(
         instance=instance,
         raw_file_tag=raw_file_tag,
         schema=_get_raw_data_table_schema(state_code, raw_file_tag),
+        sandbox_dataset_prefix=sandbox_dataset_prefix,
+        big_query_client=big_query_client,
     )

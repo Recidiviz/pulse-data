@@ -41,6 +41,8 @@ from typing import Optional
 from recidiviz.admin_panel.ingest_operations.ingest_utils import (
     import_raw_files_to_bq_sandbox,
 )
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -84,6 +86,8 @@ def do_sandbox_raw_file_import(
         source_bucket=source_bucket,
         file_tag_filters=file_tag_filters,
         allow_incomplete_configs=allow_incomplete_configs,
+        big_query_client=BigQueryClientImpl(),
+        gcsfs=GcsfsFactory.build(),
     )
 
 
