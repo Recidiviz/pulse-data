@@ -141,9 +141,18 @@ def create_workflows_api_blueprint() -> Blueprint:
         if (url := get_secret(url_secret)) is None:
             return make_response(f"Secret {url_secret} not found", HTTPStatus.NOT_FOUND)
 
+        method = g.api_data.get("method")
+        logging.info(
+            "Workflows proxy: [%s] is sending a [%s] request to url_secret [%s] with value [%s]",
+            g.authenticated_user_email,
+            method,
+            url_secret,
+            url,
+        )
+
         response = requests.request(
             url=url,
-            method=g.api_data.get("method"),
+            method=method,
             headers=g.api_data.get("headers"),
             json=g.api_data.get("json"),
             timeout=g.api_data.get("timeout"),

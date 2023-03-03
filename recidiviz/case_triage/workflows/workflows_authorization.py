@@ -19,7 +19,7 @@ import os
 from http import HTTPStatus
 from typing import Any, Dict, List
 
-from flask import request
+from flask import g, request
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.auth0 import AuthorizationError
@@ -30,6 +30,14 @@ def on_successful_authorization_recidiviz_only(claims: Dict[str, Any]) -> None:
     """Only allows users whose state code is RECIDIVIZ"""
     app_metadata = claims[f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata"]
     user_state_code = app_metadata["state_code"].upper()
+    g.authenticated_user_email = claims.get(
+        f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address"
+    )
+    if not g.authenticated_user_email:
+        raise AuthorizationError(
+            code="not_authorized",
+            description="Access denied, email is missing or invalid",
+        )
 
     if user_state_code == "RECIDIVIZ":
         return

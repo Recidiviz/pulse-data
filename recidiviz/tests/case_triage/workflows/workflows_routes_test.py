@@ -79,7 +79,8 @@ class WorkflowsBlueprintTestCase(TestCase):
             {
                 f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/app_metadata": {
                     "state_code": f"{state_code.lower()}"
-                }
+                },
+                f"{os.environ['AUTH0_CLAIM_NAMESPACE']}/email_address": "test_user@recidiviz.org",
             }
         )
 
@@ -107,7 +108,9 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         proxy_response = "test response"
         timeout = 360  # default defined in api_schemas.py
 
-        with responses.RequestsMock(assert_all_requests_are_fired=True) as rsps:
+        with responses.RequestsMock(
+            assert_all_requests_are_fired=True
+        ) as rsps, self.assertLogs(level="INFO") as log:
             rsps.add(
                 responses.GET,
                 self.fake_url,
@@ -119,6 +122,10 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
                 json={"url_secret": "foo", "method": "GET"},
             )
             self.assertEqual(response.get_data(as_text=True), proxy_response)
+            self.assertIn(
+                f"INFO:root:Workflows proxy: [test_user@recidiviz.org] is sending a [GET] request to url_secret [foo] with value [{self.fake_url}]",
+                log.output,
+            )
 
     @patch("recidiviz.case_triage.workflows.workflows_routes.get_secret")
     def test_proxy(self, mock_get_secret: MagicMock) -> None:
