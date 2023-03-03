@@ -148,7 +148,7 @@ WITH filtered_rows AS (
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
-AND External_Id_Col IN ('123');"""
+WHERE External_Id_Col IN ('123');"""
         self.assertEqual(
             expected_query,
             query,
@@ -180,7 +180,7 @@ WITH filtered_rows AS (
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
-AND External_Id_Col IN ('123', '456');"""
+WHERE External_Id_Col IN ('123', '456');"""
 
         self.assertEqual(expected_query, query)
 
@@ -214,7 +214,7 @@ WITH filtered_rows AS (
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
-AND External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR External_Id_Col_3 IN ('123', '456');"""
+WHERE External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') OR External_Id_Col_3 IN ('123', '456');"""
         self.maxDiff = None
         self.assertEqual(expected_query, query)
 
@@ -284,5 +284,5 @@ filtered_rows AS (
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
-AND External_Id_Col IN ('123');"""
+WHERE External_Id_Col IN ('123');"""
         self.assertEqual(expected_query, query)

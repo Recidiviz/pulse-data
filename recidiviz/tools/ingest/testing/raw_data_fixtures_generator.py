@@ -179,7 +179,7 @@ class RawDataFixturesGenerator:
         )
 
         id_filter_condition = (
-            f"AND {person_external_id_column} IN ({filter_by_values})"
+            f"WHERE {person_external_id_column} IN ({filter_by_values})"
             if person_external_id_column
             else ""
         )
