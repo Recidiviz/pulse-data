@@ -120,6 +120,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_sentence_term import (
     US_ME_SENTENCE_TERM_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tracks import (
+    US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_screeners_preprocessed import (
+    US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_sentencing_dates_preprocessed import (
+    US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_nd.us_nd_day_0_early_termination import (
     US_ND_DAY_0_EARLY_TERMINATION_VIEW_BUILDER,
 )
@@ -254,6 +263,9 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
         US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
         CURRENT_STAFF_SUPERVISION_LOCATIONS_VIEW_BUILDER,
+        US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
+        US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
+        US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS
