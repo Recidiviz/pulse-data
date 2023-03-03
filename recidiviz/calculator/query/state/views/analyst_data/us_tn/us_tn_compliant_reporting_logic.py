@@ -268,16 +268,23 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.DrugTestDrugClass_latest`
         WHERE DrugClass IN ('MET','MTD') AND FinalResult = 'P'
     ),
-    -- This CTE pulls information on drug contacts to understand who satisfies the criteria for drug screens
-    contacts_cte AS (
+    -- This CTE pulls information on drug screens to understand who satisfies the criteria for drug screens.
+    -- To produce estimates that conservatively estimate who is almost-eligible based on past drug screens, we count
+    -- positive screens from both Contacts and DrugTestDrugClass, while we only count negative screens from Contacts.
+    -- More context on this decision is documented here:
+    -- https://docs.google.com/document/d/13NCTyMbU_QjwuPHksuDNaMOtXV3f_zYU0qkdvqe3S9I/edit#heading=h.lpg3aal0kfwk
+    drug_screens_cte AS (
         SELECT 
             person_id,
             drug_screen_date AS contact_date,
             result_raw_text_primary AS ContactNoteType,
+            -- Count only negative screens from Contacts, not DrugTestDrugClass
             CASE WHEN result_raw_text_primary IN ('DRUN','DRUM','DRUX') THEN 1 ELSE 0 END AS negative_drug_test,
             is_positive_result,
+            -- Count positive screens from both Contacts and DrugTestDrugClass
             CASE WHEN is_positive_result = true THEN drug_screen_date END AS positive_drug_test_date,
-            1 as drug_screen
+            -- Count positive screens from both Contacts and DrugTestDrugClass, but negatives from Contacts only
+            CASE WHEN is_positive_result THEN 1 WHEN result_raw_text_primary IN ('DRUN','DRUM','DRUX') THEN 1 ELSE 0 END AS drug_screen
         FROM `{project_id}.{sessions_dataset}.drug_screens_preprocessed_materialized`
         WHERE state_code = 'US_TN'
         AND DATE_DIFF(CURRENT_DATE,drug_screen_date,DAY) <= 365
@@ -305,15 +312,15 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                      END AS most_recent_test_date,
                 -- Most recent positive test date
                 FIRST_VALUE(positive_drug_test_date) OVER(PARTITION BY person_id ORDER BY positive_drug_test_date DESC) AS most_recent_positive_test_date
-            FROM contacts_cte 
+            FROM drug_screens_cte 
         )
         GROUP BY 1    
         ORDER BY 2 desc
     ), 
     -- This CTE keeps all negative screens in the last year as an array to be displayed
-    contacts_cte_arrays AS (
+    drug_screens_cte_arrays AS (
         SELECT person_id, ARRAY_AGG(STRUCT(ContactNoteType,contact_date)) as DRUN_array
-        FROM contacts_cte 
+        FROM drug_screens_cte 
         WHERE ContactNoteType IN ('DRUN','DRUX','DRUM')
         GROUP BY 1
     ),
@@ -791,7 +798,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             USING(Offender_ID)
         LEFT JOIN assessment
             USING(person_id)
-        LEFT JOIN contacts_cte_arrays 
+        LEFT JOIN drug_screens_cte_arrays 
             USING(person_id)
         LEFT JOIN relevant_conditions
             USING(Offender_ID)

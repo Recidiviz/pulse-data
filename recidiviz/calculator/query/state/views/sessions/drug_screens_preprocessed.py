@@ -29,11 +29,36 @@ type"""
 
 DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
 
-SELECT * FROM `{project_id}.{sessions_dataset}.us_id_drug_screens_preprocessed`
+SELECT 
+    person_id,
+    state_code,
+    drug_screen_date,
+    sample_type,
+    is_positive_result,
+    result_raw_text_primary,
+    result_raw_text,
+    substance_detected,
+    med_invalidate_flg,
+    is_inferred,
+    drug_screen_date AS earliest_drug_screen_date
+FROM `{project_id}.{sessions_dataset}.us_ix_drug_screens_preprocessed`
 UNION ALL
-SELECT * FROM `{project_id}.{sessions_dataset}.us_ix_drug_screens_preprocessed`
-UNION ALL
-SELECT * FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
+SELECT
+    person_id,
+    state_code,
+    drug_screen_date,
+    sample_type,
+    is_positive_result,
+    result_raw_text_primary,
+    result_raw_text,
+    substance_detected,
+    med_invalidate_flg,
+    is_inferred,
+    LEAST(
+        IFNULL(drugtest_date, '9999-01-01'), 
+        IFNULL(contacts_date, '9999-01-01')
+    ) AS earliest_drug_screen_date
+FROM `{project_id}.{sessions_dataset}.us_tn_drug_screens_preprocessed`
 """
 
 DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

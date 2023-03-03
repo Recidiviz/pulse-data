@@ -39,6 +39,7 @@ US_TN_COMPLIANT_REPORTING_GUARDRAIL_QUERY_TEMPLATE = """
         cl.district,
         cr.compliant_reporting_eligible,
         cr.remaining_criteria_needed,
+        CAST(cr.almost_eligible_drug_screen AS BOOL) AS almost_eligible_drug_screen,
         cl.officer_id,
         is_positive_result,
         substance_detected,
@@ -50,8 +51,9 @@ US_TN_COMPLIANT_REPORTING_GUARDRAIL_QUERY_TEMPLATE = """
         -- as of this writing so just de-duping to future-proof
         SELECT 
             person_id,
-            -- renaming this field for easier join
-            drug_screen_date AS date_of_supervision,
+            -- using earliest date across drug screen data sources to align guardrails with CR logic,
+            -- renaming field for easier join
+            earliest_drug_screen_date AS date_of_supervision,
             -- prioritize positive results, then deterministic order by sample type
             ARRAY_AGG(
                 is_positive_result 
