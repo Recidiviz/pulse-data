@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: arm_ResponseMatrix
+file_description: TODO(#18936)
+data_classification: source
+primary_key_cols:
+  - ResponseMatrixId
+  - ResponseLevelId
+columns:
+  - name: ResponseMatrixId
+    description: TODO(#18936)
+  - name: ResponseLevelId
+    description: TODO(#18936)
+  - name: Locking
+    description: Locking number for record
+  - name: InsertUserId
+    description: User ID of employee who entered record
+    is_pii: True
+  - name: InsertDate
+    description: Record insert date
+    is_datetime: True
+  - name: UpdateUserId
+    description: User ID of employee who updated record
+    is_pii: True
+  - name: UpdateDate
+    description: Record update date
+    is_datetime: True
+  - name: Inactive
+    description: Flag for whether record is inactive
+  - name: EventTypeId
+    description: TODO(#18936)
+  - name: ClassCode
+    description: TODO(#18936)
