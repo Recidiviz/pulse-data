@@ -99,6 +99,13 @@ def generate_bulk_upload_template(system: schema.System) -> None:
         for filename, rows in filename_to_rows.items():
             df = pd.DataFrame.from_dict(rows)
             df.to_excel(writer, sheet_name=filename, index=False)
+            worksheet = writer.sheets[filename]
+            for idx, col in enumerate(df):
+                series = df[col]
+                # set column length to max string length in column
+                # default column length is 8
+                max_len = max(series.astype(str).map(len).max(), 8)
+                worksheet.set_column(idx, idx, max_len)
 
 
 if __name__ == "__main__":

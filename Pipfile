@@ -197,6 +197,7 @@ werkzeug = "<2.1.0"
 pysftp = "*"
 nbconvert = ">=6.5.1"
 PyGithub = "*"
+xlsxwriter="*"
 
 [requires]
 # If you change this, please update https://github.com/Recidiviz/recidiviz-research at the same time!
