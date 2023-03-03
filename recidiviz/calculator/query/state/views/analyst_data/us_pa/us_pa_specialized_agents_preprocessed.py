@@ -39,15 +39,25 @@ WITH dedup_specialty_agents AS (
            external_id,
     FROM 
         `{project_id}.{raw_dataset}.specialty_agents_latest`
-    -- Deals with small number of duplicate names by first making sure FAST agents are associated with FAST district, 
+    -- Keeps only agents who show up in the latest file received. 
+    WHERE COALESCE(date_received,'1900-01-01') = (
+        SELECT max(COALESCE(date_received,'1900-01-01'))
+        FROM 
+            `{project_id}.{raw_dataset}.specialty_agents_latest`
+    )
+    -- Deals with small number of duplicate names by keeping the latest available record, 
+    -- then making sure FAST agents are associated with FAST district, 
     -- then deterministically de-duplicating on DistrictOffice name
     QUALIFY 
-        ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY IF(AgentType = "FAST", 0, 1), DistrictOffice ) = 1
+        ROW_NUMBER() OVER(PARTITION BY external_id ORDER BY 
+                                                        date_received DESC,
+                                                        IF(AgentType = "FAST", 0, 1), 
+                                                        DistrictOffice ) = 1
 )
 SELECT 'US_PA' AS state_code, 
         external_id AS officer_id, 
-        AgentType AS specialized_agent_type,
-        AgentType != "GENERAL" AS specialized_agent_flag 
+        UPPER(AgentType) AS specialized_agent_type,
+        UPPER(AgentType) != "GENERAL" AS specialized_agent_flag 
 FROM 
     dedup_specialty_agents 
 WHERE 
