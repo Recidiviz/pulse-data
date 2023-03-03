@@ -17,13 +17,17 @@
 """Store used to keep information related to direct ingest operations"""
 import logging
 from collections import Counter
+from concurrent import futures
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from google.cloud import tasks_v2
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import (
+    BQ_CLIENT_MAX_POOL_SIZE,
+    BigQueryClientImpl,
+)
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.operations.direct_ingest_instance_status import (
@@ -504,10 +508,22 @@ class IngestOperationsStore(AdminPanelStore):
             "Getting instance [%s] ingest view contents summaries",
             ingest_instance.value,
         )
-        contents_summaries = [
-            ingest_view_contents.get_ingest_view_contents_summary(ingest_view_name)
-            for ingest_view_name, summary in materialization_job_summaries.items()
-        ]
+        with futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        ) as executor:
+            summary_futures = [
+                executor.submit(
+                    ingest_view_contents.get_ingest_view_contents_summary,
+                    ingest_view_name,
+                )
+                for ingest_view_name in materialization_job_summaries
+            ]
+            contents_summaries = [
+                f.result() for f in futures.as_completed(summary_futures)
+            ]
 
         logging.info(
             "Done getting operations DB metadata for instance [%s]",
