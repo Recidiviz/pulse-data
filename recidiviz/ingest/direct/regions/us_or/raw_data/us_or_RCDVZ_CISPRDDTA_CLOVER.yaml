@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_CLOVER
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - EFFECTIVE_DATE
+  - CLASS_ACTION_DATE
+  - CLASS_USER
+  - SEQUENCE_NO
+columns:
+  - name: RECORD_KEY
+    description: |-
+      Unique identifier for each person.
+  - name: EFFECTIVE_DATE
+    description: |-
+      Date component became effective.
+  - name: CLASS_ACTION_DATE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+  - name: CLASS_USER
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+  - name: SEQUENCE_NO
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+  - name: INSTITUTION_RISK
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+  - name: COMMENT76
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+    is_pii: True
+  - name: LAST_UPDATE_LOCATION
+    description: |-
+      Location where last update was made.
+  - name: LAST_UPDATE_USERID
+    description: |-
+      Userid who made last updates.
+    is_pii: True
+  - name: LAST_UPDATE_PROGRAM
+    description: |-
+      Last updated program.
+  - name: LAST_UPDATED_WHEN
+    description: |-
+      Date when row was last updated.
