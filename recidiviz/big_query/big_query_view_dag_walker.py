@@ -22,10 +22,12 @@ import time
 from collections import deque
 from concurrent import futures
 from concurrent.futures import Future
+from types import TracebackType
 from typing import (
     Callable,
     Deque,
     Dict,
+    Generator,
     Generic,
     Iterable,
     Iterator,
@@ -34,6 +36,7 @@ from typing import (
     Set,
     Tuple,
     TypeVar,
+    Union,
 )
 
 import attr
@@ -276,6 +279,125 @@ class BigQueryViewDagNode:
         return self._descendants_tree_num_edges
 
 
+_ProcessNodeQueueT = Union["_AsyncProcessNodeQueue", "_SyncProcessNodeQueue"]
+
+
+class _AsyncProcessNodeQueue:
+    """
+    Internal queue implementation that enqueues for
+    asynchronous execution with executor.submit
+    """
+
+    def __init__(
+        self,
+        view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
+    ) -> None:
+        self.executor = futures.ThreadPoolExecutor(
+            # Conservatively allow only half as many workers as allowed connections.
+            # Lower this number if we see "urllib3.connectionpool:Connection pool is
+            # full, discarding connection" errors.
+            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
+        )
+        self.future_to_context: Dict[
+            Future[Tuple[float, ViewResultT]],
+            Tuple[BigQueryViewDagNode, ParentResultsT, float],
+        ] = {}
+        self.view_process_fn = view_process_fn
+
+    def __enter__(self) -> _ProcessNodeQueueT:
+        self.executor.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: TracebackType,
+    ) -> None:
+        self.executor.__exit__(exc_type, exc_val, exc_tb)
+
+    def __len__(self) -> int:
+        return len(self.future_to_context)
+
+    def enqueue(
+        self,
+        item: Tuple[BigQueryViewDagNode, Dict[BigQueryView, ViewResultT], float],
+    ) -> None:
+        adjacent_node, previous_level_results, entered_queue_time = item
+        self.future_to_context[
+            self.executor.submit(
+                trace.time_and_trace(
+                    structured_logging.with_context(self.view_process_fn)
+                ),
+                adjacent_node.view,
+                previous_level_results,
+            )
+        ] = (
+            adjacent_node,
+            previous_level_results,
+            entered_queue_time,
+        )
+
+    def dequeue(
+        self,
+    ) -> Tuple[Callable, BigQueryViewDagNode, Dict[BigQueryView, ViewResultT], float,]:
+        completed, _not_completed = futures.wait(
+            self.future_to_context.keys(), return_when=futures.FIRST_COMPLETED
+        )
+        future = completed.pop()
+        node, parent_results, entered_queue_time = self.future_to_context.pop(future)
+        return future.result, node, parent_results, entered_queue_time
+
+
+class _SyncProcessNodeQueue:
+    """
+    Internal queue implementation adapter for synchronous
+    processing with deque
+    """
+
+    def __init__(
+        self,
+        view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
+    ) -> None:
+        self.queue: Deque[
+            Tuple[BigQueryViewDagNode, Dict[BigQueryView, ViewResultT], float]
+        ] = deque()
+        self.view_process_fn = view_process_fn
+
+    def __enter__(self) -> _ProcessNodeQueueT:
+        return self
+
+    def __exit__(
+        self,
+        _exc_type: Optional[type[BaseException]],
+        _exc_val: Optional[BaseException],
+        _exc_tb: TracebackType,
+    ) -> None:
+        return
+
+    def __len__(self) -> int:
+        return len(self.queue)
+
+    def enqueue(
+        self,
+        item: Tuple[BigQueryViewDagNode, Dict[BigQueryView, ViewResultT], float],
+    ) -> None:
+        self.queue.appendleft(item)
+
+    def dequeue(
+        self,
+    ) -> Tuple[Callable, BigQueryViewDagNode, Dict[BigQueryView, ViewResultT], float,]:
+        node, parent_results, entered_queue_time = self.queue.pop()
+        return (
+            lambda: trace.time_and_trace(
+                structured_logging.with_context(self.view_process_fn)
+            )(node.view, parent_results),
+            node,
+            parent_results,
+            entered_queue_time,
+        )
+
+
 class BigQueryViewDagWalker:
     """Class implementation that walks a DAG of BigQueryViews."""
 
@@ -439,163 +561,187 @@ class BigQueryViewDagWalker:
     def node_for_view(self, view: BigQueryView) -> BigQueryViewDagNode:
         return self.nodes_by_address[view.address]
 
+    def _adjacent_dag_verticies(
+        self,
+        node: BigQueryViewDagNode,
+        view_results: Dict[BigQueryView, ViewResultT],
+        visited_set: Set[BigQueryAddress],
+        reverse: bool,
+    ) -> Generator[
+        Tuple[BigQueryViewDagNode, Dict[BigQueryView, ViewResultT]], None, None
+    ]:
+        """
+        Generates an iterable of tuples, adjacent nodes and parent results,
+        which are adjacent to the given node
+        """
+
+        adjacent_addresses = (
+            node.parent_node_addresses if reverse else node.child_node_addresses
+        )
+        for adjacent_address in adjacent_addresses:
+            adjacent_node = self.nodes_by_address[adjacent_address]
+            if adjacent_node.view.address in visited_set:
+                raise ValueError(
+                    f"Unexpected situation where adjacent node has already been processed: {adjacent_address}"
+                )
+            previous_level_all_processed = True
+            previous_level_results = {}
+            previous_level_addresses = (
+                adjacent_node.child_node_addresses
+                if reverse
+                else adjacent_node.parent_node_addresses
+            )
+            for previous_level_address in previous_level_addresses:
+                if (
+                    previous_level_address in self.nodes_by_address
+                    and previous_level_address not in visited_set
+                ):
+                    previous_level_all_processed = False
+                    break
+                if previous_level_address in self.nodes_by_address:
+                    previous_level_view = self.nodes_by_address[
+                        previous_level_address
+                    ].view
+                    previous_level_results[previous_level_view] = view_results[
+                        previous_level_view
+                    ]
+            if previous_level_all_processed:
+                if not previous_level_results:
+                    raise ValueError(
+                        f"Expected adjacent node [{adjacent_node.view.address}] "
+                        f"to have previously processed ancesters."
+                    )
+                yield adjacent_node, previous_level_results
+
+    @staticmethod
+    def _check_processing_time(
+        perf_config: ProcessDagPerfConfig,
+        view: BigQueryView,
+        processing_time: float,
+    ) -> None:
+        allowed_processing_time = perf_config.allowed_processing_time(view.address)
+        if processing_time > allowed_processing_time:
+            error_msg = (
+                f"[BigQueryViewDagWalker Node Failure] Processing for "
+                f"[{view.address}] took [{round(processing_time, 2)}] "
+                f"seconds. Expected node to process in less than "
+                f"[{allowed_processing_time}] seconds."
+            )
+            if environment.in_gcp():
+                # Runtimes can be more unreliable in GCP due to resource
+                # contention with other running processes, so we do not
+                # throw in GCP. We instead emit an error log which can be
+                # used to fire an alert.
+                logging.error(error_msg)
+            else:
+                raise ValueError(error_msg)
+
+    @staticmethod
+    def _dag_view_process_fn_result(
+        results_fn: Callable[[], Tuple[float, ViewResultT]],
+        view: BigQueryView,
+    ) -> Tuple[float, ViewResultT]:
+        try:
+            execution_sec, view_result = results_fn()
+        except Exception as e:
+            logging.error(
+                "Exception found fetching results for for address: [%s]",
+                view.address,
+            )
+            raise e
+        return execution_sec, view_result
+
+    @staticmethod
+    def _view_processing_statistics(
+        view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata],
+        parent_results: Dict[BigQueryView, ViewResultT],
+        processing_time: float,
+        queue_time: float,
+    ) -> ViewProcessingMetadata:
+        graph_depth = (
+            0
+            if not parent_results
+            else max({view_processing_stats[p].graph_depth for p in parent_results}) + 1
+        )
+        return ViewProcessingMetadata(
+            node_processing_runtime_seconds=processing_time,
+            total_time_in_queue_seconds=queue_time,
+            graph_depth=graph_depth,
+        )
+
     def process_dag(
         self,
         view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
+        synchronous: bool,
         perf_config: ProcessDagPerfConfig = DEFAULT_PROCESS_DAG_PERF_CONFIG,
         reverse: bool = False,
     ) -> ProcessDagResult[ViewResultT]:
-        """This method provides a level-by-level "breadth-first" traversal of a DAG and
+        """
+        This method provides a level-by-level "breadth-first" traversal of a DAG and
         executes |view_process_fn| on every node in level order.
+
+        Callers are required to choose between asynchronous/multi-threaded and
+        synchronous/single-threaded processing. Asynchronous execution is likely
+        to perform better with IO-intensive view processing functions, which sleep
+        waiting for completion. CPU-intensive view processing functions may perform better
+        with synchronous execution.
 
         Will throw if a node execution time exceeds |max_node_process_time_sec|.
         """
-        queue = set(self.leaves) if reverse else set(self.roots)
+
+        top_level_set = set(self.leaves) if reverse else set(self.roots)
         processed: Set[BigQueryAddress] = set()
         view_results: Dict[BigQueryView, ViewResultT] = {}
         view_processing_stats: Dict[BigQueryView, ViewProcessingMetadata] = {}
         dag_processing_start = time.perf_counter()
-        with futures.ThreadPoolExecutor(
-            # Conservatively allow only half as many workers as allowed connections.
-            # Lower this number if we see "urllib3.connectionpool:Connection pool is
-            # full, discarding connection" errors.
-            max_workers=int(BQ_CLIENT_MAX_POOL_SIZE / 2)
-        ) as executor:
-            future_to_context: Dict[
-                Future[Tuple[float, ViewResultT]],
-                Tuple[BigQueryViewDagNode, ParentResultsT, float],
-            ] = {
-                executor.submit(
-                    trace.time_and_trace(
-                        structured_logging.with_context(view_process_fn)
-                    ),
-                    node.view,
-                    {},
-                ): (node, {}, time.perf_counter())
-                for node in queue
-            }
-            processing = {
-                node.view.address for node, _, _ in future_to_context.values()
-            }
-            while processing:
-                completed, _not_completed = futures.wait(
-                    future_to_context.keys(), return_when="FIRST_COMPLETED"
-                )
+        queue: _ProcessNodeQueueT = (
+            _SyncProcessNodeQueue(view_process_fn=view_process_fn)
+            if synchronous
+            else _AsyncProcessNodeQueue(view_process_fn=view_process_fn)
+        )
+        with queue:
+            for node in top_level_set:
+                queue.enqueue((node, {}, dag_processing_start))
+            while queue:
+                parent_results: Dict[BigQueryView, ViewResultT]
+                (
+                    view_result_fn,
+                    node,
+                    parent_results,
+                    entered_queue_time,
+                ) = queue.dequeue()
                 end = time.perf_counter()
-                for future in completed:
-                    node, parent_results, entered_queue_time = future_to_context.pop(
-                        future
+                execution_sec, view_result = self._dag_view_process_fn_result(
+                    results_fn=view_result_fn,
+                    view=node.view,
+                )
+                self._check_processing_time(
+                    perf_config=perf_config,
+                    view=node.view,
+                    processing_time=execution_sec,
+                )
+                view_stats = self._view_processing_statistics(
+                    view_processing_stats=view_processing_stats,
+                    parent_results=parent_results,
+                    processing_time=execution_sec,
+                    queue_time=end - entered_queue_time,
+                )
+                view_results[node.view] = view_result
+                view_processing_stats[node.view] = view_stats
+                processed.add(node.view.address)
+                for (
+                    adjacent_node,
+                    previous_level_results,
+                ) in self._adjacent_dag_verticies(
+                    node=node,
+                    view_results=view_results,
+                    visited_set=processed,
+                    reverse=reverse,
+                ):
+                    entered_queue_time = time.perf_counter()
+                    queue.enqueue(
+                        (adjacent_node, previous_level_results, entered_queue_time)
                     )
-                    try:
-                        execution_sec, view_result = future.result()
-                    except Exception as e:
-                        # We log an error here rather than doing `raise Error() from e`
-                        # so that we maintain the original error format.
-                        logging.error(
-                            "Exception found fetching results for for address: [%s]",
-                            node.view.address,
-                        )
-                        raise e
-
-                    allowed_processing_time = perf_config.allowed_processing_time(
-                        node.view.address
-                    )
-                    if execution_sec > allowed_processing_time:
-                        error_msg = (
-                            f"[BigQueryViewDagWalker Node Failure] Processing for "
-                            f"[{node.view.address}] took [{round(execution_sec, 2)}] "
-                            f"seconds. Expected node to process in less than "
-                            f"[{allowed_processing_time}] seconds."
-                        )
-                        if environment.in_gcp():
-                            # Runtimes can be more unreliable in GCP due to resource
-                            # contention with other running processes, so we do not
-                            # throw in GCP. We instead emit an error log which can be
-                            # used to fire an alert.
-                            logging.error(error_msg)
-                        else:
-                            raise ValueError(error_msg)
-
-                    graph_depth = (
-                        0
-                        if not parent_results
-                        else max(
-                            {
-                                view_processing_stats[p].graph_depth
-                                for p in parent_results
-                            }
-                        )
-                        + 1
-                    )
-                    view_stats = ViewProcessingMetadata(
-                        node_processing_runtime_seconds=execution_sec,
-                        total_time_in_queue_seconds=(end - entered_queue_time),
-                        graph_depth=graph_depth,
-                    )
-                    view_results[node.view] = view_result
-                    view_processing_stats[node.view] = view_stats
-                    processing.remove(node.view.address)
-                    processed.add(node.view.address)
-                    adjacent_addresses = (
-                        node.parent_node_addresses
-                        if reverse
-                        else node.child_node_addresses
-                    )
-                    for adjacent_address in adjacent_addresses:
-                        adjacent_node = self.nodes_by_address[adjacent_address]
-                        if (
-                            adjacent_node.view.address in processed
-                            or adjacent_node in queue
-                        ):
-                            raise ValueError(
-                                f"Unexpected situation where adjacent node has already been processed: {adjacent_address}"
-                            )
-                        if adjacent_node.view.address in processing:
-                            raise ValueError(
-                                f"Unexpected situation where adjacent node is already processing: {adjacent_address}"
-                            )
-
-                        previous_level_all_processed = True
-                        previous_level_results = {}
-                        previous_level_addresses = (
-                            adjacent_node.child_node_addresses
-                            if reverse
-                            else adjacent_node.parent_node_addresses
-                        )
-                        for previous_level_address in previous_level_addresses:
-                            if (
-                                previous_level_address in self.nodes_by_address
-                                and previous_level_address not in processed
-                            ):
-                                previous_level_all_processed = False
-                                break
-                            if previous_level_address in self.nodes_by_address:
-                                previous_level_view = self.nodes_by_address[
-                                    previous_level_address
-                                ].view
-                                previous_level_results[
-                                    previous_level_view
-                                ] = view_results[previous_level_view]
-                        if previous_level_all_processed:
-                            if not previous_level_results:
-                                raise ValueError(
-                                    f"Expected adjacent node [{adjacent_node.view.address}] "
-                                    f"to have previously processed ancesters."
-                                )
-                            entered_queue_time = time.perf_counter()
-                            future = executor.submit(
-                                trace.time_and_trace(
-                                    structured_logging.with_context(view_process_fn)
-                                ),
-                                adjacent_node.view,
-                                previous_level_results,
-                            )
-                            future_to_context[future] = (
-                                adjacent_node,
-                                previous_level_results,
-                                entered_queue_time,
-                            )
-                            processing.add(adjacent_node.view.address)
         return ProcessDagResult(
             view_results=view_results,
             view_processing_stats=view_processing_stats,
@@ -642,7 +788,7 @@ class BigQueryViewDagWalker:
 
             return is_target_view_or_descendant
 
-        self.process_dag(collect_descendants)
+        self.process_dag(collect_descendants, synchronous=True)
         self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
         sub_dag = BigQueryViewDagWalker(list(sub_dag_views))
         return sub_dag
@@ -674,7 +820,7 @@ class BigQueryViewDagWalker:
 
             return all_ancestors
 
-        self.process_dag(collect_ancestors)
+        self.process_dag(collect_ancestors, synchronous=True)
         self._check_sub_dag_views(input_views=views, sub_dag_views=sub_dag_views)
         sub_dag = BigQueryViewDagWalker(list(sub_dag_views))
         return sub_dag
@@ -751,7 +897,7 @@ class BigQueryViewDagWalker:
             )
             node.set_ancestors_tree_num_edges(ancestors_tree_num_edges)
 
-        self.process_dag(populate_node_ancestors_sub_dag)
+        self.process_dag(populate_node_ancestors_sub_dag, synchronous=True)
 
     def populate_descendant_sub_dags(self) -> None:
         """Builds and caches descendant sub-DAGs on all nodes in this DAG."""
@@ -781,7 +927,9 @@ class BigQueryViewDagWalker:
         # Process the DAG in the leaves -> roots direction so we process children
         # first.
 
-        self.process_dag(populate_node_descendants_sub_dag, reverse=True)
+        self.process_dag(
+            populate_node_descendants_sub_dag, synchronous=True, reverse=True
+        )
 
     def ancestors_dfs_tree_str(
         self,
@@ -832,7 +980,10 @@ class BigQueryViewDagWalker:
                 datasets_to_skip=datasets_to_skip,
             )
 
-        return sub_dag.process_dag(_build_dfs_str).view_results[view] + "\n"
+        return (
+            sub_dag.process_dag(_build_dfs_str, synchronous=True).view_results[view]
+            + "\n"
+        )
 
     def descendants_dfs_tree_str(
         self,
@@ -879,7 +1030,10 @@ class BigQueryViewDagWalker:
             )
 
         return (
-            sub_dag.process_dag(_build_dfs_str, reverse=True).view_results[view] + "\n"
+            sub_dag.process_dag(
+                _build_dfs_str, synchronous=True, reverse=True
+            ).view_results[view]
+            + "\n"
         )
 
     def _build_dfs_str(

@@ -16,8 +16,8 @@
 # =============================================================================
 """Tests for classes in big_query_view_dag_walker.py"""
 
+import abc
 import datetime
-import random
 import re
 import threading
 import time
@@ -114,9 +114,10 @@ DIAMOND_SHAPED_DAG_VIEW_BUILDERS_LIST = [
 ]
 
 
-class TestBigQueryViewDagWalker(unittest.TestCase):
+class TestBigQueryViewDagWalkerBase(unittest.TestCase):
     """Tests for BigQueryViewDagWalker"""
 
+    __test__ = False
     project_id_patcher: Any
     all_views: List[BigQueryView]
     x_shaped_dag_views_list: List[BigQueryView]
@@ -147,20 +148,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
     def tearDownClass(cls) -> None:
         cls.project_id_patcher.stop()
 
-    def test_dag_init(self) -> None:
-        walker = BigQueryViewDagWalker(self.all_views)
-
-        self.assertEqual(len(self.all_views), len(walker.nodes_by_address))
-
-        for key, node in walker.nodes_by_address.items():
-            if not node.parent_tables:
-                self.assertIsValidEmptyParentsView(node)
-
-            if node.is_root:
-                # Root views should only have source data tables as parents
-                self.assertEqual(set(), node.parent_node_addresses)
-                for parent_address in node.parent_tables:
-                    self.assertIsValidSourceDataTable(key, parent_address)
+    @property
+    @abc.abstractmethod
+    def synchronous(self) -> bool:
+        raise NotImplementedError
 
     def test_dag_touches_all_views(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
@@ -168,10 +159,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         def process_simple(
             view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
         ) -> BigQueryAddress:
-            time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS / 10)
             return view.address
 
-        result = walker.process_dag(process_simple)
+        result = walker.process_dag(process_simple, synchronous=self.synchronous)
 
         expected_view_addresses = set(walker.nodes_by_address)
         self.assertEqual(expected_view_addresses, set(result.view_results.values()))
@@ -180,33 +170,6 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         self.assertEqual(
             expected_view_addresses, walked_view_addresses_from_process_results
         )
-
-    def test_dag_process_time(self) -> None:
-        num_views = len(self.all_views)
-        walker = BigQueryViewDagWalker(self.all_views)
-
-        serial_processing_time_seconds = num_views * MOCK_VIEW_PROCESS_TIME_SECONDS
-        serial_processing_time = datetime.timedelta(
-            seconds=serial_processing_time_seconds
-        )
-
-        def process_simple(
-            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
-        ) -> BigQueryAddress:
-            time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
-            return view.address
-
-        start = datetime.datetime.now()
-        result = walker.process_dag(process_simple)
-        end = datetime.datetime.now()
-
-        self.assertEqual(num_views, len(result.view_results))
-
-        processing_time = end - start
-
-        # We expect to see significant speedup over the processing time if we ran the process function for each view
-        # in series.
-        self.assertLess(processing_time * 5, serial_processing_time)
 
     def test_dag_does_not_process_until_parents_processed(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
@@ -239,15 +202,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                                 parent_results,
                             )
 
-            time.sleep(
-                random.uniform(
-                    MOCK_VIEW_PROCESS_TIME_SECONDS, MOCK_VIEW_PROCESS_TIME_SECONDS * 2
-                )
-            )
             with mutex:
                 all_processed.add(node.view.address)
 
-        result = walker.process_dag(process_check_parents)
+        result = walker.process_dag(process_check_parents, synchronous=self.synchronous)
         self.assertEqual(len(self.all_views), len(result.view_results))
 
     def test_children_match_parent_projects_to_deploy(self) -> None:
@@ -294,7 +252,9 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
             return expected_projects_to_deploy.intersection(view_projects_to_deploy)
 
-        result = walker.process_dag(process_check_using_materialized)
+        result = walker.process_dag(
+            process_check_using_materialized, synchronous=self.synchronous
+        )
         self.assertEqual(len(self.all_views), len(result.view_results))
 
         if failing_views:
@@ -323,7 +283,7 @@ The following views have less restrictive projects_to_deploy than their parents:
                 return 1
             return max(parent_results.values()) + 1
 
-        result = walker.process_dag(process_check_parents)
+        result = walker.process_dag(process_check_parents, synchronous=self.synchronous)
         self.assertEqual(len(self.all_views), len(result.view_results))
 
         max_depth = 0
@@ -364,9 +324,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         # The expectation is node '3' will be processed after
         # both nodes '4' and '5' but before '1' and '2'.
 
-        walker = BigQueryViewDagWalker(
-            TestBigQueryViewDagWalker.diamond_shaped_dag_views_list
-        )
+        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
         (
             view_1,
             view_2,
@@ -374,14 +332,16 @@ The following views have less restrictive projects_to_deploy than their parents:
             view_4,
             view_5,
             view_6,
-        ) = TestBigQueryViewDagWalker.diamond_shaped_dag_views_list
+        ) = self.diamond_shaped_dag_views_list
 
         def processing_ordered_string(
             _: BigQueryView, parent_results: Dict[BigQueryView, str]
         ) -> List[str]:
             return sorted([f"{p.dataset_id}.{p.table_id}" for p in parent_results])
 
-        results = walker.process_dag(processing_ordered_string)
+        results = walker.process_dag(
+            processing_ordered_string, synchronous=self.synchronous
+        )
         assert results.view_results == {
             view_1: [],
             view_2: [],
@@ -391,7 +351,9 @@ The following views have less restrictive projects_to_deploy than their parents:
             view_6: ["dataset_4.table_4", "dataset_5.table_5"],
         }
 
-        results = walker.process_dag(processing_ordered_string, reverse=True)
+        results = walker.process_dag(
+            processing_ordered_string, synchronous=self.synchronous, reverse=True
+        )
         assert results.view_results == {
             view_6: [],
             view_5: ["dataset_6.table_6"],
@@ -415,7 +377,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             raise TestDagWalkException()
 
         with self.assertRaises(TestDagWalkException):
-            _ = walker.process_dag(process_throws)
+            walker.process_dag(process_throws, synchronous=self.synchronous)
 
         def process_throws_after_root(
             view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
@@ -426,7 +388,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             return node.view.address
 
         with self.assertRaises(TestDagWalkException):
-            _ = walker.process_dag(process_throws_after_root)
+            walker.process_dag(process_throws_after_root, synchronous=self.synchronous)
 
     def test_views_use_materialized_if_present(self) -> None:
         """Checks that each view is using the materialized version of a parent view, if
@@ -451,7 +413,9 @@ The following views have less restrictive projects_to_deploy than their parents:
                     )
             return should_be_materialized_addresses
 
-        result = walker.process_dag(process_check_using_materialized).view_results
+        result = walker.process_dag(
+            process_check_using_materialized, synchronous=self.synchronous
+        ).view_results
         self.assertEqual(len(self.all_views), len(result))
 
         views_with_issues = {
@@ -462,25 +426,6 @@ The following views have less restrictive projects_to_deploy than their parents:
                 f"Found views referencing un-materialized versions of a view when a "
                 f"materialized version exists: {views_with_issues}"
             )
-
-    def test_dag_with_cycle_at_root(self) -> None:
-        view_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
-        ).build()
-        view_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_2",
-            view_id="table_2",
-            description="table_2 description",
-            view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
-        ).build()
-
-        with self.assertRaisesRegex(
-            ValueError, "^No roots detected. Input views contain a cycle.$"
-        ):
-            _ = BigQueryViewDagWalker([view_1, view_2])
 
     def test_dag_with_cycle_at_root_with_other_valid_dag(self) -> None:
         view_1 = SimpleBigQueryViewBuilder(
@@ -1318,7 +1263,7 @@ The following views have less restrictive projects_to_deploy than their parents:
 
             return view.view_id
 
-        result = walker.process_dag(process_simple)
+        result = walker.process_dag(process_simple, synchronous=self.synchronous)
         self.assertEqual(
             {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
             result.view_results,
@@ -1368,7 +1313,7 @@ The following views have less restrictive projects_to_deploy than their parents:
 
             return view.view_id
 
-        result = walker.process_dag(process_simple)
+        result = walker.process_dag(process_simple, synchronous=self.synchronous)
         self.assertEqual(
             {view_1: view_1.view_id, view_2: view_2.view_id, view_3: view_3.view_id},
             result.view_results,
@@ -1380,106 +1325,6 @@ The following views have less restrictive projects_to_deploy than their parents:
                 view: metadata.graph_depth
                 for view, metadata in result.view_processing_stats.items()
             },
-        )
-
-    def test_union_dags(self) -> None:
-        x_shaped_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-
-        # This DAG is a superset of the X-shaped DAG
-        diamond_shaped_dag_walker = BigQueryViewDagWalker(
-            self.diamond_shaped_dag_views_list
-        )
-        unioned_dag = BigQueryViewDagWalker.union_dags(
-            x_shaped_dag_walker, diamond_shaped_dag_walker
-        )
-
-        self.assertCountEqual(self.diamond_shaped_dag_views_list, unioned_dag.views)
-
-    def test_union_dags_empty(self) -> None:
-        unioned_dag = BigQueryViewDagWalker.union_dags(
-            BigQueryViewDagWalker([]), BigQueryViewDagWalker([])
-        )
-
-        self.assertCountEqual([], unioned_dag.views)
-
-    def test_union_dags_no_dags(self) -> None:
-        """Unioning together a list of DAGs with no DAGs in it returns an empty DAG."""
-        dags: List[BigQueryViewDagWalker] = []
-        unioned_dag = BigQueryViewDagWalker.union_dags(*dags)
-
-        self.assertCountEqual([], unioned_dag.views)
-
-    def test_union_dags_more_than_two_dags(self) -> None:
-        dag_1 = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
-
-        # This DAG is a superset of the X-shaped DAG
-        dag_2 = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-
-        dag_3_builders = [
-            SimpleBigQueryViewBuilder(
-                dataset_id="another_dataset",
-                view_id="another_table",
-                description="another_table description",
-                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-            ),
-        ]
-
-        dag_3_views = [b.build() for b in dag_3_builders]
-        dag_3 = BigQueryViewDagWalker([b.build() for b in dag_3_builders])
-
-        unioned_dag = BigQueryViewDagWalker.union_dags(dag_1, dag_2, dag_3)
-
-        self.assertCountEqual(
-            self.diamond_shaped_dag_views_list + dag_3_views, unioned_dag.views
-        )
-
-    def test_union_dags_same_view_different_object(self) -> None:
-        view_builder_1 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            should_materialize=True,
-            materialized_address_override=BigQueryAddress(
-                dataset_id="other_dataset_1", table_id="other_table_1"
-            ),
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-
-        dag_1 = BigQueryViewDagWalker([view_builder_1.build()])
-
-        view_builder_2 = SimpleBigQueryViewBuilder(
-            dataset_id="dataset_1",
-            view_id="table_1",
-            description="table_1 description",
-            should_materialize=True,
-            materialized_address_override=BigQueryAddress(
-                dataset_id="other_dataset_1", table_id="other_table_1"
-            ),
-            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
-        )
-
-        dag_2 = BigQueryViewDagWalker([view_builder_2.build()])
-        unioned_dag = BigQueryViewDagWalker.union_dags(
-            dag_1,
-            dag_2,
-        )
-
-        self.assertCountEqual([view_builder_1.build()], unioned_dag.views)
-
-    def test_related_ancestor_addresses(self) -> None:
-        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
-        all_views_dag_walker.populate_ancestor_sub_dags()
-        view_1, view_2, view_3, *_ = self.diamond_shaped_dag_views_list
-        assert all_views_dag_walker.related_ancestor_addresses(
-            address=view_3.address
-        ) == set(
-            [
-                view_1.address,
-                view_2.address,
-                view_3.address,
-                BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
-                BigQueryAddress(dataset_id="source_dataset", table_id="source_table_2"),
-            ]
         )
 
     def test_dag_perf_config(self) -> None:
@@ -1499,8 +1344,9 @@ The following views have less restrictive projects_to_deploy than their parents:
             r"table_id='table_6'\)\] took \[0.1[0-9]?\] seconds. Expected node to "
             r"process in less than \[0.05\] seconds.",
         ):
-            _ = walker.process_dag(
+            walker.process_dag(
                 process_simple,
+                synchronous=self.synchronous,
                 perf_config=ProcessDagPerfConfig(
                     node_max_processing_time_seconds=0.05,
                     node_allowed_process_time_overrides={},
@@ -1510,6 +1356,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         # Now add an exemption for the slow view and see it processes
         result = walker.process_dag(
             process_simple,
+            synchronous=self.synchronous,
             perf_config=ProcessDagPerfConfig(
                 node_max_processing_time_seconds=0.05,
                 node_allowed_process_time_overrides={
@@ -1535,6 +1382,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         with patch("logging.Logger.error") as mock_logger:
             result = walker.process_dag(
                 process_simple,
+                synchronous=self.synchronous,
                 perf_config=ProcessDagPerfConfig(
                     node_max_processing_time_seconds=0.05,
                     node_allowed_process_time_overrides={},
@@ -1552,6 +1400,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             # Now add an exemption for the slow view and see it processes
             result = walker.process_dag(
                 process_simple,
+                synchronous=self.synchronous,
                 perf_config=ProcessDagPerfConfig(
                     node_max_processing_time_seconds=0.05,
                     node_allowed_process_time_overrides={
@@ -1679,6 +1528,189 @@ The following views have less restrictive projects_to_deploy than their parents:
                 f"this table will not be created until these are defined. Cannot reference "
                 f"[{raw_data_view_key}] in another BQ view."
             )
+
+
+class TestCaseProcessDagSynchronous(TestBigQueryViewDagWalkerBase):
+    __test__ = True
+
+    @property
+    def synchronous(self) -> bool:
+        return True
+
+
+class TestCaseProcessDagAsynchronous(TestBigQueryViewDagWalkerBase):
+    """
+    Run TestBigQueryViewDagWalkerBase unit tests for the
+    aysnchronous case, as well as all non-polymorphic unit tests
+    """
+
+    __test__ = True
+
+    @property
+    def synchronous(self) -> bool:
+        return False
+
+    # Non-polymorphic tests
+    def test_dag_process_time(self) -> None:
+        num_views = len(self.all_views)
+        walker = BigQueryViewDagWalker(self.all_views)
+
+        serial_processing_time_seconds = num_views * MOCK_VIEW_PROCESS_TIME_SECONDS
+        serial_processing_time = datetime.timedelta(
+            seconds=serial_processing_time_seconds
+        )
+
+        def process_simple(
+            view: BigQueryView, _parent_results: Dict[BigQueryView, BigQueryAddress]
+        ) -> BigQueryAddress:
+            time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
+            return view.address
+
+        start = datetime.datetime.now()
+        result = walker.process_dag(process_simple, synchronous=self.synchronous)
+        end = datetime.datetime.now()
+
+        self.assertEqual(num_views, len(result.view_results))
+
+        processing_time = end - start
+
+        # We expect to see significant speedup over the processing time if we ran the process function for each view
+        # in series.
+        self.assertLess(processing_time * 5, serial_processing_time)
+
+    def test_dag_init(self) -> None:
+        walker = BigQueryViewDagWalker(self.all_views)
+
+        self.assertEqual(len(self.all_views), len(walker.nodes_by_address))
+
+        for key, node in walker.nodes_by_address.items():
+            if not node.parent_tables:
+                self.assertIsValidEmptyParentsView(node)
+
+            if node.is_root:
+                # Root views should only have source data tables as parents
+                self.assertEqual(set(), node.parent_node_addresses)
+                for parent_address in node.parent_tables:
+                    self.assertIsValidSourceDataTable(key, parent_address)
+
+    def test_related_ancestor_addresses(self) -> None:
+        all_views_dag_walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+        all_views_dag_walker.populate_ancestor_sub_dags()
+        view_1, view_2, view_3, *_ = self.diamond_shaped_dag_views_list
+        assert all_views_dag_walker.related_ancestor_addresses(
+            address=view_3.address
+        ) == set(
+            [
+                view_1.address,
+                view_2.address,
+                view_3.address,
+                BigQueryAddress(dataset_id="source_dataset", table_id="source_table"),
+                BigQueryAddress(dataset_id="source_dataset", table_id="source_table_2"),
+            ]
+        )
+
+    def test_dag_with_cycle_at_root(self) -> None:
+        view_1 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            view_query_template="SELECT * FROM `{project_id}.dataset_2.table_2`",
+        ).build()
+        view_2 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_2",
+            view_id="table_2",
+            description="table_2 description",
+            view_query_template="SELECT * FROM `{project_id}.dataset_1.table_1`",
+        ).build()
+
+        with self.assertRaisesRegex(
+            ValueError, "^No roots detected. Input views contain a cycle.$"
+        ):
+            _ = BigQueryViewDagWalker([view_1, view_2])
+
+    def test_union_dags(self) -> None:
+        x_shaped_dag_walker = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # This DAG is a superset of the X-shaped DAG
+        diamond_shaped_dag_walker = BigQueryViewDagWalker(
+            self.diamond_shaped_dag_views_list
+        )
+        unioned_dag = BigQueryViewDagWalker.union_dags(
+            x_shaped_dag_walker, diamond_shaped_dag_walker
+        )
+
+        self.assertCountEqual(self.diamond_shaped_dag_views_list, unioned_dag.views)
+
+    def test_union_dags_empty(self) -> None:
+        unioned_dag = BigQueryViewDagWalker.union_dags(
+            BigQueryViewDagWalker([]), BigQueryViewDagWalker([])
+        )
+
+        self.assertCountEqual([], unioned_dag.views)
+
+    def test_union_dags_no_dags(self) -> None:
+        """Unioning together a list of DAGs with no DAGs in it returns an empty DAG."""
+        dags: List[BigQueryViewDagWalker] = []
+        unioned_dag = BigQueryViewDagWalker.union_dags(*dags)
+
+        self.assertCountEqual([], unioned_dag.views)
+
+    def test_union_dags_more_than_two_dags(self) -> None:
+        dag_1 = BigQueryViewDagWalker(self.x_shaped_dag_views_list)
+
+        # This DAG is a superset of the X-shaped DAG
+        dag_2 = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
+
+        dag_3_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id="another_dataset",
+                view_id="another_table",
+                description="another_table description",
+                view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+            ),
+        ]
+
+        dag_3_views = [b.build() for b in dag_3_builders]
+        dag_3 = BigQueryViewDagWalker([b.build() for b in dag_3_builders])
+
+        unioned_dag = BigQueryViewDagWalker.union_dags(dag_1, dag_2, dag_3)
+
+        self.assertCountEqual(
+            self.diamond_shaped_dag_views_list + dag_3_views, unioned_dag.views
+        )
+
+    def test_union_dags_same_view_different_object(self) -> None:
+        view_builder_1 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="other_dataset_1", table_id="other_table_1"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+
+        dag_1 = BigQueryViewDagWalker([view_builder_1.build()])
+
+        view_builder_2 = SimpleBigQueryViewBuilder(
+            dataset_id="dataset_1",
+            view_id="table_1",
+            description="table_1 description",
+            should_materialize=True,
+            materialized_address_override=BigQueryAddress(
+                dataset_id="other_dataset_1", table_id="other_table_1"
+            ),
+            view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
+        )
+
+        dag_2 = BigQueryViewDagWalker([view_builder_2.build()])
+        unioned_dag = BigQueryViewDagWalker.union_dags(
+            dag_1,
+            dag_2,
+        )
+
+        self.assertCountEqual([view_builder_1.build()], unioned_dag.views)
 
 
 class TestBigQueryViewDagNode(unittest.TestCase):
