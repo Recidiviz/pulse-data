@@ -29,18 +29,19 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# Note on TN DRUPs and ZTPDs [8/1/2022]
-# -------------------------------------
-# When Tennessee conducts drug screens, samples are submitted to a lab. The lab should enter a "DRUP" for any positive
-# test and call the officer immediately for any meth-positive result (ZTPD), which must be entered within 2-3 days.
-# ZTPDs aren't supposed to be entered without a DRUP, but they sometimes are, and sometimes are entered but well after
-# the 3-day window. Moving forward, they expect better compliance with these rules.
-# For past data, we assume a "maximum lag" between a DRUP and a ZTPD, and infer DRUPs for ZTPDs without any DRUPs within
-# that window. We plotted various lag choices against number of resulting matches to visually gauge the point where a
-# longer lag choice wouldn't result in many more matches, but a shorter lag would omit a large number of likely matches.
+# Note: A more detailed methodology can be found here:
+# https://docs.google.com/document/d/1vfFNslIE2GjhDTAghIw1zIyeU4aRq8rABadxz3ZmBEQ
 
 # Maximum lag allowed between a DRUP contact and a ZTPD contact to associate the two contacts with one drug screen.
 US_TN_DRUG_SCREENS_DRUP_ZTPD_MAX_LAG = "21"
+
+# Maximum and minimum lag allowed between a Contacts-based drug test and a DrugTestDrugClass-based drug test
+US_TN_DRUG_SCREENS_DRUGTEST_CONTACT_MAX_LAG = "21"
+US_TN_DRUG_SCREENS_DRUGTEST_CONTACT_MIN_LAG = "-2"
+
+# Please note that while we found similar inflection points in both the DRUP-ZTPD lag and the DrugTestDrugClass-Contacts
+# lag, the similarity in these choices is likely coincidental, though there may be factors in the data entry process
+# that result in this similarity.
 
 US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_NAME = "us_tn_drug_screens_preprocessed"
 
@@ -57,7 +58,9 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
             p.state_code,
             SAFE_CAST(SAFE_CAST(c.ContactNoteDateTime AS datetime) AS DATE) contact_note_date,
             c.ContactNoteType AS contact_note_type,
-            c.ContactNoteType LIKE "%DRU%" AS is_dru,
+            c.ContactNoteType IN (
+                "DRUN", "DRUX", "DRUM", "DRUP"
+            ) AS is_dru,
             c.ContactNoteType = "DRUP" AS is_drup,
             c.ContactNoteType = "ZTPD" AS is_ztpd
         FROM `{project_id}.{raw_dataset}.ContactNoteType_latest` c
@@ -66,8 +69,8 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
             c.OffenderID = p.external_id
             AND p.state_code = "US_TN"
         WHERE 
-            ContactNoteType = "ZTPD"
-            OR ContactNoteType LIKE "%DRU%"
+            -- Excludes DRUL (awaiting lab results) and XDRU (screen not completed)
+            ContactNoteType IN ("DRUN", "DRUX", "DRUM", "DRUP", "ZTPD")
     )
     ,
     drup_ztpd_matches AS
@@ -77,7 +80,7 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
             d.contact_note_date drup_date,
             z.contact_note_date ztpd_date,
             d.contact_note_type,
-            TRUE AS triggered_ztpd,
+            TRUE AS is_meth_positive,
         FROM tn_contacts d
         JOIN tn_contacts z
         ON 
@@ -108,19 +111,30 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
     -- back in as DRUPs that triggered a ZTPD
     ztpd_no_matches AS
     (
-        SELECT z.person_id, z.state_code, z.contact_note_date, "DRUP" contact_note_type, true triggered_ztpd 
+        SELECT 
+            z.person_id, 
+            z.state_code, 
+            z.contact_note_date, 
+            "DRUP" contact_note_type, 
+            true is_meth_positive 
         FROM tn_contacts z
         LEFT JOIN drup_ztpd_matches m
         ON 
             z.contact_note_date = m.ztpd_date
             AND z.person_id = m.person_id
-        WHERE m.ztpd_date IS NULL AND z.is_ztpd
+        WHERE 
+            m.ztpd_date IS NULL 
+            AND z.is_ztpd
     )
     ,
     dru_with_ztpd_from_original_table AS
     (
-        SELECT d.person_id, d.state_code, d.contact_note_date, d.contact_note_type, 
-            m.ztpd_date IS NOT NULL AS triggered_ztpd 
+        SELECT 
+            d.person_id, 
+            d.state_code, 
+            d.contact_note_date, 
+            d.contact_note_type, 
+            m.ztpd_date IS NOT NULL AS is_meth_positive 
         FROM tn_contacts d
         LEFT JOIN drup_ztpd_matches m
         ON 
@@ -132,39 +146,248 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
     ,
     dru_with_ztpd_full_table AS
     (
-        SELECT *, false is_inferred, CAST(NULL AS STRING) AS sample_type FROM dru_with_ztpd_from_original_table
+        SELECT 
+            *, 
+            false is_inferred, 
+            CAST(NULL AS STRING) AS sample_type 
+        FROM dru_with_ztpd_from_original_table
         UNION ALL
-        SELECT *, true is_inferred, CAST(NULL AS STRING) AS sample_type FROM ztpd_no_matches
+        SELECT 
+            *, 
+            true is_inferred, 
+            CAST(NULL AS STRING) AS sample_type 
+        FROM ztpd_no_matches
     )
-    SELECT
+    ,
+    contacts_based_drug_screens AS 
+    (
+        SELECT
+            person_id,
+            state_code,
+            contact_note_date AS drug_screen_date,
+            sample_type,
+            # Assumes that if no result is reported for a test, the outcome was negative.
+            COALESCE(LOGICAL_OR(contact_note_type = "DRUP") OVER w, FALSE) AS is_positive_result,
+            
+            # Get the primary raw text result value, prioritizing tests with non-null results 
+            # and then using alphabetical order of raw text
+            FIRST_VALUE(contact_note_type IGNORE NULLS) OVER w AS result_raw_text_primary,
+            
+            # Store an array of all raw text test results for a single drug screen date
+            ARRAY_AGG(COALESCE(contact_note_type, 'UNKNOWN')) OVER w AS result_raw_text,
+            is_inferred,
+            is_meth_positive
+        FROM dru_with_ztpd_full_table
+        WHERE contact_note_date >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 20 YEAR)
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (
+            PARTITION BY person_id, state_code, contact_note_date, sample_type
+            -- Prioritize positive screens over other screens, and "valid" negative screens over actual negative screens
+            -- so that the valid negative screens are prioritized as negative results when matched to DrugTestDrugClass
+            -- (cases of duplicate negative contact codes are rare, < 0.1% of cases with any negative contact)
+            ORDER BY CASE contact_note_type WHEN "DRUP" THEN 1 
+                                              WHEN "DRUM" THEN 2 
+                                              WHEN "DRUX" THEN 3
+                                              WHEN "DRUN" THEN 4
+                                              ELSE 5 END
+        )
+    ),
+    drugtests AS (
+        SELECT 
+            p.person_id,
+            d.DrugClass IN ('MET', 'MTD') as is_meth, 
+            d.FinalResult = 'P' AS is_positive,
+            SAFE_CAST(SAFE_CAST(d.TestDate AS datetime) AS DATE) as drug_screen_date
+        FROM `{project_id}.{raw_dataset}.DrugTestDrugClass_latest` d
+        LEFT JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` p
+        ON 
+            d.OffenderID = p.external_id
+            AND p.state_code = 'US_TN'
+        WHERE
+            p.person_id IS NOT NULL
+            AND d.FinalResult IS NOT NULL
+    )
+    ,
+    drugtests_by_date AS (
+        SELECT 
+            d.person_id, 
+            d.is_positive, 
+            d.is_meth AND d.is_positive AS is_meth_positive, 
+            d.drug_screen_date 
+        FROM drugtests d
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized` s
+        ON 
+            d.person_id = s.person_id
+            AND d.drug_screen_date BETWEEN s.start_date AND COALESCE(s.end_date,'9999-01-01')
+        WHERE 
+            drug_screen_date >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 20 YEAR)
+            
+            -- Many DrugTestDrugClass results occur during periods of incarceration, rather than supervision.
+            -- We exclude these explicitly to ensure we don't tabulate within-facility tests as drug screens for the
+            -- purpose of calculating supervision-level positivity rates. Other non-supervision compartment levels are
+            -- rare and potentially expected due to reporting lags.
+            AND s.compartment_level_1 != 'INCARCERATION'
+        QUALIFY 
+            ROW_NUMBER() OVER(PARTITION BY person_id, drug_screen_date ORDER BY is_positive DESC, is_meth DESC) = 1
+    )
+    ,
+    matches AS (
+      SELECT 
+        c.person_id, 
+        c.state_code,
+        c.sample_type,
+        c.result_raw_text,
+        c.result_raw_text_primary,
+        c.is_inferred,
+        c.drug_screen_date as contacts_date, 
+        d.drug_screen_date as drugtest_date,
+        c.is_meth_positive as contacts_meth_positive,
+        d.is_meth_positive as drugtest_meth_positive,
+        c.is_positive_result as contacts_positive,
+        d.is_positive as drugtest_positive,
+        c.result_raw_text_primary as contacts_contactnote,
+        DATE_DIFF(c.drug_screen_date, d.drug_screen_date, DAY) AS lag_days,
+      FROM contacts_based_drug_screens c
+      INNER JOIN drugtests_by_date d
+      ON
+        c.person_id = d.person_id
+        AND DATE_DIFF(c.drug_screen_date, d.drug_screen_date, DAY) 
+                      BETWEEN {us_tn_drug_screens_drugtest_contact_min_lag} AND {us_tn_drug_screens_drugtest_contact_max_lag}
+                      
+      QUALIFY
+        ROW_NUMBER() OVER(PARTITION BY person_id, contacts_date ORDER BY ABS(lag_days), lag_days DESC) = 1 AND
+        ROW_NUMBER() OVER(PARTITION BY person_id, drugtest_date ORDER BY ABS(lag_days), lag_days DESC) = 1
+    )
+    ,
+    contacts_no_drugtest AS (
+      SELECT
+        c.person_id,
+        c.state_code,
+        c.sample_type,
+        c.result_raw_text,
+        c.result_raw_text_primary,
+        c.is_inferred,
+        c.drug_screen_date AS contacts_date,
+        m.drugtest_date,
+        c.is_meth_positive as contacts_meth_positive,
+        m.drugtest_meth_positive,
+        c.is_positive_result AS contacts_positive,
+        m.drugtest_positive,
+        c.result_raw_text_primary AS contacts_contactnote,
+        m.lag_days
+      FROM contacts_based_drug_screens c
+      LEFT JOIN matches m
+      ON
+        c.person_id = m.person_id
+        AND c.drug_screen_date = m.contacts_date
+
+      -- Find all rows that weren't included in the join that generated `matches`
+      WHERE m.contacts_contactnote IS NULL
+    )
+    ,
+    drugtest_no_contacts AS (
+      SELECT
+        d.person_id,
+        "US_TN" AS state_code,
+        CAST(NULL AS STRING) AS sample_type,
+        CAST(NULL AS ARRAY<STRING>) AS result_raw_text,
+        CAST(NULL AS STRING) AS result_raw_text_primary,
+        FALSE AS is_inferred,
+        m.contacts_date,
+        d.drug_screen_date AS drugtest_date,
+        m.contacts_meth_positive,
+        d.is_meth_positive AS drugtest_meth_positive,
+        m.contacts_positive,
+        d.is_positive AS drugtest_positive,
+        m.contacts_contactnote,
+        m.lag_days
+      FROM drugtests_by_date d
+      LEFT JOIN matches m
+      ON
+        d.person_id = m.person_id
+        AND d.drug_screen_date = m.drugtest_date
+
+      -- Find all rows that weren't included in the join that generated `matches`
+      WHERE m.contacts_contactnote IS NULL
+    )
+    ,
+    combined AS (
+      SELECT 
+        *,
+        "both" AS source_table
+        FROM matches
+      UNION ALL
+      SELECT 
+        *, 
+        "drugtest" AS source_table
+        FROM drugtest_no_contacts
+      UNION ALL
+      SELECT 
+        *, 
+        "contacts" AS source_table
+        FROM contacts_no_drugtest
+    )
+    SELECT 
         person_id,
         state_code,
-        contact_note_date AS drug_screen_date,
+        
+        -- Prioritize the Contacts-based test date over the DrugTestDrugClass-based date
+        IFNULL(contacts_date, drugtest_date) AS drug_screen_date,
         sample_type,
-        # Assumes that if no result is reported for a test, the outcome was negative.
-        COALESCE(LOGICAL_OR(contact_note_type = "DRUP") OVER w, FALSE) AS is_positive_result,
-        
-        # Get the primary raw text result value, prioritizing tests with non-null results 
-        # and then using alphabetical order of raw text
-        FIRST_VALUE(contact_note_type IGNORE NULLS) OVER w AS result_raw_text_primary,
-        
-        # Store an array of all raw text test results for a single drug screen date
-        ARRAY_AGG(COALESCE(contact_note_type, 'UNKNOWN')) OVER w AS result_raw_text,
-        IF(triggered_ztpd, "METH", CAST(NULL AS STRING)) AS substance_detected,
-        CAST(NULL AS STRING) AS med_invalidate_flg,
+        (
+            (
+                IFNULL(contacts_positive, FALSE) 
+                OR 
+                IFNULL(drugtest_positive, FALSE)
+            )
+            AND
+            (
+                -- Where the Contact Note Type is either DRUX ("DRUG SCREEN NEGATIVE DUE TO VALID PRESCRIPTION"),
+                -- or DRUM ("DRUG SCREEN UNAVAILABLE DUE TO MEDICAL CONDITION"), 
+                -- positive lab results do not indicate a "positive" screen in the sense of a rules violation.
+                -- If this screen comes from DrugTestDrugClass alone, then we don't have information on these exceptions
+                -- and assume a positive lab test indicates a positive result.
+                (source_table = "drugtest") 
+                OR 
+                (result_raw_text_primary NOT IN ("DRUX", "DRUM"))
+            )
+        ) AS is_positive_result,
+        result_raw_text_primary,
+        result_raw_text,
+        IF (
+            (
+                (
+                    IFNULL(contacts_meth_positive, FALSE) 
+                    OR 
+                    IFNULL(drugtest_meth_positive, FALSE)
+                ) 
+                AND
+                (
+                    -- Where the Contact Note Type is either DRUX ("DRUG SCREEN NEGATIVE DUE TO VALID PRESCRIPTION"),
+                    -- or DRUM ("DRUG SCREEN UNAVAILABLE DUE TO MEDICAL CONDITION"), 
+                    -- positive lab results do not indicate a "positive" screen in the sense of a rules violation.
+                    -- If this screen comes from DrugTestDrugClass alone, then we don't have information on these exceptions
+                    -- and assume a positive lab test indicates a positive result.
+                    (source_table = "drugtest") 
+                    OR 
+                    (result_raw_text_primary NOT IN ("DRUX", "DRUM"))
+                )
+            ), 
+            "METH", 
+            NULL
+        ) AS substance_detected,
         is_inferred,
-    FROM dru_with_ztpd_full_table
-    WHERE contact_note_date >= DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 20 YEAR)
-    QUALIFY ROW_NUMBER() OVER w = 1
-    WINDOW w AS (
-        PARTITION BY person_id, state_code, contact_note_date, sample_type
-        -- Prioritize positives and all "passed" negative screens above DRULs, which means "awaiting lab results"
-        ORDER BY CASE contact_note_type WHEN "DRUP" THEN 1 
-                                          WHEN "DRUN" THEN 2 
-                                          WHEN "DRUM" THEN 3
-                                          WHEN "DRUX" THEN 4
-                                          ELSE 5 END
-    )
+        contacts_date,
+        drugtest_date,
+        contacts_meth_positive,
+        drugtest_meth_positive,
+        contacts_positive,
+        drugtest_positive,
+        contacts_contactnote,
+        lag_days,
+        source_table,
+        CAST(NULL AS STRING) AS med_invalidate_flg
+    FROM combined
 """
 
 US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -177,7 +400,10 @@ US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     raw_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
+    sessions_dataset=SESSIONS_DATASET,
     us_tn_drug_screens_drup_ztpd_max_lag=US_TN_DRUG_SCREENS_DRUP_ZTPD_MAX_LAG,
+    us_tn_drug_screens_drugtest_contact_max_lag=US_TN_DRUG_SCREENS_DRUGTEST_CONTACT_MAX_LAG,
+    us_tn_drug_screens_drugtest_contact_min_lag=US_TN_DRUG_SCREENS_DRUGTEST_CONTACT_MIN_LAG,
 )
 
 if __name__ == "__main__":
