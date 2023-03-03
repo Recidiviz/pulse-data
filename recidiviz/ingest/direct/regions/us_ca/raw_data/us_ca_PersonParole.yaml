@@ -1,9 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PersonParole
 file_description: |-
-  Information about people currently on parole in California.
+  Information about people currently on parole in California. The best way to identify if someone has absconded is by using the OffenderGroup
+  field -- do not rely on AddressType.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
 columns:
   - name: Cdcno
     is_pii: True
@@ -15,20 +17,79 @@ columns:
       TODO(#15297) An ID to reference a specific individual in who is in custody or under supervision of CDCR.
   - name: FirstName
     is_pii: True
+    description: |-
+      The client's first name.
   - name: MiddleName
     is_pii: True
+    description: |-
+      The client's middle name.
   - name: LastName
     is_pii: True
+    description: |-
+      The client's last name.
   - name: NameSuffix
+    is_pii: True
+    description: |-
+      The suffix appended to an client's name.
   - name: Birthday
     is_pii: True
+    description: |-
+      The client's date of birth.
   - name: Sex
     is_pii: True
+    description: |-
+      The client's sex. This field is either M or F. We're currently unclear how this is handled in the case of transgender or non-binary clients.
+    known_values:
+      - value: F
+        description: Female
+      - value: M
+        description: Male
   - name: Race
     is_pii: True
+    description: |-
+      The client's reported race.
+    known_values:
+      - value: American Indian/Alaskan Native
+      - value: Asian or Pacific Islander
+      - value: Black
+      - value: Cuban
+      - value: Hispanic
+      - value: Mexican
+      - value: Other
+      - value: Unknown
+      - value: White
   - name: Ethnic
     is_pii: True
+    description: The client's reported ethnic background.
+    known_values:
+      - value: American Indian
+      - value: Black
+      - value: Cambodian
+      - value: Columbian
+      - value: Cuban
+      - value: Filipino
+      - value: Guamanian
+      - value: Guatemalan
+      - value: Hispanic
+      - value: Indian
+      - value: Japanese
+      - value: Korean
+      - value: Laotian
+      - value: Mexican
+      - value: Nicaraguan
+      - value: Other
+      - value: Other Asian
+      - value: Puerto Rican
+      - value: Salvadorian
+      - value: Samoan
+      - value: Unknown
+      - value: Vietnamese
+      - value: White
   - name: ParoleRegion
+    description: |-
+      The region the parolee is paroled in. We need this information in addition to 
+      BadgeNumber because some agents are active in multiple units, and this allows 
+      us to understand which unit this individual is being supervised under.
   - name: ParoleDistrict
   - name: ParoleUnit
   - name: ParoleAgentName
@@ -54,7 +115,34 @@ columns:
       TODO(#15297)
   - name: OffenderGroup
     description: |-
-      TODO(#15297)
+      The group the offender belongs to.
+    known_values:
+      - value: PAROLE
+      - value: MCRP
+      - value: ICOOP
+      - value: MDPAR
+      - value: CCTRP
+      - value: PAL
+        description: Identifies someone who has absconded.
+      - value: ACP
+      - value: ISPU
+      - value: ISPU_PAL
+      - value: MRP
   - name: AddressType
     description: |-
-      TODO(#15297)
+      The general category of someone's residence.
+    known_values:
+      - value: Custody Program
+      - value: Community Program
+      - value: Physical (Home)
+      - value: Transient - Homeless
+      - value: Planned (after release)
+      - value: Mailing
+      - value: PAL Report Submitted
+      - value: Local Jail
+      - value: Shelter Transient
+      - value: Out-of-State Custody
+      - value: Temporary
+      - value: Planned (after ISC Transfer)
+      - value: Federal Custody
+      - value: Conversion
