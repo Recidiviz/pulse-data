@@ -225,24 +225,30 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
     mo_restricted_access AS (
         SELECT
             'US_MO' AS state_code,
-            LOWER(EMAIL) AS restricted_user_email,
+            LOWER(COALESCE(workflows.email, lantern.EMAIL)) AS restricted_user_email,
             CASE
                 WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
                 THEN STRING_AGG(DISTINCT DISTRICT, ',')
                 ELSE ''
             END AS allowed_supervision_location_ids,
             IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_supervision_location', NULL) AS allowed_supervision_location_level,
-            IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_access_role', 'leadership_role') as internal_role,
-            -- All users can access leadership dashboard
-            TRUE AS can_access_leadership_dashboard,
+            CASE
+                WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
+                    THEN 'level_1_access_role'
+                WHEN LOWER(workflows.facility)!='all'
+                    THEN 'line_staff_user'
+                ELSE 'leadership_role'
+            END as internal_role,
+            IF(lantern.EMAIL IS NOT NULL, TRUE, FALSE) AS can_access_leadership_dashboard,
             -- US_MO is not currently using Case Triage
             FALSE AS can_access_case_triage,
             FALSE AS should_see_beta_charts,
-            -- US_MO has not yet launched any user restricted pages
-            TO_JSON_STRING(NULL) as routes
-        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
-        WHERE EMAIL IS NOT NULL
-        GROUP BY LOWER(EMAIL)
+            TO_JSON_STRING(IF(workflows.EMAIL IS NOT NULL, STRUCT(TRUE AS workflows), NULL)) as routes
+        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest` lantern
+        FULL OUTER JOIN `{project_id}.{static_reference_dataset_id}.us_mo_rh_workflows_roster` workflows
+        ON LOWER(lantern.EMAIL)=LOWER(workflows.email)
+        WHERE lantern.EMAIL IS NOT NULL OR workflows.email IS NOT NULL
+        GROUP BY lantern.EMAIL, workflows.EMAIL, workflows.facility
     ),
     nd_restricted_access AS (
         WITH line_staff_users AS (
