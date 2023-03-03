@@ -69,7 +69,7 @@ sanitized_internal_metrics AS (
         -- TODO(#3830): Check back in with ID to see if they have rectified their historical data. If so, we can remove
         --  this case.
         -- US_ID - All low supervision unit POs had inconsistent data before July 2020.
-        WHEN state_code = 'US_ID' 
+        WHEN state_code IN ('US_ID', 'US_IX')
             AND supervising_officer_external_id IN ('REGARCIA', 'CAMCDONA', 'SLADUKE', 'COLIMSUP') 
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
         ELSE supervising_officer_external_id

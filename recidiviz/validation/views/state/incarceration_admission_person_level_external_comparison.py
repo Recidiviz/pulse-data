@@ -52,7 +52,7 @@ WITH external_data AS (
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized`
     WHERE admission_reason NOT IN ('TRANSFER', 'STATUS_CHANGE')
     -- Exclude parole revocation admissions for states that have parole board hold admissions --
-    AND (state_code NOT IN ('US_ID', 'US_MO', 'US_PA') OR NOT (admission_reason = 'REVOCATION' AND supervision_type = 'PAROLE'))
+    AND (state_code NOT IN ('US_ID', 'US_IX', 'US_MO', 'US_PA') OR NOT (admission_reason = 'REVOCATION' AND supervision_type = 'PAROLE'))
     AND CASE 
       WHEN state_code = 'US_PA' THEN 
         -- Exclude other admission reasons not included in PA external validation data
