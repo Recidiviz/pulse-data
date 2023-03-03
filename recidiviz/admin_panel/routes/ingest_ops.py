@@ -421,6 +421,8 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
                 source_bucket=source_bucket,
                 file_tag_filters=file_tags,
                 allow_incomplete_configs=True,
+                big_query_client=BigQueryClientImpl(),
+                gcsfs=GcsfsFactory.build(),
             )
         except ValueError as error:
             return str(error), HTTPStatus.INTERNAL_SERVER_ERROR
