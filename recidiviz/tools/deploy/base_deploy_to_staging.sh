@@ -88,20 +88,11 @@ else
     GAE_VERSION=$(echo "$VERSION_TAG" | tr '.' '-')
 fi
 
+IMAGE_BASE=us.gcr.io/$PROJECT_ID/appengine/default
+IMAGE_URL=$IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
 
-# app engine deploy paths
-APP_ENGINE_IMAGE_BASE=us.gcr.io/$PROJECT_ID/appengine/default
-APP_ENGINE_IMAGE_URL=$APP_ENGINE_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
-
-APP_ENGINE_REMOTE_BUILD_BASE=us.gcr.io/$PROJECT_ID/appengine/build
-APP_ENGINE_REMOTE_BUILD_URL=$APP_ENGINE_REMOTE_BUILD_BASE:${COMMIT_HASH}
-
-# dataflow deploy paths
-DATAFLOW_IMAGE_BASE=us-docker.pkg.dev/$PROJECT_ID/dataflow/default
-DATAFLOW_IMAGE_URL=$DATAFLOW_IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
-
-DATAFLOW_BUILD_BASE=us-docker.pkg.dev/$PROJECT_ID/dataflow/build
-DATAFLOW_BUILD_URL=$DATAFLOW_BUILD_BASE:${COMMIT_HASH}
+REMOTE_BUILD_BASE=us.gcr.io/$PROJECT_ID/appengine/build
+REMOTE_BUILD_URL=$REMOTE_BUILD_BASE:${COMMIT_HASH}
 
 if [[ -n ${DEBUG_BUILD_NAME} ]]; then
     # Local debug build, we'll use docker on our local machine
@@ -110,61 +101,41 @@ if [[ -n ${DEBUG_BUILD_NAME} ]]; then
     export DOCKER_BUILDKIT=1
     run_cmd docker build --pull -t recidiviz-image --platform=linux/amd64 . --build-arg=CURRENT_GIT_SHA="${COMMIT_HASH}"
 
-    echo "Tagging app engine image url [$APP_ENGINE_IMAGE_URL] as recidiviz-image"
+    echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
     verify_hash "$COMMIT_HASH"
-    run_cmd docker tag recidiviz-image "${APP_ENGINE_IMAGE_URL}"
+    run_cmd docker tag recidiviz-image "${IMAGE_URL}"
 
-    echo "Pushing app engine image url [$APP_ENGINE_IMAGE_URL]"
+    echo "Pushing image url [$IMAGE_URL]"
     verify_hash "$COMMIT_HASH"
-    run_cmd docker push "${APP_ENGINE_IMAGE_URL}"
+    run_cmd docker push "${IMAGE_URL}"
 else
-    echo "Looking for remote App Engine and Dataflow builds for commit ${COMMIT_HASH} on branch ${BRANCH_NAME}"
+    echo "Looking for remote build for commit ${COMMIT_HASH} on branch ${BRANCH_NAME}"
     verify_hash "$COMMIT_HASH"
-    FOUND_APP_ENGINE_BUILD=false
-    FOUND_DATAFLOW_BUILD=false
+    FOUND_REMOTE_BUILD=false
     ((timeout=300)) # 5 minute timeout
     
-    while [[ "${FOUND_APP_ENGINE_BUILD}" == "false" ]] && [[ "${FOUND_DATAFLOW_BUILD}" == "false" ]] && ((timeout > 0))
+    while [[ "${FOUND_REMOTE_BUILD}" == "false" ]] && ((timeout > 0))
     do
-        ae_existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json "${APP_ENGINE_REMOTE_BUILD_BASE}")
-        if [[ "$ae_existing_tags" != "[]" ]]; then
-            FOUND_APP_ENGINE_BUILD=true
+        existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json "${REMOTE_BUILD_BASE}")
+        if [[ "$existing_tags" != "[]" ]]; then
+            FOUND_REMOTE_BUILD=true
         else
-            FOUND_APP_ENGINE_BUILD=false
+            FOUND_REMOTE_BUILD=false
         fi
-
-        df_existing_tags=$(gcloud container images list-tags --filter="tags:${COMMIT_HASH}" --format=json "${DATAFLOW_BUILD_BASE}")
-        if [[ "$df_existing_tags" != "[]" ]]; then
-            FOUND_DATAFLOW_BUILD=true
-        else
-            FOUND_DATAFLOW_BUILD=false
+        if [[ "${FOUND_REMOTE_BUILD}" == "false" ]]; then
+            echo "Remote build for commit ${COMMIT_HASH} not found, retrying in 30s"
+            sleep 30
+            ((timeout -= 30))
         fi
-
-        if [[ "${FOUND_APP_ENGINE_BUILD}" == "true" ]] && [[ "${FOUND_DATAFLOW_BUILD}" == "true" ]]; then
-            break
-        fi
-
-        echo "Remote App Engine and Dataflow builds for commit ${COMMIT_HASH} not found, retrying in 30s"
-        sleep 30
-        ((timeout -= 30))
     done
 
-    if [[ "${FOUND_APP_ENGINE_BUILD}" == "false" ]]; then
-      echo "Unable to find remote App Engine build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=$PROJECT_ID). Exiting..."
-    fi
-    if [[ "${FOUND_DATAFLOW_BUILD}" == "false" ]]; then
-      echo "Unable to find remote Dataflow build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=$PROJECT_ID). Exiting..."
+    if [[ "${FOUND_REMOTE_BUILD}" == "false" ]]; then
+        echo "Unable to find remote build for ${COMMIT_HASH} within the timeout - you might need to manually trigger it in Cloud Build (https://console.cloud.google.com/cloud-build/triggers?project=$PROJECT_ID). Exiting..."
+        run_cmd exit 1
     fi
 
-    if [[ "${FOUND_APP_ENGINE_BUILD}" == "false" ]] || [[ "${FOUND_DATAFLOW_BUILD}" == "false" ]]; then
-      run_cmd exit 1
-    fi
-
-    echo "Found remote App Engine build, proceeding to use image ${APP_ENGINE_REMOTE_BUILD_URL} for the release, tagging to ${APP_ENGINE_IMAGE_URL}"
-    run_cmd gcloud -q container images add-tag "${APP_ENGINE_REMOTE_BUILD_URL}" "${APP_ENGINE_IMAGE_URL}"
-
-    echo "Found Dataflow build, proceeding to use image ${DATAFLOW_BUILD_URL} for the release, tagging to ${DATAFLOW_IMAGE_URL}"
-    run_cmd gcloud -q container images add-tag "${DATAFLOW_BUILD_URL}" "${DATAFLOW_IMAGE_URL}"
+    echo "Found remote build, proceeding to use image ${REMOTE_BUILD_URL} for the release, tagging to ${IMAGE_URL}"
+    run_cmd gcloud -q container images add-tag "${REMOTE_BUILD_URL}" "${IMAGE_URL}"
 fi
 
 update_deployment_status "${DEPLOYMENT_STATUS_STARTED}" "${PROJECT_ID}" "${COMMIT_HASH:0:7}" "${VERSION_TAG}"
