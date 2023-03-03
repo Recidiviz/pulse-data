@@ -8,6 +8,7 @@ primary_key_cols:
   - DistrictOffice
   - AgentType
   - Notes
+  - external_id
 columns:
   - name: PosNo6
     is_pii: True
