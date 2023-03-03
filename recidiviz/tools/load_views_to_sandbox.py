@@ -267,7 +267,7 @@ def _get_all_views_changed_on_branch(
 
         return None
 
-    results = full_dag_walker.process_dag(check_for_change)
+    results = full_dag_walker.process_dag(check_for_change, synchronous=False)
     return {
         view.address: change_type
         for view, change_type in results.view_results.items()
@@ -373,7 +373,7 @@ def _check_for_invalid_ignores(
             invalid_views_to_load.append(v.address)
         return is_downstream_of_new_ignored_view
 
-    full_dag_walker.process_dag(find_invalid_ignores)
+    full_dag_walker.process_dag(find_invalid_ignores, synchronous=True)
 
     if invalid_views_to_load:
         logging.error(
