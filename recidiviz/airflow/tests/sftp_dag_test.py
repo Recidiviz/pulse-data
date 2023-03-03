@@ -55,7 +55,7 @@ class TestSftpPipelineDag(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.SFTP_DAG_ID]
         state_specific_tasks_dag = dag.partial_subset(
-            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.find_sftp_files_to_download",
+            task_ids_or_regex=r"US_[A-Z][A-Z]",
             include_downstream=False,
             include_upstream=True,
         )
@@ -73,7 +73,7 @@ class TestSftpPipelineDag(unittest.TestCase):
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.SFTP_DAG_ID]
         state_specific_lock_tasks_dag = dag.partial_subset(
-            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.find_sftp_files_to_download",
+            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.gather_prior_discovered_remote_files",
             include_downstream=False,
             include_upstream=False,
             include_direct_upstream=True,
@@ -115,3 +115,16 @@ class TestSftpPipelineDag(unittest.TestCase):
         for task in state_specific_dag.leaves:
             if task != "start_sftp":
                 self.assertRegex(task.task_id, r"US_[A-Z][A-Z]\..*")
+
+    def test_sftp_and_gcs_operators_have_retries(self) -> None:
+        task_types_with_retries = [
+            "remote_file_download.download_sftp_files",
+            "remote_file_download.post_process_downloaded_files",
+            "ingest_ready_file_upload.upload_files_to_ingest_bucket",
+        ]
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        for task in dag.tasks:
+            for task_type in task_types_with_retries:
+                if task_type in task.task_id:
+                    self.assertEqual(3, task.retries)
