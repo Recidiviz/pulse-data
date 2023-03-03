@@ -147,4 +147,4 @@ products:
       - state_code: US_IX
         environment: production
       - state_code: US_MO
-        environment: staging
+        environment: production
