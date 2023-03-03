@@ -29,9 +29,8 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
 }
 
 resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
-  name = "schedule_sftp_dag_run_cloud_function"
-  # TODO(#19103) Change back to hourly once smarter discovery mechanism is applied to SFTP
-  schedule    = "45 16 * * *" # Every day at 4:45pm PT
+  name        = "schedule_sftp_dag_run_cloud_function"
+  schedule    = "45 * * * *" # Every hour at the 45 minute
   description = "Schedules the running of the SFTP DAG pipeline topic"
   time_zone   = "America/Los_Angeles"
 
