@@ -33,7 +33,6 @@ class FakeDirectIngestCloudTaskQueueManager(DirectIngestCloudTaskQueueManager, a
     """Base class for fake implementations of DirectIngestCloudTaskManager."""
 
     _queue_type_to_name: Dict[DirectIngestQueueType, str] = {
-        DirectIngestQueueType.SFTP_QUEUE: "sftp_download",
         DirectIngestQueueType.MATERIALIZE_INGEST_VIEW: "ingest_view_materialization",
         DirectIngestQueueType.RAW_DATA_IMPORT: "raw_data_import",
         DirectIngestQueueType.SCHEDULER: "schedule",

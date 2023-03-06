@@ -27,14 +27,12 @@ from google.cloud import tasks_v2
 from mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.common.constants.states import StateCode
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION,
 )
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
-    DirectIngestQueueType,
     ExtractAndMergeCloudTaskQueueInfo,
     IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
@@ -69,29 +67,6 @@ _SECONDARY_INGEST_BUCKET = gcsfs_direct_ingest_bucket_for_state(
     region_code=_REGION.region_code,
     ingest_instance=DirectIngestInstance.SECONDARY,
 )
-
-
-class TestDirectIngestQueueType(TestCase):
-    def test_exists_for_instance(self) -> None:
-        primary_only_queue_types = {
-            DirectIngestQueueType.SFTP_QUEUE,
-        }
-        for queue_type in primary_only_queue_types:
-            self.assertTrue(
-                queue_type.exists_for_instance(DirectIngestInstance.PRIMARY)
-            )
-            self.assertFalse(
-                queue_type.exists_for_instance(DirectIngestInstance.SECONDARY)
-            )
-
-        other_queue_types = set(DirectIngestQueueType) - primary_only_queue_types
-        for queue_type in other_queue_types:
-            self.assertTrue(
-                queue_type.exists_for_instance(DirectIngestInstance.PRIMARY)
-            )
-            self.assertTrue(
-                queue_type.exists_for_instance(DirectIngestInstance.SECONDARY)
-            )
 
 
 class TestRawDataImportQueueInfo(TestCase):
@@ -723,58 +698,6 @@ class TestDirectIngestCloudTaskQueueManagerImpl(TestCase):
                 _REGION, DirectIngestInstance.PRIMARY
             )
         )
-
-    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager.uuid")
-    @patch("google.cloud.tasks_v2.CloudTasksClient")
-    @freeze_time("2021-01-01")
-    def test_create_direct_ingest_sftp_download_task(
-        self,
-        mock_client: mock.MagicMock,
-        mock_uuid: mock.MagicMock,
-    ) -> None:
-        uuid = "random-uuid"
-        mock_uuid.uuid4.return_value = uuid
-        queue_path = "us-xx-sftp-path"
-        queue_name = "direct-ingest-state-us-xx-sftp-queue"
-        date = "2021-01-01"
-        task_name = f"{queue_name}/{_REGION.region_code}-{date}-{uuid}"
-        task = tasks_v2.types.task_pb2.Task(
-            name=task_name,
-            app_engine_http_request={
-                "http_method": "POST",
-                "relative_uri": f"/direct/upload_from_sftp?region={_REGION.region_code}",
-                "body": json.dumps({}).encode(),
-            },
-        )
-
-        mock_client.return_value.task_path.return_value = task_name
-        mock_client.return_value.queue_path.return_value = queue_path
-
-        DirectIngestCloudTaskQueueManagerImpl().create_direct_ingest_sftp_download_task(
-            _REGION
-        )
-
-        mock_client.return_value.queue_path.assert_called_with(
-            self.mock_project_id, QUEUES_REGION, queue_name
-        )
-        mock_client.return_value.create_task.assert_called_with(
-            parent=queue_path, task=task
-        )
-
-        state_code_list_patcher = mock.patch(
-            "recidiviz.ingest.direct.regions.direct_ingest_region_utils.get_direct_ingest_states_with_sftp_queue",
-            return_value=[StateCode.US_XX],
-        )
-        mock_client.return_value.list_tasks.return_value = [task]
-
-        state_code_list_patcher.start()
-
-        self.assertFalse(
-            DirectIngestCloudTaskQueueManagerImpl().all_ingest_instance_queues_are_empty(
-                _REGION, DirectIngestInstance.PRIMARY
-            )
-        )
-        state_code_list_patcher.stop()
 
     @patch("google.cloud.tasks_v2.CloudTasksClient")
     def test_all_ingest_related_queues_are_empty(
