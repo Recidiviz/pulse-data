@@ -124,7 +124,8 @@ SELECT
         inflow_from_level_1,
         inflow_from_level_2,
         IFNULL(start_reason, "INTERNAL_UNKNOWN") AS start_reason,
-        IFNULL(most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type
+        IFNULL(most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
+        CAST(prior_treatment_referrals_1y AS STRING) AS prior_treatment_referrals_1y
     ))[OFFSET(0)]) AS event_attributes,
 FROM (
     SELECT
@@ -136,6 +137,8 @@ FROM (
         a.start_reason,
         -- Get the first non-null start_sub_reason among incarceration starts occurring during the super session
         b.start_sub_reason AS most_severe_violation_type,
+        COUNT(DISTINCT c.referral_date)
+            OVER (PARTITION BY a.person_id, a.start_date) AS prior_treatment_referrals_1y,
     FROM
         `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized` a
     LEFT JOIN
@@ -144,6 +147,12 @@ FROM (
         a.person_id = b.person_id
         AND b.session_id BETWEEN a.session_id_start AND a.session_id_end
         AND b.start_sub_reason IS NOT NULL
+    -- Get treatment referrals within 1 year of incarceration
+    LEFT JOIN
+        `{project_id}.{normalized_state_dataset}.state_program_assignment` c
+    ON
+        a.person_id = c.person_id
+        AND DATE_SUB(a.start_date, INTERVAL 365 DAY) <= c.referral_date
     WHERE
         a.compartment_level_1 = "INCARCERATION"
     QUALIFY ROW_NUMBER() OVER (
@@ -217,7 +226,8 @@ SELECT
         CAST(outflow_to_incarceration AS STRING) AS outflow_to_incarceration,
         IFNULL(end_reason, "INTERNAL_UNKNOWN") AS end_reason,
         IFNULL(most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
-        CAST(termination_date AS STRING) AS most_severe_violation_type_termination_date
+        CAST(termination_date AS STRING) AS most_severe_violation_type_termination_date,
+        CAST(prior_treatment_referrals_1y AS STRING) AS prior_treatment_referrals_1y
     )) AS event_attributes,
 FROM (
     SELECT
@@ -231,6 +241,8 @@ FROM (
         -- Get the first non-null violation type among supervision terminations occurring during the super session
         c.most_severe_violation_type AS most_severe_violation_type,
         c.termination_date,
+        COUNT(DISTINCT d.referral_date)
+            OVER (PARTITION BY a.person_id, a.end_date_exclusive) AS prior_treatment_referrals_1y,
     FROM
         `{project_id}.{sessions_dataset}.compartment_sessions_materialized` a
     LEFT JOIN
@@ -246,6 +258,12 @@ FROM (
     ON
         a.person_id = c.person_id
         AND c.termination_date BETWEEN a.end_date_exclusive AND COALESCE(b.end_date, "9999-01-01")
+    -- Referrals within one year of supervision termination
+    LEFT JOIN
+        `{project_id}.{normalized_state_dataset}.state_program_assignment` d
+    ON
+        a.person_id = d.person_id
+        AND DATE_SUB(a.end_date_exclusive, INTERVAL 365 DAY) <= d.referral_date
     WHERE
         a.compartment_level_1 = "SUPERVISION"
         AND a.end_reason IN ("ADMITTED_TO_INCARCERATION", "REVOCATION")
