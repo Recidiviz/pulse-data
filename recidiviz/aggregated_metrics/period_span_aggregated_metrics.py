@@ -107,6 +107,7 @@ eligible_spans AS (
                     span_end_date_col="ses.end_date",
                     period_start_date_col="pop.population_start_date",
                     period_end_date_col="pop.population_end_date",
+                    original_span_start_date="ses.span_start_date",
                 )
                 for metric in metrics
             ]
