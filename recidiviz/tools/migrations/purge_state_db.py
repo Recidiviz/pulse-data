@@ -148,7 +148,6 @@ def main(
                         SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
                             database_key=db_key,
                             using_proxy=True,
-                            migration_user=True,
                         )
                     )
 
