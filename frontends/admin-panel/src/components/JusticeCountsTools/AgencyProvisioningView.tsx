@@ -31,7 +31,6 @@ import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
-import { getUsers } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 import {
@@ -43,7 +42,6 @@ import {
   FipsCountyCodeKey,
   StateCode,
   StateCodeKey,
-  UsersResponse,
 } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
@@ -51,11 +49,8 @@ const AgencyProvisioningView = (): JSX.Element => {
   const [selectedStateCode, setSelectedStateCode] = useState<string>("");
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
   const [form] = Form.useForm();
-  const { data: usersData } = useFetchedDataJSON<UsersResponse>(getUsers);
-  const usersToShow = usersData?.users.filter((user) => user.id != null);
   const onFinish = async ({
     name,
-    userDbId,
     systems,
     stateCode,
     fipsCountyCode,
@@ -73,7 +68,6 @@ const AgencyProvisioningView = (): JSX.Element => {
         nameTrimmed,
         systemsTrimmed,
         stateCodeTrimmed,
-        userDbId,
         fipsCountyCodeTrimmed
       );
       if (!response.ok) {
@@ -280,17 +274,6 @@ const AgencyProvisioningView = (): JSX.Element => {
                   {FipsCountyCode[fipsCountyCode as FipsCountyCodeKey]}
                 </Select.Option>
               ))}
-          </Select>
-        </Form.Item>
-        <Form.Item label="User" name="userDbId" rules={[{ required: true }]}>
-          <Select disabled={showSpinner}>
-            {usersToShow?.map((user) => (
-              <Select.Option key={user.id} value={user.id}>
-                {`${user.id}: ${
-                  user.email != null ? user.email : "<no email address>"
-                }`}
-              </Select.Option>
-            ))}
           </Select>
         </Form.Item>
         <Form.Item {...formTailLayout}>

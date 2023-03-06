@@ -35,7 +35,7 @@ class AgencyInterface:
         systems: List[schema.System],
         state_code: str,
         fips_county_code: Optional[str],
-        user_account_id: int,
+        user_account_id: Optional[int] = None,
     ) -> schema.Agency:
         agency = schema.Agency(
             name=name,
