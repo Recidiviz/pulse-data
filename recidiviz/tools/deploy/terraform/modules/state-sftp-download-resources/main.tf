@@ -43,30 +43,3 @@ module "sftp-download-queue" {
   max_retry_attempts        = 5
   logging_sampling_ratio    = 1.0
 }
-
-resource "google_cloud_scheduler_job" "sftp-cloud-scheduler" {
-  # Only for Michigan in production do we configure this
-  count            = (var.project_id == "recidiviz-123" && var.state_code == "US_MI") ? 1 : 0
-  name             = "${local.lower_state_code}-sftp-cron-job"
-  schedule         = "0 */3 * * *" # Every 3 hours
-  description      = "${var.state_code} SFTP cloud scheduler cron job"
-  time_zone        = "America/Los_Angeles"
-  attempt_deadline = "600s" # 10 minutes
-  region           = "us-east1"
-
-  retry_config {
-    min_backoff_duration = "30s"
-    max_doublings        = 5
-  }
-
-  http_target {
-    uri         = "https://${var.project_id}.appspot.com/direct/handle_sftp_files?region=${lower(var.state_code)}"
-    http_method = "POST"
-
-    oidc_token {
-      service_account_email = data.google_app_engine_default_service_account.default.email
-      # Only for production
-      audience = "688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.googleusercontent.com"
-    }
-  }
-}
