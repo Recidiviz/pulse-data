@@ -33,13 +33,3 @@ module "sftp-storage-bucket" {
     }
   ]
 }
-
-module "sftp-download-queue" {
-  source = "../base-task-queue"
-
-  queue_name                = "${local.direct_ingest_sftp_str}-queue"
-  region                    = var.region
-  max_dispatches_per_second = 5
-  max_retry_attempts        = 5
-  logging_sampling_ratio    = 1.0
-}
