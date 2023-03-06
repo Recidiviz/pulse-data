@@ -124,6 +124,9 @@ class Ethnicity(Dimension):
 class RaceAndEthnicity(DimensionBase, enum.Enum):
     """Class for Justice Counts Race and Ethnicity breakdowns"""
 
+    # Note: if we change Race/Ethnicity values, we have to update the frontend too
+    # as the frontend contains conditionals that are dependent on these values
+
     # Hispanic or Latino
     HISPANIC_AMERICAN_INDIAN_ALASKAN_NATIVE = (
         "American Indian or Alaska Native / Hispanic or Latino"
