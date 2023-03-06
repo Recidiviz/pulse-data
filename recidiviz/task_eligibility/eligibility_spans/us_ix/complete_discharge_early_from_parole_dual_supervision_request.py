@@ -31,7 +31,6 @@ from recidiviz.task_eligibility.criteria.general import (
 from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
     income_verified_within_3_months,
     lsir_level_low_moderate_for_x_days,
-    not_a_non_idaho_commitment,
     parole_dual_supervision_past_early_discharge_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -56,7 +55,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         lsir_level_low_moderate_for_x_days.VIEW_BUILDER,
         no_felony_within_24_months.VIEW_BUILDER,
         income_verified_within_3_months.VIEW_BUILDER,
-        not_a_non_idaho_commitment.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
