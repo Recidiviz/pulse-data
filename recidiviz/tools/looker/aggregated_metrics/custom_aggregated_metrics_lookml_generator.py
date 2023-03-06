@@ -87,6 +87,7 @@ def _generate_period_span_metric_view(
             span_end_date_col="ses.end_date",
             period_start_date_col="time_period.start_date",
             period_end_date_col="time_period.end_date",
+            original_span_start_date="ses.span_start_date",
         )
         + ",\n"
         + "\n".join(
@@ -97,6 +98,7 @@ def _generate_period_span_metric_view(
                         span_end_date_col="ses.end_date",
                         period_start_date_col="time_period.start_date",
                         period_end_date_col="time_period.end_date",
+                        original_span_start_date="ses.span_start_date",
                     ),
                     metric,
                 )

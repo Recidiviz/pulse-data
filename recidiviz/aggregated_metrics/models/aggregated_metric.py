@@ -17,7 +17,7 @@
 """Creates AggregatedMetric objects with properties of spans/events required to calculate a metric"""
 import abc
 import re
-from typing import Dict, List, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 import attr
 
@@ -69,6 +69,7 @@ class PeriodSpanAggregatedMetric(AggregatedMetric):
         span_end_date_col: str,
         period_start_date_col: str,
         period_end_date_col: str,
+        original_span_start_date: str,
     ) -> str:
         """Returns a query fragment that calculates an aggregation corresponding to the PeriodSpan metric type."""
 
@@ -224,6 +225,7 @@ class DailyAvgSpanCountMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
         span_end_date_col: str,
         period_start_date_col: str,
         period_end_date_col: str,
+        original_span_start_date: Optional[str] = None,
     ) -> str:
         return f"""
             SUM(
@@ -262,6 +264,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
         span_end_date_col: str,
         period_start_date_col: str,
         period_end_date_col: str,
+        original_span_start_date: Optional[str] = None,
     ) -> str:
         return f"""
             SAFE_DIVIDE(
@@ -314,6 +317,7 @@ class DailyAvgTimeSinceSpanStartMetric(
         span_end_date_col: str,
         period_start_date_col: str,
         period_end_date_col: str,
+        original_span_start_date: str,
     ) -> str:
         return f"""
             SAFE_DIVIDE(
@@ -328,10 +332,10 @@ class DailyAvgTimeSinceSpanStartMetric(
                             # Average of LoS on last day (inclusive) of period/span and LoS on first day of period/span
                             (DATE_DIFF(
                                 DATE_SUB(LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}), INTERVAL 1 DAY),
-                                {span_start_date_col}, DAY
+                                {original_span_start_date}, DAY
                             ) + DATE_DIFF(
                                 GREATEST({period_start_date_col}, {span_start_date_col}),
-                                {span_start_date_col}, DAY
+                                {original_span_start_date}, DAY
                             )
                         ) / 2) {"/ 365.25" if self.scale_to_year else ""},
                         NULL
@@ -372,6 +376,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
         span_end_date_col: str,
         period_start_date_col: str,
         period_end_date_col: str,
+        original_span_start_date: Optional[str] = None,
     ) -> str:
         return f"""
             SUM(
