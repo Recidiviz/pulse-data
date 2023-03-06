@@ -662,6 +662,19 @@ INCARCERATION_STARTS_WITH_VIOLATION_TYPE_METRICS = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
 
+INCARCERATION_STARTS_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCountMetric(
+    name="incarceration_starts_technical_violation_no_prior_treatment_referral",
+    display_name="Incarceration Starts, Technical Violation, No Prior Treatment Referral",
+    description="Number of observed incarceration starts for which the most severe "
+    "violation type was technical, and where there were no preceding treatment"
+    "referrals during the past 1 year",
+    event_types=["INCARCERATION_START"],
+    event_attribute_filters={
+        "most_severe_violation_type": ["TECHNICAL"],
+        "prior_treatment_referrals_1y": ["0"],
+    },
+)
+
 INCARCERATION_STARTS_AND_INFERRED = EventCountMetric(
     name="incarceration_starts_and_inferred",
     display_name="Incarceration Starts And Inferred Incarcerations",
@@ -688,6 +701,21 @@ INCARCERATION_STARTS_AND_INFERRED_WITH_VIOLATION_TYPE_METRICS = [
     for category, types in _VIOLATION_CATEGORY_TO_TYPES_DICT.items()
 ]
 
+INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL = EventCountMetric(
+    name="incarceration_starts_and_inferred_technical_violation_no_prior_treatment_referral",
+    display_name="Incarceration Starts And Inferred Incarcerations, Technical Violation, No Prior Treatment Referral",
+    description="Number of observed incarceration starts or inferred incarcerations for which the most severe "
+    "violation type was technical, and where there were no preceding treatment"
+    "referrals during the past 1 year",
+    event_types=[
+        "INCARCERATION_START",
+        "SUPERVISION_TERMINATION_WITH_INCARCERATION_REASON",
+    ],
+    event_attribute_filters={
+        "most_severe_violation_type": ["TECHNICAL"],
+        "prior_treatment_referrals_1y": ["0"],
+    },
+)
 
 INCARCERATIONS_TEMPORARY = EventCountMetric(
     name="incarceration_starts_temporary",
