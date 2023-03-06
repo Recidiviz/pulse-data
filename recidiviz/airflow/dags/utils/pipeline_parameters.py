@@ -18,10 +18,13 @@
     Helper classes for passing parameters to run flex template pipelines.
 """
 import abc
+import json
+import os
 from typing import Any, Dict, List, Optional
 
 import attr
 
+import recidiviz
 from recidiviz.common import attr_validators
 
 
@@ -50,9 +53,17 @@ class PipelineParameters:
         pass
 
     @property
-    @abc.abstractmethod
     def _template_parameter_keys(self) -> List[str]:
-        pass
+        root = os.path.dirname(recidiviz.__file__)
+        template_path = (
+            f"calculator/pipeline/{self.flex_template_name}/template_metadata.json"
+        )
+        full_path = os.path.join(root, template_path)
+
+        with open(full_path, encoding="utf-8") as f:
+            template = json.load(f)
+
+        return [parameter["name"] for parameter in template["parameters"]]
 
     def template_parameters(self) -> Dict[str, Any]:
         parameters = {key: getattr(self, key) for key in self._template_parameter_keys}
@@ -72,19 +83,6 @@ class MetricsPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "metrics"
 
-    @property
-    def _template_parameter_keys(self) -> List[str]:
-        """Keys listed in recidiviz/calculator/pipeline/metrics/template_metadata.json."""
-        # TODO(#19117): have keys read from flex template metadata json files instead of explicitly listing them
-
-        return [
-            "pipeline",
-            "output",
-            "state_code",
-            "metric_types",
-            "calculation_month_count",
-        ]
-
 
 @attr.define(kw_only=True)
 class SupplementalPipelineParameters(PipelineParameters):
@@ -94,11 +92,6 @@ class SupplementalPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "supplemental"
 
-    @property
-    def _template_parameter_keys(self) -> List[str]:
-        """Keys listed in recidiviz/calculator/pipeline/supplemental/template_metadata.json."""
-        return ["pipeline", "output", "state_code"]
-
 
 @attr.define(kw_only=True)
 class NormalizationPipelineParameters(PipelineParameters):
@@ -107,8 +100,3 @@ class NormalizationPipelineParameters(PipelineParameters):
     @property
     def flex_template_name(self) -> str:
         return "normalization"
-
-    @property
-    def _template_parameter_keys(self) -> List[str]:
-        """Keys listed in recidiviz/calculator/pipeline/normalization/template_metadata.json."""
-        return ["pipeline", "output", "state_code"]
