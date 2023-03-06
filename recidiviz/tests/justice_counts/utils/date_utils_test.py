@@ -19,9 +19,7 @@
 import datetime
 import unittest
 
-from recidiviz.justice_counts.utils.datetime_utils import (
-    convert_date_range_to_year_month,
-)
+from recidiviz.justice_counts.utils.date_utils import convert_date_range_to_year_month
 
 
 class TestJusticeCountsDatetimeUtils(unittest.TestCase):
