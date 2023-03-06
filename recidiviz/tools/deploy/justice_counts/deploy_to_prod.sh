@@ -13,6 +13,8 @@ Example usage:
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
+# shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
+source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
 PROJECT_ID='recidiviz-123'
 BACKEND_VERSION=''
@@ -75,6 +77,9 @@ else
     echo_error "Invalid frontend application - must be either publisher or agency-dashboard"
     run_cmd exit 1
 fi
+
+echo "Checking script is executing in a pipenv shell..."
+run_cmd check_running_in_pipenv_shell
 
 echo "Checking for clean git status..."
 run_cmd verify_clean_git_status

@@ -86,12 +86,12 @@ Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_pla
 ```
 ./recidiviz/tools/deploy/justice_counts/deploy_for_playtesting.sh -b <name of backend branch> -f <name of frontend branch> -a publisher -t playtesting
 
-./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh -b v1.0.0 -f v1.0.0 -a publisher
+./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh -a publisher
 
 ./recidiviz/tools/deploy/justice_counts/deploy_to_prod.sh -b v1.0.0 -f v1.0.0 -a publisher
 ```
 
-The versions we've deployed to staging or prod are tracked [here](https://paper.dropbox.com/doc/Justice-Counts-Deploy-Log--ByP1W00sWJCrBjelmL9_TVD_Ag-rxYzPkYw2yDQzobnXYM3f).
+The versions we've deployed to prod are tracked [here](https://paper.dropbox.com/doc/Justice-Counts-Deploy-Log--ByP1W00sWJCrBjelmL9_TVD_Ag-rxYzPkYw2yDQzobnXYM3f).
 
 ## Creating Users and Agencies
 

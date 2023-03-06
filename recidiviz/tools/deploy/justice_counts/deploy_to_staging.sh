@@ -9,67 +9,61 @@ Performs the following actions:
 4) Tags the commits (both backend and frontend) that were used in the deploy.
 
 Example usage:
-./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh -b v1.0.0 -f v1.1.0 -a publisher
+./recidiviz/tools/deploy/justice_counts/deploy_to_staging.sh -a publisher
 "
 
 BASH_SOURCE_DIR=$(dirname "${BASH_SOURCE[0]}")
 # shellcheck source=recidiviz/tools/script_base.sh
 source "${BASH_SOURCE_DIR}/../../script_base.sh"
+# shellcheck source=recidiviz/tools/deploy/deploy_helpers.sh
+source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 
 PROJECT_ID='recidiviz-staging'
-BACKEND_VERSION=''
-FRONTEND_VERSION=''
 FRONTEND_APP=''
 CLOUD_RUN_SERVICE=''
 
 function print_usage {
-    echo_error "usage: $0 -b BACKEND_VERSION -f FRONTEND_VERSION -a FRONTEND_APP"
-    echo_error "  -b: Version with which to tag the backend commit (e.g. v1.0.0)."
-    echo_error "  -f: Version with which to tag the frontend commit (e.g. v.1.1.0)."
+    echo_error "usage: $0 -a FRONTEND_APP"
     echo_error "  -a: Frontend app to deploy (either publisher or agency-dashboard)."
     run_cmd exit 1
 }
 
-# TODO(#16325): Automatically determine new versions by fetching latest existing tags and incrementing old versions.
-while getopts "b:f:a:" flag; do
+# Used to automatically determine the versions with which to tag the
+# backend and frontend commits that are being deployed. We look up
+# previous tags and increment the minor version by 1.
+function get_next_version {
+    TAG_PREFIX=$1
+
+    echo "Fetching all tags..."
+    run_cmd git fetch --all --tags --prune --prune-tags
+
+    LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged "main" | grep "${TAG_PREFIX}" | sort_versions | tail -n 1) || exit_on_fail
+    echo "Last version tag on the branch is ${LAST_VERSION_TAG_ON_BRANCH}"
+
+    if [[ ! ${LAST_VERSION_TAG_ON_BRANCH} =~ ^${TAG_PREFIX}.v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+        echo_error "Invalid version - must be of the format vX.Y.Z"
+        run_cmd exit 1
+    fi
+
+    MAJOR=${BASH_REMATCH[1]}
+    MINOR=${BASH_REMATCH[2]}
+
+    echo "${TAG_PREFIX}.v${MAJOR}.$((MINOR+1)).0"
+}
+
+while getopts "a:" flag; do
   case "${flag}" in
-    b) BACKEND_VERSION="$OPTARG" ;;
-    f) FRONTEND_VERSION="$OPTARG" ;;
     a) FRONTEND_APP="$OPTARG" ;;
     *) print_usage
        run_cmd exit 1 ;;
   esac
 done
 
-
-if [[ -z ${BACKEND_VERSION} ]]; then
-    echo_error "Missing/empty backend version argument"
-    print_usage
-    run_cmd exit 1
-fi
-
-if [[ -z ${FRONTEND_VERSION} ]]; then
-    echo_error "Missing/empty frontend version argument"
-    print_usage
-    run_cmd exit 1
-fi
-
 if [[ -z ${FRONTEND_APP} ]]; then
     echo_error "Missing/empty frontend app argument"
     print_usage
     run_cmd exit 1
 fi
-
-if [[ ! ${BACKEND_VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo_error "Invalid backend version - must be of the format vX.Y.Z"
-    run_cmd exit 1
-fi
-
-if [[ ! ${FRONTEND_VERSION} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo_error "Invalid frontend version - must be of the format vX.Y.Z"
-    run_cmd exit 1
-fi
-
 
 if [[ ${FRONTEND_APP} == 'publisher' ]]; then
     CLOUD_RUN_SERVICE="justice-counts-web"
@@ -80,8 +74,14 @@ else
     run_cmd exit 1
 fi
 
+echo "Checking script is executing in a pipenv shell..."
+run_cmd check_running_in_pipenv_shell
+
 echo "Checking for clean git status..."
 run_cmd verify_clean_git_status
+
+BACKEND_TAG_PREFIX=jc.${FRONTEND_APP}
+FRONTEND_TAG_PREFIX=${FRONTEND_APP}
 
 # This is where Cloud Build will put the new Docker image
 SUBDIRECTORY=justice-counts/${FRONTEND_APP}
@@ -92,8 +92,15 @@ REMOTE_IMAGE_BASE=us.gcr.io/${PROJECT_ID}/${SUBDIRECTORY}
 # getting into a weird state where a new commit is checked in during the deploy.
 # note: can't use run_cmd here because of the way cd works in shell scripts
 cd ../justice-counts || exit
+
 JUSTICE_COUNTS_COMMIT_HASH=$(git fetch && git rev-parse origin/main) || exit_on_fail
+FRONTEND_VERSION=$(get_next_version "${FRONTEND_TAG_PREFIX}") || exit_on_fail
+echo "Next frontend version is ${FRONTEND_VERSION}"
+
 cd ../pulse-data || exit
+
+BACKEND_VERSION=$(get_next_version "${BACKEND_TAG_PREFIX}") || exit_on_fail
+echo "Next backend version is ${BACKEND_VERSION}"
 
 echo "Building Docker image off of main in pulse-data and ${JUSTICE_COUNTS_COMMIT_HASH} in justice-counts..."
 run_cmd pipenv run python -m recidiviz.tools.deploy.justice_counts.run_cloud_build_trigger \
