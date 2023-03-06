@@ -145,7 +145,6 @@ class TagKey:
         "create_update_raw_data_latest_views_file_tag"
     )
     METRIC_VIEW_EXPORT_NAME = "metric_view_export_name"
-    SFTP_TASK_TYPE = "sftp_task_type"
 
     # Postgres related tags
     SCHEMA_TYPE = "schema_type"
