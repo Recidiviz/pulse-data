@@ -217,26 +217,6 @@ class SQLAlchemyEngineManager:
         return password
 
     @classmethod
-    def _get_db_migration_password(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_migration_password"
-        password = secrets.get_secret(secret_key)
-        if password is None:
-            raise ValueError(
-                f"Unable to retrieve database migration password for key [{secret_key}]"
-            )
-        return password
-
-    @classmethod
-    def _get_db_migration_user(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
-        secret_key = f"{cls._secret_manager_prefix(database_key)}_db_migration_user"
-        user = secrets.get_secret(secret_key)
-        if user is None:
-            raise ValueError(
-                f"Unable to retrieve database migration user for key [{secret_key}]"
-            )
-        return user
-
-    @classmethod
     def _get_db_readonly_password(cls, *, database_key: SQLAlchemyDatabaseKey) -> str:
         secret_key = f"{cls._secret_manager_prefix(database_key)}_db_readonly_password"
         password = secrets.get_secret(secret_key)
@@ -339,7 +319,6 @@ class SQLAlchemyEngineManager:
     def update_sqlalchemy_env_vars(
         cls,
         database_key: SQLAlchemyDatabaseKey,
-        migration_user: bool = False,
         readonly_user: bool = False,
         using_proxy: bool = False,
     ) -> Dict[str, Optional[str]]:
@@ -347,8 +326,6 @@ class SQLAlchemyEngineManager:
 
         It returns the old set of env variables that were overridden.
         """
-        if migration_user and readonly_user:
-            raise ValueError("Both migration user and readonly user cannot be set")
 
         sqlalchemy_vars = [
             SQLALCHEMY_DB_NAME,
@@ -375,24 +352,6 @@ class SQLAlchemyEngineManager:
             os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_readonly_password(
                 database_key=database_key
             )
-        elif migration_user:
-            try:
-                os.environ[SQLALCHEMY_DB_USER] = cls._get_db_migration_user(
-                    database_key=database_key
-                )
-                os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_migration_password(
-                    database_key=database_key
-                )
-            except ValueError:
-                logging.info(
-                    "No explicit migration user defined. Falling back to default user."
-                )
-                os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(
-                    database_key=database_key
-                )
-                os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_password(
-                    database_key=database_key
-                )
         else:
             os.environ[SQLALCHEMY_DB_USER] = cls._get_db_user(database_key=database_key)
             os.environ[SQLALCHEMY_DB_PASSWORD] = cls._get_db_password(

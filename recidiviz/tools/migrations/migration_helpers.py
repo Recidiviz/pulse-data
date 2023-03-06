@@ -124,7 +124,6 @@ class CloudSQLProxyEngineIteratorDelegate(EngineIteratorDelegate):
         return SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
             database_key=database_key,
             using_proxy=True,
-            migration_user=True,
         )
 
     def get_engine(self, database_key: SQLAlchemyDatabaseKey) -> Engine:
