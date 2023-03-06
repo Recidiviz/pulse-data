@@ -17,9 +17,11 @@
 """Registers all metric file objects."""
 
 import itertools
+from typing import Optional
 
 import attr
 
+from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.courts import COURTS_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.defense import DEFENSE_METRIC_FILES
 from recidiviz.justice_counts.metricfiles.jails import JAILS_METRIC_FILES
@@ -81,3 +83,11 @@ SYSTEM_METRIC_KEY_AND_DIM_ID_TO_METRICFILE = {
     for system, metricfiles in SYSTEM_TO_METRICFILES.items()
     for metricfile in metricfiles
 }
+
+
+def get_metricfile_by_sheetname(
+    sheet_name: str, system: schema.System
+) -> Optional[MetricFile]:
+    stripped_sheet_name = sheet_name.split("/")[-1].split(".")[0].strip()
+    filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
+    return filename_to_metricfile.get(stripped_sheet_name)

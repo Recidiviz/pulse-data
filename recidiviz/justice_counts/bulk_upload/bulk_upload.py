@@ -41,6 +41,7 @@ from recidiviz.justice_counts.exceptions import (
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
+    get_metricfile_by_sheetname,
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import (
@@ -476,7 +477,7 @@ class BulkUploader:
 
             # Based on the system and the name of the CSV file, determine which
             # Justice Counts metric this file contains data for
-            metricfile = self._get_metricfile(
+            metricfile = get_metricfile_by_sheetname(
                 sheet_name=sheet_name, system=current_system
             )
             if not metricfile:
@@ -693,13 +694,6 @@ class BulkUploader:
                 )
 
         return datapoint_jsons_list
-
-    def _get_metricfile(
-        self, sheet_name: str, system: schema.System
-    ) -> Optional[MetricFile]:
-        stripped_sheet_name = sheet_name.split("/")[-1].split(".")[0].strip()
-        filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
-        return filename_to_metricfile.get(stripped_sheet_name)
 
     def _get_rows_by_time_range(
         self,
