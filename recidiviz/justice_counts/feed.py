@@ -28,7 +28,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRIC
 from recidiviz.justice_counts.report import ReportInterface
 
-from .utils.datetime_utils import convert_date_range_to_year_month
+from .utils.date_utils import convert_date_range_to_year_month
 
 
 class FeedInterface:

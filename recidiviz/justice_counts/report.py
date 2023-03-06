@@ -39,7 +39,7 @@ from recidiviz.justice_counts.metrics.metric_registry import METRIC_KEY_TO_METRI
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.persistence.database.schema.justice_counts import schema
 
-from .utils.datetime_utils import convert_date_range_to_year_month
+from .utils.date_utils import convert_date_range_to_year_month
 
 DatapointsForMetricT = TypeVar("DatapointsForMetricT", bound="DatapointsForMetric")
 

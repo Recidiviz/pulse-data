@@ -16,8 +16,16 @@
 # =============================================================================
 """Contains utilities for working with datetimes."""
 
+import calendar
 from datetime import datetime
 from typing import Optional, Tuple
+
+from recidiviz.common.text_analysis import TextAnalyzer
+from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
+    fuzzy_match_against_options,
+)
+
+MONTH_NAMES = list(calendar.month_name)
 
 
 def convert_date_range_to_year_month(
@@ -38,3 +46,23 @@ def convert_date_range_to_year_month(
     if end_date.year == start_date.year + 1 and end_date.month == start_date.month:
         return (start_date.year, None)
     raise ValueError(f"Invalid report start and end: {start_date}, {end_date}")
+
+
+def get_month_value_from_string(month: str, text_analyzer: TextAnalyzer) -> int:
+    """Takes as input a string and attempts to find the corresponding month
+    index using the calendar module's month_names enum. For instance,
+    March -> 3. Uses fuzzy matching to handle typos, such as `Febuary`."""
+    column_value = month.title()
+    if column_value not in MONTH_NAMES:
+        column_value = fuzzy_match_against_options(
+            analyzer=text_analyzer,
+            category_name="Month",
+            text=column_value,
+            options=MONTH_NAMES,
+        )
+    return MONTH_NAMES.index(column_value)
+
+
+def get_annual_year_from_fiscal_year(fiscal_year: str) -> Optional[str]:
+    """Takes as input a string and attempts to find the corresponding year"""
+    return fiscal_year[0 : fiscal_year.index("-")]

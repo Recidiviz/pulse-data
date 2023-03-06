@@ -16,8 +16,6 @@
 # =============================================================================
 """Functionality for bulk upload of data into the Justice Counts database."""
 
-
-import calendar
 import datetime
 import itertools
 import logging
@@ -54,13 +52,16 @@ from recidiviz.justice_counts.metrics.metric_registry import (
 )
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.date_utils import (
+    get_annual_year_from_fiscal_year,
+    get_month_value_from_string,
+)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
     ReportStatus,
 )
 
-MONTH_NAMES = list(calendar.month_name)
 PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
 
 
@@ -873,11 +874,13 @@ class BulkUploader:
         except Exception as e:
             if column_name == "month":
                 # Allow "month" column to be either numbers or month names
-                column_value = self._get_month_column_value(column_value=column_value)
+                column_value = get_month_value_from_string(
+                    text_analyzer=self.text_analyzer, month=column_value
+                )
                 value = column_type(column_value)
             elif column_name == "year" and "-" in str(column_value):
-                column_value = self._get_annual_year_from_fiscal_year(
-                    column_value=str(column_value)
+                column_value = get_annual_year_from_fiscal_year(
+                    fiscal_year=str(column_value)
                 )
                 value = column_type(column_value)
             else:
@@ -894,24 +897,3 @@ class BulkUploader:
             value = round(value, 2)
 
         return value
-
-    def _get_month_column_value(
-        self,
-        column_value: str,
-    ) -> int:
-        """Takes as input a string and attempts to find the corresponding month
-        index using the calendar module's month_names enum. For instance,
-        March -> 3. Uses fuzzy matching to handle typos, such as `Febuary`."""
-        column_value = column_value.title()
-        if column_value not in MONTH_NAMES:
-            column_value = fuzzy_match_against_options(
-                analyzer=self.text_analyzer,
-                category_name="Month",
-                text=column_value,
-                options=MONTH_NAMES,
-            )
-        return MONTH_NAMES.index(column_value)
-
-    def _get_annual_year_from_fiscal_year(self, column_value: str) -> Optional[str]:
-        """Takes as input a string and attempts to find the corresponding year"""
-        return column_value[0 : column_value.index("-")]
