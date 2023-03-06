@@ -65,6 +65,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_DAILY_POPULATION_UNKNOWN_CASE_TYPE,
     AVG_LSIR_SCORE,
     AVG_LSIR_SCORE_AT_ASSIGNMENT,
+    COMMUNITY_CONFINEMENT_SUPERVISION_STARTS,
     CONTACTS_ATTEMPTED,
     CONTACTS_COMPLETED,
     CONTACTS_FACE_TO_FACE,
@@ -157,6 +158,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         AVG_LSIR_SCORE_AT_ASSIGNMENT,
         DAYS_SINCE_MOST_RECENT_LSIR,
         # Events
+        COMMUNITY_CONFINEMENT_SUPERVISION_STARTS,
         SUPERVISION_STARTS,
         # Assignment window metrics
         DAYS_AT_LIBERTY_365,
