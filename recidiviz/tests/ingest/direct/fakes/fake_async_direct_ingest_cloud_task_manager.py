@@ -24,13 +24,11 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
-    SftpCloudTaskQueueInfo,
     build_extract_and_merge_task_id,
     build_handle_new_files_task_id,
     build_ingest_view_materialization_task_id,
     build_raw_data_import_task_id,
     build_scheduler_task_id,
-    build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.types.cloud_task_args import (
@@ -87,11 +85,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
                         DirectIngestInstance.PRIMARY,
                     )
                 ),
-                DirectIngestQueueType.SFTP_QUEUE: SingleThreadTaskQueue(
-                    name=self.queue_name_for_type(
-                        DirectIngestQueueType.SFTP_QUEUE, DirectIngestInstance.PRIMARY
-                    )
-                ),
             },
             DirectIngestInstance.SECONDARY: {
                 DirectIngestQueueType.SCHEDULER: SingleThreadTaskQueue(
@@ -117,7 +110,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
                         DirectIngestInstance.SECONDARY,
                     )
                 ),
-                # Note: There is no SFTP queue in SECONDARY
             },
         }
 
@@ -265,15 +257,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             task_args,
         )
 
-    def create_direct_ingest_sftp_download_task(
-        self, region: DirectIngestRegion
-    ) -> None:
-        task_id = build_sftp_download_task_id(region)
-        # SFTP only uses in the PRIMARY queue
-        self._get_queue(
-            DirectIngestInstance.PRIMARY, DirectIngestQueueType.SFTP_QUEUE
-        ).add_task(f"projects/path/to/{task_id}", lambda _: None)
-
     def delete_scheduler_queue_task(
         self,
         region: DirectIngestRegion,
@@ -342,19 +325,6 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskQueueManage
             queue_name=ingest_view_materialization_queue.name,
             task_names=task_names,
         )
-
-    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
-        # SFTP queues are only in PRIMARY
-        sftp_queue = self._get_queue(
-            DirectIngestInstance.PRIMARY, DirectIngestQueueType.SFTP_QUEUE
-        )
-        with sftp_queue.all_tasks_mutex:
-            has_unfinished_tasks = sftp_queue.get_unfinished_task_names_unsafe()
-
-        task_names = (
-            [f"{region.region_code}-sftp-download"] if has_unfinished_tasks else []
-        )
-        return SftpCloudTaskQueueInfo(queue_name=sftp_queue.name, task_names=task_names)
 
     def wait_for_all_tasks_to_run(
         self,

@@ -18,12 +18,9 @@
 import os
 from typing import List, Set
 
-import yaml
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.file_system import is_non_empty_code_directory
 from recidiviz.ingest.direct import direct_ingest_regions, regions
-from recidiviz.tools import deploy
 
 _REGIONS_DIR = os.path.dirname(regions.__file__)
 
@@ -70,21 +67,4 @@ def get_direct_ingest_states_launched_in_env() -> List[StateCode]:
         if direct_ingest_regions.get_direct_ingest_region(
             state_code.value.lower()
         ).is_ingest_launched_in_env()
-    ]
-
-
-def get_direct_ingest_states_with_sftp_queue() -> List[StateCode]:
-    """Returns list of states that have a direct ingest sftp queue, which only exists if a state code
-    is in the sftp_state_alpha_codes terraform list."""
-    yaml_path = os.path.join(
-        os.path.dirname(deploy.__file__),
-        "terraform/config/sftp_state_alpha_codes.yaml",
-    )
-    with open(yaml_path, "r", encoding="utf-8") as ymlfile:
-        sftp_state_alpha_codes: List[str] = yaml.full_load(ymlfile)
-
-    return [
-        StateCode[state_code]
-        for state_code in sftp_state_alpha_codes
-        if StateCode.is_state_code(state_code)
     ]

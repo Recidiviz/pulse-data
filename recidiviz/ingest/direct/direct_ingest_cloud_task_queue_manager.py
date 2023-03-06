@@ -32,9 +32,6 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
     SingleCloudTaskQueueManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
-from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
-    get_direct_ingest_states_with_sftp_queue,
-)
 from recidiviz.ingest.direct.types.cloud_task_args import (
     CloudTaskArgs,
     ExtractAndMergeArgs,
@@ -46,7 +43,6 @@ from recidiviz.utils import metadata
 
 SCHEDULER_TASK_ID_TAG = "scheduler"
 HANDLE_NEW_FILES_TASK_ID_TAG = "handle_new_files"
-HANDLE_SFTP_DOWNLOAD_TASK_ID_TAG = "handle_sftp_download"
 
 _TASK_LOCATION = "us-east1"
 QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
@@ -143,27 +139,11 @@ def build_extract_and_merge_task_id(
     )
 
 
-def build_sftp_download_task_id(region: DirectIngestRegion) -> str:
-    return _build_task_id(
-        region.region_code,
-        ingest_instance=DirectIngestInstance.PRIMARY,
-        task_id_tag=HANDLE_SFTP_DOWNLOAD_TASK_ID_TAG,
-        prefix_only=False,
-    )
-
-
 class DirectIngestQueueType(Enum):
-    SFTP_QUEUE = "sftp-queue"
     SCHEDULER = "scheduler"
     EXTRACT_AND_MERGE = "extract-and-merge"
     RAW_DATA_IMPORT = "raw-data-import"
     MATERIALIZE_INGEST_VIEW = "materialize-ingest-view"
-
-    def exists_for_instance(self, ingest_instance: DirectIngestInstance) -> bool:
-        return ingest_instance is DirectIngestInstance.PRIMARY or self not in (
-            # Primary-instance-only queues
-            DirectIngestQueueType.SFTP_QUEUE,
-        )
 
 
 def _build_direct_ingest_queue_name(
@@ -175,16 +155,9 @@ def _build_direct_ingest_queue_name(
     Names take the form: direct-ingest-<region_code>-<queue_type><optional instance suffix>.
 
     For example:
-        _build_direct_ingest_queue_name('us_id', SFTP_QUEUE, PRIMARY) ->
-        'direct-ingest-state-us-id-sftp-queue'
-
          _build_direct_ingest_queue_name('us_nd', EXTRACT_AND_MERGE, SECONDARY) ->
         'direct-ingest-state-us-nd-extract-and-merge-secondary'
     """
-    if not queue_type.exists_for_instance(ingest_instance):
-        raise ValueError(
-            f"Queue type [{queue_type}] does not exist for [{ingest_instance}] instance."
-        )
 
     if ingest_instance == DirectIngestInstance.PRIMARY:
         instance_suffix = ""
@@ -209,12 +182,7 @@ def _queue_name_for_queue_type(
 def get_direct_ingest_queues_for_state(state_code: StateCode) -> List[str]:
     queue_names = []
     for queue_type in DirectIngestQueueType:
-        if queue_type == DirectIngestQueueType.SFTP_QUEUE:
-            if state_code not in get_direct_ingest_states_with_sftp_queue():
-                continue
         for ingest_instance in DirectIngestInstance:
-            if not queue_type.exists_for_instance(ingest_instance):
-                continue
             queue_names.append(
                 _queue_name_for_queue_type(
                     queue_type, state_code.value, ingest_instance
@@ -253,11 +221,6 @@ class DirectIngestCloudTaskQueueInfo(CloudTaskQueueInfo):
 
 @attr.s
 class SchedulerCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
-    pass
-
-
-@attr.s
-class SftpCloudTaskQueueInfo(DirectIngestCloudTaskQueueInfo):
     pass
 
 
@@ -357,10 +320,6 @@ class DirectIngestCloudTaskQueueManager:
         the given region."""
 
     @abc.abstractmethod
-    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
-        """Returns information about the tasks in the sftp queue for the given region."""
-
-    @abc.abstractmethod
     def create_direct_ingest_extract_and_merge_task(
         self,
         region: DirectIngestRegion,
@@ -427,16 +386,6 @@ class DirectIngestCloudTaskQueueManager:
         pass
 
     @abc.abstractmethod
-    def create_direct_ingest_sftp_download_task(
-        self, region: DirectIngestRegion
-    ) -> None:
-        """Creates a sftp download task for direct ingest for a given region.
-
-        Args:
-            region: `Region` direct ingest region.
-        """
-
-    @abc.abstractmethod
     def delete_scheduler_queue_task(
         self,
         region: DirectIngestRegion,
@@ -484,14 +433,6 @@ class DirectIngestCloudTaskQueueManager:
             self.get_extract_and_merge_queue_info(region, ingest_instance),
             self.get_raw_data_import_queue_info(region, ingest_instance),
         ]
-
-        # SFTP always writes data to the PRIMARY instance bucket, so only return the SFTP queue if the instance is
-        # PRIMARY.
-        if (
-            StateCode(region.region_code.upper())
-            in get_direct_ingest_states_with_sftp_queue()
-        ) and ingest_instance == DirectIngestInstance.PRIMARY:
-            ingest_queue_info.append(self.get_sftp_queue_info(region))
 
         return ingest_queue_info
 
@@ -574,21 +515,6 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             cloud_tasks_client=self.cloud_tasks_client,
         )
 
-    def _get_sftp_queue_manager(
-        self, region: DirectIngestRegion
-    ) -> SingleCloudTaskQueueManager[SftpCloudTaskQueueInfo]:
-        """Returns the appropriate SFTP queue for the given region. This uses a standardized
-        naming scheme based on the queue type."""
-        return SingleCloudTaskQueueManager(
-            queue_info_cls=SftpCloudTaskQueueInfo,
-            queue_name=_queue_name_for_queue_type(
-                DirectIngestQueueType.SFTP_QUEUE,
-                region.region_code,
-                DirectIngestInstance.PRIMARY,
-            ),
-            cloud_tasks_client=self.cloud_tasks_client,
-        )
-
     def get_extract_and_merge_queue_info(
         self,
         region: DirectIngestRegion,
@@ -622,11 +548,6 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             region,
             ingest_instance,
         ).get_queue_info(task_id_prefix=region.region_code)
-
-    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
-        return self._get_sftp_queue_manager(region).get_queue_info(
-            task_id_prefix=region.region_code
-        )
 
     def create_direct_ingest_extract_and_merge_task(
         self,
@@ -745,18 +666,6 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
             body=body,
         )
 
-    def create_direct_ingest_sftp_download_task(
-        self, region: DirectIngestRegion
-    ) -> None:
-        task_id = build_sftp_download_task_id(region)
-        params = {
-            "region": region.region_code.lower(),
-        }
-        relative_uri = f"/direct/upload_from_sftp?{urlencode(params)}"
-        self._get_sftp_queue_manager(region).create_task(
-            task_id=task_id, relative_uri=relative_uri, body={}
-        )
-
     def delete_scheduler_queue_task(
         self,
         region: DirectIngestRegion,
@@ -846,7 +755,6 @@ class DirectIngestCloudTaskQueueManagerImpl(DirectIngestCloudTaskQueueManager):
          - direct-ingest-state-<region_code>-raw-data-import-secondary
          - direct-ingest-state-<region_code>-materialize-ingest-view
          - direct-ingest-state-<region_code>-materialize-ingest-view-secondary
-         - direct-ingest-state-<region_code>-sftp-queue    (for select regions)
 
         Requires:
         - state_code: (required) State code to pause queues for

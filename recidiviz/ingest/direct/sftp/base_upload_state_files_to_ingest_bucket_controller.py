@@ -19,23 +19,14 @@ import abc
 import datetime
 import logging
 import os
-from mimetypes import guess_type
 from multiprocessing.pool import ThreadPool
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from google.cloud import tasks_v2
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.cloud_storage.gcsfs_path import (
-    GcsfsBucketPath,
-    GcsfsDirectoryPath,
-    GcsfsFilePath,
-)
-from recidiviz.common.constants.states import StateCode
+from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
 from recidiviz.common.results import MultiRequestResultWithSkipped
-from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
-    DirectIngestCloudTaskQueueManagerImpl,
-)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
     to_normalized_unprocessed_raw_file_path,
@@ -43,14 +34,7 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_bucket_for_state,
 )
-from recidiviz.ingest.direct.metadata.direct_ingest_sftp_ingest_ready_file_metadata_manager import (
-    DirectIngestSftpIngestReadyFileMetadataManager,
-)
-from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manager import (
-    PostgresDirectIngestRawFileMetadataManager,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.utils.types import assert_type
 
 QUEUE_STATE_ENUM = tasks_v2.enums.Queue.State
 
@@ -204,175 +188,3 @@ class BaseUploadStateFilesToIngestBucketController:
             failures=self.unable_to_upload_files,
             skipped=self.skipped_files,
         )
-
-
-class DeployedUploadStateFilesToIngestBucketDelegate(
-    UploadStateFilesToIngestBucketDelegate
-):
-    def __init__(self, region_code: str) -> None:
-        self.state_code = StateCode(region_code.upper())
-        self.cloud_task_manager = DirectIngestCloudTaskQueueManagerImpl()
-
-    def should_pause_processing(self) -> bool:
-        # Note - SFTP only uploads to the PRIMARY bucket.
-        primary_scheduler_state = self.cloud_task_manager.get_scheduler_queue_state(
-            state_code=self.state_code, ingest_instance=DirectIngestInstance.PRIMARY
-        )
-        return QUEUE_STATE_ENUM.RUNNING == primary_scheduler_state
-
-    def pause_processing(self) -> None:
-        # Note - SFTP only uploads to the PRIMARY bucket.
-        self.cloud_task_manager.update_scheduler_queue_state(
-            state_code=self.state_code,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            new_queue_state=QUEUE_STATE_ENUM.PAUSED,
-        )
-
-    def unpause_processing(self) -> None:
-        # Note - SFTP only uploads to the PRIMARY bucket.
-        self.cloud_task_manager.update_scheduler_queue_state(
-            state_code=self.state_code,
-            ingest_instance=DirectIngestInstance.PRIMARY,
-            new_queue_state=QUEUE_STATE_ENUM.RUNNING,
-        )
-
-
-# TODO(#17947) Deprecate entire class once switched to Airflow
-class UploadStateFilesToIngestBucketController(
-    BaseUploadStateFilesToIngestBucketController
-):
-    """Uploads files that already exist in GCS to a region's ingest bucket. Must be used
-    in the context of a deployed app engine instance.
-    """
-
-    def __init__(
-        self,
-        paths_with_timestamps: List[Tuple[str, datetime.datetime]],
-        project_id: str,
-        region_code: str,
-        downloaded_paths_to_remote_files: Dict[str, str],
-        gcs_destination_path: Optional[GcsfsBucketPath] = None,
-    ):
-        super().__init__(
-            paths_with_timestamps=paths_with_timestamps,
-            project_id=project_id,
-            region=region_code,
-            delegates=[
-                DeployedUploadStateFilesToIngestBucketDelegate(
-                    region_code=region_code,
-                )
-            ],
-            destination_bucket_override=gcs_destination_path,
-        )
-        self.downloaded_paths_to_remote_files = downloaded_paths_to_remote_files
-        self.uploaded_paths_to_remote_files: Dict[str, str] = {}
-        self.postgres_direct_ingest_file_metadata_manager = PostgresDirectIngestRawFileMetadataManager(
-            region_code,
-            # Note - SFTP only uploads to the PRIMARY bucket.
-            DirectIngestInstance.PRIMARY,
-        )
-
-        self.direct_ingest_sftp_ingest_ready_file_metadata_manager = (
-            DirectIngestSftpIngestReadyFileMetadataManager(region_code)
-        )
-
-    def _copy_to_ingest_bucket(
-        self,
-        path: str,
-        full_file_upload_path: GcsfsFilePath,
-    ) -> None:
-        """Moves a file within GCS to the appropriate bucket if it has not already been deemed
-        processed or discovered by the file metadata manager.
-
-        We check both processed and discovered because a file may be discovered and awaiting to be
-        ingested, so we will not re-upload. We check processed because a file may have already been
-        ingested, but has been deleted from the bucket."""
-        if not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_discovered(
-            full_file_upload_path
-        ) and not self.postgres_direct_ingest_file_metadata_manager.has_raw_file_been_processed(
-            full_file_upload_path
-        ):
-            try:
-                mimetype, _ = guess_type(os.path.basename(path))
-                src_path = GcsfsFilePath.from_absolute_path(path)
-                self.gcsfs.mv(
-                    src_path=src_path,
-                    dst_path=full_file_upload_path,
-                )
-                self.gcsfs.set_content_type(
-                    full_file_upload_path, mimetype if mimetype else "text/plain"
-                )
-                logging.info("Copied %s -> %s", path, full_file_upload_path.uri())
-                self.direct_ingest_sftp_ingest_ready_file_metadata_manager.mark_ingest_ready_file_as_uploaded(
-                    post_processed_normalized_file=src_path,
-                    remote_file_path=self.uploaded_paths_to_remote_files[path],
-                )
-                self.uploaded_files.append(path)
-            except BaseException as e:
-                logging.warning(
-                    "Could not copy %s -> %s due to error %s",
-                    path,
-                    full_file_upload_path.uri(),
-                    e.args,
-                )
-                self.unable_to_upload_files.append(path)
-        else:
-            logging.info(
-                "Skipping %s -> %s, due to %s already being processed",
-                path,
-                full_file_upload_path.uri(),
-                full_file_upload_path.uri(),
-            )
-            self.skipped_files.append(path)
-
-    def get_paths_to_upload(self) -> List[Tuple[str, datetime.datetime]]:
-        """Returns the appropriate paths to upload and the proper associated timestamp that
-        it is to be normalized with. Skips any files that are not properly supported."""
-        path_candidates = []
-        for path, timestamp in self.paths_with_timestamps:
-            remote_file = self.downloaded_paths_to_remote_files[path]
-            if self.gcsfs.is_dir(path):
-                directory = GcsfsDirectoryPath.from_absolute_path(path)
-                files_in_directory = [
-                    assert_type(file_in_directory, GcsfsFilePath)
-                    for file_in_directory in self.gcsfs.ls_with_blob_prefix(
-                        bucket_name=directory.bucket_name,
-                        blob_prefix=directory.relative_path,
-                    )
-                ]
-                for file in files_in_directory:
-                    if self._is_supported_extension(file.abs_path()):
-                        path_candidates.append((file.abs_path(), timestamp))
-                        if not self.direct_ingest_sftp_ingest_ready_file_metadata_manager.has_ingest_ready_file_been_discovered(
-                            file, remote_file
-                        ):
-                            self.direct_ingest_sftp_ingest_ready_file_metadata_manager.mark_ingest_ready_file_as_discovered(
-                                file, remote_file
-                            )
-                        self.uploaded_paths_to_remote_files[
-                            file.abs_path()
-                        ] = remote_file
-                    else:
-                        self.skipped_files.append(file.abs_path())
-            elif self.gcsfs.is_file(path):
-                file = GcsfsFilePath.from_absolute_path(path)
-                if self._is_supported_extension(file.abs_path()):
-                    path_candidates.append((file.abs_path(), timestamp))
-                    if not self.direct_ingest_sftp_ingest_ready_file_metadata_manager.has_ingest_ready_file_been_discovered(
-                        file, remote_file
-                    ):
-                        self.direct_ingest_sftp_ingest_ready_file_metadata_manager.mark_ingest_ready_file_as_discovered(
-                            file, remote_file
-                        )
-                    self.uploaded_paths_to_remote_files[file.abs_path()] = remote_file
-                else:
-                    self.skipped_files.append(file.abs_path())
-            else:
-                logging.warning(
-                    "Could not indicate %s as a directory or a file in %s. Skipping",
-                    path,
-                    self.destination_ingest_bucket.uri(),
-                )
-                self.unable_to_upload_files.append(path)
-                continue
-        return path_candidates

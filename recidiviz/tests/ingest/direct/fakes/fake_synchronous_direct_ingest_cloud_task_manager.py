@@ -26,13 +26,11 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     IngestViewMaterializationCloudTaskQueueInfo,
     RawDataImportCloudTaskQueueInfo,
     SchedulerCloudTaskQueueInfo,
-    SftpCloudTaskQueueInfo,
     build_extract_and_merge_task_id,
     build_handle_new_files_task_id,
     build_ingest_view_materialization_task_id,
     build_raw_data_import_task_id,
     build_scheduler_task_id,
-    build_sftp_download_task_id,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
 from recidiviz.ingest.direct.types.cloud_task_args import (
@@ -79,7 +77,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         self.num_finished_ingest_view_materialization_tasks: Dict[
             DirectIngestInstance, int
         ] = defaultdict(int)
-        self.sftp_tasks: Dict[DirectIngestInstance, List[str]] = defaultdict(list)
 
     def get_extract_and_merge_queue_info(
         self,
@@ -128,15 +125,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(
             task_names=[
                 t[0] for t in self.ingest_view_materialization_tasks[ingest_instance]
             ],
-        )
-
-    def get_sftp_queue_info(self, region: DirectIngestRegion) -> SftpCloudTaskQueueInfo:
-        return SftpCloudTaskQueueInfo(
-            # SFTP only uses PRIMARY
-            queue_name=self.queue_name_for_type(
-                DirectIngestQueueType.SFTP_QUEUE, DirectIngestInstance.PRIMARY
-            ),
-            task_names=[t[0] for t in self.sftp_tasks[DirectIngestInstance.PRIMARY]],
         )
 
     def create_direct_ingest_extract_and_merge_task(
@@ -222,18 +210,6 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         self.ingest_view_materialization_tasks[task_args.ingest_instance].append(
             (f"projects/path/to/{task_id}", task_args)
         )
-
-    def create_direct_ingest_sftp_download_task(
-        self, region: DirectIngestRegion
-    ) -> None:
-        if not self.controllers.get(DirectIngestInstance.PRIMARY):
-            raise ValueError(
-                "Controller for instance=DirectIngestInstance.PRIMARY is null - did you call "
-                "set_controller()?"
-            )
-        task_id = build_sftp_download_task_id(region)
-        # SFTP only uses PRIMARY
-        self.sftp_tasks[DirectIngestInstance.PRIMARY].append(task_id)
 
     def delete_scheduler_queue_task(
         self,
