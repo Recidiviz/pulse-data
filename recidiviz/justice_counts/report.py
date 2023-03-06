@@ -589,7 +589,7 @@ class ReportInterface:
 
     @staticmethod
     def create_reports_for_new_agency(
-        session: Session, agency_id: int, user_account_id: int
+        session: Session, agency_id: int, user_account_id: Optional[int] = None
     ) -> None:
         date = datetime.date.today()
         # create twelve monthly reports for the last 12 months

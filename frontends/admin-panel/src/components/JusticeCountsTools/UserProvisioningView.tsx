@@ -242,9 +242,7 @@ const UserProvisioningView = (): JSX.Element => {
           Add User
         </Typography.Title>
         <Typography.Paragraph style={{ marginBottom: 16 }}>
-          To create a new user, you must first create the user in Auth0.
-          Afterwards, create a new user here with the same user email you used
-          in Auth0 to add the user to our database.
+          This will create a new user in both Auth0 and our database.
         </Typography.Paragraph>
         <Form.Item label="Name" name="name" rules={[{ required: true }]}>
           <Input disabled={showSpinner} />
