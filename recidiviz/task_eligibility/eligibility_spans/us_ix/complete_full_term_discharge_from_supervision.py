@@ -25,9 +25,6 @@ from recidiviz.task_eligibility.completion_events import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
     supervision_past_full_term_completion_date,
 )
-from recidiviz.task_eligibility.criteria.state_specific.us_ix import (
-    not_a_non_idaho_commitment,
-)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -45,7 +42,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=supervision_population_not_unsupervised.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,
-        not_a_non_idaho_commitment.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
 )
