@@ -190,13 +190,13 @@ def xcom_output_is_non_empty_list(xcom_output: Optional[List]) -> bool:
     return xcom_output is not None and len(xcom_output) > 0
 
 
-def remote_files_lists_are_equal(
-    xcom_prior_remote_files: Optional[List], xcom_remote_files: Optional[List]
+def discovered_files_lists_are_equal(
+    xcom_prior_discovered_files: Optional[List], xcom_discovered_files: Optional[List]
 ) -> bool:
     return (
-        xcom_prior_remote_files is not None
-        and xcom_remote_files is not None
-        and len(xcom_prior_remote_files) == len(xcom_remote_files)
+        xcom_prior_discovered_files is not None
+        and xcom_discovered_files is not None
+        and len(xcom_prior_discovered_files) == len(xcom_discovered_files)
     )
 
 
@@ -301,7 +301,7 @@ def sftp_dag() -> None:
                 )
                 check_if_remote_files_have_stabilized = ShortCircuitOperator(
                     task_id="check_if_remote_files_have_stabilized",
-                    python_callable=remote_files_lists_are_equal,
+                    python_callable=discovered_files_lists_are_equal,
                     op_args=[
                         XComArg(gather_prior_discovered_remote_files),
                         XComArg(gather_discovered_remote_files),
@@ -369,6 +369,13 @@ def sftp_dag() -> None:
             with TaskGroup(
                 "ingest_ready_file_discovery"
             ) as ingest_ready_file_discovery:
+                gather_prior_discovered_ingest_ready_files = CloudSqlQueryOperator(
+                    task_id="gather_prior_discovered_ingest_ready_files",
+                    cloud_sql_conn_id=operations_cloud_sql_conn_id,
+                    query_generator=GatherDiscoveredIngestReadyFilesSqlQueryGenerator(
+                        region_code=state_code
+                    ),
+                )
                 # Some files are initially downloaded as ZIP files that may contain improper
                 # files for ingest, therefore we need to filter them out before uploading.
                 filter_invalid_files_downloaded = FilterInvalidGcsFilesOperator(
@@ -393,10 +400,24 @@ def sftp_dag() -> None:
                     # steps.
                     trigger_rule=TriggerRule.ALL_DONE,
                 )
+                check_if_ingest_ready_files_have_stabilized = ShortCircuitOperator(
+                    task_id="check_if_ingest_ready_files_have_stabilized",
+                    python_callable=discovered_files_lists_are_equal,
+                    op_args=[
+                        XComArg(gather_prior_discovered_ingest_ready_files),
+                        XComArg(gather_discovered_ingest_ready_files),
+                    ],
+                    # If the condition is False, that means there are new ingest ready files
+                    # still likely coming in (on a retry of download, etc),
+                    # and therefore, we should skip the entire rest of the tasks for this state.
+                    ignore_downstream_trigger_rules=True,
+                )
                 (
-                    filter_invalid_files_downloaded
+                    gather_prior_discovered_ingest_ready_files
+                    >> filter_invalid_files_downloaded
                     >> mark_ingest_ready_files_discovered
                     >> gather_discovered_ingest_ready_files
+                    >> check_if_ingest_ready_files_have_stabilized
                 )
 
             scheduler_queue_name = (
