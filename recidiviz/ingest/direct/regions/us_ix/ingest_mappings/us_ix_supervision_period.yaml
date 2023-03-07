@@ -194,6 +194,7 @@ output:
                         - Release to Parole
                         - Release to Supervision
                         - Reinstate Parole
+                        - Return From Bond
                       StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION:
                         - Return from Escape
                       StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
