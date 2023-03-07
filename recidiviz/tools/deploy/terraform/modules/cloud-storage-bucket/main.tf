@@ -84,6 +84,10 @@ resource "google_storage_bucket" "bucket" {
   
   labels = var.labels
 
+  logging {
+    log_bucket = "${var.project_id}-gcs-object-logs"
+  }
+
   dynamic "lifecycle_rule" {
     for_each = var.lifecycle_rules
     content {
