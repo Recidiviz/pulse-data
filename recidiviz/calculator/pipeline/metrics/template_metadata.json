@@ -11,7 +11,7 @@
       "name": "state_code",
       "label": "State code",
       "helpText": "State that the pipeline is running for.",
-      "regexes": ["us_[a-z]{2}"]
+      "regexes": ["US_[A-Z]{2}"]
     },
     {
       "name": "metric_types",
@@ -23,13 +23,56 @@
       "name": "calculation_month_count",
       "label": "Number of months to calculate",
       "helpText": "The number of months (including the month of the calculation_end_month) to limit the monthly calculation output to. If set to -1, does not limit the calculations.",
-      "regexes": ["^-?[0-9]+$"]
+      "regexes": ["^-?[0-9]+$"],
+      "isOptional": true
+    },
+    {
+      "name": "calculation_end_month",
+      "label": "Last month that metrics should be calculated",
+      "helpText": "The year and month, formatted in YYYY-MM, specifying the last month for which metrics should be calculated. If unset, defaults to the current month. Cannot be a month in the future.",
+      "regexes": ["^[0-9]{4}-[0-9]{2}$"],
+      "isOptional": true
     },
     {
       "name": "output",
       "label": "Test output dataset",
-      "helpText": "If specified, the pipeline will write to this test dataset.",
+      "helpText": "If specified, the pipeline will write results to this test dataset.",
       "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "static_reference_input",
+      "label": "BigQuery static reference table dataset to query.",
+      "helpText": "If specified, the pipeline query this BigQuery static reference table dataset instead of the default.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "data_input",
+      "label": "BigQuery dataset to query",
+      "helpText": "If specified, the pipeline will query this dataset instead of the default.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "normalized_input",
+      "label": "BigQuery dataset to query for normalized versions of entities",
+      "helpText": "If specified, the pipeline will query this BigQuery dataset for normalized versions of entities.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "reference_view_input",
+      "label": "BigQuery reference view dataset to query",
+      "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "person_filter_ids",
+      "label": "A list of person ids to filter for",
+      "helpText": "An optional list of DB person_id values. When present, the pipeline will only calculate metrics for these people and will not output to BQ.",
+      "regexes": ["[0-9 ]+"],
       "isOptional": true
     }
   ]

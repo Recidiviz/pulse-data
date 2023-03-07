@@ -16,19 +16,24 @@
 # =============================================================================
 """
     Helper classes for passing parameters to run flex template pipelines.
+    The parameters in the PipelineParameters classes (state_code, pipeline, output, etc) need to match the parameters
+    in their respective flex template json files.
+
+    MetricsPipelineParameters -> calculator/pipeline/metrics/template_metadata.json,
+    NormalizationPipelineParameters -> calculator/pipeline/normalization/template_metadata.json
+    SupplementalPipelineParameters -> calculator/pipeline/supplemental/template_metadata.json
+
+    A parameter change, addition, or deletion must be reflected in both the class and it's respective json file.
+
 """
 import abc
-import json
-import os
 from typing import Any, Dict, List, Optional
 
 import attr
 
-import recidiviz
 from recidiviz.common import attr_validators
 
 
-# TODO(#19118): add in debug parameters
 @attr.define(kw_only=True)
 class PipelineParameters:
     """Parent class with base template parameters."""
@@ -37,6 +42,18 @@ class PipelineParameters:
     state_code: str = attr.ib(validator=attr_validators.is_str)
     pipeline: str = attr.ib(validator=attr_validators.is_str)
     output: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    data_input: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    normalized_input: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    reference_view_input: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    person_filter_ids: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Args used for job configuration
     region: str = attr.ib(validator=attr_validators.is_str)
@@ -53,17 +70,9 @@ class PipelineParameters:
         pass
 
     @property
+    @abc.abstractmethod
     def _template_parameter_keys(self) -> List[str]:
-        root = os.path.dirname(recidiviz.__file__)
-        template_path = (
-            f"calculator/pipeline/{self.flex_template_name}/template_metadata.json"
-        )
-        full_path = os.path.join(root, template_path)
-
-        with open(full_path, encoding="utf-8") as f:
-            template = json.load(f)
-
-        return [parameter["name"] for parameter in template["parameters"]]
+        pass
 
     def template_parameters(self) -> Dict[str, Any]:
         parameters = {key: getattr(self, key) for key in self._template_parameter_keys}
@@ -77,11 +86,35 @@ class MetricsPipelineParameters(PipelineParameters):
     """Class for metrics pipeline parameters"""
 
     metric_types: str = attr.ib(validator=attr_validators.is_str)
-    calculation_month_count: int = attr.ib(default=-1, validator=attr_validators.is_int)
+    static_reference_input: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    calculation_month_count: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+    calculation_end_month: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     @property
     def flex_template_name(self) -> str:
         return "metrics"
+
+    @property
+    def _template_parameter_keys(self) -> List[str]:
+        return [
+            "pipeline",
+            "state_code",
+            "metric_types",
+            "calculation_month_count",
+            "calculation_end_month",
+            "output",
+            "static_reference_input",
+            "data_input",
+            "normalized_input",
+            "reference_view_input",
+            "person_filter_ids",
+        ]
 
 
 @attr.define(kw_only=True)
@@ -92,6 +125,18 @@ class SupplementalPipelineParameters(PipelineParameters):
     def flex_template_name(self) -> str:
         return "supplemental"
 
+    @property
+    def _template_parameter_keys(self) -> List[str]:
+        return [
+            "pipeline",
+            "state_code",
+            "output",
+            "data_input",
+            "normalized_input",
+            "reference_view_input",
+            "person_filter_ids",
+        ]
+
 
 @attr.define(kw_only=True)
 class NormalizationPipelineParameters(PipelineParameters):
@@ -100,3 +145,15 @@ class NormalizationPipelineParameters(PipelineParameters):
     @property
     def flex_template_name(self) -> str:
         return "normalization"
+
+    @property
+    def _template_parameter_keys(self) -> List[str]:
+        return [
+            "pipeline",
+            "state_code",
+            "output",
+            "data_input",
+            "normalized_input",
+            "reference_view_input",
+            "person_filter_ids",
+        ]

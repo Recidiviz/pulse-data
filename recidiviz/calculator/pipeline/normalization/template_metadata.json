@@ -11,13 +11,41 @@
       "name": "state_code",
       "label": "State code",
       "helpText": "State that the pipeline is running for.",
-      "regexes": ["us_[a-z]{2}"]
+      "regexes": ["US_[A-Z]{2}"]
     },
     {
       "name": "output",
       "label": "Test output dataset",
       "helpText": "If specified, the pipeline will write to this test dataset.",
       "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "data_input",
+      "label": "BigQuery dataset to query",
+      "helpText": "If specified, the pipeline will query this dataset instead of the default.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "normalized_input",
+      "label": "BigQuery dataset to query for normalized versions of entities",
+      "helpText": "If specified, the pipeline will query this BigQuery dataset for normalized versions of entities.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "reference_view_input",
+      "label": "BigQuery reference view dataset to query",
+      "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
+      "regexes": ["[1-9a-z_]+"],
+      "isOptional": true
+    },
+    {
+      "name": "person_filter_ids",
+      "label": "A list of person ids to filter for",
+      "helpText": "An optional list of DB person_id values. When present, the pipeline will only calculate metrics for these people and will not output to BQ.",
+      "regexes": ["[0-9 ]+"],
       "isOptional": true
     }
   ]
