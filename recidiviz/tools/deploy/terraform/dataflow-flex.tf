@@ -45,7 +45,7 @@ resource "google_storage_bucket_object" "flex_template_metadata" {
   name = "template_metadata/${basename(dirname(each.value))}"
 
   content = jsonencode({
-    image = "us-docker.pkg.dev/$PROJECT_ID/dataflow/default:${var.docker_image_tag}"
+    image = "us-docker.pkg.dev/${var.project_id}/dataflow/default:${var.docker_image_tag}"
     sdkInfo = {
       language = "PYTHON"
     }
