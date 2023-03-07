@@ -42,7 +42,7 @@ resource "google_storage_bucket_object" "flex_template_metadata" {
   for_each = fileset("${local.recidiviz_root}/calculator/pipeline/", "*/template_metadata.json")
 
   # Here we extract the last directory before the filename (e.g. metrics) and append to the filename to make the full file name
-  name = "template_metadata/${basename(dirname(each.value))}"
+  name = "template_metadata/${basename(dirname(each.value))}.json"
 
   content = jsonencode({
     image = "us-docker.pkg.dev/${var.project_id}/dataflow/default:${var.docker_image_tag}"
