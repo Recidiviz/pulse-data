@@ -106,7 +106,7 @@ individual_sentence_charges AS (
   ) as judicial_district_code,
   INITCAP(JSON_VALUE(PARSE_JSON(charge.judge_full_name), '$.full_name')) AS judge,
   CONCAT(
-      COALESCE(ncic.description, charge.description, "<to fill>"), 
+      COALESCE(charge.description, charge.description, "<to fill>"), 
       IFNULL(CONCAT(" a Class (", charge.classification_subtype, ") "), " a Class (<to fill>) "),
       IFNULL(INITCAP(charge.classification_type), " <to fill>")
     ) AS crime_name,
@@ -125,8 +125,6 @@ individual_sentence_charges AS (
     ON offense.sid = pei.external_id
     AND offense.case_number = sent.external_id
     AND offense.RecID = charge.external_id
-  LEFT JOIN `{project_id}.{static_reference_tables_dataset}.ncic_codes`ncic
-    ON COALESCE(offense.common_statute_ncic_code, offense.code) = ncic.ncic_code
   LEFT JOIN `{project_id}.{static_reference_tables_dataset}.state_county_codes` scc
     ON charge.state_code = scc.state_code
     AND charge.county_code = scc.county_code
