@@ -17,6 +17,7 @@
 """
     Unit tests to test the PipelineParameters classes
 """
+import json
 import os
 import unittest
 from typing import Any
@@ -98,7 +99,6 @@ class TestPipelineParameters(unittest.TestCase):
             "pipeline": "test_pipeline_name",
             "output": "test_output",
             "metric_types": "TEST_METRIC",
-            "calculation_month_count": "-1",
         }
 
         self.assertEqual(expected_parameters, template_parameters)
@@ -147,6 +147,40 @@ class TestPipelineParameters(unittest.TestCase):
 
         self.assertEqual(expected_parameters, template_parameters)
 
+    def test_pipeline_parameters_creation_debug_params(self) -> None:
+        pipeline_parameters = MetricsPipelineParameters(
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            metric_types="TEST_METRIC",
+            output="test_output",
+            calculation_month_count=36,
+            reference_view_input="test_view",
+            data_input="test_input",
+            normalized_input="normalized_input",
+            person_filter_ids="123 12323 324",
+        )
+
+        template_parameters = pipeline_parameters.template_parameters()
+
+        expected_parameters = {
+            "state_code": "US_OZ",
+            "pipeline": "test_pipeline_name",
+            "metric_types": "TEST_METRIC",
+            "calculation_month_count": "36",
+            "output": "test_output",
+            "reference_view_input": "test_view",
+            "data_input": "test_input",
+            "normalized_input": "normalized_input",
+            "person_filter_ids": "123 12323 324",
+        }
+
+        self.assertEqual(expected_parameters, template_parameters)
+
+        self.assertEqual(pipeline_parameters.region, "us-west1")
+        self.assertEqual(pipeline_parameters.job_name, "test_job")
+
 
 class TestValidPipelineParameters(unittest.TestCase):
     """
@@ -184,3 +218,77 @@ class TestValidPipelineParameters(unittest.TestCase):
         for pipeline in supplemental_pipelines:
             d: dict[str, Any] = pipeline.get()
             SupplementalPipelineParameters(**d)
+
+    def test_metrics_parameter_keys_match(self) -> None:
+
+        test_parameters = MetricsPipelineParameters(
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            metric_types="TEST_METRIC",
+            output="test_output",
+            calculation_month_count=36,
+        )
+
+        root = os.path.dirname(recidiviz.__file__)
+        template_path = "calculator/pipeline/metrics/template_metadata.json"
+        full_path = os.path.join(root, template_path)
+
+        with open(full_path, encoding="utf-8") as f:
+            template = json.load(f)
+
+        expected_keys = [parameter["name"] for parameter in template["parameters"]]
+        template_keys = (
+            test_parameters._template_parameter_keys  # pylint: disable=protected-access
+        )
+
+        self.assertCountEqual(expected_keys, template_keys)
+
+    def test_normalization_parameter_keys_match(self) -> None:
+
+        test_parameters = NormalizationPipelineParameters(
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            output="test_output",
+        )
+
+        root = os.path.dirname(recidiviz.__file__)
+        template_path = "calculator/pipeline/normalization/template_metadata.json"
+        full_path = os.path.join(root, template_path)
+
+        with open(full_path, encoding="utf-8") as f:
+            template = json.load(f)
+
+        expected_keys = [parameter["name"] for parameter in template["parameters"]]
+        template_keys = (
+            test_parameters._template_parameter_keys  # pylint: disable=protected-access
+        )
+
+        self.assertCountEqual(expected_keys, template_keys)
+
+    def test_supplemental_parameter_keys_match(self) -> None:
+
+        test_parameters = SupplementalPipelineParameters(
+            state_code="US_OZ",
+            pipeline="test_pipeline_name",
+            region="us-west1",
+            job_name="test_job",
+            output="test_output",
+        )
+
+        root = os.path.dirname(recidiviz.__file__)
+        template_path = "calculator/pipeline/supplemental/template_metadata.json"
+        full_path = os.path.join(root, template_path)
+
+        with open(full_path, encoding="utf-8") as f:
+            template = json.load(f)
+
+        expected_keys = [parameter["name"] for parameter in template["parameters"]]
+        template_keys = (
+            test_parameters._template_parameter_keys  # pylint: disable=protected-access
+        )
+
+        self.assertCountEqual(expected_keys, template_keys)
