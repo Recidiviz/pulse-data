@@ -193,3 +193,43 @@ class BigQueryQueryBuilderTest(unittest.TestCase):
                 query_template=template,
                 query_format_kwargs=query_args,
             )
+
+    def test_build_view_in_another_project_referenced(self) -> None:
+        template = (
+            "SELECT {column_arg} "
+            "FROM `{project_id}.dataset_1.table_1` "
+            "JOIN `{another_project_id}.dataset_1.table_1` "
+            "ON {column_arg};"
+        )
+
+        query_args = {"column_arg": "my_column", "another_project_id": "recidiviz-789"}
+
+        result = self.builder_no_overrides.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            (
+                "SELECT my_column "
+                "FROM `recidiviz-456.dataset_1.table_1` "
+                "JOIN `recidiviz-789.dataset_1.table_1` "
+                "ON my_column;"
+            ),
+        )
+
+        result = self.builder_with_overrides.build_query(
+            project_id=self.project_id,
+            query_template=template,
+            query_format_kwargs=query_args,
+        )
+        self.assertEqual(
+            result,
+            (
+                "SELECT my_column "
+                "FROM `recidiviz-456.my_prefix_dataset_1.table_1` "
+                "JOIN `recidiviz-789.dataset_1.table_1` "  # NOTE: No override here
+                "ON my_column;"
+            ),
+        )

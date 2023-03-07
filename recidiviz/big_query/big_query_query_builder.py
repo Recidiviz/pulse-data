@@ -72,7 +72,7 @@ class BigQueryQueryBuilder:
             return query_no_overrides
 
         return self._apply_overrides_to_query(
-            query_no_overrides, self.address_overrides
+            project_id, query_no_overrides, self.address_overrides
         )
 
     @classmethod
@@ -116,6 +116,7 @@ class BigQueryQueryBuilder:
 
     @staticmethod
     def _apply_overrides_to_query(
+        project_id: str,
         query: str,
         address_overrides: BigQueryAddressOverrides,
     ) -> str:
@@ -123,13 +124,19 @@ class BigQueryQueryBuilder:
         the same query string, but with overrides applied to all relevant addresses.
         """
         query_with_overrides = query
-        for project_id, dataset_id, table_id in re.findall(
+        for ref_project_id, dataset_id, table_id in re.findall(
             REFERENCED_BQ_ADDRESS_REGEX, query
         ):
+            # We assume here that all overrides only apply to addresses within the
+            # current project. If we have a view that explicitly references an address
+            # in a different project (e.g. a prod/staging comparison view), then we do
+            # not override the address for the other project.
+            if project_id != ref_project_id:
+                continue
             parent_table = BigQueryAddress(dataset_id=dataset_id, table_id=table_id)
             if override := address_overrides.get_sandbox_address(address=parent_table):
                 query_with_overrides = query_with_overrides.replace(
-                    f"`{project_id}.{dataset_id}.{table_id}`",
-                    f"`{project_id}.{override.dataset_id}.{override.table_id}`",
+                    f"`{ref_project_id}.{dataset_id}.{table_id}`",
+                    f"`{ref_project_id}.{override.dataset_id}.{override.table_id}`",
                 )
         return query_with_overrides
