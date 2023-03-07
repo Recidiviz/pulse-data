@@ -485,10 +485,12 @@ class BulkUploader:
                 invalid_sheetnames.append(sheet_name)
                 return metric_key_to_datapoint_jsons, metric_key_to_errors
 
-            metric_datapoints = metric_key_to_datapoint_jsons[metricfile.definition.key]
+            existing_datapoint_json_list = metric_key_to_datapoint_jsons[
+                metricfile.definition.key
+            ]
 
             try:
-                datapoint_json_list = self._upload_rows_for_metricfile(
+                new_datapoint_json_list = self._upload_rows_for_metricfile(
                     session=session,
                     rows=current_rows,
                     metricfile=metricfile,
@@ -500,7 +502,7 @@ class BulkUploader:
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
             except Exception as e:
-                datapoint_json_list = []
+                new_datapoint_json_list = []
                 curr_metricfile = sheet_name_to_metricfile[sheet_name]
                 metric_key_to_errors[curr_metricfile.definition.key].append(
                     self._handle_error(
@@ -510,13 +512,13 @@ class BulkUploader:
                 )
 
             metric_key_to_datapoint_jsons[metricfile.definition.key] = (
-                metric_datapoints + datapoint_json_list
+                existing_datapoint_json_list + new_datapoint_json_list
             )
 
             if (
                 metricfile.disaggregation is not None
-                and len(metric_datapoints) == 0
-                and len(datapoint_json_list) > 0
+                and len(existing_datapoint_json_list) == 0
+                and len(new_datapoint_json_list) > 0
             ):
                 metric_key_to_errors = self._add_missing_total_warning(
                     metric_definition=metricfile.definition,
@@ -525,8 +527,8 @@ class BulkUploader:
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
             elif (
-                len(datapoint_json_list) == 0
-                and len(metric_datapoints) > 0
+                len(new_datapoint_json_list) == 0
+                and len(existing_datapoint_json_list) > 0
                 and metricfile.disaggregation is not None
             ):
                 # If the current sheet is a breakdown sheet and there are no datapoints associated
