@@ -168,3 +168,4 @@ columns:
     is_datetime: True
   - name: last_update_node
   - name: lifetime_gps_flag
+    description: Flag for whether this sentence mandates lifetime electronic monitoring
