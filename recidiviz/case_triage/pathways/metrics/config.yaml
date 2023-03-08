@@ -79,6 +79,7 @@ PrisonPopulationPersonLevel:
       - state_id
       - gender
       - race
+      - admission_reason
     aggregate_columns:
       - age
       - facility
