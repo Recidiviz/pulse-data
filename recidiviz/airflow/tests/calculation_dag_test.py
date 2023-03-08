@@ -28,6 +28,7 @@ from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateO
 from more_itertools import one
 
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
+    RecidivizDataflowFlexTemplateOperator,
     RecidivizDataflowTemplateOperator,
 )
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
@@ -145,7 +146,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         self,
     ) -> None:
         """Tests that the `normalized_state` dataset update happens after all
-        normalization pipelines are run.
+        non normalization pipelines are run.
         """
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
@@ -155,6 +156,37 @@ class TestCalculationPipelineDag(unittest.TestCase):
             task.task_id
             for task in dag.tasks
             if isinstance(task, RecidivizDataflowTemplateOperator)
+            and "normalization" not in task.task_id
+        }
+
+        normalized_state_upstream_dag = dag.partial_subset(
+            task_ids_or_regex=["update_normalized_state"],
+            include_downstream=True,
+            include_upstream=False,
+        )
+        self.assertNotEqual(0, len(normalized_state_upstream_dag.task_ids))
+
+        upstream_tasks = set()
+        for task in normalized_state_upstream_dag.tasks:
+            upstream_tasks.update(task.upstream_task_ids)
+
+        pipeline_tasks_not_upstream = metric_pipeline_task_ids - upstream_tasks
+        self.assertEqual(set(), pipeline_tasks_not_upstream)
+
+    def test_update_normalized_state_upstream_of_non_normalization_flex_pipelines(
+        self,
+    ) -> None:
+        """Tests that the `normalized_state` dataset update happens after all
+        non normalization flex pipelines are run.
+        """
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.CALCULATION_DAG_ID]
+        self.assertNotEqual(0, len(dag.task_ids))
+
+        metric_pipeline_task_ids: Set[str] = {
+            task.task_id
+            for task in dag.tasks
+            if isinstance(task, RecidivizDataflowFlexTemplateOperator)
             and "normalization" not in task.task_id
         }
 
@@ -300,7 +332,13 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(task, RecidivizDataflowTemplateOperator)
+            if isinstance(
+                task,
+                (
+                    RecidivizDataflowFlexTemplateOperator,
+                    RecidivizDataflowTemplateOperator,
+                ),
+            )
         }
 
         self.assertNotEqual(0, len(pipeline_task_ids))
@@ -329,7 +367,13 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(task, RecidivizDataflowTemplateOperator)
+            if isinstance(
+                task,
+                (
+                    RecidivizDataflowFlexTemplateOperator,
+                    RecidivizDataflowTemplateOperator,
+                ),
+            )
         }
 
         self.assertNotEqual(0, len(pipeline_task_ids))

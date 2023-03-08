@@ -54,7 +54,10 @@ try:
     )
     from utils.default_args import DEFAULT_ARGS  # type: ignore
     from utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS  # type: ignore
-    from utils.pipeline_parameters import PipelineParameters  # type: ignore
+    from utils.pipeline_parameters import (  # type: ignore
+        MetricsPipelineParameters,
+        PipelineParameters,
+    )
 except ImportError:
     from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
         FinishedCloudTaskQueryGenerator,
@@ -78,6 +81,7 @@ except ImportError:
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
     from recidiviz.airflow.dags.utils.pipeline_parameters import (
         PipelineParameters,
+        MetricsPipelineParameters,
     )
 
 from recidiviz.metrics.export.products.product_configs import (
@@ -511,6 +515,7 @@ def create_calculation_dag() -> None:
 
     if config_file is None:
         raise ValueError("Configuration file not specified")
+
     with TaskGroup("bq_refresh") as _:
         state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
         operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
@@ -736,6 +741,67 @@ def create_calculation_dag() -> None:
         end_update_all_views_branch >> data_export_operator
 
     for state_code, metric_pipeline_operators in metric_pipelines_by_state.items():
+        for metric_pipeline_operator in metric_pipeline_operators:
+            # If any metric pipeline for a particular state fails, then the exports
+            # for that state should not proceed.
+            (
+                metric_pipeline_operator
+                >> state_create_metric_view_data_export_nodes[state_code]
+            )
+
+    # ********** METRICS FLEX PIPELINES **********
+
+    metric_pipelines_flex = YAMLDict.from_path(config_file).pop_dicts(
+        "metric_pipelines"
+    )
+
+    metric_pipelines_by_state_flex: Dict[
+        str, List[RecidivizDataflowFlexTemplateOperator]
+    ] = defaultdict(list)
+
+    flex_dataflow_pipeline_task_groups: Dict[str, TaskGroup] = {}
+    flex_dataflow_pipeline_task_group = TaskGroup("flex_dataflow_pipelines")
+
+    for metric_pipeline in metric_pipelines_flex:
+        # TODO(#19131): remove test dataset
+        pipeline_config_parameters = MetricsPipelineParameters(
+            output="glorialiu_dataflow_metrics", **metric_pipeline.get()
+        )
+        state_code = pipeline_config_parameters.state_code
+
+        # TODO(#19330): remove check once migration is ready to be complete
+        if state_code == "US_IX":
+            if state_code not in flex_dataflow_pipeline_task_groups:
+                flex_dataflow_pipeline_task_groups[state_code] = TaskGroup(
+                    f"{state_code}_dataflow_pipelines",
+                    parent_group=flex_dataflow_pipeline_task_group,
+                )
+
+            if (
+                project_id == GCP_PROJECT_STAGING
+                or not pipeline_config_parameters.staging_only
+            ):
+                flex_metric_pipeline_operator = flex_dataflow_operator_for_pipeline(
+                    pipeline_config_parameters,
+                    flex_dataflow_pipeline_task_groups[state_code],
+                )
+
+                # Metric pipelines should complete before view rematerialization starts
+                flex_metric_pipeline_operator >> update_all_views_branch
+
+                # This ensures that all of the normalization pipelines for a state will
+                # run and the normalized_state dataset will be updated before the
+                # metric pipelines for the state are triggered.
+                update_normalized_state >> flex_metric_pipeline_operator
+
+                # Add the pipeline to the list of metric pipelines for this state
+                metric_pipelines_by_state_flex[state_code].append(
+                    flex_metric_pipeline_operator
+                )
+
+    # ********** END OF FLEX PIPELINES **********
+
+    for state_code, metric_pipeline_operators in metric_pipelines_by_state_flex.items():
         for metric_pipeline_operator in metric_pipeline_operators:
             # If any metric pipeline for a particular state fails, then the exports
             # for that state should not proceed.
