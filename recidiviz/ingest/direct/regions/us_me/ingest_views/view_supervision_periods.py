@@ -258,7 +258,12 @@ VIEW_QUERY_TEMPLATE = f"""
                 THEN COALESCE(transfer_from_jur_location, previous_jurisdiction_location)
                 ELSE previous_jurisdiction_location 
             END AS previous_jurisdiction_location,
-            current_jurisdiction_location_type,
+            -- If ICO, this person is supervised out of state and the custodial
+            --      authority is given by its physical location
+            IF( current_status = 'Interstate Compact Out',
+                current_physical_location_type,
+                current_jurisdiction_location_type)
+                AS current_jurisdiction_location_type,
             next_jurisdiction_location_type,
             next_jurisdiction_location,
             transfer_type,
@@ -275,9 +280,8 @@ VIEW_QUERY_TEMPLATE = f"""
                 'Pending Violation',
                 'Pending Violation - Incarcerated',
                 'Partial Revocation - County Jail',
-                'Interstate Compact In',
                 'Interstate Compact Out',
-                'Interstate Active Detainer'
+                'Interstate Compact In'
             )
                 -- Remove periods where the supervision site, jurisdiction location, and physical location
                 -- are all either DOC Facility, County Jail, one of Maine's counties, one of the US States, 
@@ -298,6 +302,9 @@ VIEW_QUERY_TEMPLATE = f"""
 
         -- Filter out periods where location is in a DOC Facility or County Jail
         AND current_physical_location_type NOT IN ('2', '7', '9')
+
+        ## IADs are incarcerated out of state; so shouldn't be included in supervision
+        AND current_status NOT IN ('Interstate Active Detainer')
 
         -- Filter out periods where no officer is assigned
         AND officer_external_id IS NOT NULL
