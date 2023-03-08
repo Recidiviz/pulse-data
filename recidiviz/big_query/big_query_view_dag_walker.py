@@ -580,10 +580,6 @@ class BigQueryViewDagWalker:
         )
         for adjacent_address in adjacent_addresses:
             adjacent_node = self.nodes_by_address[adjacent_address]
-            if adjacent_node.view.address in visited_set:
-                raise ValueError(
-                    f"Unexpected situation where adjacent node has already been processed: {adjacent_address}"
-                )
             previous_level_all_processed = True
             previous_level_results = {}
             previous_level_addresses = (
@@ -710,6 +706,11 @@ class BigQueryViewDagWalker:
                     parent_results,
                     entered_queue_time,
                 ) = queue.dequeue()
+                if node.view.address in processed:
+                    raise ValueError(
+                        "Unexpected situation where node has already "
+                        f"been processed: {node.view.address}"
+                    )
                 end = time.perf_counter()
                 execution_sec, view_result = self._dag_view_process_fn_result(
                     results_fn=view_result_fn,
