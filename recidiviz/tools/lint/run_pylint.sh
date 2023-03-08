@@ -42,6 +42,27 @@ else
     pylint_config_may_have_changed=false
 fi
 
+#Query logical CPUs on Mac
+if num_cpus=$(sysctl -n hw.ncpu 2> /dev/null)
+then
+    echo "Configured to run with $num_cpus CPUs"
+#Query logical CPUs on Linux
+elif [[ -d /sys/devices/system/cpu/ ]];
+then
+    num_cpus=$( \
+        find /sys/devices/system/cpu/                 \
+        -maxdepth 1                                   \
+        -type d                                       \
+        -regex "/sys/devices/system/cpu/cpu[0-9]+$" | \
+        wc -l
+    )
+    echo "Configured to run with $num_cpus CPUs"
+#Fallback
+else
+    num_cpus=0
+    echo "Cannot determine number of available CPUs, reverting to pylint default"
+fi
+
 # Sum the exit codes throughout the file so that we can run all checks and still exit if only the first one fails.
 exit_code=0
 
@@ -49,7 +70,7 @@ exit_code=0
 if [[ ${merge_base_hash} == "${current_head_hash}" || ${pylint_config_may_have_changed} == true ]]
 then
     echo "Running FULL pylint for branch $current_head_branch_name. Pylint config changed=[$pylint_config_may_have_changed]";
-    pylint recidiviz
+    pylint recidiviz -j $num_cpus
 else
 
     declare -a changed_python_files
@@ -63,7 +84,7 @@ else
         echo "Changed files:"
         echo "${changed_python_files[@]}" | tr ' ' '\n'
 
-        pylint "${changed_python_files[@]}"
+        pylint "${changed_python_files[@]}" -j $num_cpus
     fi
 fi
 exit_code=$((exit_code + $?))
