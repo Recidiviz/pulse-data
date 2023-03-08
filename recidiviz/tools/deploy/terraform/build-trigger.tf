@@ -31,7 +31,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
   build {
     step {
       name = "gcr.io/kaniko-project/executor:v1.8.1"
-      args = ["--destination=us.gcr.io/$PROJECT_ID/appengine/build:$COMMIT_SHA", "--cache=true"]
+      args = ["--destination=us.gcr.io/$PROJECT_ID/appengine/build:$COMMIT_SHA", "--cache=true", "--target=recidiviz-app"]
       id   = "recidiviz"
     }
     step {
