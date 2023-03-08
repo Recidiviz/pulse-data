@@ -22,14 +22,15 @@ import {
   Descriptions,
   Divider,
   message,
+  Segmented,
   Spin,
   Tooltip,
 } from "antd";
 import * as React from "react";
 import { Link } from "react-router-dom";
 import {
-  fetchValidationDetails,
   fetchValidationDescription,
+  fetchValidationDetails,
   fetchValidationErrorTable,
 } from "../../AdminPanelAPI";
 import { useFetchedDataJSON, useFetchedDataProtobuf } from "../../hooks";
@@ -86,8 +87,11 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
     return `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2F${queryEnv}%2Flogs%2Fapp%22%0Atrace%3D%22projects%2F${queryEnv}%2Ftraces%2F${traceId}%22%0A%22${validationName}%22%0A%22${stateCode}%22;timeRange=P5D?project=${queryEnv}`;
   };
 
-  // TODO(#9480): Allow user to see more than last 14 days.
+  const [lookbackDays, setLookbackDays] = React.useState(30);
+
   const fetchResults = React.useCallback(async () => {
+    // TODO(#19328): Why are we doing these together? I think it means we wait to fetch
+    // results until after we have the description.
     const r = await fetchValidationDescription(validationName);
     const text = await r.text();
     if (r.status >= 400) {
@@ -96,18 +100,26 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       setValidationDescription(text);
     }
 
-    return fetchValidationDetails(validationName, stateCode);
-  }, [validationName, stateCode]);
+    return fetchValidationDetails(validationName, stateCode, lookbackDays);
+  }, [validationName, stateCode, lookbackDays]);
 
   const validationFetched = useFetchedDataProtobuf<ValidationStatusRecords>(
     fetchResults,
     ValidationStatusRecords.deserializeBinary
   );
 
-  const validationLoading = validationFetched.loading;
-  const validationData = validationFetched.data;
-  const records = validationData?.getRecordsList();
+  const records = validationFetched.data?.getRecordsList() || [];
   const latestRecord = records && records[0];
+
+  // `validationLoading` is true whenever we are reloading the records, including when
+  // the lookback was changed. `validationInitialLoading` will only be true when we
+  // first load the page for this state and validation, not when the lookback is
+  // changed. Components of the page that only use the latest record only need to
+  // display a loading state when `validationInitialLoading` is true, as that won't
+  // change based on the lookback.
+  const validationLoading = validationFetched.loading;
+  const validationInitialLoading = validationLoading && !records.length;
+
   const latestResultStatus =
     (latestRecord && getRecordStatus(latestRecord)) || RecordStatus.UNKNOWN;
   const validationLogLink =
@@ -118,7 +130,7 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
       <Divider orientation="left">Recent Run Details</Divider>
       {/* TODO(#9480): could let the user pick a run but just default to the most recent */}
       <Card title="Summary">
-        {validationLoading ? (
+        {validationInitialLoading ? (
           <Spin />
         ) : (
           <Descriptions bordered>
@@ -185,7 +197,7 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
           justifyContent: "space-evenly",
         }}
       >
-        {validationLoading && <Spin />}
+        {validationInitialLoading && <Spin />}
         {latestRecord?.getResultDetailsCase() ===
           ValidationStatusRecord.ResultDetailsCase.SAMENESS_PER_VIEW && (
           <SamenessPerViewDetails
@@ -208,17 +220,34 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
           justifyContent: "space-evenly",
         }}
       >
-        {validationLoading && <Spin />}
-        {records && (
-          <>
-            <Card title="Graph">
-              <ValidationDetailsGraph
-                // Use slice() to copy before reversing.
-                records={records.slice().reverse()}
-                isPercent={latestRecord?.getIsPercentage()}
-              />
-            </Card>
+        <Card
+          title="Graph"
+          extra={
+            <Segmented
+              options={[
+                { label: "1 wk", value: 7 },
+                { label: "2 wk", value: 14 },
+                { label: "1 mo", value: 30 },
+                { label: "3 mo", value: 90 },
+                { label: "6 mo", value: 180 },
+              ]}
+              defaultValue={lookbackDays}
+              onChange={(value) => setLookbackDays(value as number)}
+            />
+          }
+        >
+          <ValidationDetailsGraph
+            // Use slice() to copy before reversing.
+            records={records.slice().reverse()}
+            isPercent={latestRecord?.getIsPercentage()}
+            loading={validationLoading}
+          />
+        </Card>
 
+        {validationInitialLoading ? (
+          <Spin />
+        ) : (
+          <>
             {
               // Only show the "Last Better Run" card if it is not this run.
               latestRecord?.getLastBetterStatusRunId() !==

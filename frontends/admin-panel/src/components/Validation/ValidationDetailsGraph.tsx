@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { ChartWrapper, palette } from "@recidiviz/design-system";
-import { Badge, Card, Descriptions } from "antd";
+import { Badge, Card, Descriptions, Spin } from "antd";
 import { scaleTime } from "d3-scale";
 import * as React from "react";
 import XYFrame from "semiotic/lib/XYFrame";
@@ -27,6 +27,7 @@ import { formatDate, formatDatetime, formatStatusAmount } from "./utils";
 const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
   records,
   isPercent,
+  loading,
 }) => {
   const lines = [
     {
@@ -106,6 +107,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
   };
   return (
     <ChartWrapper className="validation-graph">
+      {loading ? <Spin style={{ position: "absolute" }} /> : undefined}
       <XYFrame
         // TODO(#9479): add annotations for when a new system version is deployed
         axes={[
@@ -121,7 +123,7 @@ const ValidationDetailsGraph: React.FC<ValidationDetailsGraphProps> = ({
             tickSize: 0,
           },
         ]}
-        lines={lines}
+        lines={loading ? undefined : lines}
         lineStyle={(d: { color: string }, i: number) => ({
           stroke: d.color,
         })}
