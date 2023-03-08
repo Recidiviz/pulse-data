@@ -29,7 +29,7 @@ COPY ./frontends/case-triage/public /usr/case-triage/public
 
 RUN yarn build
 
-FROM ubuntu:focal-20221130
+FROM ubuntu:focal-20221130 as recidiviz-app
 
 ENV DEBIAN_FRONTEND noninteractive
 
