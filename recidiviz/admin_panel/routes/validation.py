@@ -18,13 +18,14 @@
 from http import HTTPStatus
 from typing import Optional, Tuple
 
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 
 from recidiviz.admin_panel.admin_stores import (
     fetch_state_codes,
     get_validation_status_store,
 )
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.types import assert_type
 from recidiviz.validation.configured_validations import get_all_validations
 
 
@@ -55,8 +56,10 @@ def add_validation_routes(admin_panel: Blueprint) -> None:
     def fetch_validation_metadata_status_for_validation(
         validation_name: str, state_code: str
     ) -> Tuple[bytes, HTTPStatus]:
+        request_json = assert_type(request.json, dict)
+        lookbackDays = request_json["lookbackDays"]
         records = get_validation_status_store().get_results_for_validation(
-            validation_name, state_code
+            validation_name, state_code, lookbackDays
         )
         return (
             records.SerializeToString(),

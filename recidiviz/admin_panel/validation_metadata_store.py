@@ -157,7 +157,7 @@ def validation_history_results_query(
     validation_result_address: BigQueryAddress,
     validation_name: str,
     region_code: str,
-    days_to_include: int = 14,
+    days_to_include: int,
 ) -> str:
     return f"""
 {results_query(project_id, validation_result_address, most_recent_run_only=False)}
@@ -438,7 +438,7 @@ class ValidationStatusStore(AdminPanelStore):
         return self.records
 
     def get_results_for_validation(
-        self, validation_name: str, state_code: str
+        self, validation_name: str, state_code: str, days_to_include: int
     ) -> ValidationStatusRecords_pb2:
         query_job = self.bq_client.run_query_async(
             query_str=validation_history_results_query(
@@ -446,6 +446,7 @@ class ValidationStatusStore(AdminPanelStore):
                 VALIDATION_RESULTS_BIGQUERY_ADDRESS,
                 validation_name,
                 state_code,
+                days_to_include,
             ),
             use_query_cache=True,
             query_parameters=[],

@@ -32,6 +32,7 @@ function useFetchedData<T>(
 
   React.useEffect(() => {
     const fetchData = async (req: () => Promise<Response>): Promise<void> => {
+      setLoading(true);
       const r = await req();
       if (r.status >= 400) {
         const text = await r.text();

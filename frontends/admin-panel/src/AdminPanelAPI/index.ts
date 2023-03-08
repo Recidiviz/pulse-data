@@ -64,10 +64,12 @@ export const fetchValidationStatus = async (): Promise<Response> => {
 
 export const fetchValidationDetails = async (
   validationName: string,
-  stateCode: string
+  stateCode: string,
+  lookbackDays: number
 ): Promise<Response> => {
   return postWithURLAndBody(
-    `/api/validation_metadata/status/${validationName}/${stateCode}`
+    `/api/validation_metadata/status/${validationName}/${stateCode}`,
+    { lookbackDays }
   );
 };
 

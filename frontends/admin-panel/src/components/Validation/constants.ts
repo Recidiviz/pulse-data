@@ -45,6 +45,7 @@ export interface ValidationDetailsProps {
 export interface ValidationDetailsGraphProps {
   records: ValidationStatusRecord[];
   isPercent: boolean | undefined;
+  loading: boolean;
 }
 
 export interface SamenessPerRowDetailsProps {
