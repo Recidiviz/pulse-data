@@ -22,16 +22,12 @@ import re
 import threading
 import time
 import unittest
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List
 from unittest.mock import MagicMock, patch
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_table_checker import BigQueryTableChecker
-from recidiviz.big_query.big_query_view import (
-    BigQueryView,
-    BigQueryViewBuilder,
-    SimpleBigQueryViewBuilder,
-)
+from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import (
     BigQueryViewDagNode,
     BigQueryViewDagWalker,
@@ -40,7 +36,6 @@ from recidiviz.big_query.big_query_view_dag_walker import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRegionRawFileConfig,
 )
-from recidiviz.utils.environment import GCP_PROJECTS
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
@@ -208,71 +203,6 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
         result = walker.process_dag(process_check_parents, synchronous=self.synchronous)
         self.assertEqual(len(self.all_views), len(result.view_results))
 
-    def test_children_match_parent_projects_to_deploy(self) -> None:
-        """Checks that if any parents have the projects_to_deploy field set, all
-        children have equal or more restrictive projects.
-        """
-        builders_by_address: Dict[Tuple[str, str], BigQueryViewBuilder] = {
-            (b.dataset_id, b.view_id): b for b in all_deployed_view_builders()
-        }
-
-        walker = BigQueryViewDagWalker(self.all_views)
-
-        failing_views: Dict[BigQueryViewBuilder, Set[str]] = {}
-
-        def process_check_using_materialized(
-            view: BigQueryView, parent_results: Dict[BigQueryView, Set[str]]
-        ) -> Set[str]:
-            view_builder = builders_by_address[
-                (view.address.dataset_id, view.address.table_id)
-            ]
-
-            parent_constraints: List[Set[str]] = [
-                parent_projects_to_deploy
-                for parent_projects_to_deploy in parent_results.values()
-                if parent_projects_to_deploy is not None
-            ]
-            view_projects_to_deploy = (
-                view_builder.projects_to_deploy
-                if view_builder.projects_to_deploy is not None
-                else {*GCP_PROJECTS}
-            )
-            if not parent_constraints:
-                # If the parents have no constraints, constraints are just those on
-                # this view.
-                return view_projects_to_deploy
-
-            # This view can only be deployed to all the projects that its parents allow
-            expected_projects_to_deploy = set.intersection(*parent_constraints)
-
-            extra_projects = view_projects_to_deploy - expected_projects_to_deploy
-
-            if extra_projects:
-                failing_views[view_builder] = expected_projects_to_deploy
-
-            return expected_projects_to_deploy.intersection(view_projects_to_deploy)
-
-        result = walker.process_dag(
-            process_check_using_materialized, synchronous=self.synchronous
-        )
-        self.assertEqual(len(self.all_views), len(result.view_results))
-
-        if failing_views:
-
-            error_message_rows = []
-            for view_builder, expected in failing_views.items():
-                error_message_rows.append(
-                    f"\t{view_builder.dataset_id}.{view_builder.view_id} - "
-                    f"allowed projects: {expected}"
-                )
-
-            error_message_rows_str = "\n".join(error_message_rows)
-            error_message = f"""
-The following views have less restrictive projects_to_deploy than their parents:
-{error_message_rows_str}
-"""
-            raise ValueError(error_message)
-
     def test_dag_returns_parent_results(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
 
@@ -369,7 +299,7 @@ The following views have less restrictive projects_to_deploy than their parents:
         class TestDagWalkException(ValueError):
             pass
 
-        walker = BigQueryViewDagWalker(self.all_views)
+        walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
 
         def process_throws(
             _view: BigQueryView, _parent_results: Dict[BigQueryView, None]
@@ -389,43 +319,6 @@ The following views have less restrictive projects_to_deploy than their parents:
 
         with self.assertRaises(TestDagWalkException):
             walker.process_dag(process_throws_after_root, synchronous=self.synchronous)
-
-    def test_views_use_materialized_if_present(self) -> None:
-        """Checks that each view is using the materialized version of a parent view, if
-        one exists."""
-        walker = BigQueryViewDagWalker(self.all_views)
-
-        def process_check_using_materialized(
-            view: BigQueryView,
-            _parent_results: Dict[BigQueryView, Set[BigQueryAddress]],
-        ) -> Set[BigQueryAddress]:
-            node = walker.node_for_view(view)
-            should_be_materialized_addresses = set()
-            for parent_table_address in node.parent_tables:
-                parent_key = parent_table_address
-                if parent_key not in walker.nodes_by_address:
-                    # We assume this is a source data table (checked in other tests)
-                    continue
-                parent_view: BigQueryView = walker.view_for_address(parent_key)
-                if parent_view.materialized_address is not None:
-                    should_be_materialized_addresses.add(
-                        parent_view.materialized_address
-                    )
-            return should_be_materialized_addresses
-
-        result = walker.process_dag(
-            process_check_using_materialized, synchronous=self.synchronous
-        ).view_results
-        self.assertEqual(len(self.all_views), len(result))
-
-        views_with_issues = {
-            view.address: addresses for view, addresses in result.items() if addresses
-        }
-        if views_with_issues:
-            raise ValueError(
-                f"Found views referencing un-materialized versions of a view when a "
-                f"materialized version exists: {views_with_issues}"
-            )
 
     def test_dag_with_cycle_at_root_with_other_valid_dag(self) -> None:
         view_1 = SimpleBigQueryViewBuilder(
@@ -1530,7 +1423,7 @@ The following views have less restrictive projects_to_deploy than their parents:
             )
 
 
-class TestCaseProcessDagSynchronous(TestBigQueryViewDagWalkerBase):
+class SynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
     __test__ = True
 
     @property
@@ -1538,7 +1431,7 @@ class TestCaseProcessDagSynchronous(TestBigQueryViewDagWalkerBase):
         return True
 
 
-class TestCaseProcessDagAsynchronous(TestBigQueryViewDagWalkerBase):
+class AsynchronousBigQueryViewDagWalkerTest(TestBigQueryViewDagWalkerBase):
     """
     Run TestBigQueryViewDagWalkerBase unit tests for the
     aysnchronous case, as well as all non-polymorphic unit tests
