@@ -56,7 +56,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_co
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
-    RawTableViewType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
@@ -97,7 +96,7 @@ def query_ingest_view(
 
     query = ingest_view.build_query(
         config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-            raw_table_view_type=RawTableViewType.LATEST,
+            raw_data_datetime_upper_bound=None,
         ),
     )
 

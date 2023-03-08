@@ -21,7 +21,7 @@ import abc
 import datetime
 import logging
 import uuid
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from google.cloud import bigquery
 
@@ -42,7 +42,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DestinationTableType,
     DirectIngestViewQueryBuilder,
-    RawTableViewType,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
@@ -51,9 +50,6 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
 
-UPDATE_TIMESTAMP_PARAM_NAME = "update_timestamp"
-UPPER_BOUND_TIMESTAMP_PARAM_NAME = "update_timestamp_upper_bound_inclusive"
-LOWER_BOUND_TIMESTAMP_PARAM_NAME = "update_timestamp_lower_bound_exclusive"
 SELECT_SUBQUERY = "SELECT * FROM `{project_id}.{dataset_id}.{table_name}`;"
 TABLE_NAME_DATE_FORMAT = "%Y_%m_%d_%H_%M_%S"
 
@@ -119,7 +115,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         and starts a job to load the results of that query into the provided
         |table_name|. Returns the potentially in progress QueryJob to the caller.
         """
-        query, query_params = self._generate_ingest_view_query_and_params_for_date(
+        query = self._generate_ingest_view_query_for_date(
             ingest_view=ingest_view,
             raw_data_source_instance=self.raw_data_source_instance,
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
@@ -128,11 +124,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             update_timestamp=date_bound,
         )
 
-        logging.info(
-            "Generated bound query with params \nquery: [%s]\nparams: [%s]",
-            query,
-            query_params,
-        )
+        logging.info("Generated bound query: [%s]", query)
 
         self.big_query_client.create_dataset_if_necessary(
             dataset_ref=self.big_query_client.dataset_ref_for_id(
@@ -141,7 +133,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
         )
         query_job = self.big_query_client.run_query_async(
-            query_str=query, use_query_cache=False, query_parameters=query_params
+            query_str=query, use_query_cache=False, query_parameters=[]
         )
         return query_job
 
@@ -363,52 +355,35 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
     ) -> str:
         """Returns a version of the materialization query for the provided args that can
         be run in the BigQuery UI.
+
+        Generates a single query that is date bounded such that it represents the data
+        that has changed for this view between the specified date bounds in the provided
+         materialization args.
+
+        If there is no lower bound, this produces a query for a historical query up to
+        the upper bound date. Otherwise, it diffs two historical queries to produce a
+        delta query, using the SQL 'EXCEPT DISTINCT' function.
+
+        Important Note: This query is meant for debug/test use only. In the production
+        ingest flow, query results for individual dates are persisted into temporary
+        tables, and those temporary tables are then diff'd using SQL's `EXCEPT DISTINCT`
+        function.
         """
-        query, query_params = cls._debug_generate_unified_query(
-            ingest_views_by_name[ingest_view_materialization_args.ingest_view_name],
-            raw_data_source_instance,
-            ingest_view_materialization_args,
-        )
-
-        for param in query_params:
-            dt = param.value
-            query = query.replace(
-                f"@{param.name}",
-                f"DATETIME({dt.year}, {dt.month}, {dt.day}, {dt.hour}, {dt.minute}, {dt.second})",
-            )
-
-        return query
-
-    @classmethod
-    def _debug_generate_unified_query(
-        cls,
-        ingest_view: DirectIngestViewQueryBuilder,
-        raw_data_source_instance: DirectIngestInstance,
-        ingest_view_materialization_args: IngestViewMaterializationArgs,
-    ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
-        """Generates a single query that is date bounded such that it represents the data that has changed for this view
-        between the specified date bounds in the provided materialization args.
-
-        If there is no lower bound, this produces a query for a historical query up to the upper bound date. Otherwise,
-        it diffs two historical queries to produce a delta query, using the SQL 'EXCEPT DISTINCT' function.
-
-        Important Note: This query is meant for debug use only. In the actual DirectIngest flow, query results for
-        individual dates are persisted into temporary tables, and those temporary tables are then diff'd using SQL's
-        `EXCEPT DISTINCT` function.
-        """
+        ingest_view = ingest_views_by_name[
+            ingest_view_materialization_args.ingest_view_name
+        ]
 
         request_id = cls._generate_request_id()
         upper_bound_table_id = cls._get_upper_bound_intermediate_table_name(
             ingest_view_materialization_args, request_id=request_id
         )
-        query, query_params = cls._generate_ingest_view_query_and_params_for_date(
+        query = cls._generate_ingest_view_query_for_date(
             ingest_view=ingest_view,
             raw_data_source_instance=raw_data_source_instance,
             destination_table_type=DestinationTableType.TEMPORARY,
             destination_dataset_id=None,
             destination_table_id=upper_bound_table_id,
             update_timestamp=ingest_view_materialization_args.upper_bound_datetime_inclusive,
-            param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME,
             raw_table_subquery_name_prefix="upper_"
             if ingest_view.materialize_raw_data_table_views
             else "",
@@ -418,23 +393,17 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             lower_bound_table_id = cls._get_lower_bound_intermediate_table_name(
                 ingest_view_materialization_args, request_id=request_id
             )
-            (
-                lower_bound_query,
-                lower_bound_query_params,
-            ) = cls._generate_ingest_view_query_and_params_for_date(
+            lower_bound_query = cls._generate_ingest_view_query_for_date(
                 ingest_view=ingest_view,
                 raw_data_source_instance=raw_data_source_instance,
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_dataset_id=None,
                 destination_table_id=lower_bound_table_id,
                 update_timestamp=ingest_view_materialization_args.lower_bound_datetime_exclusive,
-                param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME,
                 raw_table_subquery_name_prefix="lower_"
                 if ingest_view.materialize_raw_data_table_views
                 else "",
             )
-
-            query_params.extend(lower_bound_query_params)
 
             diff_query = cls._create_date_diff_query(
                 upper_bound_query=f"SELECT * FROM {upper_bound_table_id}",
@@ -445,10 +414,10 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             )
 
             query = f"{query}\n{lower_bound_query}\n{diff_query}"
-        return query, query_params
+        return query
 
     @staticmethod
-    def _generate_ingest_view_query_and_params_for_date(
+    def _generate_ingest_view_query_for_date(
         *,
         ingest_view: DirectIngestViewQueryBuilder,
         raw_data_source_instance: DirectIngestInstance,
@@ -456,28 +425,20 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
         destination_table_type: DestinationTableType,
         destination_dataset_id: Optional[str],
         destination_table_id: str,
-        param_name: str = UPDATE_TIMESTAMP_PARAM_NAME,
         raw_table_subquery_name_prefix: Optional[str] = None,
-    ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
+    ) -> str:
         """Generates a single query for the provided |ingest view| that is date bounded by |update_timestamp|."""
-        query_params = [
-            bigquery.ScalarQueryParameter(
-                param_name, bigquery.enums.SqlTypeNames.DATETIME.value, update_timestamp
-            )
-        ]
-
         query = ingest_view.build_query(
             config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                raw_table_view_type=RawTableViewType.PARAMETERIZED,
                 raw_data_source_instance=raw_data_source_instance,
-                param_name_override=param_name,
                 destination_table_type=destination_table_type,
                 destination_dataset_id=destination_dataset_id,
                 destination_table_id=destination_table_id,
                 raw_table_subquery_name_prefix=raw_table_subquery_name_prefix,
+                raw_data_datetime_upper_bound=update_timestamp,
             )
         )
-        return query, query_params
+        return query
 
     def _materialize_query_results(
         self,
@@ -500,8 +461,10 @@ if __name__ == "__main__":
     # Update these variables and run to print a materialization query you can run in the BigQuery UI
     region_code_: str = "us_mo"
     ingest_view_name_: str = "tak001_offender_identification"
-    lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(2020, 10, 15)
-    upper_bound_datetime_inclusive_: datetime.datetime = datetime.datetime(2020, 12, 18)
+    lower_bound_datetime_exclusive_: datetime.datetime = datetime.datetime(2023, 1, 11)
+    upper_bound_datetime_inclusive_: datetime.datetime = datetime.datetime(
+        2023, 1, 16, 12, 11, 0
+    )
     raw_data_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY
 
     with local_project_id_override(GCP_PROJECT_STAGING):

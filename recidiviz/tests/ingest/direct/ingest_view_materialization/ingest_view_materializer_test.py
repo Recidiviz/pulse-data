@@ -23,7 +23,6 @@ from unittest.mock import create_autospec
 import mock
 import sqlalchemy
 from freezegun import freeze_time
-from google.cloud.bigquery import ScalarQueryParameter
 from mock import Mock, patch
 from more_itertools import one
 
@@ -88,7 +87,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
         ) a
         WHERE
             recency_rank = 1
@@ -102,7 +101,7 @@ tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= @update_timestamp
+        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
     ),
     max_file_id AS (
         SELECT
@@ -139,7 +138,7 @@ _DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT = """CREATE TEMP 
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
         ) a
         WHERE
             recency_rank = 1
@@ -153,7 +152,7 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE update_datetime <= @update_timestamp
+        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
     ),
     max_file_id AS (
         SELECT
@@ -289,12 +288,6 @@ class IngestViewMaterializerTest(unittest.TestCase):
             launched_ingest_views=[ingest_view_name],
         )
 
-    @staticmethod
-    def generate_query_params_for_date(
-        date_param: datetime.datetime,
-    ) -> ScalarQueryParameter:
-        return ScalarQueryParameter("update_timestamp", "DATETIME", date_param)
-
     def assert_materialized_with_query(
         self, args: IngestViewMaterializationArgs, expected_query: str
     ) -> None:
@@ -429,11 +422,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
             [
                 mock.call(
                     query_str=expected_upper_bound_query,
-                    query_parameters=[
-                        self.generate_query_params_for_date(
-                            args.upper_bound_datetime_inclusive
-                        )
-                    ],
+                    query_parameters=[],
                     use_query_cache=False,
                 ),
             ]
@@ -498,7 +487,7 @@ class IngestViewMaterializerTest(unittest.TestCase):
         )
         expected_lower_bound_query = expected_upper_bound_query.replace(
             "2020_07_20_00_00_00_upper_bound", "2019_07_20_00_00_00_lower_bound"
-        )
+        ).replace("DATETIME(2020, 7, 20, 0, 0, 0)", "DATETIME(2019, 7, 20, 0, 0, 0)")
 
         self.mock_client.dataset_ref_for_id.assert_has_calls(
             [mock.call(_TEMP_DATASET), mock.call(_TEMP_DATASET)]
@@ -510,12 +499,12 @@ class IngestViewMaterializerTest(unittest.TestCase):
             [
                 mock.call(
                     query_str=expected_upper_bound_query,
-                    query_parameters=[self.generate_query_params_for_date(_DATE_2)],
+                    query_parameters=[],
                     use_query_cache=False,
                 ),
                 mock.call(
                     query_str=expected_lower_bound_query,
-                    query_parameters=[self.generate_query_params_for_date(_DATE_1)],
+                    query_parameters=[],
                     use_query_cache=False,
                 ),
             ]
@@ -589,18 +578,18 @@ ORDER BY colA, colC;"""
         )
         expected_lower_bound_query = expected_upper_bound_query.replace(
             "2020_07_20_00_00_00_upper_bound", "2019_07_20_00_00_00_lower_bound"
-        )
+        ).replace("DATETIME(2020, 7, 20, 0, 0, 0)", "DATETIME(2019, 7, 20, 0, 0, 0)")
 
         self.mock_client.run_query_async.assert_has_calls(
             [
                 mock.call(
                     query_str=expected_upper_bound_query,
-                    query_parameters=[self.generate_query_params_for_date(_DATE_2)],
+                    query_parameters=[],
                     use_query_cache=False,
                 ),
                 mock.call(
                     query_str=expected_lower_bound_query,
-                    query_parameters=[self.generate_query_params_for_date(_DATE_1)],
+                    query_parameters=[],
                     use_query_cache=False,
                 ),
             ]

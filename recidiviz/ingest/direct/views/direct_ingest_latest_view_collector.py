@@ -75,7 +75,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
             raw_file_config=self.raw_file_config,
             address_overrides=address_overrides,
             normalized_column_values=True,
-            parameterized_date_filter=False,
+            raw_data_datetime_upper_bound=None,
         )
         return BigQueryView(
             project_id=self.project_id,

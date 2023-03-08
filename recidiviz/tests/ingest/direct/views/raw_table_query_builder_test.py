@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for RawTableQueryBuilder"""
 # pylint: disable=anomalous-backslash-in-string
+import datetime
 import unittest
 
 import attr
@@ -90,12 +91,12 @@ class RawTableQueryBuilderTest(unittest.TestCase):
             raw_data_source_instance=DirectIngestInstance.PRIMARY,
         )
 
-    def test_parameterized_date_filter_query(self) -> None:
+    def test_date_filter_query(self) -> None:
         query = self.query_builder.build_query(
             self.raw_file_config,
             address_overrides=None,
             normalized_column_values=True,
-            parameterized_date_filter=True,
+            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
         )
 
         expected_view_query = """
@@ -109,7 +110,7 @@ WITH filtered_rows AS (
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
             `recidiviz-456.us_xx_raw_data.table_name`
-        WHERE update_datetime <= @update_timestamp
+        WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
     ) a
     WHERE
         recency_rank = 1
@@ -132,7 +133,7 @@ FROM filtered_rows
 
         self.assertEqual(expected_view_query, query)
 
-    def test_parameterized_date_filter_historical_file_query(self) -> None:
+    def test_date_filter_historical_file_query(self) -> None:
         raw_file_config = attr.evolve(
             self.raw_file_config, always_historical_export=True
         )
@@ -140,7 +141,7 @@ FROM filtered_rows
             raw_file_config,
             address_overrides=None,
             normalized_column_values=True,
-            parameterized_date_filter=True,
+            raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
         )
 
         expected_view_query = """
@@ -149,7 +150,7 @@ WITH max_update_datetime AS (
         MAX(update_datetime) AS update_datetime
     FROM
         `recidiviz-456.us_xx_raw_data.table_name`
-    WHERE update_datetime <= @update_timestamp
+    WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
 ),
 max_file_id AS (
     SELECT
@@ -189,7 +190,7 @@ FROM filtered_rows
             self.raw_file_config,
             address_overrides=None,
             normalized_column_values=True,
-            parameterized_date_filter=False,
+            raw_data_datetime_upper_bound=None,
         )
 
         expected_view_query = """
@@ -233,7 +234,7 @@ FROM filtered_rows
             self.raw_file_config,
             address_overrides=None,
             normalized_column_values=False,
-            parameterized_date_filter=False,
+            raw_data_datetime_upper_bound=None,
         )
 
         expected_view_query = """
@@ -271,7 +272,7 @@ FROM filtered_rows
                 raw_file_config,
                 address_overrides=None,
                 normalized_column_values=False,
-                parameterized_date_filter=False,
+                raw_data_datetime_upper_bound=None,
             )
 
     def test_no_primary_keys_query(
@@ -286,5 +287,5 @@ FROM filtered_rows
                 raw_file_config,
                 address_overrides=None,
                 normalized_column_values=False,
-                parameterized_date_filter=False,
+                raw_data_datetime_upper_bound=None,
             )

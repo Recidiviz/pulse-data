@@ -194,7 +194,7 @@ class RawDataFixturesGenerator:
             raw_file_config=raw_file_config,
             address_overrides=None,
             normalized_column_values=False,
-            parameterized_date_filter=False,
+            raw_data_datetime_upper_bound=None,
         )
 
         return f"{latest_query_template}{id_filter_condition};"
