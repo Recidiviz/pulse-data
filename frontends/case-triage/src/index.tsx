@@ -14,88 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Router } from "@reach/router";
-import { GlobalStyle, ToastProvider } from "@recidiviz/design-system";
-import * as Sentry from "@sentry/react";
-import { Integrations } from "@sentry/tracing";
-import {
-  BreakpointProvider,
-  setup as setupUseBreakpoint,
-} from "@w11r/use-breakpoint";
-import "core-js";
 import React from "react";
-import "react-app-polyfill/ie11";
 import ReactDOM from "react-dom";
-import ReactModal from "react-modal";
-import "react-truncate-list/dist/styles.css";
-import styled from "styled-components/macro";
-import { trackScrolledToBottom } from "./analytics";
-import { breakpoints } from "./components/styles";
-import Onboarding from "./routes/Onboarding";
-import Verify from "./routes/Verify";
-import StoreProvider from "./stores";
-import { redactLocalStorageCache } from "./utils";
-import "./window.d";
-import Home from "./routes/Home";
 
-if (process.env.NODE_ENV !== "development") {
-  Sentry.init({
-    dsn: "https://1aa10e823cad49d9a662d71cedb3365b@o432474.ingest.sentry.io/5623757",
-    integrations: [new Integrations.BrowserTracing()],
-
-    // This value may need to be adjusted over time as usage increases.
-    tracesSampleRate: 1.0,
-  });
-}
-
-// Implement scrollToBottom listener
-let isCurrentlyScrolledToBottom = false;
-window.onscroll = function () {
-  const scrolledToBottom =
-    window.innerHeight + window.scrollY >= document.body.offsetHeight;
-  if (scrolledToBottom) {
-    if (!isCurrentlyScrolledToBottom) {
-      isCurrentlyScrolledToBottom = true;
-      trackScrolledToBottom();
-    }
-  } else {
-    isCurrentlyScrolledToBottom = false;
-  }
-};
-
-// configure breakpoint hook with custom values
-setupUseBreakpoint({
-  breakpoints: {
-    mobile: [0, breakpoints.mobilePx],
-    tablet: [breakpoints.mobilePx + 1, breakpoints.tabletPx],
-  },
+ReactDOM.render(<div />, document.getElementById("root"), () => {
+  // Redirecting to Recidiviz Dashboard now that Case Triage is deprecated.
+  window.location.replace("https://dashboard.recidiviz.org");
 });
-
-const RoutingContainer = styled(Router)`
-  margin: 0 auto;
-  height: 100%;
-`;
-
-ReactDOM.render(
-  <BreakpointProvider>
-    <StoreProvider>
-      <ToastProvider placement="bottom-left">
-        <GlobalStyle />
-        <RoutingContainer>
-          <Verify path="verify" />
-          <Onboarding path="onboarding" />
-          <Home path="/" />
-        </RoutingContainer>
-      </ToastProvider>
-    </StoreProvider>
-  </BreakpointProvider>,
-  document.getElementById("root"),
-  () => {
-    ReactModal.setAppElement("#root");
-  }
-);
-
-// This is run every time the page is loaded anew to
-// ensure that the localStorage cache is cleared of
-// offending information.
-redactLocalStorageCache();
