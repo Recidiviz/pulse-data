@@ -33,6 +33,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_results_contents_handle import (
     BigQueryResultsContentsHandle,
 )
+from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
@@ -365,10 +366,6 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         date_ts = datetime.datetime.utcnow().strftime("%Y%m%d")
         return f"{self.results_dataset()}_temp_{date_ts}"
 
-    def _datetime_clause(self, dt: datetime.datetime) -> str:
-        """Returns a datetime formatted as a BigQuery DATETIME() function."""
-        return f"DATETIME({dt.year}, {dt.month}, {dt.day}, {dt.hour}, {dt.minute}, {dt.second})"
-
     def save_query_results(
         self,
         *,
@@ -413,11 +410,11 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             project_id=metadata.project_id(),
             temp_results_dataset=intermediate_table_address.dataset_id,
             temp_results_table=intermediate_table_address.table_id,
-            upper_bound_datetime_inclusive=self._datetime_clause(
+            upper_bound_datetime_inclusive=datetime_clause(
                 upper_bound_datetime_inclusive
             ),
             lower_bound_datetime_exclusive=(
-                self._datetime_clause(lower_bound_datetime_exclusive)
+                datetime_clause(lower_bound_datetime_exclusive)
                 if lower_bound_datetime_exclusive
                 else "CAST(NULL AS DATETIME)"
             ),
@@ -493,7 +490,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                 project_id=metadata.project_id(),
                 results_dataset=results_address.dataset_id,
                 results_table=results_address.table_id,
-                upper_bound_datetime_inclusive=self._datetime_clause(
+                upper_bound_datetime_inclusive=datetime_clause(
                     upper_bound_datetime_inclusive
                 ),
                 batch_number=batch_number,
@@ -574,10 +571,10 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
             project_id=metadata.project_id(),
             results_dataset=results_address.dataset_id,
             results_table=results_address.table_id,
-            upper_bound_datetime_inclusive=self._datetime_clause(
+            upper_bound_datetime_inclusive=datetime_clause(
                 upper_bound_datetime_inclusive
             ),
-            processed_time=self._datetime_clause(datetime.datetime.utcnow()),
+            processed_time=datetime_clause(datetime.datetime.utcnow()),
             batch_number=batch_number,
         )
         query_job = self._big_query_client.run_query_async(

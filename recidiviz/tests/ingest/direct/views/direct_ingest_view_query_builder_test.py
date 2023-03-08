@@ -15,33 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for types defined in direct_ingest_view_query_builder.py"""
+import datetime
 import unittest
 
 import attr
 from mock import patch
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    UPDATE_DATETIME_PARAM_NAME,
     DestinationTableType,
     DirectIngestViewQueryBuilder,
-    RawTableViewType,
-)
-from recidiviz.ingest.direct.views.raw_table_query_builder import (
-    UPDATE_DATETIME_PARAM_NAME,
 )
 from recidiviz.tests.ingest.direct import fake_regions as fake_regions_module
 
 
-class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
+class DirectIngestViewQueryBuilderTest(unittest.TestCase):
     """Tests for types defined in direct_ingest_view_query_builder.py"""
 
     PROJECT_ID = "recidiviz-456"
 
     DEFAULT_LATEST_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
-        raw_table_view_type=RawTableViewType.LATEST
+        raw_data_datetime_upper_bound=None,
     )
 
-    DEFAULT_PARAMETERIZED_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
-        raw_table_view_type=RawTableViewType.PARAMETERIZED
+    DEFAULT_EXPANDED_CONFIG = DirectIngestViewQueryBuilder.QueryStructureConfig(
+        raw_data_datetime_upper_bound=datetime.datetime(2000, 1, 2, 3, 4, 5),
     )
 
     def setUp(self) -> None:
@@ -99,7 +97,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @my_update_timestamp_param_name
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -118,7 +116,7 @@ file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= @my_update_timestamp_param_name
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -133,12 +131,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
-                    param_name_override="my_update_timestamp_param_name",
-                )
-            ),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(
@@ -205,7 +198,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @my_param
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -220,12 +213,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_date_parameterized_view_query,
-            view.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
-                    param_name_override="my_param",
-                )
-            ),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
@@ -311,7 +299,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -330,7 +318,7 @@ file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -346,7 +334,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
         # Also check that appending whitespace before the WITH prefix produces the same results
@@ -371,7 +359,7 @@ ORDER BY col1, col2;"""
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
@@ -430,7 +418,7 @@ ORDER BY col1, col2;"""
             expected_view_query,
             view.build_query(
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.LATEST,
+                    raw_data_datetime_upper_bound=None,
                 )
             ),
         )
@@ -446,7 +434,7 @@ ORDER BY col1, col2;"""
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @my_update_timestamp_param_name
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -465,7 +453,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= @my_update_timestamp_param_name
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -481,8 +469,9 @@ ORDER BY col1, col2;"""
             expected_parameterized_view_query,
             view.build_query(
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
-                    param_name_override="my_update_timestamp_param_name",
+                    raw_data_datetime_upper_bound=datetime.datetime(
+                        2000, 1, 2, 3, 4, 5
+                    ),
                 )
             ),
         )
@@ -558,7 +547,7 @@ ORDER BY col1, col2;"""
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -577,7 +566,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -594,7 +583,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
         # Also check that appending whitespace before the WITH prefix produces the same results
@@ -620,7 +609,7 @@ ORDER BY col1, col2;"""
         )
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(config=self.DEFAULT_PARAMETERIZED_CONFIG),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_temp_output_table(
@@ -682,7 +671,7 @@ ORDER BY col1, col2
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -701,7 +690,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -721,7 +710,7 @@ ORDER BY col1, col2
 );"""
 
         parametrized_config = attr.evolve(
-            self.DEFAULT_PARAMETERIZED_CONFIG,
+            self.DEFAULT_EXPANDED_CONFIG,
             destination_table_id="my_destination_table",
             destination_table_type=DestinationTableType.TEMPORARY,
         )
@@ -802,7 +791,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -821,7 +810,7 @@ file_tag_second_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_second`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -838,7 +827,7 @@ ORDER BY col1, col2
 );"""
 
         parametrized_config = attr.evolve(
-            self.DEFAULT_PARAMETERIZED_CONFIG,
+            self.DEFAULT_EXPANDED_CONFIG,
             destination_dataset_id="my_destination_dataset",
             destination_table_id="my_destination_table",
             destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
@@ -886,7 +875,7 @@ file_tag_first_generated_view AS (
                                    ORDER BY update_datetime DESC) AS recency_rank
             FROM
                 `recidiviz-456.us_xx_raw_data.file_tag_first`
-            WHERE update_datetime <= @update_timestamp
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
         ) a
         WHERE
             recency_rank = 1
@@ -895,16 +884,12 @@ file_tag_first_generated_view AS (
     FROM filtered_rows
 )
 SELECT * FROM file_tag_first_generated_view
-        WHERE col1 <= @update_timestamp
+        WHERE col1 <= DATETIME(2000, 1, 2, 3, 4, 5)
 ORDER BY col1, col2;"""
 
         self.assertEqual(
             expected_parameterized_view_query,
-            view.build_query(
-                config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED
-                )
-            ),
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
         )
 
     def test_direct_ingest_preprocessed_view_with_current_date(self) -> None:
@@ -936,67 +921,64 @@ ORDER BY col1, col2;"""
         has_destination_dataset_types = {DestinationTableType.PERMANENT_EXPIRING}
 
         # Must have dataset id
-        for _ in RawTableViewType:
-            for destination_table_type in has_destination_dataset_types:
-                with self.assertRaisesRegex(
-                    ValueError,
-                    r"^Found null destination_dataset_id \[None\] with destination_table_type "
-                    rf"\[{destination_table_type.name}\]$",
-                ):
-                    _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                        raw_table_view_type=RawTableViewType.LATEST,
-                        destination_table_type=destination_table_type,
-                    )
+        for destination_table_type in has_destination_dataset_types:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^Found null destination_dataset_id \[None\] with destination_table_type "
+                rf"\[{destination_table_type.name}\]$",
+            ):
+                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    destination_table_type=destination_table_type,
+                    raw_data_datetime_upper_bound=None,
+                )
 
         has_no_destination_dataset_types = set(DestinationTableType).difference(
             has_destination_dataset_types
         )
         # Should not have dataset id
-        for _ in RawTableViewType:
-            for destination_table_type in has_no_destination_dataset_types:
-                with self.assertRaisesRegex(
-                    ValueError,
-                    r"^Found nonnull destination_dataset_id \[some_dataset\] with destination_table_type "
-                    rf"\[{destination_table_type.name}\]$",
-                ):
-                    _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                        raw_table_view_type=RawTableViewType.LATEST,
-                        destination_dataset_id="some_dataset",
-                        destination_table_type=destination_table_type,
-                    )
+        for destination_table_type in has_no_destination_dataset_types:
+            with self.assertRaisesRegex(
+                ValueError,
+                r"^Found nonnull destination_dataset_id \[some_dataset\] with destination_table_type "
+                rf"\[{destination_table_type.name}\]$",
+            ):
+                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
+                    destination_dataset_id="some_dataset",
+                    destination_table_type=destination_table_type,
+                    raw_data_datetime_upper_bound=None,
+                )
 
     def test_query_structure_config_destination_table_type_table_id_validations(
         self,
     ) -> None:
         # Must have table id
-        for _ in RawTableViewType:
-            with self.assertRaisesRegex(
-                ValueError,
-                r"^Found null destination_table_id \[None\] with destination_table_type \[PERMANENT_EXPIRING\]$",
-            ):
-                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.LATEST,
-                    destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
-                    destination_dataset_id="some_dataset",
-                )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found null destination_table_id \[None\] with destination_table_type \[PERMANENT_EXPIRING\]$",
+        ):
+            _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
+                destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
+                destination_dataset_id="some_dataset",
+                raw_data_datetime_upper_bound=None,
+            )
 
-            with self.assertRaisesRegex(
-                ValueError,
-                r"^Found null destination_table_id \[None\] with destination_table_type \[TEMPORARY\]$",
-            ):
-                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.LATEST,
-                    destination_table_type=DestinationTableType.TEMPORARY,
-                )
+        # Must have table id
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found null destination_table_id \[None\] with destination_table_type \[TEMPORARY\]$",
+        ):
+            _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
+                destination_table_type=DestinationTableType.TEMPORARY,
+                raw_data_datetime_upper_bound=None,
+            )
 
         # Should not have table id
-        for _ in RawTableViewType:
-            with self.assertRaisesRegex(
-                ValueError,
-                r"^Found nonnull destination_table_id \[some_table\] with destination_table_type \[NONE\]$",
-            ):
-                _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.LATEST,
-                    destination_table_id="some_table",
-                    destination_table_type=DestinationTableType.NONE,
-                )
+        with self.assertRaisesRegex(
+            ValueError,
+            r"^Found nonnull destination_table_id \[some_table\] with destination_table_type \[NONE\]$",
+        ):
+            _ = DirectIngestViewQueryBuilder.QueryStructureConfig(
+                destination_table_id="some_table",
+                destination_table_type=DestinationTableType.NONE,
+                raw_data_datetime_upper_bound=None,
+            )

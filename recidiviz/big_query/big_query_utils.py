@@ -190,3 +190,8 @@ def transform_dict_to_bigquery_row(data_point: Dict[str, Any]) -> bigquery.table
         values.append(value)
         indices[key] = idx
     return bigquery.table.Row(values, indices)
+
+
+def datetime_clause(dt: datetime.datetime) -> str:
+    """Returns a datetime formatted as a BigQuery DATETIME() function."""
+    return f"DATETIME({dt.year}, {dt.month}, {dt.day}, {dt.hour}, {dt.minute}, {dt.second})"

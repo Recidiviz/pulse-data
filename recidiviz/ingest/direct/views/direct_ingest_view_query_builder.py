@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
+import datetime
 import re
 import string
 from enum import Enum, auto
@@ -22,8 +23,10 @@ from types import ModuleType
 from typing import List, Optional
 
 import attr
+import pytz
 
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
@@ -34,12 +37,11 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import (
     DirectIngestRawDataTableLatestViewBuilder,
 )
-from recidiviz.ingest.direct.views.raw_table_query_builder import (
-    UPDATE_DATETIME_PARAM_NAME,
-    RawTableQueryBuilder,
-)
+from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
+
+UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 
 CREATE_TEMP_TABLE_REGEX = re.compile(r"CREATE\s+((TEMP|TEMPORARY)\s+)TABLE")
 
@@ -67,16 +69,6 @@ CREATE TEMP TABLE {table_id} AS (
 """
 
 
-class RawTableViewType(Enum):
-    # Raw table view subqueries will take form of non-parameterized queries that return the latest version of each raw
-    # table. This type will produce a query that can run in the BigQuery UI and that can be used easily for debugging.
-    LATEST = auto()
-
-    # Raw table views will take the form of parameterized queries that return the the version of the raw table up to the
-    # a max update date parameter. By default, this parameter name will be UPDATE_DATETIME_PARAM_NAME.
-    PARAMETERIZED = auto()
-
-
 class DestinationTableType(Enum):
     # The query will be structured to end with a SELECT statement. This can be used for queries that may be run in the
     # BigQuery UI.
@@ -102,13 +94,9 @@ class DirectIngestViewQueryBuilder:
     class QueryStructureConfig:
         """Configuration for how to structure the expanded view query with hydrated raw table views."""
 
-        # Specifies the structure of the raw table view subqueries
-        raw_table_view_type: RawTableViewType = attr.ib()
-
-        # For queries with a |raw_table_view_type| of PARAMETERIZED, this may be to set to specify a custom name for the
-        # max update date parameter. If it is not set, the parameter name will be the default
-        # UPDATE_DATETIME_PARAM_NAME.
-        param_name_override: Optional[str] = attr.ib(default=None)
+        # If set, the raw data queries will only return rows received on or before this
+        # datetime.
+        raw_data_datetime_upper_bound: Optional[datetime.datetime] = attr.ib()
 
         # The source of the raw data for the query
         raw_data_source_instance: DirectIngestInstance = attr.ib(default=None)
@@ -130,17 +118,7 @@ class DirectIngestViewQueryBuilder:
         # (e.g. two that each have different date bounds).
         raw_table_subquery_name_prefix: Optional[str] = attr.ib(default=None)
 
-        @property
-        def parameterize_raw_data_table_views(self) -> bool:
-            return self.raw_table_view_type == RawTableViewType.PARAMETERIZED
-
         def __attrs_post_init__(self) -> None:
-            if not self.parameterize_raw_data_table_views and self.param_name_override:
-                raise ValueError(
-                    f"Found nonnull param_name_override [{self.param_name_override}] which should only be "
-                    f"set if parameterize_raw_data_table_views is True."
-                )
-
             if (
                 self.destination_dataset_id
                 and self.destination_table_type
@@ -283,15 +261,17 @@ class DirectIngestViewQueryBuilder:
         self,
         raw_data_source_instance: DirectIngestInstance = DirectIngestInstance.PRIMARY,
     ) -> None:
-        """For local testing, prints out the parameterized and latest versions of the view's query."""
+        """For local testing, prints out the date-bounded and latest versions of the
+        view's query.
+        """
         print(
-            "****************************** PARAMETERIZED ******************************"
+            "****************************** DATE BOUNDED ******************************"
         )
         print(
             self.build_query(
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
                     raw_data_source_instance=raw_data_source_instance,
+                    raw_data_datetime_upper_bound=datetime.datetime.now(tz=pytz.UTC),
                 )
             )
         )
@@ -301,8 +281,8 @@ class DirectIngestViewQueryBuilder:
         print(
             self.build_query(
                 config=DirectIngestViewQueryBuilder.QueryStructureConfig(
-                    raw_table_view_type=RawTableViewType.LATEST,
                     raw_data_source_instance=raw_data_source_instance,
+                    raw_data_datetime_upper_bound=None,
                 )
             )
         )
@@ -429,11 +409,15 @@ class DirectIngestViewQueryBuilder:
             query_template=full_query_template,
             query_format_kwargs=format_args,
         )
-        if config.param_name_override:
+
+        # We manually hydrate @update_timestamp parameters that may be defined in the
+        # main body of an ingest view query.
+        if config.raw_data_datetime_upper_bound:
             query = query.replace(
-                f"@{UPDATE_DATETIME_PARAM_NAME}", f"@{config.param_name_override}"
+                f"@{UPDATE_DATETIME_PARAM_NAME}",
+                f"{datetime_clause(config.raw_data_datetime_upper_bound)}",
             )
-        elif config.raw_table_view_type == RawTableViewType.LATEST:
+        else:
             query = query.replace(
                 f"@{UPDATE_DATETIME_PARAM_NAME}", "CURRENT_DATE('US/Eastern')"
             )
@@ -507,7 +491,12 @@ class DirectIngestViewQueryBuilder:
         raw_table_config: DirectIngestRawFileConfig,
     ) -> str:
         project_id = metadata.project_id()
-        if config.parameterize_raw_data_table_views:
+
+        # TODO(#18282): When we allow ingest views to query the full set of raw data
+        #  rows in a given raw data table, we will not be able to query the latest view
+        #  for those tables either and will have to recreate the raw data query like we
+        #  do for date-bounded queries as well.
+        if config.raw_data_datetime_upper_bound:
             return RawTableQueryBuilder(
                 project_id=project_id,
                 region_code=self._region_code,
@@ -516,7 +505,7 @@ class DirectIngestViewQueryBuilder:
                 raw_file_config=raw_table_config,
                 address_overrides=None,
                 normalized_column_values=True,
-                parameterized_date_filter=True,
+                raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
             )
 
         return DirectIngestRawDataTableLatestViewBuilder(

@@ -15,11 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper class for building views over state raw data tables."""
-
+import datetime
 from typing import Optional
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
+from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
@@ -30,7 +31,6 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.string import StrictStringFormatter
 
-UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 LATEST_INCREMENTAL_FILE_FILTER_CLAUSE = """filtered_rows AS (
     SELECT
         * EXCEPT (recency_rank)
@@ -113,7 +113,7 @@ class RawTableQueryBuilder:
         raw_file_config: DirectIngestRawFileConfig,
         address_overrides: Optional[BigQueryAddressOverrides],
         normalized_column_values: bool,
-        parameterized_date_filter: bool,
+        raw_data_datetime_upper_bound: Optional[datetime.datetime],
     ) -> str:
         """Returns a query against data in a state raw data table.
 
@@ -124,17 +124,16 @@ class RawTableQueryBuilder:
             normalized_column_values: If true, columns values will be normalized
                 according to their config specification (e.g. datetime columns
                 normalized).
-            parameterized_date_filter: If true, adds a parameterized filter to the update_datetime.
+            raw_data_datetime_upper_bound: If set, this raw data query will only return
+                rows received on or before this datetime.
         """
         if normalized_column_values:
             columns_clause = self.normalized_columns_for_config(raw_file_config)
         else:
             columns_clause = self._columns_clause_for_config(raw_file_config)
 
-        if parameterized_date_filter:
-            date_filter_clause = (
-                f"WHERE update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}"
-            )
+        if raw_data_datetime_upper_bound:
+            date_filter_clause = f"WHERE update_datetime <= {datetime_clause(raw_data_datetime_upper_bound)}"
         else:
             date_filter_clause = ""
 
