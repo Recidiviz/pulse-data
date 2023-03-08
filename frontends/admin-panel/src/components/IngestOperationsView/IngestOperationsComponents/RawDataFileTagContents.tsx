@@ -22,7 +22,7 @@ import { getGCPBucketURL } from "../ingestStatusUtils";
 
 interface RenderHasConfigFileProps {
   status: IngestRawFileProcessingStatus;
-  ingestBucketPath: string;
+  ingestBucketPath: string | undefined;
 }
 
 const RawDataFileTagContents: React.FC<RenderHasConfigFileProps> = ({
@@ -34,19 +34,27 @@ const RawDataFileTagContents: React.FC<RenderHasConfigFileProps> = ({
   if (isSpecialTag) {
     return <div>N/A</div>;
   }
+
+  let content;
+  if (hasConfig) {
+    content = "Yes";
+  } else if (ingestBucketPath) {
+    content = (
+      <NewTabLink href={getGCPBucketURL(ingestBucketPath, fileTag)}>
+        No Raw Config File Available
+      </NewTabLink>
+    );
+  } else {
+    content = "No Raw Config File Available";
+  }
+
   return (
     <div
       className={classNames({
         "ingest-caution": !hasConfig,
       })}
     >
-      {hasConfig ? (
-        "Yes"
-      ) : (
-        <NewTabLink href={getGCPBucketURL(ingestBucketPath, fileTag)}>
-          No Raw Config File Available
-        </NewTabLink>
-      )}
+      {content}
     </div>
   );
 };

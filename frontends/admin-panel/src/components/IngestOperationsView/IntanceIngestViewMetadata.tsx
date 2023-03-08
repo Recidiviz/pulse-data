@@ -17,24 +17,59 @@
 import { Table } from "antd";
 import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getIngestViewSummaries } from "../../AdminPanelAPI/IngestOperations";
 import { optionalStringSort } from "../Utilities/GeneralUtilities";
+import { isAbortException } from "../Utilities/exceptions";
 import {
-  IngestInstanceSummary,
+  DirectIngestInstance,
   IngestViewContentsSummary,
   IngestViewMaterializationSummary,
+  IngestViewSummaries,
 } from "./constants";
 
 interface InstanceIngestViewMetadataProps {
+  instance: DirectIngestInstance;
   stateCode: string;
-  data: IngestInstanceSummary;
 }
 
 const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
+  instance,
   stateCode,
-  data,
 }) => {
-  const materializationTableData =
-    data.operations.ingestViewMaterializationSummaries;
+  // Uses useRef so abort controller not re-initialized every render cycle.
+  const abortControllerRef = useRef<AbortController | undefined>(undefined);
+
+  const [ingestViewSummariesLoading, setingestViewSummariesLoading] =
+    useState<boolean>(true);
+  const [ingestViewSummaries, setingestViewSummaries] =
+    useState<IngestViewSummaries | undefined>(undefined);
+
+  const fetchingestViewSummaries = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    setingestViewSummariesLoading(true);
+    try {
+      const primaryResponse = await getIngestViewSummaries(
+        stateCode,
+        instance,
+        abortControllerRef.current
+      );
+      const result: IngestViewSummaries = await primaryResponse.json();
+      setingestViewSummaries(result);
+    } catch (err) {
+      if (!isAbortException(err)) {
+        throw err;
+      }
+    }
+    setingestViewSummariesLoading(false);
+  }, [instance, stateCode]);
+
+  useEffect(() => {
+    fetchingestViewSummaries();
+  }, [fetchingestViewSummaries, instance, stateCode]);
 
   const materializationColumns: ColumnsType<IngestViewMaterializationSummary> =
     [
@@ -47,10 +82,12 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
           b: IngestViewMaterializationSummary
         ) => a.ingestViewName.localeCompare(b.ingestViewName),
         defaultSortOrder: "ascend",
-        filters: materializationTableData.map(({ ingestViewName }) => ({
-          text: ingestViewName,
-          value: ingestViewName,
-        })),
+        filters: ingestViewSummaries?.ingestViewMaterializationSummaries.map(
+          ({ ingestViewName }) => ({
+            text: ingestViewName,
+            value: ingestViewName,
+          })
+        ),
         onFilter: (value, content) => content.ingestViewName === value,
         filterSearch: true,
       },
@@ -105,8 +142,6 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       },
     ];
 
-  const contentsTableData = data.operations.ingestViewContentsSummaries;
-
   const contentsColumns: ColumnsType<IngestViewContentsSummary> = [
     {
       title: "Ingest View Name",
@@ -115,10 +150,12 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       sorter: (a: IngestViewContentsSummary, b: IngestViewContentsSummary) =>
         a.ingestViewName.localeCompare(b.ingestViewName),
       defaultSortOrder: "ascend",
-      filters: contentsTableData.map(({ ingestViewName }) => ({
-        text: ingestViewName,
-        value: ingestViewName,
-      })),
+      filters: ingestViewSummaries?.ingestViewContentsSummaries.map(
+        ({ ingestViewName }) => ({
+          text: ingestViewName,
+          value: ingestViewName,
+        })
+      ),
       onFilter: (value, content) => content.ingestViewName === value,
       filterSearch: true,
     },
@@ -192,7 +229,8 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       </p>
       <Table
         columns={materializationColumns}
-        dataSource={materializationTableData}
+        loading={ingestViewSummariesLoading}
+        dataSource={ingestViewSummaries?.ingestViewMaterializationSummaries}
         rowKey="ingestViewName"
         pagination={{
           hideOnSinglePage: true,
@@ -211,7 +249,8 @@ const InstanceIngestViewMetadata: React.FC<InstanceIngestViewMetadataProps> = ({
       </p>
       <Table
         columns={contentsColumns}
-        dataSource={contentsTableData}
+        loading={ingestViewSummariesLoading}
+        dataSource={ingestViewSummaries?.ingestViewContentsSummaries}
         rowKey="ingestViewName"
         pagination={{
           hideOnSinglePage: true,

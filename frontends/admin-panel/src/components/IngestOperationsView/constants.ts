@@ -58,18 +58,13 @@ export enum DirectIngestInstance {
   SECONDARY = "SECONDARY",
 }
 
-export type IngestInstanceSummary = {
-  instance: DirectIngestInstance;
+export type IngestInstanceResources = {
   storageDirectoryPath: string;
   ingestBucketPath: string;
   dbName: string;
-  operations: OperationsDbInfo;
 };
 
-export type OperationsDbInfo = {
-  unprocessedFilesRaw: number;
-  processedFilesRaw: number;
-
+export type IngestViewSummaries = {
   ingestViewMaterializationSummaries: IngestViewMaterializationSummary[];
   ingestViewContentsSummaries: IngestViewContentsSummary[];
 };

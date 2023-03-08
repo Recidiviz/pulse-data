@@ -25,7 +25,7 @@ import { getGCPBucketURL } from "../ingestStatusUtils";
 
 interface RawDataLatestProcessedDateCellContentsProps {
   status: IngestRawFileProcessingStatus;
-  storageDirectoryPath: string;
+  storageDirectoryPath: string | undefined;
 }
 
 const RawDataLatestProcessedDateCellContents: React.FC<RawDataLatestProcessedDateCellContentsProps> =
@@ -38,17 +38,19 @@ const RawDataLatestProcessedDateCellContents: React.FC<RawDataLatestProcessedDat
     }
 
     if (fileTag === FILE_TAG_UNNORMALIZED) {
-      <div className="ingest-danger">N/A - Unknown file tag</div>;
+      return <div className="ingest-danger">N/A - Unknown file tag</div>;
     }
 
     if (hasConfig && latestProcessedTime && latestUpdateDatetime) {
       const date = new Date(latestUpdateDatetime);
-      return (
+      return storageDirectoryPath ? (
         <NewTabLink
           href={getIngestStorageBucketPath(storageDirectoryPath, fileTag, date)}
         >
           {latestProcessedTime}
         </NewTabLink>
+      ) : (
+        <div>{latestProcessedTime}</div>
       );
     }
 

@@ -16,13 +16,10 @@
 // =============================================================================
 
 import { Alert } from "antd";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getIngestInstanceSummary } from "../../AdminPanelAPI";
-import { isAbortException } from "../Utilities/exceptions";
-import { DirectIngestInstance, IngestInstanceSummary } from "./constants";
 import IngestInstanceCard from "./IngestInstanceCard";
 import IngestInstanceActionsPageHeader from "./IngestOperationsComponents/IngestInstanceActionsPageHeader";
+import { DirectIngestInstance } from "./constants";
 
 const instances = [
   DirectIngestInstance.PRIMARY,
@@ -35,42 +32,6 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
     useParams<{ stateCode: string; instance: string }>();
 
   const directInstance = getInstance(instance);
-  // Uses useRef so abort controller not re-initialized every render cycle.
-  const abortControllerRef = useRef<AbortController | undefined>(undefined);
-
-  const [ingestInstanceSummaryLoading, setIngestInstanceSummaryLoading] =
-    useState<boolean>(true);
-  const [ingestInstanceSummary, setIngestInstanceSummary] =
-    useState<IngestInstanceSummary | undefined>(undefined);
-
-  const fetchIngestInstanceSummary = useCallback(async () => {
-    if (!directInstance) {
-      return;
-    }
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-    setIngestInstanceSummaryLoading(true);
-    try {
-      const primaryResponse = await getIngestInstanceSummary(
-        stateCode,
-        directInstance,
-        abortControllerRef.current
-      );
-      const result: IngestInstanceSummary = await primaryResponse.json();
-      setIngestInstanceSummary(result);
-    } catch (err) {
-      if (!isAbortException(err)) {
-        throw err;
-      }
-    }
-    setIngestInstanceSummaryLoading(false);
-  }, [directInstance, stateCode]);
-
-  useEffect(() => {
-    fetchIngestInstanceSummary();
-  }, [fetchIngestInstanceSummary]);
 
   if (!directInstance) {
     return <Alert message="Invalid instance" type="error" />;
@@ -81,8 +42,6 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
       <IngestInstanceActionsPageHeader
         instance={directInstance}
         stateCode={stateCode}
-        ingestInstanceSummary={ingestInstanceSummary}
-        onRefreshIngestSummary={fetchIngestInstanceSummary}
       />
       {env === "development" ? (
         <>
@@ -104,8 +63,6 @@ const IngestStateSpecificInstanceMetadata = (): JSX.Element => {
           instance={directInstance}
           env={env}
           stateCode={stateCode}
-          ingestInstanceSummary={ingestInstanceSummary}
-          ingestInstanceSummaryLoading={ingestInstanceSummaryLoading}
         />
       </div>
     </>
