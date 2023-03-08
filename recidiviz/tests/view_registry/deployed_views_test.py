@@ -18,12 +18,13 @@
 import datetime
 import re
 import unittest
-from typing import Set
+from typing import Dict, List, Set, Tuple
 from unittest.mock import MagicMock, patch
 
 from parameterized import parameterized
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import build_views_to_update
 from recidiviz.metrics.export.export_config import VIEW_COLLECTION_EXPORT_INDEX
@@ -103,6 +104,7 @@ class ViewDagInvariantTests(unittest.TestCase):
     """Tests that certain views have the correct descendants."""
 
     dag_walker: BigQueryViewDagWalker
+    all_deployed_view_builders: List[BigQueryViewBuilder]
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -114,6 +116,9 @@ class ViewDagInvariantTests(unittest.TestCase):
                 address_overrides=None,
             )
             cls.dag_walker = BigQueryViewDagWalker(views)
+
+            # All view builders deployed to any project.
+            cls.all_deployed_view_builders = all_deployed_view_builders()
 
     @parameterized.expand(
         [
@@ -218,3 +223,94 @@ class ViewDagInvariantTests(unittest.TestCase):
                     f"query template for view: [{view.dataset_id}.{view.view_id}]. "
                     f"Must replace with query argument."
                 )
+
+    def test_views_use_materialized_if_present(self) -> None:
+        """Checks that each view is using the materialized version of a parent view, if
+        one exists."""
+        views_with_issues = {}
+        for view in self.dag_walker.views:
+            node = self.dag_walker.node_for_view(view)
+            should_be_materialized_addresses = set()
+            for parent_table_address in node.parent_tables:
+                if parent_table_address.table_id.endswith("_materialized"):
+                    # This address is already materialized
+                    continue
+                if parent_table_address in node.source_addresses:
+                    continue
+                parent_view: BigQueryView = self.dag_walker.view_for_address(
+                    parent_table_address
+                )
+                if parent_view.materialized_address is not None:
+                    should_be_materialized_addresses.add(
+                        parent_view.materialized_address
+                    )
+            if should_be_materialized_addresses:
+                views_with_issues[view.address] = should_be_materialized_addresses
+
+        if views_with_issues:
+            raise ValueError(
+                f"Found views referencing un-materialized versions of a view when a "
+                f"materialized version exists: {views_with_issues}"
+            )
+
+    def test_children_match_parent_projects_to_deploy(self) -> None:
+        """Checks that if any parents have the projects_to_deploy field set, all
+        children have equal or more restrictive projects.
+        """
+        builders_by_address: Dict[Tuple[str, str], BigQueryViewBuilder] = {
+            (b.dataset_id, b.view_id): b for b in self.all_deployed_view_builders
+        }
+
+        failing_views: Dict[BigQueryViewBuilder, Set[str]] = {}
+
+        def process_check_using_materialized(
+            view: BigQueryView, parent_results: Dict[BigQueryView, Set[str]]
+        ) -> Set[str]:
+            view_builder = builders_by_address[
+                (view.address.dataset_id, view.address.table_id)
+            ]
+
+            parent_constraints: List[Set[str]] = [
+                parent_projects_to_deploy
+                for parent_projects_to_deploy in parent_results.values()
+                if parent_projects_to_deploy is not None
+            ]
+            view_projects_to_deploy = (
+                view_builder.projects_to_deploy
+                if view_builder.projects_to_deploy is not None
+                else {*GCP_PROJECTS}
+            )
+            if not parent_constraints:
+                # If the parents have no constraints, constraints are just those on
+                # this view.
+                return view_projects_to_deploy
+
+            # This view can only be deployed to all the projects that its parents allow
+            expected_projects_to_deploy = set.intersection(*parent_constraints)
+
+            extra_projects = view_projects_to_deploy - expected_projects_to_deploy
+
+            if extra_projects:
+                failing_views[view_builder] = expected_projects_to_deploy
+
+            return expected_projects_to_deploy.intersection(view_projects_to_deploy)
+
+        _ = self.dag_walker.process_dag(
+            process_check_using_materialized, synchronous=True
+        )
+
+        if failing_views:
+
+            error_message_rows = []
+            for view_builder, expected in failing_views.items():
+                error_message_rows.append(
+                    f"\t{view_builder.dataset_id}.{view_builder.view_id} - "
+                    f"allowed projects: {expected}"
+                )
+
+            error_message_rows_str = "\n".join(error_message_rows)
+            error_message = f"""
+The following views have less restrictive projects_to_deploy than their parents:
+{error_message_rows_str}
+"""
+            raise ValueError(error_message)
