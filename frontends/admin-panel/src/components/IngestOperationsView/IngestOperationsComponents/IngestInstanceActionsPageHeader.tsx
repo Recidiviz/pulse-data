@@ -23,11 +23,7 @@ import {
   RegionAction,
   regionActionNames,
 } from "../../Utilities/ActionRegionConfirmationForm";
-import {
-  DirectIngestInstance,
-  IngestInstanceStatusInfo,
-  IngestInstanceSummary,
-} from "../constants";
+import { DirectIngestInstance, IngestInstanceStatusInfo } from "../constants";
 import {
   getStatusBoxColor,
   getStatusMessage,
@@ -38,12 +34,10 @@ import IngestActionButton from "./IngestActionButton";
 interface IngestActionsPageHeaderProps {
   stateCode: string;
   instance: DirectIngestInstance;
-  ingestInstanceSummary: IngestInstanceSummary | undefined;
-  onRefreshIngestSummary: () => void;
 }
 
 const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
-  ({ stateCode, instance, ingestInstanceSummary, onRefreshIngestSummary }) => {
+  ({ stateCode, instance }) => {
     const [statusInfo, setStatusInfo] =
       useState<IngestInstanceStatusInfo | undefined>();
 
@@ -89,42 +83,36 @@ const IngestInstanceActionsPageHeader: React.FC<IngestActionsPageHeaderProps> =
           )
         }
         extra={
-          ingestInstanceSummary ? (
-            <>
-              <IngestActionButton
-                style={{ marginRight: 5 }}
-                action={RegionAction.ExportToGCS}
-                buttonText={regionActionNames[RegionAction.ExportToGCS]}
-                instance={instance}
-                stateCode={stateCode}
-              />
-              <IngestActionButton
-                style={{ marginRight: 5 }}
-                action={RegionAction.TriggerTaskScheduler}
-                buttonText={
-                  regionActionNames[RegionAction.TriggerTaskScheduler]
-                }
-                instance={instance}
-                stateCode={stateCode}
-                type="primary"
-              />
-              <IngestActionButton
-                style={
-                  // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
-                  instance === "SECONDARY"
-                    ? { marginRight: 5 }
-                    : { display: "none" }
-                }
-                action={RegionAction.StartIngestRerun}
-                buttonText={regionActionNames[RegionAction.StartIngestRerun]}
-                instance={instance}
-                stateCode={stateCode}
-                type="primary"
-              />
-            </>
-          ) : (
-            <></>
-          )
+          <>
+            <IngestActionButton
+              style={{ marginRight: 5 }}
+              action={RegionAction.ExportToGCS}
+              buttonText={regionActionNames[RegionAction.ExportToGCS]}
+              instance={instance}
+              stateCode={stateCode}
+            />
+            <IngestActionButton
+              style={{ marginRight: 5 }}
+              action={RegionAction.TriggerTaskScheduler}
+              buttonText={regionActionNames[RegionAction.TriggerTaskScheduler]}
+              instance={instance}
+              stateCode={stateCode}
+              type="primary"
+            />
+            <IngestActionButton
+              style={
+                // TODO(#13406) Remove check if rerun button should be present for PRIMARY as well.
+                instance === "SECONDARY"
+                  ? { marginRight: 5 }
+                  : { display: "none" }
+              }
+              action={RegionAction.StartIngestRerun}
+              buttonText={regionActionNames[RegionAction.StartIngestRerun]}
+              instance={instance}
+              stateCode={stateCode}
+              type="primary"
+            />
+          </>
         }
       />
     );

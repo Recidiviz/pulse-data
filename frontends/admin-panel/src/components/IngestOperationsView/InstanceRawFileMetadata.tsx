@@ -14,22 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Descriptions } from "antd";
+import { Descriptions, Spin } from "antd";
 import * as React from "react";
-import {
-  DirectIngestInstance,
-  IngestRawFileProcessingStatus,
-} from "./constants";
+import { IngestRawFileProcessingStatus } from "./constants";
 
 interface InstanceRawFileMetadataProps {
   stateCode: string;
-  instance: DirectIngestInstance;
+  loading: boolean;
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
 }
 
 const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
   stateCode,
-  instance,
+  loading,
   ingestRawFileProcessingStatus: ingestFileProcessingStatus,
 }) => {
   return (
@@ -47,7 +44,11 @@ const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
           }
           span={3}
         >
-          {getNumberOfFilesPendingUpload(ingestFileProcessingStatus)}
+          {loading ? (
+            <Spin />
+          ) : (
+            getNumberOfFilesPendingUpload(ingestFileProcessingStatus)
+          )}
         </Descriptions.Item>
         <Descriptions.Item
           label={
@@ -57,7 +58,11 @@ const InstanceRawFileMetadata: React.FC<InstanceRawFileMetadataProps> = ({
           }
           span={3}
         >
-          {getNumberOfUnrecognizedFiles(ingestFileProcessingStatus)}
+          {loading ? (
+            <Spin />
+          ) : (
+            getNumberOfUnrecognizedFiles(ingestFileProcessingStatus)
+          )}
         </Descriptions.Item>
       </Descriptions>
     </div>

@@ -76,14 +76,31 @@ export const getIngestQueuesState = async (
   );
 };
 
-// Get ingest instance summary
-export const getIngestInstanceSummary = async (
+// Get ingest instance resources
+export const getIngestInstanceResources = async (
   regionCode: string,
   ingestInstance: DirectIngestInstance,
   controller: AbortController
 ): Promise<Response> => {
   return fetch(
-    `/admin/api/ingest_operations/${regionCode}/get_ingest_instance_summary/${ingestInstance}`,
+    `/admin/api/ingest_operations/${regionCode}/get_ingest_instance_resources/${ingestInstance}`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+    }
+  );
+};
+
+// Get ingest view summaries
+export const getIngestViewSummaries = async (
+  regionCode: string,
+  ingestInstance: DirectIngestInstance,
+  controller: AbortController
+): Promise<Response> => {
+  return fetch(
+    `/admin/api/ingest_operations/${regionCode}/get_ingest_view_summaries/${ingestInstance}`,
     {
       headers: {
         "Content-Type": "application/json",

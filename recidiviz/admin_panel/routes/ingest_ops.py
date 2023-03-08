@@ -179,10 +179,10 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
     # Get summary of an ingest instance for a state
     @bp.route(
-        "/api/ingest_operations/<state_code_str>/get_ingest_instance_summary/<ingest_instance_str>"
+        "/api/ingest_operations/<state_code_str>/get_ingest_instance_resources/<ingest_instance_str>"
     )
     @requires_gae_auth
-    def _get_ingest_instance_summary(
+    def _get_ingest_instance_resources(
         state_code_str: str, ingest_instance_str: str
     ) -> Tuple[Union[str, Response], HTTPStatus]:
         state_code = _get_state_code_from_str(state_code_str)
@@ -190,12 +190,30 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
         except ValueError:
             return "invalid parameters provided", HTTPStatus.BAD_REQUEST
-        ingest_instance_summary = (
-            get_ingest_operations_store().get_ingest_instance_summary(
+        ingest_instance_resources = (
+            get_ingest_operations_store().get_ingest_instance_resources(
                 state_code, ingest_instance
             )
         )
-        return jsonify(ingest_instance_summary), HTTPStatus.OK
+        return jsonify(ingest_instance_resources), HTTPStatus.OK
+
+    # Get summary of an ingest instance for a state
+    @bp.route(
+        "/api/ingest_operations/<state_code_str>/get_ingest_view_summaries/<ingest_instance_str>"
+    )
+    @requires_gae_auth
+    def _get_ingest_view_summaries(
+        state_code_str: str, ingest_instance_str: str
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
+        state_code = _get_state_code_from_str(state_code_str)
+        try:
+            ingest_instance = DirectIngestInstance(ingest_instance_str.upper())
+        except ValueError:
+            return "invalid parameters provided", HTTPStatus.BAD_REQUEST
+        ingest_view_summaries = get_ingest_operations_store().get_ingest_view_summaries(
+            state_code, ingest_instance
+        )
+        return jsonify(ingest_view_summaries), HTTPStatus.OK
 
     # Get processing status of filetags for an ingest instance for a state
     @bp.route(

@@ -24,22 +24,25 @@ import {
   optionalNumberSort,
   optionalStringSort,
 } from "../Utilities/GeneralUtilities";
-import { IngestRawFileProcessingStatus } from "./constants";
 import RawDataFileTagContents from "./IngestOperationsComponents/RawDataFileTagContents";
 import RawDataHasConfigFileCellContents from "./IngestOperationsComponents/RawDataHasConfigFileCellContents";
 import RawDataLatestProcessedDateCellContents from "./IngestOperationsComponents/RawDataLatestProcessedDateCellContents";
+import {
+  IngestInstanceResources,
+  IngestRawFileProcessingStatus,
+} from "./constants";
 
 interface IngestRawFileProcessingStatusTableProps {
+  ingestInstanceResources: IngestInstanceResources | undefined;
+  statusLoading: boolean;
   ingestRawFileProcessingStatus: IngestRawFileProcessingStatus[];
-  ingestBucketPath: string;
-  storageDirectoryPath: string;
 }
 
 const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatusTableProps> =
   ({
+    ingestInstanceResources,
+    statusLoading,
     ingestRawFileProcessingStatus,
-    ingestBucketPath,
-    storageDirectoryPath,
   }) => {
     const allFilesLatestDiscoveryTime: Date | undefined =
       ingestRawFileProcessingStatus
@@ -84,7 +87,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         filterSearch: true,
       },
       {
-        title: "Last Recieved",
+        title: "Last Received",
         dataIndex: "latestDiscoveryTime",
         key: "latestDiscoveryTime",
         render: (_, record) =>
@@ -96,7 +99,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
           optionalStringSort(a.latestDiscoveryTime, b.latestDiscoveryTime),
       },
       {
-        title: "Recieved 24 Hours Before Latest",
+        title: "Received 24 Hours Before Latest",
         key: "pastLatest",
         render: (_, record) =>
           renderIsTooFarBeforeLatestDiscoveryTime(
@@ -118,7 +121,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         render: (_, record) => (
           <RawDataLatestProcessedDateCellContents
             status={record}
-            storageDirectoryPath={storageDirectoryPath}
+            storageDirectoryPath={ingestInstanceResources?.storageDirectoryPath}
           />
         ),
         sorter: (a, b) =>
@@ -152,7 +155,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
         render: (_, record) => (
           <RawDataFileTagContents
             status={record}
-            ingestBucketPath={ingestBucketPath}
+            ingestBucketPath={ingestInstanceResources?.ingestBucketPath}
           />
         ),
         sorter: {
@@ -166,6 +169,7 @@ const IngestRawFileProcessingStatusTable: React.FC<IngestRawFileProcessingStatus
     return (
       <Table
         dataSource={ingestRawFileProcessingStatus}
+        loading={statusLoading}
         columns={columns}
         rowKey="fileTag"
         pagination={{

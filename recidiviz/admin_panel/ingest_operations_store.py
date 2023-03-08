@@ -292,16 +292,14 @@ class IngestOperationsStore(AdminPanelStore):
 
         self.trigger_task_scheduler(state_code, instance.value)
 
-    def get_ingest_instance_summary(
+    def get_ingest_instance_resources(
         self, state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> Dict[str, Any]:
         """Returns a dictionary containing the following info for the provided instance:
         i.e. {
-            instance: the direct ingest instance,
             dbName: database name for this instance,
             storageDirectoryPath: storage directory absolute path,
             ingestBucketPath: ingest bucket path,
-            operations: dictionary with metadata from the operations DB
         }
         """
         formatted_state_code = state_code.value.lower()
@@ -323,18 +321,10 @@ class IngestOperationsStore(AdminPanelStore):
         # Get the database name corresponding to this instance
         ingest_db_name = database_key_for_state(ingest_instance, state_code).db_name
 
-        # Get the operations metadata for this ingest instance
-        operations_db_metadata = self._get_operations_db_metadata(
-            state_code, ingest_instance
-        )
-
-        logging.info("Done getting instance summary for [%s]", ingest_instance.value)
         return {
-            "instance": ingest_instance.value,
             "storageDirectoryPath": storage_bucket_path.abs_path(),
             "ingestBucketPath": ingest_bucket_path.abs_path(),
             "dbName": ingest_db_name,
-            "operations": operations_db_metadata,
         }
 
     def get_ingest_raw_file_processing_status(
@@ -463,7 +453,7 @@ class IngestOperationsStore(AdminPanelStore):
         }
 
     @staticmethod
-    def _get_operations_db_metadata(
+    def get_ingest_view_summaries(
         state_code: StateCode, ingest_instance: DirectIngestInstance
     ) -> Dict[
         str,
@@ -473,10 +463,8 @@ class IngestOperationsStore(AdminPanelStore):
             List[Dict[str, Union[Optional[str], int]]],
         ],
     ]:
-        """Returns the following dictionary with information about the operations
-        database for the state:
+        """Returns the following dictionary with information from BigQuery:
         {
-            dateOfEarliestUnprocessedIngestView: <datetime>
             ingestViewMaterializationSummaries: [
                 {
                     ingestViewName: <str>
@@ -484,6 +472,15 @@ class IngestOperationsStore(AdminPanelStore):
                     numCompletedJobs: <int>
                     completedJobsMaxDatetime: <datetime>
                     pendingJobsMinDatetime: <datetime>
+                }
+            ],
+            ingestViewContentsSummaries: [
+                {
+                    ingestViewName: <str>
+                    numUnprocessedRows: <int>
+                    unprocessedRowsMinDatetime: <datetime>
+                    numProcessedRows: <int>
+                    processedRowsMaxDatetime: <datetime>
                 }
             ]
         }

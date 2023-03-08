@@ -14,49 +14,81 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Card, Col, Descriptions, Spin } from "antd";
+import { Card, Descriptions, Spin } from "antd";
 import Title from "antd/lib/typography/Title";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { getIngestRawFileProcessingStatus } from "../../AdminPanelAPI/IngestOperations";
-import NewTabLink from "../NewTabLink";
-import { isAbortException } from "../Utilities/exceptions";
-import { scrollToAnchor } from "../Utilities/GeneralUtilities";
 import {
-  GCP_STORAGE_BASE_URL,
-  DirectIngestInstance,
-  IngestInstanceSummary,
-  IngestRawFileProcessingStatus,
-  ANCHOR_INGEST_RAW_DATA,
-  ANCHOR_INGEST_VIEWS,
-  ANCHOR_INGEST_RESOURCES,
-  ANCHOR_INGEST_LOGS,
-} from "./constants";
+  getIngestInstanceResources,
+  getIngestRawFileProcessingStatus,
+} from "../../AdminPanelAPI/IngestOperations";
+import NewTabLink from "../NewTabLink";
+import { scrollToAnchor } from "../Utilities/GeneralUtilities";
+import { isAbortException } from "../Utilities/exceptions";
 import IngestRawFileProcessingStatusTable from "./IngestRawFileProcessingStatusTable";
 import InstanceRawFileMetadata from "./InstanceRawFileMetadata";
 import InstanceIngestViewMetadata from "./IntanceIngestViewMetadata";
+import {
+  ANCHOR_INGEST_LOGS,
+  ANCHOR_INGEST_RAW_DATA,
+  ANCHOR_INGEST_RESOURCES,
+  ANCHOR_INGEST_VIEWS,
+  DirectIngestInstance,
+  GCP_STORAGE_BASE_URL,
+  IngestInstanceResources,
+  IngestRawFileProcessingStatus,
+} from "./constants";
 
 interface IngestInstanceCardProps {
   instance: DirectIngestInstance;
   env: string;
   stateCode: string;
-  ingestInstanceSummary: IngestInstanceSummary | undefined;
-  ingestInstanceSummaryLoading: boolean;
 }
 
 const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
   instance,
   env,
   stateCode,
-  ingestInstanceSummary,
-  ingestInstanceSummaryLoading,
 }) => {
   const logsEnv = env === "production" ? "prod" : "staging";
   const logsUrl = `http://go/${logsEnv}-ingest-${instance.toLowerCase()}-logs/${stateCode.toLowerCase()}`;
   const non200Url = `http://go/${logsEnv}-non-200-ingest-${instance.toLowerCase()}-responses/${stateCode.toLowerCase()}`;
   const { hash } = useLocation();
   // Uses useRef so abort controller not re-initialized every render cycle.
-  const abortControllerRef = useRef<AbortController | undefined>(undefined);
+  const abortControllerRefResources =
+    useRef<AbortController | undefined>(undefined);
+  const abortControllerRefRaw = useRef<AbortController | undefined>(undefined);
+
+  const [ingestInstanceResources, setIngestInstanceResources] =
+    useState<IngestInstanceResources | undefined>(undefined);
+
+  const fetchingestInstanceResources = useCallback(async () => {
+    if (!instance) {
+      return;
+    }
+    if (abortControllerRefResources.current) {
+      abortControllerRefResources.current.abort();
+      abortControllerRefResources.current = undefined;
+    }
+    try {
+      abortControllerRefResources.current = new AbortController();
+      const primaryResponse = await getIngestInstanceResources(
+        stateCode,
+        instance,
+        abortControllerRefResources.current
+      );
+      const result: IngestInstanceResources = await primaryResponse.json();
+      setIngestInstanceResources(result);
+    } catch (err) {
+      if (!isAbortException(err)) {
+        throw err;
+      }
+    }
+  }, [instance, stateCode]);
+
+  useEffect(() => {
+    fetchingestInstanceResources();
+  }, [fetchingestInstanceResources, instance, stateCode]);
 
   const [
     ingestRawFileProcessingStatusLoading,
@@ -71,17 +103,17 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
 
   const getRawFileProcessingStatusData = useCallback(async () => {
     setIngestRawFileProcessingStatusLoading(true);
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = undefined;
+    if (abortControllerRefRaw.current) {
+      abortControllerRefRaw.current.abort();
+      abortControllerRefRaw.current = undefined;
     }
     try {
-      abortControllerRef.current = new AbortController();
+      abortControllerRefRaw.current = new AbortController();
       const response = await Promise.all([
         getIngestRawFileProcessingStatus(
           stateCode,
           instance,
-          abortControllerRef.current
+          abortControllerRefRaw.current
         ),
       ]);
       setIngestRawFileProcessingStatus(await response[0].json());
@@ -90,86 +122,67 @@ const IngestInstanceCard: React.FC<IngestInstanceCardProps> = ({
         throw err;
       }
     }
-
     setIngestRawFileProcessingStatusLoading(false);
   }, [instance, stateCode]);
 
   useEffect(() => {
     getRawFileProcessingStatusData();
-  }, [
-    getRawFileProcessingStatusData,
-    ingestInstanceSummary,
-    instance,
-    stateCode,
-  ]);
-
-  if (ingestInstanceSummaryLoading) {
-    return (
-      <Col span={12} key={instance}>
-        <Card title={instance} loading />
-      </Col>
-    );
-  }
-
-  if (ingestInstanceSummary === undefined) {
-    throw new Error(`No summary data for ${instance}`);
-  }
+  }, [getRawFileProcessingStatusData, instance, stateCode]);
 
   return (
     <Card>
       <Title id={ANCHOR_INGEST_RAW_DATA} level={4}>
         Raw data
       </Title>
-      {ingestRawFileProcessingStatusLoading ? (
-        <Spin />
-      ) : (
-        <>
-          <InstanceRawFileMetadata
-            stateCode={stateCode}
-            instance={instance}
-            ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
-          />
-          <br />
-          <IngestRawFileProcessingStatusTable
-            ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
-            ingestBucketPath={ingestInstanceSummary.ingestBucketPath}
-            storageDirectoryPath={ingestInstanceSummary.storageDirectoryPath}
-          />
-        </>
-      )}
+      <InstanceRawFileMetadata
+        stateCode={stateCode}
+        loading={ingestRawFileProcessingStatusLoading}
+        ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+      />
+      <br />
+      <IngestRawFileProcessingStatusTable
+        ingestInstanceResources={ingestInstanceResources}
+        statusLoading={ingestRawFileProcessingStatusLoading}
+        ingestRawFileProcessingStatus={ingestRawFileProcessingStatus}
+      />
       <br />
       <Title id={ANCHOR_INGEST_VIEWS} level={4}>
         Ingest views
       </Title>
-      <InstanceIngestViewMetadata
-        stateCode={stateCode}
-        data={ingestInstanceSummary}
-      />
+      <InstanceIngestViewMetadata stateCode={stateCode} instance={instance} />
       <br />
       <Title id={ANCHOR_INGEST_RESOURCES} level={4}>
         Resources
       </Title>
       <Descriptions bordered>
         <Descriptions.Item label="Ingest Bucket" span={3}>
-          <NewTabLink
-            href={GCP_STORAGE_BASE_URL.concat(
-              ingestInstanceSummary.ingestBucketPath
-            )}
-          >
-            {ingestInstanceSummary.ingestBucketPath}
-          </NewTabLink>
+          {!ingestInstanceResources ? (
+            <Spin />
+          ) : (
+            <NewTabLink
+              href={GCP_STORAGE_BASE_URL.concat(
+                ingestInstanceResources.ingestBucketPath
+              )}
+            >
+              {ingestInstanceResources.ingestBucketPath}
+            </NewTabLink>
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="Storage Bucket" span={3}>
-          <NewTabLink
-            href={GCP_STORAGE_BASE_URL.concat(
-              ingestInstanceSummary.storageDirectoryPath
-            )}
-          >
-            {ingestInstanceSummary.storageDirectoryPath}
-          </NewTabLink>
+          {!ingestInstanceResources ? (
+            <Spin />
+          ) : (
+            <NewTabLink
+              href={GCP_STORAGE_BASE_URL.concat(
+                ingestInstanceResources.storageDirectoryPath
+              )}
+            >
+              {ingestInstanceResources.storageDirectoryPath}
+            </NewTabLink>
+          )}
         </Descriptions.Item>
         <Descriptions.Item label="Postgres database" span={3}>
-          {ingestInstanceSummary.dbName}
+          {!ingestInstanceResources ? <Spin /> : ingestInstanceResources.dbName}
         </Descriptions.Item>
       </Descriptions>
       <br />
