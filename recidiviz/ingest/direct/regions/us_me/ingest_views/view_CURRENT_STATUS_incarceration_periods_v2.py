@@ -507,7 +507,15 @@ VIEW_QUERY_TEMPLATE = f"""
             next_status,
             current_status_location,
             location_type,
-            jurisdiction_location_type,
+            CASE 
+                WHEN current_status = 'Interstate Active Detainer' 
+                    AND location_type IN ('13', '4')
+                        THEN '99'
+                WHEN current_status = 'Interstate Active Detainer' 
+                    AND location_type NOT IN ('13', '4')
+                        THEN location_type
+                ELSE jurisdiction_location_type
+            END AS jurisdiction_location_type,
             previous_location_type,
             next_location_type,
             housing_unit,
@@ -522,11 +530,12 @@ VIEW_QUERY_TEMPLATE = f"""
             'Incarcerated',
             'Partial Revocation - incarcerated',
             'Interstate Compact In',
-            'County Jail'
+            'County Jail',
+            'Interstate Active Detainer'
         )
 
         -- Filter to periods at Adult DOC Facilities and County Jails
-        AND location_type IN ('2','7','9')
+        AND (location_type IN ('2','7','9') OR current_status IN ('Interstate Active Detainer'))
         
         -- Include periods that either do not have a movement_type, or have a Transfer "In" movement
         AND (

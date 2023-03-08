@@ -96,6 +96,10 @@ output:
                 StateCustodialAuthority.STATE_PRISON:
                   - "2" # Adult DOC Facilities
                   - "7" # Pre-Release Centers
+                StateCustodialAuthority.FEDERAL:
+                  - "19" # Transfer - U.S Marshal, Federal, Oxford County S.O.,
+                StateCustodialAuthority.OTHER_STATE:
+                  - "8" # US and Canadian States and territories,
           supervising_officer:
             StateAgent:
               external_id: officer_external_id

@@ -43,8 +43,13 @@ output:
                 StateCustodialAuthority.STATE_PRISON:
                   - "2" # Adult DOC Facilities
                   - "7" # Pre-Release Centers
-                  - "9" # County jails
-                  - "8" # State of Maine
+                  - "9" # County jail
+                StateCustodialAuthority.OTHER_STATE:
+                  - "8" # Other state or canada
+                StateCustodialAuthority.FEDERAL:
+                  - "19" # Federal
+                StateCustodialAuthority.INTERNAL_UNKNOWN:
+                  - "99" # Interstate Active Detainers with location within ME.
           housing_unit: housing_unit
           housing_unit_type:
             $enum_mapping:

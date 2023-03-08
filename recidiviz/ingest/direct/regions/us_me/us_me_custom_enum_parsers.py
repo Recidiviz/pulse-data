@@ -88,6 +88,8 @@ OTHER_JURISDICTION_STATUSES = [
     "INTERSTATE ACTIVE DETAINER",
 ]
 COMMUNITY_CONFINEMENT_STATUS = "SCCP"
+INTERSTATE_COMPACT_OUT = "INTERSTATE COMPACT OUT"
+INTERSTATE_COMPACT_IN = "INTERSTATE COMPACT IN"
 PAROLE_STATUS = "PAROLE"
 PROBATION_STATUS = "PROBATION"
 SUPERVISION_PRECEDING_INCARCERATION_STATUSES = [
@@ -121,6 +123,8 @@ DOC_FACILITY_LOCATION_TYPES = [
 ]
 SUPERVISION_LOCATION_TYPES = ["4", "1"]  # Adult Supervision Offices
 COUNTY_JAIL_LOCATION_TYPES = ["9"]  # County Jails
+US_STATES_LOCATION_TYPES = ["8"]  # US and Canadian States and territories
+FEDERAL_LOCATION_TYPES = ["19"]  # Transfer - U.S Marshal, Federal, Oxford County S.O.,
 SOCIETY_OUT_LOCATION_TYPES = ["8", "13"]  # Maine's counties and all US states
 OTHER_JURISDICTION_LOCATION_TYPES = ["8", "19"]  # All US States and Federal
 DECEASED_LOCATION_TYPE = "14"
@@ -165,6 +169,10 @@ def parse_incarceration_type(raw_text: str) -> StateIncarcerationType:
         return StateIncarcerationType.COUNTY_JAIL
     if normalized_raw_text in DOC_FACILITY_LOCATION_TYPES:
         return StateIncarcerationType.STATE_PRISON
+    if normalized_raw_text in US_STATES_LOCATION_TYPES:
+        return StateIncarcerationType.OUT_OF_STATE
+    if normalized_raw_text in FEDERAL_LOCATION_TYPES:
+        return StateIncarcerationType.FEDERAL_PRISON
     return StateIncarcerationType.EXTERNAL_UNKNOWN
 
 
@@ -475,6 +483,12 @@ def parse_supervision_type(
         return StateSupervisionPeriodSupervisionType.ABSCONSION
     if current_status == PAROLE_STATUS:
         return StateSupervisionPeriodSupervisionType.PAROLE
+    if current_status in (
+        PROBATION_STATUS,
+        INTERSTATE_COMPACT_OUT,
+        INTERSTATE_COMPACT_IN,
+    ):
+        return StateSupervisionPeriodSupervisionType.PROBATION
     if (
         current_status == COMMUNITY_CONFINEMENT_STATUS
         or current_jurisdiction_location_type in DOC_FACILITY_LOCATION_TYPES
