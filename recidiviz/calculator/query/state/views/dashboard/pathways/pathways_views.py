@@ -63,9 +63,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.super
 from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.supervision_to_prison_transitions_raw import (
     SUPERVISION_TO_PRISON_TRANSITIONS_RAW_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_count_by_month import (
-    LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_population_snapshot_by_dimension import (
     LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 )
@@ -78,12 +75,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarcer
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_prison_dimension_combinations import (
-    PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_dimension_combinations import (
-    PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_supervision_location_name_map import (
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
 )
@@ -92,9 +83,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.prison_population_snapshot_person_level import (
     PRISON_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.prison_to_supervision_count_by_month import (
-    PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.prison_to_supervision_population_snapshot_by_dimension import (
     PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
@@ -105,17 +93,8 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.prison_to_supervi
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_snapshot_by_dimension import (
     SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_population_time_series import (
-    SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_liberty_count_by_month import (
-    SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_liberty_population_snapshot_by_dimension import (
     SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_count_by_month import (
-    SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.supervision_to_prison_population_snapshot_by_dimension import (
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
@@ -153,33 +132,28 @@ PATHWAYS_PRISON_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
 
 PATHWAYS_LIBERTY_TO_PRISON_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
     LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-    LIBERTY_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
 ]
 
 PATHWAYS_PRISON_TO_SUPERVISION_VIEW_BUILDERS: List[
     PathwaysMetricBigQueryViewBuilder
 ] = [
-    PRISON_TO_SUPERVISION_COUNT_BY_MONTH_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     PRISON_TO_SUPERVISION_POPULATION_SNAPSHOT_PERSON_LEVEL_VIEW_BUILDER,
 ]
 
 PATHWAYS_SUPERVISION_VIEW_BUILDERS: List[PathwaysMetricBigQueryViewBuilder] = [
     SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
-    SUPERVISION_POPULATION_TIME_SERIES_VIEW_BUILDER,
 ]
 
 PATHWAYS_SUPERVISION_TO_LIBERTY_VIEW_BUILDERS: List[
     PathwaysMetricBigQueryViewBuilder
 ] = [
-    SUPERVISION_TO_LIBERTY_COUNT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_TO_LIBERTY_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 ]
 
 PATHWAYS_SUPERVISION_TO_PRISON_VIEW_BUILDERS: List[
     PathwaysMetricBigQueryViewBuilder
 ] = [
-    SUPERVISION_TO_PRISON_COUNT_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
     SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER,
 ]
@@ -198,7 +172,5 @@ PATHWAYS_HELPER_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *PATHWAYS_EVENT_LEVEL_VIEW_BUILDER_HELPERS,
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
-    PATHWAYS_SUPERVISION_DIMENSION_COMBINATIONS_VIEW_BUILDER,
-    PATHWAYS_PRISON_DIMENSION_COMBINATIONS_VIEW_BUILDER,
     PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_BUILDER,
 ]
