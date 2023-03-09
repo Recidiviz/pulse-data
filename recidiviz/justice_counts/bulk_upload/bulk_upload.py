@@ -633,7 +633,10 @@ class BulkUploader:
         corresponds to one of the MetricFile objects in bulk_upload_helpers.py.
         """
         metric_definition = metricfile.definition
-        reporting_frequency = metric_definition.get_reporting_frequency_to_use(
+        (
+            reporting_frequency,
+            custom_starting_month,
+        ) = metric_definition.get_reporting_frequency_to_use(
             agency_datapoints=metric_key_to_agency_datapoints.get(
                 metric_definition.key, []
             ),
@@ -644,7 +647,9 @@ class BulkUploader:
 
         # Step 2: Group the rows in this file by time range.
         (rows_by_time_range, time_range_to_year_month,) = self._get_rows_by_time_range(
-            rows=rows, reporting_frequency=reporting_frequency
+            rows=rows,
+            reporting_frequency=reporting_frequency,
+            custom_starting_month=custom_starting_month,
         )
 
         # Step 2: For each time range represented in the file, convert the
@@ -702,6 +707,7 @@ class BulkUploader:
         self,
         rows: List[Dict[str, Any]],
         reporting_frequency: ReportingFrequency,
+        custom_starting_month: Optional[int],
     ) -> Tuple[
         Dict[Tuple[datetime.date, datetime.date], List[Dict[str, Any]]],
         Dict[Tuple[datetime.date, datetime.date], Tuple[int, int]],
@@ -727,9 +733,10 @@ class BulkUploader:
                     description="This sheet should not contain a month column.",
                     message_type=BulkUploadMessageType.ERROR,
                 )
-            else:
-                # TODO(#13731): Look up whether this agency uses fiscal years
-                month = 1
+            elif reporting_frequency == ReportingFrequency.ANNUAL:
+                month = (
+                    custom_starting_month or 1
+                )  # if no custom starting month specified, assume calendar year
 
             date_range_start, date_range_end = ReportInterface.get_date_range(
                 year=year, month=month, frequency=reporting_frequency.value
