@@ -21,6 +21,8 @@ source "${BASH_SOURCE_DIR}/../deploy_helpers.sh"
 PROJECT_ID='recidiviz-staging'
 FRONTEND_APP=''
 CLOUD_RUN_SERVICE=''
+FRONTEND_VERSION=''
+BACKEND_VERSION=''
 
 function print_usage {
     echo_error "usage: $0 -a FRONTEND_APP"
@@ -34,11 +36,9 @@ function print_usage {
 function get_next_version {
     TAG_PREFIX=$1
 
-    echo "Fetching all tags..."
     run_cmd git fetch --all --tags --prune --prune-tags
 
     LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged "main" | grep "${TAG_PREFIX}" | sort_versions | tail -n 1) || exit_on_fail
-    echo "Last version tag on the branch is ${LAST_VERSION_TAG_ON_BRANCH}"
 
     if [[ ! ${LAST_VERSION_TAG_ON_BRANCH} =~ ^${TAG_PREFIX}.v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
         echo_error "Invalid version - must be of the format vX.Y.Z"
@@ -48,7 +48,16 @@ function get_next_version {
     MAJOR=${BASH_REMATCH[1]}
     MINOR=${BASH_REMATCH[2]}
 
-    echo "${TAG_PREFIX}.v${MAJOR}.$((MINOR+1)).0"
+    VERSION="v${MAJOR}.$((MINOR+1)).0"
+
+    if [[ "${TAG_PREFIX}" == "${BACKEND_TAG_PREFIX}" ]]; then
+        BACKEND_VERSION=${VERSION}
+    elif [[ "${TAG_PREFIX}" == "${FRONTEND_TAG_PREFIX}" ]]; then
+        FRONTEND_VERSION=${VERSION}
+    else
+        echo_error "Invalid tag prefix"
+        run_cmd exit 1
+    fi
 }
 
 while getopts "a:" flag; do
@@ -92,14 +101,12 @@ REMOTE_IMAGE_BASE=us.gcr.io/${PROJECT_ID}/${SUBDIRECTORY}
 # getting into a weird state where a new commit is checked in during the deploy.
 # note: can't use run_cmd here because of the way cd works in shell scripts
 cd ../justice-counts || exit
-
 JUSTICE_COUNTS_COMMIT_HASH=$(git fetch && git rev-parse origin/main) || exit_on_fail
-FRONTEND_VERSION=$(get_next_version "${FRONTEND_TAG_PREFIX}") || exit_on_fail
+get_next_version "${FRONTEND_TAG_PREFIX}" || exit_on_fail
 echo "Next frontend version is ${FRONTEND_VERSION}"
 
 cd ../pulse-data || exit
-
-BACKEND_VERSION=$(get_next_version "${BACKEND_TAG_PREFIX}") || exit_on_fail
+get_next_version "${BACKEND_TAG_PREFIX}" || exit_on_fail
 echo "Next backend version is ${BACKEND_VERSION}"
 
 echo "Building Docker image off of main in pulse-data and ${JUSTICE_COUNTS_COMMIT_HASH} in justice-counts..."
