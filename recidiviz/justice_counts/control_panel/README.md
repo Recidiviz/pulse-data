@@ -6,6 +6,15 @@ The backend of this application, which lives in this directory, consists of a Py
 
 To run the app locally, you need to spin up both the backend and frontend simultaneously. Instructions for spinning up the backend are below; instructions for spinning up the frontend can be found [here](https://github.com/Recidiviz/justice-counts/tree/main/publisher).
 
+## Helpful Links
+
+- GCP Cloud Run [[staging](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
+- GCP Gloud Run [[prod](https://console.cloud.google.com/run/detail/us-central1/justice-counts-web/revisions?project=recidiviz-staging)]
+- Auth0 [[staging](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts-staging/)]
+- Auth0 [[prod](https://manage.auth0.com/dashboard/us/recidiviz-justice-counts/)]
+- [Sentry](https://recidiviz-inc.sentry.io/issues/?project=4504532096516096&referrer=sidebar)
+- [Oncall doc](go/jc-oncall)
+
 ## Setting up your environment
 
 ### Aliases
@@ -67,12 +76,14 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 
 6. You should see the application running on `localhost:3000`!
 
-## Connect to the local Postgres database
+## Databases
+
+### Connect to the local Postgres database
 
 1. Look for `pulse-data_justice_counts_db_1` in your Docker dashboard, hover over it, and choose the CLI icon
 2. In the terminal that opens, run `psql --dbname postgres -U justice_counts_user`
 
-## Connect to the staging Postgres database
+### Connect to the staging Postgres database
 
 1. Run `brew install jq`.
 2. From within `pulse-data`, run `pipenv run cloudsql`.
