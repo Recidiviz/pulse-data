@@ -113,11 +113,18 @@ class WorkflowsClientETLDelegateTest(TestCase):
                             "text": "12 months without a violation",
                         },
                     ],
-                    "emailAddress": "matilda@mouse-house.net",
-                    "currentEmployer": ["Mouse House", "Denny's"],
-                    "currentEmployerAddress": [
-                        "123 Mousey Way",
-                        "456 Cookie Crumble Drive",
+                    "emailAddress": "matilda@fake.net",
+                    "currentEmployers": [
+                        {
+                            "name": "Mouse House",
+                            "address": "123 Mousey Way",
+                            "startDate": "2021-04-04",
+                        },
+                        {
+                            "name": "Denny's",
+                            "address": "456 Cookie Crumble Drive",
+                            "startDate": "2022-03-04",
+                        },
                     ],
                 },
                 row,
@@ -143,9 +150,14 @@ class WorkflowsClientETLDelegateTest(TestCase):
                     "district": "DISTRICT X",
                     "supervisionType": "ISC",
                     "specialConditions": "NULL",
-                    "emailAddress": "harry@houdini.net",
-                    "currentEmployer": ["The Camera Store"],
-                    "currentEmployerAddress": ["496 Marigold Ave"],
+                    "emailAddress": "harry@fake.net",
+                    "currentEmployers": [
+                        {
+                            "name": "The Camera Store",
+                            "address": "496 Fakers Ave",
+                            "startDate": None,
+                        }
+                    ],
                 },
                 row,
             )

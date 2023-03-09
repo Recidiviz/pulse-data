@@ -109,10 +109,14 @@ class WorkflowsClientETLDelegate(WorkflowsFirestoreETLDelegate):
         if "email_address" in data:
             new_document["emailAddress"] = data["email_address"]
 
-        if "current_employer" in data:
-            new_document["currentEmployer"] = data["current_employer"]
-
-        if "current_employer_address" in data:
-            new_document["currentEmployerAddress"] = data["current_employer_address"]
+        if "current_employers" in data:
+            new_document["currentEmployers"] = [
+                {
+                    "name": employer.get("name"),
+                    "address": employer.get("address"),
+                    "startDate": employer.get("start_date"),
+                }
+                for employer in data["current_employers"]
+            ]
 
         return data["person_external_id"], new_document

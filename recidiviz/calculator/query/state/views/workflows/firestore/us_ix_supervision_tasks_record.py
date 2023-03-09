@@ -127,7 +127,7 @@ def get_case_compliance_need_ctes() -> str:
                 'employment' AS type
             )) as need,
         FROM `{project_id}.{workflows_views}.client_record_materialized`
-        WHERE array_length(current_employer) = 0
+        WHERE array_length(current_employers) = 0
         AND state_code = 'US_IX'
     """
 
