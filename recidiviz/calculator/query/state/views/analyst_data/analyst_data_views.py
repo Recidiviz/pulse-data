@@ -207,6 +207,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_lo
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_zero_tolerance_codes import (
     US_TN_ZERO_TOLERANCE_CODES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.workflows_officer_events import (
+    WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
+)
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
     [
@@ -270,6 +273,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
         US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
         US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
+        WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS
