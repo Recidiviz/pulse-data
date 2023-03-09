@@ -157,6 +157,7 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataflow_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     us_nd_raw_data="us_nd_raw_data_up_to_date_views",
     us_id_raw_data="us_id_raw_data_up_to_date_views",
+    us_ix_raw_data="us_ix_raw_data_up_to_date_views",
     should_materialize=True,
     state_id_type=state_specific_query_strings.state_specific_external_id_type(
         "sessions"

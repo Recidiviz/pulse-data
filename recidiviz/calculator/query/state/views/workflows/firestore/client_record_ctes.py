@@ -160,20 +160,29 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
         SELECT
             state_code,
             person_id,
-            ARRAY_AGG(DISTINCT COALESCE(employer_name, "UNKNOWN")) AS current_employer,
-            ARRAY_AGG(DISTINCT start_date) AS current_employer_start_date,
-            # TODO(#18490): Add employer address
-            CAST(NULL AS ARRAY<STRING>) AS current_employer_address,
+            ARRAY_AGG(STRUCT(employer_name AS name, employer_address AS address, start_date as start_date) IGNORE NULLS ORDER BY start_date ASC) AS current_employers
         FROM (
-            SELECT
+            SELECT DISTINCT
                 state_code,
                 person_id,
                 sep.employer_name,
                 sep.start_date,
                 NULL AS end_date,
+            UPPER(a.StreetNumber || ' ' || a.StreetName || ', ' || jurisdiction.LocationName || ', ' || state_ids.state_abbreviation || ' ' || a.ZipCode) AS employer_address,
             FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ind_EmploymentHistory_latest` emp_hist
+            ON sep.external_id = emp_hist.employmentHistoryId
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Employer_Address_latest` ra
+            USING(employerId)
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Address_latest` a
+            USING(AddressId)
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Location_latest` state
+            ON a.StateId = state.locationId
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Location_latest` jurisdiction
+            ON a.CountyId = jurisdiction.locationId
+            LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.state_ids` state_ids
+            ON state_ids.state_name = state.LocationName
             WHERE {today_between_start_date_and_nullable_end_date_clause('start_date', 'end_date')}
-            ORDER BY person_id, sep.start_date ASC
         )
         WHERE state_code IN ("US_IX")
         GROUP BY state_code, person_id
@@ -248,14 +257,14 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                 SELECT
                     state_code,
                     person_id,
-                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date[OFFSET(0)], MONTH) as string) || " months with the same employer" as milestone_text,
+                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employers[OFFSET(0)].start_date, MONTH) as string) || " months with the same employer" as milestone_text,
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
                 FROM employment_info
                 LEFT JOIN supervision_super_sessions ss
                 USING(person_id)
-                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employer_start_date[OFFSET(0)], MONTH) > 0
-                AND current_employer_start_date[OFFSET(0)] > ss.start_date
+                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employers[OFFSET(0)].start_date, MONTH) > 0
+                AND current_employers[OFFSET(0)].start_date > ss.start_date
             )
         )
         WHERE state_code in ('US_IX')
@@ -323,8 +332,7 @@ _CLIENTS_CTE = """
             CAST(NULL AS ARRAY<string>) AS special_conditions,
             CAST(NULL AS ARRAY<STRUCT<condition STRING, condition_description STRING>>) AS board_conditions,
             district,
-            ei.current_employer,
-            ei.current_employer_address,
+            ei.current_employers,
             opportunities_aggregated.all_eligible_opportunities,
             milestones
         FROM join_clients c
