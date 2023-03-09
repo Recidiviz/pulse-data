@@ -2154,6 +2154,52 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual([expected], json.loads(response.data))
 
+    def test_states_update_state_role_routes_without_existing_routes(self) -> None:
+        existing = generate_fake_default_permissions(
+            state="US_MO",
+            role="leadership_role",
+            can_access_leadership_dashboard=True,
+            can_access_case_triage=False,
+            should_see_beta_charts=True,
+            routes=None,
+            feature_variants={"C": True, "D": False},
+        )
+        add_entity_to_database_session(self.database_key, [existing])
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+            response = self.client.patch(
+                self.update_state_role("US_MO", "leadership_role"),
+                headers=self.headers,
+                json={
+                    "canAccessCaseTriage": True,
+                    "shouldSeeBetaCharts": False,
+                    "routes": {"C": True, "B": False},
+                    "featureVariants": {"D": True, "E": False},
+                    "reason": "test",
+                },
+            )
+
+            expected = {
+                "stateCode": "US_MO",
+                "role": "leadership_role",
+                "canAccessCaseTriage": True,
+                "canAccessLeadershipDashboard": True,
+                "shouldSeeBetaCharts": False,
+                "routes": {"B": False, "C": True},
+                "featureVariants": {"C": True, "D": True, "E": False},
+            }
+
+            self.assertEqual(expected, json.loads(response.data))
+            self.assertReasonLog(
+                log.output,
+                "updating permissions for state US_MO, role leadership_role with reason: test",
+            )
+
+            response = self.client.get(
+                self.states,
+                headers=self.headers,
+            )
+            self.assertEqual([expected], json.loads(response.data))
+
     def test_states_update_state_code(self) -> None:
         existing = generate_fake_default_permissions(
             state="US_MO",

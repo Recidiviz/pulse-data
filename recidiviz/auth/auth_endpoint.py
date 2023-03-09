@@ -823,6 +823,11 @@ def update_state_role(
 
             for col_name in json_columns:
                 if col_value := request_dict.get(col_name):
+                    new_value = (
+                        {**getattr(state_role, col_name), **col_value}
+                        if getattr(state_role, col_name)
+                        else col_value
+                    )
                     # Note: JSONB does not detect in-place changes when used with the ORM.
                     # (https://docs.sqlalchemy.org/en/13/dialects/postgresql.html#sqlalchemy.dialects.postgresql.JSONB)
                     # The sqlalchemy.ext.mutable extension supposedly makes it so it does, but it didn't
@@ -830,7 +835,7 @@ def update_state_role(
                     setattr(
                         state_role,
                         col_name,
-                        {**getattr(state_role, col_name), **col_value},
+                        new_value,
                     )
 
             session.commit()
