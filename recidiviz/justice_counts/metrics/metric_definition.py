@@ -17,7 +17,7 @@
 """Base class for official Justice Counts metrics."""
 
 import enum
-from typing import Dict, List, Optional, Set, Type
+from typing import Dict, List, Optional, Set, Tuple, Type
 
 import attr
 
@@ -260,15 +260,17 @@ class MetricDefinition:
 
     def get_reporting_frequency_to_use(
         self, agency_datapoints: List[Datapoint]
-    ) -> ReportingFrequency:
-        # Returns the reporting frequency based upon what the
-        # agency has set in metric settings.
+    ) -> Tuple[ReportingFrequency, Optional[int]]:
+        # Returns a tuple containing:
+        # - the reporting frequency based upon what the agency has set in metric settings.
+        # - the custom starting month of the reporting frequency (if specified) (None if not specified)
+        # Note that the custom starting month applies for custom reporting frequencies for annual metrics
 
         default_frequency = self.reporting_frequency
         if agency_datapoints is None:
             # If there is no agency datapoint for the agency, return
             # the default frequency
-            return default_frequency
+            return default_frequency, None
 
         frequency_datapoint_list = list(
             filter(
@@ -279,14 +281,17 @@ class MetricDefinition:
         if len(list(frequency_datapoint_list)) == 0:
             # If there is no custom reporting frequency datapoint for
             # the agency, return the default frequency
-            return default_frequency
+            return default_frequency, None
 
         frequency_datapoint = frequency_datapoint_list.pop()
         custom_reporting_frequency = CustomReportingFrequency.from_datapoint(
             frequency_datapoint
         )
         return (
-            custom_reporting_frequency.frequency
+            (
+                custom_reporting_frequency.frequency,
+                custom_reporting_frequency.starting_month,
+            )
             if custom_reporting_frequency.frequency is not None
-            else default_frequency
+            else (default_frequency, None)
         )
