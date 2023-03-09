@@ -23,7 +23,9 @@ first_ix_export_date = "2023-01-17"
 
 
 def user_event_template(
-    table_name: str, add_columns: Optional[List[str]] = None
+    table_name: str,
+    add_columns: Optional[List[str]] = None,
+    should_check_client_id: bool = True,
 ) -> str:
     if add_columns is None:
         add_columns = []
@@ -65,7 +67,10 @@ def user_event_template(
         SELECT
             -- default columns for all views
             -- this field was renamed, fall back to previous name for older records
-            IFNULL(justice_involved_person_id, client_id) AS pseudonymized_id,
+            {"IFNULL(justice_involved_person_id, client_id)" 
+                if should_check_client_id
+                else "justice_involved_person_id"
+            } AS pseudonymized_id,
             timestamp,
             session_id,
             context_page_url,

@@ -1,0 +1,264 @@
+#  Recidiviz - a data platform for criminal justice reform
+#  Copyright (C) 2023 Recidiviz, Inc.
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#  =============================================================================
+"""Creates the view for all Workflows-specific officer events"""
+from typing import List, Optional
+
+import attr
+
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    PULSE_DASHBOARD_SEGMENT_DATASET,
+    WORKFLOWS_VIEWS_DATASET,
+)
+from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
+    OfficerEvent,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+WORKFLOWS_OFFICER_EVENTS_VIEW_NAME = "workflows_officer_events"
+
+WORKFLOWS_OFFICER_EVENTS_DESCRIPTION = """
+Workflows-specific officer events from the front-end, used to power the Workflows Usage Metrics dashboard
+"""
+
+
+@attr.s
+class WorkflowsOfficerEventQueryConfig:
+    # The name of the source table for this officer event
+    table_name: str = attr.ib()
+
+    # The general officer event name
+    officer_event_name: OfficerEvent = attr.ib()
+
+    # The workflows-specific event type
+    workflows_event_type: str = attr.ib()
+
+    # True if the event has a person_id specific to the event, False otherwise.
+    has_person_id: bool = attr.ib()
+
+    # True if the event has a opportunity_type specific to the event, False otherwise.
+    has_opportunity_type: bool = attr.ib()
+
+    # True if the event has a status specific to the event, False otherwise.
+    has_status: bool = attr.ib()
+
+    # True if the context_page is needed from the event, which is then used to infer opportunity_type
+    # The raw context_page_path value is formatted like "/workflows/compliantReporting/<person_id>",
+    # so the expression "SPLIT(SUBSTR(context_page_path, 12), '/')[ORDINAL(1)]" for context_page
+    # gets the substring starting after the second "/", i.e. "compliantReporting"
+    should_get_context_page: bool = attr.ib()
+
+    # Additional columns to dedup the events by, should be ordered!
+    additional_dedup_cols: Optional[List[str]] = attr.ib(default=None)
+
+
+WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_profile_viewed",
+        officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
+        workflows_event_type="PROFILE_VIEWED",
+        has_person_id=True,
+        has_opportunity_type=False,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_opportunity_previewed",
+        officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
+        workflows_event_type="OPPORTUNITY_PREVIEWED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_form_viewed",
+        officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
+        workflows_event_type="FORM_VIEWED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_form_copied",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="FORM_COPIED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_form_printed",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="FORM_PRINTED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_form_first_edited",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="FORM_FIRST_EDITED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_status_updated",
+        officer_event_name=OfficerEvent.WORKFLOWS_CLIENT_STATUS_UPDATE,
+        workflows_event_type="CLIENT_REFERRAL_STATUS_UPDATED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=True,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_form_submitted",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="FORM_SUBMITTED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_surfaced",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="CLIENT_SURFACED",
+        has_person_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="identifies",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="USER_IDENTIFIED",
+        has_person_id=False,
+        has_opportunity_type=False,
+        has_status=False,
+        should_get_context_page=True,
+    ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="frontend_caseload_search",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="SEARCH_BAR_USED",
+        has_person_id=False,
+        has_opportunity_type=False,
+        has_status=False,
+        should_get_context_page=True,
+    ),
+]
+
+
+def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -> str:
+    """
+    Helper for querying events logged from the Workflows front-end.
+    """
+    if not config.has_opportunity_type and not config.has_person_id:
+        # If there is no opportunity and person associated with this event,
+        # the event is not from a workflows_views.clients_ table, so get the raw event
+        # and join on reidentified_dashboard_users to get user_external_id.
+        table_source = f"""`{{project_id}}.{{workflows_segment_dataset}}.{config.table_name}` INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users` USING (user_id)"""
+    else:
+        table_source = (
+            f"""`{{project_id}}.{{workflows_views_dataset}}.{config.table_name}`"""
+        )
+
+    cols_to_dedup_by = ["user_external_id"]
+    # The order of the steps to construct cols_to_dedup_by matters, so that events are deduped
+    # by user_external_id (officer), person_id (if applicable), opportunity_type (if applicable), then event date
+    if config.has_person_id:
+        cols_to_dedup_by.append("person_id")
+    if config.has_opportunity_type:
+        cols_to_dedup_by.append("opportunity_type")
+    if config.additional_dedup_cols:
+        cols_to_dedup_by.extend(config.additional_dedup_cols)
+
+    cols_to_dedup_by.append("DATE(event_ts)")
+
+    template = f"""
+SELECT
+    state_code,
+    user_external_id AS officer_external_id,
+    "{config.officer_event_name.value}" AS event,
+    EXTRACT(DATETIME FROM timestamp AT TIME ZONE "US/Eastern") AS event_ts,
+    "{config.workflows_event_type}" AS event_type, 
+    { "" if config.has_person_id else "NULL AS "}person_id,
+    { "" if config.has_opportunity_type else "CAST(NULL AS STRING) AS "}opportunity_type,
+    { "status" if config.has_status else "CAST(NULL AS STRING)"} AS new_status,
+    { "SPLIT(SUBSTR(context_page_path, 12), '/')[ORDINAL(1)]" 
+        if config.should_get_context_page 
+        else "CAST(NULL AS STRING)"
+    } AS context_page
+FROM {table_source}
+{ "WHERE context_page_path LIKE '%workflows%'" if config.table_name == "identifies" else "" }
+QUALIFY ROW_NUMBER() OVER (PARTITION BY {list_to_query_string(cols_to_dedup_by)} ORDER BY timestamp DESC) = 1
+    """
+    return template
+
+
+def get_all_workflows_officer_events() -> str:
+    full_query = "\nUNION ALL\n".join(
+        [
+            workflows_officer_event_template(config)
+            for config in WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS
+        ]
+    )
+    return full_query
+
+
+WORKFLOWS_OFFICER_EVENTS_QUERY_TEMPLATE = f"""
+WITH events AS (
+    {get_all_workflows_officer_events()}
+)
+
+SELECT * except (opportunity_type),
+    -- TODO(#19054): Read from a unified config
+    CASE  -- infer opportunity type from context_page if the path includes an opportunity-related substring
+        WHEN opportunity_type is NOT null THEN opportunity_type
+        WHEN context_page = 'supervisionLevelDowngrade' AND state_code IN ('US_ID', 'US_IX') THEN 'usIdSupervisionLevelDowngrade'
+        WHEN context_page = 'SCCP' AND state_code = 'US_ME' THEN 'usMeSCCP'
+        WHEN context_page = 'expiration' AND state_code = 'US_TN' THEN 'usTnExpiration'
+        WHEN context_page IN ('LSU', 'earnedDischarge', 'pastFTRD', 'compliantReporting', 'earlyTermination', 'supervisionLevelDowngrade') THEN context_page
+        ELSE null
+    END AS opportunity_type
+FROM events
+"""
+
+
+WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+    dataset_id=ANALYST_VIEWS_DATASET,
+    view_id=WORKFLOWS_OFFICER_EVENTS_VIEW_NAME,
+    view_query_template=WORKFLOWS_OFFICER_EVENTS_QUERY_TEMPLATE,
+    description=WORKFLOWS_OFFICER_EVENTS_DESCRIPTION,
+    should_materialize=True,
+    clustering_fields=["state_code", "officer_external_id"],
+    workflows_views_dataset=WORKFLOWS_VIEWS_DATASET,
+    workflows_segment_dataset=PULSE_DASHBOARD_SEGMENT_DATASET,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER.build_and_print()
