@@ -33,17 +33,7 @@ from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import all_deployed_view_builders
 
 
-def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
-    is_valid_view = False
-    for builder in all_deployed_view_builders():
-        if (
-            not is_valid_view
-            and builder.dataset_id == dataset_id
-            and builder.view_id == view_id
-        ):
-            is_valid_view = True
-    if not is_valid_view:
-        raise ValueError(f"invalid view {dataset_id}.{view_id}")
+def build_dag_walker() -> BigQueryViewDagWalker:
     return BigQueryViewDagWalker(
         build_views_to_update(
             view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
@@ -56,7 +46,16 @@ def build_dag_walker(dataset_id: str, view_id: str) -> BigQueryViewDagWalker:
 def print_dfs_tree(
     dataset_id: str, view_id: str, print_downstream_tree: bool = False
 ) -> None:
-    dag_walker = build_dag_walker(dataset_id, view_id)
+    dag_walker = build_dag_walker()
+
+    address = BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
+    if address not in dag_walker.nodes_by_address:
+        raise ValueError(f"invalid view {address.to_str()}")
+
+    if print_downstream_tree:
+        dag_walker.populate_descendant_sub_dags()
+    else:
+        dag_walker.populate_ancestor_sub_dags()
     view = dag_walker.view_for_address(
         view_address=BigQueryAddress(dataset_id=dataset_id, table_id=view_id)
     )
