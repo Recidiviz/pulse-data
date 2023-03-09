@@ -106,7 +106,9 @@ VIEW_QUERY_TEMPLATE = """
 
         shock_sentence.SENT_FLAG,
         most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_SCD,
-        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_DATE
+        most_recent_status_by_sentence.MOST_RECENT_SENTENCE_STATUS_DATE,
+
+        sentence_elig.CG_MD
     FROM
         {LBAKRDTA_TAK022} sentence_bs
     JOIN
@@ -127,6 +129,12 @@ VIEW_QUERY_TEMPLATE = """
         most_recent_status_by_sentence.BW_DOC = shock_sentence.BW_DOC AND
         most_recent_status_by_sentence.BW_CYC = shock_sentence.BW_CYC AND
         most_recent_status_by_sentence.BW_SSO = shock_sentence.BW_SSO
+    LEFT JOIN
+        {LBAKRDTA_TAK044} sentence_elig
+    ON 
+        sentence_bs.BS_DOC = sentence_elig.CG_DOC AND
+        sentence_bs.BS_CYC = sentence_elig.CG_CYC AND
+        sentence_bs.BS_SEO = sentence_elig.CG_ESN
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

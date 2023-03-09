@@ -30,7 +30,9 @@ input_columns:
   - MOST_RECENT_SENTENCE_STATUS_SCD
   - MOST_RECENT_SENTENCE_STATUS_DATE
   - SENT_FLAG
-unused_columns: []
+  - CG_MD
+unused_columns:
+  - BT_PIE
 variables:
   - sentence_external_id:
       $concat:
@@ -154,10 +156,12 @@ output:
             $equal: [BT_CRR, $literal("LIF")]
           parole_eligibility_date:
             $custom:
-              $function: us_mo_custom_parsers.set_parole_eligibility_date
+              $function: us_mo_custom_parsers.null_if_magic_date
+              # There are a number of '0' CG_MD values which cannot be parsed as a parole
+              # eligibility date. Using this custom parser ensures that these are treated
+              # as null dates, consistent with the handling of min/max release dates.
               $args:
-                start_date: BT_EM
-                parole_ineligible_years: BT_PIE
+                date: CG_MD
           max_length_days:
             $custom:
               $function: us_mo_custom_parsers.max_length_days_from_ymd
