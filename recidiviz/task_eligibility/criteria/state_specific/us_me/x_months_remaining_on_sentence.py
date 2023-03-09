@@ -65,9 +65,8 @@ months away from their release date)
 """
 
 _QUERY_TEMPLATE = f"""
-WITH term_crit_date AS (
--- Calculate the critical date as a function of the statewide case load
-    -- 24 months if caseload is more than 90, 30 months otherwise
+WITH term_with_caseload AS (
+-- Combine case load with term data
     SELECT 
         cl.state_code,
         person_id,
@@ -75,11 +74,10 @@ WITH term_crit_date AS (
                  cl.start_quarter) AS start_date,
         LEAST({nonnull_end_date_clause('tc.end_date')}, 
                  cl.end_quarter) AS end_date,
+        cl.officer_to_client_ratio AS case_load,
+        end_date AS release_date,
         status,
         term_id,
-        DATE_SUB(end_date, 
-                 INTERVAL IF(cl.officer_to_client_ratio > 90, 24, 30) MONTH)
-        AS critical_date,
     FROM `{{project_id}}.{{analyst_dataset}}.us_me_sentence_term_materialized` tc
     INNER JOIN `{{project_id}}.{{analyst_dataset}}.supervision_clients_to_officers_ratio_quarterly_materialized` cl
         ON cl.state_code = tc.state_code
@@ -87,6 +85,19 @@ WITH term_crit_date AS (
                                                                     CURRENT_DATE('US/Eastern'))
         AND cl.start_quarter < {nonnull_end_date_clause('tc.end_date')}
 ),
+term_crit_date AS (
+-- Calculate the critical date as a function of the statewide case load
+    SELECT 
+        * EXCEPT(case_load, release_date),
+        IF(start_date < '2021-10-18',
+        -- Pre-reform: 18 months if caseload is more than 90, 24 months otherwise        
+            DATE_SUB(release_date, INTERVAL IF(case_load > 90, 18, 24) MONTH),
+        -- Post-reform: 24 months if caseload is more than 90, 30 months otherwise
+            DATE_SUB(release_date, INTERVAL IF(case_load > 90, 24, 30) MONTH))
+        AS critical_date,
+    FROM term_with_caseload
+),
+
 term_crit_date_plus_real AS(
     -- Folks can start their paperwork 3 months before their eligibility date,
     -- so we save the actual eligibility date, but let the critical_date be 
