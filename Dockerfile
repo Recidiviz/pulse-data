@@ -1,36 +1,4 @@
-FROM node:14-alpine as admin-panel-build
-
-WORKDIR /usr/admin-panel
-COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
-COPY ./frontends/admin-panel/tsconfig.json ./frontends/admin-panel/.eslintrc.json /usr/admin-panel/
-
-# Set a 5 minute timeout instead of the default 30s. For some reason, when building with the
-# --platform argument, it takes longer to download packages from yarn.
-RUN yarn config set network-timeout 300000
-RUN yarn
-
-COPY ./frontends/admin-panel/src /usr/admin-panel/src
-COPY ./frontends/admin-panel/public /usr/admin-panel/public
-
-RUN yarn build
-
-FROM node:14-alpine as case-triage-build
-
-WORKDIR /usr/case-triage
-COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr/case-triage/
-COPY ./frontends/case-triage/tsconfig.json ./frontends/case-triage/.eslintrc.json /usr/case-triage/
-COPY ./frontends/case-triage/craco.config.js /usr/case-triage/
-
-RUN yarn config set network-timeout 300000
-RUN yarn
-
-COPY ./frontends/case-triage/src /usr/case-triage/src
-COPY ./frontends/case-triage/public /usr/case-triage/public
-
-RUN yarn build
-
-FROM ubuntu:focal-20221130 as recidiviz-app
-
+FROM ubuntu:focal-20221130 as recidiviz-init
 ENV DEBIAN_FRONTEND noninteractive
 
 # NOTE: It is is extremely important that we do not delete this
@@ -69,6 +37,40 @@ RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
 ENV PYTHONUNBUFFERED 1
 
 RUN pip3 install pipenv
+
+
+FROM node:14-alpine as admin-panel-build
+
+WORKDIR /usr/admin-panel
+COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
+COPY ./frontends/admin-panel/tsconfig.json ./frontends/admin-panel/.eslintrc.json /usr/admin-panel/
+
+# Set a 5 minute timeout instead of the default 30s. For some reason, when building with the
+# --platform argument, it takes longer to download packages from yarn.
+RUN yarn config set network-timeout 300000
+RUN yarn
+
+COPY ./frontends/admin-panel/src /usr/admin-panel/src
+COPY ./frontends/admin-panel/public /usr/admin-panel/public
+
+RUN yarn build
+
+FROM node:14-alpine as case-triage-build
+
+WORKDIR /usr/case-triage
+COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr/case-triage/
+COPY ./frontends/case-triage/tsconfig.json ./frontends/case-triage/.eslintrc.json /usr/case-triage/
+COPY ./frontends/case-triage/craco.config.js /usr/case-triage/
+
+RUN yarn config set network-timeout 300000
+RUN yarn
+
+COPY ./frontends/case-triage/src /usr/case-triage/src
+COPY ./frontends/case-triage/public /usr/case-triage/public
+
+RUN yarn build
+
+FROM recidiviz-init as recidiviz-app
 
 # If DEV_MODE="True", then install dependencies required for running tests
 ARG DEV_MODE="False"
