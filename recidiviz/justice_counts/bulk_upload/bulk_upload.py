@@ -169,10 +169,12 @@ class BulkUploader:
 
             # Convert dataframe to a list of dictionaries
             rows = df.to_dict("records")
+            column_names = df.columns
             metric_key_to_datapoint_jsons, metric_key_to_errors = self._upload_rows(
                 session=session,
                 system=system,
                 rows=rows,
+                column_names=column_names,
                 sheet_name=sheet_name,
                 agency_id=agency_id,
                 user_account=user_account,
@@ -246,6 +248,62 @@ class BulkUploader:
                 description=description,
             )
             metric_key_to_errors[None].append(invalid_sheet_name_error)
+        return metric_key_to_errors
+
+    def _check_expected_columns(
+        self,
+        metricfile: MetricFile,
+        actual_columns: Set[str],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        metric_definition: MetricDefinition,
+        reporting_frequency: ReportingFrequency,
+    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
+        """This function adds an Unexpected Columns warning to the metric_key_to_errors
+        dictionary if there are unexpected column names for a given metric in a given sheet.
+        """
+        expected_columns = {"value", "year"}
+        if reporting_frequency.value == "MONTHLY":
+            expected_columns.add("month")
+        if metricfile.disaggregation_column_name is not None:
+            expected_columns.add(
+                metricfile.disaggregation_column_name  # type: ignore[arg-type]
+            )
+        if metric_definition.system.value == "SUPERVISION":
+            expected_columns.add("system")
+
+        unexpected_columns = actual_columns.difference(expected_columns)
+        for unexpected_col in unexpected_columns:
+            if unexpected_col == "month":
+                warning_title = "Unexpected Month Column"
+                warning_description = (
+                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: month. "
+                    f"The {metric_definition.display_name} metric is configured to be reported annually and does not require a month column."
+                )
+            elif unexpected_col == "system":
+                warning_title = "Unexpected System Column"
+                warning_description = (
+                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: system. "
+                    f"The {metric_definition.system.value} system does not have subsystems and does not require a system column."
+                )
+            elif (
+                "_type" in unexpected_col
+                and metricfile.disaggregation_column_name is None
+            ):
+                warning_title = "Unexpected Breakdown Column"
+                warning_description = f"Breakdown data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but this sheet should only contain aggregate data."
+            else:
+                warning_title = "Unexpected Column"
+                warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}."
+            unexpected_column_warning = JusticeCountsBulkUploadException(
+                title=warning_title,
+                message_type=BulkUploadMessageType.WARNING,
+                description=warning_description,
+            )
+            metric_key_to_errors[metric_definition.key].append(
+                unexpected_column_warning
+            )
         return metric_key_to_errors
 
     def _add_missing_metric_errors(
@@ -416,32 +474,12 @@ class BulkUploader:
         metric_key_to_errors[metric_definition.key].append(missing_total_error)
         return metric_key_to_errors
 
-    def _maybe_raise_invalid_breakdown_error(
-        self, rows: List[Dict[str, Any]], metricfile: MetricFile
-    ) -> None:
-        if not metricfile.disaggregation:
-            # If _type is a substring of the column name, then the row column contains
-            # a breakdown name. For example, a column named "offense_type" would contain
-            # values such as "Drug", "Person", or "Public Order". These columns should only
-            # be in breakdown sheets.
-            is_type_column_list = ["_type" in col for row in rows for col in row.keys()]
-            if any(is_type_column_list):
-                description = (
-                    f"Breakdown data was provided in the {metricfile.canonical_filename} sheet, but this sheet "
-                    f"should only contain aggregate data."
-                )
-
-                raise JusticeCountsBulkUploadException(
-                    title="Invalid Breakdown Data in Aggregate Sheet",
-                    description=description,
-                    message_type=BulkUploadMessageType.ERROR,
-                )
-
     def _upload_rows(
         self,
         session: Session,
         system: schema.System,
         rows: List[Dict[str, Any]],
+        column_names: List[str],
         sheet_name: str,
         agency_id: int,
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
@@ -493,6 +531,7 @@ class BulkUploader:
                 new_datapoint_json_list = self._upload_rows_for_metricfile(
                     session=session,
                     rows=current_rows,
+                    column_names=column_names,
                     metricfile=metricfile,
                     agency_id=agency_id,
                     user_account=user_account,
@@ -601,6 +640,7 @@ class BulkUploader:
         self,
         session: Session,
         rows: List[Dict[str, Any]],
+        column_names: List[str],
         metricfile: MetricFile,
         agency_id: int,
         user_account: schema.UserAccount,
@@ -642,8 +682,17 @@ class BulkUploader:
             ),
         )
         # Step 1: Warn if there are unexpected columns in the file
-        self._maybe_raise_invalid_breakdown_error(rows=rows, metricfile=metricfile)
-        # TODO(#13731): Add warnings for other unexpected columns
+        # actual_columns is a set of all of the column names that have been uploaded by the user
+        # we are filtering out 'Unnamed: 0' because this is the column name of the index column
+        # the index column is produced when the excel file is converted to a pandas df
+        actual_columns = {col.lower() for col in column_names if col != "Unnamed: 0"}
+        metric_key_to_errors = self._check_expected_columns(
+            metricfile=metricfile,
+            actual_columns=actual_columns,
+            metric_key_to_errors=metric_key_to_errors,
+            metric_definition=metric_definition,
+            reporting_frequency=reporting_frequency,
+        )
 
         # Step 2: Group the rows in this file by time range.
         (rows_by_time_range, time_range_to_year_month,) = self._get_rows_by_time_range(
@@ -652,7 +701,7 @@ class BulkUploader:
             custom_starting_month=custom_starting_month,
         )
 
-        # Step 2: For each time range represented in the file, convert the
+        # Step 3: For each time range represented in the file, convert the
         # reported data into a MetricInterface object. If a report already
         # exists for this time range, update it with the MetricInterface.
         # Else, create a new report and add the MetricInterface.
@@ -728,10 +777,10 @@ class BulkUploader:
                 reporting_frequency == ReportingFrequency.ANNUAL
                 and row.get("month") is not None
             ):
-                raise JusticeCountsBulkUploadException(
-                    title="Monthly Data Provided for Annual Metric",
-                    description="This sheet should not contain a month column.",
-                    message_type=BulkUploadMessageType.ERROR,
+                # We will be in this case if monthly data is provided for annual metrics
+                # warning will be added in _check_expected_columns()
+                month = self._get_column_value(
+                    row=row, column_name="month", column_type=int
                 )
             elif reporting_frequency == ReportingFrequency.ANNUAL:
                 month = (

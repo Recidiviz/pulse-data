@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import pandas as pd
 
+from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
@@ -33,26 +34,44 @@ TEST_EXCEL_FILE = os.path.join(
 
 
 def _create_dataframe_dict(
+    metricfile: MetricFile,
     reporting_frequency: schema.ReportingFrequency,
     invalid_month: bool = False,
     vary_values: bool = False,
+    unexpected_month: Optional[bool] = False,
+    unexpected_column: Optional[str] = None,
+    unexpected_disaggregation: Optional[bool] = False,
 ) -> Dict[str, Any]:
+    """Helper function that creates a dictionary, which is later converted into a
+    dataframe and exported as an excel file for testing purposes.
+    """
     year_col = [2021, 2022, 2023]
     value_col = [12, 45, 30] if vary_values else [10, 20, 30]
 
     if reporting_frequency == schema.ReportingFrequency.ANNUAL:
-        return {"year": year_col, "value": value_col}
+        annual_dataframe_dict = {"year": year_col, "value": value_col}
+        if unexpected_month is True:
+            annual_dataframe_dict["month"] = ["January", "January", "January"]  # type: ignore[list-item]
+        if unexpected_column == "system":
+            annual_dataframe_dict[unexpected_column] = ["PROBATION", "PAROLE", "ALL"]  # type: ignore[list-item]
+        if unexpected_disaggregation is True and metricfile.disaggregation is None:
+            annual_dataframe_dict["metric_by_type"] = ["metric_type_A", "metric_type_C", "metric_type_D"]  # type: ignore[list-item]
+        return annual_dataframe_dict
 
     # If the metric is reported monthly, add a month column for
     # January and February of each year.
     dataframe_dict = {
-        "month": ["January", "February"] * len(value_col),
+        "month": ["January", "February"] * len(value_col),  # type: ignore[list-item]
         "year": [val for val in year_col for _ in (0, 1)],
         "value": [val for val in value_col for _ in (0, 1)],
     }
 
     if invalid_month:
         dataframe_dict["month"][0] = "Marchuary"  # type: ignore[index]
+    if unexpected_column == "system":
+        dataframe_dict[unexpected_column] = ["PROBATION" for _ in value_col for _ in (0, 1)]  # type: ignore[list-item]
+    if unexpected_disaggregation is True and metricfile.disaggregation is None:
+        dataframe_dict["metric_by_type"] = ["metric_type_A" for _ in value_col for _ in (0, 1)]  # type: ignore[list-item]
 
     return dataframe_dict
 
@@ -64,6 +83,9 @@ def create_excel_file(
     add_invalid_sheetname: Optional[bool] = False,
     sheetnames_to_skip: Optional[Set[str]] = None,
     sheetnames_to_vary_values: Optional[Set[str]] = None,
+    unexpected_month: Optional[bool] = False,
+    unexpected_column: Optional[str] = None,
+    unexpected_disaggregation: Optional[bool] = False,
 ) -> None:
     """Populates bulk_upload_test.xlsx with fake data to test functions that ingest spreadsheets"""
     filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
@@ -75,10 +97,14 @@ def create_excel_file(
                 continue
             # For every metric, add a value for 2021, 2022, and 2023
             dataframe_dict = _create_dataframe_dict(
+                metricfile=metricfile,
                 reporting_frequency=metricfile.definition.reporting_frequency,
                 invalid_month=filename == invalid_month_sheetname,
                 vary_values=sheetnames_to_vary_values is not None
                 and filename in sheetnames_to_vary_values,
+                unexpected_month=unexpected_month,
+                unexpected_column=unexpected_column,
+                unexpected_disaggregation=unexpected_disaggregation,
             )
 
             if metricfile.disaggregation_column_name is not None:
