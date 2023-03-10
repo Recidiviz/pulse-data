@@ -43,7 +43,7 @@ output:
               $include_nulls: True
           supervision_type:
             $conditional:
-              # If there's an active warrant legal order, then we're going to mark supervision type as BENCH_WARRANT
+              # If there's an active warrant legal order, then we're going to mark supervision type as BENCH_WARRANT or ABSCONSION
               # NOTE: MI has said that sometimes the warrant legal order isn't closed in a timely manner but I'm not accounting for that
               - $if:
                   $in:
@@ -62,10 +62,11 @@ output:
                           - supervision_level_id
                     $mappings:
                       StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
-                        - "WARRANT-supervision_level-7483"
-                        - "WARRANT-supervision_level-2286"
-                        - "WARRANT-supervision_level-7482"
-                        - "WARRANT-supervision_level-2394"
+                        - "WARRANT-supervision_level-2286" # Warrant Status
+                        - "WARRANT-supervision_level-2394" # Absconder Warrant Status
+                      StateSupervisionPeriodSupervisionType.ABSCONSION:
+                        - "WARRANT-supervision_level-7483" # Probation Absconder Warrant Status
+                        - "WARRANT-supervision_level-7482" # Parole Absconder Warrant Status
               # If the movements data indicate that the individual has absconded, then we're going to mark supervision type as ABSCONSION
               - $else_if:
                   $in:
@@ -724,14 +725,12 @@ output:
                   - "14164" # Probation Minimum Telephone Unemployed
                   - "14052" # Parole Minimum Telephone Unemployed
                   - "14051" # Parole Minimum Telephone Employed
-                  - "2292" # Parole Minimum Administrative
                   - "2294" # Parole Minimum
                   - "13560" # Parole Minimum Employed
                   - "13561" # Parole Minimum Unemployed
                   - "14196" # Parole Minimum In-Person Employed
                   - "2293" # Parole Minimum Mail-In
                   - "14197" # Parole Minimum In-Person Unemployed
-                  - "3624" # Probation Minimum Administrative
                   - "3626" # Probation Minimum
                   - "3625" # Probation Minimum Mail-in
                   - "14050" # VO Parole Minimum In-Person Unemployed
@@ -852,6 +851,16 @@ output:
                   - "14214" # Parole SAI Intensive EMS Employed
                   - "14250" # VO/SA Probation Parole Intensive SSU EMS Employed
                   - "14170" # Probation Intensive GPS Employed
+                StateSupervisionLevel.WARRANT:
+                  - "2286" # Warrant Status
+                  - "2394" # Absconder Warrant Status
+                StateSupervisionLevel.ABSCONSION:
+                  - "7483" # Probation Absconder Warrant Status
+                  - "7482" # Parole Absconder Warrant Status
+                StateSupervisionLevel.IN_CUSTODY:
+                  - "7405" # Paroled in Custody
+                  - "2292" # Parole Minimum Administrative
+                  - "3624" # Probation Minimum Administrative
                 StateSupervisionLevel.INTERNAL_UNKNOWN:
                   # NOTE: CRP facilities ended a long time ago so ignoring for now
                   - "7314" # CRP - Corrections Center Unemployed
@@ -872,11 +881,6 @@ output:
                   - "7173" # CRP EMS Combination Office
                   - "7225" # CRP - Jail Custody
                   - "7171" # CRP - EMS Waiver
-                  # Q: Not sure how to categorize warrant status?
-                  - "7483" # Probation Absconder Warrant Status
-                  - "2286" # Warrant Status
-                  - "7482" # Parole Absconder Warrant Status
-                  - "2394" # Absconder Warrant Status
                   # Not sure how to categorize these below that don't indicate level
                   # MI research team also wasn't sure but said that a lot of supervision levels have been inactivated in recent years since they had too many
                   - "13567" # VO/SA Parole EMS Employed
@@ -907,7 +911,6 @@ output:
                   - "13596" # VO/SA Parole SAI Employed
                   - "14175" # Parole LCRRP Placement
                   - "13822" # Parole GPS Employed
-                  - "7405" # Paroled in Custody
                   - "3806" # Parole SAI Employed Sub. Abuse
                   - "11890" # Probation SAI Residential (Wayne County)
                   - "2396" # Probation Detention
