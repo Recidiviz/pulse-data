@@ -54,7 +54,20 @@ class BigQueryUtilsTest(unittest.TestCase):
             }
         )
 
-    def test_normalize_column_name_for_bq_lead_whitespace(self) -> None:
+    def test_normalize_column_name_for_bq(self) -> None:
         for column_name in self.column_names:
             normalized = normalize_column_name_for_bq(column_name)
             self.assertEqual(normalized, self.valid_column_name)
+
+        # Handles reserved words correctly
+        self.assertEqual(
+            "_ASSERT_ROWS_MODIFIED",
+            normalize_column_name_for_bq("ASSERT_ROWS_MODIFIED"),
+        )
+        self.assertEqual(
+            "_TableSAmple",
+            normalize_column_name_for_bq("TableSAmple"),
+        )
+
+        # Handles digits correctly
+        self.assertEqual("_123_COLUMN", normalize_column_name_for_bq("123_COLUMN"))

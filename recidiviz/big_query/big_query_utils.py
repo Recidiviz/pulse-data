@@ -36,6 +36,7 @@ from recidiviz.common.attr_utils import (
     is_list,
     is_str,
 )
+from recidiviz.persistence.database.reserved_words import BIGQUERY_RESERVED_WORDS
 
 # Maximum value of an integer stored in BigQuery
 MAX_BQ_INT = (2**63) - 1
@@ -150,8 +151,13 @@ def normalize_column_name_for_bq(column_name: str) -> str:
     column_name = column_name.strip()
     column_name = _make_bq_compatible_column_name(column_name)
 
-    # BQ doesn't allow column names to begin with a number, so we prepend an underscore in that case
-    if column_name[0] in string.digits:
+    # BQ doesn't allow column names to begin with a number.
+    # Also doesn't allow for column names to be reserved words.
+    # So we prepend an underscore in that case
+    if (
+        column_name[0] in string.digits
+        or column_name.upper() in BIGQUERY_RESERVED_WORDS
+    ):
         column_name = "_" + column_name
 
     return column_name
