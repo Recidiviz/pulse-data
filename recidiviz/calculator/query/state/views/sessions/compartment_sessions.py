@@ -84,6 +84,10 @@ Compartment sessions differs from other sessionized views in that the edges shou
 |	supervision_region_name_end	|	Supervision region location at the end of the session	|
 |	correctional_level_start	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the start of the session	|
 |	correctional_level_end	|	A person's custody level (for incarceration sessions) or supervision level (for supervision sessions) as of the end of the session	|
+|	housing_unit_start	|	Housing unit at the start of an incarceration session	|
+|	housing_unit_end	|	Housing unit at the end of an incarceration session	|
+|	housing_unit_type_start	|	Housing unit type at the start of an incarceration session	|
+|	housing_unit_type_end	|	Housing unit type at the end of an incarceration session	|
 |	age_start	|	Age at start of session	|
 |	age_end	|	Age at end of session	|
 |	gender	|	Gender	|
@@ -166,7 +170,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         last_day_of_data,
         MIN(start_date) AS start_date,
         CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
-        
         ARRAY_AGG(dataflow_session_id RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS dataflow_session_id_start,
         ARRAY_AGG(dataflow_session_id RESPECT NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS dataflow_session_id_end,
         ARRAY_AGG(sub_session_id RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS sub_session_id_start,
@@ -174,15 +177,12 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ARRAY_AGG(start_reason RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS start_reason,
         ARRAY_AGG(start_sub_reason RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS start_sub_reason,
         ARRAY_AGG(end_reason RESPECT NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS end_reason,
-        
         ARRAY_AGG(inflow_from_level_1 RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS inflow_from_level_1,
         ARRAY_AGG(inflow_from_level_2 RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS inflow_from_level_2,
         ARRAY_AGG(outflow_to_level_1 RESPECT NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS outflow_to_level_1,
         ARRAY_AGG(outflow_to_level_2 RESPECT NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS outflow_to_level_2,
-        
         ARRAY_AGG(supervising_officer_external_id IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS supervising_officer_external_id_start,
         ARRAY_AGG(supervising_officer_external_id IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervising_officer_external_id_end,
-
         ARRAY_AGG(compartment_location IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS compartment_location_start,
         ARRAY_AGG(facility_name IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS facility_name_start,
         ARRAY_AGG(supervision_office_name IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_office_name_start,
@@ -193,32 +193,28 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ARRAY_AGG(supervision_office_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_office_name_end,
         ARRAY_AGG(supervision_district_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_district_name_end,
         ARRAY_AGG(supervision_region_name IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS supervision_region_name_end,
-
         ARRAY_AGG(correctional_level IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS correctional_level_start,
         ARRAY_AGG(correctional_level IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS correctional_level_end,
-
+        ARRAY_AGG(housing_unit IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_start,
+        ARRAY_AGG(housing_unit IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_end,
+        ARRAY_AGG(housing_unit_type IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_type_start,
+        ARRAY_AGG(housing_unit_type IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_type_end,
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_start,
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_end,
-
         ARRAY_AGG(judicial_district_code IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS judicial_district_code_start,
         ARRAY_AGG(judicial_district_code IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS judicial_district_code_end,
-
         ANY_VALUE(gender) AS gender,
         ANY_VALUE(prioritized_race_or_ethnicity) AS prioritized_race_or_ethnicity,
-
         ARRAY_AGG(age RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS age_start,
         --Null out the age_end for active inferred sub-sessions
         ARRAY_AGG(CASE WHEN NOT (end_date_exclusive IS NULL AND metric_source = 'INFERRED') THEN age END
              RESPECT NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS age_end,
-
         -- TODO(#17265): Consider removing this logic following investigation of unknown assessment scores
         NULLIF(ARRAY_AGG(assessment_score IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)],-999) AS assessment_score_start,
         NULLIF(ARRAY_AGG(assessment_score IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)],-999) AS assessment_score_end,
-
         SUM(CASE WHEN metric_source = 'INFERRED' 
             THEN DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive,INTERVAL 1 DAY), last_day_of_data), start_date, DAY) + 1 ELSE 0 END) AS session_days_inferred,
         SUM(DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data), start_date, DAY)+1) AS session_length_days,
-    
     FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized`
     GROUP BY 1,2,3,4,5,6,7
     )
@@ -274,6 +270,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         supervision_region_name_end,
         correctional_level_start,
         correctional_level_end,
+        housing_unit_start,
+        housing_unit_end,
+        housing_unit_type_start,
+        housing_unit_type_end,
         case_type_start,
         case_type_end,
         judicial_district_code_start,
