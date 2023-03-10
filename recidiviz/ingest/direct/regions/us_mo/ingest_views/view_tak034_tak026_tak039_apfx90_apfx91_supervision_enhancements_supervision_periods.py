@@ -82,55 +82,60 @@ WITH field_assignments_ce AS (
             -- We correct potential input error on closed periods with flipped start and end dates
             IF(CE_EH != '0', LEAST(CE_HF, CE_EH), CE_HF) AS FLD_ASSN_BEG_DT,
             IF(CE_EH != '0', GREATEST(CE_HF, CE_EH), CE_EH)  AS FLD_ASSN_END_DT,
-            CE_PLN AS LOC_ACRO,
+            CE_PLN AS LOC_ACRO
         FROM
             {{LBAKRDTA_TAK034}}
         -- We discard field assignments prior to 2000 due to unreliable data with a large number of overlapping periods
         WHERE 
             CE_HF >= '20000101'        
     ),
-    field_assignments_with_unique_date_spans as (
-        -- Where there are multiple rows for the same period, pick the one with the most recent update date.
-        -- Also filter out 0-day periods.
-        SELECT * EXCEPT(rn),
-        LEAD(FLD_ASSN_BEG_DT)
+    field_assignments_next_beg_dt AS (
+        SELECT 
+            field_assignments_ce.*,
+            LEAD(FLD_ASSN_BEG_DT)
                 OVER (
                     PARTITION BY DOC, CYC 
                     ORDER BY FLD_ASSN_BEG_DT, CASE WHEN FLD_ASSN_END_DT = '0' THEN 1 ELSE 0 END, FLD_ASSN_END_DT)
             AS NEXT_FLD_ASSN_BEG_DT
-        FROM (
-          SELECT 
-            *,
-            ROW_NUMBER() OVER (PARTITION BY DOC,CYC,FLD_ASSN_BEG_DT,FLD_ASSN_END_DT 
-                               ORDER BY CAST(CE_DCR AS INT64) DESC, CAST(CE_TCR AS INT64) DESC) AS rn 
-          FROM field_assignments_ce
-        ) 
-        WHERE rn = 1 AND FLD_ASSN_BEG_DT != FLD_ASSN_END_DT
+        FROM field_assignments_ce
     ),
     augmented_field_assignments AS (
         SELECT
-            field_assignments_with_unique_date_spans.* REPLACE (
+            field_assignments_next_beg_dt.* REPLACE (
                 -- Close open spans that are followed by new periods
                 CASE 
                     WHEN FLD_ASSN_END_DT = '0' and NEXT_FLD_ASSN_BEG_DT IS NOT NULL THEN NEXT_FLD_ASSN_BEG_DT
                     ELSE FLD_ASSN_END_DT END
                 AS FLD_ASSN_END_DT
             ),
-            level_2_supervision_location_external_id AS REGION,
+            level_2_supervision_location_external_id AS REGION
+        FROM field_assignments_next_beg_dt
+        LEFT OUTER JOIN
+            {{RECIDIVIZ_REFERENCE_supervision_district_to_region}}
+        ON
+            LOC_ACRO = level_1_supervision_location_external_id
+    ),
+    field_assignments_with_unique_date_spans as (
+        -- Where there are multiple rows for the same period, pick the one with the most recent update date.
+        -- Also filter out 0-day periods.
+        SELECT * EXCEPT(rn)
+        FROM (
+          SELECT 
+            *,
+            ROW_NUMBER() OVER (PARTITION BY DOC,CYC,FLD_ASSN_BEG_DT,FLD_ASSN_END_DT 
+                               ORDER BY CAST(CE_DCR AS INT64) DESC, CAST(CE_TCR AS INT64) DESC) AS rn 
+          FROM augmented_field_assignments
+        ) 
+        WHERE rn = 1 AND FLD_ASSN_BEG_DT != FLD_ASSN_END_DT
+    ),
+    field_assignments_with_valid_region AS (
+        SELECT *,
             ROW_NUMBER() OVER (
                 PARTITION BY DOC, CYC
                 ORDER BY
                     FLD_ASSN_BEG_DT,
                     FLD_ASSN_END_DT
             ) AS FIELD_ASSIGNMENT_SEQ_NUM
-        FROM field_assignments_with_unique_date_spans
-        LEFT OUTER JOIN
-            {{RECIDIVIZ_REFERENCE_supervision_district_to_region}}
-        ON
-            LOC_ACRO = level_1_supervision_location_external_id
-    ),
-    field_assignments_with_valid_region AS (
-        SELECT *
         FROM augmented_field_assignments
         WHERE REGION != 'UNCLASSIFIED_REGION'
     ),
