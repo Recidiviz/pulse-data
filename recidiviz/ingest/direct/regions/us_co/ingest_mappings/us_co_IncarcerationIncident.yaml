@@ -179,6 +179,7 @@ output:
                 external_id:
                   $concat:
                     $values:
+                      - docno
                       - incident_num
                       - inc_id
                 hearing_date: disp_hrg_dtd
