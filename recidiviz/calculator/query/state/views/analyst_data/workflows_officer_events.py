@@ -232,9 +232,31 @@ def get_all_workflows_officer_events() -> str:
 WORKFLOWS_OFFICER_EVENTS_QUERY_TEMPLATE = f"""
 WITH events AS (
     {get_all_workflows_officer_events()}
+), profile_viewed_events AS (
+    -- The frontend event for PROFILE_VIEWED does not have a specific opportunity type, so
+    -- join on person_record and apply this event to all opportunities the person is eligible for
+    SELECT
+        state_code, 
+        officer_external_id,
+        event,
+        event_ts, 
+        event_type,
+        person_external_id,
+        opportunity_type,
+        new_status,
+        context_page,
+    FROM events
+    INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_record_materialized` USING (state_code, person_external_id), UNNEST(all_eligible_opportunities) AS opportunity_type
+    WHERE event_type = "PROFILE_VIEWED"
 )
 
-SELECT * except (opportunity_type),
+SELECT 
+    state_code,
+    officer_external_id,
+    event,
+    event_ts, 
+    event_type,
+    person_external_id,
     -- TODO(#19054): Read from a unified config
     CASE  -- infer opportunity type from context_page if the path includes an opportunity-related substring
         WHEN opportunity_type is NOT null THEN opportunity_type
@@ -243,8 +265,25 @@ SELECT * except (opportunity_type),
         WHEN context_page = 'expiration' AND state_code = 'US_TN' THEN 'usTnExpiration'
         WHEN context_page IN ('LSU', 'earnedDischarge', 'pastFTRD', 'compliantReporting', 'earlyTermination', 'supervisionLevelDowngrade') THEN context_page
         ELSE null
-    END AS opportunity_type
+    END AS opportunity_type,
+    new_status,
+    context_page
 FROM events
+WHERE event_type != "PROFILE_VIEWED"
+
+UNION ALL
+
+SELECT 
+    state_code, 
+    officer_external_id,
+    event,
+    event_ts, 
+    event_type,
+    person_external_id,
+    opportunity_type,
+    new_status,
+    context_page, 
+FROM profile_viewed_events
 """
 
 
