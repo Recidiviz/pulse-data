@@ -16,6 +16,7 @@
 # =============================================================================
 """Unit test to test the SFTP DAG."""
 import os
+import re
 import unittest
 from unittest.mock import patch
 
@@ -67,54 +68,63 @@ class TestSftpPipelineDag(unittest.TestCase):
 
         self.assertIn(_START_SFTP_TASK_ID, upstream_tasks)
 
-    def test_set_locks_upstream_of_rest_of_state_specific_tasks(self) -> None:
-        """Tests that the state-specific locks get set before the rest of the files
-        start executing."""
+    def test_check_config_upstream_of_remote_file_discovery_tasks(self) -> None:
+        """Tests that the `check_config` check happens before we discover remote file
+        discovery tasks."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.SFTP_DAG_ID]
-        state_specific_lock_tasks_dag = dag.partial_subset(
-            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.gather_prior_discovered_remote_files",
+        state_specific_tasks_dag = dag.partial_subset(
+            task_ids_or_regex=r"US_[A-Z][A-Z]\.remote_file_discovery.find_sftp_files_to_download",
             include_downstream=False,
             include_upstream=False,
             include_direct_upstream=True,
         )
-        self.assertNotEqual(0, len(state_specific_lock_tasks_dag.task_ids))
+        self.assertNotEqual(0, len(state_specific_tasks_dag.task_ids))
 
         upstream_tasks = set()
-        for task in state_specific_lock_tasks_dag.tasks:
+        for task in state_specific_tasks_dag.tasks:
             upstream_tasks.update(task.upstream_task_ids)
 
-        for task in upstream_tasks:
-            self.assertRegex(task, r"US_[A-Z][A-Z]\..*_lock")
+        for task_id in upstream_tasks:
+            self.assertTrue("check_config" in task_id)
 
-    def test_release_locks_downstream_of_rest_of_state_specific_tasks(self) -> None:
-        """Tests that the state-specific locks get released after the rest of the state
-        tasks get executed and right before the end."""
+    def test_mark_files_discovered_upstream_of_gather_discovered_files(self) -> None:
+        """Tests that gathering all discovered files occurs after marking new files discovered."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.SFTP_DAG_ID]
-        end_dag = dag.partial_subset(
-            task_ids_or_regex=[_END_SFTP_TASK_ID],
-            include_direct_upstream=True,
-            include_upstream=False,
+        state_specific_tasks_dag = dag.partial_subset(
+            task_ids_or_regex=r"US_[A-Z][A-Z].*gather_discovered.*files",
             include_downstream=False,
+            include_upstream=False,
+            include_direct_upstream=True,
         )
-        self.assertNotEqual(0, len(end_dag.task_ids))
+        self.assertNotEqual(0, len(state_specific_tasks_dag.task_ids))
 
         upstream_tasks = set()
-        for task in end_dag.tasks:
+        for task in state_specific_tasks_dag.tasks:
             upstream_tasks.update(task.upstream_task_ids)
-        for task in upstream_tasks:
-            self.assertRegex(task, r"US_[A-Z][A-Z]\.release\_.*\_lock")
 
-        state_specific_dag = dag.partial_subset(
-            task_ids_or_regex=r"US_[A-Z][A-Z]\.release\_.*\_lock",
+        for task_id in upstream_tasks:
+            self.assertRegex(task_id, r"US_[A-Z][A-Z].*mark_.*files_discovered")
+
+    def test_mark_files_discovered_upstream_of_mark_files_loaded(self) -> None:
+        """Tests that marking files uploaded or downloaded occurs after marking them discovered."""
+        dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
+        dag = dag_bag.dags[self.SFTP_DAG_ID]
+        state_specific_tasks_dag = dag.partial_subset(
+            task_ids_or_regex=r"US_[A-Z][A-Z].*mark_.*files_.*loaded",
+            include_downstream=False,
             include_upstream=True,
-            include_downstream=False,
         )
-        self.assertNotEqual(0, state_specific_dag.leaves)
-        for task in state_specific_dag.leaves:
-            if task != "start_sftp":
-                self.assertRegex(task.task_id, r"US_[A-Z][A-Z]\..*")
+        self.assertNotEqual(0, len(state_specific_tasks_dag.task_ids))
+
+        upstream_tasks = set()
+        for task in state_specific_tasks_dag.tasks:
+            for task_id in task.upstream_task_ids:
+                if re.match(r"US_[A-Z][A-Z].*mark_.*files_.*discovered", task_id):
+                    upstream_tasks.add(task_id)
+
+        self.assertNotEqual(0, len(upstream_tasks))
 
     def test_sftp_and_gcs_operators_have_retries(self) -> None:
         task_types_with_retries = [
