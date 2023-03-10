@@ -39,6 +39,12 @@ from recidiviz.calculator.query.state.views.reference.ingested_product_users imp
 from recidiviz.calculator.query.state.views.reference.opportunity_to_completion_event import (
     OPPORTUNITY_TO_COMPLETION_EVENT_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.location_metadata.location_metadata import (
+    LOCATION_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_location_metadata import (
+    US_PA_LOCATION_METADATA_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
@@ -50,6 +56,9 @@ from recidiviz.calculator.query.state.views.reference.sentence_judicial_district
 )
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
@@ -75,6 +84,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
+    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
@@ -88,4 +98,6 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
     PRODUCT_ROSTER_VIEW_BUILDER,
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
+    LOCATION_METADATA_VIEW_BUILDER,
+    US_PA_LOCATION_METADATA_VIEW_BUILDER,
 ]

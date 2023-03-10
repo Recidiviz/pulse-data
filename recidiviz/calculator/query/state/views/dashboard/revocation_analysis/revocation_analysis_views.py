@@ -55,9 +55,6 @@ from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.state_
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis.state_race_ethnicity_population import (
     STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
-    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
-)
 
 REVOCATION_ANALYSIS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REVOCATIONS_MATRIX_EVENTS_BY_MONTH_VIEW_BUILDER,
@@ -70,7 +67,6 @@ REVOCATION_ANALYSIS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER,
     REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER,
     REVOCATIONS_MATRIX_SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
-    SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     STATE_RACE_ETHNICITY_POPULATION_VIEW_BUILDER,
     STATE_GENDER_POPULATION_VIEW_BUILDER,
 ]
