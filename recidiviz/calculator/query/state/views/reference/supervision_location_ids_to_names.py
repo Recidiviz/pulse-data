@@ -96,22 +96,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         FROM
             `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
     ),
-    pa_location_names AS (
-        SELECT 
-            DISTINCT 'US_PA' AS state_code,
-            level_3_supervision_location_external_id,
-            level_3_supervision_location_name,
-            level_2_supervision_location_external_id,
-            level_2_supervision_location_name,
-            UPPER(level_1_supervision_location_external_id) AS level_1_supervision_location_external_id,
-            level_1_supervision_location_name,
-        FROM `{project_id}.{us_pa_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
-        -- Limit the central office mapping to the central region to remove duplicates
-        WHERE (
-            level_2_supervision_location_external_id != "CO"
-            OR level_3_supervision_location_external_id = "CR"
-        )
-    ),
     tn_location_names AS (
         SELECT
             DISTINCT 'US_TN' AS state_code,
@@ -175,21 +159,40 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 SUPERVISION_SITE AS level_1_supervision_location_name,
         FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
     )
+    # TODO(#19319): Delete this clause / logic when MO supervision locations added to location_metadata
     SELECT * FROM me_location_names
     UNION ALL
+    # TODO(#19340): Delete this clause / logic when MO supervision locations added to location_metadata
     SELECT * FROM mo_location_names
     UNION ALL
+    # TODO(#19339): Delete this clause / logic when ND supervision locations added to location_metadata
     SELECT * FROM nd_location_names
     UNION ALL
-    SELECT * FROM pa_location_names
-    UNION ALL
+    # TODO(#19318): Delete this clause / logic when TN supervision locations added to location_metadata
     SELECT * FROM tn_location_names
     UNION ALL
     SELECT * FROM id_location_names
     UNION ALL
+    # TODO(#19317): Delete this clause / logic when IX supervision locations added to location_metadata
     SELECT * FROM ix_location_names
     UNION ALL
-    SELECT * FROM mi_location_names;
+    # TODO(#19316): Delete this clause / logic when MI supervision locations added to location_metadata
+    SELECT * FROM mi_location_names
+    UNION ALL
+
+    # TODO(#19343): Eventually update the output columns to be the "nice" names in the 
+    # `location_metadata` table (e.g. 'supervision_region_id', 'supervision_district_id',
+    # etc instead of level_1/level_2...).
+    SELECT DISTINCT
+        state_code, 
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_region_id') AS level_3_supervision_location_external_id,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_region_name') AS level_3_supervision_location_name,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_id') AS level_2_supervision_location_external_id,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') AS level_2_supervision_location_name,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_office_id') AS level_1_supervision_location_external_id,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_office_name') AS level_1_supervision_location_name
+    FROM `{project_id}.{reference_views_dataset}.location_metadata_materialized`
+    WHERE location_type = 'SUPERVISION_LOCATION';
     """
 
 SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -198,14 +201,12 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     us_mo_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_MO, instance=DirectIngestInstance.PRIMARY
     ),
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
-    ),
-    us_pa_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_PA, instance=DirectIngestInstance.PRIMARY
     ),
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
