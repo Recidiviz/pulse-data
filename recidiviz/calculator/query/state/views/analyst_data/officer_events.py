@@ -147,7 +147,7 @@ SELECT
     TO_JSON_STRING(STRUCT(
         event_type, 
         opportunity_type,
-        person_id,
+        person_external_id,
         new_status
     )) AS event_attributes,
 FROM 

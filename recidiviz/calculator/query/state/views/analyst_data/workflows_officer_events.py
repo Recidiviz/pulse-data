@@ -50,8 +50,8 @@ class WorkflowsOfficerEventQueryConfig:
     # The workflows-specific event type
     workflows_event_type: str = attr.ib()
 
-    # True if the event has a person_id specific to the event, False otherwise.
-    has_person_id: bool = attr.ib()
+    # True if the event has a person_external_id specific to the event, False otherwise.
+    has_person_external_id: bool = attr.ib()
 
     # True if the event has a opportunity_type specific to the event, False otherwise.
     has_opportunity_type: bool = attr.ib()
@@ -74,7 +74,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_profile_viewed",
         officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
         workflows_event_type="PROFILE_VIEWED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=False,
         has_status=False,
         should_get_context_page=False,
@@ -83,7 +83,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_opportunity_previewed",
         officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
         workflows_event_type="OPPORTUNITY_PREVIEWED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -92,7 +92,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_referral_form_viewed",
         officer_event_name=OfficerEvent.WORKFLOWS_PAGE,
         workflows_event_type="FORM_VIEWED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -101,7 +101,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_referral_form_copied",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="FORM_COPIED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -110,7 +110,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_referral_form_printed",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="FORM_PRINTED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -119,7 +119,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_referral_form_first_edited",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="FORM_FIRST_EDITED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -128,7 +128,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_referral_status_updated",
         officer_event_name=OfficerEvent.WORKFLOWS_CLIENT_STATUS_UPDATE,
         workflows_event_type="CLIENT_REFERRAL_STATUS_UPDATED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=True,
         should_get_context_page=False,
@@ -137,7 +137,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_referral_form_submitted",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="FORM_SUBMITTED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -146,7 +146,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="clients_surfaced",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="CLIENT_SURFACED",
-        has_person_id=True,
+        has_person_external_id=True,
         has_opportunity_type=True,
         has_status=False,
         should_get_context_page=False,
@@ -155,7 +155,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="identifies",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="USER_IDENTIFIED",
-        has_person_id=False,
+        has_person_external_id=False,
         has_opportunity_type=False,
         has_status=False,
         should_get_context_page=True,
@@ -164,7 +164,7 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         table_name="frontend_caseload_search",
         officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
         workflows_event_type="SEARCH_BAR_USED",
-        has_person_id=False,
+        has_person_external_id=False,
         has_opportunity_type=False,
         has_status=False,
         should_get_context_page=True,
@@ -176,7 +176,7 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
     """
     Helper for querying events logged from the Workflows front-end.
     """
-    if not config.has_opportunity_type and not config.has_person_id:
+    if not config.has_opportunity_type and not config.has_person_external_id:
         # If there is no opportunity and person associated with this event,
         # the event is not from a workflows_views.clients_ table, so get the raw event
         # and join on reidentified_dashboard_users to get user_external_id.
@@ -188,9 +188,9 @@ def workflows_officer_event_template(config: WorkflowsOfficerEventQueryConfig) -
 
     cols_to_dedup_by = ["user_external_id"]
     # The order of the steps to construct cols_to_dedup_by matters, so that events are deduped
-    # by user_external_id (officer), person_id (if applicable), opportunity_type (if applicable), then event date
-    if config.has_person_id:
-        cols_to_dedup_by.append("person_id")
+    # by user_external_id (officer), person_external_id (if applicable), opportunity_type (if applicable), then event date
+    if config.has_person_external_id:
+        cols_to_dedup_by.append("person_external_id")
     if config.has_opportunity_type:
         cols_to_dedup_by.append("opportunity_type")
     if config.additional_dedup_cols:
@@ -205,7 +205,7 @@ SELECT
     "{config.officer_event_name.value}" AS event,
     EXTRACT(DATETIME FROM timestamp AT TIME ZONE "US/Eastern") AS event_ts,
     "{config.workflows_event_type}" AS event_type, 
-    { "" if config.has_person_id else "NULL AS "}person_id,
+    { "" if config.has_person_external_id else "CAST(NULL AS STRING) AS "}person_external_id,
     { "" if config.has_opportunity_type else "CAST(NULL AS STRING) AS "}opportunity_type,
     { "status" if config.has_status else "CAST(NULL AS STRING)"} AS new_status,
     { "SPLIT(SUBSTR(context_page_path, 12), '/')[ORDINAL(1)]" 
