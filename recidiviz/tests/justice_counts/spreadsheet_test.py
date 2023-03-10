@@ -24,6 +24,7 @@ from freezegun import freeze_time
 
 from recidiviz.justice_counts.metrics import supervision
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
@@ -83,6 +84,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     auth0_user_id=user.auth0_user_id,
                     agency_id=agency.id,
                     metric_key_to_agency_datapoints={},
+                    metric_definitions=METRICS_BY_SYSTEM[
+                        schema.System.LAW_ENFORCEMENT.value
+                    ],
                 )
 
                 spreadsheet = session.query(schema.Spreadsheet).one()
@@ -115,6 +119,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
                 metric_key_to_agency_datapoints={},
+                metric_definitions=METRICS_BY_SYSTEM[
+                    schema.System.LAW_ENFORCEMENT.value
+                ],
             )
 
             spreadsheet = session.query(schema.Spreadsheet).one()
@@ -173,6 +180,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 auth0_user_id=user.auth0_user_id,
                 agency_id=agency.id,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PAROLE.value]
+                + METRICS_BY_SYSTEM[schema.System.PROBATION.value]
+                + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
             )
 
             metric_definitions = MetricInterface.get_metric_definitions_for_systems(

@@ -17,20 +17,17 @@
 """Functionality for bulk upload of data into the Justice Counts database."""
 
 import datetime
-import itertools
-import logging
 from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
-import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
 )
-from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
+from recidiviz.justice_counts.datapoint import DatapointUniqueKey
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
@@ -46,10 +43,6 @@ from recidiviz.justice_counts.metrics.metric_interface import (
     MetricAggregatedDimensionData,
     MetricInterface,
 )
-from recidiviz.justice_counts.metrics.metric_registry import (
-    METRIC_KEY_TO_METRIC,
-    METRICS_BY_SYSTEM,
-)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.date_utils import (
@@ -59,7 +52,6 @@ from recidiviz.justice_counts.utils.date_utils import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
-    ReportStatus,
 )
 
 PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
@@ -94,394 +86,16 @@ class BulkUploader:
         e.sheet_name = sheet_name
         return e
 
-    def upload_excel(
-        self,
-        session: Session,
-        xls: pd.ExcelFile,
-        agency_id: int,
-        system: schema.System,
-        user_account: schema.UserAccount,
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-        metric_definitions: Optional[List[MetricDefinition]] = None,
-    ) -> Tuple[
-        Dict[str, List[DatapointJson]],
-        Dict[Optional[str], List[JusticeCountsBulkUploadException]],
-    ]:
-        """Iterate through all tabs in an Excel spreadsheet and upload them
-        to the Justice Counts database using the `upload_rows` method defined below.
-        If an error is encountered in a particular sheet, log it and continue.
-        """
-        # 1. Fetch existing reports and datapoints for this agency, so that
-        # we know what objects to update vs. what new objects to create.
-        reports = ReportInterface.get_reports_by_agency_id(
-            session, agency_id=agency_id, include_datapoints=True
-        )
-        reports_sorted_by_time_range = sorted(
-            reports, key=lambda x: (x.date_range_start, x.date_range_end)
-        )
-        reports_by_time_range = {
-            k: list(v)
-            for k, v in groupby(
-                reports_sorted_by_time_range,
-                key=lambda x: (x.date_range_start, x.date_range_end),
-            )
-        }
-        existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
-            reports=reports
-        )
-
-        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]] = defaultdict(
-            list
-        )
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ] = defaultdict(list)
-        sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
-
-        expected_breakdown_sheet_names: Set[str] = {
-            metricfile.canonical_filename
-            for metricfile in sheet_name_to_metricfile.values()
-            if metricfile.disaggregation_column_name is not None
-        }
-
-        # 2. Sort sheet_names so that we process by aggregate sheets first
-        # e.g. caseloads before caseloads_by_gender. This ensures we don't
-        # infer an aggregate value when one is explicitly given.
-        # Note that the regular sorting will work for this case, since
-        # foobar will always come before foobar_by_xxx alphabetically.
-        actual_sheet_names = sorted(xls.sheet_names)
-
-        # 3. Now run through all sheets and process each in turn.
-        invalid_sheetnames: List[str] = []
-        sheet_name_to_df = pd.read_excel(xls, sheet_name=None)
-        for sheet_name in actual_sheet_names:
-            logging.info("Uploading %s", sheet_name)
-            df = sheet_name_to_df[sheet_name]
-            # Drop any rows that contain any NaN values
-            try:
-                df = df.dropna(axis=0, how="any", subset=["value"])
-            except (KeyError, TypeError):
-                # We will be in this case if the value column is missing,
-                # and it's safe to ignore the error because we'll raise
-                # an error about the missing value column later on in
-                # _get_column_value.
-                pass
-
-            # Convert dataframe to a list of dictionaries
-            rows = df.to_dict("records")
-            column_names = df.columns
-            metric_key_to_datapoint_jsons, metric_key_to_errors = self._upload_rows(
-                session=session,
-                system=system,
-                rows=rows,
-                column_names=column_names,
-                sheet_name=sheet_name,
-                agency_id=agency_id,
-                user_account=user_account,
-                reports_by_time_range=reports_by_time_range,
-                existing_datapoints_dict=existing_datapoints_dict,
-                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-                metric_key_to_errors=metric_key_to_errors,
-                invalid_sheetnames=invalid_sheetnames,
-                metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-            )
-
-        metric_key_to_errors = self._add_invalid_sheet_name_error(
-            invalid_sheet_names=invalid_sheetnames,
-            metric_key_to_errors=metric_key_to_errors,
-            sheet_name_to_metricfile=sheet_name_to_metricfile,
-        )
-
-        # 5. For any report that was updated, set its status to DRAFT
-        report: schema.Report  # make mypy happy
-        for report in itertools.chain(*reports_by_time_range.values()):
-            ReportInterface.update_report_metadata(
-                report=report,
-                editor_id=user_account.id,
-                status=ReportStatus.DRAFT.value,
-            )
-
-        metric_key_to_errors = self._add_missing_metric_errors(
-            metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-            metric_key_to_errors=metric_key_to_errors,
-            metric_definitions=metric_definitions or METRICS_BY_SYSTEM[system.value],
-            actual_sheet_names=actual_sheet_names,
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-        )
-
-        actual_breakdown_sheet_names: Set[str] = {
-            s for s in actual_sheet_names if s in expected_breakdown_sheet_names
-        }
-
-        metric_key_to_errors = self._add_missing_breakdowns_errors(
-            metric_key_to_errors=metric_key_to_errors,
-            metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
-            expected_breakdown_sheet_names=expected_breakdown_sheet_names,
-            actual_breakdown_sheet_names=actual_breakdown_sheet_names,
-            sheet_name_to_metricfile=sheet_name_to_metricfile,
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-        )
-
-        return metric_key_to_datapoint_jsons, metric_key_to_errors
-
-    def _add_invalid_sheet_name_error(
-        self,
-        invalid_sheet_names: List[str],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        sheet_name_to_metricfile: Dict[str, MetricFile],
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        """This function adds an Invalid Sheet Names error to the metric_key_to_errors
-        dictionary if the user has included sheet names in their Excel workbook
-        that do not correspond to the metrics that are specified for their agency."""
-
-        if len(invalid_sheet_names) > 0:
-            description = (
-                f"The following sheet names do not correspond to a metric for "
-                f"your agency: {', '.join(invalid_sheet_names)}. "
-                f"Valid options include {', '.join(sheet_name_to_metricfile.keys())}."
-            )
-            invalid_sheet_name_error = JusticeCountsBulkUploadException(
-                title="Invalid Sheet Names",
-                message_type=BulkUploadMessageType.ERROR,
-                description=description,
-            )
-            metric_key_to_errors[None].append(invalid_sheet_name_error)
-        return metric_key_to_errors
-
-    def _check_expected_columns(
-        self,
-        metricfile: MetricFile,
-        actual_columns: Set[str],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        metric_definition: MetricDefinition,
-        reporting_frequency: ReportingFrequency,
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        """This function adds an Unexpected Columns warning to the metric_key_to_errors
-        dictionary if there are unexpected column names for a given metric in a given sheet.
-        """
-        expected_columns = {"value", "year"}
-        if reporting_frequency.value == "MONTHLY":
-            expected_columns.add("month")
-        if metricfile.disaggregation_column_name is not None:
-            expected_columns.add(
-                metricfile.disaggregation_column_name  # type: ignore[arg-type]
-            )
-        if metric_definition.system.value == "SUPERVISION":
-            expected_columns.add("system")
-
-        unexpected_columns = actual_columns.difference(expected_columns)
-        for unexpected_col in unexpected_columns:
-            if unexpected_col == "month":
-                warning_title = "Unexpected Month Column"
-                warning_description = (
-                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: month. "
-                    f"The {metric_definition.display_name} metric is configured to be reported annually and does not require a month column."
-                )
-            elif unexpected_col == "system":
-                warning_title = "Unexpected System Column"
-                warning_description = (
-                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: system. "
-                    f"The {metric_definition.system.value} system does not have subsystems and does not require a system column."
-                )
-            elif (
-                "_type" in unexpected_col
-                and metricfile.disaggregation_column_name is None
-            ):
-                warning_title = "Unexpected Breakdown Column"
-                warning_description = f"Breakdown data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but this sheet should only contain aggregate data."
-            else:
-                warning_title = "Unexpected Column"
-                warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}."
-            unexpected_column_warning = JusticeCountsBulkUploadException(
-                title=warning_title,
-                message_type=BulkUploadMessageType.WARNING,
-                description=warning_description,
-            )
-            metric_key_to_errors[metric_definition.key].append(
-                unexpected_column_warning
-            )
-        return metric_key_to_errors
-
-    def _add_missing_metric_errors(
-        self,
-        actual_sheet_names: List[str],
-        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        metric_definitions: List[MetricDefinition],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        """This function adds an Missing Metric error to the metric_key_to_errors
-        dictionary if the user has not included rows in their Excel workbook
-        for a metric that is required for their agency."""
-        for metric_definition in metric_definitions:
-            sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
-                metric_definition.system.value
-            ]
-
-            # If no datapoints were ingested for a metric and no errors are associated with the
-            # metric (i.e there was no error in the sheet that prevented ingest), then the
-            # metric is missing.
-            if (
-                len(metric_key_to_datapoint_jsons.get(metric_definition.key, [])) == 0
-                and len(metric_key_to_errors.get(metric_definition.key, [])) == 0
-                and metric_definition.disabled is not True
-                and not DatapointInterface.is_metric_disabled(
-                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                    metric_key=metric_definition.key,
-                )
-            ):
-                files_without_rows = [
-                    sheet_name
-                    for sheet_name, metricfile in sheet_name_to_metricfile.items()
-                    if sheet_name in actual_sheet_names
-                    and metricfile.definition.key == metric_definition.key
-                ]
-                totals_filename = [
-                    sheet_name
-                    for sheet_name, metricfile in sheet_name_to_metricfile.items()
-                    if metricfile.definition.key == metric_definition.key
-                    and metricfile.disaggregation is None
-                ].pop()
-                description_suffix = (
-                    f"Please provide data in a sheet named {totals_filename}."
-                )
-                if len(files_without_rows) > 0:
-                    description_suffix = f"The following sheets were empty: {', '.join(files_without_rows)}."
-                missing_metric_warning = JusticeCountsBulkUploadException(
-                    title="Missing Metric",
-                    message_type=BulkUploadMessageType.WARNING,
-                    description=(
-                        f"No data for the {METRIC_KEY_TO_METRIC[metric_definition.key].display_name} metric was provided. "
-                        + description_suffix
-                    ),
-                )
-                metric_key_to_errors[metric_definition.key].append(
-                    missing_metric_warning
-                )
-
-        return metric_key_to_errors
-
-    def _add_missing_breakdowns_errors(
-        self,
-        actual_breakdown_sheet_names: Set[str],
-        expected_breakdown_sheet_names: Set[str],
-        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        sheet_name_to_metricfile: Dict[str, MetricFile],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        """This function adds an Missing Breakdown Sheet error to the metric_key_to_errors
-        dictionary if the user has not included a sheet in their Excel workbook
-        for a metric breakdown.
-        """
-        actual_breakdown_canonical_filenames = {
-            sheet_name_to_metricfile.get(
-                s
-            ).canonical_filename  # type: ignore[union-attr]
-            for s in actual_breakdown_sheet_names
-            if sheet_name_to_metricfile.get(s) is not None
-        }
-        for missing_sheet in (
-            expected_breakdown_sheet_names - actual_breakdown_sheet_names
-        ):
-            metricfile = sheet_name_to_metricfile.get(missing_sheet)
-            if (
-                metricfile is not None
-                and metricfile.canonical_filename
-                not in actual_breakdown_canonical_filenames
-                and len(
-                    metric_key_to_datapoint_jsons.get(metricfile.definition.key, [])
-                )
-                > 0
-            ):
-                # Only add missing breakdown warning if the metric is not missing.
-                self._add_missing_breakdowns_error(
-                    sheet_name=missing_sheet,
-                    metric_key_to_errors=metric_key_to_errors,
-                    metric_definition=metricfile.definition,
-                    is_sheet_provided=False,
-                    # we know metricfile.disaggreation will be non-None, so it's
-                    # safe to silence mypy
-                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                    disaggregation=metricfile.disaggregation,  # type: ignore[arg-type]
-                )
-        return metric_key_to_errors
-
-    def _add_missing_breakdowns_error(
-        self,
-        sheet_name: str,
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        metric_definition: MetricDefinition,
-        is_sheet_provided: bool,
-        disaggregation: Type[DimensionBase],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        if DatapointInterface.is_metric_disabled(
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-            metric_key=metric_definition.key,
-            dimension_id=disaggregation.dimension_identifier(),
-        ):
-            return metric_key_to_errors
-        description_suffix = f"Please provide data in a sheet named {sheet_name}."
-        if is_sheet_provided is True:
-            description_suffix = f"The sheet named {sheet_name} was empty."
-        missing_sheet_error = JusticeCountsBulkUploadException(
-            title="Missing Breakdown Sheet",
-            message_type=BulkUploadMessageType.WARNING,
-            description=f"No data for the {disaggregation.human_readable_name()} breakdown was provided. "
-            + description_suffix,
-            sheet_name=sheet_name,
-        )
-        metric_key_to_errors[metric_definition.key].append(missing_sheet_error)
-        return metric_key_to_errors
-
-    def _add_missing_total_warning(
-        self,
-        metric_definition: MetricDefinition,
-        sheet_name: str,
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        # Add a warning for missing total value only if datapoints
-        # were successfully ingested from the breakdown sheet.
-        if DatapointInterface.is_metric_disabled(
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-            metric_key=metric_definition.key,
-        ):
-            return metric_key_to_errors
-
-        missing_total_error = JusticeCountsBulkUploadException(
-            title="Missing Total Value",
-            message_type=BulkUploadMessageType.WARNING,
-            sheet_name=sheet_name,
-            description=(
-                f"No total values were provided for this metric. The total values will be assumed "
-                f"to be equal to the sum of the breakdown values provided in {sheet_name}."
-            ),
-        )
-        metric_key_to_errors[metric_definition.key].append(missing_total_error)
-        return metric_key_to_errors
-
-    def _upload_rows(
+    def upload_rows(
         self,
         session: Session,
         system: schema.System,
         rows: List[Dict[str, Any]],
-        column_names: List[str],
         sheet_name: str,
         agency_id: int,
+        column_names: List[str],
+        invalid_sheet_names: List[str],
+        metric_key_to_successfully_ingested_sheet_names: Dict[str, List[str]],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -489,7 +103,6 @@ class BulkUploader:
         user_account: schema.UserAccount,
         reports_by_time_range: Dict,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        invalid_sheetnames: List[str],
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
@@ -520,7 +133,7 @@ class BulkUploader:
                 sheet_name=sheet_name, system=current_system
             )
             if not metricfile:
-                invalid_sheetnames.append(sheet_name)
+                invalid_sheet_names.append(sheet_name)
                 return metric_key_to_datapoint_jsons, metric_key_to_errors
 
             existing_datapoint_json_list = metric_key_to_datapoint_jsons[
@@ -531,15 +144,19 @@ class BulkUploader:
                 new_datapoint_json_list = self._upload_rows_for_metricfile(
                     session=session,
                     rows=current_rows,
-                    column_names=column_names,
                     metricfile=metricfile,
                     agency_id=agency_id,
                     user_account=user_account,
                     reports_by_time_range=reports_by_time_range,
+                    column_names=column_names,
                     existing_datapoints_dict=existing_datapoints_dict,
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
+                if len(new_datapoint_json_list) > 0:
+                    metric_key_to_successfully_ingested_sheet_names[
+                        metricfile.definition.key
+                    ].append(sheet_name)
             except Exception as e:
                 new_datapoint_json_list = []
                 curr_metricfile = sheet_name_to_metricfile[sheet_name]
@@ -553,33 +170,6 @@ class BulkUploader:
             metric_key_to_datapoint_jsons[metricfile.definition.key] = (
                 existing_datapoint_json_list + new_datapoint_json_list
             )
-
-            if (
-                metricfile.disaggregation is not None
-                and len(existing_datapoint_json_list) == 0
-                and len(new_datapoint_json_list) > 0
-            ):
-                metric_key_to_errors = self._add_missing_total_warning(
-                    metric_definition=metricfile.definition,
-                    sheet_name=sheet_name,
-                    metric_key_to_errors=metric_key_to_errors,
-                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                )
-            elif (
-                len(new_datapoint_json_list) == 0
-                and len(existing_datapoint_json_list) > 0
-                and metricfile.disaggregation is not None
-            ):
-                # If the current sheet is a breakdown sheet and there are no datapoints associated
-                # with the sheet, the uploaded breakdown sheet is empty.
-                metric_key_to_errors = self._add_missing_breakdowns_error(
-                    sheet_name,
-                    metric_definition=metricfile.definition,
-                    metric_key_to_errors=metric_key_to_errors,
-                    is_sheet_provided=True,
-                    disaggregation=metricfile.disaggregation,
-                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                )
 
         return metric_key_to_datapoint_jsons, metric_key_to_errors
 
@@ -640,10 +230,10 @@ class BulkUploader:
         self,
         session: Session,
         rows: List[Dict[str, Any]],
-        column_names: List[str],
         metricfile: MetricFile,
         agency_id: int,
         user_account: schema.UserAccount,
+        column_names: List[str],
         reports_by_time_range: Dict,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         metric_key_to_errors: Dict[
@@ -655,20 +245,16 @@ class BulkUploader:
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
         The rows should be formatted according to the technical specification, and contain
         data for a particular metric across multiple time periods.
-
         Uploads this data into the Justice Counts database by breaking it up into Report objects,
         and either updating existing reports or creating new ones.
-
         A simplified version of the expected format:
         year | month | value | offense_type
         ===================================
         2021 | 1     | 100   | All
         2021 | 1     | 50    | Felony
         2021 | 2     | 110   | All
-
         This data would be used to either update or create two reports, one for January
         2021 and one for February 2021.
-
         The filename is assumed to be of the format "metric_name.csv", where metric_name
         corresponds to one of the MetricFile objects in bulk_upload_helpers.py.
         """
@@ -751,6 +337,62 @@ class BulkUploader:
                 )
 
         return datapoint_jsons_list
+
+    def _check_expected_columns(
+        self,
+        metricfile: MetricFile,
+        actual_columns: Set[str],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        metric_definition: MetricDefinition,
+        reporting_frequency: ReportingFrequency,
+    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
+        """This function adds an Unexpected Columns warning to the metric_key_to_errors
+        dictionary if there are unexpected column names for a given metric in a given sheet.
+        """
+        expected_columns = {"value", "year"}
+        if reporting_frequency.value == "MONTHLY":
+            expected_columns.add("month")
+        if metricfile.disaggregation_column_name is not None:
+            expected_columns.add(
+                metricfile.disaggregation_column_name  # type: ignore[arg-type]
+            )
+        if metric_definition.system.value == "SUPERVISION":
+            expected_columns.add("system")
+
+        unexpected_columns = actual_columns.difference(expected_columns)
+        for unexpected_col in unexpected_columns:
+            if unexpected_col == "month":
+                warning_title = "Unexpected Month Column"
+                warning_description = (
+                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: month. "
+                    f"The {metric_definition.display_name} metric is configured to be reported annually and does not require a month column."
+                )
+            elif unexpected_col == "system":
+                warning_title = "Unexpected System Column"
+                warning_description = (
+                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: system. "
+                    f"The {metric_definition.system.value} system does not have subsystems and does not require a system column."
+                )
+            elif (
+                "_type" in unexpected_col
+                and metricfile.disaggregation_column_name is None
+            ):
+                warning_title = "Unexpected Breakdown Column"
+                warning_description = f"Breakdown data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but this sheet should only contain aggregate data."
+            else:
+                warning_title = "Unexpected Column"
+                warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}."
+            unexpected_column_warning = JusticeCountsBulkUploadException(
+                title=warning_title,
+                message_type=BulkUploadMessageType.WARNING,
+                description=warning_description,
+            )
+            metric_key_to_errors[metric_definition.key].append(
+                unexpected_column_warning
+            )
+        return metric_key_to_errors
 
     def _get_rows_by_time_range(
         self,
