@@ -40,38 +40,7 @@ Funnel dashboard in Looker. It includes additional information about the individ
 """
 
 CURRENT_IMPACT_FUNNEL_STATUS_QUERY_TEMPLATE = f"""
-WITH records AS (
-  -- Combine the client record and resident record together to every opportunities
-  -- where the JII is currently considered eligible or almost eligible
-  SELECT
-    person_external_id,
-    state_code,
-    person_name,
-    officer_id,
-    supervision_level AS correctional_level,
-    supervision_start_date AS start_date,
-    expiration_date AS end_date,
-    district AS location,
-    pseudonymized_id,
-    all_eligible_opportunities
-  FROM `{{project_id}}.{{workflows_views_dataset}}.client_record_materialized` client_record
-
-  UNION ALL
-
-  SELECT
-    person_external_id,
-    state_code,
-    person_name,
-    officer_id,
-    custody_level AS correctional_level,
-    admission_date AS start_date,
-    release_date AS end_date,
-    facility_id AS location,
-    pseudonymized_id,
-    all_eligible_opportunities
-  FROM `{{project_id}}.{{workflows_views_dataset}}.resident_record_materialized` resident_record
-),
-eligibility AS (
+WITH eligibility AS (
   -- Query the current eligibility status (remaining criteria needed) for each opportunity
   SELECT
     state_code,
@@ -114,7 +83,7 @@ SELECT
   INITCAP(JSON_VALUE(PARSE_JSON(officer_name), '$.given_names'))
     || " "
     || INITCAP(JSON_VALUE(PARSE_JSON(officer_name), '$.surname')) AS officer_name,
-FROM records,
+FROM `{{project_id}}.{{workflows_views_dataset}}.person_record_materialized` records,
 UNNEST (all_eligible_opportunities) AS opportunity_type
 LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.opportunity_to_completion_event`
   USING (state_code, opportunity_type)

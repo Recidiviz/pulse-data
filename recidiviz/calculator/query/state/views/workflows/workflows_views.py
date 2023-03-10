@@ -72,6 +72,9 @@ from recidiviz.calculator.query.state.views.workflows.firestore.firestore_views 
 from recidiviz.calculator.query.state.views.workflows.person_id_to_external_id import (
     PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.person_record import (
+    PERSON_RECORD_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.reidentified_dashboard_users import (
     REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
 )
@@ -95,5 +98,6 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_FORM_PRINTED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_SUBMITTED_VIEW_BUILDER,
     CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
+    PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
 ]
