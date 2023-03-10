@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_MTSANC
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: NEXT_NUMBER
+  - name: RULE_ALLEGED
+  - name: SEQUENCE_NO
+  - name: DISCIPLINARY_SANCTION
+  - name: SUBFILE_KEY
+  - name: START_DATE
+  - name: STOP_DATE
+  - name: ACTUAL_DAYS
+  - name: SANCTION_AMOUNT
+  - name: SUSPENSE_DATE
+  - name: SANCTION_ACTUAL_END_DATE
+  - name: POSTED_DATE
+  - name: MTA_APPLNID
+  - name: SANCTION_TABLE
+  - name: LAST_UPDATE_LOCATION
+  - name: MISCONDUCT_SANCTION_ID
+  - name: SANCTION_ADJUST_ID

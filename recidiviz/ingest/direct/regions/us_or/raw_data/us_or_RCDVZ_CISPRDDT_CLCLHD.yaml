@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDT_CLCLHD
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols:
+  - RECORD_KEY
+  - CLASS_ACTION_DATE
+columns:
+  - name: RECORD_KEY
+  - name: EFFECTIVE_DATE
+  - name: CLASS_ACTION_DATE
+  - name: PUBLIC_SCORE
+  - name: INST_SCORE
+  - name: INSTITUTION_RISK
+  - name: CLASS_STATUS
+  - name: CLS_APPLNID
+  - name: CLASS_STATUS_TABLE
+  - name: COUNSELOR_APPROVAL
+  - name: CHAIR_APPROVAL
+  - name: ADMIN_APPROVAL
+  - name: CASELOAD
+  - name: PRIOR_CRIMES

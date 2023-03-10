@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_MTRLMS
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RULE_ALLEGED
+  - name: EFFECTIVE_DATE
+  - name: MISCONDUCT_SEV_LEVEL
+  - name: SHORT_DESCRIPTION
+  - name: LONG_DESCRIPTION
+  - name: RULE_DISPLAYED
+  - name: DISCONTINUED_DATE
