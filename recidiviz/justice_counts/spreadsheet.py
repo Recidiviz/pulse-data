@@ -34,7 +34,7 @@ from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHand
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
-from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
+from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
@@ -209,25 +209,26 @@ class SpreadsheetInterface:
         auth0_user_id: str,
         agency_id: int,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-        metric_definitions: Optional[List[MetricDefinition]] = None,
+        metric_definitions: List[MetricDefinition],
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
-        uploader = BulkUploader()
         user_account = (
             session.query(schema.UserAccount)
             .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
             .one()
         )
-        metric_key_to_datapoint_jsons, metric_key_to_errors = uploader.upload_excel(
-            session=session,
-            xls=xls,
+        uploader = WorkbookUploader(
             agency_id=spreadsheet.agency_id,
             system=spreadsheet.system,
             user_account=user_account,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+        )
+        metric_key_to_datapoint_jsons, metric_key_to_errors = uploader.upload_workbook(
+            session=session,
+            xls=xls,
             metric_definitions=metric_definitions,
         )
         is_ingest_successful = all(

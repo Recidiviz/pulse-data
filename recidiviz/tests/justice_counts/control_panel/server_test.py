@@ -35,7 +35,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.justice_counts import ContextKey
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.justice_counts.agency import AgencyInterface
-from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
+from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
 from recidiviz.justice_counts.control_panel.config import Config
 from recidiviz.justice_counts.control_panel.server import create_app
 from recidiviz.justice_counts.control_panel.user_context import UserContext
@@ -50,6 +50,7 @@ from recidiviz.justice_counts.includes_excludes.prisons import (
 )
 from recidiviz.justice_counts.metrics import law_enforcement, prisons
 from recidiviz.justice_counts.metrics.metric_definition import IncludesExcludesSetting
+from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -2281,13 +2282,16 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 "bulk_upload/bulk_upload_fixtures/law_enforcement/law_enforcement_metrics.xlsx",
             )
         )
-        BulkUploader().upload_excel(
-            session=self.session,
-            xls=pd.ExcelFile(law_enforcement_excel),
+        uploader = WorkbookUploader(
             agency_id=agency_id,
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
             metric_key_to_agency_datapoints={},
+        )
+        uploader.upload_workbook(
+            session=self.session,
+            xls=pd.ExcelFile(law_enforcement_excel),
+            metric_definitions=METRICS_BY_SYSTEM[schema.System.LAW_ENFORCEMENT.value],
         )
         self.session.commit()
 
