@@ -506,7 +506,7 @@ def sftp_dag() -> None:
                     task_id="check_queues_were_unpaused_prior",
                     python_callable=queues_were_unpaused,
                     op_kwargs={
-                        "status": XComArg(gather_queue_pause_status),
+                        "queues_paused": XComArg(gather_queue_pause_status),
                         "task_ids_if_unpaused": [
                             resume_scheduler_queue.task_id
                             for resume_scheduler_queue in resume_scheduler_queues
