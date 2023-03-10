@@ -20,10 +20,10 @@ columns:
     description: Official job title of the PO
   - name: LastName
     is_pii: True
-    description: PO's first name
+    description: PO's last name
   - name: FirstName
     is_pii: True
-    description: PO's last name
+    description: PO's first name
   - name: EMAIL_ADDRESS
     is_pii: True
     description: PO's email address
