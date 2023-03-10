@@ -20,8 +20,17 @@ from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
 )
+from recidiviz.persistence.entity_matching.state.us_ar.us_ar_matching_delegate import (
+    UsArMatchingDelegate,
+)
+from recidiviz.persistence.entity_matching.state.us_ca.us_ca_matching_delegate import (
+    UsCaMatchingDelegate,
+)
 from recidiviz.persistence.entity_matching.state.us_co.us_co_matching_delegate import (
     UsCoMatchingDelegate,
+)
+from recidiviz.persistence.entity_matching.state.us_ia.us_ia_matching_delegate import (
+    UsIaMatchingDelegate,
 )
 from recidiviz.persistence.entity_matching.state.us_id.us_id_matching_delegate import (
     UsIdMatchingDelegate,
@@ -56,30 +65,41 @@ from recidiviz.persistence.entity_matching.state.us_tn.us_tn_matching_delegate i
 
 
 class StateSpecificEntityMatchingDelegateFactory:
+    """Factory class for creating StateSpecificEntityMatchingDelegate objects"""
+
     @staticmethod
     def build(
         *, region_code: str, ingest_metadata: IngestMetadata
     ) -> StateSpecificEntityMatchingDelegate:
+        """Returns the appropriate StateSpecificEntityMatchingDelegate for the provided
+        state.
+        """
+        if region_code.upper() == "US_AR":
+            return UsArMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_CA":
+            return UsCaMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_CO":
+            return UsCoMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_IA":
+            return UsIaMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_ID":
             return UsIdMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_IX":
             return UsIxMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_ME":
+            return UsMeMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_MI":
+            return UsMiMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_MO":
             return UsMoMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_ND":
             return UsNdMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_OR":
             return UsOrMatchingDelegate(ingest_metadata)
+        if region_code.upper() == "US_OZ":
+            return UsOzMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_PA":
             return UsPaMatchingDelegate(ingest_metadata)
         if region_code.upper() == "US_TN":
             return UsTnMatchingDelegate(ingest_metadata)
-        if region_code.upper() == "US_ME":
-            return UsMeMatchingDelegate(ingest_metadata)
-        if region_code.upper() == "US_MI":
-            return UsMiMatchingDelegate(ingest_metadata)
-        if region_code.upper() == "US_CO":
-            return UsCoMatchingDelegate(ingest_metadata)
-        if region_code.upper() == "US_OZ":
-            return UsOzMatchingDelegate(ingest_metadata)
         raise ValueError(f"Unexpected region_code provided: {region_code}.")
