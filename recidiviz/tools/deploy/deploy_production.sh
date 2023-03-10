@@ -72,19 +72,34 @@ echo "Updating configuration / infrastructure in preparation for deploy"
 verify_hash "$TAG_COMMIT_HASH"
 pre_deploy_configure_infrastructure 'recidiviz-123' "${GIT_VERSION_TAG}" "$TAG_COMMIT_HASH"
 
-STAGING_IMAGE_URL="us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
-PROD_IMAGE_URL="us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
+DATAFLOW_STAGING_IMAGE_URL="us-docker.pkg.dev/recidiviz-staging/dataflow/default:${GIT_VERSION_TAG}" || exit_on_fail
+DATAFLOW_PROD_IMAGE_URL="us-docker.pkg.dev/recidiviz-123/dataflow/default:${GIT_VERSION_TAG}" || exit_on_fail
 
-echo "Starting deploy of main app - default"
+echo "Tagging dataflow image for deploy"
 {
-    run_cmd_no_exiting gcloud -q container images add-tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
+    run_cmd_no_exiting gcloud -q container images add-tag "${DATAFLOW_STAGING_IMAGE_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
 } || {
     echo "Falling back to manual docker tag commands"
     # We are running these fallback commands in case the add-tag command above times out
     # (likely due to network bandwidth)
-    run_cmd docker pull "${STAGING_IMAGE_URL}"
-    run_cmd docker tag "${STAGING_IMAGE_URL}" "${PROD_IMAGE_URL}"
-    run_cmd docker push "${PROD_IMAGE_URL}"
+    run_cmd docker pull "${DATAFLOW_STAGING_IMAGE_URL}"
+    run_cmd docker tag "${DATAFLOW_STAGING_IMAGE_URL}" "${DATAFLOW_PROD_IMAGE_URL}"
+    run_cmd docker push "${DATAFLOW_PROD_IMAGE_URL}"
+}
+
+APP_ENGINE_STAGING_IMAGE_URL="us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
+APP_ENGINE_PROD_IMAGE_URL="us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG}" || exit_on_fail
+
+echo "Starting deploy of main app - default"
+{
+    run_cmd_no_exiting gcloud -q container images add-tag "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
+} || {
+    echo "Falling back to manual docker tag commands"
+    # We are running these fallback commands in case the add-tag command above times out
+    # (likely due to network bandwidth)
+    run_cmd docker pull "${APP_ENGINE_STAGING_IMAGE_URL}"
+    run_cmd docker tag "${APP_ENGINE_STAGING_IMAGE_URL}" "${APP_ENGINE_PROD_IMAGE_URL}"
+    run_cmd docker push "${APP_ENGINE_PROD_IMAGE_URL}"
 }
 
 
@@ -92,7 +107,7 @@ run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_static_files --projec
 
 # TODO(#3928): Migrate deploy of app engine services to terraform.
 GAE_VERSION=$(echo "${GIT_VERSION_TAG}" | tr '.' '-') || exit_on_fail
-run_cmd gcloud -q app deploy prod.yaml --project="${PROJECT}" --version="${GAE_VERSION}" --image-url="${PROD_IMAGE_URL}"
+run_cmd gcloud -q app deploy prod.yaml --project="${PROJECT}" --version="${GAE_VERSION}" --image-url="${APP_ENGINE_PROD_IMAGE_URL}"
 
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
