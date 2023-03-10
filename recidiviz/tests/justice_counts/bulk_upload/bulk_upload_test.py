@@ -735,3 +735,63 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertTrue(
                 len(metric_key_to_datapoint_jsons.get("PROBATION_FUNDING", [])) > 0
             )
+
+    def test_unexpected_column_name(
+        self,
+    ) -> None:
+        """Checks that we warn the user when a sheet is uploaded with an unexpected column name."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+
+            # Warnings will include:
+            # 'month' when frequency is annual
+            # 'system' when not a Supervision system
+            # disaggregation with disaggregation_column_name is None
+            create_excel_file(
+                system=schema.System.PRISONS,
+                unexpected_month=True,
+                unexpected_column="system",
+                unexpected_disaggregation=True,
+            )
+            _, metric_key_to_errors = self.uploader.upload_excel(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                agency_id=self.prison_agency_id,
+                system=schema.System.PRISONS,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
+            self.assertEqual(len(metric_key_to_errors), 9)
+            # admission (monthly), admissions_by_type
+            # 2 'system' warnings, 1 disaggregation warning
+            self.assertEqual(len(metric_key_to_errors[prisons.admissions.key]), 3)
+            # expenses (annual), expenses_by_type
+            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
+            self.assertEqual(len(metric_key_to_errors[prisons.expenses.key]), 5)
+            # funding (annual), funding_by_type
+            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
+            self.assertEqual(len(metric_key_to_errors[prisons.funding.key]), 5)
+            # grievances_upheld (annual), grievances_upheld_by_type
+            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
+            self.assertEqual(
+                len(metric_key_to_errors[prisons.grievances_upheld.key]), 5
+            )
+            # population (monthly), population_by_type, population_by_race, population_by_biological_sex
+            # 4 'system' warnings, 1 disaggregation warning
+            self.assertEqual(len(metric_key_to_errors[prisons.daily_population.key]), 5)
+            # readmission (annual), readmissions_by_type
+            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
+            self.assertEqual(len(metric_key_to_errors[prisons.readmissions.key]), 5)
+            # releases (monthly), releases_by_type
+            # 2 'system' warnings, 1 disaggregation warning
+            self.assertEqual(len(metric_key_to_errors[prisons.releases.key]), 3)
+            # total_staff (annual), staff_by_type
+            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
+            self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 5)
+            # use_of_force_incidents (annual)
+            # 1 'system' warning, 1 disaggregation warning, 1 'month' warning
+            self.assertEqual(
+                len(metric_key_to_errors[prisons.staff_use_of_force_incidents.key]), 3
+            )
