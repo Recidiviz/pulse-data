@@ -104,6 +104,7 @@ DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED: Set[str] = {
     "dashboard_views",
     "dataflow_metrics_materialized",
     "experiments",
+    "external_reference_views",
     "externally_shared_views",
     "ingest_metadata",
     "justice_counts",

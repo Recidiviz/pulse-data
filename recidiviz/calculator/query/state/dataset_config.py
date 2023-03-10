@@ -102,6 +102,9 @@ EXPORT_ARCHIVES_DATASET = "export_archives"
 
 PULSE_DASHBOARD_SEGMENT_DATASET = "pulse_dashboard_segment_metrics"
 
+# Views that are based on the static data in the `external_reference` dataset.
+EXTERNAL_REFERENCE_VIEWS_DATASET = "external_reference_views"
+
 
 def normalized_state_dataset_for_state_code(state_code: StateCode) -> str:
     """Where the output of state-specific entity normalization pipelines is stored."""
