@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISPRDDTA_MTOFDR
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: RECORD_KEY
+  - name: NEXT_NUMBER
+  - name: CASE_DATE
+  - name: MTA_APPLNID
+  - name: LOCATION_TABLE
+  - name: CASE_LOCATION
+  - name: CASE_SEQUENCE
+  - name: HEARING_LOCATION
+  - name: HEARING_OFFICER_TABLE
+  - name: HEARING_OFFICER
+  - name: DECISION_STATUS
+  - name: DECISION_DATE
+  - name: DECISION_HO_DATE
+  - name: DECISION_FINAL_DATE
+  - name: EFFECTIVE_DATE
+  - name: NOTES
+  - name: DR_COMMENT
+  - name: LANGUAGE
+  - name: CIS_APPLNID
+  - name: LANGUAGE_TABLE
+  - name: CELL_NUMBER
+  - name: PROG_ID
+  - name: LOCATION_CODE
+  - name: MISCONDUCT_LOCATION
+  - name: CASE_TIME
+  - name: DISPOSITION_OF_EVIDENCE
+  - name: IMMEDIATE_ACTION
+  - name: USER_TITLE
+  - name: SUBMITTED_DATE
+  - name: DESEGREGATION_USER
+  - name: DESEG_USER_TITLE
+  - name: DESEGREGATION_DATE
+  - name: DESEGREGATION_APPROVED_USER
+  - name: DESEGREGATION_APPROVED_YN
+  - name: REVIEW_SUPERVISOR
+  - name: SUPERVISOR_TITLE
+  - name: DATE_OF_REVIEW
+  - name: DELIVERY_USER
+  - name: DELIVERY_TITLE
+  - name: DELIVERY_DATE
+  - name: DOCKET_DATE
+  - name: LAST_UPDATE_LOCATION
+  - name: LAST_UPDATE_PROGRAM
+  - name: LAST_UPDATED_WHEN
