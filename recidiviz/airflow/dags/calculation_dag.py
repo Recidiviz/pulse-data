@@ -22,7 +22,7 @@ import json
 import os
 import uuid
 from collections import defaultdict
-from typing import Any, Dict, List, NamedTuple, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Union
 
 from airflow.decorators import dag
 from airflow.operators.empty import EmptyOperator
@@ -54,7 +54,10 @@ try:
     )
     from utils.default_args import DEFAULT_ARGS  # type: ignore
     from utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS  # type: ignore
-    from utils.pipeline_parameters import PipelineParameters  # type: ignore
+    from utils.pipeline_parameters import (  # type: ignore
+        MetricsPipelineParameters,
+        PipelineParameters,
+    )
 except ImportError:
     from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
         FinishedCloudTaskQueryGenerator,
@@ -77,9 +80,10 @@ except ImportError:
     )
     from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
     from recidiviz.airflow.dags.utils.pipeline_parameters import (
+        MetricsPipelineParameters,
         PipelineParameters,
     )
-
+from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -595,25 +599,40 @@ def create_calculation_dag() -> None:
     metric_pipelines = YAMLDict.from_path(config_file).pop_dicts("metric_pipelines")
 
     metric_pipelines_by_state: Dict[
-        str, List[RecidivizDataflowTemplateOperator]
+        str,
+        Union[RecidivizDataflowTemplateOperator, RecidivizDataflowFlexTemplateOperator],
     ] = defaultdict(list)
 
     dataflow_pipeline_task_groups: Dict[str, TaskGroup] = {}
     dataflow_pipeline_task_group = TaskGroup("dataflow_pipelines")
 
     for metric_pipeline in metric_pipelines:
+
+        # define both a MetricsPipelineParameters for flex templates and a legacy PipelineConfigArgs
+        pipeline_config_parameters = MetricsPipelineParameters(**metric_pipeline.get())
         pipeline_config_args = get_pipeline_config_args(metric_pipeline)
-        if pipeline_config_args.state_code not in dataflow_pipeline_task_groups:
-            dataflow_pipeline_task_groups[pipeline_config_args.state_code] = TaskGroup(
-                f"{pipeline_config_args.state_code}_dataflow_pipelines",
+
+        state_code = pipeline_config_args.state_code
+
+        if state_code not in dataflow_pipeline_task_groups:
+            dataflow_pipeline_task_groups[state_code] = TaskGroup(
+                f"{state_code}_dataflow_pipelines",
                 parent_group=dataflow_pipeline_task_group,
             )
 
         if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            metric_pipeline_operator = dataflow_operator_for_pipeline(
-                pipeline_config_args,
-                metric_pipeline,
-                dataflow_pipeline_task_groups[pipeline_config_args.state_code],
+            metric_pipeline_operator = (
+                dataflow_operator_for_pipeline(
+                    pipeline_config_args,
+                    metric_pipeline,
+                    dataflow_pipeline_task_groups[state_code],
+                )
+                # TODO(#19131): remove state specific filtering and return all flex
+                if state_code != StateCode.US_IX.value
+                else flex_dataflow_operator_for_pipeline(
+                    pipeline_config_parameters,
+                    dataflow_pipeline_task_groups[state_code],
+                )
             )
 
             # Metric pipelines should complete before view rematerialization starts
