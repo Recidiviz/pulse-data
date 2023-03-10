@@ -124,7 +124,13 @@ class TestCalculationPipelineDag(unittest.TestCase):
         normalization_pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(task, RecidivizDataflowTemplateOperator)
+            if isinstance(
+                task,
+                (
+                    RecidivizDataflowFlexTemplateOperator,
+                    RecidivizDataflowTemplateOperator,
+                ),
+            )
             and "normalization" in task.task_id
         }
 
@@ -155,7 +161,13 @@ class TestCalculationPipelineDag(unittest.TestCase):
         metric_pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(task, RecidivizDataflowTemplateOperator)
+            if isinstance(
+                task,
+                (
+                    RecidivizDataflowFlexTemplateOperator,
+                    RecidivizDataflowTemplateOperator,
+                ),
+            )
             and "normalization" not in task.task_id
         }
 
