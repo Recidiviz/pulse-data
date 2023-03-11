@@ -293,6 +293,36 @@ def main() -> int:
     )
 
     success &= check_dependencies_for_entrypoint(
+        "recidiviz/airflow/dags/sftp_dag.py",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.airflow",
+                "recidiviz.cloud_storage",
+                "recidiviz.common.attr_validators",
+                "recidiviz.common.constants.states",
+                "recidiviz.common.io",
+                "recidiviz.common.retry_predicate",
+                "recidiviz.ingest.direct",
+                "recidiviz.persistence.database.schema_type",
+                "recidiviz.utils.environment",
+                "recidiviz.utils.metadata",
+                "recidiviz.utils.yaml_dict",
+                "recidiviz.utils.types",
+            }
+        ),
+        allowed_missing_module_prefixes=make_module_matcher(set()),
+    )
+
+    success &= check_dependencies_for_entrypoint(
+        "recidiviz/airflow/tests/sftp_dag_test.py",
+        valid_module_prefixes=make_module_matcher(
+            {
+                "recidiviz.airflow",
+            }
+        ),
+    )
+
+    success &= check_dependencies_for_entrypoint(
         "recidiviz/cloud_functions/main.py",
         valid_module_prefixes=make_module_matcher(set()),
     )
