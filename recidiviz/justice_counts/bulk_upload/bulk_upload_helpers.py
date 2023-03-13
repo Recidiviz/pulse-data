@@ -16,8 +16,10 @@
 # =============================================================================
 """Helpers for bulk upload functionality."""
 
+import calendar
+import datetime
 from datetime import date
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from thefuzz import fuzz
 
@@ -33,6 +35,7 @@ from recidiviz.justice_counts.exceptions import (
     JusticeCountsBulkUploadException,
 )
 
+MONTH_NAMES = list(calendar.month_name)
 FUZZY_MATCHING_SCORE_CUTOFF = 90
 NORMALIZERS: List[Normalizer] = [
     # hyphens with whitespace
@@ -44,6 +47,13 @@ NORMALIZERS: List[Normalizer] = [
     # multiple whitespaces
     REMOVE_MULTIPLE_WHITESPACES,
 ]
+
+PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
+
+
+def get_annual_year_from_fiscal_year(fiscal_year: str) -> Optional[str]:
+    """Takes as input a string and attempts to find the corresponding year"""
+    return fiscal_year[0 : fiscal_year.index("-")]
 
 
 def fuzzy_match_against_options(
@@ -76,3 +86,75 @@ def fuzzy_match_against_options(
         )
 
     return best_option
+
+
+def get_column_value(
+    row: Dict[str, Any],
+    column_name: str,
+    column_type: Type,
+    analyzer: TextAnalyzer,
+    time_range: Optional[Tuple[datetime.date, datetime.date]] = None,
+) -> Any:
+    """Given a row, a column name, and a column type, attempts to
+    extract a value of the given type from the row."""
+    if column_name not in row:
+        description = (
+            f'We expected to see a column named "{column_name}". '
+            f"Only the following columns were found in the sheet: "
+            f"{', '.join(row.keys())}."
+        )
+        raise JusticeCountsBulkUploadException(
+            title="Missing Column",
+            description=description,
+            message_type=BulkUploadMessageType.ERROR,
+            time_range=time_range,
+        )
+
+    column_value = row[column_name]
+    # Allow numeric values with columns in them (e.g. 1,000)
+    if isinstance(column_value, str):
+        column_value = column_value.replace(",", "")
+
+    try:
+        value = column_type(column_value)
+    except Exception as e:
+        if column_name == "month":
+            # Allow "month" column to be either numbers or month names
+            column_value = get_month_value_from_string(
+                text_analyzer=analyzer, month=column_value
+            )
+            value = column_type(column_value)
+        elif column_name == "year" and "-" in str(column_value):
+            column_value = get_annual_year_from_fiscal_year(
+                fiscal_year=str(column_value)
+            )
+            value = column_type(column_value)
+        else:
+            raise JusticeCountsBulkUploadException(
+                title="Wrong Value Type",
+                message_type=BulkUploadMessageType.ERROR,
+                description=f'We expected all values in the column named "{column_name}" to '
+                f"be {PYTHON_TYPE_TO_READABLE_NAME.get(column_type.__name__, column_type.__name__)}. Instead we found the value "
+                f'"{column_value}", which is {PYTHON_TYPE_TO_READABLE_NAME.get(type(column_value).__name__, type(column_value).__name__)}.',
+            ) from e
+
+    # Round numbers to two decimal places
+    if isinstance(value, float):
+        value = round(value, 2)
+
+    return value
+
+
+def get_month_value_from_string(month: str, text_analyzer: TextAnalyzer) -> int:
+    """Takes as input a string and attempts to find the corresponding month
+    index using the calendar module's month_names enum. For instance,
+    March -> 3. Uses fuzzy matching to handle typos, such as `Febuary`."""
+    column_value = month.title()
+    if column_value not in MONTH_NAMES:
+        column_value = fuzzy_match_against_options(
+            analyzer=text_analyzer,
+            category_name="Month",
+            text=column_value,
+            options=MONTH_NAMES,
+        )
+    return MONTH_NAMES.index(column_value)
