@@ -1,0 +1,75 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Shows the spans of time during which someone in TN may be eligible for compliant reporting, with discretion.
+"""
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.candidate_populations.general import (
+    supervision_population_all_eligible_levels,
+)
+from recidiviz.task_eligibility.completion_events import transfer_to_limited_supervision
+from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    fines_fees_eligible,
+    missing_active_sentences_or_zero_tolerance_code_spans_or_ineligible_offenses_expired,
+    no_arrests_in_past_year,
+    no_high_sanctions_in_past_year,
+    no_murder_convictions,
+    no_recent_compliant_reporting_rejections,
+    not_in_judicial_district_17_while_on_probation,
+    not_on_life_sentence_or_lifetime_supervision,
+    not_permanently_rejected_from_compliant_reporting,
+    on_eligible_level_for_sufficient_time,
+    passed_drug_screen_check,
+    special_conditions_are_current,
+)
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+_DESCRIPTION = """Shows the spans of time during which someone in TN may be eligible for compliant reporting, with
+discretion related to:
+- missing/outdated sentencing information
+- zero tolerance codes suggesting outdated sentencing information
+- ineligible offense types for expired sentences (but not sentences that expired 10+ years ago)
+"""
+
+VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    task_name="TRANSFER_TO_COMPLIANT_REPORTING_WITH_DISCRETION",
+    description=_DESCRIPTION,
+    candidate_population_view_builder=supervision_population_all_eligible_levels.VIEW_BUILDER,
+    criteria_spans_view_builders=[
+        on_eligible_level_for_sufficient_time.VIEW_BUILDER,
+        no_arrests_in_past_year.VIEW_BUILDER,
+        no_high_sanctions_in_past_year.VIEW_BUILDER,
+        fines_fees_eligible.VIEW_BUILDER,
+        passed_drug_screen_check.VIEW_BUILDER,
+        special_conditions_are_current.VIEW_BUILDER,
+        not_in_judicial_district_17_while_on_probation.VIEW_BUILDER,
+        not_permanently_rejected_from_compliant_reporting.VIEW_BUILDER,
+        no_recent_compliant_reporting_rejections.VIEW_BUILDER,
+        not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
+        no_murder_convictions.VIEW_BUILDER,
+        missing_active_sentences_or_zero_tolerance_code_spans_or_ineligible_offenses_expired.VIEW_BUILDER,
+    ],
+    completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()
