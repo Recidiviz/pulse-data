@@ -41,10 +41,6 @@ class TestGetUnionedViewBuilders(unittest.TestCase):
                 table_id="all_general_candidate_populations",
             ),
             BigQueryAddress(
-                dataset_id="task_eligibility_candidates_us_mi",
-                table_id="all_state_specific_candidate_populations",
-            ),
-            BigQueryAddress(
                 dataset_id="task_eligibility_completion_events",
                 table_id="all_completion_events",
             ),
