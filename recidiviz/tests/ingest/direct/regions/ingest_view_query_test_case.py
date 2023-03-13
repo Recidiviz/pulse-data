@@ -64,7 +64,7 @@ from recidiviz.tests.ingest.direct.fixture_util import (
     DirectIngestFixtureDataFileType,
     direct_ingest_fixture_path,
 )
-from recidiviz.utils import csv
+from recidiviz.utils import csv, environment
 
 DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0, tzinfo=pytz.UTC)
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime(2021, 4, 15, 0, 0, 0)
@@ -146,6 +146,10 @@ class IngestViewQueryTester:
         results = self._query_ingest_view_for_builder(ingest_view, query_run_dt)
 
         if create_expected:
+            if environment.in_ci():
+                raise AssertionError(
+                    "`create_expected` should only be used when writing or updating the test."
+                )
             results.to_csv(expected_output_fixture_path, index=False)
 
         self.compare_results_to_fixture(results, expected_output_fixture_path)
