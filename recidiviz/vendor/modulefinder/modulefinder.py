@@ -160,7 +160,7 @@ class Module:
         self.__name__ = name
         self.__file__ = file
         self.__path__ = path
-        self.__code__ = None
+        self.__code__: Optional[types.CodeType] = None
         # The set of global names that are assigned to in the module.
         # This includes those names imported through starimports of
         # Python modules.
