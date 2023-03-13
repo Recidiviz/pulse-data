@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Functionality for bulk upload of data into the Justice Counts database."""
+"""Functionality for bulk upload of an Excel workbook into the Justice Counts database."""
 
 import itertools
 import logging
@@ -26,7 +26,9 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
-from recidiviz.justice_counts.bulk_upload.bulk_upload import BulkUploader
+from recidiviz.justice_counts.bulk_upload.spreadsheet_uploader import (
+    SpreadsheetUploader,
+)
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
@@ -54,13 +56,6 @@ class WorkbookUploader:
         user_account: schema.UserAccount,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> None:
-        self.text_analyzer = TextAnalyzer(
-            configuration=TextMatchingConfiguration(
-                # We don't want to treat "other" as a stop word,
-                # because it's a valid breakdown category
-                stop_words_to_remove={"other"}
-            )
-        )
         self.system = system
         self.agency_id = agency_id
         self.user_account = user_account
@@ -82,6 +77,13 @@ class WorkbookUploader:
         self.metric_key_to_datapoint_jsons: Dict[
             str, List[DatapointJson]
         ] = defaultdict(list)
+        self.text_analyzer = TextAnalyzer(
+            configuration=TextMatchingConfiguration(
+                # We don't want to treat "other" as a stop word,
+                # because it's a valid breakdown category
+                stop_words_to_remove={"other"}
+            )
+        )
 
     def upload_workbook(
         self,
@@ -145,22 +147,24 @@ class WorkbookUploader:
                 pass
             rows = df.to_dict("records")
             column_names = df.columns
-            bulk_upload = BulkUploader()
-            bulk_upload.upload_rows(
-                session=session,
+            spreadsheet_uploader = SpreadsheetUploader(
+                text_analyzer=self.text_analyzer,
                 system=self.system,
-                rows=rows,
-                sheet_name=sheet_name,
-                column_names=column_names,
-                invalid_sheet_names=invalid_sheet_names,
-                metric_key_to_successfully_ingested_sheet_names=metric_key_to_successfully_ingested_sheet_names,
                 agency_id=self.agency_id,
                 user_account=self.user_account,
+                metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
+                sheet_name=sheet_name,
+                column_names=column_names,
                 reports_by_time_range=reports_by_time_range,
                 existing_datapoints_dict=existing_datapoints_dict,
+            )
+            spreadsheet_uploader.upload_sheet(
+                session=session,
+                rows=rows,
+                invalid_sheet_names=invalid_sheet_names,
+                metric_key_to_successfully_ingested_sheet_names=metric_key_to_successfully_ingested_sheet_names,
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
                 metric_key_to_errors=self.metric_key_to_errors,
-                metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
             )
 
         # 4. For any report that was updated, set its status to DRAFT

@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Functionality for bulk upload of data into the Justice Counts database."""
+"""Functionality for bulk upload of a spreadsheet into the Justice Counts database."""
 
 import datetime
 from collections import defaultdict
@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Type
 
 from sqlalchemy.orm import Session
 
-from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
+from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
     fuzzy_match_against_options,
 )
@@ -57,17 +57,30 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
 
 
-class BulkUploader:
-    """Functionality for bulk upload of data into the Justice Counts database."""
+class SpreadsheetUploader:
+    """Functionality for bulk upload of a spreadsheet into the Justice Counts database."""
 
-    def __init__(self) -> None:
-        self.text_analyzer = TextAnalyzer(
-            configuration=TextMatchingConfiguration(
-                # We don't want to treat "other" as a stop word,
-                # because it's a valid breakdown category
-                stop_words_to_remove={"other"}
-            )
-        )
+    def __init__(
+        self,
+        text_analyzer: TextAnalyzer,
+        system: schema.System,
+        agency_id: int,
+        user_account: schema.UserAccount,
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        sheet_name: str,
+        column_names: List[str],
+        reports_by_time_range: Dict[tuple[datetime.date, datetime.date], Any],
+        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
+    ) -> None:
+        self.text_analyzer = text_analyzer
+        self.system = system
+        self.agency_id = agency_id
+        self.user_account = user_account
+        self.metric_key_to_agency_datapoints = metric_key_to_agency_datapoints
+        self.sheet_name = sheet_name
+        self.column_names = column_names
+        self.reports_by_time_range = reports_by_time_range
+        self.existing_datapoints_dict = existing_datapoints_dict
 
     def _handle_error(
         self, e: Exception, sheet_name: str
@@ -86,24 +99,16 @@ class BulkUploader:
         e.sheet_name = sheet_name
         return e
 
-    def upload_rows(
+    def upload_sheet(
         self,
         session: Session,
-        system: schema.System,
         rows: List[Dict[str, Any]],
-        sheet_name: str,
-        agency_id: int,
-        column_names: List[str],
         invalid_sheet_names: List[str],
         metric_key_to_successfully_ingested_sheet_names: Dict[str, List[str]],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        user_account: schema.UserAccount,
-        reports_by_time_range: Dict,
-        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -113,9 +118,8 @@ class BulkUploader:
         probation. This is indicated by the `system` column. In this case, we break
         up the rows by system, and then ingest one system at a time."""
         system_to_rows = self._get_system_to_rows(
-            system=system,
+            system=self.system,
             rows=rows,
-            sheet_name=sheet_name,
             metric_key_to_errors=metric_key_to_errors,
         )
         for current_system, current_rows in system_to_rows.items():
@@ -130,10 +134,10 @@ class BulkUploader:
             # Based on the system and the name of the CSV file, determine which
             # Justice Counts metric this file contains data for
             metricfile = get_metricfile_by_sheetname(
-                sheet_name=sheet_name, system=current_system
+                sheet_name=self.sheet_name, system=current_system
             )
             if not metricfile:
-                invalid_sheet_names.append(sheet_name)
+                invalid_sheet_names.append(self.sheet_name)
                 return metric_key_to_datapoint_jsons, metric_key_to_errors
 
             existing_datapoint_json_list = metric_key_to_datapoint_jsons[
@@ -145,25 +149,19 @@ class BulkUploader:
                     session=session,
                     rows=current_rows,
                     metricfile=metricfile,
-                    agency_id=agency_id,
-                    user_account=user_account,
-                    reports_by_time_range=reports_by_time_range,
-                    column_names=column_names,
-                    existing_datapoints_dict=existing_datapoints_dict,
                     metric_key_to_errors=metric_key_to_errors,
-                    metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 )
                 if len(new_datapoint_json_list) > 0:
                     metric_key_to_successfully_ingested_sheet_names[
                         metricfile.definition.key
-                    ].append(sheet_name)
+                    ].append(self.sheet_name)
             except Exception as e:
                 new_datapoint_json_list = []
-                curr_metricfile = sheet_name_to_metricfile[sheet_name]
+                curr_metricfile = sheet_name_to_metricfile[self.sheet_name]
                 metric_key_to_errors[curr_metricfile.definition.key].append(
                     self._handle_error(
                         e=e,
-                        sheet_name=sheet_name,
+                        sheet_name=self.sheet_name,
                     )
                 )
 
@@ -177,7 +175,6 @@ class BulkUploader:
         self,
         system: schema.System,
         rows: List[Dict[str, Any]],
-        sheet_name: str,
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
@@ -214,7 +211,7 @@ class BulkUploader:
                                 f"The valid values for this column are {', '.join(v.value for v in normalized_system_value_to_system.values())}."
                             ),
                             message_type=BulkUploadMessageType.ERROR,
-                            sheet_name=sheet_name,
+                            sheet_name=self.sheet_name,
                         )
                     )
                     continue
@@ -231,15 +228,9 @@ class BulkUploader:
         session: Session,
         rows: List[Dict[str, Any]],
         metricfile: MetricFile,
-        agency_id: int,
-        user_account: schema.UserAccount,
-        column_names: List[str],
-        reports_by_time_range: Dict,
-        existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -263,7 +254,7 @@ class BulkUploader:
             reporting_frequency,
             custom_starting_month,
         ) = metric_definition.get_reporting_frequency_to_use(
-            agency_datapoints=metric_key_to_agency_datapoints.get(
+            agency_datapoints=self.metric_key_to_agency_datapoints.get(
                 metric_definition.key, []
             ),
         )
@@ -271,7 +262,9 @@ class BulkUploader:
         # actual_columns is a set of all of the column names that have been uploaded by the user
         # we are filtering out 'Unnamed: 0' because this is the column name of the index column
         # the index column is produced when the excel file is converted to a pandas df
-        actual_columns = {col.lower() for col in column_names if col != "Unnamed: 0"}
+        actual_columns = {
+            col.lower() for col in self.column_names if col != "Unnamed: 0"
+        }
         metric_key_to_errors = self._check_expected_columns(
             metricfile=metricfile,
             actual_columns=actual_columns,
@@ -293,7 +286,7 @@ class BulkUploader:
         # Else, create a new report and add the MetricInterface.
         datapoint_jsons_list = []
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
-            existing_report = reports_by_time_range.get(time_range)
+            existing_report = self.reports_by_time_range.get(time_range)
             if existing_report is not None:
                 if len(existing_report) != 1:
                     raise ValueError(
@@ -304,13 +297,13 @@ class BulkUploader:
                 year, month = time_range_to_year_month[time_range]
                 report = ReportInterface.create_report(
                     session=session,
-                    agency_id=agency_id,
-                    user_account_id=user_account.id,
+                    agency_id=self.agency_id,
+                    user_account_id=self.user_account.id,
                     year=year,
                     month=month,
                     frequency=reporting_frequency.value,
                 )
-                reports_by_time_range[time_range] = [report]
+                self.reports_by_time_range[time_range] = [report]
 
             try:
                 report_metric = self._get_report_metric(
@@ -323,10 +316,10 @@ class BulkUploader:
                     session=session,
                     report=report,
                     report_metric=report_metric,
-                    user_account=user_account,
+                    user_account=self.user_account,
                     # TODO(#15499) Infer aggregate value only if total sheet was not provided.
                     use_existing_aggregate_value=metricfile.disaggregation is not None,
-                    existing_datapoints_dict=existing_datapoints_dict,
+                    existing_datapoints_dict=self.existing_datapoints_dict,
                 )
             except Exception as e:
                 metric_key_to_errors[metricfile.definition.key].append(
