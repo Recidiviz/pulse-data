@@ -43,8 +43,8 @@ WITH last_day_of_data AS (
     GROUP BY 1
 )
 
--- PO-level assignments from static reference table
-, po_assignments AS (
+-- officer-level assignments from static reference table
+, officer_assignments AS (
     SELECT
         experiment_id,
         state_code,
@@ -53,6 +53,23 @@ WITH last_day_of_data AS (
         variant_date,
     FROM
         `{project_id}.{static_reference_dataset}.experiment_officer_assignments_materialized`
+)
+
+-- state-level assignments passed through to officers, e.g. statewide feature rollouts
+, state_assignments AS (
+    SELECT DISTINCT
+      experiment_id,
+      a.state_code,
+      supervising_officer_external_id AS officer_external_id,
+      variant_id,
+      variant_date,
+    FROM
+      `experiments.state_assignments_materialized` a
+    INNER JOIN
+      `sessions.supervision_officer_sessions_materialized` b
+    ON
+      a.state_code = b.state_code
+      AND variant_date BETWEEN b.start_date AND IFNULL(b.end_date, "9999-01-01")
 )
 
 -- When officers first given access to Case Triage
@@ -88,7 +105,10 @@ WITH last_day_of_data AS (
 -- Union all assignment subqueries
 , stacked AS (
     SELECT *
-    FROM po_assignments
+    FROM officer_assignments
+    UNION ALL
+    SELECT *
+    FROM state_assignments
     UNION ALL
     SELECT *
     FROM case_triage_access
