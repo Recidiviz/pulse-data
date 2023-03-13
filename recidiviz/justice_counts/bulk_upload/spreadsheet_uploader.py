@@ -19,16 +19,14 @@
 import datetime
 from collections import defaultdict
 from itertools import groupby
-from typing import Any, Dict, List, Optional, Set, Tuple, Type
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from sqlalchemy.orm import Session
 
 from recidiviz.common.text_analysis import TextAnalyzer
-from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import (
-    fuzzy_match_against_options,
-)
-from recidiviz.justice_counts.datapoint import DatapointUniqueKey
-from recidiviz.justice_counts.dimensions.base import DimensionBase
+from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import get_column_value
+from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
+from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
@@ -39,22 +37,12 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     get_metricfile_by_sheetname,
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
-from recidiviz.justice_counts.metrics.metric_interface import (
-    MetricAggregatedDimensionData,
-    MetricInterface,
-)
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
-from recidiviz.justice_counts.utils.date_utils import (
-    get_annual_year_from_fiscal_year,
-    get_month_value_from_string,
-)
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
 )
-
-PYTHON_TYPE_TO_READABLE_NAME = {"int": "a number", "float": "a number", "str": "text"}
 
 
 class SpreadsheetUploader:
@@ -81,23 +69,6 @@ class SpreadsheetUploader:
         self.column_names = column_names
         self.reports_by_time_range = reports_by_time_range
         self.existing_datapoints_dict = existing_datapoints_dict
-
-    def _handle_error(
-        self, e: Exception, sheet_name: str
-    ) -> JusticeCountsBulkUploadException:
-        if not isinstance(e, JusticeCountsBulkUploadException):
-            # If an error is not a JusticeCountsBulkUploadException, wrap it
-            # in a JusticeCountsBulkUploadException and label it unexpected.
-            return JusticeCountsBulkUploadException(
-                title="Unexpected Error",
-                message_type=BulkUploadMessageType.ERROR,
-                sheet_name=sheet_name,
-                description=e.message  # type: ignore[attr-defined]
-                if hasattr(e, "message")
-                else "",
-            )
-        e.sheet_name = sheet_name
-        return e
 
     def upload_sheet(
         self,
@@ -171,58 +142,6 @@ class SpreadsheetUploader:
 
         return metric_key_to_datapoint_jsons, metric_key_to_errors
 
-    def _get_system_to_rows(
-        self,
-        system: schema.System,
-        rows: List[Dict[str, Any]],
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-    ) -> Dict[schema.System, List[Dict[str, Any]]]:
-        """Groups the rows in the file by the value of the `system` column.
-        Returns a dictionary mapping each system to its list of rows."""
-        system_to_rows = {}
-        if system == schema.System.SUPERVISION:
-            system_value_to_rows = {
-                k: list(v)
-                for k, v in groupby(
-                    sorted(rows, key=lambda x: x.get("system", "both")),
-                    lambda x: x.get("system", "both"),
-                )
-            }
-            normalized_system_value_to_system = {
-                "supervision": schema.System.SUPERVISION,
-                "all": schema.System.SUPERVISION,
-                "parole": schema.System.PAROLE,
-                "probation": schema.System.PROBATION,
-                "other supervision": schema.System.OTHER_SUPERVISION,
-                "pretrial supervision": schema.System.PRETRIAL_SUPERVISION,
-            }
-            for system_value, system_rows in system_value_to_rows.items():
-                normalized_system_value = (
-                    system_value.lower().strip().replace("-", " ").replace("_", " ")
-                )
-                if normalized_system_value not in normalized_system_value_to_system:
-                    metric_key_to_errors[None].append(
-                        JusticeCountsBulkUploadException(
-                            title="System Not Recognized",
-                            description=(
-                                f'"{system_value}" is not a valid value for the System column. '
-                                f"The valid values for this column are {', '.join(v.value for v in normalized_system_value_to_system.values())}."
-                            ),
-                            message_type=BulkUploadMessageType.ERROR,
-                            sheet_name=self.sheet_name,
-                        )
-                    )
-                    continue
-                mapped_system = normalized_system_value_to_system[
-                    normalized_system_value
-                ]
-                system_to_rows[mapped_system] = system_rows
-        else:
-            system_to_rows[system] = rows
-        return system_to_rows
-
     def _upload_rows_for_metricfile(
         self,
         session: Session,
@@ -279,48 +198,36 @@ class SpreadsheetUploader:
             reporting_frequency=reporting_frequency,
             custom_starting_month=custom_starting_month,
         )
-
         # Step 3: For each time range represented in the file, convert the
         # reported data into a MetricInterface object. If a report already
         # exists for this time range, update it with the MetricInterface.
         # Else, create a new report and add the MetricInterface.
         datapoint_jsons_list = []
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
-            existing_report = self.reports_by_time_range.get(time_range)
-            if existing_report is not None:
-                if len(existing_report) != 1:
-                    raise ValueError(
-                        f"Found {len(existing_report)} reports with time range {time_range}."
-                    )
-                report = existing_report[0]
-            else:  # existing report is None, so create the report
-                year, month = time_range_to_year_month[time_range]
-                report = ReportInterface.create_report(
-                    session=session,
-                    agency_id=self.agency_id,
-                    user_account_id=self.user_account.id,
-                    year=year,
-                    month=month,
-                    frequency=reporting_frequency.value,
-                )
-                self.reports_by_time_range[time_range] = [report]
 
             try:
-                report_metric = self._get_report_metric(
-                    metricfile=metricfile,
+                time_range_uploader = TimeRangeUploader(
                     time_range=time_range,
+                    agency_id=self.agency_id,
                     rows_for_this_time_range=rows_for_this_time_range,
-                )
-
-                datapoint_jsons_list += ReportInterface.add_or_update_metric(
-                    session=session,
-                    report=report,
-                    report_metric=report_metric,
                     user_account=self.user_account,
                     # TODO(#15499) Infer aggregate value only if total sheet was not provided.
-                    use_existing_aggregate_value=metricfile.disaggregation is not None,
                     existing_datapoints_dict=self.existing_datapoints_dict,
+                    text_analyzer=self.text_analyzer,
+                    metricfile=metricfile,
                 )
+                existing_report = self.reports_by_time_range.get(time_range)
+                (
+                    report,
+                    datapoint_json_list_for_time_range,
+                ) = time_range_uploader.upload_time_range(
+                    session=session,
+                    time_range_to_year_month=time_range_to_year_month,
+                    existing_report=existing_report,
+                    reporting_frequency=reporting_frequency,
+                )  # TODO(#15499) Infer aggregate value only if total sheet was not provided
+                self.reports_by_time_range[time_range] = [report]
+                datapoint_jsons_list += datapoint_json_list_for_time_range
             except Exception as e:
                 metric_key_to_errors[metricfile.definition.key].append(
                     self._handle_error(
@@ -403,10 +310,18 @@ class SpreadsheetUploader:
         for row in rows:
             # remove whitespace from column headers
             row = {k.strip(): v for k, v in row.items() if k is not None}
-            year = self._get_column_value(row=row, column_name="year", column_type=int)
+            year = get_column_value(
+                row=row,
+                column_name="year",
+                column_type=int,
+                analyzer=self.text_analyzer,
+            )
             if reporting_frequency == ReportingFrequency.MONTHLY:
-                month = self._get_column_value(
-                    row=row, column_name="month", column_type=int
+                month = get_column_value(
+                    row=row,
+                    column_name="month",
+                    column_type=int,
+                    analyzer=self.text_analyzer,
                 )
             elif (
                 reporting_frequency == ReportingFrequency.ANNUAL
@@ -414,8 +329,11 @@ class SpreadsheetUploader:
             ):
                 # We will be in this case if monthly data is provided for annual metrics
                 # warning will be added in _check_expected_columns()
-                month = self._get_column_value(
-                    row=row, column_name="month", column_type=int
+                month = get_column_value(
+                    analyzer=self.text_analyzer,
+                    row=row,
+                    column_name="month",
+                    column_type=int,
                 )
             elif reporting_frequency == ReportingFrequency.ANNUAL:
                 month = (
@@ -429,164 +347,121 @@ class SpreadsheetUploader:
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
 
-    def _get_report_metric(
+    def _add_missing_total_warning(
         self,
-        metricfile: MetricFile,
-        time_range: Tuple[datetime.date, datetime.date],
-        rows_for_this_time_range: List[Dict[str, Any]],
-    ) -> MetricInterface:
-        """Given a a set of rows from the CSV that all correspond to a single
-        time period, convert the data in these rows to a MetricInterface object.
-        If the metric associated with this CSV has no disaggregations, there
-        should only be a single row for a single time period, and it contains
-        the aggregate metric value. If the metric does have a disaggregation,
-        there will be several rows, one with the value for each category.
-        """
-        aggregate_value = None
-        dimension_to_value: Optional[Dict[DimensionBase, Optional[float]]] = (
-            {d: None for d in metricfile.disaggregation}  # type: ignore[attr-defined]
-            if metricfile.disaggregation is not None
-            else None
-        )
+        metric_definition: MetricDefinition,
+        sheet_name: str,
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
+        # Add a warning for missing total value only if datapoints
+        # were successfully ingested from the breakdown sheet.
+        if DatapointInterface.is_metric_disabled(
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_key=metric_definition.key,
+        ):
+            return metric_key_to_errors
 
-        # If this file represents a metric without disaggregations,
-        # there should only be one row for a given time period.
-        if metricfile.disaggregation is None:
-            if len(rows_for_this_time_range) != 1:
+        missing_total_error = JusticeCountsBulkUploadException(
+            title="Missing Total Value",
+            message_type=BulkUploadMessageType.WARNING,
+            sheet_name=sheet_name,
+            description=(
+                f"No total values were provided for this metric. The total values will be assumed "
+                f"to be equal to the sum of the breakdown values provided in {sheet_name}."
+            ),
+        )
+        metric_key_to_errors[metric_definition.key].append(missing_total_error)
+        return metric_key_to_errors
+
+    def _maybe_raise_invalid_breakdown_error(
+        self, rows: List[Dict[str, Any]], metricfile: MetricFile
+    ) -> None:
+        if not metricfile.disaggregation:
+            # If _type is a substring of the column name, then the row column contains
+            # a breakdown name. For example, a column named "offense_type" would contain
+            # values such as "Drug", "Person", or "Public Order". These columns should only
+            # be in breakdown sheets.
+            is_type_column_list = ["_type" in col for row in rows for col in row.keys()]
+            if any(is_type_column_list):
                 description = (
-                    "There should only be a single row containing data "
-                    f"for the time period {time_range[0].month}/{time_range[0].year}."
+                    f"Breakdown data was provided in the {metricfile.canonical_filename} sheet, but this sheet "
+                    f"should only contain aggregate data."
                 )
 
                 raise JusticeCountsBulkUploadException(
-                    title="Too Many Rows",
+                    title="Invalid Breakdown Data in Aggregate Sheet",
                     description=description,
                     message_type=BulkUploadMessageType.ERROR,
-                    time_range=time_range,
-                )
-            row = rows_for_this_time_range[0]
-            aggregate_value = self._get_column_value(
-                row=row,
-                column_name="value",
-                column_type=float,
-                time_range=time_range,
-            )
-
-        else:  # metricfile.disaggregation is not None
-            if metricfile.disaggregation_column_name is None:
-                raise ValueError(
-                    "`disaggregation` is not None but `disaggregation_column_name` is None"
-                )
-            for row in rows_for_this_time_range:
-                # If this file represents a metric with a disaggregation,
-                # there will likely be more than one row for a given time range;
-                # there will be one row for each dimension value. Each will have
-                # a value (i.e. the number or count) and a disaggregation value
-                # (i.e. the category the count refers to, e.g. Male or Female).
-                value = self._get_column_value(
-                    row=row, column_name="value", column_type=float
                 )
 
-                # disaggregation_value is either "All" or an enum member,
-                # e.g. "Male" for Gender, "Asian" for Race, "Felony" for OffenseType, etc
-                disaggregation_value = self._get_column_value(
-                    row=row,
-                    column_name=metricfile.disaggregation_column_name,
-                    column_type=str,
-                )
-
-                try:
-                    matching_disaggregation_member = metricfile.disaggregation(disaggregation_value)  # type: ignore
-                except ValueError:
-                    # A ValueError will be thrown by the line above if the user-entered disaggregation
-                    # value is not actually a member of the disaggreation enum. In that case, we fuzzy
-                    # match against the enum members and try again.
-                    disaggregation_options = [
-                        member.value for member in metricfile.disaggregation  # type: ignore[attr-defined]
-                    ]
-                    disaggregation_value = fuzzy_match_against_options(
-                        analyzer=self.text_analyzer,
-                        text=disaggregation_value,
-                        options=disaggregation_options,
-                        category_name=metricfile.disaggregation_column_name.replace(
-                            "_", " "
-                        ).title(),
-                        time_range=time_range,
-                    )
-                    matching_disaggregation_member = metricfile.disaggregation(
-                        disaggregation_value
-                    )  # type: ignore[call-arg]
-                dimension_to_value[matching_disaggregation_member] = value  # type: ignore[index]
-
-            aggregate_value = sum(
-                val  # type: ignore[misc]
-                for val in dimension_to_value.values()  # type: ignore[union-attr]
-                if val is not None
-            )
-
-        return MetricInterface(
-            key=metricfile.definition.key,
-            value=aggregate_value,
-            contexts=[],
-            aggregated_dimensions=[
-                MetricAggregatedDimensionData(dimension_to_value=dimension_to_value)
-            ]
-            if dimension_to_value is not None
-            else [],
-        )
-
-    def _get_column_value(
+    def _get_system_to_rows(
         self,
-        row: Dict[str, Any],
-        column_name: str,
-        column_type: Type,
-        time_range: Optional[Tuple[datetime.date, datetime.date]] = None,
-    ) -> Any:
-        """Given a row, a column name, and a column type, attempts to
-        extract a value of the given type from the row."""
-        if column_name not in row:
-            description = (
-                f'We expected to see a column named "{column_name}". '
-                f"Only the following columns were found in the sheet: "
-                f"{', '.join(row.keys())}."
-            )
-            raise JusticeCountsBulkUploadException(
-                title="Missing Column",
-                description=description,
+        system: schema.System,
+        rows: List[Dict[str, Any]],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+    ) -> Dict[schema.System, List[Dict[str, Any]]]:
+        """Groups the rows in the file by the value of the `system` column.
+        Returns a dictionary mapping each system to its list of rows."""
+        system_to_rows = {}
+        if system == schema.System.SUPERVISION:
+            system_value_to_rows = {
+                k: list(v)
+                for k, v in groupby(
+                    sorted(rows, key=lambda x: x.get("system", "both")),
+                    lambda x: x.get("system", "both"),
+                )
+            }
+            normalized_system_value_to_system = {
+                "supervision": schema.System.SUPERVISION,
+                "all": schema.System.SUPERVISION,
+                "parole": schema.System.PAROLE,
+                "probation": schema.System.PROBATION,
+                "other supervision": schema.System.OTHER_SUPERVISION,
+                "pretrial supervision": schema.System.PRETRIAL_SUPERVISION,
+            }
+            for system_value, system_rows in system_value_to_rows.items():
+                normalized_system_value = (
+                    system_value.lower().strip().replace("-", " ").replace("_", " ")
+                )
+                if normalized_system_value not in normalized_system_value_to_system:
+                    metric_key_to_errors[None].append(
+                        JusticeCountsBulkUploadException(
+                            title="System Not Recognized",
+                            description=(
+                                f'"{system_value}" is not a valid value for the System column. '
+                                f"The valid values for this column are {', '.join(v.value for v in normalized_system_value_to_system.values())}."
+                            ),
+                            message_type=BulkUploadMessageType.ERROR,
+                            sheet_name=self.sheet_name,
+                        )
+                    )
+                    continue
+                mapped_system = normalized_system_value_to_system[
+                    normalized_system_value
+                ]
+                system_to_rows[mapped_system] = system_rows
+        else:
+            system_to_rows[system] = rows
+        return system_to_rows
+
+    def _handle_error(
+        self, e: Exception, sheet_name: str
+    ) -> JusticeCountsBulkUploadException:
+        if not isinstance(e, JusticeCountsBulkUploadException):
+            # If an error is not a JusticeCountsBulkUploadException, wrap it
+            # in a JusticeCountsBulkUploadException and label it unexpected.
+            return JusticeCountsBulkUploadException(
+                title="Unexpected Error",
                 message_type=BulkUploadMessageType.ERROR,
-                time_range=time_range,
+                sheet_name=sheet_name,
+                description=e.message  # type: ignore[attr-defined]
+                if hasattr(e, "message")
+                else "",
             )
-
-        column_value = row[column_name]
-        # Allow numeric values with columns in them (e.g. 1,000)
-        if isinstance(column_value, str):
-            column_value = column_value.replace(",", "")
-
-        try:
-            value = column_type(column_value)
-        except Exception as e:
-            if column_name == "month":
-                # Allow "month" column to be either numbers or month names
-                column_value = get_month_value_from_string(
-                    text_analyzer=self.text_analyzer, month=column_value
-                )
-                value = column_type(column_value)
-            elif column_name == "year" and "-" in str(column_value):
-                column_value = get_annual_year_from_fiscal_year(
-                    fiscal_year=str(column_value)
-                )
-                value = column_type(column_value)
-            else:
-                raise JusticeCountsBulkUploadException(
-                    title="Wrong Value Type",
-                    message_type=BulkUploadMessageType.ERROR,
-                    description=f'We expected all values in the column named "{column_name}" to '
-                    f"be {PYTHON_TYPE_TO_READABLE_NAME.get(column_type.__name__, column_type.__name__)}. Instead we found the value "
-                    f'"{column_value}", which is {PYTHON_TYPE_TO_READABLE_NAME.get(type(column_value).__name__, type(column_value).__name__)}.',
-                ) from e
-
-        # Round numbers to two decimal places
-        if isinstance(value, float):
-            value = round(value, 2)
-
-        return value
+        e.sheet_name = sheet_name
+        return e
