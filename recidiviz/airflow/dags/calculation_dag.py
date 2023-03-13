@@ -171,8 +171,6 @@ def flex_dataflow_operator_for_pipeline(
     task_group: Optional[TaskGroup] = None,
 ) -> RecidivizDataflowFlexTemplateOperator:
 
-    template_path = f"gs://{project_id}-dataflow-flex-templates/template_metadata/{pipeline_parameters.flex_template_name}.json"
-
     region = pipeline_parameters.region
 
     # TODO(#19131): remove -flex
@@ -180,29 +178,7 @@ def flex_dataflow_operator_for_pipeline(
     return RecidivizDataflowFlexTemplateOperator(
         task_id=task_id,
         location=region,
-        body={
-            "launchParameter": {
-                "containerSpecGcsPath": template_path,
-                "jobName": task_id,
-                "parameters": pipeline_parameters.template_parameters(),
-                # DEFAULTS
-                "environment": {
-                    "machineType": pipeline_parameters.machine_type,
-                    "diskSizeGb": pipeline_parameters.disk_gb_size,
-                    "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
-                    "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
-                    "additionalExperiments": [
-                        "shuffle-mode=service",
-                        "use-beam-bq-sink",
-                        "use-runner-v2",
-                        "enable_google_cloud_profiler",
-                    ],
-                    "network": "default",
-                    "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{region}/subnetworks/default",
-                    "ipConfiguration": "WORKER_IP_PRIVATE",
-                },
-            }
-        },
+        body=pipeline_parameters.flex_template_launch_body(project_id=project_id),
         project_id=project_id,
         task_group=task_group,
     )

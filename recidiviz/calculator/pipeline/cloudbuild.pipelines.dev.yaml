@@ -1,0 +1,12 @@
+# This file is used to manually trigger and submit a build from the run_sandbox_flex_calculation_pipeline script
+# It builds a Docker image using the Dockerfile recidiviz/calculator/pipeline/Dockerfile.pipeline,
+# and specifies it to be pushed to the provided _IMAGE_PATH.
+
+steps:
+  - name: "gcr.io/kaniko-project/executor:v1.8.1"
+    args:
+      [
+        "--destination=${_IMAGE_PATH}",
+        "--cache=true",
+        "--dockerfile=recidiviz/calculator/pipeline/Dockerfile.pipelines",
+      ]
