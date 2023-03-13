@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISMSC_MISCONDUCT
+file_description: |-
+  TODO(#17148): Fill in with more context from OR
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: MISCONDUCT_ID
+  - name: CASE_NUM
+  - name: OFFENDER_ID
+    is_pii: True
+  - name: FACILITY_CD
+  - name: MR_LOCATION_TEXT
+  - name: MR_DATE
+  - name: MISCONDUCT_STATUS_CD
+  - name: PREA_RELATED_FLAG
+  - name: SEXUAL_ELEMENT_FLAG
+  - name: LANGUAGE_CD
+  - name: FINALIZED_DATE
+  - name: DECISION_DATE
+  - name: NOTES
+    is_pii: True
+  - name: EARLY_SEG_RELEASE
+  - name: EARLY_REL_TYPE
+  - name: SUBMITTING_USER_TITLE
+  - name: SUBMITTED_DATE
+  - name: REVIEW_SUPERVISOR_TITLE
+  - name: REVIEW_DATE
+  - name: PARENT_MISCONDUCT_ID
+  - name: CREATE_DATE
+  - name: CREATEDBY
+  - name: MODIFY_DATE
+  - name: MODIFIEDBY
+  - name: VERSION_NUM
+  - name: FINALIZED_BY_TITLE
+  - name: VIDEO_AVAILABLE
+  - name: PHYSICAL_EVIDENCE_AVAIL
+  - name: PHYSICAL_EVIDENCE_LOCATION
+  - name: GROUP_ID
+  - name: AMENDED_FLAG
+  - name: CORRECTED_FLAG
+  - name: REVIEW_RESULT_CD
