@@ -38,3 +38,27 @@ def supervision_population_eligible_levels_additional_filters(
         f"attr.compartment_level_2 NOT IN {excluded_compartment_level_2}",
         f"start_date >= '{start_date}'",
     ]
+
+
+def active_supervision_population_additional_filters(
+    start_date: str = "1900-01-01",
+    excluded_correctional_levels: str = "('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')",
+    included_compartment_level_2: str = "('PAROLE', 'DUAL', 'PROBATION')",
+    excluded_compartment_level_2: str = "('INTERNAL_UNKNOWN', 'ABSCONSION', 'BENCH_WARRANT')",
+) -> list[str]:
+    """Helper method that returns the filters to generate the
+    population on active supervision from a specific start date
+    Args:
+        start_date (str): Default set to "1900-01-01"
+        included_compartment_level_2 (str): Defaults to Parole, Dual, and Probation
+        excluded_correctional_levels (str): Defaults set to shared list of levels not considered active
+        excluded_compartment_level_2 (str): Defaults set to shared list of levels not considered active
+    """
+    # TODO(#17654) align on ABSCONDED/ABSCONSION terminology
+    return [
+        f"attr.compartment_level_2 IN {included_compartment_level_2}",
+        f"attr.compartment_level_2 NOT IN {excluded_compartment_level_2}",
+        # TODO(##19411) align on how to treat null supervision levels
+        f"attr.correctional_level NOT IN {excluded_correctional_levels}",
+        f"start_date >= '{start_date}'",
+    ]

@@ -19,7 +19,7 @@ someone in MI is eligible for early discharge from probation supervision.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_supervision_population,
+    probation_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -45,7 +45,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=probation_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=probation_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         not_serving_ineligible_offenses_for_early_discharge_from_probation_supervision.VIEW_BUILDER,
         no_active_ppo.VIEW_BUILDER,

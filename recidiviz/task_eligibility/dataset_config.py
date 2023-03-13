@@ -28,3 +28,8 @@ TASK_COMPLETION_EVENTS_DATASET_ID = "task_eligibility_completion_events"
 def task_eligibility_spans_state_specific_dataset(state_code: StateCode) -> str:
     """Returns the dataset containing task eligibility spans for this region."""
     return f"task_eligibility_spans_{state_code.value.lower()}"
+
+
+def task_eligibility_criteria_state_specific_dataset(state_code: StateCode) -> str:
+    """Returns the dataset containing task eligibility spans for this region."""
+    return f"task_eligibility_criteria_{state_code.value.lower()}"
