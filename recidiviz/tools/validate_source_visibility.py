@@ -273,6 +273,7 @@ def main() -> int:
             {
                 "recidiviz.airflow",
                 "recidiviz.cloud_functions.cloud_function_utils",
+                "recidiviz.cloud_storage",
                 "recidiviz.common.attr_validators",
                 "recidiviz.common.constants.states",
                 "recidiviz.metrics.export.products",

@@ -27,10 +27,12 @@
 
 """
 import abc
+import os.path
 from typing import Any, Dict, List, Optional
 
 import attr
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
 
 
@@ -64,6 +66,10 @@ class PipelineParameters:
     disk_gb_size: int = attr.ib(default=200, validator=attr_validators.is_int)
     staging_only: bool = attr.ib(default=False, validator=attr_validators.is_bool)
 
+    template_metadata_subdir: str = attr.ib(
+        default="template_metadata", validator=attr_validators.is_str
+    )
+
     @property
     @abc.abstractmethod
     def flex_template_name(self) -> str:
@@ -79,6 +85,39 @@ class PipelineParameters:
 
         # The Flex template expects all parameter values to be strings, so cast all non-null values to strings.
         return {k: str(v) for k, v in parameters.items() if v is not None}
+
+    def template_gcs_path(self, project_id: str) -> str:
+        return GcsfsFilePath.from_bucket_and_blob_name(
+            bucket_name=f"{project_id}-dataflow-flex-templates",
+            blob_name=os.path.join(
+                self.template_metadata_subdir, f"{self.flex_template_name}.json"
+            ),
+        ).uri()
+
+    def flex_template_launch_body(self, project_id: str) -> Dict[str, Any]:
+        return {
+            "launchParameter": {
+                "containerSpecGcsPath": self.template_gcs_path(project_id),
+                "jobName": self.job_name,
+                "parameters": self.template_parameters(),
+                # DEFAULTS
+                "environment": {
+                    "machineType": self.machine_type,
+                    "diskSizeGb": self.disk_gb_size,
+                    "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
+                    "stagingLocation": f"gs://{project_id}-dataflow-templates/staging/",
+                    "additionalExperiments": [
+                        "shuffle-mode=service",
+                        "use-beam-bq-sink",
+                        "use-runner-v2",
+                        "enable_google_cloud_profiler",
+                    ],
+                    "network": "default",
+                    "subnetwork": f"https://www.googleapis.com/compute/v1/projects/{project_id}/regions/{self.region}/subnetworks/default",
+                    "ipConfiguration": "WORKER_IP_PRIVATE",
+                },
+            }
+        }
 
 
 @attr.define(kw_only=True)
