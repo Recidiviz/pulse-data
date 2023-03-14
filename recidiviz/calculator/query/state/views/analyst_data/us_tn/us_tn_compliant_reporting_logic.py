@@ -93,7 +93,6 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 standards.first_name,
                 standards.last_name,
                 standards.Phone_Number AS phone_number,
-                -- TODO(#11790): Pull from Address table instead of Standards Sheet if both are same
                 INITCAP(CONCAT(
                     Address_Line1, 
                     IF(Address_Line2 IS NULL, '', CONCAT(' ', Address_Line2)), 

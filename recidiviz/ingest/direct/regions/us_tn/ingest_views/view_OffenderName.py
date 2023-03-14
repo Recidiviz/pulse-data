@@ -67,8 +67,15 @@ WITH normalized_rows AS (
         Race,
         Ethnicity,
         Sex,
-        BirthDate
+        BirthDate,
+        A.AddressLine1,
+        A.AddressLine2,
+        A.AddressCity,
+        A.AddressState, 
+        A.AddressZip
     FROM filtered_out_nicknames
+    LEFT JOIN {Address} A
+    ON OffenderID = A.PersonId
     WHERE recency_rank = 1
 """
 

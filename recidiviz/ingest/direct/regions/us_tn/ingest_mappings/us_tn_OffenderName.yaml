@@ -11,6 +11,11 @@ input_columns:
   - BirthDate
   - Race
   - Ethnicity
+  - AddressLine1
+  - AddressLine2
+  - AddressCity
+  - AddressState
+  - AddressZip
 unused_columns: []
 output:
   StatePerson:
@@ -48,3 +53,10 @@ output:
               $mappings:
                 StateEthnicity.HISPANIC: HISPANIC
                 StateEthnicity.NOT_HISPANIC: NOT_HISPANIC
+    current_address:
+      $physical_address:
+        $address_1: AddressLine1
+        $address_2: AddressLine2
+        $city: AddressCity
+        $state: AddressState
+        $zip: AddressZip
