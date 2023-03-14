@@ -132,7 +132,18 @@ columns:
       Occupation Class Past 3
   - name: DQ_SOP
     description: |-
-      MOSOP Indicator
+      MOSOP (MO Sex Offender Program) Indicator
+    known_values:
+      - value: Y
+        description: MOSOP required
+      - value: R
+        description: Required by department, not by state
+      - value: F
+        description: Required for sentences before MOSOP statute
+      - value: N
+        description: Not required
+      - value: O
+        description: Override, no longer required
   - name: DQ_DCR
     description: |-
       Row Creation Date
