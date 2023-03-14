@@ -17,7 +17,6 @@
 """Creates a LookMLView object and associated functions"""
 import os
 from datetime import date
-from pathlib import Path
 from typing import List
 
 import attr
@@ -92,7 +91,7 @@ class LookMLView:
             os.path.relpath(source_script_path, os.path.dirname(recidiviz.__file__)),
         )
         # if directory doesn't already exist, create
-        Path(output_directory).mkdir(parents=True, exist_ok=True)
+        os.makedirs(output_directory, exist_ok=True)
 
         with open(
             os.path.join(output_directory, f"{self.view_name}.view.lkml"),

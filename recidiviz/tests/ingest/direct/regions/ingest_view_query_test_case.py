@@ -19,6 +19,7 @@ ingest view queries.
 """
 import abc
 import datetime
+import os.path
 from typing import Iterable, Iterator, Optional, Tuple, Type, Union
 
 import pandas as pd
@@ -150,6 +151,10 @@ class IngestViewQueryTester:
                 raise AssertionError(
                     "`create_expected` should only be used when writing or updating the test."
                 )
+            # Make output directory if it doesn't yet exist
+            output_directory = os.path.dirname(expected_output_fixture_path)
+            os.makedirs(output_directory, exist_ok=True)
+
             results.to_csv(expected_output_fixture_path, index=False)
 
         self.compare_results_to_fixture(results, expected_output_fixture_path)
