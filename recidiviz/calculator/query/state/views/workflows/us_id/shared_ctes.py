@@ -23,14 +23,14 @@ def us_id_latest_phone_number() -> str:
         "US_ID" AS state_code,
         pei.external_id AS person_external_id,
         c.phonenumber AS phone_number,
-      FROM `{project_id}.{us_id_raw_data}.cis_personphonenumber_latest` a
-      LEFT JOIN `{project_id}.{us_id_raw_data}.cis_codephonenumbertype_latest` b
+      FROM `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_personphonenumber_latest` a
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_codephonenumbertype_latest` b
         ON a.codephonenumbertypeid = b.id
-      LEFT JOIN `{project_id}.{us_id_raw_data}.cis_phonenumber_latest` c
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_phonenumber_latest` c
         ON a.phonenumberid = c.id
-      LEFT JOIN `{project_id}.{us_id_raw_data}.cis_offenderphonenumber_latest` d
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_offenderphonenumber_latest` d
         ON a.id = d.id
-      LEFT JOIN `{project_id}.{us_id_raw_data}.cis_offender_latest` e
+      LEFT JOIN `{project_id}.{us_id_raw_data_up_to_date_dataset}.cis_offender_latest` e
         ON a.personid = e.id
       INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
         ON e.offendernumber = pei.external_id

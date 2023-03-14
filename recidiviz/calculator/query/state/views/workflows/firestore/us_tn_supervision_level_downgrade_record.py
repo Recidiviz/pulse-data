@@ -23,7 +23,6 @@ from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DAT
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
@@ -62,14 +61,6 @@ WITH base_query AS (
         AND tes.is_eligible
         AND tes.state_code = 'US_TN'
     GROUP BY 1,2
-),
-latest_people AS (
-    SELECT DISTINCT OffenderID AS external_id
-    FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
-    WHERE update_datetime = (
-        SELECT MAX(update_datetime)
-        FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
-    )
 )
 SELECT
     external_id,
@@ -78,9 +69,6 @@ SELECT
     IF(metadata_violations[offset(0)].violation_date IS NULL, [], metadata_violations) AS metadata_violations
     FROM
         base_query
-    INNER JOIN
-        latest_people
-    USING(external_id)
 """
 
 US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -94,9 +82,6 @@ US_TN_SUPERVISION_LEVEL_DOWNGRADE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilde
     ),
     should_materialize=True,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
-    ),
-    us_tn_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
 )

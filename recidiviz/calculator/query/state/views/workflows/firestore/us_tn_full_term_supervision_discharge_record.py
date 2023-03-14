@@ -26,7 +26,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
-    raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
@@ -255,14 +254,6 @@ sex_offenses AS (
       )
   GROUP BY 1
 ),
-latest_people AS (
-    SELECT DISTINCT OffenderID AS external_id
-    FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
-    WHERE update_datetime = (
-        SELECT MAX(update_datetime)
-        FROM `{{project_id}}.{{us_tn_raw_data_dataset}}.OffenderMovement`
-    )
-),
 tes_cte AS (
     SELECT *,
       CAST(JSON_EXTRACT_SCALAR(single_reason.reason.eligible_date) AS DATE) AS expiration_date,
@@ -314,8 +305,6 @@ tes_cte AS (
     AND latest_tepe >= DATE_SUB(tes.expiration_date, INTERVAL 30 day)
   LEFT JOIN `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.STGOffender_latest` stg
     ON pei.external_id = stg.OffenderID
-  INNER JOIN latest_people
-    ON pei.external_id = latest_people.external_id
     /* TODO(#18327) - Excluding anyone from being surfaced who has a recent TEPE. Add these folks back in and surface
     recent TEPE note in client profile when UX changes can handle this behavior */
   WHERE latest_tepe IS NULL
@@ -333,9 +322,6 @@ US_TN_FULL_TERM_SUPERVISION_DISCHARGE_RECORD_VIEW_BUILDER = SimpleBigQueryViewBu
     ),
     should_materialize=True,
     us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
-        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
-    ),
-    us_tn_raw_data_dataset=raw_tables_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
 )
