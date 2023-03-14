@@ -24,7 +24,9 @@ import {
   useHistory,
   useLocation,
 } from "react-router-dom";
-import Nelly from "../favicon-32x32.png";
+import { useEffect } from "react";
+import qs from "querystringify";
+import Nelly from "../favicon-nelly.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
 import * as IngestOperations from "../navigation/IngestOperations";
@@ -50,6 +52,9 @@ import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 
 type MenuItem = Required<MenuProps>["items"][number];
+type QueryString = {
+  stateCode?: string;
+};
 
 function getItem(
   label: React.ReactNode,
@@ -70,17 +75,18 @@ function getItem(
 interface EnvironmentOption {
   baseUrl: string;
   title: string;
+  backgroundColor: string;
 }
 
-const ENVIRONMENT_OPTIONS: Map<
-  "development" | "staging" | "production",
-  EnvironmentOption
-> = new Map([
+type EnvironmentType = "development" | "staging" | "production";
+
+const ENVIRONMENT_OPTIONS: Map<EnvironmentType, EnvironmentOption> = new Map([
   [
     "development",
     {
       title: "Development",
       baseUrl: "http://localhost:3030",
+      backgroundColor: "#bf7474",
     },
   ],
   [
@@ -88,6 +94,7 @@ const ENVIRONMENT_OPTIONS: Map<
     {
       title: "Staging",
       baseUrl: "https://recidiviz-staging.ue.r.appspot.com",
+      backgroundColor: "#bf7474",
     },
   ],
   [
@@ -95,6 +102,7 @@ const ENVIRONMENT_OPTIONS: Map<
     {
       title: "Production",
       baseUrl: "https://recidiviz-123.ue.r.appspot.com",
+      backgroundColor: "#90aeb5",
     },
   ],
 ]);
@@ -146,13 +154,39 @@ const items: MenuProps["items"] = [
   ]),
 ];
 
+const formatPageName = (page: string) => {
+  return page
+    .replace(/_/g, " ") // convert underscores to spaces
+    .replace(/(^|\s)\S/g, function (t) {
+      return t.toUpperCase();
+    }) // title case
+    .replace(/Sql/g, "SQL") // Correctly case acronyms
+    .replace(/Gcs/g, "GCS")
+    .replace(/Po/g, "PO")
+    .replace(/Csv/g, "CSV");
+};
+
 const App = (): JSX.Element => {
   const location = useLocation();
   const title = "Admin Panel";
   const history = useHistory();
+  const env = (window.RUNTIME_GCP_ENVIRONMENT ||
+    "production") as EnvironmentType;
+
   const onClick: MenuProps["onClick"] = (e) => {
     history.push(e.key);
   };
+
+  useEffect(() => {
+    // Update the document title (tab name) based on the page and state
+    const page = location.pathname.split("/").slice(-1)[0];
+    const { stateCode } = qs.parse(location.search) as QueryString;
+    const stateCodePrefix =
+      stateCode && typeof stateCode === "string"
+        ? `${stateCode?.split("_")[1]} `
+        : "";
+    document.title = ` ${stateCodePrefix}${formatPageName(page)}`;
+  }, [location]);
 
   const routeClass = classNames({
     "main-content": true,
@@ -171,11 +205,16 @@ const App = (): JSX.Element => {
   return (
     <Layout style={{ height: "100%" }}>
       <Layout.Sider width={256}>
-        <div className="title-header">
+        <div
+          className="title-header"
+          style={{
+            backgroundColor: `${ENVIRONMENT_OPTIONS.get(env)?.backgroundColor}`,
+          }}
+        >
           <Typography.Title level={3}>{title}</Typography.Title>
           <Avatar
             shape="square"
-            style={{ backgroundColor: "bisque", padding: "2px" }}
+            style={{ backgroundColor: "inherit", padding: "2px" }}
             icon={<img src={Nelly} id="adminPanelNelly" alt="Nelly" />}
           />
         </div>
@@ -317,7 +356,7 @@ function selectedMenuKeys(pathname: string): string[] {
 export default App;
 
 function getEnvironmentSegmentedLabelOption(
-  env: "production" | "staging" | "development",
+  env: EnvironmentType,
   pathname: string
 ): SegmentedLabeledOption {
   const environmentOption = ENVIRONMENT_OPTIONS.get(env);
