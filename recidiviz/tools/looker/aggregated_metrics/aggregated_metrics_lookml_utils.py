@@ -22,7 +22,6 @@ from more_itertools import one
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
-    AssignmentAvgSpanValueMetric,
     AssignmentDaysToFirstEventMetric,
     AssignmentEventCountMetric,
     AssignmentSpanDaysMetric,
@@ -75,11 +74,6 @@ def _generate_lookml_measure_fragment(
         return (
             f"SUM(${{TABLE}}.{metric.name} * {days_in_period_clause}) / "
             f"SUM({days_in_period_clause})"
-        )
-    if isinstance(metric, AssignmentAvgSpanValueMetric):
-        return (
-            f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.assignments) / "
-            f"SUM(IF(${{TABLE}}.{metric.name} IS NULL, 0, 1) * ${{TABLE}}.assignments)"
         )
     if isinstance(metric, EventValueMetric):
         return (

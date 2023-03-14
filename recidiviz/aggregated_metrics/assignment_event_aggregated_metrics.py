@@ -49,8 +49,21 @@ def generate_assignment_event_aggregated_metrics_view_builder(
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
-    query_template = (
-        f"""
+    metric_aggregation_fragment_inner = ",\n".join(
+        [
+            metric.generate_aggregation_query_fragment(
+                event_date_col="events.event_date",
+                assignment_date_col="assign.assignment_date",
+            )
+            for metric in metrics
+            if isinstance(metric, AssignmentEventAggregatedMetric)
+        ]
+    )
+    metric_aggregation_fragment_outer = ",\n".join(
+        [metric.generate_aggregate_time_periods_query_fragment() for metric in metrics]
+    )
+
+    query_template = f"""
 WITH time_periods AS (
     SELECT * FROM `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized`
 )
@@ -67,9 +80,7 @@ assignments AS (
         population_start_date AS start_date,
         population_end_date AS end_date,
         period,
-    """
-        + ",\n".join([f"SUM({metric.name}) AS {metric.name}" for metric in metrics])
-        + f"""
+        {metric_aggregation_fragment_outer}
     FROM (
         SELECT
             {aggregation_level.get_index_columns_query_string("assign")},
@@ -78,19 +89,7 @@ assignments AS (
             period,
             assign.person_id,
             assign.assignment_date,
-        -- Sum the number of days from assignment to the first subsequent person event
-    """
-        + ",\n".join(
-            [
-                metric.generate_aggregation_query_fragment(
-                    event_date_col="events.event_date",
-                    assignment_date_col="assign.assignment_date",
-                )
-                for metric in metrics
-                if isinstance(metric, AssignmentEventAggregatedMetric)
-            ]
-        )
-        + f"""
+            {metric_aggregation_fragment_inner}
         FROM 
             time_periods pop
         LEFT JOIN
@@ -115,11 +114,9 @@ assignments AS (
     GROUP BY 
         {aggregation_level.get_index_columns_query_string()}, 
         population_start_date, population_end_date, period
-)"""
-        + get_unioned_time_granularity_clause(
-            aggregation_level=aggregation_level,
-            metrics=metrics,
-        )
+)""" + get_unioned_time_granularity_clause(
+        aggregation_level=aggregation_level,
+        metrics=metrics,
     )
 
     return SimpleBigQueryViewBuilder(

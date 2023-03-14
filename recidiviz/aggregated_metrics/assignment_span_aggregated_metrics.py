@@ -40,7 +40,7 @@ def generate_assignment_span_aggregated_metrics_view_builder(
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that calculates AssignmentSpan metrics for the specified
-    aggregation level, population, and set of metrics.
+    aggregation level, population, and set of metrics. Example: Avg LSI-R score at client assignment.
     """
     view_id = f"{population.population_name_short}_{aggregation_level.level_name_short}_assignment_span_aggregated_metrics"
     view_description = f"""
@@ -50,8 +50,20 @@ def generate_assignment_span_aggregated_metrics_view_builder(
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
-    query_template = (
-        f"""
+    metric_aggregation_fragment_inner = ",\n".join(
+        [
+            metric.generate_aggregation_query_fragment(
+                span_start_date_col="spans.start_date",
+                span_end_date_col="spans.end_date",
+                assignment_date_col="assign.assignment_date",
+            )
+            for metric in metrics
+        ]
+    )
+    metric_aggregation_fragment_outer = ",\n".join(
+        [metric.generate_aggregate_time_periods_query_fragment() for metric in metrics]
+    )
+    query_template = f"""
 WITH time_periods AS (
     SELECT * FROM `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized`
 )
@@ -64,49 +76,54 @@ assignments AS (
 
 , month_metrics AS (
     SELECT
-        {aggregation_level.get_index_columns_query_string("assign")},
+        {aggregation_level.get_index_columns_query_string()},
         population_start_date AS start_date,
         population_end_date AS end_date,
         period,
-        COUNT(DISTINCT CONCAT(assign.person_id, assign.assignment_date)) AS assignments,
-    """
-        + ",\n".join(
-            [
-                metric.generate_aggregation_query_fragment(
-                    span_start_date_col="spans.start_date",
-                    span_end_date_col="spans.end_date",
-                    assignment_date_col="assign.assignment_date",
-                )
-                for metric in metrics
-            ]
-        )
-        + f"""
-    FROM 
-        time_periods pop
-    LEFT JOIN
-        assignments assign
-    ON 
-        assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
-    LEFT JOIN
-        `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` spans
-    ON  
-        assign.person_id = spans.person_id
-        AND (
-            spans.start_date > assign.assignment_date
-            OR assign.assignment_date BETWEEN spans.start_date 
-                AND {nonnull_end_date_exclusive_clause("spans.end_date")}
-        )
-    WHERE
-        period = "MONTH"
+        SUM(assignments) AS assignments,
+        {metric_aggregation_fragment_outer}
+    FROM (
+        SELECT
+            {aggregation_level.get_index_columns_query_string("assign")},
+            population_start_date,
+            population_end_date,
+            period,
+            assign.person_id,
+            assign.assignment_date,
+            1 AS assignments,
+            {metric_aggregation_fragment_inner}
+        FROM 
+            time_periods pop
+        LEFT JOIN
+            assignments assign
+        ON 
+            assign.assignment_date BETWEEN population_start_date AND DATE_SUB(population_end_date, INTERVAL 1 DAY)
+        LEFT JOIN
+            `{{project_id}}.{{analyst_dataset}}.person_spans_materialized` spans
+        ON  
+            assign.person_id = spans.person_id
+            AND (
+                spans.start_date > assign.assignment_date
+                OR assign.assignment_date BETWEEN spans.start_date 
+                    AND {nonnull_end_date_exclusive_clause("spans.end_date")}
+            )
+        WHERE
+            period = "MONTH"
+        GROUP BY 
+            {aggregation_level.get_index_columns_query_string("assign")},
+            population_start_date,
+            population_end_date,
+            period,
+            assign.person_id,
+            assign.assignment_date
+    )
     GROUP BY 
         {aggregation_level.get_index_columns_query_string()}, 
         population_start_date, population_end_date, period
-)"""
-        + get_unioned_time_granularity_clause(
-            aggregation_level=aggregation_level,
-            metrics=metrics,
-            manual_metrics_str="SUM(assignments) AS assignments",
-        )
+)""" + get_unioned_time_granularity_clause(
+        aggregation_level=aggregation_level,
+        metrics=metrics,
+        manual_metrics_str="SUM(assignments) AS assignments",
     )
     return SimpleBigQueryViewBuilder(
         dataset_id=AGGREGATED_METRICS_DATASET_ID,

@@ -543,6 +543,24 @@ FROM (
         ), FALSE)
 )
 GROUP BY 1, 2, 3, 4
+
+UNION ALL
+
+-- (employment period starts)
+SELECT
+    state_code,
+    person_id,
+    "EMPLOYMENT_PERIOD_START" AS event,
+    start_date,
+    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+        employer_name
+    ) ORDER BY employer_name)[OFFSET(0)]) AS event_attributes
+FROM
+    `{project_id}.{normalized_state_dataset}.state_employment_period`
+WHERE
+    start_date IS NOT NULL
+    AND employment_status != "UNEMPLOYED"
+GROUP BY 1, 2, 3, 4
     
 UNION ALL
 
