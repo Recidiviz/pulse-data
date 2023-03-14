@@ -22,43 +22,23 @@ resource "google_storage_bucket_object" "table_data" {
 }
 
 resource "google_bigquery_table" "table" {
-  dataset_id = var.dataset_id
-  table_id   = var.table_name
+  dataset_id          = var.dataset_id
+  table_id            = var.table_name
   deletion_protection = false
 
-  schema = var.schema
-}
-
-resource "google_bigquery_job" "load" {
-  # Sets the job id based on the hash of the table_data, so that the table is only
-  # reloaded when the data changes.
-  # Note: Whenever this resource is changed, the `vX` fragment below must be incremented
-  # to ensure the new resource can be created without conflict.
-  # There's an outstanding terraform issue where GCP deletes the BQ job history after 6
-  # months, causing terraform to assume that this version of the file hasn't been loaded
-  # into the table. Until this issue is resolved we are required to increment the `vX`
-  # fragment below on a 6-month cadence.
-  # See issue for more context: https://github.com/hashicorp/terraform-provider-google/issues/9768.
-  # !!!!!!! If, during terraform applies in deploys, you see failures that look like the one below:
-  # !!!!!!!   `Error: Error creating Job: googleapi: Error 404: Not found: Job`
-  # !!!!!!! update the `job_id` below by changing `_vX_` to `_vX+1_` (ex: `_v5_` to `_v6_`).
-  job_id = "${var.table_name}_load_v5_${md5(google_storage_bucket_object.table_data.crc32c)}"
-
-  load {
+  external_data_configuration {
+    autodetect            = false
+    ignore_unknown_values = false
+    max_bad_records       = 0
+    source_format         = "CSV"
+    csv_options {
+      quote             = "\""
+      skip_leading_rows = 1
+    }
     source_uris = [
       "gs://${var.bucket_name}/${google_storage_bucket_object.table_data.output_name}"
     ]
-
-    destination_table {
-      project_id = google_bigquery_table.table.project
-      dataset_id = google_bigquery_table.table.dataset_id
-      table_id   = google_bigquery_table.table.table_id
-    }
-
-    skip_leading_rows = 1
-
-    create_disposition = "CREATE_NEVER"
-    write_disposition  = "WRITE_TRUNCATE"
-    autodetect         = false
   }
+
+  schema = var.schema
 }
