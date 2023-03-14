@@ -156,10 +156,7 @@ output:
             $equal: [BT_CRR, $literal("LIF")]
           parole_eligibility_date:
             $custom:
-              $function: us_mo_custom_parsers.null_if_magic_date
-              # There are a number of '0' CG_MD values which cannot be parsed as a parole
-              # eligibility date. Using this custom parser ensures that these are treated
-              # as null dates, consistent with the handling of min/max release dates.
+              $function: us_mo_custom_parsers.null_if_invalid_date
               $args:
                 date: CG_MD
           max_length_days:
