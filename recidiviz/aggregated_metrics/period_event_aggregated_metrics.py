@@ -49,8 +49,15 @@ def generate_period_event_aggregated_metrics_view_builder(
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
-    query_template = (
-        f"""
+    metric_aggregation_fragment = ",\n".join(
+        [
+            metric.generate_aggregation_query_fragment(
+                event_date_col="events.event_date"
+            )
+            for metric in metrics
+        ]
+    )
+    query_template = f"""
 WITH time_periods AS (
     SELECT * FROM `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized`
 )
@@ -67,16 +74,7 @@ assignments AS (
         population_start_date AS start_date,
         population_end_date AS end_date,
         period,
-    """
-        + ",\n".join(
-            [
-                metric.generate_aggregation_query_fragment(
-                    event_date_col="events.event_date"
-                )
-                for metric in metrics
-            ]
-        )
-        + f"""
+        {metric_aggregation_fragment}
     FROM 
         time_periods pop
     INNER JOIN
@@ -100,11 +98,9 @@ assignments AS (
     GROUP BY 
         {aggregation_level.get_index_columns_query_string()},
         population_start_date, population_end_date, period
-)"""
-        + get_unioned_time_granularity_clause(
-            aggregation_level=aggregation_level,
-            metrics=metrics,
-        )
+)""" + get_unioned_time_granularity_clause(
+        aggregation_level=aggregation_level,
+        metrics=metrics,
     )
 
     return SimpleBigQueryViewBuilder(

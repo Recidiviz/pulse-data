@@ -54,8 +54,19 @@ def generate_period_span_aggregated_metrics_view_builder(
 
     All end_dates are exclusive, i.e. the metric is for the range [start_date, end_date).
     """
-    query_template = (
-        f"""
+    metric_aggregation_fragment = ",\n".join(
+        [
+            metric.generate_aggregation_query_fragment(
+                span_start_date_col="ses.start_date",
+                span_end_date_col="ses.end_date",
+                period_start_date_col="pop.population_start_date",
+                period_end_date_col="pop.population_end_date",
+                original_span_start_date="ses.span_start_date",
+            )
+            for metric in metrics
+        ]
+    )
+    query_template = f"""
 WITH time_periods AS (
     SELECT * FROM `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized`
 )
@@ -99,20 +110,7 @@ eligible_spans AS (
         population_start_date AS start_date,
         population_end_date AS end_date,
         period,
-    """
-        + ",\n".join(
-            [
-                metric.generate_aggregation_query_fragment(
-                    span_start_date_col="ses.start_date",
-                    span_end_date_col="ses.end_date",
-                    period_start_date_col="pop.population_start_date",
-                    period_end_date_col="pop.population_end_date",
-                    original_span_start_date="ses.span_start_date",
-                )
-                for metric in metrics
-            ]
-        )
-        + f"""
+        {metric_aggregation_fragment}
     FROM 
         eligible_spans ses
     INNER JOIN 
@@ -125,11 +123,9 @@ eligible_spans AS (
     GROUP BY 
         {aggregation_level.get_index_columns_query_string()}, 
         population_start_date, population_end_date, period
-)"""
-        + get_unioned_time_granularity_clause(
-            aggregation_level=aggregation_level,
-            metrics=metrics,
-        )
+)""" + get_unioned_time_granularity_clause(
+        aggregation_level=aggregation_level,
+        metrics=metrics,
     )
 
     return SimpleBigQueryViewBuilder(

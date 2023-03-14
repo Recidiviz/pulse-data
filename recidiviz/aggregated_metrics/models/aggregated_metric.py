@@ -411,15 +411,15 @@ class AssignmentSpanDaysMetric(
         return f"""
             SUM(
                 IF({self.get_metric_conditions_string()}, DATE_DIFF(
-                      LEAST(
+                    LEAST(
                         DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
                         {nonnull_current_date_exclusive_clause(span_end_date_col)}
-                      ),
-                      GREATEST(
+                    ),
+                    GREATEST(
                         {assignment_date_col},
                         IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
-                      ),
-                      DAY
+                    ),
+                    DAY
                 ), 0)
             ) AS {self.name}
         """
@@ -429,64 +429,74 @@ class AssignmentSpanDaysMetric(
 
 
 @attr.define(frozen=True, kw_only=True)
-class AssignmentAvgSpanValueMetric(
+class AssignmentSpanMaxDaysMetric(
     AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin
 ):
     """
-    Class that stores information about a metric that calculates average value
-    for a specified set of `person_span` rows intersecting with a window following assignment.
+    Class that stores information about a metric that takes the longest contiguous intersection
+    between span and {window_length_days} window following assignment date
+    (includes when person has left the eligible population).
 
-    Example metric: Average LSI-R score within one year of assignment.
+    Example metric: Maximum days with consistent employer within 365 days of assignment.
     """
-
-    # Name of the field in span_attributes JSON containing the numeric attribute of the span.
-    span_value_numeric: str = attr.field(validator=attr_validators.is_str)
 
     def generate_aggregation_query_fragment(
         self, span_start_date_col: str, span_end_date_col: str, assignment_date_col: str
     ) -> str:
         return f"""
-            SAFE_DIVIDE(
-                SUM(
+            MAX(
+                IF(
+                    {self.get_metric_conditions_string()}
+                    AND {span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), 
                     DATE_DIFF(
                         LEAST(
                             DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
                             {nonnull_current_date_exclusive_clause(span_end_date_col)}
                         ),
-                        GREATEST(
-                            {assignment_date_col},
-                            IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
-                        ),
+                        GREATEST({assignment_date_col}, {span_start_date_col}),
                         DAY
-                    ) * IF(
-                        {self.get_metric_conditions_string()}, 
-                        CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64), 
-                        0
-                    )
-                ),
-                SUM(
-                    DATE_DIFF(
-                        LEAST(
-                            DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY),
-                            {nonnull_current_date_exclusive_clause(span_end_date_col)}
-                        ),
-                        GREATEST(
-                            {assignment_date_col},
-                            IF({span_start_date_col} <= DATE_ADD({assignment_date_col}, INTERVAL {self.window_length_days} DAY), {span_start_date_col}, NULL)
-                        ),
-                        DAY
-                    ) * IF({self.get_metric_conditions_string()}, 1, 0)
+                    ), 0
                 )
             ) AS {self.name}
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
-        return (
-            f"SAFE_DIVIDE("
-            f"SUM(assignments * {self.window_length_days} * {self.name}), "
-            f"SUM(assignments * {self.window_length_days})"
-            f")"
-        )
+        return f"SUM({self.name}) AS {self.name}"
+
+
+@attr.define(frozen=True, kw_only=True)
+class AssignmentSpanValueAtStartMetric(
+    AssignmentSpanAggregatedMetric, SpanMetricConditionsMixin
+):
+    """
+    Class that stores information about a metric that calculates average value
+    for a specified set of `person_span` rows intersecting with the assignment date
+
+    Example metric: Average LSI-R score at assignment
+    """
+
+    # Name of the field in span_attributes JSON containing the numeric attribute of the span.
+    span_value_numeric: str
+
+    # Metric counting the number of assignments satisfying the span condition
+    span_count_metric: AssignmentSpanDaysMetric
+
+    def generate_aggregation_query_fragment(
+        self, span_start_date_col: str, span_end_date_col: str, assignment_date_col: str
+    ) -> str:
+        return f"""
+            AVG(
+                IF(
+                    {self.get_metric_conditions_string()}
+                    AND {assignment_date_col} BETWEEN {span_start_date_col} AND {nonnull_current_date_exclusive_clause(span_end_date_col)}, 
+                    CAST(JSON_EXTRACT_SCALAR(span_attributes, "$.{self.span_value_numeric}") AS FLOAT64), 
+                    NULL
+                )
+            ) AS {self.name}
+        """
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"SAFE_DIVIDE(SUM({self.span_count_metric.name} * {self.name}), SUM({self.span_count_metric.name})) AS {self.name}"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -593,7 +603,7 @@ class AssignmentEventCountMetric(
                     CONCAT(events.person_id, {event_date_col}), 
                     NULL
                 )
-            )
+            ) AS {self.name}
         """
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:

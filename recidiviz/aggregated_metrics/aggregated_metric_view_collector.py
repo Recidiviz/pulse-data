@@ -93,6 +93,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     EARLY_DISCHARGE_REQUESTS,
     EMPLOYED_STATUS_ENDS,
     EMPLOYED_STATUS_STARTS,
+    EMPLOYER_CHANGES_365,
     INCARCERATION_STARTS,
     INCARCERATION_STARTS_AND_INFERRED,
     INCARCERATION_STARTS_AND_INFERRED_TECHNICAL_VIOLATION_NO_PRIOR_TREATMENT_REFERRAL,
@@ -105,9 +106,13 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     LATE_OPPORTUNITY_METRICS,
     LIBERTY_STARTS,
     LSIR_ASSESSMENTS,
+    LSIR_ASSESSMENTS_365,
     LSIR_ASSESSMENTS_AVG_SCORE,
+    LSIR_ASSESSMENTS_AVG_SCORE_CHANGE,
     LSIR_ASSESSMENTS_RISK_DECREASE,
     LSIR_ASSESSMENTS_RISK_INCREASE,
+    LSIR_SCORE_PRESENT_AT_ASSIGNMENT,
+    MAX_DAYS_STABLE_EMPLOYMENT_365,
     PENDING_CUSTODY_STARTS,
     PERSON_DAYS_TASK_ELIGIBLE_METRICS,
     SUPERVISION_LEVEL_DOWNGRADES,
@@ -116,6 +121,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     SUPERVISION_STARTS,
     TASK_COMPLETED_METRICS,
     TREATMENT_REFERRALS,
+    UNSUCCESSFUL_SUPERVISION_TERMINATIONS,
     VIOLATION_RESPONSES,
     VIOLATION_RESPONSES_BY_TYPE_METRICS,
     VIOLATIONS,
@@ -157,6 +163,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         AVG_LSIR_SCORE,
         AVG_LSIR_SCORE_AT_ASSIGNMENT,
         DAYS_SINCE_MOST_RECENT_LSIR,
+        LSIR_SCORE_PRESENT_AT_ASSIGNMENT,
         # Events
         COMMUNITY_CONFINEMENT_SUPERVISION_STARTS,
         SUPERVISION_STARTS,
@@ -199,6 +206,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         AVG_LSIR_SCORE,
         AVG_LSIR_SCORE_AT_ASSIGNMENT,
         DAYS_SINCE_MOST_RECENT_LSIR,
+        LSIR_SCORE_PRESENT_AT_ASSIGNMENT,
         # Events
         ## Session transitions
         ABSCONSIONS_BENCH_WARRANTS,
@@ -214,6 +222,7 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         INCARCERATIONS_TEMPORARY,
         LIBERTY_STARTS,
         PENDING_CUSTODY_STARTS,
+        UNSUCCESSFUL_SUPERVISION_TERMINATIONS,
         ## Supervision level changes
         SUPERVISION_LEVEL_DOWNGRADES,
         SUPERVISION_LEVEL_UPGRADES,
@@ -229,7 +238,9 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         DRUG_SCREENS_POSITIVE,
         ## LSI-R Assessments
         LSIR_ASSESSMENTS,
+        LSIR_ASSESSMENTS_365,
         LSIR_ASSESSMENTS_AVG_SCORE,
+        LSIR_ASSESSMENTS_AVG_SCORE_CHANGE,
         LSIR_ASSESSMENTS_RISK_DECREASE,
         LSIR_ASSESSMENTS_RISK_INCREASE,
         ## Contacts
@@ -241,6 +252,8 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         ## Employment Changes
         EMPLOYED_STATUS_ENDS,
         EMPLOYED_STATUS_STARTS,
+        EMPLOYER_CHANGES_365,
+        MAX_DAYS_STABLE_EMPLOYMENT_365,
         ## Program Referrals
         TREATMENT_REFERRALS,
         # TODO(#18344): Use task population_types to only calculate relevant workflows metrics for a single population

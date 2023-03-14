@@ -18,9 +18,11 @@
 from typing import Dict, List
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
-    AssignmentAvgSpanValueMetric,
     AssignmentDaysToFirstEventMetric,
+    AssignmentEventCountMetric,
     AssignmentSpanDaysMetric,
+    AssignmentSpanMaxDaysMetric,
+    AssignmentSpanValueAtStartMetric,
     DailyAvgSpanCountMetric,
     DailyAvgSpanValueMetric,
     DailyAvgTimeSinceSpanStartMetric,
@@ -309,19 +311,6 @@ AVG_LSIR_SCORE = DailyAvgSpanValueMetric(
         "assessment_type": ["LSIR"],
     },
     span_value_numeric="assessment_score",
-)
-
-# TODO(#18420): Replace metric type with AssignmentSpanValueAtStart once new metric class is supported
-AVG_LSIR_SCORE_AT_ASSIGNMENT = AssignmentAvgSpanValueMetric(
-    name="avg_lsir_score_at_assignment",
-    display_name="Average LSI-R Score At Assignment",
-    description="Average LSI-R score of clients on date of assignment",
-    span_types=["ASSESSMENT_SCORE_SESSION"],
-    span_attribute_filters={
-        "assessment_type": ["LSIR"],
-    },
-    span_value_numeric="assessment_score",
-    window_length_days=1,
 )
 
 COMMUNITY_CONFINEMENT_SUPERVISION_STARTS = EventCountMetric(
@@ -628,6 +617,14 @@ EMPLOYED_STATUS_STARTS = EventCountMetric(
     },
 )
 
+EMPLOYER_CHANGES_365 = AssignmentEventCountMetric(
+    name="employer_changes_365",
+    display_name="Employer Changes Within 1 Year Of Assignment",
+    description="Number of times client starts employment with a new employer within 1 year of assignment",
+    event_types=["EMPLOYMENT_PERIOD_START"],
+    event_attribute_filters={},
+)
+
 INCARCERATIONS_INFERRED = EventCountMetric(
     name="incarcerations_inferred",
     display_name="Inferred Incarcerations",
@@ -769,6 +766,14 @@ LSIR_ASSESSMENTS = EventCountMetric(
     event_attribute_filters={"assessment_type": ["LSIR"]},
 )
 
+LSIR_ASSESSMENTS_365 = AssignmentEventCountMetric(
+    name="lsir_assessments_365",
+    display_name="LSI-R Assessments Within 1 Year Of Assignment",
+    description="Number of LSI-R assessments administered within 1 year of assignment",
+    event_types=["RISK_SCORE_ASSESSMENT"],
+    event_attribute_filters={"assessment_type": ["LSIR"]},
+)
+
 LSIR_ASSESSMENTS_AVG_SCORE = EventValueMetric(
     name="lsir_assessments_avg_score",
     display_name="Average LSI-R Score Of Assessments",
@@ -778,6 +783,18 @@ LSIR_ASSESSMENTS_AVG_SCORE = EventValueMetric(
         "assessment_type": ["LSIR"],
     },
     event_value_numeric="assessment_score",
+    event_count_metric=LSIR_ASSESSMENTS,
+)
+
+LSIR_ASSESSMENTS_AVG_SCORE_CHANGE = EventValueMetric(
+    name="lsir_assessments_avg_score_change",
+    display_name="Average LSI-R Score Change Of Assessments",
+    description="Average change in LSI-R score across all completed assessments",
+    event_types=["RISK_SCORE_ASSESSMENT"],
+    event_attribute_filters={
+        "assessment_type": ["LSIR"],
+    },
+    event_value_numeric="assessment_score_change",
     event_count_metric=LSIR_ASSESSMENTS,
 )
 
@@ -801,6 +818,38 @@ LSIR_ASSESSMENTS_RISK_INCREASE = EventCountMetric(
         "assessment_type": ["LSIR"],
         "assessment_score_increase": ["true"],
     },
+)
+
+LSIR_SCORE_PRESENT_AT_ASSIGNMENT = AssignmentSpanDaysMetric(
+    name="lsir_score_present_at_assignment",
+    display_name="Assignments with an active LSI-R score",
+    description="Number of assignments during which client has an LSI-R score",
+    span_types=["ASSESSMENT_SCORE_SESSION"],
+    span_attribute_filters={
+        "assessment_type": ["LSIR"],
+    },
+    window_length_days=1,
+)
+
+AVG_LSIR_SCORE_AT_ASSIGNMENT = AssignmentSpanValueAtStartMetric(
+    name="avg_lsir_score_at_assignment",
+    display_name="Average LSI-R Score At Assignment",
+    description="Average LSI-R score of clients on date of assignment",
+    span_types=["ASSESSMENT_SCORE_SESSION"],
+    span_attribute_filters={
+        "assessment_type": ["LSIR"],
+    },
+    span_value_numeric="assessment_score",
+    span_count_metric=LSIR_SCORE_PRESENT_AT_ASSIGNMENT,
+    window_length_days=1,
+)
+
+MAX_DAYS_STABLE_EMPLOYMENT_365 = AssignmentSpanMaxDaysMetric(
+    name="max_days_stable_employment_365",
+    display_name="Maximum Days Stable Employment Within 1 Year of Assignment",
+    description="Number of days in the longest stretch of continuous stable employment (same employer and job) within 1 year of assignment",
+    span_types=["EMPLOYMENT_PERIOD"],
+    span_attribute_filters={},
 )
 
 PENDING_CUSTODY_STARTS = EventCountMetric(
@@ -876,6 +925,19 @@ TREATMENT_REFERRALS = EventCountMetric(
     display_name="Treatment Referrals",
     description="Number of treatment referrals",
     event_types=["TREATMENT_REFERRAL"],
+    event_attribute_filters={},
+)
+
+UNSUCCESSFUL_SUPERVISION_TERMINATIONS = EventCountMetric(
+    name="unsuccessful_supervision_terminations",
+    display_name="Unsuccessful Supervision Terminations",
+    description="Number of unsuccessful supervision terminations (incarceration starts, absconsion/bench warrants, "
+    "pending custody starts)",
+    event_types=[
+        "ABSCONSION_BENCH_WARRANT",
+        "INCARCERATION_START",
+        "PENDING_CUSTODY_START",
+    ],
     event_attribute_filters={},
 )
 
