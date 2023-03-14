@@ -33,6 +33,7 @@ from recidiviz.common import ncic
 from recidiviz.common.str_field_utils import (
     parse_days_from_duration_pieces,
     parse_yyyymmdd_date,
+    safe_parse_date_from_date_pieces,
     safe_parse_days_from_duration_pieces,
 )
 from recidiviz.ingest.direct.regions.us_mo.us_mo_county_code_reference import (
@@ -149,3 +150,18 @@ def null_if_magic_date(date: str) -> Optional[str]:
     if date in date_codes:
         return None
     return date
+
+
+def null_if_invalid_date(date: str) -> Optional[str]:
+    """
+    Some (229/535028 as of 2023-03-13) of the dates in the TAK044 CG_MD (parole
+    eligibility date) column are invalid: sets these un-parsable dates to None to
+    prevent ingest errors. A potential alternative would be to use the closest valid date,
+    instead of removing the invalid date entirely. This probably isn't necessary unless
+    many more invalid dates start making it into the data transfers.
+    """
+    if len(date) == 8:
+        year_substr, month_substr, day_substr = date[:4], date[4:6], date[6:]
+        if safe_parse_date_from_date_pieces(year_substr, month_substr, day_substr):
+            return date
+    return None
