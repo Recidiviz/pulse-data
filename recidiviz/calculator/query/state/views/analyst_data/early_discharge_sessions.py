@@ -24,13 +24,14 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(##19463): deprecate this view in favor of compartment sessions
 # TODO(#10706): explore how many people/sessions we are dropping with this filter
 # Limit (in days) for difference between discharge date and session end date
 # in order for the discharge to be considered a valid early discharge
 DISCHARGE_SESSION_DIFF_DAYS = "7"
 
 # States currently supported
-SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME")
+SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME", "US_MI")
 
 EARLY_DISCHARGE_SESSIONS_VIEW_NAME = "early_discharge_sessions"
 
@@ -46,6 +47,8 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
             SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
             UNION ALL
             SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
+            UNION ALL 
+            SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
         )
         -- Only count sessions ending in release where the discharge date is within a specified number of days of session end date
         WHERE outflow_to_level_1 = 'LIBERTY'
