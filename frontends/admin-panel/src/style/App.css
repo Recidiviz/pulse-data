@@ -123,7 +123,7 @@ tr.metadata-table-row > td.ant-table-cell > div {
 /* Site Side Panel */
 .title-header {
   display: flex;
-  margin: 23px;
+  padding: 23px;
   justify-content: space-around;
 }
 
@@ -203,4 +203,3 @@ tr.metadata-table-row > td.ant-table-cell > div {
   color: #ffffff;
   background-color: #f5222d;
 }
-
