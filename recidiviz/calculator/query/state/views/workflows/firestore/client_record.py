@@ -31,6 +31,11 @@ from recidiviz.calculator.query.state.views.workflows.firestore.client_record_ct
 from recidiviz.calculator.query.state.views.workflows.us_tn.supervision_clients_template import (
     US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     TaskCompletionEventType,
 )
@@ -155,9 +160,21 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     sessions_dataset=dataset_config.SESSIONS_DATASET,
     workflows_dataset=dataset_config.WORKFLOWS_VIEWS_DATASET,
     dataflow_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    us_nd_raw_data="us_nd_raw_data_up_to_date_views",
-    us_id_raw_data="us_id_raw_data_up_to_date_views",
-    us_ix_raw_data="us_ix_raw_data_up_to_date_views",
+    us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_id_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_ID, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+    ),
+    us_mi_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
+    ),
     should_materialize=True,
     state_id_type=state_specific_query_strings.state_specific_external_id_type(
         "sessions"

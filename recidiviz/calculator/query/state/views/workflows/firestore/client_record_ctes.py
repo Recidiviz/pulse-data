@@ -120,7 +120,7 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
             "US_ND" AS state_code,
             pei.external_id AS person_external_id, 
             doc.PHONE AS phone_number
-        FROM `{{project_id}}.{{us_nd_raw_data}}.docstars_offenders_latest` doc
+        FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.docstars_offenders_latest` doc
         INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
         ON doc.SID = pei.external_id
         AND pei.id_type = "US_ND_SID"
@@ -170,15 +170,15 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
                 NULL AS end_date,
             UPPER(a.StreetNumber || ' ' || a.StreetName || ', ' || jurisdiction.LocationName || ', ' || state_ids.state_abbreviation || ' ' || a.ZipCode) AS employer_address,
             FROM `{{project_id}}.{{normalized_state_dataset}}.state_employment_period` sep
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ind_EmploymentHistory_latest` emp_hist
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ind_EmploymentHistory_latest` emp_hist
             ON sep.external_id = emp_hist.employmentHistoryId
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Employer_Address_latest` ra
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_Employer_Address_latest` ra
             USING(employerId)
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Address_latest` a
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_Address_latest` a
             USING(AddressId)
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Location_latest` state
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_Location_latest` state
             ON a.StateId = state.locationId
-            LEFT JOIN `{{project_id}}.{{us_ix_raw_data}}.ref_Location_latest` jurisdiction
+            LEFT JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.ref_Location_latest` jurisdiction
             ON a.CountyId = jurisdiction.locationId
             LEFT JOIN `{{project_id}}.{{static_reference_tables_dataset}}.state_ids` state_ids
             ON state_ids.state_name = state.LocationName
@@ -273,6 +273,44 @@ _CLIENT_RECORD_MILESTONES_CTE = """
     ),
 """
 
+_CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
+    # For states where each transfer is a full historical transfer, we want to ensure only clients included
+    # in the latest file are included in our tool
+    # TODO(#18193): This currently doesn't matter for TN because of a TN-specific template that will eventually be 
+    # deprecated
+    include_clients AS (
+        SELECT DISTINCT 
+            person_id,
+            state_code,
+        FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Offender_latest` tn_raw
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            ON tn_raw.OffenderID = pei.external_id
+            AND pei.state_code = "US_TN"
+            AND pei.id_type = "US_TN_DOC"
+    
+        UNION ALL
+    
+        SELECT DISTINCT 
+            person_id,
+            state_code,
+        FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_latest` mi_raw
+        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+            ON mi_raw.offender_number = pei.external_id
+            AND pei.state_code = "US_MI"
+            AND pei.id_type = "US_MI_DOC"
+        
+        UNION ALL
+        
+        SELECT DISTINCT
+                person_id,
+                state_code
+        FROM `{project_id}.{normalized_state_dataset}.state_person` person
+        WHERE
+            person.state_code IN ({workflows_supervision_states})
+            AND person.state_code NOT IN ("US_MI", "US_TN")
+    ),
+    """
+
 _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
     join_clients AS (
         SELECT DISTINCT
@@ -296,6 +334,7 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
         FROM supervision_cases sc 
         INNER JOIN supervision_level_start sl USING(person_id)
         INNER JOIN supervision_super_sessions ss USING(person_id)
+        INNER JOIN include_clients USING(person_id)
         INNER JOIN `{project_id}.{normalized_state_dataset}.state_person` sp USING(person_id)
         LEFT JOIN phone_numbers ph
             -- join on state_code / person_external_id instead of person_id alone because state data
@@ -308,7 +347,6 @@ _CLIENT_RECORD_JOIN_CLIENTS_CTE = """
             AND sc.person_external_id = ea.person_external_id
     ),
     """
-
 
 _CLIENTS_CTE = """
     clients AS (
@@ -354,6 +392,7 @@ def full_client_record() -> str:
     {_CLIENT_RECORD_EMAIL_ADDRESSES_CTE}
     {_CLIENT_RECORD_EMPLOYMENT_INFO_CTE}
     {_CLIENT_RECORD_MILESTONES_CTE}
+    {_CLIENT_RECORD_INCLUDE_CLIENTS_CTE}
     {_CLIENT_RECORD_JOIN_CLIENTS_CTE}
     {_CLIENTS_CTE}
     """

@@ -19,11 +19,26 @@ from recidiviz.calculator.query.bq_utils import columns_to_array
 
 # This template returns a CTEs to be used in the `client_record.py` firestore ETL query
 US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
+    # We want to ensure only clients included in the latest file are included in our tool
+    # TODO(#18193): Deprecate this TN-specific template once complete
+    include_tn_clients AS (
+        SELECT DISTINCT 
+            external_id,
+            state_code,
+        FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.Offender_latest` tn_raw
+        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            ON tn_raw.OffenderID = pei.external_id
+            AND pei.state_code = "US_TN"
+            AND pei.id_type = "US_TN_DOC"
+    ),
     tn_supervision_level_downgrade_eligibility AS (
         SELECT 
             external_id AS person_external_id,
             "supervisionLevelDowngrade" AS opportunity_name,
         FROM `{{project_id}}.{{workflows_dataset}}.us_tn_supervision_level_downgrade_record_materialized`
+        INNER JOIN 
+            include_tn_clients
+        USING(external_id)
     ),
     tn_expiration_eligibility AS (
         SELECT 
@@ -32,6 +47,9 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             CAST(JSON_EXTRACT_SCALAR(single_reason.reason.eligible_date) AS DATE) AS expiration_date,
         FROM `{{project_id}}.{{workflows_dataset}}.us_tn_full_term_supervision_discharge_record_materialized` tes,
         UNNEST(JSON_QUERY_ARRAY(reasons)) AS single_reason
+        INNER JOIN 
+            include_tn_clients
+        USING(external_id)
         WHERE STRING(single_reason.criteria_name) = 'SUPERVISION_PAST_FULL_TERM_COMPLETION_DATE_OR_UPCOMING_1_DAY'        
     ),
     tn_compliant_reporting_eligibility AS (
@@ -39,6 +57,9 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
             *,
             CASE WHEN cr.compliant_reporting_eligible IS NOT NULL THEN "compliantReporting" ELSE null END AS opportunity_name,
         FROM `{{project_id}}.{{analyst_views_dataset}}.us_tn_compliant_reporting_logic_materialized` cr
+        INNER JOIN 
+            include_tn_clients
+        ON person_external_id = external_id
     ),
     tn_clients AS (
         # Values set to NULL are not applicable for this state
@@ -68,7 +89,11 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
                                "tn_expiration_eligibility.opportunity_name"])} AS all_eligible_opportunities,
             CAST(NULL AS ARRAY<STRUCT<type STRING, text STRING>>) as milestones,
         FROM tn_compliant_reporting_eligibility
-        LEFT JOIN tn_supervision_level_downgrade_eligibility USING (person_external_id)
-        FULL OUTER JOIN tn_expiration_eligibility USING (person_external_id)
+        LEFT JOIN 
+            tn_supervision_level_downgrade_eligibility USING (person_external_id)
+        -- Full outer join is done because `tn_compliant_reporting_eligibility` is based on standards sheet and might be
+        -- missing some people that are eligible for full term discharge
+        FULL OUTER JOIN 
+            tn_expiration_eligibility USING (person_external_id)
     )
 """
