@@ -112,8 +112,7 @@ class RawTableSchemaUtilsTest(unittest.TestCase):
             bigquery.SchemaField(
                 name="is_deleted",
                 field_type=bigquery.enums.SqlTypeNames.BOOLEAN.value,
-                # TODO(#18954): Change to `REQUIRED` once is_deleted is populated for every table.
-                mode="NULLABLE",
+                mode="REQUIRED",
             ),
         ]
 
