@@ -170,21 +170,45 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         )
         self.assertTrue(view.should_deploy())
 
-    def test_build_no_primary_keys_throws(self) -> None:
-        # Config with no columns
-        raw_file_config = attr.evolve(
-            self.raw_file_config,
-            primary_key_cols=[],
-        )
-        with self.assertRaisesRegex(
-            ValueError,
-            r"Found no defined primary key columns for file \[table_name\]",
-        ):
+    def test_build_no_primary_keys_no_throw(self) -> None:
+        for value in (True, False):
+            raw_file_config = attr.evolve(
+                self.raw_file_config,
+                # primary_key_cols=[] is allowed for any value of no_valid_primary_keys
+                primary_key_cols=[],
+                no_valid_primary_keys=value,
+            )
+
             _ = DirectIngestRawDataTableLatestViewBuilder(
                 region_code="us_xx",
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 raw_file_config=raw_file_config,
             ).build(address_overrides=None)
+
+    def test_build_primary_keys_nonempty_no_throw(self) -> None:
+        raw_file_config = attr.evolve(
+            self.raw_file_config,
+            primary_key_cols=["primary_key"],
+            no_valid_primary_keys=False,
+        )
+
+        _ = DirectIngestRawDataTableLatestViewBuilder(
+            region_code="us_xx",
+            raw_data_source_instance=DirectIngestInstance.PRIMARY,
+            raw_file_config=raw_file_config,
+        ).build(address_overrides=None)
+
+    def test_build_primary_keys_throw(self) -> None:
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Incorrect primary key setup found for file_tag=table_name: `no_valid_primary_keys`=True and "
+            r"`primary_key_cols` is not empty: \['primary_key'\]",
+        ):
+            _ = attr.evolve(
+                self.raw_file_config,
+                primary_key_cols=["primary_key"],
+                no_valid_primary_keys=True,
+            )
 
     def test_build_no_documented_columns_throws(self) -> None:
         # Columns with no documentation

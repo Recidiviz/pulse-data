@@ -3,27 +3,8 @@ file_tag: ORAS_WEEKLY_SUMMARY_UPDATE
 file_description: |-
   ORAS assessment scores (updated weekly)
 data_classification: source
-primary_key_cols:
-  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
-  # an approach to handling missing PKs has been established.
-  - OFFENDER_NAME
-  - AGENCY_NAME
-  - DATE_OF_BIRTH
-  - GENDER
-  - ETHNICITY
-  - DOC_ID
-  - ASSESSMENT_TYPE
-  - RISK_LEVEL
-  - OVERRIDE_RISK_LEVEL
-  - OVERRIDE_RISK_REASON
-  - ASSESSMENT_OUTCOME
-  - ASSESSMENT_STATUS
-  - SCORE
-  - DATE_CREATED
-  - USER_CREATED
-  - RACE
-  - BIRTH_DATE
-  - CREATED_DATE
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: OFFENDER_NAME
     description: |-

@@ -275,17 +275,12 @@ FROM filtered_rows
                 raw_data_datetime_upper_bound=None,
             )
 
-    def test_no_primary_keys_query(
+    def test_no_valid_primary_keys_nonempty(
         self,
     ) -> None:
-        raw_file_config = attr.evolve(self.raw_file_config, primary_key_cols=[])
         with self.assertRaisesRegex(
             ValueError,
-            r"Found no defined primary key columns for file \[table_name\]",
+            r"Incorrect primary key setup found for file_tag=table_name: `no_valid_primary_keys`=True and "
+            r"`primary_key_cols` is not empty: \['col1'\]",
         ):
-            _ = self.query_builder.build_query(
-                raw_file_config,
-                address_overrides=None,
-                normalized_column_values=False,
-                raw_data_datetime_upper_bound=None,
-            )
+            _ = attr.evolve(self.raw_file_config, no_valid_primary_keys=True)

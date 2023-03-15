@@ -127,7 +127,7 @@ class RawDataConfigWriter:
         # we need to include it in the config
         if raw_file_config.always_historical_export != default_always_historical_export:
             config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
-        # If whether to treat raw files as having unstable primary keys is not the default,
+        # If whether to treat raw files as having valid primary keys is not the default,
         # we need to include it in the config
         if raw_file_config.no_valid_primary_keys != default_no_valid_primary_keys:
             config += (

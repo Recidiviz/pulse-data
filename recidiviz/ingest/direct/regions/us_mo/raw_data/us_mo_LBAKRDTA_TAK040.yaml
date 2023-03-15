@@ -7,38 +7,8 @@ file_description: |-
 
   The `LBAKRDTA.TAK040` table also acts as a "roll-up" table within the MODOC data warehouse, aggregating together bits of data from a variety of tables that contain sentencing information elsewhere. Since we ingest the information we need directly from those lower-level tables, we do not ingest this data directly (as of 2022-01-03).
 data_classification: source
-primary_key_cols:
-  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
-  # an approach to handling missing PKs has been established.
-  - DQ_DOC
-  - DQ_CYC
-  - DQ_SSR
-  - DQ_NRN
-  - DQ_PND
-  - DQ_CD
-  - DQ_FD
-  - DQ_OAB
-  - DQ_OA
-  - DQ_OFB
-  - DQ_OF
-  - DQ_TSE
-  - DQ_MSO
-  - DQ_NDM
-  - DQ_NDO
-  - DQ_NEM
-  - DQ_NEO
-  - DQ_NPM
-  - DQ_NBO
-  - DQ_OCA
-  - DQ_OCL
-  - DQ_OC1
-  - DQ_OC2
-  - DQ_OC3
-  - DQ_SOP
-  - DQ_DCR
-  - DQ_TCR
-  - DQ_DLU
-  - DQ_TLU
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: DQ_DOC
     is_pii: True

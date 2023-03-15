@@ -3,29 +3,8 @@ file_tag: LBAKRDTA_TAK065
 file_description: |-
   Institution History. Column prefix: CS.
 data_classification: source
-primary_key_cols:
-  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
-  # an approach to handling missing PKs has been established.
-  - CS_DOC
-  - CS_CYC
-  - CS_OLC
-  - CS_OLA
-  - CS_PLC
-  - CS_PLA
-  - CS_FLC
-  - CS_FLA
-  - CS_LTR
-  - CS_REA
-  - CS_AV
-  - CS_NM
-  - CS_DD
-  - CS_TAT
-  - CS_TDT
-  - CS_DCR
-  - CS_TCR
-  - CS_DLU
-  - CS_TLU
-  - CS_UID
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: CS_DOC
     is_pii: True

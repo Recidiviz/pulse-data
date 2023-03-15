@@ -3,18 +3,8 @@ file_tag: LBAKRDTA_TAK238
 file_description: |-
   Violations data information (CDV) - Comments. Column prefix: IS.
 data_classification: source
-primary_key_cols:
-  # TODO(#18359): Table is missing a valid primary key, so should be revisited once
-  # an approach to handling missing PKs has been established.
-  - ISCSQ_
-  - ISCLN_
-  - ISCMNT
-  - ISDCRT
-  - ISTCRT
-  - ISUIDC
-  - ISDUPT
-  - ISTUPT
-  - ISUIDU
+no_valid_primary_keys: True
+primary_key_cols: []
 columns:
   - name: ISCSQ_
     description: |-
