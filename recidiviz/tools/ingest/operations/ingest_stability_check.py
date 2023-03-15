@@ -133,10 +133,8 @@ def verify_raw_data_primary_keys(
         ) -> Optional[bigquery.QueryJob]:
             with on_exit(progress.update):
                 if not raw_file_config.primary_key_cols:
+                    # Don't run the query if there are no primary keys
                     return None
-
-                # TODO(#18359): make it so this doesn't fail on files if we know they
-                # don't have a good primary key and we always get them historically.
 
                 job = bq_client.run_query_async(
                     query_str=f"""
@@ -168,6 +166,9 @@ def verify_raw_data_primary_keys(
         query_job = f.result()
 
         if query_job is None:
+            raw_config = region_raw_file_config.raw_file_configs[raw_file_tag]
+            if not raw_config.has_valid_primary_key_configuration:
+                bad_key_file_tags.add(raw_file_tag)
             continue
 
         results = query_job.result()

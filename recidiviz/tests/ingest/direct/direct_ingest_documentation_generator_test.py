@@ -137,7 +137,7 @@ tagNotHistorical file description
 
 | Column |Column Description|Part of Primary Key?|Distinct Values|Is PII?|
 |--------|------------------|--------------------|---------------|-------|
-|column_1|<No documentation>|YES                 |N/A            |False  |
+|column_1|<No documentation>|                    |N/A            |False  |
 """
 
         expected_tag_primary_key_cols_missing = """## tagPrimaryKeyColsMissing

@@ -235,17 +235,24 @@ class DirectIngestRawFileConfig:
     # are defined in, as the column names. By default, False.
     infer_columns_from_config: bool = attr.ib()
 
-    # If true, that means that the primary keys for this table are unstable over time.
+    # If true, that means that there are no valid primary key columns for this table.
     no_valid_primary_keys: bool = attr.ib()
+
+    def __attrs_post_init__(self) -> None:
+        self._validate_primary_keys()
+
+    def _validate_primary_keys(self) -> None:
+        """Validate that primary key configuration is correct."""
+        if not self.has_valid_primary_key_configuration:
+            raise ValueError(
+                f"Incorrect primary key setup found for file_tag={self.file_tag}: "
+                f"`no_valid_primary_keys`={self.no_valid_primary_keys} and `primary_key_cols` is not empty: "
+                f"{self.primary_key_cols}."
+            )
 
     @property
     def primary_key_str(self) -> str:
         """A comma-separated string representation of the primary keys"""
-        if not self.primary_key_cols:
-            raise ValueError(
-                f"Found no defined primary key columns for file [{self.file_tag}]"
-            )
-
         return ", ".join(self.primary_key_cols)
 
     def encodings_to_try(self) -> List[str]:
@@ -287,10 +294,15 @@ class DirectIngestRawFileConfig:
         return bool([column.name for column in self.columns if column.is_enum])
 
     @property
+    def has_valid_primary_key_configuration(self) -> bool:
+        """Confirm that the primary key configuration is correct."""
+        return not self.no_valid_primary_keys or len(self.primary_key_cols) == 0
+
+    @property
     def is_undocumented(self) -> bool:
-        # TODO(#18359): Change this logic to allow for empty primary key cols in files
-        #  that do not have valid primary keys.
-        return not self.available_columns or not self.primary_key_cols
+        return (
+            not self.available_columns or not self.has_valid_primary_key_configuration
+        )
 
     def caps_normalized_col(self, col_name: str) -> Optional[str]:
         """If the provided column name has a case-insensitive match in the columns list,
@@ -432,7 +444,7 @@ class DirectIngestRawFileDefaultConfig:
     default_ignore_quotes: bool = attr.ib(validator=attr_validators.is_bool)
     # The default setting for whether to always treat raw files as historical exports
     default_always_historical_export: bool = attr.ib(validator=attr_validators.is_bool)
-    # The default value for whether tables in a region have unstable primary keys
+    # The default value for whether tables in a region have valid primary keys
     default_no_valid_primary_keys: bool = attr.ib(validator=attr_validators.is_bool)
     # The default line terminator for raw files from this region
     default_line_terminator: Optional[str] = attr.ib(

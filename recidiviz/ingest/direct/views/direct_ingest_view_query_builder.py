@@ -465,9 +465,10 @@ class DirectIngestViewQueryBuilder:
                 )
             if not region_raw_table_config.raw_file_configs[
                 raw_table_tag
-            ].primary_key_cols:
+            ].has_valid_primary_key_configuration:
                 raise ValueError(
-                    f"Empty primary key list in raw file config with tag [{raw_table_tag}]"
+                    f"Incorrect primary key definition for file [{raw_table_tag}]. If this table does not have any "
+                    "valid primary keys, set `primary_key_cols` to [] and set `no_valid_primary_keys` to True"
                 )
             raw_table_dependency_configs.append(
                 region_raw_table_config.raw_file_configs[raw_table_tag]
