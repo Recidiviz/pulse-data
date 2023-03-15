@@ -205,7 +205,11 @@ class IngestViewQueryTester:
         column_names = tuple(column.name for column in config.available_columns)
         if headers != column_names:
             raise ValueError(
-                f"Columns in file do not match file config:\nheaders: {headers}\nconfig: {column_names}"
+                "Columns in file do not match file config:\n"
+                f"From file:\n{headers}\n"
+                f"From config:\n{column_names}\n"
+                f"File is missing:\n{set(column_names) - set(headers)}\n"
+                f"Config is missing:\n{set(headers) - set(column_names)}\n"
             )
         return column_names
 

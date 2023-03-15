@@ -1,52 +1,54 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: PersonParole
-file_description: |-
-  Information about people currently on parole in California. The best way to identify if someone has absconded is by using the OffenderGroup
-  field -- do not rely on AddressType.
+file_description: >-
+  Information about people currently on parole in California. The best way to
+  identify if someone has absconded is by using the OffenderGroup field -- do
+  not rely on AddressType.
 data_classification: source
 primary_key_cols:
   - OffenderId
 columns:
   - name: Cdcno
     is_pii: True
-    description: |-
+    description: >-
       This has the latest CDCNO for each person. See CDCNOParole for more.
   - name: OffenderId
     is_pii: True
-    description: |-
-      TODO(#15297) An ID to reference a specific individual in who is in custody or under supervision of CDCR.
+    description: >-
+      TODO(#15297) An ID to reference a specific individual in who is in custody
+      or under supervision of CDCR.
   - name: FirstName
     is_pii: True
-    description: |-
+    description: >-
       The client's first name.
   - name: MiddleName
     is_pii: True
-    description: |-
+    description: >-
       The client's middle name.
   - name: LastName
     is_pii: True
-    description: |-
+    description: >-
       The client's last name.
   - name: NameSuffix
     is_pii: True
-    description: |-
+    description: >-
       The suffix appended to an client's name.
   - name: Birthday
     is_pii: True
-    description: |-
+    is_datetime: True
+    description: >-
       The client's date of birth.
   - name: Sex
-    is_pii: True
-    description: |-
-      The client's sex. This field is either M or F. We're currently unclear how this is handled in the case of transgender or non-binary clients.
+    description: >-
+      The client's sex. This field is either M or F. We're currently unclear how
+      this is handled in the case of transgender or non-binary clients.
     known_values:
       - value: F
         description: Female
       - value: M
         description: Male
   - name: Race
-    is_pii: True
-    description: |-
+    description: >-
       The client's reported race.
     known_values:
       - value: American Indian/Alaskan Native
@@ -59,7 +61,6 @@ columns:
       - value: Unknown
       - value: White
   - name: Ethnic
-    is_pii: True
     description: The client's reported ethnic background.
     known_values:
       - value: American Indian
@@ -86,35 +87,46 @@ columns:
       - value: Vietnamese
       - value: White
   - name: ParoleRegion
-    description: |-
-      The region the parolee is paroled in. We need this information in addition to 
-      BadgeNumber because some agents are active in multiple units, and this allows 
-      us to understand which unit this individual is being supervised under.
+    description: >-
+      The region the parolee is paroled in. We need this information in addition
+      to  BadgeNumber because some agents are active in multiple units, and this
+      allows  us to understand which unit this individual is being supervised
+      under (needs to be confirmed that this information is accurate). This is
+      sometimes null as well.  This is being investigated here:
+      https://docs.google.com/document/d/1btF1k4KotghdKkAxjUNQOY9mYZcNnk1NL_t4XJyLm9w/edit#bookmark=id.vgjp81eb5voo
   - name: ParoleDistrict
+    description: >-
+      The district the parolee is paroled in. See ParoleRegion.
   - name: ParoleUnit
+    description: >-
+      The unit the parolee is paroled in. See ParoleRegion.
   - name: ParoleAgentName
     is_pii: True
   - name: BadgeNumber
-    description: |-
+    description: >-
       The badge number of the parole agent.
     is_pii: True
   - name: LastParoleDate
-    description: |-
-      The most recent time this person went onto parole. This often (perhaps alwyas) matches IncarcerationParole.OUTDATE.
+    description: >-
+      The most recent time this person went onto parole. This often (perhaps
+      alwyas) matches IncarcerationParole.OUTDATE.
     is_datetime: True
   - name: ControllingDischargeDate
-    description: |-
-      Maximum date at which a person must legally be discharged. When a parolee has absconded, his/her Controlling Discharge Date is suspended until apprehended and may be in the past.
+    description: >-
+      Maximum date at which a person must legally be discharged. When a parolee
+      has absconded, their Controlling Discharge Date is suspended until
+      apprehended and may be in the past.
     is_datetime: True
   - name: EarnedDischargeDate
-    description: |-
-      Date at which a person should be eligible for discharge. Typically reflecting policies that target different populations (i.e. parole caps).
+    description: >-
+      Date at which a person should be eligible for discharge. Typically
+      reflecting policies that target different populations (i.e. parole caps).
     is_datetime: True
   - name: SentenceInMonths
-    description: |-
-      TODO(#15297)
+    description: >-
+      This is related to the incarceration sentence, not the parole sentence.
   - name: OffenderGroup
-    description: |-
+    description: >-
       The group the offender belongs to.
     known_values:
       - value: PAROLE
@@ -129,20 +141,39 @@ columns:
       - value: ISPU_PAL
       - value: MRP
   - name: AddressType
-    description: |-
-      The general category of someone's residence.
+    description: >-
+      The general category of someone's residence. More information about these
+      address types can be found in the DOM, section 81090.7.1. A link to the
+      DOM is available in the main US_CA documentation. Most of these
+      descriptions are sourced from this.
     known_values:
       - value: Custody Program
+        description: >-
+          An inpatient treatment program in a custody setting.
       - value: Community Program
+        description: >-
+          A residential treatment program.
       - value: Physical (Home)
       - value: Transient - Homeless
       - value: Planned (after release)
+        description: The proposed address from the RPS.
       - value: Mailing
       - value: PAL Report Submitted
       - value: Local Jail
+        description: >-
+          An offender incarcerated in a county jail within the state of
+          California  pending local or revocation charges, or serving a
+          revocation sentence.
       - value: Shelter Transient
       - value: Out-of-State Custody
       - value: Temporary
       - value: Planned (after ISC Transfer)
+        description: >-
+          The address in California where an offender from another state
+          proposes to  reside, if the offender's interstate transfer request is
+          granted.
       - value: Federal Custody
+        description: >-
+          An offender under DAPO's supervision currently in custody for federal
+          charges  in a federal facility or federal contract bed.
       - value: Conversion

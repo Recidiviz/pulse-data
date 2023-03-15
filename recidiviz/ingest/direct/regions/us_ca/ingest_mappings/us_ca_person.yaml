@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_CLIENT` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - FirstName
+  - MiddleName
+  - LastName
+  - NameSuffix
+  - Birthday
+  - Sex
+  - Ethnic
+  - Race
+  - AddressType
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_CA_DOC")
+    birthdate: Birthday
+    full_name:
+      $person_name:
+        $given_names: FirstName
+        $middle_names: MiddleName
+        $surname: LastName
+        $name_suffix: NameSuffix
+    gender:
+      $enum_mapping:
+        $raw_text: Sex
+        $mappings:
+          StateGender.MALE: "M"
+          StateGender.FEMALE: "F"
+    races:
+      - StatePersonRace:
+          race:
+            $enum_mapping:
+              $raw_text: Race
+              $mappings:
+                StateRace.AMERICAN_INDIAN_ALASKAN_NATIVE: "American Indian/Alaskan Native"
+                StateRace.ASIAN: "Asian"
+                StateRace.BLACK: "Black"
+                StateRace.NATIVE_HAWAIIAN_PACIFIC_ISLANDER: "Asian or Pacific Islander"
+                StateRace.WHITE: "White"
+                StateRace.EXTERNAL_UNKNOWN: "Unknown"
+                StateRace.OTHER: "Other"
+              $ignore:
+                # These are ethnicities, not races
+                - "Mexican"
+                - "Hispanic"
+                - "Cuban"
+    ethnicities:
+      - StatePersonEthnicity:
+          ethnicity:
+            $enum_mapping:
+              $raw_text: Ethnic
+              $mappings:
+                StateEthnicity.HISPANIC:
+                  - "Hispanic"
+                  - "Mexican"
+                  - "Puerto Rican"
+                  - "Salvadorian"
+                  - "Guatemalan"
+                  - "Nicaraguan"
+                  - "Columbian"
+                  - "Cuban"
+                StateEthnicity.NOT_HISPANIC:
+                  - "Other"
+                  - "American Indian"
+                  - "Other Asian"
+                  - "Filipino"
+                  - "Vietnamese"
+                  - "Pacific Islander"
+                  - "Chinese"
+                  - "Samoan"
+                  - "Cambodian"
+                  - "Laotian"
+                  - "Indian"
+                  - "Korean"
+                  - "Hawaiian"
+                  - "Guamanian"
+                  - "Japanese"
+                  - "Thai"
+                StateEthnicity.EXTERNAL_UNKNOWN:
+                  - "Unknown"
+              $ignore:
+                # These are races, not ethnicities
+                - "Black"
+                - "White"
+    residency_status:
+      $enum_mapping:
+        $raw_text: AddressType
+        $mappings:
+          StateResidencyStatus.HOMELESS:
+            - "Transient - Homeless"
+          StateResidencyStatus.PERMANENT:
+            - "Physical (Home)"
+            - "Planned (after release)"
+            - "Planned (after ISC Transfer)"
+            - "Community Program"
+          StateResidencyStatus.TRANSIENT:
+            - "Temporary"
+            - "Shelter Transient"
+          StateResidencyStatus.INTERNAL_UNKNOWN:
+            - "Local Jail"
+            - "Federal Custody"
+            - "Out-of-State Custody"
+            - "Custody Program"
+            - "Conversion"
+            - "Mailing"
+          StateResidencyStatus.EXTERNAL_UNKNOWN:
+            - "PAL Report Submitted"
