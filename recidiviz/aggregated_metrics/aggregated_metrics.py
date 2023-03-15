@@ -15,9 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Joins together all aggregated metric views for the specified population and aggregation level"""
+from typing import List
+
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
     generate_misc_aggregated_metrics_view_builder,
+)
+from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AggregatedMetric,
+    MetricConditionsMixin,
 )
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
     MetricAggregationLevel,
@@ -29,6 +35,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 def generate_aggregated_metrics_view_builder(
     aggregation_level: MetricAggregationLevel,
     population: MetricPopulation,
+    metrics: List[AggregatedMetric],
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that joins together all metric views into a
@@ -37,8 +44,32 @@ def generate_aggregated_metrics_view_builder(
     level_name = aggregation_level.level_name_short
     population_name = population.population_name_short
     view_id = f"{population_name}_{level_name}_aggregated_metrics"
+
+    view_description_metrics = [
+        f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
+        f"`{metric.get_metric_conditions_string_no_newline() if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
+        for metric in metrics
+    ]
+    view_description_metrics_str = "\n".join(view_description_metrics)
     view_description = f"""
-    All metrics for the {population_name} population disaggregated by {level_name}.
+All metrics for the {population_name} population disaggregated by {level_name}.
+
+#### Population Definition: {population_name.title()}
+
+```
+{population.get_conditions_query_string()}
+```
+
+#### Aggregation Level Definition: {level_name.title()}
+
+Source table: `{aggregation_level.client_assignment_sessions_view_name}`
+
+Index columns: `{aggregation_level.get_index_columns_query_string()}`
+
+### Metrics:
+|	Metric	|	Description	|   Metric Type    |   Conditions   |
+|	--------------------	|	--------------------	|	--------------------	|	--------------------	|
+{view_description_metrics_str}
     """
 
     query_template = f"""

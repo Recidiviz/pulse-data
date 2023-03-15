@@ -373,7 +373,7 @@ def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder
             # Build joined view of all metrics
             view_builders.append(
                 generate_aggregated_metrics_view_builder(
-                    aggregation_level=level, population=population
+                    aggregation_level=level, population=population, metrics=all_metrics
                 )
             )
     return view_builders
