@@ -389,6 +389,7 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
             else "",
         )
 
+        lower_bound_table_id = None
         if ingest_view_materialization_args.lower_bound_datetime_exclusive:
             lower_bound_table_id = cls._get_lower_bound_intermediate_table_name(
                 ingest_view_materialization_args, request_id=request_id
@@ -404,16 +405,23 @@ class IngestViewMaterializerImpl(IngestViewMaterializer):
                 if ingest_view.materialize_raw_data_table_views
                 else "",
             )
+            query = f"{query}\n{lower_bound_query}"
 
+        upper_bound_select = f"SELECT * FROM {upper_bound_table_id}"
+        if lower_bound_table_id:
             diff_query = cls._create_date_diff_query(
-                upper_bound_query=f"SELECT * FROM {upper_bound_table_id}",
+                upper_bound_query=upper_bound_select,
                 upper_bound_prev_query=f"SELECT * FROM {lower_bound_table_id}",
             )
-            diff_query = DirectIngestViewQueryBuilder.add_order_by_suffix(
-                query=diff_query, order_by_cols=ingest_view.order_by_cols
-            )
 
-            query = f"{query}\n{lower_bound_query}\n{diff_query}"
+            query = f"{query}\n{diff_query}"
+        else:
+            query = f"{query}\n{upper_bound_select}"
+
+        query = DirectIngestViewQueryBuilder.add_order_by_suffix(
+            query=query, order_by_cols=ingest_view.order_by_cols
+        )
+
         return query
 
     @staticmethod
