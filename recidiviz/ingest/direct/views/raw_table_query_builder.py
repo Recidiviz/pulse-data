@@ -28,8 +28,17 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
 )
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    UPDATE_DATETIME_COL_NAME,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.string import StrictStringFormatter
+
+DATE_ONLY_FILTER_CLAUSE = """filtered_rows AS (
+    SELECT *
+    FROM `{{project_id}}.{raw_table_dataset_id}.{raw_table_name}`
+    {date_filter_clause}
+)"""
 
 LATEST_INCREMENTAL_FILE_FILTER_CLAUSE = """filtered_rows AS (
     SELECT
@@ -114,6 +123,7 @@ class RawTableQueryBuilder:
         address_overrides: Optional[BigQueryAddressOverrides],
         normalized_column_values: bool,
         raw_data_datetime_upper_bound: Optional[datetime.datetime],
+        filter_to_latest: bool,
     ) -> str:
         """Returns a query against data in a state raw data table.
 
@@ -126,14 +136,26 @@ class RawTableQueryBuilder:
                 normalized).
             raw_data_datetime_upper_bound: If set, this raw data query will only return
                 rows received on or before this datetime.
+            filter_to_latest: If true, only returns the latest version of each row, if
+                if we have received multiple versions of the same row from the state
+                over time. If we receive a file historically every day, this means we
+                return just the rows from the latest version of this raw file we
+                received. If false, do no filtering and return |update_datetime| as an
+                additional column. TODO(#19495): Update docstring here once logic for
+                historical files change as part of automatic raw data pruning work.
         """
+        # TODO(#19495): Adjust logic and query templates in this function to properly
+        #  handle tables where automatic raw data pruning is enabled.
         if normalized_column_values:
             columns_clause = self.normalized_columns_for_config(raw_file_config)
         else:
             columns_clause = self._columns_clause_for_config(raw_file_config)
 
+        if not filter_to_latest:
+            columns_clause += f", {UPDATE_DATETIME_COL_NAME}"
+
         if raw_data_datetime_upper_bound:
-            date_filter_clause = f"WHERE update_datetime <= {datetime_clause(raw_data_datetime_upper_bound)}"
+            date_filter_clause = f"WHERE {UPDATE_DATETIME_COL_NAME} <= {datetime_clause(raw_data_datetime_upper_bound)}"
         else:
             date_filter_clause = ""
 
@@ -142,7 +164,14 @@ class RawTableQueryBuilder:
             instance=self.raw_data_source_instance,
             sandbox_dataset_prefix=None,
         )
-        if not raw_file_config.always_historical_export:
+        if not filter_to_latest:
+            filtered_rows_cte = StrictStringFormatter().format(
+                DATE_ONLY_FILTER_CLAUSE,
+                raw_table_dataset_id=raw_table_dataset_id,
+                raw_table_name=raw_file_config.file_tag,
+                date_filter_clause=date_filter_clause,
+            )
+        elif not raw_file_config.always_historical_export:
             filtered_rows_cte = StrictStringFormatter().format(
                 LATEST_INCREMENTAL_FILE_FILTER_CLAUSE,
                 raw_table_dataset_id=raw_table_dataset_id,

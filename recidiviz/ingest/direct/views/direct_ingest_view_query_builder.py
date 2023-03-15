@@ -507,6 +507,9 @@ class DirectIngestViewQueryBuilder:
                 address_overrides=None,
                 normalized_column_values=True,
                 raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
+                # TODO(#18282): Update this when we have support for anything other than
+                #  filter_to_latest=True.
+                filter_to_latest=True,
             )
 
         return DirectIngestRawDataTableLatestViewBuilder(
