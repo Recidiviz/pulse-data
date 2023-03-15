@@ -14,14 +14,31 @@ columns:
     description: |-
       This has the latest CDCNO for each person. See CDCNOInCustody for more.
   - name: SupervisionType
+    description: |-
+      Supervision type of the period starting. For some types, a parenthesis shows the 
+      unit in charge of the monitoring and the client's offense type (at a very high level).
+      We should ask more about the info in these parenthesis ()
   - name: SupervisionLevel
+    description: |-
+      Supervision level starting at SupvLevelChangeDate.
   - name: SupvLevelChangeDate
+    description: |-
+      Date at which SupervisionLevel changed.
     is_datetime: True
   - name: ParoleAgentName
     is_pii: True
+    description: |-
+      Name of each parole agent (string). Some of these fields are represented by something
+      that looks like badge numbers (should ask the state TODO(#15297))
   - name: BadgeNumber
     description: |-
       TODO(#15297)
   - name: ParoleRegion
+    description: |-
+      The region that a parole agent works under. Parole Agents may work in multiple regions.
   - name: ParoleDistrict
+    description: |-
+      The district that a parole agent works under. Parole Agents may work in multiple districts.
   - name: ParoleUnit
+    description: |-
+      The unit the parolee is paroled in. See ParoleRegion.

@@ -23,8 +23,17 @@ columns:
   - name: CSRALevel
     description: |-
       California Static Risk Assessment (CSRA) The California Static Risk Assessment (CSRA) (new 12/09) is a validated risk assessment tool that utilizes a set of risk factors which are most predictive of recidivism. The tool produces a risk number value that will predict the likelihood that an offender will incur a felony arrest within a three-year period after release to parole. Risk factors utilized include, but are not limited to, age, gender, criminal misdemeanor and felony convictions, and sentence/supervision violations.
-
-      CSRA risk falls in one of following five categories: (1) Low Risk. (2) Moderate Risk (3) High Risk Drug means that the offender has a greater risk of reoffending with a drug offense. (4) High Risk Property means that the offender has a greater risk of reoffending with a property offense. (5) High Risk Violence means that the offender has a greater risk of reoffending with a violent offense.
+    known_values:
+      - value: High Violent
+        description: with a CSRA score of 5; the offender has a greater risk of reoffending with a violent offense.
+      - value: High Property
+        description: with a CSRA score of 4; the offender has a greater risk of reoffending with a property offense.
+      - value: High Drug
+        description: with a CSRA score of 3; the offender has a greater risk of reoffending with a drug offense.
+      - value: Moderate
+        description: with a CSRA score of 2; moderate risk
+      - value: Low
+        description: with a CSRA score of 1; low risk
   - name: DateCompleted
     description: |-
       The date that the CSRA Level was calculated.
