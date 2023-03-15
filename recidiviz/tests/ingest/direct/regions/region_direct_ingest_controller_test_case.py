@@ -484,6 +484,8 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
                     and matches_external_id(e, single_root_entity_to_debug)
                 ]
 
+            # TODO(#19439) We almost always diff these two anyway -- should we just
+            # output the diff?
             print_visible_header_label("FINAL")
             print_entity_trees(
                 found_root_entities,

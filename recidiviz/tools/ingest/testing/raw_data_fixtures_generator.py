@@ -78,7 +78,9 @@ def randomize_value(
                     list(string.ascii_uppercase), size=1
                 )[0]
 
-    print(f"Randomizing original value {value} to random value {randomized_value}")
+    print(
+        f"Randomizing value from column '{column_info.name}': {value} -> {randomized_value}"
+    )
     return randomized_value
 
 

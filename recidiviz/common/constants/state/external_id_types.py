@@ -77,6 +77,9 @@ US_MI_DOC_ID = "US_MI_DOC_ID"
 # MI Offender Booking
 US_MI_DOC_BOOK = "US_MI_DOC_BOOK"
 
+# CA Offender Number
+US_CA_DOC = "US_CA_DOC"
+
 # OZ ID types
 US_OZ_VFDS = "US_OZ_VFDS"
 US_OZ_INTERNDS = "US_OZ_INTERNDS"
