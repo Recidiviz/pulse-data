@@ -44,7 +44,7 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
     offender_id: str = attr.ib(default=None)
 
     # The state user who authored the note
-    user_id: str = attr.ib(default=None)
+    staff_id: str = attr.ib(default=None)
 
     # The time that the request was submitted for the full note
     # All pages from the same note should have the same contact_note_date_time
@@ -71,21 +71,21 @@ class WorkflowsUsTnWriteTEPENoteToTomisRequest:
                 f"{self.contact_note_date_time} is not a valid datetime str"
             ) from exc
 
-        if not in_gcp_production() or self.user_id == "RECIDIVIZ":
+        if not in_gcp_production() or self.staff_id == "RECIDIVIZ":
             # If we are not in production or the user is Recidiviz, ensure we do not submit notes to TOMIS with real ids
             offender_id = get_secret("workflows_us_tn_test_offender_id")
-            user_id = get_secret("workflows_us_tn_test_user_id")
+            staff_id = get_secret("workflows_us_tn_test_user_id")
 
-            if offender_id is None or user_id is None:
-                raise ValueError("Missing OffenderId and/or UserId secret")
+            if offender_id is None or staff_id is None:
+                raise ValueError("Missing OffenderId and/or StaffId secret")
         else:
             offender_id = self.offender_id
-            user_id = self.user_id
+            staff_id = self.staff_id
 
         request = {
             "ContactNoteDateTime": self.contact_note_date_time,
             "OffenderId": offender_id,
-            "UserId": user_id,
+            "StaffId": staff_id,
             "ContactTypeCode1": "TEPE",
             "ContactSequenceNumber": self.contact_sequence_number,
         }
@@ -105,7 +105,7 @@ class WorkflowsUsTnExternalRequestInterface:
     def insert_tepe_contact_note(
         self,
         person_external_id: str,
-        user_id: str,
+        staff_id: str,
         contact_note_date_time: str,
         contact_note: Dict[int, List[str]],
         voters_rights_code: Optional[str] = None,
@@ -121,7 +121,7 @@ class WorkflowsUsTnExternalRequestInterface:
         tomis_url = get_secret("workflows_us_tn_insert_contact_note_url")
         tomis_key = get_secret("workflows_us_tn_insert_contact_note_key")
 
-        if in_gcp_production() and user_id == "RECIDIVIZ":
+        if in_gcp_production() and staff_id == "RECIDIVIZ":
             tomis_url = get_secret("workflows_us_tn_insert_contact_note_test_url")
 
         if tomis_url is None or tomis_key is None:
@@ -156,7 +156,7 @@ class WorkflowsUsTnExternalRequestInterface:
             )
             request_body = WorkflowsUsTnWriteTEPENoteToTomisRequest(
                 offender_id=person_external_id,
-                user_id=user_id,
+                staff_id=staff_id,
                 contact_note_date_time=contact_note_date_time,
                 contact_sequence_number=page_number,
                 comments=page_by_line,

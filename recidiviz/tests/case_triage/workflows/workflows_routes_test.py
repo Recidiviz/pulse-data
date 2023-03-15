@@ -38,7 +38,7 @@ from recidiviz.case_triage.workflows.workflows_routes import (
 from recidiviz.utils.types import assert_type
 
 PERSON_EXTERNAL_ID = "123"
-USER_ID = "456"
+STAFF_ID = "456"
 CONTACT_NOTE_DATE_TIME = datetime.datetime.now()
 
 
@@ -237,7 +237,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": str(datetime.datetime.now()),
             "contactNote": {1: ["Line 1", "Line 2"]},
         }
@@ -251,7 +251,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         expected_task_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note_date_time": "2023-01-01T01:23:45",
             "contact_note": {1: ["Line 1", "Line 2"]},
         }
@@ -282,7 +282,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": str(datetime.datetime.now()),
             "contactNote": {1: ["Line 1", "Line 2"]},
             "shouldQueueTask": False,
@@ -297,7 +297,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         expected_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note_date_time": "2023-01-01T01:23:45",
             "contact_note": {1: ["Line 1", "Line 2"]},
         }
@@ -322,7 +322,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": str(datetime.datetime.now()),
             "contactNote": {1: ["Line 1", "Line 2"]},
         }
@@ -354,7 +354,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
         # No contactNoteDateTime
         request_body = {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNote": {1: ["Line 1", "Line 2"]},
         }
 
@@ -376,7 +376,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note": {1: ["Line 1", "Line 2"]},
             "contact_note_date_time": str(datetime.datetime.now()),
         }
@@ -393,7 +393,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note": {1: ["Line 1", "Line 2"]},
         }
         with self.test_app.test_request_context():
@@ -419,7 +419,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note": {1: ["Line 1", "Line 2"]},
             "contact_note_date_time": str(datetime.datetime.now()),
         }
@@ -436,7 +436,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         expected_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note_date_time": "2023-01-01T01:23:45",
             "contact_note": {1: ["Line 1", "Line 2"]},
         }
@@ -457,7 +457,7 @@ class TestWorkflowsRoutes(WorkflowsBlueprintTestCase):
 
         request_body = {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note": {1: ["Line 1", "Line 2"]},
             "contact_note_date_time": str(datetime.datetime.now()),
         }

@@ -67,7 +67,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchema(CamelOrSnakeCaseSchema):
     """
 
     person_external_id = fields.Str(required=True)
-    user_id = fields.Str(required=True)
+    staff_id = fields.Str(required=True)
     contact_note_date_time = fields.DateTime(required=True)
     contact_note = fields.Dict(
         keys=fields.Integer(),
