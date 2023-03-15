@@ -195,6 +195,9 @@ class RawDataFixturesGenerator:
             address_overrides=None,
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
+            # TODO(#18282): Add support for generating raw data fixtures that include the
+            #  update_datetime column and do not filter to latest.
+            filter_to_latest=True,
         )
 
         return f"{latest_query_template}{id_filter_condition};"
