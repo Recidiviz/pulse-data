@@ -295,13 +295,20 @@ class DirectIngestRawFileConfig:
 
     @property
     def has_valid_primary_key_configuration(self) -> bool:
-        """Confirm that the primary key configuration is correct."""
+        """Confirm that the primary key configuration is allowed for any config
+        committed to our codebase. If this returns true, it does NOT mean that the
+        table is sufficently documented for use in an ingest view. To determine if this
+        is a valid ingest view dependency, see is_undocumented().
+        """
         return not self.no_valid_primary_keys or len(self.primary_key_cols) == 0
 
     @property
     def is_undocumented(self) -> bool:
-        return (
-            not self.available_columns or not self.has_valid_primary_key_configuration
+        """Returns true if the raw file config provides enough information for this
+        table to be used in ingest views or *latest views.
+        """
+        return not self.available_columns or (
+            len(self.primary_key_cols) == 0 and not self.no_valid_primary_keys
         )
 
     def caps_normalized_col(self, col_name: str) -> Optional[str]:
