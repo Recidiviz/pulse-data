@@ -298,6 +298,7 @@ const StateUserPermissionsView = (): JSX.Element => {
         )}
         scroll={{ x: 2000 }}
         key={tableKey}
+        pagination={{ showSizeChanger: true }}
       />
     </>
   );
