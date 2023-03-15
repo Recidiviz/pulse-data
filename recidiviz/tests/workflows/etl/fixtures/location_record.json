@@ -1,0 +1,4 @@
+{"id": "WOMEN'S FACILITY 1", "state_code":  "US_XX", "name":  "Women's Facility 1", "system": "INCARCERATION", "id_type": "facilityId"}
+{"id": "U2", "state_code":  "US_XX", "name":  "Unit 2", "system": "INCARCERATION", "id_type": "unitId"}
+{"id": "DISTRICT 1/2", "state_code":  "US_XX", "name":  "Supervision district 1/2", "system": "SUPERVISION", "id_type": "district"}
+{"id": "D3", "state_code":  "US_XX", "name":  "Supervision district 3", "system": "SUPERVISION", "id_type": "district"}
