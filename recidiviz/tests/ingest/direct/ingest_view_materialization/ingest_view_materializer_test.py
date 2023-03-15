@@ -896,3 +896,83 @@ ORDER BY colA, colC;"""
         self.assertEqual(expected_debug_query, debug_query)
 
         self.mock_client.create_dataset_if_necessary.assert_not_called()
+
+    def test_debugQueryForArgsNoLowerBound(self) -> None:
+        # Arrange
+        region = self.create_fake_region()
+        export_args = IngestViewMaterializationArgs(
+            ingest_view_name="ingest_view",
+            ingest_instance=_INGEST_INSTANCE,
+            lower_bound_datetime_exclusive=None,
+            upper_bound_datetime_inclusive=_DATE_2,
+        )
+
+        # Act
+        ingest_view_materializer = self.create_materializer(
+            region,
+            materialize_raw_data_table_views=True,
+        )
+        with freeze_time(_DATE_5.isoformat()):
+            debug_query = IngestViewMaterializerImpl.debug_query_for_args(
+                ingest_view_materializer.ingest_views_by_name,
+                DirectIngestInstance.PRIMARY,
+                export_args,
+            )
+
+        expected_debug_query = """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.file_tag_first`
+            WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+        ) a
+        WHERE
+            recency_rank = 1
+    )
+    SELECT col_name_1a, col_name_1b
+    FROM filtered_rows
+);
+CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    filtered_rows AS (
+        SELECT *
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT COL_1
+    FROM filtered_rows
+);
+CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234 AS (
+
+select * from upper_file_tag_first_generated_view JOIN upper_tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);
+SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound_abcd1234
+ORDER BY colA, colC;"""
+
+        # Assert
+        self.assertEqual(expected_debug_query, debug_query)
+        self.mock_client.create_dataset_if_necessary.assert_not_called()

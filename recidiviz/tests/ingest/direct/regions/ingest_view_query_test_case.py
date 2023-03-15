@@ -229,9 +229,6 @@ class IngestViewQueryTester:
     ) -> pd.DataFrame:
         """Uses the ingest view diff query from DirectIngestIngestViewExportManager.debug_query_for_args to query
         raw data for ingest view tests."""
-        lower_bound_datetime_exclusive = (
-            DEFAULT_FILE_UPDATE_DATETIME - datetime.timedelta(days=1)
-        )
         upper_bound_datetime_inclusive = query_run_dt
         view_query = str(
             IngestViewMaterializerImpl.debug_query_for_args(
@@ -239,7 +236,7 @@ class IngestViewQueryTester:
                 raw_data_source_instance=DirectIngestInstance.PRIMARY,
                 ingest_view_materialization_args=IngestViewMaterializationArgs(
                     ingest_view_name=ingest_view.ingest_view_name,
-                    lower_bound_datetime_exclusive=lower_bound_datetime_exclusive,
+                    lower_bound_datetime_exclusive=None,
                     upper_bound_datetime_inclusive=upper_bound_datetime_inclusive,
                     ingest_instance=DirectIngestInstance.PRIMARY,
                 ),
