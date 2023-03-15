@@ -74,7 +74,8 @@ def get_lookml_view_for_metrics(
 ) -> LookMLView:
     """Generates LookML view string for the specified population, aggregation level, and metrics"""
     bq_view_builder = generate_aggregated_metrics_view_builder(
-        aggregation_level, population, metrics
+        aggregation_level,
+        population,
     )
     view_name = bq_view_builder.view_id
 
