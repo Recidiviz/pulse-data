@@ -29,7 +29,6 @@ from more_itertools import one
 
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
-    RecidivizDataflowTemplateOperator,
 )
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
 from recidiviz.calculator import pipeline
@@ -124,13 +123,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         normalization_pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(
-                task,
-                (
-                    RecidivizDataflowFlexTemplateOperator,
-                    RecidivizDataflowTemplateOperator,
-                ),
-            )
+            if isinstance(task, RecidivizDataflowFlexTemplateOperator)
             and "normalization" in task.task_id
         }
 
@@ -161,13 +154,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         metric_pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(
-                task,
-                (
-                    RecidivizDataflowFlexTemplateOperator,
-                    RecidivizDataflowTemplateOperator,
-                ),
-            )
+            if isinstance(task, RecidivizDataflowFlexTemplateOperator)
             and "normalization" not in task.task_id
         }
 
@@ -344,13 +331,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(
-                task,
-                (
-                    RecidivizDataflowFlexTemplateOperator,
-                    RecidivizDataflowTemplateOperator,
-                ),
-            )
+            if isinstance(task, RecidivizDataflowFlexTemplateOperator)
         }
 
         self.assertNotEqual(0, len(pipeline_task_ids))
@@ -379,13 +360,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
         pipeline_task_ids: Set[str] = {
             task.task_id
             for task in dag.tasks
-            if isinstance(
-                task,
-                (
-                    RecidivizDataflowFlexTemplateOperator,
-                    RecidivizDataflowTemplateOperator,
-                ),
-            )
+            if isinstance(task, RecidivizDataflowFlexTemplateOperator)
         }
 
         self.assertNotEqual(0, len(pipeline_task_ids))
