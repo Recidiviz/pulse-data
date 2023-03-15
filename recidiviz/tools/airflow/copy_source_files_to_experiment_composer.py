@@ -34,6 +34,7 @@ import argparse
 import logging
 import os
 from glob import glob
+from multiprocessing.pool import ThreadPool
 
 import yaml
 
@@ -73,6 +74,11 @@ def gcloud_path_for_local_path(local_path: str) -> str:
     return os.path.join(prefix_to_replace_with, local_path[len(prefix_to_replace) :])
 
 
+def upload_file(local_path: str, gcs_url: str, message: str) -> None:
+    logging.info(message)
+    gsutil_cp(local_path, gcs_url)
+
+
 def main(files: list[str], environment: str, dry_run: bool) -> None:
     """
     Takes in arguments and copies appropriate files to the appropriate environment.
@@ -81,6 +87,8 @@ def main(files: list[str], environment: str, dry_run: bool) -> None:
 
     if environment == "experiment-2":
         experiment_cloud_composer_bucket = EXPERIMENT_2
+
+    thread_pool = ThreadPool(processes=10)
 
     if files:
         local_path_list = [
@@ -105,8 +113,10 @@ def main(files: list[str], environment: str, dry_run: bool) -> None:
         if dry_run:
             logging.info("%s %s", "[DRY RUN]", message)
         else:
-            logging.info(message)
-            gsutil_cp(local_path, gcs_url)
+            thread_pool.apply_async(upload_file, args=(local_path, gcs_url, message))
+
+    thread_pool.close()
+    thread_pool.join()
 
 
 if __name__ == "__main__":
