@@ -171,13 +171,19 @@ class DirectIngestRawDataTableLatestViewBuilderTest(unittest.TestCase):
         self.assertTrue(view.should_deploy())
 
     def test_build_no_primary_keys_no_throw(self) -> None:
-        for value in (True, False):
+        for no_valid_primary_keys in (True, False):
             raw_file_config = attr.evolve(
                 self.raw_file_config,
                 # primary_key_cols=[] is allowed for any value of no_valid_primary_keys
                 primary_key_cols=[],
-                no_valid_primary_keys=value,
+                no_valid_primary_keys=no_valid_primary_keys,
             )
+            if no_valid_primary_keys:
+                # If no_valid_primary_keys is explicitly set to True, then this config
+                # does count as documented
+                self.assertFalse(raw_file_config.is_undocumented)
+            else:
+                self.assertTrue(raw_file_config.is_undocumented)
 
             _ = DirectIngestRawDataTableLatestViewBuilder(
                 region_code="us_xx",
