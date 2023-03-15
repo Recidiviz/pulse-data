@@ -101,7 +101,7 @@ class TestConfiguredValidations(unittest.TestCase):
                 builder_type=BigQueryViewBuilder,  # type: ignore[type-abstract]
                 view_dir_module=views_module,
                 recurse=True,
-                view_builder_attribute_name_regex=".*_VIEW_BUILDER",
+                view_builder_attribute_name_regex=".*_VIEW_BUILDER(S?)",
                 expect_builders_in_all_files=False,
             )
         )

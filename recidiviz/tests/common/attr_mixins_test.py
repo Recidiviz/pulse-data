@@ -29,11 +29,11 @@ from recidiviz.common.attr_mixins import (
     BuilderException,
     CachedAttributeInfo,
     DefaultableAttr,
-    _attribute_field_type_reference_for_class,
     _clear_class_structure_reference,
     _get_class_structure_reference,
     attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
+    attribute_field_type_reference_for_class,
 )
 
 
@@ -387,7 +387,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
         )
 
     def testAttributeFieldTypeReferenceForClass(self) -> None:
-        """Tests that the _attribute_field_type_reference_for_class function returns
+        """Tests that the attribute_field_type_reference_for_class function returns
         the expected mapping from Attribute to BuildableAttrFieldType."""
         # Clear the _class_structure_reference cache
         _clear_class_structure_reference()
@@ -449,7 +449,7 @@ class CachedClassStructureReferenceTests(unittest.TestCase):
                     referenced_cls_name=None,
                 )
 
-        attr_field_type_ref = _attribute_field_type_reference_for_class(
+        attr_field_type_ref = attribute_field_type_reference_for_class(
             FakeBuildableAttrDeluxe
         )
 

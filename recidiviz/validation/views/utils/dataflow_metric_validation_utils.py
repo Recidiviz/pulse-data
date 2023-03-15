@@ -15,16 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for writing validations of Dataflow metrics."""
-from typing import List, Type
-
-import attr
+from typing import List, Set, Type
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
 )
-from recidiviz.common.attr_utils import get_enum_cls
+from recidiviz.common.attr_mixins import (
+    attr_field_enum_cls_for_field_name,
+    attribute_field_type_reference_for_class,
+)
 from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.utils.string import StrictStringFormatter
 
@@ -33,6 +34,16 @@ SELECT_FROM_METRICS_TEMPLATE = (
     "`{{project_id}}.{{materialized_metrics_dataset}}.most_recent_{metric_view_name}_materialized` "
     "{invalid_rows_filter_clause})"
 )
+
+SELECT_ROWS_FROM_METRIC_ALL_INVALID_FIELD_TEMPLATE = """
+SELECT state_code AS region_code, 
+    '{field}' AS field_name,
+    '{metric_view_name}' AS metric,
+    COUNTIF({field} {invalid_clause}) AS invalid_count,
+    COUNT(*) AS row_count FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_{metric_view_name}_materialized`
+    GROUP BY 1, 2, 3
+    HAVING row_count = invalid_count
+"""
 
 
 def _metric_views_for_metric_classes(
@@ -53,27 +64,45 @@ def _metric_views_for_metric_classes(
 def _metrics_with_enum_field_of_type(
     enum_field_name: str, enum_field_type: Type[EntityEnum]
 ) -> List[Type[RecidivizMetric]]:
-    """Returns all metric classes that contain the given |enum_field_name|
-    storing the given |enum_field_type|.
-    """
+    """Returns all metric classes that contain the given |enum_field_name| storing the
+    given |enum_field_type|."""
     return [
         metric
         for metric in DATAFLOW_METRICS_TO_TABLES
-        if (field := attr.fields_dict(metric).get(enum_field_name)) is not None  # type: ignore[arg-type]
-        and get_enum_cls(field) == enum_field_type
+        if (enum_cls := attr_field_enum_cls_for_field_name(metric, enum_field_name))
+        and enum_cls == enum_field_type
     ]
+
+
+def _metrics_with_field(field_name: str) -> List[Type[RecidivizMetric]]:
+    """Returns all metric classes that contain the given |field_name|."""
+    return [
+        metric
+        for metric in DATAFLOW_METRICS_TO_TABLES
+        if field_name in attribute_field_type_reference_for_class(metric)
+    ]
+
+
+def all_enum_fields_across_all_metrics_with_field_value(enum_value: str) -> Set[str]:
+    """Returns all fields across all metric classes that are enums that could be a certain value."""
+    return {
+        field_name
+        for metric in DATAFLOW_METRICS_TO_TABLES
+        for field_name, cached_attribute_info in attribute_field_type_reference_for_class(
+            metric
+        ).items()
+        if (enum_cls := cached_attribute_info.enum_cls)
+        and enum_value in enum_cls.__members__
+    }
 
 
 def _validate_metric_has_all_fields(
     metric: Type[RecidivizMetric], fields_to_validate: List[str]
 ) -> None:
-    """Asserts that the given |metric| class contains all of the fields in
-    |fields_to_validate|.
-
-    Raises an error if the metric does not contain all of the fields.
-    """
+    """Asserts that the given |metric| class contains all of the fields in |fields_to_validate|.
+    Raises an error if the metric does not contain all of the fields."""
     for field in fields_to_validate:
-        if (attr.fields_dict(metric).get(field)) is None:  # type: ignore[arg-type]
+        if field not in attribute_field_type_reference_for_class(metric):
             raise ValueError(
                 f"The {metric.__name__} does not contain metric field: " f"{field}."
             )
@@ -103,6 +132,38 @@ def _validation_query_for_metrics(
         for metric_view_name in _metric_views_for_metric_classes(
             metric_classes=metric_classes
         )
+    ]
+
+    return f"/*{validation_description}*/\n" + "\n UNION ALL \n".join(
+        queries_for_metric_views
+    )
+
+
+def validation_query_for_metric_views_with_all_invalid_fields(
+    field_name: str, invalid_clause: str, validation_description: str
+) -> str:
+    """Builds a validation query for all Dataflow metrics that contain a field with the
+    given |field_name| that returns rows for any metric where the field satisfies the
+    |invalid_clause| in ALL rows (e.g. all values are NULL)."""
+    metrics_with_field = _metrics_with_field(field_name)
+
+    if not metrics_with_field:
+        raise ValueError(f"No metric classes with the field {field_name}.")
+
+    if not invalid_clause == "IS NULL" and not invalid_clause.startswith("= "):
+        raise ValueError(
+            "Invalid clause for the field value. Must be 'IS NULL' or start with '= '. "
+            f"Found: {invalid_clause}"
+        )
+
+    queries_for_metric_views = [
+        StrictStringFormatter().format(
+            SELECT_ROWS_FROM_METRIC_ALL_INVALID_FIELD_TEMPLATE,
+            field=field_name,
+            metric_view_name=metric_view_name,
+            invalid_clause=invalid_clause,
+        )
+        for metric_view_name in _metric_views_for_metric_classes(metrics_with_field)
     ]
 
     return f"/*{validation_description}*/\n" + "\n UNION ALL \n".join(
