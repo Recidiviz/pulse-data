@@ -25,7 +25,7 @@ from recidiviz.tests.case_triage.api_schemas_test import (
 )
 
 PERSON_EXTERNAL_ID = "123"
-USER_ID = "456"
+STAFF_ID = "456"
 CONTACT_NOTE_DATE_TIME = "2000-12-30T00:00:00"
 
 
@@ -38,7 +38,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_valid_data = valid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {1: ["line 1", "line 2"]},
             "votersRightsCode": "VRRE",
@@ -48,7 +48,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_valid_data_missing_voters_rights_code = valid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {1: ["line 1", "line 2"]},
         }
@@ -57,7 +57,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_valid_data_snake_case = valid_schema_test(
         {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note_date_time": CONTACT_NOTE_DATE_TIME,
             "contact_note": {1: ["line 1", "line 2"]},
             "voters_rights_code": "VRRE",
@@ -67,7 +67,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_valid_data_snake_case_missing_voters_rights_code = valid_schema_test(
         {
             "person_external_id": PERSON_EXTERNAL_ID,
-            "user_id": USER_ID,
+            "staff_id": STAFF_ID,
             "contact_note_date_time": CONTACT_NOTE_DATE_TIME,
             "contact_note": {1: ["line 1", "line 2"]},
         }
@@ -76,7 +76,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_incorrect_voters_rights_code = invalid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {1: ["line 1", "line 2"]},
             "votersRightsCode": "VVVV",
@@ -87,7 +87,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_missing_contact_note = invalid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
         },
         ["contact_note"],
@@ -95,27 +95,27 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
 
     test_missing_person_id = invalid_schema_test(
         {
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {1: ["line 1", "line 2"]},
         },
         ["person_external_id"],
     )
 
-    test_missing_user_id = invalid_schema_test(
+    test_missing_staff_id = invalid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {1: ["line 1", "line 2"]},
             "votersRightsCode": "VRRE",
         },
-        ["user_id"],
+        ["staff_id"],
     )
 
     test_invalid_contact_note = invalid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {"1": "line 1"},
             "votersRightsCode": "VRRE",
@@ -126,7 +126,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_too_many_lines_contact_note = invalid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {
                 1: [
@@ -150,7 +150,7 @@ class WorkflowsUsTnInsertTEPEContactNoteSchemaTest(SchemaTestCase):
     test_invalid_page_num_contact_note = invalid_schema_test(
         {
             "personExternalId": PERSON_EXTERNAL_ID,
-            "userId": USER_ID,
+            "staffId": STAFF_ID,
             "contactNoteDateTime": CONTACT_NOTE_DATE_TIME,
             "contactNote": {
                 11: [

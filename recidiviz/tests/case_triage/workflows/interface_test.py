@@ -33,7 +33,7 @@ from recidiviz.case_triage.workflows.interface import (
 )
 
 PERSON_EXTERNAL_ID = "123"
-USER_ID = "456"
+STAFF_ID = "456"
 CONTACT_NOTE_DATE_TIME = datetime.datetime.now().isoformat()
 
 
@@ -62,7 +62,7 @@ class TestWorkflowsInterface(TestCase):
             rsps.add(responses.PUT, self.fake_url, json=response_json)
             WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
                 PERSON_EXTERNAL_ID,
-                USER_ID,
+                STAFF_ID,
                 CONTACT_NOTE_DATE_TIME,
                 {1: [], 2: []},
                 "VRRE",
@@ -83,7 +83,7 @@ class TestWorkflowsInterface(TestCase):
             rsps.add(responses.PUT, self.fake_url, body=ConnectionRefusedError())
             with self.assertRaises(ConnectionRefusedError):
                 WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                    PERSON_EXTERNAL_ID, USER_ID, CONTACT_NOTE_DATE_TIME, {1: []}
+                    PERSON_EXTERNAL_ID, STAFF_ID, CONTACT_NOTE_DATE_TIME, {1: []}
                 )
             self.assertEqual(mock_client.update_document.call_count, 3)
 
@@ -97,7 +97,7 @@ class TestWorkflowsInterface(TestCase):
         mock_client = mock_client.return_value
         with self.assertRaises(Exception):
             WorkflowsUsTnExternalRequestInterface().insert_tepe_contact_note(
-                PERSON_EXTERNAL_ID, USER_ID, CONTACT_NOTE_DATE_TIME, {}
+                PERSON_EXTERNAL_ID, STAFF_ID, CONTACT_NOTE_DATE_TIME, {}
             )
 
         mock_put.assert_not_called()
@@ -138,7 +138,7 @@ class TestWorkflowsInterface(TestCase):
         mock_secret.return_value = "test-id"
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
-            user_id=USER_ID,
+            staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now().isoformat(),
             contact_sequence_number=1,
             comments=["line 1", "line 2"],
@@ -150,7 +150,7 @@ class TestWorkflowsInterface(TestCase):
             {
                 "ContactNoteDateTime": "2000-12-30T00:00:00",
                 "OffenderId": "test-id",
-                "UserId": "test-id",
+                "StaffId": "test-id",
                 "ContactTypeCode1": "TEPE",
                 "ContactSequenceNumber": 1,
                 "Comment1": "line 1",
@@ -170,7 +170,7 @@ class TestWorkflowsInterface(TestCase):
         mock_secret.return_value = "test-id"
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
-            user_id="RECIDIVIZ",
+            staff_id="RECIDIVIZ",
             contact_note_date_time=datetime.datetime.now().isoformat(),
             contact_sequence_number=1,
             comments=["line 1", "line 2"],
@@ -182,7 +182,7 @@ class TestWorkflowsInterface(TestCase):
             {
                 "ContactNoteDateTime": "2000-12-30T00:00:00",
                 "OffenderId": "test-id",
-                "UserId": "test-id",
+                "StaffId": "test-id",
                 "ContactTypeCode1": "TEPE",
                 "ContactSequenceNumber": 1,
                 "Comment1": "line 1",
@@ -200,7 +200,7 @@ class TestWorkflowsInterface(TestCase):
         mock_in_prod.return_value = True
         request = WorkflowsUsTnWriteTEPENoteToTomisRequest(
             offender_id=PERSON_EXTERNAL_ID,
-            user_id=USER_ID,
+            staff_id=STAFF_ID,
             contact_note_date_time=datetime.datetime.now().isoformat(),
             contact_sequence_number=1,
             comments=["line 1", "line 2"],
@@ -212,7 +212,7 @@ class TestWorkflowsInterface(TestCase):
         expected = {
             "ContactNoteDateTime": "2000-12-30T00:00:00",
             "OffenderId": PERSON_EXTERNAL_ID,
-            "UserId": USER_ID,
+            "StaffId": STAFF_ID,
             "ContactTypeCode1": "TEPE",
             "ContactTypeCode2": "VRRE",
             "ContactSequenceNumber": 1,
