@@ -88,7 +88,6 @@ except ImportError:
         NormalizationPipelineParameters,
     )
 
-from recidiviz.common.constants.states import StateCode
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -591,9 +590,8 @@ def create_calculation_dag() -> None:
 
         # define both a MetricsPipelineParameters for flex templates and a legacy PipelineConfigArgs
         pipeline_config_parameters = MetricsPipelineParameters(**metric_pipeline.get())
-        pipeline_config_args = get_pipeline_config_args(metric_pipeline)
 
-        state_code = pipeline_config_args.state_code
+        state_code = pipeline_config_parameters.state_code
 
         if state_code not in dataflow_pipeline_task_groups:
             dataflow_pipeline_task_groups[state_code] = TaskGroup(
@@ -601,19 +599,13 @@ def create_calculation_dag() -> None:
                 parent_group=dataflow_pipeline_task_group,
             )
 
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            metric_pipeline_operator = (
-                dataflow_operator_for_pipeline(
-                    pipeline_config_args,
-                    metric_pipeline,
-                    dataflow_pipeline_task_groups[state_code],
-                )
-                # TODO(#19131): remove state specific filtering and return all flex
-                if state_code != StateCode.US_IX.value
-                else flex_dataflow_operator_for_pipeline(
-                    pipeline_config_parameters,
-                    dataflow_pipeline_task_groups[state_code],
-                )
+        if (
+            project_id == GCP_PROJECT_STAGING
+            or not pipeline_config_parameters.staging_only
+        ):
+            metric_pipeline_operator = flex_dataflow_operator_for_pipeline(
+                pipeline_config_parameters,
+                dataflow_pipeline_task_groups[state_code],
             )
             # Metric pipelines should complete before view rematerialization starts
             metric_pipeline_operator >> update_all_views_branch
@@ -624,9 +616,7 @@ def create_calculation_dag() -> None:
             update_normalized_state >> metric_pipeline_operator
 
             # Add the pipeline to the list of metric pipelines for this state
-            metric_pipelines_by_state[pipeline_config_args.state_code].append(
-                metric_pipeline_operator
-            )
+            metric_pipelines_by_state[state_code].append(metric_pipeline_operator)
 
     normalization_pipelines = YAMLDict.from_path(config_file).pop_dicts(
         "normalization_pipelines"
@@ -636,23 +626,14 @@ def create_calculation_dag() -> None:
         normalization_pipeline_parameters = NormalizationPipelineParameters(
             **normalization_pipeline.get()
         )
-        pipeline_config_args = get_pipeline_config_args(normalization_pipeline)
 
-        state_code = pipeline_config_args.state_code
-
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            normalization_calculation_pipeline = (
-                dataflow_operator_for_pipeline(
-                    pipeline_config_args,
-                    normalization_pipeline,
-                    normalization_task_group,
-                )
-                # TODO(#19131): remove state specific filtering and return all flex
-                if state_code != StateCode.US_IX.value
-                else flex_dataflow_operator_for_pipeline(
-                    normalization_pipeline_parameters,
-                    normalization_task_group,
-                )
+        if (
+            project_id == GCP_PROJECT_STAGING
+            or not normalization_pipeline_parameters.staging_only
+        ):
+            normalization_calculation_pipeline = flex_dataflow_operator_for_pipeline(
+                normalization_pipeline_parameters,
+                normalization_task_group,
             )
 
             # Normalization pipelines should run after the BQ refresh is complete, but
@@ -670,9 +651,7 @@ def create_calculation_dag() -> None:
         supplemental_pipeline_parameters = SupplementalPipelineParameters(
             **supplemental_pipeline.get()
         )
-        pipeline_config_args = get_pipeline_config_args(supplemental_pipeline)
-
-        state_code = pipeline_config_args.state_code
+        state_code = supplemental_pipeline_parameters.state_code
 
         if state_code not in dataflow_pipeline_task_groups:
             dataflow_pipeline_task_groups[state_code] = TaskGroup(
@@ -680,19 +659,13 @@ def create_calculation_dag() -> None:
                 parent_group=dataflow_pipeline_task_group,
             )
 
-        if project_id == GCP_PROJECT_STAGING or not pipeline_config_args.staging_only:
-            supplemental_pipeline_operator = (
-                dataflow_operator_for_pipeline(
-                    pipeline_config_args,
-                    supplemental_pipeline,
-                    dataflow_pipeline_task_groups[state_code],
-                )
-                # TODO(#19131): remove state specific filtering and return all flex
-                if state_code != StateCode.US_IX.value
-                else flex_dataflow_operator_for_pipeline(
-                    supplemental_pipeline_parameters,
-                    dataflow_pipeline_task_groups[state_code],
-                )
+        if (
+            project_id == GCP_PROJECT_STAGING
+            or not supplemental_pipeline_parameters.staging_only
+        ):
+            supplemental_pipeline_operator = flex_dataflow_operator_for_pipeline(
+                supplemental_pipeline_parameters,
+                dataflow_pipeline_task_groups[state_code],
             )
 
             supplemental_pipeline_operator >> update_all_views_branch
