@@ -35,7 +35,7 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
 }
 
 resource "google_storage_bucket_object" "flex_template_metadata" {
-  bucket       = "recidiviz-staging-dataflow-flex-templates"
+  bucket       = "${var.project_id}-dataflow-flex-templates"
   content_type = "application/json"
 
   # This line means we will make a new google_storage_bucket_object for each file we find at the given wildcard path
