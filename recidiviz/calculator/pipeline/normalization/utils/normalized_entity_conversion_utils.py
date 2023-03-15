@@ -514,7 +514,7 @@ def _get_unique_fields_reference() -> Dict[Type[NormalizedStateEntity], Set[str]
 def _get_fields_unique_to_normalized_class(
     entity_cls: Type[NormalizedStateEntity],
 ) -> Set[str]:
-    """Helper function for _attribute_field_type_reference_for_class to map attributes
+    """Helper function for attribute_field_type_reference_for_class to map attributes
     to their BuildableAttrFieldType for a class if the attributes of the class aren't
     yet in the cached _class_structure_reference.
     """

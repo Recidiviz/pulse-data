@@ -71,6 +71,9 @@ from recidiviz.validation.views.state.active_program_participation_by_region_int
 from recidiviz.validation.views.state.admission_pfi_pop_pfi_mismatch import (
     ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.dataflow_metrics.configured_validations import (
+    get_all_dataflow_metrics_validations,
+)
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import (
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER,
 )
@@ -340,6 +343,7 @@ def get_all_validations() -> List[DataValidationCheck]:
 
     all_data_validations: List[DataValidationCheck] = [
         *get_all_task_eligibility_validations(),
+        *get_all_dataflow_metrics_validations(),
         ExistenceDataValidationCheck(
             view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,

@@ -82,7 +82,9 @@ class ModuleCollectorMixin:
         expect_match_in_all_files: bool = True,
     ) -> List[T]:
         """Collects and returns a list of all attributes with the correct type /
-         specifications defined in files in a given directory.
+         specifications defined in files in a given directory. If the collection
+         encounters a matching list attribute, it will look inside the list to collect
+         the attributes of the correct type.
 
         Args:
             attribute_type: The type of attribute that we expect to find in this subdir
@@ -132,17 +134,35 @@ class ModuleCollectorMixin:
                         f"[{attribute_name_regex}]"
                     )
 
+                found_attributes_in_module: List[T] = []
                 for attribute_name in attribute_variable_names:
                     attribute = getattr(child_module, attribute_name)
-                    if not isinstance(attribute, attribute_type):
-                        raise ValueError(
-                            f"Unexpected type [{attribute.__class__.__name__}] for attribute "
-                            f"[{attribute_name}] in file [{child_module.__file__}]. Expected "
-                            f"type [{attribute_type.__name__}]."
-                        )
+                    if isinstance(attribute, list):
+                        if not attribute:
+                            raise ValueError(
+                                f"Unexpected empty list for attribute [{attribute_name}]"
+                                f"in file [{child_module.__file__}]."
+                            )
+                        if not isinstance(attribute[0], attribute_type):
+                            raise ValueError(
+                                f"Unexpected type [List[{attribute[0].__class__.__name__}]] for attribute "
+                                f"[{attribute_name}] in file [{child_module.__file__}]. Expected "
+                                f"type [List[{attribute_type.__name__}]]."
+                            )
+                        found_attributes_in_module += attribute
+                    else:
+                        if not isinstance(attribute, attribute_type):
+                            raise ValueError(
+                                f"Unexpected type [{attribute.__class__.__name__}] for attribute "
+                                f"[{attribute_name}] in file [{child_module.__file__}]. Expected "
+                                f"type [{attribute_type.__name__}]."
+                            )
 
+                        found_attributes_in_module.append(attribute)
+
+                for val in found_attributes_in_module:
                     if validate_fn:
-                        validate_fn(attribute, child_module)
-                    found_attributes.add(attribute)
+                        validate_fn(val, child_module)
+                    found_attributes.add(val)
 
         return list(found_attributes)

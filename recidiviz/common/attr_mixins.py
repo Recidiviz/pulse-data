@@ -81,7 +81,7 @@ def _clear_class_structure_reference() -> None:
     _class_structure_reference = None
 
 
-def _attribute_field_type_reference_for_class(
+def attribute_field_type_reference_for_class(
     cls: Type,
 ) -> Dict[str, CachedAttributeInfo]:
     """Returns a dictionary mapping the attributes of the given class to the type of
@@ -109,12 +109,12 @@ def attr_field_type_for_field_name(
 ) -> BuildableAttrFieldType:
     """Returns the BuildableAttrFieldType of the Attribute on the |cls| with the name
     matching the given |field_name|."""
-    return _attribute_field_type_reference_for_class(cls)[field_name].field_type
+    return attribute_field_type_reference_for_class(cls)[field_name].field_type
 
 
 def attr_field_attribute_for_field_name(cls: Type, field_name: str) -> attr.Attribute:
     """Returns the Attribute on the |cls| for the given |field_name|."""
-    return _attribute_field_type_reference_for_class(cls)[field_name].attribute
+    return attribute_field_type_reference_for_class(cls)[field_name].attribute
 
 
 def attr_field_enum_cls_for_field_name(
@@ -123,7 +123,8 @@ def attr_field_enum_cls_for_field_name(
     """Returns the enum class of the Attribute on the |cls| with the name
     matching the given |field_name|. Returns None if the field is not an enum.
     """
-    return _attribute_field_type_reference_for_class(cls)[field_name].enum_cls
+    reference = attribute_field_type_reference_for_class(cls)
+    return reference[field_name].enum_cls if field_name in reference else None
 
 
 def attr_field_name_storing_referenced_cls_name(
@@ -138,7 +139,7 @@ def attr_field_name_storing_referenced_cls_name(
     """
     fields_storing_referenced_cls = [
         field
-        for field, info in _attribute_field_type_reference_for_class(base_cls).items()
+        for field, info in attribute_field_type_reference_for_class(base_cls).items()
         if info.referenced_cls_name and info.referenced_cls_name == referenced_cls_name
     ]
 
@@ -163,15 +164,13 @@ def attr_field_referenced_cls_name_for_field_name(
     name matching the given |field_name|. Returns None if the field is not a FORWARD_REF
     or LIST type field.
     """
-    return _attribute_field_type_reference_for_class(cls)[
-        field_name
-    ].referenced_cls_name
+    return attribute_field_type_reference_for_class(cls)[field_name].referenced_cls_name
 
 
 def _map_attr_to_type_for_class(
     cls: Type,
 ) -> Dict[str, CachedAttributeInfo]:
-    """Helper function for _attribute_field_type_reference_for_class to map attributes
+    """Helper function for attribute_field_type_reference_for_class to map attributes
     to their BuildableAttrFieldType for a class if the attributes of the class aren't
     yet in the cached _class_structure_reference.
     """
@@ -380,7 +379,7 @@ class BuildableAttr:
 
         cls_builder = cls.builder()
 
-        attributes_and_types = _attribute_field_type_reference_for_class(cls)
+        attributes_and_types = attribute_field_type_reference_for_class(cls)
         for field, cached_attribute_info in attributes_and_types.items():
             field_type = cached_attribute_info.field_type
             if field in build_dict:
