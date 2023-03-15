@@ -68,7 +68,7 @@ file_description: |-
      SELECT
          Org_cd,
          Org_Name,
-         sub_office_external_id AS level_1_supervision_location_external_id,
+         UPPER(sub_office_external_id) AS level_1_supervision_location_external_id,
          sub_office_external_id AS level_1_supervision_location_name,
          district_office_external_id AS level_2_supervision_location_external_id,
          district_office_name AS level_2_supervision_location_name,
