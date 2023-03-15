@@ -254,7 +254,10 @@ class IngestViewQueryTester:
         a DataFrame read from a fixture file.
         """
         column_value_types = {
-            type(val) for val in df[column].tolist() if val is not None
+            # Collect types, filtering out None, pd.NaT, np.nan values.
+            type(val)
+            for val in df[column].tolist()
+            if isinstance(val, list) or not pd.isnull(val)
         }
 
         if len(column_value_types) == 0:
