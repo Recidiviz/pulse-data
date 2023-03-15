@@ -1077,6 +1077,10 @@ def augment_raw_data_df_with_metadata_columns(
         )
     raw_data_df[UPDATE_DATETIME_COL_NAME] = utc_upload_datetime.replace(tzinfo=None)
 
+    # TODO(##18944): For now, default the value of `is_deleted` is False. Once raw data pruning is launched and the
+    # value of `is_deleted` is conditionally set, delete this default value.
+    raw_data_df[IS_DELETED_COL_NAME] = False
+
     return raw_data_df
 
 
