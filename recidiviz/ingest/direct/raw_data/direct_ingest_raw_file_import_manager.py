@@ -973,8 +973,7 @@ class DirectIngestRawFileImportManager:
                 mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.DATETIME.value
             if name == IS_DELETED_COL_NAME:
-                # TODO(#18954): Change to `REQUIRED` once is_deleted is populated for every table.
-                mode = "NULLABLE"
+                mode = "REQUIRED"
                 typ_str = bigquery.enums.SqlTypeNames.BOOLEAN.value
             schema.append(
                 bigquery.SchemaField(name=name, field_type=typ_str, mode=mode)
