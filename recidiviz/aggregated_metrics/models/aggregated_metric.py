@@ -130,6 +130,13 @@ class MetricConditionsMixin:
         """Returns a query fragment string that joins SQL conditional statements with `AND`."""
         return "\n\t\t\t\tAND\n".join(self.get_metric_conditions())
 
+    def get_metric_conditions_string_no_newline(self) -> str:
+        """
+        Returns a query fragment string that joins SQL conditional statements with `AND` without line breaks
+        or extra spaces, for more succinct print output.
+        """
+        return re.sub(r" +|\n+", " ", " AND ".join(self.get_metric_conditions()))
+
     @abc.abstractmethod
     def get_metric_conditions(self) -> List[str]:
         """Returns a list of conditional query fragments filtering person_spans or person_events."""
