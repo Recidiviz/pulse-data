@@ -243,7 +243,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         rowSelection={rowSelection}
         dataSource={data}
         columns={columns}
-        pagination={{ defaultPageSize: 20 }}
+        pagination={{ defaultPageSize: 20, showSizeChanger: true }}
         key={tableKey}
       />
     </>
