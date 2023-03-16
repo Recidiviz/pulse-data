@@ -15,9 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Joins together all aggregated metric views for the specified population and aggregation level"""
+from typing import List
+
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
     generate_misc_aggregated_metrics_view_builder,
+)
+from recidiviz.aggregated_metrics.models.aggregated_metric import (
+    AggregatedMetric,
+    MiscAggregatedMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
     MetricAggregationLevel,
@@ -29,6 +35,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 def generate_aggregated_metrics_view_builder(
     aggregation_level: MetricAggregationLevel,
     population: MetricPopulation,
+    metrics: List[AggregatedMetric],
 ) -> SimpleBigQueryViewBuilder:
     """
     Returns a SimpleBigQueryViewBuilder that joins together all metric views into a
@@ -69,6 +76,13 @@ def generate_aggregated_metrics_view_builder(
     misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
         aggregation_level=aggregation_level,
         population=population,
+        metrics=[
+            m
+            for m in metrics
+            if isinstance(m, MiscAggregatedMetric)
+            and population in m.populations
+            and aggregation_level in m.aggregation_levels
+        ],
     )
     if misc_metrics_view_builder:
         # Join to miscellaneous metrics view if view exists for population and aggregation level

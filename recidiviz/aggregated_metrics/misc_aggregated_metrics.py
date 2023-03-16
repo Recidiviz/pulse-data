@@ -18,6 +18,18 @@
 from typing import Dict, List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
+from recidiviz.aggregated_metrics.models.aggregated_metric import MiscAggregatedMetric
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    AVG_ASSIGNMENTS_OFFICER,
+    AVG_CRITICAL_CASELOAD_SIZE,
+    AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
+    AVG_DAILY_CASELOAD_OFFICER,
+    CURRENT_DISTRICT,
+    CURRENT_OFFICE,
+    PRIMARY_DISTRICT,
+    PRIMARY_OFFICE,
+    PROP_PERIOD_WITH_CRITICAL_CASELOAD,
+)
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
     MetricAggregationLevel,
     MetricAggregationLevelType,
@@ -54,7 +66,6 @@ def _query_template_and_format_args(
     """Returns the appropriate query template (and associated dataset keyword args for
     that template) for the provided population and aggregation level.
     """
-    # TODO(#19011): Add support for misc_metrics metadata
     if population.population_type == MetricPopulationType.SUPERVISION:
         if (
             aggregation_level.level_type
@@ -62,43 +73,17 @@ def _query_template_and_format_args(
         ):
             group_by_range = range(1, len(aggregation_level.index_columns) + 8)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
-            query_template = f"""
-SELECT
-    {aggregation_level.get_index_columns_query_string()},
-    period,
-    population_start_date AS start_date,
-    population_end_date AS end_date,
-    district AS primary_district,
-    office AS primary_office,
-    level_2_supervision_location_external_id AS current_district,
-    level_1_supervision_location_external_id AS current_office,
-    -- Proportion of the analysis period where officer has a valid caseload size
-    SUM(
-        IF(
-            b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
-            DATE_DIFF(
-                LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
-                GREATEST(a.population_start_date, b.start_date),
-                DAY
-            ),
-            0
-        )
-    ) / DATE_DIFF(population_end_date, population_start_date, DAY) AS prop_period_with_critical_caseload,
-
-    -- Average caseload size across all days in the analysis period where officer has a valid caseload
-    SAFE_DIVIDE(
-        SUM(
-            IF(
-                b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
-                DATE_DIFF(
-                    LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
-                    GREATEST(a.population_start_date, b.start_date),
-                    DAY
-                ) * b.caseload_count,
-                0
-            )
-        )
-        ,
+            cte = f"""
+    SELECT
+        {aggregation_level.get_index_columns_query_string()},
+        period,
+        population_start_date AS start_date,
+        population_end_date AS end_date,
+        district AS {PRIMARY_DISTRICT.name},
+        office AS {PRIMARY_OFFICE.name},
+        level_2_supervision_location_external_id AS {CURRENT_DISTRICT.name},
+        level_1_supervision_location_external_id AS {CURRENT_OFFICE.name},
+        -- Proportion of the analysis period where officer has a valid caseload size
         SUM(
             IF(
                 b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
@@ -109,30 +94,56 @@ SELECT
                 ),
                 0
             )
-        )
-    ) AS avg_critical_caseload_size,
-FROM
-    `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized` a
-INNER JOIN
-    `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_caseload_count_spans_materialized` b
-ON
-    b.start_date < a.population_end_date
-    AND {nonnull_end_date_clause("b.end_date")} > a.population_start_date
-LEFT JOIN (
-    SELECT 
-        *, date AS population_start_date
+        ) / DATE_DIFF(population_end_date, population_start_date, DAY) AS {PROP_PERIOD_WITH_CRITICAL_CASELOAD.name},
+    
+        -- Average caseload size across all days in the analysis period where officer has a valid caseload
+        SAFE_DIVIDE(
+            SUM(
+                IF(
+                    b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
+                    DATE_DIFF(
+                        LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
+                        GREATEST(a.population_start_date, b.start_date),
+                        DAY
+                    ) * b.caseload_count,
+                    0
+                )
+            )
+            ,
+            SUM(
+                IF(
+                    b.caseload_count >= {_MIN_OFFICER_CASELOAD_SIZE},
+                    DATE_DIFF(
+                        LEAST(a.population_end_date, {nonnull_current_date_clause("b.end_date")}),
+                        GREATEST(a.population_start_date, b.start_date),
+                        DAY
+                    ),
+                    0
+                )
+            )
+        ) AS {AVG_CRITICAL_CASELOAD_SIZE.name},
     FROM
-        `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized` c
-    )
-USING 
-    ({aggregation_level.get_index_columns_query_string()}, population_start_date)
-LEFT JOIN 
-    `{{project_id}}.{{analyst_views_dataset}}.current_staff_supervision_locations_materialized` r
-USING
-    (officer_id, state_code)
-GROUP BY {group_by_range_str}
+        `{{project_id}}.{{aggregated_metrics_dataset}}.metric_time_periods_materialized` a
+    INNER JOIN
+        `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_caseload_count_spans_materialized` b
+    ON
+        b.start_date < a.population_end_date
+        AND {nonnull_end_date_clause("b.end_date")} > a.population_start_date
+    LEFT JOIN (
+        SELECT 
+            *, date AS population_start_date
+        FROM
+            `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized` c
+        )
+    USING 
+        ({aggregation_level.get_index_columns_query_string()}, population_start_date)
+    LEFT JOIN 
+        `{{project_id}}.{{analyst_views_dataset}}.current_staff_supervision_locations_materialized` r
+    USING
+        (officer_id, state_code)
+    GROUP BY {group_by_range_str}
 """
-            return query_template, {
+            return cte, {
                 "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID,
                 "analyst_views_dataset": ANALYST_VIEWS_DATASET,
             }
@@ -141,30 +152,28 @@ GROUP BY {group_by_range_str}
             MetricAggregationLevelType.SUPERVISION_DISTRICT,
             MetricAggregationLevelType.STATE_CODE,
         ]:
-            query_template = f"""
-SELECT
-    {aggregation_level.get_index_columns_query_string()},
-    period,
-    start_date,
-    end_date,
-    AVG(avg_daily_population) AS avg_daily_caseload_officer,
-    AVG(avg_critical_caseload_size) AS avg_critical_caseload_size_officer,
-    AVG(assignments) AS avg_assignments_officer,
-FROM (
-    SELECT 
-        *, 
-        primary_district AS district, 
-        primary_office AS office
-    FROM
-        `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
-)
-GROUP BY
-    {aggregation_level.get_index_columns_query_string()},
-    period, start_date, end_date       
+            cte = f"""
+    SELECT
+        {aggregation_level.get_index_columns_query_string()},
+        period,
+        start_date,
+        end_date,
+        AVG(avg_daily_population) AS {AVG_DAILY_CASELOAD_OFFICER.name},
+        AVG(avg_critical_caseload_size) AS {AVG_CRITICAL_CASELOAD_SIZE_OFFICER.name},
+        AVG(assignments) AS {AVG_ASSIGNMENTS_OFFICER.name},
+    FROM (
+        SELECT 
+            *, 
+            {PRIMARY_DISTRICT.name} AS district, 
+            {PRIMARY_OFFICE.name} AS office
+        FROM
+            `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
+    )
+    GROUP BY
+        {aggregation_level.get_index_columns_query_string()},
+        period, start_date, end_date       
 """
-            return query_template, {
-                "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID
-            }
+            return cte, {"aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID}
 
     raise ValueError(
         f"Unexpected population_type [{population.population_type}] and "
@@ -176,6 +185,7 @@ GROUP BY
 def generate_misc_aggregated_metrics_view_builder(
     aggregation_level: MetricAggregationLevel,
     population: MetricPopulation,
+    metrics: List[MiscAggregatedMetric],
 ) -> Optional[SimpleBigQueryViewBuilder]:
     """
     Returns a SimpleBigQueryViewBuilder that calculates miscellaneous metrics for the specified
@@ -187,9 +197,21 @@ def generate_misc_aggregated_metrics_view_builder(
     ) not in _MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS:
         return None
 
-    query_template, dataset_kwargs = _query_template_and_format_args(
-        aggregation_level, population
-    )
+    cte, dataset_kwargs = _query_template_and_format_args(aggregation_level, population)
+    metrics_str = ",\n    ".join([metric.name for metric in metrics])
+    query_template = f"""
+WITH misc_metrics_cte AS (
+    {cte}
+)
+SELECT
+    {aggregation_level.get_index_columns_query_string()},
+    start_date,
+    end_date,
+    period,
+    {metrics_str}
+FROM
+    misc_metrics_cte
+"""
 
     view_id = f"{population.population_name_short}_{aggregation_level.level_name_short}_misc_aggregated_metrics"
     view_description = f"""

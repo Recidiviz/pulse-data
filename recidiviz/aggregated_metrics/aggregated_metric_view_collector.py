@@ -36,12 +36,17 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
     AssignmentEventAggregatedMetric,
     AssignmentSpanAggregatedMetric,
+    MiscAggregatedMetric,
     PeriodEventAggregatedMetric,
     PeriodSpanAggregatedMetric,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     ABSCONSIONS_BENCH_WARRANTS,
     AVG_AGE,
+    AVG_ASSIGNMENTS_OFFICER,
+    AVG_CRITICAL_CASELOAD_SIZE,
+    AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
+    AVG_DAILY_CASELOAD_OFFICER,
     AVG_DAILY_POPULATION,
     AVG_DAILY_POPULATION_COMMUNITY_CONFINEMENT,
     AVG_DAILY_POPULATION_DOMESTIC_VIOLENCE_CASE_TYPE,
@@ -70,6 +75,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     CONTACTS_COMPLETED,
     CONTACTS_FACE_TO_FACE,
     CONTACTS_HOME_VISIT,
+    CURRENT_DISTRICT,
+    CURRENT_OFFICE,
     DAYS_ABSCONDED_365,
     DAYS_AT_LIBERTY_365,
     DAYS_EMPLOYED_365,
@@ -115,6 +122,9 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     MAX_DAYS_STABLE_EMPLOYMENT_365,
     PENDING_CUSTODY_STARTS,
     PERSON_DAYS_TASK_ELIGIBLE_METRICS,
+    PRIMARY_DISTRICT,
+    PRIMARY_OFFICE,
+    PROP_PERIOD_WITH_CRITICAL_CASELOAD,
     SUPERVISION_LEVEL_DOWNGRADES,
     SUPERVISION_LEVEL_DOWNGRADES_TO_LIMITED,
     SUPERVISION_LEVEL_UPGRADES,
@@ -178,8 +188,18 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
         DAYS_TO_FIRST_SUPERVISION_START_365,
     ],
     MetricPopulationType.SUPERVISION: [
-        # Average daily population
+        # Location information
+        CURRENT_DISTRICT,
+        CURRENT_OFFICE,
+        PRIMARY_DISTRICT,
+        PRIMARY_OFFICE,
+        # Population/caseload information
         AVG_DAILY_POPULATION,
+        AVG_ASSIGNMENTS_OFFICER,
+        AVG_CRITICAL_CASELOAD_SIZE,
+        AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
+        AVG_DAILY_CASELOAD_OFFICER,
+        PROP_PERIOD_WITH_CRITICAL_CASELOAD,
         # Average daily population, person demographics
         AVG_AGE,
         AVG_DAILY_POPULATION_FEMALE,
@@ -366,6 +386,13 @@ def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder
             misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
                 aggregation_level=level,
                 population=population,
+                metrics=[
+                    m
+                    for m in all_metrics
+                    if isinstance(m, MiscAggregatedMetric)
+                    and population.population_type in m.populations
+                    and level.level_type in m.aggregation_levels
+                ],
             )
             if misc_metrics_view_builder:
                 view_builders.append(misc_metrics_view_builder)
@@ -373,7 +400,7 @@ def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder
             # Build joined view of all metrics
             view_builders.append(
                 generate_aggregated_metrics_view_builder(
-                    aggregation_level=level, population=population
+                    aggregation_level=level, population=population, metrics=all_metrics
                 )
             )
     return view_builders
