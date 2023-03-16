@@ -81,6 +81,9 @@ from recidiviz.calculator.query.state.views.workflows.reidentified_dashboard_use
 from recidiviz.calculator.query.state.views.workflows.resident_record_archive import (
     RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.workflows_usage import (
+    WORKFLOWS_USAGE_VIEW_BUILDER,
+)
 
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
@@ -104,4 +107,5 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     CLIENTS_REFERRAL_STATUS_UPDATED_VIEW_BUILDER,
     PERSON_RECORD_VIEW_BUILDER,
     CURRENT_IMPACT_FUNNEL_STATUS_VIEW_BUILDER,
+    WORKFLOWS_USAGE_VIEW_BUILDER,
 ]
