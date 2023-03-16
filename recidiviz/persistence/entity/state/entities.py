@@ -1752,6 +1752,9 @@ class StateStaff(
     supervisor_periods: List["StateStaffSupervisorPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    location_periods: List["StateStaffLocationPeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
     def get_external_ids(self) -> List[StateStaffExternalId]:
         return self.external_ids

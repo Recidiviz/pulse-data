@@ -59,4 +59,5 @@ class UsPaController(BaseDirectIngestController):
             "supervision_period_v4",
             "program_assignment",
             "supervision_staff",
+            "supervision_staff_location_period",
         ]
