@@ -76,7 +76,7 @@ def _copy_tables_to_temporary(
     # Copy raw tables to temporary tables, and append `is_deleted=False` to each temporary table
     for instance in DirectIngestInstance:
         dataset_id = raw_tables_dataset_for_region(state_code, instance)
-
+        orig_dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
         tmp_dataset_id = f"tmp_{str(uuid.uuid4())[:6]}_{dataset_id}"
         tmp_dataset_ref = bq_client.dataset_ref_for_id(tmp_dataset_id)
         tmp_to_orig_dataset_ids.append((tmp_dataset_id, dataset_id))
@@ -97,6 +97,21 @@ def _copy_tables_to_temporary(
                 table_id,
             )
             if not dry_run:
+                orig_table = bq_client.get_table(orig_dataset_ref, table_id)
+                schema = orig_table.schema
+                # If the table doesn't yet have `is_deleted`, add it to the tmp table's schema
+                nullable_is_deleted = bigquery.SchemaField(
+                    "is_deleted", "BOOLEAN", "NULLABLE"
+                )
+                if nullable_is_deleted not in schema:
+                    schema.append(nullable_is_deleted)
+                    bq_client.create_table_with_schema(
+                        dataset_id=tmp_dataset_id,
+                        table_id=table_id,
+                        schema_fields=schema,
+                        # Don't touch existing table's clustering fields
+                        clustering_fields=orig_table.clustering_fields,
+                    )
                 copy_job = bq_client.copy_table(dataset_id, table_id, tmp_dataset_id)
                 if copy_job is None:
                     raise ValueError("Expected copy job")
