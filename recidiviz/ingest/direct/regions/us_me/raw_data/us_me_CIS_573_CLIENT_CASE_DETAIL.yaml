@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: CIS_573_CLIENT_CASE_DETAIL
+file_description: |-
+  This table contains the total amount each client owes in restitution payments: it adds up all restitution cases a client has.
+data_classification: source
+primary_key_cols:
+  - client_case_id
+columns:
+  - name: cis_100_client_id
+    description: |-
+      The unique identifier for all clients in the offender management system.
+    is_pii: True
+  - name: cis_570_rest_case_id
+    description: |-
+      Column used to merge with CIS_570_REST_CASE.
+  - name: cis_5750_disburse_to_other_id
+  - name: cis_589_restitution_id
+  - name: client_case_id
+    description: |-
+      Primary key: Client case id
+  - name: comments_tx
+    description: |-
+      Free text comment related to the amount owed.
+    is_pii: True
+  - name: created_by_tx
+    is_pii: True
+  - name: created_on_date
+  - name: jsc_max_to_receive_num
+  - name: jsc_override_dist_ind
+  - name: jsc_override_dist_pct
+  - name: jsc_override_reason_tx
+    is_pii: True
+  - name: modified_by_tx
+    is_pii: True
+  - name: modified_on_date
+  - name: total_owing_num
+    description: |-
+      Total amount owed.
