@@ -14,20 +14,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Sessionized view of each individual on supervision. Session defined as continuous period of time on supervision level, using
-a state's internal mappings"""
+"""Sessionized view of non-overlapping periods of continuous stay on supervision on a given supervision level and case
+type, using a state's internal mappings"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_NAME = "supervision_level_raw_text_sessions"
 
-SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay on supervision on a given supervision level, using
-a state's internal mappings"""
+SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_DESCRIPTION = """Sessionized view of non-overlapping periods of continuous stay on supervision on a given supervision level and
+case type, using a state's internal mappings"""
 
-SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
+SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = f"""
     WITH sub_sessions_attributes_unnested AS
     (
     SELECT DISTINCT
@@ -37,11 +38,11 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
         session_attributes.compartment_level_2,
         session_attributes.correctional_level AS supervision_level,
         session_attributes.correctional_level_raw_text AS supervision_level_raw_text,
-        session_attributes.case_type,
+        session_attributes.case_type AS case_type,
         start_date,
         end_date_exclusive,
         dataflow_session_id,
-    FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized`,
+    FROM `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized`,
     UNNEST(session_attributes) session_attributes
     WHERE session_attributes.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
     )
@@ -49,96 +50,37 @@ SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_QUERY_TEMPLATE = """
     deduped_cte AS
     (
     SELECT
-        *
+        ss.*
     FROM sub_sessions_attributes_unnested ss
-    LEFT JOIN `{project_id}.{sessions_dataset}.supervision_level_dedup_priority` p
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority` p
         ON ss.supervision_level  = p.correctional_level
-    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_level_2_dedup_priority` cp
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.compartment_level_2_dedup_priority` cp
         ON ss.compartment_level_1  = cp.compartment_level_1
         AND ss.compartment_level_2  = cp.compartment_level_2
-    WHERE TRUE
-    -- For a small percent of the sessions, we have multiple supervision_level_raw_text values mapping to the same
-    -- supervision level. Ordering by compartment_level_2 addresses most of these, and the rest we deterministically deduplicate
+    --Deduplicate first by the supervision level priority, then by the compartment level 2 value in cases where those
+    --are identical across multiple forms of supervision.
     QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, state_code, dataflow_session_id
-        ORDER BY COALESCE(priority, 999),
-                 COALESCE(correctional_level_priority, 999),
-                 supervision_level_raw_text
+        ORDER BY COALESCE(correctional_level_priority, 999),
+                    COALESCE(priority, 999),
+                    supervision_level_raw_text,
+                    case_type
                  ) = 1
     )
     ,
     sessionized_cte AS
     (
-    SELECT
-        state_code,
-        person_id,
-        supervision_level,
-        supervision_level_raw_text,
-        case_type,
-        supervision_level_session_id_unordered,
-        correctional_level_priority,
-        is_discretionary_level,
-        MIN(start_date) start_date,
-        CASE WHEN LOGICAL_AND(end_date_exclusive IS NOT NULL) THEN MAX(end_date_exclusive) END AS end_date_exclusive,
-        MIN(dataflow_session_id) AS dataflow_session_id_start,
-        MAX(dataflow_session_id) AS dataflow_session_id_end,
-        FROM
-            (
-            SELECT
-                *,
-                SUM(CASE WHEN COALESCE(level_changed, 1) = 1 THEN 1 ELSE 0 END)
-                    OVER(PARTITION BY person_id, state_code ORDER BY supervision_level, start_date) AS supervision_level_session_id_unordered
-            FROM
-                (
-                SELECT
-                    session.state_code,
-                    session.person_id,
-                    session.supervision_level,
-                    session.supervision_level_raw_text,
-                    session.case_type,
-                    session.correctional_level_priority,
-                    session.is_discretionary_level,
-                    session.start_date,
-                    session.end_date_exclusive,
-                    session.dataflow_session_id,
-                    MIN(IF(session_lag.supervision_level_raw_text = session.supervision_level_raw_text, 0, 1)) AS level_changed
-                FROM deduped_cte session
-                LEFT JOIN deduped_cte as session_lag
-                    ON session.state_code = session_lag.state_code
-                    AND session.person_id = session_lag.person_id
-                    AND session.start_date = session_lag.end_date_exclusive
-                GROUP BY 1,2,3,4,5,6,7,8,9,10
-                )
-            )
-    GROUP BY 1,2,3,4,5,6,7,8
+    {aggregate_adjacent_spans(table_name='deduped_cte',
+                       attribute=['supervision_level','supervision_level_raw_text','case_type'],
+                       session_id_output_name='supervision_level_session_id',
+                       end_date_field_name='end_date_exclusive')}
     )
-    ,
-    sessionized_cte_ordered AS
-    (
     SELECT
-        *  EXCEPT(supervision_level_session_id_unordered),
-        ROW_NUMBER() OVER(PARTITION BY person_id, state_code ORDER BY start_date, COALESCE(end_date_exclusive,'9999-01-01')) AS supervision_level_session_id
+        *,
+        DATE_SUB(end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+        LAG(supervision_level) OVER w AS previous_supervision_level,
+        LAG(supervision_level_raw_text) OVER w AS previous_supervision_level_raw_text,
     FROM sessionized_cte
-    ORDER BY supervision_level_session_id
-    )
-    SELECT
-        session.state_code,
-        session.person_id,
-        session.supervision_level_session_id,
-        session.dataflow_session_id_start,
-        session.dataflow_session_id_end,
-        session.supervision_level,
-        session.supervision_level_raw_text,
-        session.case_type,
-        session.start_date,
-        session.end_date_exclusive,
-        DATE_SUB(session.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
-        session_lag.supervision_level AS previous_supervision_level,
-        session_lag.supervision_level_raw_text AS previous_supervision_level_raw_text,
-    FROM sessionized_cte_ordered session
-    LEFT JOIN sessionized_cte_ordered session_lag
-        ON session.state_code = session_lag.state_code
-            AND session.person_id = session_lag.person_id
-            AND session.start_date = session_lag.end_date_exclusive
+    WINDOW w AS (PARTITION BY person_id, state_code ORDER BY start_date)
     """
 
 SUPERVISION_LEVEL_RAW_TEXT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
