@@ -51,14 +51,6 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestRegionRawFileConfig"
     )
     @patch(
-        "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
-        "._get_updated_by"
-    )
-    @patch(
-        "recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator"
-        "._get_last_updated"
-    )
-    @patch(
         "recidiviz.ingest.direct.direct_ingest_regions.get_direct_ingest_region",
         return_value=fake_region(
             region_code=TEST_STATE_CODE_DOCS, region_module=fake_regions
@@ -72,8 +64,6 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         self,
         mock_referencing_views: MagicMock,
         _mock_region: MagicMock,
-        mock_last_updated: MagicMock,
-        mock_updated_by: MagicMock,
         mock_raw_config: MagicMock,
     ) -> None:
         region_code = states.StateCode.US_WW.value.lower()
@@ -82,8 +72,6 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
             region_module=fake_regions,
         )
         mock_raw_config.return_value = region_config
-        mock_updated_by.return_value = "Julia Dressel"
-        mock_last_updated.return_value = "2021-02-10"
         mock_referencing_views.return_value = {
             "multiLineDescription": ["view_one", "view_two"],
             "tagColumnsMissing": ["view_one"],
@@ -104,12 +92,12 @@ found in `us_ww_raw_data_up_to_date_views`.
 
 ## Table of Contents
 
-|                           **Table**                            | **Referencing Views** |**Last Updated**|**Updated By**|
-|----------------------------------------------------------------|-----------------------|----------------|--------------|
-|[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two|2021-02-10      |Julia Dressel |
-|[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one               |2021-02-10      |Julia Dressel |
-|[tagNotHistorical](raw_data/tagNotHistorical.md)                |                       |2021-02-10      |Julia Dressel |
-|[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                       |2021-02-10      |Julia Dressel |
+|                           **Table**                            | **Referencing Views** |
+|----------------------------------------------------------------|-----------------------|
+|[multiLineDescription](raw_data/multiLineDescription.md)        |view_one,<br />view_two|
+|[tagColumnsMissing](raw_data/tagColumnsMissing.md)              |view_one               |
+|[tagNotHistorical](raw_data/tagNotHistorical.md)                |                       |
+|[tagPrimaryKeyColsMissing](raw_data/tagPrimaryKeyColsMissing.md)|                       |
 """
 
         expected_multi_line = """## multiLineDescription
