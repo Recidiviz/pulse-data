@@ -506,6 +506,8 @@ def create_calculation_dag() -> None:
         # This will trigger the task regardless of the failure or success of the
         # normalization pipelines
         trigger_rule=TriggerRule.ALL_DONE,
+        # this endpoint fails ephemerally sometimes and we want to retry and not fail the entire dag when this happens
+        retries=3,
     )
 
     view_materialize_task_group = TaskGroup("view_materialization")
