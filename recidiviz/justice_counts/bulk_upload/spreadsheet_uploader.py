@@ -59,6 +59,9 @@ class SpreadsheetUploader:
         column_names: List[str],
         reports_by_time_range: Dict[tuple[datetime.date, datetime.date], Any],
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
+        metric_key_to_timerange_to_total_value: Dict[
+            str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
+        ],
     ) -> None:
         self.text_analyzer = text_analyzer
         self.system = system
@@ -69,6 +72,9 @@ class SpreadsheetUploader:
         self.column_names = column_names
         self.reports_by_time_range = reports_by_time_range
         self.existing_datapoints_dict = existing_datapoints_dict
+        self.metric_key_to_timerange_to_total_value = (
+            metric_key_to_timerange_to_total_value
+        )
 
     def upload_sheet(
         self,
@@ -215,6 +221,7 @@ class SpreadsheetUploader:
                     existing_datapoints_dict=self.existing_datapoints_dict,
                     text_analyzer=self.text_analyzer,
                     metricfile=metricfile,
+                    metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
                 )
                 existing_report = self.reports_by_time_range.get(time_range)
                 (

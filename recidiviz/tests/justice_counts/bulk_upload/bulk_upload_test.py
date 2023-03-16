@@ -834,3 +834,64 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(
                 len(metric_key_to_errors[prisons.staff_use_of_force_incidents.key]), 3
             )
+
+    def test_breakdown_sum_warning(
+        self,
+    ) -> None:
+        """Checks that we warn the user when a the sum of values in a breakdown sheet is uploaded
+        and does not equal the sum of values in the aggregate sheet.
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheetnames_to_vary_values={
+                    "funding_by_type",
+                    "expenses_by_type",
+                    "staff_by_type",
+                    "readmissions_by_type",
+                    "admissions_by_type",
+                    "population_by_type",
+                    "population_by_race",
+                    "population_by_biological_sex",
+                    "releases_by_type",
+                    "grievances_upheld_by_type",
+                },
+            )
+            workbook_uploader = WorkbookUploader(
+                system=schema.System.PRISONS,
+                agency_id=self.prison_agency_id,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
+            _, metric_key_to_errors = workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            self.assertEqual(len(metric_key_to_errors), 8)
+            # Annual metrics have a row for 2 years
+            # Monthly metrics have a row for 2 years, 2 months for each year
+            # admissions (monthly) x admissions_by_type = 4
+            self.assertEqual(len(metric_key_to_errors[prisons.admissions.key]), 4)
+            # expenses (annual) x expenses_by_type = 2
+            self.assertEqual(len(metric_key_to_errors[prisons.expenses.key]), 2)
+            # funding (annual) x funding_by_type = 2
+            self.assertEqual(len(metric_key_to_errors[prisons.funding.key]), 2)
+            # grievances_upheld (annual) x grievances_upheld_by_type = 2
+            self.assertEqual(
+                len(metric_key_to_errors[prisons.grievances_upheld.key]), 2
+            )
+            # population (monthly), population_by_type, population_by_race, population_by_biological_sex
+            # 4 x 3 = 12
+            self.assertEqual(
+                len(metric_key_to_errors[prisons.daily_population.key]), 12
+            )
+            # readmission (annual) x readmissions_by_type = 2
+            self.assertEqual(len(metric_key_to_errors[prisons.readmissions.key]), 2)
+            # releases (monthly) x releases_by_type = 4
+            self.assertEqual(len(metric_key_to_errors[prisons.releases.key]), 4)
+            # total_staff (annual) x staff_by_type = 2
+            self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 2)

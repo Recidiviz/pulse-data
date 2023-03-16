@@ -16,6 +16,7 @@
 # =============================================================================
 """Functionality for bulk upload of an Excel workbook into the Justice Counts database."""
 
+import datetime
 import itertools
 import logging
 from collections import defaultdict
@@ -84,6 +85,10 @@ class WorkbookUploader:
                 stop_words_to_remove={"other"}
             )
         )
+        self.metric_key_to_timerange_to_total_value: Dict[
+            str,
+            Dict[Tuple[datetime.date, datetime.date], Optional[int]],
+        ] = defaultdict(dict)
 
     def upload_workbook(
         self,
@@ -157,6 +162,7 @@ class WorkbookUploader:
                 column_names=column_names,
                 reports_by_time_range=reports_by_time_range,
                 existing_datapoints_dict=existing_datapoints_dict,
+                metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
             )
             spreadsheet_uploader.upload_sheet(
                 session=session,
