@@ -50,8 +50,7 @@ def user_event_template(
             person_external_id,
             pseudonymized_id,
             state_code,
-        # TODO(#17870): replace with resident record archive once available
-        FROM `{{project_id}}.{{workflows_views_dataset}}.resident_record_materialized` resident_records
+        FROM `{{project_id}}.{{workflows_views_dataset}}.resident_record_archive_materialized` resident_records
     )
 
     SELECT
