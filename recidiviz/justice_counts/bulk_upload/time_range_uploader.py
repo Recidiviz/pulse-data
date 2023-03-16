@@ -54,6 +54,9 @@ class TimeRangeUploader:
         text_analyzer: TextAnalyzer,
         metricfile: MetricFile,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
+        metric_key_to_timerange_to_total_value: Dict[
+            str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
+        ],
     ) -> None:
         self.time_range = time_range
         self.user_account = user_account
@@ -62,6 +65,9 @@ class TimeRangeUploader:
         self.rows_for_this_time_range = rows_for_this_time_range
         self.text_analyzer = text_analyzer
         self.metricfile = metricfile
+        self.metric_key_to_timerange_to_total_value = (
+            metric_key_to_timerange_to_total_value
+        )
 
     def upload_time_range(
         self,
@@ -143,7 +149,9 @@ class TimeRangeUploader:
                 time_range=self.time_range,
                 analyzer=self.text_analyzer,
             )
-
+            self.metric_key_to_timerange_to_total_value[self.metricfile.definition.key][
+                self.time_range
+            ] = aggregate_value
         else:  # metricfile.disaggregation is not None
             if self.metricfile.disaggregation_column_name is None:
                 raise ValueError(
@@ -199,6 +207,25 @@ class TimeRangeUploader:
                 for val in dimension_to_value.values()  # type: ignore[union-attr]
                 if val is not None
             )
+
+            # Check that the sum of the disaggregate values is equal to that of the aggregate
+            previously_saved_aggregate_value = (
+                self.metric_key_to_timerange_to_total_value.get(
+                    self.metricfile.definition.key, {}
+                ).get(self.time_range)
+            )
+            # if previously_saved_aggregate_value is None, a Missing Total Warning will be thrown
+            # (don't need a warning for each breakdown row)
+            if (
+                previously_saved_aggregate_value is not None
+                and previously_saved_aggregate_value != aggregate_value
+            ):
+                description = f"The sum of all values ({aggregate_value}) in the {self.metricfile.canonical_filename} sheet for {self.time_range[0].strftime('%m/%d/%Y')}-{self.time_range[1].strftime('%m/%d/%Y')} does not equal the total value provided in the aggregate sheet ({previously_saved_aggregate_value})."
+                raise JusticeCountsBulkUploadException(
+                    title="Breakdown Total Warning",
+                    message_type=BulkUploadMessageType.WARNING,
+                    description=description,
+                )
 
         return MetricInterface(
             key=self.metricfile.definition.key,
