@@ -36,14 +36,14 @@ from recidiviz.calculator.query.state.views.reference.incarceration_period_judic
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.opportunity_to_completion_event import (
-    OPPORTUNITY_TO_COMPLETION_EVENT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.location_metadata.location_metadata import (
     LOCATION_METADATA_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_location_metadata import (
     US_PA_LOCATION_METADATA_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.reference.opportunity_to_completion_event import (
+    OPPORTUNITY_TO_COMPLETION_EVENT_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
@@ -78,6 +78,9 @@ from recidiviz.calculator.query.state.views.reference.us_ix_case_update_info imp
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import (
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
+)
 
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     DASHBOARD_USER_RESTRICTIONS_VIEW_BUILDER,
@@ -100,4 +103,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
     LOCATION_METADATA_VIEW_BUILDER,
     US_PA_LOCATION_METADATA_VIEW_BUILDER,
+    WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
 ]
