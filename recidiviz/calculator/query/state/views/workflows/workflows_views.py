@@ -78,12 +78,16 @@ from recidiviz.calculator.query.state.views.workflows.person_record import (
 from recidiviz.calculator.query.state.views.workflows.reidentified_dashboard_users import (
     REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.resident_record_archive import (
+    RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
+)
 
 WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *FIRESTORE_VIEW_BUILDERS,
     PERSON_ID_TO_EXTERNAL_ID_VIEW_BUILDER,
     COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENT_RECORD_ARCHIVE_VIEW_BUILDER,
+    RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER,
     CLIENTS_SURFACED_VIEW_BUILDER,
     CLIENTS_OPPORTUNITY_PREVIEWED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_VIEWED_VIEW_BUILDER,
