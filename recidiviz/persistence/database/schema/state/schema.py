@@ -3052,6 +3052,9 @@ class StateStaff(StateBase):
     supervisor_periods = relationship(
         "StateStaffSupervisorPeriod", backref="staff", lazy="selectin"
     )
+    location_periods = relationship(
+        "StateStaffLocationPeriod", backref="staff", lazy="selectin"
+    )
 
 
 # Shared mixin columns
