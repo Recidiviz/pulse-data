@@ -21,6 +21,12 @@ from typing import Dict, List, Optional, Sequence, Union
 
 import attr
 
+from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
+    MetricAggregationLevelType,
+)
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
+)
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_current_date_exclusive_clause,
@@ -53,6 +59,23 @@ class AggregatedMetric:
         short_cls_name = cls.__mro__[1].__name__.replace("Aggregated", "")
         # Solution taken from here: https://stackoverflow.com/questions/199059/a-pythonic-way-to-insert-a-space-before-capital-letters
         return re.sub(r"(\w)([A-Z])", r"\1 \2", short_cls_name)
+
+
+@attr.define(frozen=True, kw_only=True)
+class MiscAggregatedMetric(AggregatedMetric):
+    """
+    Class that stores information about metrics that are calculated in a separate user-defined query
+    for specific populations and aggregation levels, without using person_events or person_spans logic
+    """
+
+    # Populations compatible with metric
+    populations: List[MetricPopulationType]
+
+    # Aggregation levels compatible with metric
+    aggregation_levels: List[MetricAggregationLevelType]
+
+    def generate_aggregate_time_periods_query_fragment(self) -> str:
+        return f"ARRAY_AGG({self.name}) AS {self.name}"
 
 
 @attr.define(frozen=True, kw_only=True)

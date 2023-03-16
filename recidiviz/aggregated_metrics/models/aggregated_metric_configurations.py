@@ -28,7 +28,14 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
     EventValueMetric,
+    MiscAggregatedMetric,
     SumSpanDaysMetric,
+)
+from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
+    MetricAggregationLevelType,
+)
+from recidiviz.aggregated_metrics.models.metric_population_type import (
+    MetricPopulationType,
 )
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
@@ -59,6 +66,18 @@ ABSCONSIONS_BENCH_WARRANTS = EventCountMetric(
     event_attribute_filters={},
 )
 
+AVG_ASSIGNMENTS_OFFICER = MiscAggregatedMetric(
+    name="avg_assignments_officer",
+    display_name="Average Asssignments Per Officer",
+    description="Average of the number of assignments to an officer's caseload",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[
+        MetricAggregationLevelType.SUPERVISION_OFFICE,
+        MetricAggregationLevelType.SUPERVISION_DISTRICT,
+        MetricAggregationLevelType.STATE_CODE,
+    ],
+)
+
 AVG_AGE = DailyAvgTimeSinceSpanStartMetric(
     name="avg_age",
     display_name="Average Age",
@@ -66,6 +85,40 @@ AVG_AGE = DailyAvgTimeSinceSpanStartMetric(
     span_types=["PERSON_DEMOGRAPHICS"],
     span_attribute_filters={},
     scale_to_year=True,
+)
+
+AVG_CRITICAL_CASELOAD_SIZE = MiscAggregatedMetric(
+    name="avg_critical_caseload_size",
+    display_name="Average Critical Officer Caseload",
+    description="Average count of clients in the officer's caseload among days when "
+    "officer has critical caseload size",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
+
+AVG_CRITICAL_CASELOAD_SIZE_OFFICER = MiscAggregatedMetric(
+    name="avg_critical_caseload_size_officer",
+    display_name="Average Critical Caseload Size Per Officer",
+    description="Average of the count of clients in each officer's caseload among days when "
+    "officer has critical caseload size",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[
+        MetricAggregationLevelType.SUPERVISION_OFFICE,
+        MetricAggregationLevelType.SUPERVISION_DISTRICT,
+        MetricAggregationLevelType.STATE_CODE,
+    ],
+)
+
+AVG_DAILY_CASELOAD_OFFICER = MiscAggregatedMetric(
+    name="avg_daily_caseload_officer",
+    display_name="Average Daily Caseload Per Officer",
+    description="Average of the daily population size on each officer caseload",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[
+        MetricAggregationLevelType.SUPERVISION_OFFICE,
+        MetricAggregationLevelType.SUPERVISION_DISTRICT,
+        MetricAggregationLevelType.STATE_CODE,
+    ],
 )
 
 AVG_DAILY_POPULATION = DailyAvgSpanCountMetric(
@@ -363,6 +416,22 @@ CONTACTS_HOME_VISIT = EventCountMetric(
         "location": ["RESIDENCE"],
         "contact_type": ["DIRECT", "BOTH_COLLATERAL_AND_DIRECT"],
     },
+)
+
+CURRENT_DISTRICT = MiscAggregatedMetric(
+    name="current_district",
+    display_name="Current District",
+    description="Current district assignment for the officer, based on state's current roster",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
+
+CURRENT_OFFICE = MiscAggregatedMetric(
+    name="current_office",
+    display_name="Current Office",
+    description="Current office assignment for the officer, based on state's current roster",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
 )
 
 DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
@@ -875,6 +944,31 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS = [
     )
     for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
 ]
+
+PRIMARY_DISTRICT = MiscAggregatedMetric(
+    name="primary_district",
+    display_name="Primary District",
+    description="District containing the majority of an officer's clients on the first day of the analysis period",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
+
+PRIMARY_OFFICE = MiscAggregatedMetric(
+    name="primary_office",
+    display_name="Primary Office",
+    description="Office containing the majority of an officer's clients on the first day of the analysis period",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
+
+
+PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
+    name="prop_period_with_critical_caseload",
+    display_name="Proportion Of Analysis Period With Critical Caseload",
+    description="Proportion of the analysis period for which an officer has a critical caseload size",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
 
 SUPERVISION_LEVEL_DOWNGRADES = EventCountMetric(
     name="supervision_level_downgrades",
