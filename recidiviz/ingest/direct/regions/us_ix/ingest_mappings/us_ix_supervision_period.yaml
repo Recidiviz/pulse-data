@@ -131,6 +131,7 @@ output:
                         - Return From Temporary Release
                         - Sanction
                         - Temporary Remand To Community
+                        - Serving Local Jail Sentence
                       StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION:
                         - Release Clemency/Pardon
                         - Release Court Order
