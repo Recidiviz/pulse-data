@@ -13,7 +13,8 @@ COPY ./recidiviz/calculator/pipeline/flex_pipeline_runner.py ${WORKDIR}/pipeline
 # Install apache-beam and other dependencies to launch the pipeline
 # --no-cache-dir means the pip cache won't be used. Using the pip cache makes the image unnecessarily larger,
 # when the docker cache can be used instead. this flag is needed to prevent worker memory/start up issues
-RUN pip install --no-cache-dir apache-beam[gcp]==2.41.0
+# we increase the timeout from the default (15s) to avoid 'Connection reset by peer' errors that may be due to a timeout
+RUN pip install --no-cache-dir --timeout=150 apache-beam[gcp]==2.41.0
 RUN pip install --no-cache-dir ${WORKDIR}/.
 
 COPY . ${WORKDIR}
