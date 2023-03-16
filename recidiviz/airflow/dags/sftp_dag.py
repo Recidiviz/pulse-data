@@ -208,7 +208,7 @@ def queues_are_unpaused(*queues: Optional[Dict[str, Any]]) -> List[str]:
     ingest_instances_to_unpause: List[str] = []
     for queue in queues:
         if queue and queue["state"] == Queue.State.PAUSED:
-            if "secondary" in queue:
+            if "secondary" in queue["name"]:
                 ingest_instances_to_unpause.append(
                     DirectIngestInstance.SECONDARY.value.lower()
                 )
