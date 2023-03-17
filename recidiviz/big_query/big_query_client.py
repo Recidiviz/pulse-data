@@ -42,7 +42,7 @@ from google.cloud.bigquery_datatransfer import (
     TransferState,
 )
 from google.protobuf import timestamp_pb2
-from more_itertools import one
+from more_itertools import one, peekable
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
@@ -136,6 +136,16 @@ class BigQueryClient:
 
         Returns:
             True if the dataset exists, False otherwise.
+        """
+
+    @abc.abstractmethod
+    def dataset_is_empty(self, dataset_ref: bigquery.DatasetReference) -> bool:
+        """Check whether or not a BigQuery Dataset is empty (and could be deleted).
+        Args:
+            dataset_ref: The BigQuery dataset to look for
+
+        Returns:
+            True if the dataset is empty, False otherwise.
         """
 
     @abc.abstractmethod
@@ -858,6 +868,12 @@ class BigQueryClientImpl(BigQueryClient):
             return True
         except exceptions.NotFound:
             return False
+
+    def dataset_is_empty(self, dataset_ref: bigquery.DatasetReference) -> bool:
+        tables = peekable(self.client.list_tables(dataset_ref.dataset_id))
+        routines = peekable(self.client.list_routines(dataset_ref.dataset_id))
+
+        return not tables and not routines
 
     def delete_dataset(
         self,

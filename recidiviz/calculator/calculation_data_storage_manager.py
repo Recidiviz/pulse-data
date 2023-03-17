@@ -26,7 +26,7 @@ import flask
 from google.api_core.future.polling import PollingFuture
 from google.cloud.bigquery import WriteDisposition
 from google.cloud.bigquery.table import TableListItem
-from more_itertools import one, peekable
+from more_itertools import one
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_client import BigQueryClient, BigQueryClientImpl
@@ -64,8 +64,8 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
-# Datasets must be at least 12 hours old to be deleted
-DATASET_DELETION_MIN_SECONDS = 12 * 60 * 60
+# Datasets must be at least 2 hours old to be deleted
+DATASET_DELETION_MIN_SECONDS = 2 * 60 * 60
 
 DATASET_MANAGED_BY_TERRAFORM_KEY = "managed_by_terraform"
 
@@ -124,13 +124,15 @@ def _delete_empty_datasets() -> None:
             )
             continue
 
-        tables = peekable(bq_client.list_tables(dataset.dataset_id))
         created_time = dataset.created
         dataset_age_seconds = (
             datetime.datetime.now(datetime.timezone.utc) - created_time
         ).total_seconds()
 
-        if not tables and dataset_age_seconds > DATASET_DELETION_MIN_SECONDS:
+        if (
+            bq_client.dataset_is_empty(dataset_ref)
+            and dataset_age_seconds > DATASET_DELETION_MIN_SECONDS
+        ):
             logging.info(
                 "Dataset %s is empty and was not created very recently. Deleting...",
                 dataset_ref.dataset_id,
