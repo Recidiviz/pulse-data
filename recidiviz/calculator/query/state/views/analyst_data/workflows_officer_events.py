@@ -169,6 +169,15 @@ WORKFLOWS_OFFICER_EVENT_QUERY_CONFIGS = [
         has_status=False,
         should_get_context_page=True,
     ),
+    WorkflowsOfficerEventQueryConfig(
+        table_name="clients_referral_form_edited",
+        officer_event_name=OfficerEvent.WORKFLOWS_ACTION,
+        workflows_event_type="FORM_EDITED",
+        has_person_external_id=True,
+        has_opportunity_type=True,
+        has_status=False,
+        should_get_context_page=False,
+    ),
 ]
 
 
