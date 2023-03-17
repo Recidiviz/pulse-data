@@ -65,6 +65,7 @@ SELECT
     person_external_id,
     new_status,
     event_ts,
+    MIN(event_date) OVER (PARTITION BY state_code, opportunity_type, officer_external_id) AS officer_first_workflow_event_date,
     MAX(event_date) OVER () AS max_event_date,
     ROW_NUMBER() OVER (PARTITION BY state_code, officer_external_id, workflows_events.opportunity_type, event_type, person_external_id ORDER BY event_ts DESC) = 1 AS latest_within_event_type
 FROM workflows_events
