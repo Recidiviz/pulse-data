@@ -151,10 +151,10 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
         SELECT
             DISTINCT
                 'US_MI' AS state_code,
-                REGION_ID AS level_3_supervision_location_external_id,
-                REGION_NAME AS level_3_supervision_location_name,
-                COUNTY_ID AS level_2_supervision_location_external_id,
-                COUNTY_NAME AS level_2_supervision_location_name,
+                'NOT_APPLICABLE' AS level_3_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_3_supervision_location_name,
+                REGION_ID AS level_2_supervision_location_external_id,
+                REGION_NAME AS level_2_supervision_location_name,
                 SUPERVISION_SITE AS level_1_supervision_location_external_id,
                 SUPERVISION_SITE AS level_1_supervision_location_name,
         FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
