@@ -25,9 +25,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Optional, Union
 
 from airflow.decorators import dag
-from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
-from airflow.utils.state import State
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
@@ -357,9 +355,7 @@ def response_can_refresh_proceed_check(response: Response) -> bool:
     return data.lower() == "true"
 
 
-def create_bq_refresh_nodes(
-    schema_type: str, dry_run: bool = False
-) -> ShortCircuitOperator:
+def create_bq_refresh_nodes(schema_type: str, dry_run: bool = False) -> BQResultSensor:
     """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
     task_group = TaskGroup(f"{schema_type.lower()}_bq_refresh")
     acquire_lock = IAPHTTPRequestOperator(
@@ -409,22 +405,7 @@ def create_bq_refresh_nodes(
         >> release_lock
     )
 
-    def check_if_bq_refresh_completion_success(**context: Any) -> bool:
-        """Checks whether the state bq refresh was successful and returns bool."""
-        wait_for_refresh_task_instance = context["dag_run"].get_task_instance(
-            wait_for_refresh_bq_dataset.task_id
-        )
-        return wait_for_refresh_task_instance.state != State.FAILED
-
-    bq_refresh_completion = ShortCircuitOperator(
-        task_id=f"post_refresh_short_circuit_{schema_type}",
-        python_callable=check_if_bq_refresh_completion_success,
-        trigger_rule=TriggerRule.ALL_DONE,
-        task_group=task_group,
-    )
-
-    wait_for_refresh_bq_dataset >> bq_refresh_completion
-    return bq_refresh_completion
+    return wait_for_refresh_bq_dataset
 
 
 # By setting catchup to False and max_active_runs to 1, we ensure that at
