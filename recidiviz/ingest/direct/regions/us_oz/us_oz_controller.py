@@ -55,4 +55,5 @@ class UsOzController(BaseDirectIngestController):
             "eg_person",
             "eg_movements",
             "ageid_staff",
+            "ageid_staff_supervisor",
         ]

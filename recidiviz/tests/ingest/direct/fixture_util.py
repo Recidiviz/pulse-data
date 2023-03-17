@@ -31,6 +31,9 @@ from recidiviz.ingest.direct.types.errors import (
     DirectIngestError,
     DirectIngestErrorType,
 )
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewRawFileDependency,
+)
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
 
 
@@ -135,7 +138,7 @@ class DirectIngestFixtureDataFileType(Enum):
     EXTRACT_AND_MERGE_INPUT = "EXTRACT_AND_MERGE_INPUT"
 
     def fixture_directory_for_region_code(
-        self, region_code: str, file_tag: Optional[str] = None
+        self, region_code: str, subdir_name: Optional[str] = None
     ) -> str:
         region_fixtures_directory_path = os.path.join(
             os.path.dirname(direct_ingest_fixtures.__file__), region_code.lower()
@@ -145,17 +148,17 @@ class DirectIngestFixtureDataFileType(Enum):
             return region_fixtures_directory_path
 
         if self is DirectIngestFixtureDataFileType.RAW:
-            if file_tag is None:
+            if subdir_name is None:
                 raise ValueError(
-                    f"File tag cannot be none for fixture file type [{self}]"
+                    f"subdir_name cannot be none for fixture file type [{self}]"
                 )
-            subdir = os.path.join("raw", file_tag)
+            subdir = os.path.join("raw", subdir_name)
         elif self is DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS:
-            if file_tag is None:
+            if subdir_name is None:
                 raise ValueError(
-                    f"File tag cannot be none for fixture file type [{self}]"
+                    f"subdir_name cannot be none for fixture file type [{self}]"
                 )
-            subdir = os.path.join("ingest_view", file_tag)
+            subdir = os.path.join("ingest_view", subdir_name)
         elif self is DirectIngestFixtureDataFileType.ENUM_RAW_TEXT:
             subdir = "enum_raw_text"
         else:
@@ -168,12 +171,62 @@ def direct_ingest_fixture_path(
     *,
     region_code: str,
     fixture_file_type: DirectIngestFixtureDataFileType,
-    file_tag: Optional[str] = None,
+    file_name: str,
+) -> str:
+    if fixture_file_type == DirectIngestFixtureDataFileType.RAW:
+        raise ValueError(
+            f"Unexpected fixture_file_type {fixture_file_type} - use "
+            f"ingest_view_raw_table_dependency_fixture_path() instead."
+        )
+    if fixture_file_type == DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS:
+        raise ValueError(
+            f"Unexpected fixture_file_type {fixture_file_type} - use "
+            f"ingest_view_results_fixture_path() instead."
+        )
+    return _direct_ingest_fixture_path(
+        region_code=region_code,
+        fixture_file_type=fixture_file_type,
+        subdir_name=None,
+        file_name=file_name,
+    )
+
+
+def _direct_ingest_fixture_path(
+    *,
+    region_code: str,
+    fixture_file_type: DirectIngestFixtureDataFileType,
+    subdir_name: Optional[str],
     file_name: str,
 ) -> str:
     return os.path.join(
         fixture_file_type.fixture_directory_for_region_code(
-            region_code=region_code, file_tag=file_tag
+            region_code=region_code, subdir_name=subdir_name
         ),
         file_name,
+    )
+
+
+def ingest_view_raw_table_dependency_fixture_path(
+    region_code: str,
+    raw_file_dependency_config: DirectIngestViewRawFileDependency,
+    file_name: str,
+) -> str:
+    return _direct_ingest_fixture_path(
+        region_code=region_code,
+        fixture_file_type=DirectIngestFixtureDataFileType.RAW,
+        subdir_name=raw_file_dependency_config.raw_table_dependency_arg_name,
+        file_name=file_name,
+    )
+
+
+def ingest_view_results_fixture_path(
+    region_code: str,
+    ingest_view_name: str,
+    file_name: str,
+) -> str:
+    return _direct_ingest_fixture_path(
+        region_code=region_code,
+        fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
+        subdir_name=ingest_view_name,
+        file_name=file_name,
     )
