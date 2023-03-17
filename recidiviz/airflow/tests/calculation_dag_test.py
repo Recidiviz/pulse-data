@@ -66,8 +66,8 @@ _WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID = (
 )
 
 
-def get_post_refresh_short_circuit_task_id(schema_type: str) -> str:
-    return f"bq_refresh.{schema_type.lower()}_bq_refresh.post_refresh_short_circuit_{schema_type.upper()}"
+def get_post_refresh_release_lock_task_id(schema_type: str) -> str:
+    return f"bq_refresh.{schema_type.lower()}_bq_refresh.release_lock_{schema_type.upper()}"
 
 
 @patch(
@@ -392,20 +392,20 @@ class TestCalculationPipelineDag(unittest.TestCase):
     def test_wait_for_refresh_bq_dataset_task_upstream_of_state_bq_refresh_completion(
         self,
     ) -> None:
-        """Tests that wait_for_refresh_bq_dataset happens directly before we call state_bq_refresh_completion."""
+        """Tests that wait_for_refresh_bq_dataset happens directly before we release locks."""
         dag_bag = DagBag(dag_folder=DAG_FOLDER, include_examples=False)
         dag = dag_bag.dags[self.CALCULATION_DAG_ID]
         self.assertNotEqual(0, len(dag.task_ids))
 
         wait_subdag = dag.partial_subset(
-            task_ids_or_regex=get_post_refresh_short_circuit_task_id("STATE"),
+            task_ids_or_regex=get_post_refresh_release_lock_task_id("STATE"),
             include_downstream=False,
             include_upstream=True,
         )
         wait_task = one(wait_subdag.leaves)
 
         self.assertEqual(
-            get_post_refresh_short_circuit_task_id("STATE"), wait_task.task_id
+            get_post_refresh_release_lock_task_id("STATE"), wait_task.task_id
         )
         self.assertEqual(
             {_WAIT_FOR_REFRESH_BQ_DATASET_SUCCESS_ID},
