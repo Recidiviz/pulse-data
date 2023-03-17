@@ -97,7 +97,7 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
         opportunity_type="usTnExpiration",
-        experiment_id="",
+        experiment_id="US_TN_DISCHARGE_WORKFLOWS",
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_ME,
@@ -108,6 +108,11 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         state_code=StateCode.US_ND,
         opportunity_type="earlyTermination",
         experiment_id="US_ND_EARLY_TERMINATION_WORKFLOWS",
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_MO,
+        opportunity_type="usMoRestrictiveHousingStatusHearing",
+        experiment_id="US_MO_ADMINISTRATIVE_SEGREGATION_WORKFLOWS",
     ),
 ]
 
