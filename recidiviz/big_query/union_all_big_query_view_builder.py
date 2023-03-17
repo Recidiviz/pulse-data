@@ -133,6 +133,7 @@ class UnionAllBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             description=self.description,
+            bq_description=self.description,
             view_query_template=view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=None,

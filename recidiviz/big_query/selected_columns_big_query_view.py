@@ -52,6 +52,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
             dataset_id=dataset_id,
             view_id=view_id,
             description=full_description,
+            bq_description=full_description,
             view_query_template=view_query_template,
             materialized_address=materialized_address,
             address_overrides=address_overrides,

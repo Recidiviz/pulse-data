@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_query_builder import (
 from recidiviz.utils import metadata
 
 _DEFAULT_MATERIALIZED_SUFFIX = "_materialized"
+BQ_TABLE_DESCRIPTION_MAX_LENGTH = 2**14
 
 
 class BigQueryView(bigquery.TableReference):
@@ -41,6 +42,7 @@ class BigQueryView(bigquery.TableReference):
         project_id: Optional[str] = None,
         dataset_id: str,
         view_id: str,
+        bq_description: str,
         description: str,
         view_query_template: str,
         # Address this table will be materialized to, if this is a view that is
@@ -83,6 +85,7 @@ class BigQueryView(bigquery.TableReference):
         self.query_format_kwargs = query_format_kwargs
         self.query_builder = BigQueryQueryBuilder(address_overrides=address_overrides)
 
+        self._bq_description = bq_description
         self._description = description
         self._view_query_template = view_query_template
 
@@ -129,7 +132,45 @@ class BigQueryView(bigquery.TableReference):
 
     @property
     def description(self) -> str:
+        """The full description for this view which will be deployed to Gitbook."""
         return self._description
+
+    @property
+    def bq_description(self) -> str:
+        """The BigQuery-compatible description for this view which is short enough to
+        be saved as a table description in BigQuery. This will generally be the same
+        as the description returned by description() above, but users may choose to
+        provide an abbreviated description for this field where necessary.
+        """
+        if len(self._bq_description) > BQ_TABLE_DESCRIPTION_MAX_LENGTH:
+            raise ValueError(
+                f"Description for view [{self.address.to_str()}] is too long to deploy to"
+                f"BigQuery. Consider setting a shorter, alternate description via the "
+                f"`bq_description` field."
+            )
+        return self._bq_description
+
+    @property
+    def materialized_table_bq_description(self) -> str:
+        """The BigQuery-compatible description for this view's materialized table."""
+        if not self.materialized_address:
+            raise ValueError(
+                f"Can only get the materialized table BQ address for materialized "
+                f"views. No materialized address found for view "
+                f"[{self.address.to_str()}]"
+            )
+        description_prefix = (
+            f"Materialized data from view [{self.address.to_str()}]. "
+            f"View description:\n"
+        )
+        table_description = f"{description_prefix}{self._bq_description}"
+        if len(table_description) > BQ_TABLE_DESCRIPTION_MAX_LENGTH:
+            raise ValueError(
+                f"Materialized table description for view [{self.address.to_str()}] is "
+                f"too long to deploy to BigQuery. Consider setting a shorter, "
+                f"alternate description via the `bq_description` field."
+            )
+        return table_description
 
     @property
     def view_query(self) -> str:
@@ -301,6 +342,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         view_id: str,
         description: str,
         view_query_template: str,
+        bq_description: Optional[str] = None,
         should_materialize: bool = False,
         projects_to_deploy: Optional[Set[str]] = None,
         materialized_address_override: Optional[BigQueryAddress] = None,
@@ -313,6 +355,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
         self.view_id = view_id
         self.projects_to_deploy = projects_to_deploy
         self.description = description
+        self.bq_description = bq_description or description
         self.view_query_template = view_query_template
         self.should_deploy_predicate = should_deploy_predicate
         self.clustering_fields = clustering_fields
@@ -331,6 +374,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder[BigQueryView]):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             description=self.description,
+            bq_description=self.bq_description,
             view_query_template=self.view_query_template,
             materialized_address=self.materialized_address,
             clustering_fields=self.clustering_fields,

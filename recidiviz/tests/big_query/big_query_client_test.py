@@ -750,32 +750,6 @@ class BigQueryClientImplTest(unittest.TestCase):
             )
         self.mock_client.query.assert_not_called()
 
-    def test_update_description(self) -> None:
-        mock_table = create_autospec(bigquery.Table)
-        mock_table.description = None
-        self.mock_client.get_table.return_value = mock_table
-        self.mock_client.update_table.return_value = mock_table
-
-        result = self.bq_client.update_description(
-            "dataset_id", "view_id", "some description"
-        )
-        self.assertEqual(mock_table.description, "some description")
-        self.mock_client.update_table.assert_called_with(mock_table, ["description"])
-        self.assertEqual(result, mock_table)
-
-    def test_update_description_no_change(self) -> None:
-        mock_table = create_autospec(bigquery.Table)
-        mock_table.description = "some description"
-        self.mock_client.get_table.return_value = mock_table
-        self.mock_client.update_table.return_value = mock_table
-
-        result = self.bq_client.update_description(
-            "dataset_id", "view_id", "some description"
-        )
-        self.assertEqual(mock_table.description, "some description")
-        self.mock_client.update_table.assert_not_called()
-        self.assertEqual(result, mock_table)
-
     def test_create_table_with_schema(self) -> None:
         """Tests that the create_table_with_schema function calls the create_table function on the client."""
         self.mock_client.get_table.side_effect = exceptions.NotFound("!")

@@ -23,10 +23,12 @@ from recidiviz.tests.big_query.fake_big_query_view_builder import (
 from recidiviz.utils.metadata import local_project_id_override
 
 with local_project_id_override("my-project-id"):
+    description = "early_discharge_incarceration_sentence description"
     GOOD_VIEW_1 = BigQueryView(
         dataset_id="my_dataset",
         view_id="early_discharge_incarceration_sentence",
-        description="early_discharge_incarceration_sentence description",
+        bq_description=description,
+        description=description,
         view_query_template="SELECT * FROM table1",
     )
 

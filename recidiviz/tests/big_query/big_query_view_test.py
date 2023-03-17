@@ -22,7 +22,11 @@ from mock import patch
 
 from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BQ_TABLE_DESCRIPTION_MAX_LENGTH,
+    BigQueryView,
+    SimpleBigQueryViewBuilder,
+)
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
@@ -45,6 +49,7 @@ class BigQueryViewTest(unittest.TestCase):
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
+            bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
             clustering_fields=fake_clustering_fields,
         )
@@ -67,6 +72,7 @@ class BigQueryViewTest(unittest.TestCase):
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
+            bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
         )
 
@@ -86,6 +92,7 @@ class BigQueryViewTest(unittest.TestCase):
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
+            bq_description="my_view description",
             view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
             select_col_1="name",
@@ -110,6 +117,7 @@ class BigQueryViewTest(unittest.TestCase):
                 dataset_id="view_dataset",
                 view_id="my_view",
                 description="my_view description",
+                bq_description="my_view description",
                 view_query_template="SELECT {select_col_1}, {select_col_2} FROM `{project_id}.{some_dataset}.table`",
                 some_dataset="a_dataset",
                 select_col_2="date",
@@ -294,6 +302,7 @@ class BigQueryViewTest(unittest.TestCase):
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
+            bq_description="my_view description",
             address_overrides=address_overrides,
             view_query_template="SELECT * FROM `{project_id}.{some_dataset}.table`",
             some_dataset="a_dataset",
@@ -310,6 +319,7 @@ class BigQueryViewTest(unittest.TestCase):
             dataset_id="view_dataset",
             view_id="my_view",
             description="my_view description",
+            bq_description="my_view description",
             view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
         )
 
@@ -365,3 +375,82 @@ class BigQueryViewTest(unittest.TestCase):
         self.assertFalse(v.should_deploy_in_project("test-project"))
         self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_STAGING))
         self.assertTrue(v.should_deploy_in_project(GCP_PROJECT_PRODUCTION))
+
+    def test_alternate_shorter_bq_description(self) -> None:
+        long_description = "my very long description" + (
+            "x" * BQ_TABLE_DESCRIPTION_MAX_LENGTH
+        )
+        short_description = "my abbreviated description"
+        self.assertTrue(len(long_description) > BQ_TABLE_DESCRIPTION_MAX_LENGTH)
+        self.assertTrue(len(short_description) < BQ_TABLE_DESCRIPTION_MAX_LENGTH)
+        builder = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description=long_description,
+            bq_description=short_description,
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
+            should_materialize=True,
+        )
+
+        v = builder.build()
+
+        self.assertEqual(v.bq_description, short_description)
+        self.assertEqual(
+            v.materialized_table_bq_description,
+            f"Materialized data from view [view_dataset.my_view]. View description:\n"
+            f"{short_description}",
+        )
+        self.assertEqual(v.description, long_description)
+
+    def test_description_too_long(self) -> None:
+        long_description = "my very long description" + (
+            "x" * BQ_TABLE_DESCRIPTION_MAX_LENGTH
+        )
+        builder = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description=long_description,
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
+            should_materialize=True,
+        )
+
+        v = builder.build()
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Description for view \[view_dataset.my_view\] is too long to deploy toBigQuery.",
+        ):
+            _ = v.bq_description
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Materialized table description for view \[view_dataset.my_view\] is too "
+            r"long to deploy to BigQuery.",
+        ):
+            _ = v.materialized_table_bq_description
+
+    def test_materialized_description_too_long(self) -> None:
+        # Make length just under the allowed limit
+        long_description = "x" * (BQ_TABLE_DESCRIPTION_MAX_LENGTH - 1)
+        builder = SimpleBigQueryViewBuilder(
+            dataset_id="view_dataset",
+            view_id="my_view",
+            description=long_description,
+            view_query_template="SELECT * FROM `{project_id}.some_dataset.table`",
+            projects_to_deploy={GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION},
+            should_materialize=True,
+        )
+
+        v = builder.build()
+
+        self.assertEqual(v.description, long_description)
+        self.assertEqual(v.bq_description, long_description)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Materialized table description for view \[view_dataset.my_view\] is too "
+            r"long to deploy to BigQuery.",
+        ):
+            _ = v.materialized_table_bq_description

@@ -669,21 +669,6 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def update_description(
-        self, dataset_id: str, table_id: str, description: str
-    ) -> bigquery.Table:
-        """Updates the description for a given table / view.
-
-        Args:
-            dataset_id: The name of the dataset where the table/view lives
-            table_id: The name of the table/view to update
-            description: The new description string.
-
-        Returns:
-            The bigquery.Table result of the update.
-        """
-
-    @abc.abstractmethod
     def update_schema(
         self,
         dataset_id: str,
@@ -933,7 +918,7 @@ class BigQueryClientImpl(BigQueryClient):
             )
         bq_view = bigquery.Table(view)
         bq_view.view_query = view.view_query
-        bq_view.description = view.description
+        bq_view.description = view.bq_description
 
         try:
             logging.info("Optimistically updating view [%s]", str(bq_view))
@@ -1540,15 +1525,14 @@ class BigQueryClientImpl(BigQueryClient):
             use_query_cache=use_query_cache,
         )
         create_job.result()
-        table_description = (
-            f"Materialized data from view [{view.dataset_id}.{view.view_id}]. "
-            f"View description:\n{view.description}"
-        )
-        return self.update_description(
-            dst_dataset_id,
-            dst_table_id,
-            table_description,
-        )
+
+        description = view.materialized_table_bq_description
+        table = self.get_table(self.dataset_ref_for_id(dst_dataset_id), dst_table_id)
+        if description == table.description:
+            return table
+
+        table.description = description
+        return self.client.update_table(table, ["description"])
 
     def create_table_with_schema(
         self,
@@ -1595,16 +1579,6 @@ class BigQueryClientImpl(BigQueryClient):
 
         logging.info("Creating table %s.%s", dataset_id, table_id)
         return self.client.create_table(table)
-
-    def update_description(
-        self, dataset_id: str, table_id: str, description: str
-    ) -> bigquery.Table:
-        table = self.get_table(self.dataset_ref_for_id(dataset_id), table_id)
-        if description == table.description:
-            return table
-
-        table.description = description
-        return self.client.update_table(table, ["description"])
 
     @staticmethod
     def _get_excess_schema_fields(

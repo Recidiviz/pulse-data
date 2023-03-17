@@ -74,6 +74,7 @@ class FederatedCloudSQLTableBigQueryView(BigQueryView):
         super().__init__(
             dataset_id=dataset_id,
             view_id=view_id,
+            bq_description=description,
             description=description,
             materialized_address=materialized_address,
             address_overrides=address_overrides,
