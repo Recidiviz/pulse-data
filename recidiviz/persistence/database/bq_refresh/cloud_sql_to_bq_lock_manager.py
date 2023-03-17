@@ -121,5 +121,7 @@ class CloudSqlToBQLockManager:
         For the moment all lock timeouts are set to one hour in length.
 
         Export jobs may take longer than the alotted time, but if they do so, they
-        will de facto relinquish their hold on the acquired lock."""
-        return 3600
+        will de facto relinquish their hold on the acquired lock. The export lock is
+        going to be longer than ingest locks because ingest crashes should not stop
+        BQ refreshes from continuing."""
+        return 3900
