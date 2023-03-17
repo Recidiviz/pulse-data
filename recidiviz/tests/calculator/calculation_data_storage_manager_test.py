@@ -235,7 +235,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         ]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = empty_dataset
-        self.mock_client.list_tables.return_value = []
+        self.mock_client.dataset_is_empty.return_value = True
 
         calculation_data_storage_manager._delete_empty_datasets()
 
@@ -256,9 +256,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         ]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = non_empty_dataset
-        self.mock_client.list_tables.return_value = [
-            bigquery.table.TableListItem(self.mock_table_resource)
-        ]
+        self.mock_client.dataset_is_empty.return_value = False
 
         calculation_data_storage_manager._delete_empty_datasets()
 
@@ -280,9 +278,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         ]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = new_dataset
-        self.mock_client.list_tables.return_value = [
-            bigquery.table.TableListItem(self.mock_table_resource)
-        ]
+        self.mock_client.dataset_is_empty.return_value = False
 
         calculation_data_storage_manager._delete_empty_datasets()
 
@@ -307,7 +303,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         ]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
         self.mock_client.get_dataset.return_value = terraform_managed_dataset
-        self.mock_client.list_tables.return_value = []
+        self.mock_client.dataset_is_empty.return_value = True
 
         calculation_data_storage_manager._delete_empty_datasets()
 
@@ -356,7 +352,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
             terraform_managed_dataset,
             empty_dataset,
         ]
-        self.mock_client.list_tables.return_value = []
+        self.mock_client.dataset_is_empty.return_value = True
 
         calculation_data_storage_manager._delete_empty_datasets()
 
