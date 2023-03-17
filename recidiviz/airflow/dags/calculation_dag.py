@@ -25,8 +25,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, NamedTuple, Optional, Union
 
 from airflow.decorators import dag
-from airflow.operators.empty import EmptyOperator
-from airflow.operators.python import BranchPythonOperator, ShortCircuitOperator
+from airflow.operators.python import ShortCircuitOperator
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
 from airflow.utils.state import State
 from airflow.utils.task_group import TaskGroup
@@ -179,40 +178,6 @@ def flex_dataflow_operator_for_pipeline(
         location=region,
         body=pipeline_parameters.flex_template_launch_body(project_id=project_id),
         project_id=project_id,
-        task_group=task_group,
-    )
-
-
-def trigger_rematerialize_views_operator(
-    task_group: TaskGroup,
-) -> CloudTasksTaskCreateOperator:
-    queue_location = "us-east1"
-    queue_name = "bq-view-update"
-    if not project_id:
-        raise ValueError("project_id must be configured.")
-    task_path = CloudTasksClient.task_path(
-        project=project_id,
-        location=queue_location,
-        queue=queue_name,
-        task=uuid.uuid4().hex,
-    )
-    task = tasks_v2.types.Task(
-        name=task_path,
-        app_engine_http_request={
-            "http_method": "POST",
-            "relative_uri": "/view_update/rematerialize_all_deployed_views",
-            "body": json.dumps({}).encode(),
-        },
-    )
-    return CloudTasksTaskCreateOperator(
-        task_id="trigger_rematerialize_views_task",
-        location=queue_location,
-        queue_name=queue_name,
-        task=task,
-        retry=retry,
-        # This will trigger the task regardless of the failure or success of the
-        # upstream pipelines.
-        trigger_rule=TriggerRule.ALL_DONE,
         task_group=task_group,
     )
 
@@ -462,18 +427,6 @@ def create_bq_refresh_nodes(
     return bq_refresh_completion
 
 
-def update_all_views_branch_func(
-    trigger_update_all_views_task_id: str,
-    trigger_rematerialize_views_task_id: str,
-    trigger_source: str,
-) -> str:
-    if trigger_source == "POST_DEPLOY":
-        return trigger_update_all_views_task_id
-    if trigger_source == "DAILY":
-        return trigger_rematerialize_views_task_id
-    raise ValueError(f" TRIGGER_SOURCE unexpected value: {trigger_source}")
-
-
 # By setting catchup to False and max_active_runs to 1, we ensure that at
 # most one instance of this DAG is running at a time. Because we set catchup
 # to false, it ensures that new DAG runs aren't enqueued while the old one is
@@ -512,47 +465,8 @@ def create_calculation_dag() -> None:
 
     view_materialize_task_group = TaskGroup("view_materialization")
 
-    trigger_view_rematerialize = trigger_rematerialize_views_operator(
-        view_materialize_task_group
-    )
-
-    wait_for_rematerialize = BQResultSensor(
-        task_id="wait_for_view_rematerialization_success",
-        query_generator=FinishedCloudTaskQueryGenerator(
-            project_id=project_id,
-            cloud_task_create_operator_task_id=trigger_view_rematerialize.task_id,
-            tracker_dataset_id="view_update_metadata",
-            tracker_table_id="rematerialization_tracker",
-        ),
-        timeout=(60 * 45),
-        task_group=view_materialize_task_group,
-    )
-
     trigger_update_all_views = trigger_update_all_managed_views_operator(
         view_materialize_task_group
-    )
-
-    update_all_views_branch = BranchPythonOperator(
-        task_id="update_all_views_branch",
-        provide_context=True,
-        python_callable=update_all_views_branch_func,
-        op_kwargs={
-            "trigger_update_all_views_task_id": trigger_update_all_views.task_id,
-            "trigger_rematerialize_views_task_id": trigger_view_rematerialize.task_id,
-            "trigger_source": "{{ dag_run.conf['TRIGGER_SOURCE'] }}",
-        },
-        retries=0,
-        task_group=view_materialize_task_group,
-    )
-
-    (
-        [
-            state_bq_refresh_completion,
-            operations_bq_refresh_completion,
-            case_triage_bq_refresh_completion,
-        ]
-        >> update_all_views_branch
-        >> [trigger_update_all_views, trigger_view_rematerialize]
     )
 
     wait_for_update_all_views = BQResultSensor(
@@ -567,16 +481,15 @@ def create_calculation_dag() -> None:
         task_group=view_materialize_task_group,
     )
 
-    end_update_all_views_branch = EmptyOperator(
-        task_id="end_update_all_views_branch",
-        # This task will run if the upstream parents either are skipped or succeeded.
-        trigger_rule=TriggerRule.NONE_FAILED,
-        task_group=view_materialize_task_group,
+    (
+        [
+            state_bq_refresh_completion,
+            operations_bq_refresh_completion,
+            case_triage_bq_refresh_completion,
+        ]
+        >> trigger_update_all_views
+        >> wait_for_update_all_views
     )
-
-    trigger_update_all_views >> wait_for_update_all_views >> end_update_all_views_branch
-
-    trigger_view_rematerialize >> wait_for_rematerialize >> end_update_all_views_branch
 
     metric_pipelines = YAMLDict.from_path(config_file).pop_dicts("metric_pipelines")
 
@@ -610,7 +523,7 @@ def create_calculation_dag() -> None:
                 dataflow_pipeline_task_groups[state_code],
             )
             # Metric pipelines should complete before view rematerialization starts
-            metric_pipeline_operator >> update_all_views_branch
+            metric_pipeline_operator >> trigger_update_all_views
 
             # This ensures that all of the normalization pipelines for a state will
             # run and the normalized_state dataset will be updated before the
@@ -670,7 +583,7 @@ def create_calculation_dag() -> None:
                 dataflow_pipeline_task_groups[state_code],
             )
 
-            supplemental_pipeline_operator >> update_all_views_branch
+            supplemental_pipeline_operator >> trigger_update_all_views
 
             # This ensures that all of the normalization pipelines for a state will
             # run and the normalized_state dataset will be updated before the
@@ -699,7 +612,7 @@ def create_calculation_dag() -> None:
             task_group=validation_task_groups[state_code],
         )
         (
-            end_update_all_views_branch
+            wait_for_update_all_views
             >> trigger_state_validations
             >> wait_for_state_validations
         )
@@ -736,7 +649,7 @@ def create_calculation_dag() -> None:
     ]
 
     for data_export_operator in all_create_metric_view_data_export_nodes:
-        end_update_all_views_branch >> data_export_operator
+        wait_for_update_all_views >> data_export_operator
 
     for state_code, metric_pipeline_operators in metric_pipelines_by_state.items():
         for metric_pipeline_operator in metric_pipeline_operators:
