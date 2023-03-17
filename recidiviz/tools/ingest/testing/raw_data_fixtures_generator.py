@@ -39,13 +39,15 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     RawTableColumnInfo,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewRawFileDependency,
+)
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
 )
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestFixtureDataFileType,
-    direct_ingest_fixture_path,
+    ingest_view_raw_table_dependency_fixture_path,
 )
 
 Faker.seed(0)
@@ -96,8 +98,8 @@ class RawDataFixturesGenerator:
         region_code: str,
         ingest_view_tag: str,
         output_filename: str,
-        person_external_ids: List[str],
-        person_external_id_columns: List[str],
+        root_entity_external_ids: List[str],
+        root_entity_external_id_columns: List[str],
         columns_to_randomize: List[str],
         file_tags_to_load_in_full: List[str],
         randomized_values_map: Dict[str, str],
@@ -108,8 +110,8 @@ class RawDataFixturesGenerator:
         self.region_code = region_code
         self.ingest_view_tag = ingest_view_tag
         self.output_filename = output_filename
-        self.person_external_ids = person_external_ids
-        self.person_external_id_columns = person_external_id_columns
+        self.root_entity_external_ids = root_entity_external_ids
+        self.root_entity_external_id_columns = root_entity_external_id_columns
         self.file_tags_to_load_in_full = file_tags_to_load_in_full
         self.randomized_values_map = randomized_values_map
         self.datetime_format = datetime_format
@@ -117,16 +119,18 @@ class RawDataFixturesGenerator:
 
         self.bq_client = BigQueryClientImpl(project_id=project_id)
 
-        view = DirectIngestViewQueryBuilderCollector(
+        query_builder = DirectIngestViewQueryBuilderCollector(
             get_direct_ingest_region(region_code), []
         ).get_query_builder_by_view_name(ingest_view_tag)
 
-        self.ingest_view_raw_table_configs = view.raw_table_dependency_configs
+        self.ingest_view_raw_table_dependency_configs = (
+            query_builder.raw_table_dependency_configs
+        )
 
         # TODO(#12178) Rely only on pii fields once all states have labeled PII fields.
         self.columns_to_randomize = [
             column
-            for raw_config in self.ingest_view_raw_table_configs
+            for raw_config in self.ingest_view_raw_table_dependency_configs
             for column in raw_config.columns
             if column.is_pii or column.name in columns_to_randomize
         ]
@@ -138,12 +142,13 @@ class RawDataFixturesGenerator:
             raw_data_source_instance=self.raw_data_source_instance,
         )
 
-    def get_output_fixture_path(self, raw_table_file_tag: str) -> str:
-        return direct_ingest_fixture_path(
+    def get_output_fixture_path(
+        self, raw_file_dependency_config: DirectIngestViewRawFileDependency
+    ) -> str:
+        return ingest_view_raw_table_dependency_fixture_path(
             region_code=self.region_code,
             file_name=f"{self.output_filename}.csv",
-            file_tag=raw_table_file_tag,
-            fixture_file_type=DirectIngestFixtureDataFileType.RAW,
+            raw_file_dependency_config=raw_file_dependency_config,
         )
 
     def write_results_to_csv(
@@ -163,21 +168,23 @@ class RawDataFixturesGenerator:
 
     def build_query_for_raw_table(
         self,
-        raw_file_config: DirectIngestRawFileConfig,
-        person_external_id_columns: List[str],
+        raw_table_dependency_config: DirectIngestViewRawFileDependency,
+        root_entity_external_id_columns: List[str],
     ) -> str:
         """Builds a query that can be used to collect a sample of rows from the raw data
         table associated with the provided |raw_file_config|. Will return the most
         recent version of each row associated with the people in
-        |person_external_id_columns|. Datetime cols etc are NOT normalized like they are
+        |root_entity_external_id_columns|. Datetime cols etc are NOT normalized like they are
         in *latest views (i.e. they retain the formatting in the source raw data table).
         """
         filter_by_values = ", ".join(
-            f"'{id_filter}'" for id_filter in self.person_external_ids
+            f"'{id_filter}'" for id_filter in self.root_entity_external_ids
         )
 
         person_external_id_column = (
-            person_external_id_columns.pop(0) if person_external_id_columns else None
+            root_entity_external_id_columns.pop(0)
+            if root_entity_external_id_columns
+            else None
         )
 
         id_filter_condition = (
@@ -186,20 +193,18 @@ class RawDataFixturesGenerator:
             else ""
         )
 
-        if person_external_id_columns and id_filter_condition:
-            for person_external_id_column in person_external_id_columns:
+        if root_entity_external_id_columns and id_filter_condition:
+            for person_external_id_column in root_entity_external_id_columns:
                 id_filter_condition += (
                     f" OR {person_external_id_column} IN ({filter_by_values})"
                 )
 
         latest_query_template = self.query_builder.build_query(
-            raw_file_config=raw_file_config,
+            raw_file_config=raw_table_dependency_config.raw_file_config,
             address_overrides=None,
             normalized_column_values=False,
             raw_data_datetime_upper_bound=None,
-            # TODO(#18282): Add support for generating raw data fixtures that include the
-            #  update_datetime column and do not filter to latest.
-            filter_to_latest=True,
+            filter_to_latest=raw_table_dependency_config.filter_to_latest,
         )
 
         return f"{latest_query_template}{id_filter_condition};"
@@ -302,22 +307,26 @@ class RawDataFixturesGenerator:
 
     def generate_fixtures_for_ingest_view(self) -> None:
         """Queries BigQuery for the provided raw table and writes the results to CSV."""
-        for raw_table_config in self.ingest_view_raw_table_configs:
-            raw_table_file_tag = raw_table_config.file_tag
-            self.validate_raw_table_exists(raw_table_config)
+        for (
+            raw_table_dependency_config
+        ) in self.ingest_view_raw_table_dependency_configs:
+            self.validate_raw_table_exists(raw_table_dependency_config.raw_file_config)
 
             # Write fixtures to this path
-            output_fixture_path = self.get_output_fixture_path(raw_table_file_tag)
+            output_fixture_path = self.get_output_fixture_path(
+                raw_table_dependency_config
+            )
 
             # Get all person external ID columns present in this raw table config
-            person_external_id_columns = [
+            root_entity_external_id_columns = [
                 column.name
-                for column in raw_table_config.columns
-                if column.name in self.person_external_id_columns
+                for column in raw_table_dependency_config.columns
+                if column.name in self.root_entity_external_id_columns
             ]
 
+            raw_table_file_tag = raw_table_dependency_config.file_tag
             if (
-                not person_external_id_columns
+                not root_entity_external_id_columns
                 and self.file_tags_to_load_in_full
                 and raw_table_file_tag not in self.file_tags_to_load_in_full
             ):
@@ -328,8 +337,8 @@ class RawDataFixturesGenerator:
                 )
 
             query_str = self.build_query_for_raw_table(
-                raw_file_config=raw_table_config,
-                person_external_id_columns=person_external_id_columns,
+                raw_table_dependency_config=raw_table_dependency_config,
+                root_entity_external_id_columns=root_entity_external_id_columns,
             )
 
             query_job = self.bq_client.run_query_async(

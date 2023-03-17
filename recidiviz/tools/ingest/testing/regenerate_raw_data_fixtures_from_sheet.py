@@ -54,6 +54,7 @@ from recidiviz.common.constants import states
 from recidiviz.tools.ingest.testing.raw_data_fixtures_generator import (
     RawDataFixturesGenerator,
 )
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.google_drive import get_credentials, get_sheets_service
 from recidiviz.utils.metadata import local_project_id_override
@@ -120,8 +121,8 @@ def main(
                 region_code=region_code,
                 ingest_view_tag=ingest_view_tag_from_sheet,
                 output_filename=output_filename,
-                person_external_ids=external_id_to_test_id_map.keys(),
-                person_external_id_columns=person_external_id_columns,
+                root_entity_external_ids=external_id_to_test_id_map.keys(),
+                root_entity_external_id_columns=person_external_id_columns,
                 columns_to_randomize=columns_to_randomize,
                 file_tags_to_load_in_full=[],
                 randomized_values_map=external_id_to_test_id_map,
@@ -226,6 +227,12 @@ if __name__ == "__main__":
     args = parse_arguments(sys.argv)
 
     with local_project_id_override(GCP_PROJECT_STAGING):
+        prompt_for_confirmation(
+            "This script is not well-maintained and does not support regeneration for"
+            "test fixtures that use staff ids instead of person ids - are you sure you "
+            "want to proceed?"
+        )
+
         sheet_values = get_values_from_sheets(
             google_sheet_id=args.google_sheet_id,
             credentials_directory=args.credentials_directory,

@@ -31,6 +31,7 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
+    RawTableColumnInfo,
     get_region_raw_file_config,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
@@ -83,6 +84,93 @@ class DestinationTableType(Enum):
     # expiration (via a CREATE TABLE statement). Initialization will throw if this is set without nonnull
     # destination_table_id and destination_dataset_id.
     PERMANENT_EXPIRING = auto()
+
+
+class RawFileHistoricalRowsFilterType(Enum):
+    # Return all rows we have ever received for this table, even if they have since
+    # been updated with a newer version.
+    ALL = "ALL"
+
+    # Returns rows in the latest version of the table
+    LATEST = "LATEST"
+
+
+@attr.define(kw_only=True)
+class DirectIngestViewRawFileDependency:
+    """Class containing information about a raw table that is a dependency of an ingest
+    view.
+
+    For example, for the ingest view text: "SELECT * FROM {myTable};", this class
+    contains information for how to expand {myTable} into a real SELECT clause against
+    BigQuery.
+    """
+
+    # Regex matching the raw table dependency format args allowed in ingest view
+    # definition (i.e the text between the brackets of '{myRawTable}').
+    RAW_TABLE_DEPENDENCY_REGEX = r"^(?P<raw_file_tag>\w+)(@(?P<filter_info_str>\w+))?$"
+
+    raw_file_config: DirectIngestRawFileConfig
+    filter_type: RawFileHistoricalRowsFilterType
+    raw_table_dependency_arg_name: str
+
+    def __attrs_post_init__(self) -> None:
+        if self.raw_file_config.is_undocumented:
+            raise ValueError(
+                f"Cannot use undocumented raw file [{self.file_tag}] as a dependency "
+                f"in an ingest view."
+            )
+
+    @property
+    def file_tag(self) -> str:
+        return self.raw_file_config.file_tag
+
+    @property
+    def columns(self) -> List[RawTableColumnInfo]:
+        return self.raw_file_config.columns
+
+    @property
+    def filter_to_latest(self) -> bool:
+        return self.filter_type is RawFileHistoricalRowsFilterType.LATEST
+
+    @classmethod
+    def from_raw_table_dependency_arg_name(
+        cls,
+        raw_table_dependency_arg_name: str,
+        region_raw_table_config: DirectIngestRegionRawFileConfig,
+    ) -> "DirectIngestViewRawFileDependency":
+        """Parses a raw table format arg string (e.g. the text inside the brackets of
+        '{myTable}') into a DirectIngestViewRawFileDependency.
+        """
+        match = re.match(cls.RAW_TABLE_DEPENDENCY_REGEX, raw_table_dependency_arg_name)
+        if not match:
+            raise ValueError(
+                f"Found raw table dependency format arg "
+                f"[{raw_table_dependency_arg_name}] which does not match the expected "
+                f"pattern."
+            )
+        raw_file_tag = match.group("raw_file_tag")
+        filter_info_str = match.group("filter_info_str")
+        if raw_file_tag not in region_raw_table_config.raw_file_configs:
+            raise ValueError(f"Found unexpected raw table tag [{raw_file_tag}]")
+
+        raw_file_config = region_raw_table_config.raw_file_configs[raw_file_tag]
+
+        if not filter_info_str:
+            filter_type = RawFileHistoricalRowsFilterType.LATEST
+        else:
+            try:
+                filter_type = RawFileHistoricalRowsFilterType(filter_info_str)
+            except ValueError as e:
+                raise ValueError(
+                    f"Found unexpected filter info string [{filter_info_str}] on raw "
+                    f"table dependency [{raw_table_dependency_arg_name}]"
+                ) from e
+
+        return DirectIngestViewRawFileDependency(
+            raw_file_config=raw_file_config,
+            filter_type=filter_type,
+            raw_table_dependency_arg_name=raw_table_dependency_arg_name,
+        )
 
 
 class DirectIngestViewQueryBuilder:
@@ -193,7 +281,7 @@ class DirectIngestViewQueryBuilder:
 
         self._region_code = region
         self._raw_table_dependency_configs: Optional[
-            List[DirectIngestRawFileConfig]
+            List[DirectIngestViewRawFileDependency]
         ] = None
         self._query_builder = BigQueryQueryBuilder(address_overrides=None)
         self.ingest_view_name = ingest_view_name
@@ -215,7 +303,7 @@ class DirectIngestViewQueryBuilder:
             )
 
     @property
-    def raw_table_dependency_configs(self) -> List[DirectIngestRawFileConfig]:
+    def raw_table_dependency_configs(self) -> List[DirectIngestViewRawFileDependency]:
         """Configs for any raw tables that this view's query depends on."""
         if self._raw_table_dependency_configs is None:
             region_raw_table_config = get_region_raw_file_config(
@@ -289,12 +377,17 @@ class DirectIngestViewQueryBuilder:
 
     @staticmethod
     def _table_subbquery_name(
-        raw_table_config: DirectIngestRawFileConfig, prefix: Optional[str]
+        raw_table_dependency_config: DirectIngestViewRawFileDependency,
+        prefix: Optional[str],
     ) -> str:
         """The name for the expanded subquery on this raw table."""
 
         prefix = prefix or ""
-        return f"{prefix}{raw_table_config.file_tag}_generated_view"
+        dependency_name = raw_table_dependency_config.file_tag
+        filter_type = raw_table_dependency_config.filter_type
+        if filter_type != RawFileHistoricalRowsFilterType.LATEST:
+            dependency_name += f"__{filter_type.value}"
+        return f"{prefix}{dependency_name}_generated_view"
 
     @staticmethod
     def add_order_by_suffix(query: str, order_by_cols: str) -> str:
@@ -399,9 +492,11 @@ class DirectIngestViewQueryBuilder:
         )
 
         format_args = {}
-        for raw_table_config in self.raw_table_dependency_configs:
-            format_args[raw_table_config.file_tag] = self._table_subbquery_name(
-                raw_table_config, config.raw_table_subquery_name_prefix
+        for raw_table_dependency_config in self.raw_table_dependency_configs:
+            format_args[
+                raw_table_dependency_config.raw_table_dependency_arg_name
+            ] = self._table_subbquery_name(
+                raw_table_dependency_config, config.raw_table_subquery_name_prefix
             )
 
         query = self._query_builder.build_query(
@@ -427,12 +522,12 @@ class DirectIngestViewQueryBuilder:
     def _get_table_subquery_str(
         self,
         config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        raw_table_config: DirectIngestRawFileConfig,
+        raw_table_dependency_config: DirectIngestViewRawFileDependency,
     ) -> str:
         """Returns an expanded subquery on this raw table in the form 'subquery_name AS (...)'."""
         date_bounded_query = self._date_bounded_query_for_raw_table(
             config=config,
-            raw_table_config=raw_table_config,
+            raw_table_dependency_config=raw_table_dependency_config,
         )
         date_bounded_query = date_bounded_query.strip("\n")
         indented_date_bounded_query = self.SUBQUERY_INDENT + date_bounded_query.replace(
@@ -443,42 +538,35 @@ class DirectIngestViewQueryBuilder:
             f"\n{self.SUBQUERY_INDENT}\n", "\n\n"
         )
         table_subquery_name = self._table_subbquery_name(
-            raw_table_config, config.raw_table_subquery_name_prefix
+            raw_table_dependency_config, config.raw_table_subquery_name_prefix
         )
         return f"{table_subquery_name} AS (\n{indented_date_bounded_query}\n)"
 
     def _get_raw_table_dependency_configs(
         self, region_raw_table_config: DirectIngestRegionRawFileConfig
-    ) -> List[DirectIngestRawFileConfig]:
+    ) -> List[DirectIngestViewRawFileDependency]:
         """Returns a sorted list of configs for all raw files this query depends on."""
-        raw_table_dependencies = self._parse_raw_table_dependencies(
+        raw_table_dependency_strs = self._parse_raw_table_dependencies(
             self._view_query_template
         )
         raw_table_dependency_configs = []
-        for raw_table_tag in raw_table_dependencies:
-            if raw_table_tag not in region_raw_table_config.raw_file_configs:
-                raise ValueError(f"Found unexpected raw table tag [{raw_table_tag}]")
-            if not region_raw_table_config.raw_file_configs[raw_table_tag].columns:
-                raise ValueError(
-                    f"Found empty set of columns in raw table config [{raw_table_tag}]"
-                    f" in region [{region_raw_table_config.region_code}]."
-                )
-            if not region_raw_table_config.raw_file_configs[
-                raw_table_tag
-            ].has_valid_primary_key_configuration:
-                raise ValueError(
-                    f"Incorrect primary key definition for file [{raw_table_tag}]. If this table does not have any "
-                    "valid primary keys, set `primary_key_cols` to [] and set `no_valid_primary_keys` to True"
-                )
+        for raw_table_dependency_str in raw_table_dependency_strs:
             raw_table_dependency_configs.append(
-                region_raw_table_config.raw_file_configs[raw_table_tag]
+                DirectIngestViewRawFileDependency.from_raw_table_dependency_arg_name(
+                    raw_table_dependency_str, region_raw_table_config
+                )
             )
         return raw_table_dependency_configs
 
     @staticmethod
     def _parse_raw_table_dependencies(view_query_template: str) -> List[str]:
-        """Parses and returns all format args in the view query template (should be only raw table names) and returns as
-        a sorted list."""
+        """Parses and returns all format args in the view query template and returns as
+        a sorted list.
+
+        These format args should only be raw table names or raw table names with a
+        suffix indicating that they should be queried in a specific way (e.g.
+        "my_table@ALL").
+        """
         dependencies_set = {
             field_name
             for _, field_name, _, _ in string.Formatter().parse(view_query_template)
@@ -489,34 +577,33 @@ class DirectIngestViewQueryBuilder:
     def _date_bounded_query_for_raw_table(
         self,
         config: "DirectIngestViewQueryBuilder.QueryStructureConfig",
-        raw_table_config: DirectIngestRawFileConfig,
+        raw_table_dependency_config: DirectIngestViewRawFileDependency,
     ) -> str:
         project_id = metadata.project_id()
 
-        # TODO(#18282): When we allow ingest views to query the full set of raw data
-        #  rows in a given raw data table, we will not be able to query the latest view
-        #  for those tables either and will have to recreate the raw data query like we
-        #  do for date-bounded queries as well.
-        if config.raw_data_datetime_upper_bound:
-            return RawTableQueryBuilder(
-                project_id=project_id,
+        if (
+            not config.raw_data_datetime_upper_bound
+            and raw_table_dependency_config.filter_to_latest
+        ):
+            # If there is no bound and we are filtering to the latest version of each
+            # row, we can query directly from the `latest` view for convenience.
+            return DirectIngestRawDataTableLatestViewBuilder(
                 region_code=self._region_code,
                 raw_data_source_instance=config.raw_data_source_instance,
-            ).build_query(
-                raw_file_config=raw_table_config,
-                address_overrides=None,
-                normalized_column_values=True,
-                raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
-                # TODO(#18282): Update this when we have support for anything other than
-                #  filter_to_latest=True.
-                filter_to_latest=True,
-            )
+                raw_file_config=raw_table_dependency_config.raw_file_config,
+            ).table_for_query.select_query(project_id)
 
-        return DirectIngestRawDataTableLatestViewBuilder(
+        return RawTableQueryBuilder(
+            project_id=project_id,
             region_code=self._region_code,
             raw_data_source_instance=config.raw_data_source_instance,
-            raw_file_config=raw_table_config,
-        ).table_for_query.select_query(project_id)
+        ).build_query(
+            raw_file_config=raw_table_dependency_config.raw_file_config,
+            address_overrides=None,
+            normalized_column_values=True,
+            raw_data_datetime_upper_bound=config.raw_data_datetime_upper_bound,
+            filter_to_latest=raw_table_dependency_config.filter_to_latest,
+        )
 
     @staticmethod
     def _validate_order_by(ingest_view_name: str, view_query_template: str) -> None:

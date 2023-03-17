@@ -551,6 +551,30 @@ def add_external_id_to_staff(
     staff.external_ids.append(external_id_to_add)
 
 
+def add_supervisor_period_to_staff(
+    staff: entities.StateStaff,
+    external_id: str,
+    supervisor_staff_external_id: str,
+    supervisor_staff_external_id_type: str,
+    start_date: datetime.date,
+    end_date: Optional[datetime.date],
+    state_code: str,
+) -> None:
+    """Append external id to the person (updates the person entity in place)."""
+    supervisor_period_to_add: entities.StateStaffSupervisorPeriod = (
+        entities.StateStaffSupervisorPeriod.new_with_defaults(
+            state_code=state_code,
+            external_id=external_id,
+            supervisor_staff_external_id=supervisor_staff_external_id,
+            supervisor_staff_external_id_type=supervisor_staff_external_id_type,
+            start_date=start_date,
+            end_date=end_date,
+            staff=staff,
+        )
+    )
+    staff.supervisor_periods.append(supervisor_period_to_add)
+
+
 def add_supervision_violation_to_person(
     person: entities.StatePerson,
     state_code: str,

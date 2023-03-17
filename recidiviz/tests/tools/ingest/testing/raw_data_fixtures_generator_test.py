@@ -24,8 +24,12 @@ import attr
 
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
     DirectIngestRawFileConfig,
+    DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawTableColumnInfo,
+)
+from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
+    DirectIngestViewRawFileDependency,
 )
 from recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq import (
     RawDataFixturesGenerator,
@@ -54,10 +58,10 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
         self.region_code: str = "US_XX"
         self.ingest_view_tag: str = "supervision_periods"
         self.output_filename: str = "test_output"
-        self.person_external_ids: List[str] = []
-        self.person_external_id_columns: List[str] = []
+        self.root_entity_external_ids: List[str] = []
+        self.root_entity_external_id_columns: List[str] = []
         self.columns_to_randomize: List[str] = []
-        self.raw_table_config = DirectIngestRawFileConfig(
+        raw_table_config = DirectIngestRawFileConfig(
             file_tag="raw_data_table",
             file_path="some path",
             file_description="some description",
@@ -99,6 +103,23 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
             infer_columns_from_config=False,
             custom_line_terminator="\n",
         )
+        region_raw_table_config = DirectIngestRegionRawFileConfig(
+            region_code=self.region_code,
+            raw_file_configs={raw_table_config.file_tag: raw_table_config},
+        )
+
+        self.standard_raw_table_dependency_config = (
+            DirectIngestViewRawFileDependency.from_raw_table_dependency_arg_name(
+                region_raw_table_config=region_raw_table_config,
+                raw_table_dependency_arg_name=raw_table_config.file_tag,
+            )
+        )
+        self.all_rows_raw_table_dependency_config = (
+            DirectIngestViewRawFileDependency.from_raw_table_dependency_arg_name(
+                region_raw_table_config=region_raw_table_config,
+                raw_table_dependency_arg_name=f"{raw_table_config.file_tag}@ALL",
+            )
+        )
 
     def tearDown(self) -> None:
         self.bq_patcher.stop()
@@ -107,15 +128,15 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
 
     def _build_raw_data_fixtures_generator(
         self,
-        person_external_ids: List[str],
+        root_entity_external_ids: List[str],
     ) -> RawDataFixturesGenerator:
         return RawDataFixturesGenerator(
             project_id=self.project_id,
             region_code=self.region_code,
             ingest_view_tag=self.ingest_view_tag,
             output_filename=self.output_filename,
-            person_external_ids=person_external_ids,
-            person_external_id_columns=self.person_external_id_columns,
+            root_entity_external_ids=root_entity_external_ids,
+            root_entity_external_id_columns=self.root_entity_external_id_columns,
             columns_to_randomize=self.columns_to_randomize,
             file_tags_to_load_in_full=[],
             datetime_format="%m/%d/%y",
@@ -124,11 +145,11 @@ class RawDataFixturesGeneratorTest(unittest.TestCase):
 
     def test_build_query_for_raw_table_single_column_and_value(self) -> None:
         fixtures_generator = self._build_raw_data_fixtures_generator(
-            person_external_ids=["123"]
+            root_entity_external_ids=["123"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_file_config=self.raw_table_config,
-            person_external_id_columns=["External_Id_Col"],
+            raw_table_dependency_config=self.standard_raw_table_dependency_config,
+            root_entity_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
 WITH filtered_rows AS (
@@ -156,11 +177,11 @@ WHERE External_Id_Col IN ('123');"""
 
     def test_build_query_for_raw_table_single_column_multiple_values(self) -> None:
         fixtures_generator = self._build_raw_data_fixtures_generator(
-            person_external_ids=["123", "456"]
+            root_entity_external_ids=["123", "456"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_file_config=self.raw_table_config,
-            person_external_id_columns=["External_Id_Col"],
+            raw_table_dependency_config=self.standard_raw_table_dependency_config,
+            root_entity_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
 WITH filtered_rows AS (
@@ -186,11 +207,11 @@ WHERE External_Id_Col IN ('123', '456');"""
 
     def test_build_query_for_raw_table_multiple_cols_and_values(self) -> None:
         fixtures_generator = self._build_raw_data_fixtures_generator(
-            person_external_ids=["123", "456"]
+            root_entity_external_ids=["123", "456"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_file_config=self.raw_table_config,
-            person_external_id_columns=[
+            raw_table_dependency_config=self.standard_raw_table_dependency_config,
+            root_entity_external_id_columns=[
                 "External_Id_Col",
                 "External_Id_Col_2",
                 "External_Id_Col_3",
@@ -220,11 +241,11 @@ WHERE External_Id_Col IN ('123', '456') OR External_Id_Col_2 IN ('123', '456') O
 
     def test_build_query_for_raw_table_no_ids(self) -> None:
         fixtures_generator = self._build_raw_data_fixtures_generator(
-            person_external_ids=[]
+            root_entity_external_ids=[]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_file_config=self.raw_table_config,
-            person_external_id_columns=[],
+            raw_table_dependency_config=self.standard_raw_table_dependency_config,
+            root_entity_external_id_columns=[],
         )
         expected_query = """
 WITH filtered_rows AS (
@@ -249,15 +270,16 @@ FROM filtered_rows
         self.assertEqual(expected_query, query)
 
     def test_build_query_for_raw_table_historical_export(self) -> None:
-        raw_table_config = attr.evolve(
-            self.raw_table_config, always_historical_export=True
+        self.standard_raw_table_dependency_config.raw_file_config = attr.evolve(
+            self.standard_raw_table_dependency_config.raw_file_config,
+            always_historical_export=True,
         )
         fixtures_generator = self._build_raw_data_fixtures_generator(
-            person_external_ids=["123"]
+            root_entity_external_ids=["123"]
         )
         query = fixtures_generator.build_query_for_raw_table(
-            raw_file_config=raw_table_config,
-            person_external_id_columns=["External_Id_Col"],
+            raw_table_dependency_config=self.standard_raw_table_dependency_config,
+            root_entity_external_id_columns=["External_Id_Col"],
         )
         expected_query = """
 WITH max_update_datetime AS (
@@ -286,3 +308,25 @@ SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
 WHERE External_Id_Col IN ('123');"""
         self.assertEqual(expected_query, query)
+
+    def test_build_query_for_raw_table_all_rows_dependency(self) -> None:
+        fixtures_generator = self._build_raw_data_fixtures_generator(
+            root_entity_external_ids=["123"]
+        )
+        query = fixtures_generator.build_query_for_raw_table(
+            raw_table_dependency_config=self.all_rows_raw_table_dependency_config,
+            root_entity_external_id_columns=["External_Id_Col"],
+        )
+        expected_query = """
+WITH filtered_rows AS (
+    SELECT *
+    FROM `recidiviz-test.us_xx_raw_data.raw_data_table`
+    
+)
+SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3, update_datetime
+FROM filtered_rows
+WHERE External_Id_Col IN ('123');"""
+        self.assertEqual(
+            expected_query,
+            query,
+        )

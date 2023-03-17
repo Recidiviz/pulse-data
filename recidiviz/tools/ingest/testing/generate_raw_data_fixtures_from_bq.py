@@ -37,12 +37,11 @@ in `randomized_values_map` will be given a random value, though for non-id colum
 This makes `randomized_values_map` especially useful for non-id columns, like birthdays.
 
 Example Usage:
-    python -m recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq --region_code US_XX \
-    --columns_to_randomize Person_Id_Column First_Name Last_Name Birthdate\
-    --person_external_id_columns Person_Id_Column Other_Person_Id_Col \
-    --ingest_view_tag incarceration_periods \
+    python -m recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq --region_code US_OZ \
+    --root_entity_external_id_columns StaffId \
+    --ingest_view_tag ageid_staff_supervisor \
     --output_filename basic \
-    --person_external_ids 111 222 333 \
+    --root_entity_external_ids 123 456 789 1011 \
     [--file_tags_to_load_in_full CIS_3150_TRANSFER_TYPE OTHER_TABLE] \
     [--project_id GCP_PROJECT_STAGING] \
     [--datetime_format '%m/%d/%y'] \
@@ -67,8 +66,8 @@ def main(
     region_code: str,
     ingest_view_tag: str,
     output_filename: str,
-    person_external_ids: List[str],
-    person_external_id_columns: List[str],
+    root_entity_external_ids: List[str],
+    root_entity_external_id_columns: List[str],
     columns_to_randomize: List[str],
     file_tags_to_load_in_full: List[str],
     randomized_values_map: Dict[str, str],
@@ -81,8 +80,8 @@ def main(
         region_code=region_code,
         ingest_view_tag=ingest_view_tag,
         output_filename=output_filename,
-        person_external_ids=person_external_ids,
-        person_external_id_columns=person_external_id_columns,
+        root_entity_external_ids=root_entity_external_ids,
+        root_entity_external_id_columns=root_entity_external_id_columns,
         # TODO(#12178) Remove this option once all states have labeled PII fields.
         columns_to_randomize=columns_to_randomize,
         file_tags_to_load_in_full=file_tags_to_load_in_full,
@@ -139,12 +138,11 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
         help="Column names that have alphanumeric PII values to randomize.",
         nargs="+",
         default=[],
-        required=True,
     )
 
     parser.add_argument(
-        "--person_external_ids",
-        dest="person_external_ids",
+        "--root_entity_external_ids",
+        dest="root_entity_external_ids",
         help="Person-level IDs to filter the dataset by.",
         nargs="+",
         default=[],
@@ -152,8 +150,8 @@ def parse_arguments(argv: List[str]) -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--person_external_id_columns",
-        dest="person_external_id_columns",
+        "--root_entity_external_id_columns",
+        dest="root_entity_external_id_columns",
         help="Column names that map to the person-level external IDs.",
         nargs="+",
         default=[],
@@ -211,8 +209,8 @@ if __name__ == "__main__":
             region_code=args.region_code,
             ingest_view_tag=args.ingest_view_tag,
             output_filename=args.output_filename,
-            person_external_ids=args.person_external_ids,
-            person_external_id_columns=args.person_external_id_columns,
+            root_entity_external_ids=args.root_entity_external_ids,
+            root_entity_external_id_columns=args.root_entity_external_id_columns,
             columns_to_randomize=args.columns_to_randomize,
             file_tags_to_load_in_full=args.file_tags_to_load_in_full,
             randomized_values_map=args.randomized_values_map,

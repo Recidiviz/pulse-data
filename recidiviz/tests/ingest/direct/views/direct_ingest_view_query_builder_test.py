@@ -149,8 +149,8 @@ ORDER BY col1, col2;"""
         )
         with self.assertRaisesRegex(
             ValueError,
-            r"^Found empty set of columns in raw table config \[tagColumnsMissing\]"
-            r" in region \[us_ww\].$",
+            r"^Cannot use undocumented raw file \[tagColumnsMissing\] as a dependency "
+            r"in an ingest view.$",
         ):
             view.build_query(config=self.DEFAULT_LATEST_CONFIG)
 
@@ -982,3 +982,208 @@ ORDER BY col1, col2;"""
                 destination_table_type=DestinationTableType.NONE,
                 raw_data_datetime_upper_bound=None,
             )
+
+    def test_one_all_rows_dependency(self) -> None:
+        view_query_template = """SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN {file_tag_second@ALL}
+USING (col1);"""
+
+        view = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region="us_xx",
+            order_by_cols="col1, col2",
+            region_module=fake_regions_module,
+        )
+
+        self.assertEqual(
+            ["file_tag_first", "file_tag_second"],
+            [c.file_tag for c in view.raw_table_dependency_configs],
+        )
+
+        expected_view_query = """WITH
+file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+),
+file_tag_second__ALL_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT *
+        FROM `recidiviz-456.us_xx_raw_data.file_tag_second`
+        
+    )
+    SELECT col_name_2a, update_datetime
+    FROM filtered_rows
+)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second__ALL_generated_view
+USING (col1)
+ORDER BY col1, col2;"""
+
+        self.assertEqual(
+            expected_view_query,
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+        )
+
+        expected_parameterized_view_query = """WITH
+file_tag_first_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.file_tag_first`
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+        ) a
+        WHERE
+            recency_rank = 1
+    )
+    SELECT col_name_1a, col_name_1b
+    FROM filtered_rows
+),
+file_tag_second__ALL_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT *
+        FROM `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+    )
+    SELECT col_name_2a, update_datetime
+    FROM filtered_rows
+)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second__ALL_generated_view
+USING (col1)
+ORDER BY col1, col2;"""
+
+        self.assertEqual(
+            expected_parameterized_view_query,
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+        )
+
+    def test_all_rows_dependency_mixed_with_latest_same_table(self) -> None:
+        view_query_template = """SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN {file_tag_first@ALL}
+USING (col1);"""
+
+        view = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region="us_xx",
+            order_by_cols="col1, col2",
+            region_module=fake_regions_module,
+        )
+
+        self.assertEqual(
+            ["file_tag_first", "file_tag_first"],
+            [c.file_tag for c in view.raw_table_dependency_configs],
+        )
+        self.assertEqual(
+            ["file_tag_first", "file_tag_first@ALL"],
+            [
+                c.raw_table_dependency_arg_name
+                for c in view.raw_table_dependency_configs
+            ],
+        )
+
+        expected_view_query = """WITH
+file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+),
+file_tag_first__ALL_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT *
+        FROM `recidiviz-456.us_xx_raw_data.file_tag_first`
+        
+    )
+    SELECT col_name_1a, col_name_1b, update_datetime
+    FROM filtered_rows
+)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_first__ALL_generated_view
+USING (col1)
+ORDER BY col1, col2;"""
+
+        self.assertEqual(
+            expected_view_query,
+            view.build_query(config=self.DEFAULT_LATEST_CONFIG),
+        )
+
+        expected_parameterized_view_query = """WITH
+file_tag_first_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT
+            * EXCEPT (recency_rank)
+        FROM (
+            SELECT
+                *,
+                ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                                   ORDER BY update_datetime DESC) AS recency_rank
+            FROM
+                `recidiviz-456.us_xx_raw_data.file_tag_first`
+            WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+        ) a
+        WHERE
+            recency_rank = 1
+    )
+    SELECT col_name_1a, col_name_1b
+    FROM filtered_rows
+),
+file_tag_first__ALL_generated_view AS (
+    WITH filtered_rows AS (
+        SELECT *
+        FROM `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE update_datetime <= DATETIME(2000, 1, 2, 3, 4, 5)
+    )
+    SELECT col_name_1a, col_name_1b, update_datetime
+    FROM filtered_rows
+)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_first__ALL_generated_view
+USING (col1)
+ORDER BY col1, col2;"""
+
+        self.assertEqual(
+            expected_parameterized_view_query,
+            view.build_query(config=self.DEFAULT_EXPANDED_CONFIG),
+        )
+
+    def test_invalid_raw_table_dependency(self) -> None:
+        # This raw table dependency string doesn't match the regext at all
+        view_query_template = """SELECT * FROM {file_tag_first#ALL};"""
+
+        view = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region="us_xx",
+            order_by_cols="col1, col2",
+            region_module=fake_regions_module,
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found raw table dependency format arg \[file_tag_first#ALL\] which does "
+            r"not match the expected pattern.",
+        ):
+            _ = view.raw_table_dependency_configs
+
+    def test_invalid_raw_table_dependency_bad_filter_info(self) -> None:
+        # This raw table dependency matches the regex but uses a bad filter string.
+        view_query_template = """SELECT * FROM {file_tag_first@ALL_ROWS};"""
+
+        view = DirectIngestViewQueryBuilder(
+            ingest_view_name="ingest_view_tag",
+            view_query_template=view_query_template,
+            region="us_xx",
+            order_by_cols="col1, col2",
+            region_module=fake_regions_module,
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Found unexpected filter info string \[ALL_ROWS\] on raw table "
+            r"dependency \[file_tag_first@ALL_ROWS\]",
+        ):
+            _ = view.raw_table_dependency_configs

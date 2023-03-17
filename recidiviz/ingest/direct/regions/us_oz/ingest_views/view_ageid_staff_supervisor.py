@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Ingest view for ageid_StaffRecord information."""
+"""Ingest view for ageid_StaffSupervisor information."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -23,20 +23,31 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
+WITH critical_dates AS (
+    SELECT
+      StaffId,
+      Supervisor,
+      LAG(Supervisor) OVER (PARTITION BY StaffId ORDER BY update_datetime) AS prev_supervisor,
+      update_datetime
+    FROM {ageid_StaffRecord@ALL}
+    WHERE TRUE
+    QUALIFY (prev_supervisor IS NULL AND Supervisor IS NOT NULL) OR prev_supervisor != Supervisor
+)
 SELECT 
   StaffId,
-  UserId,
-  FirstName,
-  LastName,
-  Email
-FROM {ageid_StaffRecord};
+  ROW_NUMBER() OVER (PARTITION BY StaffId ORDER BY update_datetime) AS period_seq_num,
+  Supervisor,
+  update_datetime AS start_date,
+  LEAD(update_datetime) OVER (PARTITION BY StaffId ORDER BY update_datetime) AS end_date
+FROM critical_dates
+WHERE Supervisor IS NOT NULL;
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_oz",
-    ingest_view_name="ageid_staff",
+    ingest_view_name="ageid_staff_supervisor",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="StaffId",
+    order_by_cols="StaffId, period_seq_num",
 )
 
 if __name__ == "__main__":

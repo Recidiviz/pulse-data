@@ -20,7 +20,7 @@ ingest view queries.
 import abc
 import datetime
 import os.path
-from typing import Iterable, Iterator, Optional, Tuple, Type, Union
+from typing import Iterable, Iterator, List, Optional, Tuple, Type, Union
 
 import pandas as pd
 import pytest
@@ -45,9 +45,13 @@ from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager impo
     check_found_columns_are_subset_of_config,
 )
 from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
+from recidiviz.ingest.direct.types.direct_ingest_constants import (
+    UPDATE_DATETIME_COL_NAME,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
+    DirectIngestViewRawFileDependency,
 )
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder_collector import (
     DirectIngestViewQueryBuilderCollector,
@@ -62,8 +66,8 @@ from recidiviz.tests.big_query.big_query_test_helper import (
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
 from recidiviz.tests.ingest.direct.fixture_util import (
-    DirectIngestFixtureDataFileType,
-    direct_ingest_fixture_path,
+    ingest_view_raw_table_dependency_fixture_path,
+    ingest_view_results_fixture_path,
 )
 from recidiviz.utils import csv, environment
 
@@ -138,10 +142,9 @@ class IngestViewQueryTester:
             raw_fixtures_name=fixtures_files_name,
         )
 
-        expected_output_fixture_path = direct_ingest_fixture_path(
+        expected_output_fixture_path = ingest_view_results_fixture_path(
             region_code=region_code,
-            fixture_file_type=DirectIngestFixtureDataFileType.INGEST_VIEW_RESULTS,
-            file_tag=ingest_view.ingest_view_name,
+            ingest_view_name=ingest_view.ingest_view_name,
             file_name=fixtures_files_name,
         )
         results = self._query_ingest_view_for_builder(ingest_view, query_run_dt)
@@ -161,13 +164,31 @@ class IngestViewQueryTester:
 
     @staticmethod
     def _check_valid_fixture_columns(
-        raw_file_config: DirectIngestRawFileConfig, fixture_file: str
-    ) -> None:
+        raw_file_dependency_config: DirectIngestViewRawFileDependency, fixture_file: str
+    ) -> List[str]:
         fixture_columns = csv.get_csv_columns(fixture_file)
 
+        if raw_file_dependency_config.filter_to_latest:
+            expected_extra_columns = []
+        else:
+            # We expect all fixtures for {myTable@ALL} type tags to have an
+            # update_datetime column.
+            expected_extra_columns = [UPDATE_DATETIME_COL_NAME]
+        columns_to_check = [
+            col for col in fixture_columns if col not in expected_extra_columns
+        ]
         check_found_columns_are_subset_of_config(
-            raw_file_config=raw_file_config, found_columns=fixture_columns
+            raw_file_config=raw_file_dependency_config.raw_file_config,
+            found_columns=columns_to_check,
         )
+        for expected_extra_column in expected_extra_columns:
+            if expected_extra_column not in fixture_columns:
+                raise ValueError(
+                    f"Fixture [{fixture_file}] does not have expected column "
+                    f"[{expected_extra_column}]"
+                )
+
+        return fixture_columns
 
     def _create_mock_raw_bq_tables_from_fixtures(
         self,
@@ -178,23 +199,13 @@ class IngestViewQueryTester:
         """Loads mock raw data tables from fixture files used by the given ingest view.
         All raw fixture files must have names matching |raw_fixtures_name|.
         """
-        for raw_file_config in ingest_view.raw_table_dependency_configs:
-            raw_fixture_path = direct_ingest_fixture_path(
-                region_code=region_code,
-                fixture_file_type=DirectIngestFixtureDataFileType.RAW,
-                file_tag=raw_file_config.file_tag,
-                file_name=raw_fixtures_name,
+        for raw_table_dependency_config in ingest_view.raw_table_dependency_configs:
+            raw_data_df = self._get_raw_data(
+                region_code, raw_table_dependency_config, raw_fixtures_name
             )
-            print(
-                f"Loading fixture data for raw file [{raw_file_config.file_tag}] from file path [{raw_fixture_path}]."
-            )
-
-            self._check_valid_fixture_columns(raw_file_config, raw_fixture_path)
-            raw_data_df = self._get_raw_data(raw_file_config, raw_fixture_path)
-
             self.helper.load_mock_raw_table(
                 region_code=region_code,
-                file_tag=raw_file_config.file_tag,
+                file_tag=raw_table_dependency_config.file_tag,
                 mock_data=raw_data_df,
             )
 
@@ -214,14 +225,36 @@ class IngestViewQueryTester:
         return column_names
 
     def _get_raw_data(
-        self, raw_file_config: DirectIngestRawFileConfig, raw_fixture_path: str
+        self,
+        region_code: str,
+        raw_file_dependency_config: DirectIngestViewRawFileDependency,
+        raw_fixtures_name: str,
     ) -> pd.DataFrame:
-        mock_data = csv.get_rows_as_tuples(raw_fixture_path, skip_header_row=False)
-        header_row = next(mock_data)
-        columns = self.columns_from_raw_file_config(raw_file_config, header_row)
+        raw_fixture_path = ingest_view_raw_table_dependency_fixture_path(
+            region_code=region_code,
+            raw_file_dependency_config=raw_file_dependency_config,
+            file_name=raw_fixtures_name,
+        )
+        print(
+            f"Loading fixture data for raw file [{raw_file_dependency_config.file_tag}] "
+            f"from file path [{raw_fixture_path}]."
+        )
+
+        fixture_columns = self._check_valid_fixture_columns(
+            raw_file_dependency_config, raw_fixture_path
+        )
+
+        mock_data = csv.get_rows_as_tuples(raw_fixture_path)
         values = _replace_empty_with_null(mock_data)
+        raw_data_df = pd.DataFrame(values, columns=fixture_columns)
+
+        if not raw_file_dependency_config.filter_to_latest:
+            # We don't add metadata columns since this fixture file should already
+            # have an update_datetime column and the file_id will never be referenced.
+            return raw_data_df
+
         return augment_raw_data_df_with_metadata_columns(
-            raw_data_df=pd.DataFrame(values, columns=columns),
+            raw_data_df=raw_data_df,
             file_id=0,
             utc_upload_datetime=DEFAULT_FILE_UPDATE_DATETIME,
         )
