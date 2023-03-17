@@ -308,14 +308,17 @@ class UnionedStateSegmentsViewBuilder(BigQueryViewBuilder[BigQueryView]):
         ) = self.config.get_unioned_table_view_query_format_string(
             self.state_codes, self.table
         )
-
+        description = (
+            f"A view that unions the contents of the [{self.table.name}] "
+            f"across all state segments."
+        )
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             materialized_address=self.materialized_address,
             address_overrides=address_overrides,
-            description=f"A view that unions the contents of the [{self.table.name}] "
-            f"across all state segments.",
+            description=description,
+            bq_description=description,
             view_query_template=table_union_query_fmt,
             clustering_fields=None,
             should_deploy_predicate=None,

@@ -56,6 +56,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_0",
                 view_id="table_0",
                 description="table_0 description",
+                bq_description="table_0 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
             )
         ]
@@ -70,18 +71,21 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="table_1",
                 description="table_1 description",
+                bq_description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
             ),
             BigQueryView(
                 dataset_id="dataset_2",
                 view_id="table_2",
                 description="table_2 description",
+                bq_description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
             ),
             BigQueryView(
                 dataset_id="dataset_3",
                 view_id="table_3",
                 description="table_3 description",
+                bq_description="table_3 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_1.table_1`
             JOIN `{project_id}.dataset_2.table_2`
@@ -91,6 +95,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_4",
                 view_id="table_4",
                 description="table_4 description",
+                bq_description="table_4 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
             ),
@@ -98,6 +103,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_5",
                 view_id="table_5",
                 description="table_5 description",
+                bq_description="table_5 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_3.table_3`""",
             ),
@@ -117,6 +123,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_6",
                 view_id="table_6",
                 description="table_6 description",
+                bq_description="table_6 description",
                 view_query_template="""
             SELECT * FROM `{project_id}.dataset_4.table_4`
             JOIN `{project_id}.dataset_5.table_5`
@@ -129,18 +136,21 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="table_1",
                 description="table_1 description",
+                bq_description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
             ),
             BigQueryView(
                 dataset_id="dataset_1",
                 view_id="table_2",
                 description="table_2 description",
+                bq_description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
             ),
             BigQueryView(
                 dataset_id="dataset_3",
                 view_id="table_3",
                 description="table_3 description",
+                bq_description="table_3 description",
                 view_query_template="""
                     SELECT * FROM `{project_id}.dataset_1.table_1`
                     JOIN `{project_id}.dataset_1.table_2`
@@ -150,6 +160,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_4",
                 view_id="table_4",
                 description="table_4 description",
+                bq_description="table_4 description",
                 view_query_template="""
                     SELECT * FROM `{project_id}.dataset_3.table_3`""",
             ),
@@ -160,18 +171,21 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="table_1",
                 description="table_1 description",
+                bq_description="table_1 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table`",
             ),
             BigQueryView(
                 dataset_id="dataset_1",
                 view_id="table_2",
                 description="table_2 description",
+                bq_description="table_2 description",
                 view_query_template="SELECT * FROM `{project_id}.source_dataset.source_table_2`",
             ),
             BigQueryView(
                 dataset_id="dataset_1",
                 view_id="table_3",
                 description="table_3 description",
+                bq_description="table_3 description",
                 view_query_template="""
                     SELECT * FROM `{project_id}.dataset_1.table_1`
                     JOIN `{project_id}.dataset_1.table_2`
@@ -449,6 +463,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 description=f"{view['view_id']} description",
+                bq_description=f"{view['view_id']} description",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
@@ -524,6 +539,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="my_fake_view",
                 description="my_fake_view description",
+                bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -531,6 +547,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_2",
                 view_id="my_fake_view_2",
                 description="my_fake_view_2 description",
+                bq_description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -638,6 +655,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 description=f"{view['view_id']} description",
+                bq_description=f"{view['view_id']} description",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
@@ -710,6 +728,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
             SimpleBigQueryViewBuilder(
                 dataset_id="dataset_1",
                 description=f"{view['view_id']} description",
+                bq_description=f"{view['view_id']} description",
                 should_materialize=False,
                 projects_to_deploy=None,
                 materialized_address_override=None,
@@ -778,6 +797,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="my_fake_view",
                 description="my_fake_view description",
+                bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -785,6 +805,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="bogus_dataset",
                 view_id="my_fake_view_2",
                 description="my_fake_view_2 description",
+                bq_description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -866,6 +887,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="my_fake_view",
                 description="my_fake_view description",
+                bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             )
@@ -939,6 +961,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_1",
                 view_id="my_fake_view",
                 description="my_fake_view description",
+                bq_description="my_fake_view description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),
@@ -946,6 +969,7 @@ class TestViewUpdateManagerUtils(unittest.TestCase):
                 dataset_id="dataset_2",
                 view_id="my_fake_view_2",
                 description="my_fake_view_2 description",
+                bq_description="my_fake_view_2 description",
                 view_query_template="SELECT NULL LIMIT 0",
                 should_materialize=False,
             ),

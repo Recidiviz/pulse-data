@@ -99,6 +99,15 @@ class DeployedViewsTest(unittest.TestCase):
         # about .28 seconds).
         self.assertLessEqual(total_seconds, 5)
 
+    def test_view_descriptions(self) -> None:
+        for view_builder in all_deployed_view_builders():
+            view = view_builder.build()
+
+            # This shouldn't crash
+            _ = view.bq_description
+            if view.materialized_address:
+                _ = view.materialized_table_bq_description
+
 
 class ViewDagInvariantTests(unittest.TestCase):
     """Tests that certain views have the correct descendants."""

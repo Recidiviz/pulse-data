@@ -45,6 +45,7 @@ class MetricBigQueryView(BigQueryView):
             dataset_id=dataset_id,
             view_id=view_id,
             description=description,
+            bq_description=description,
             view_query_template=view_query_template,
             materialized_address=materialized_address,
             address_overrides=address_overrides,

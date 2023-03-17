@@ -83,6 +83,7 @@ class DirectIngestRawDataTableLatestViewBuilder(BigQueryViewBuilder):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             view_query_template=query,
+            bq_description=self.description,
             description=self.description,
             address_overrides=address_overrides,
         )

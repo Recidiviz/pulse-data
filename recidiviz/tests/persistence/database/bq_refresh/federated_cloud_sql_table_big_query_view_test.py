@@ -206,6 +206,7 @@ FROM EXTERNAL_QUERY(
 
         self.assertIsInstance(view, FederatedCloudSQLTableBigQueryView)
         self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_description, view.bq_description)
         self.assertEqual(expected_description, view.description)
         self.assertEqual(
             BigQueryAddress(

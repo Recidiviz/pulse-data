@@ -45,6 +45,7 @@ class WithMetadataQueryBigQueryView(BigQueryView):
             dataset_id=delegate.dataset_id,
             view_id=delegate.view_id,
             description=delegate.description,
+            bq_description=delegate.bq_description,
             view_query_template=delegate.view_query_template,
             materialized_address=delegate.materialized_address,
             address_overrides=address_overrides,
