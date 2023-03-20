@@ -23,6 +23,7 @@ from recidiviz.aggregated_metrics.misc_aggregated_metrics import (
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     AggregatedMetric,
+    MetricConditionsMixin,
     MiscAggregatedMetric,
 )
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
@@ -44,8 +45,39 @@ def generate_aggregated_metrics_view_builder(
     level_name = aggregation_level.level_name_short
     population_name = population.population_name_short
     view_id = f"{population_name}_{level_name}_aggregated_metrics"
+
+    view_description_metrics = [
+        f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
+        f"`{metric.get_metric_conditions_string_no_newline() if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
+        for metric in metrics
+        # Only display MiscAggregatedMetrics that are relevant to the population and aggregation level
+        if not isinstance(metric, MiscAggregatedMetric)
+        or (
+            population.population_type in metric.populations
+            and aggregation_level.level_type in metric.aggregation_levels
+        )
+    ]
+    view_description_metrics_str = "\n".join(view_description_metrics)
+    view_description_header = f"All metrics for the {population_name} population disaggregated by {level_name}."
     view_description = f"""
-    All metrics for the {population_name} population disaggregated by {level_name}.
+{view_description_header}
+
+#### Population Definition: {population_name.title()}
+
+```
+{population.get_conditions_query_string()}
+```
+
+#### Aggregation Level Definition: {level_name.title()}
+
+Source table: `{aggregation_level.client_assignment_sessions_view_name}`
+
+Index columns: `{aggregation_level.get_index_columns_query_string()}`
+
+### Metrics:
+|	Metric	|	Description	|   Metric Type    |   Conditions   |
+|	--------------------	|	--------------------	|	--------------------	|	--------------------	|
+{view_description_metrics_str}
     """
 
     query_template = f"""
@@ -100,6 +132,7 @@ def generate_aggregated_metrics_view_builder(
         view_id=view_id,
         view_query_template=query_template,
         description=view_description,
+        bq_description=view_description_header,
         aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
         should_materialize=True,
         clustering_fields=aggregation_level.index_columns,
