@@ -43,7 +43,10 @@ COMPAS as (
   select 
         'COMPAS' as source,
         coassessment.RecId,
-        shoffender.OffenderNumber,
+        -- starting sometime in Feb 2023, it seems like the format of OffenderNumber in ADH_SHOFFENDER changed such that there
+        -- are now leading zeroes.  In order to make sure we can still join with ADH_OFFENDER correctly (which has no leading zeroes)
+        -- we must trim all leading zeroes off of OffenderNumber
+        LTRIM(shoffender.OffenderNumber, '0') as OffenderNumber,
         FkCoSyScale,
         corfscaleset.Name as corfscaleset_name,
         cosyscale.Name as cosyscale_name,
@@ -77,7 +80,10 @@ STATIC_STABLE as (
   SELECT  
           'STATIC_STABLE' as source,
           screening.RecId,   
-          shoffender.offendernumber,
+          -- starting sometime in Feb 2023, it seems like the format of OffenderNumber in ADH_SHOFFENDER changed such that there
+          -- are now leading zeroes.  In order to make sure we can still join with ADH_OFFENDER correctly (which has no leading zeroes)
+          -- we must trim all leading zeroes off of OffenderNumber
+          LTRIM(shoffender.OffenderNumber, '0') as OffenderNumber,
           FkCoSyScale,
           -- there are no applicable scale sets for STATIC/STABLE
           CAST(NULL as string) as corfscaleset_name,
@@ -130,7 +136,7 @@ from (
   union all
   (select * from STATIC_STABLE)
 ) unioned
-left join {ADH_OFFENDER} off on unioned.offendernumber = off.offender_number
+left join {ADH_OFFENDER} off on unioned.OffenderNumber = off.offender_number
 inner join (select distinct offender_id from {ADH_OFFENDER_BOOKING}) book on off.offender_id = book.offender_id
 
 """
