@@ -238,3 +238,6 @@ columns:
     description: |-
       Alternate phone number for this person.
     is_pii: True
+  - name: EMAIL
+    description: This person's email address.
+    is_pii: True

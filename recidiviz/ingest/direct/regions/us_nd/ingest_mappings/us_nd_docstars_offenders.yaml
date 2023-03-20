@@ -60,6 +60,7 @@ input_columns:
   - EARLY_TERMINATION_ACKNOWLEDGED
   - HOMELESS
   - SORAC_SCORE
+  - EMAIL
 unused_columns:
   - SUP_LVL # Unused, for now.
   - SUPER_OVERRIDE # Unused, for now.
@@ -154,6 +155,7 @@ output:
       $enum_mapping:
         $raw_text: ADDRESS
         $custom_parser: us_nd_custom_enum_parsers.parse_residency_status_from_address
+    current_email_address: EMAIL
     races:
       - StatePersonRace:
           race:
