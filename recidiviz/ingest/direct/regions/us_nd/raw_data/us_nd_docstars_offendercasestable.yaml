@@ -153,6 +153,7 @@ columns:
   - name: TERMINATING_OFFICER
     description: |-
       ID of the supervising officer at the end of the period of supervision.
+    is_pii: True
   - name: REV_NOFF_YN
     description: |-
       Whether the revocation occurred due in part to a new offense, if applicable.

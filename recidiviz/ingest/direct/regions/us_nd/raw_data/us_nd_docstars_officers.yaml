@@ -9,12 +9,15 @@ columns:
   - name: OFFICER
     description: |-
       ID of the officer.
+    is_pii: True
   - name: LNAME
     description: |-
       Surname of the officer.
+    is_pii: True
   - name: FNAME
     description: |-
       First/given name of the officer.
+    is_pii: True
   - name: SITEID
     description: |-
       ID of the site where this officer serves.
@@ -24,12 +27,15 @@ columns:
   - name: SUPERVISOR
     description: |-
       Name of the supervisor of this officer.
+    is_pii: True
   - name: SUPERVISOR_ID
     description: |-
       ID of the supervisor of this officer.
+    is_pii: True
   - name: LOGINNAME
     description: |-
       System login name of the officer.
+    is_pii: True
   - name: RecDate
     is_datetime: True
     description: |-

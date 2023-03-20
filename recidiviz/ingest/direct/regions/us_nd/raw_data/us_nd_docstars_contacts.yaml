@@ -117,6 +117,7 @@ columns:
   - name: ORIGINATOR
     description: |-
       The name of the supervision officer associated with this contact.
+    is_pii: True
   - name: CONTACT_DATE
     is_datetime: True
     description: |-
