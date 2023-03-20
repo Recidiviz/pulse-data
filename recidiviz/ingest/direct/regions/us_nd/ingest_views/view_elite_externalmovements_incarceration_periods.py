@@ -52,7 +52,12 @@ WITH in_edges AS (
     AND in_edges.TO_AGY_LOC_ID = out_edges.FROM_AGY_LOC_ID
 ), missing_releases_handled AS (
     SELECT
-        * EXCEPT(release_date),
+        period_sequence,
+        offender_book_id,
+        admission_reason_code,
+        admission_date,
+        facility,
+        release_reason_code,
         -- If there's no release but we know that the movement is not the person's most
         -- recent movement then use the next admission as the release
         CASE
