@@ -25,8 +25,8 @@ from recidiviz.calculator.query.state.views.workflows.us_id.supervision_staff_te
 from recidiviz.calculator.query.state.views.workflows.us_ix.supervision_staff_template import (
     US_IX_SUPERVISION_STAFF_TEMPLATE,
 )
-from recidiviz.calculator.query.state.views.workflows.us_me.incarceration_staff_template import (
-    US_ME_INCARCERATION_STAFF_TEMPLATE,
+from recidiviz.calculator.query.state.views.workflows.us_me.staff_template import (
+    US_ME_STAFF_TEMPLATE,
 )
 from recidiviz.calculator.query.state.views.workflows.us_mo.incarceration_staff_template import (
     US_MO_INCARCERATION_STAFF_TEMPLATE,
@@ -58,7 +58,7 @@ STAFF_RECORD_QUERY_TEMPLATE = f"""
         , nd_staff AS ({US_ND_SUPERVISION_STAFF_TEMPLATE})
         , id_staff AS ({US_ID_SUPERVISION_STAFF_TEMPLATE})
         , ix_staff AS ({US_IX_SUPERVISION_STAFF_TEMPLATE})
-        , me_staff AS ({US_ME_INCARCERATION_STAFF_TEMPLATE})
+        , me_staff AS ({US_ME_STAFF_TEMPLATE})
         , mo_staff AS ({US_MO_INCARCERATION_STAFF_TEMPLATE})
     
     SELECT {{columns}} FROM tn_staff
