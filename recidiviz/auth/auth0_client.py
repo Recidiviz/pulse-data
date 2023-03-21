@@ -42,6 +42,7 @@ class CaseTriageAuth0AppMetadata(TypedDict):
     should_see_beta_charts: bool
     routes: Optional[dict]
     user_hash: str
+    role: str
 
 
 class JusticeCountsAuth0AppMetadata(TypedDict, total=False):

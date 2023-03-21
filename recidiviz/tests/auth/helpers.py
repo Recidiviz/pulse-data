@@ -49,7 +49,7 @@ def generate_fake_user_restrictions(
         restricted_user_email=email,
         allowed_supervision_location_ids=allowed_supervision_location_ids,
         allowed_supervision_location_level=allowed_supervision_location_level,
-        internal_role="level_1_access_role",
+        internal_role="supervision_staff",
         can_access_leadership_dashboard=can_access_leadership_dashboard,
         can_access_case_triage=can_access_case_triage,
         should_see_beta_charts=should_see_beta_charts,

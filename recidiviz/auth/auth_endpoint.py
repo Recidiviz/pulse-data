@@ -21,7 +21,7 @@ import csv
 import logging
 import os
 from http import HTTPStatus
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import sqlalchemy.orm.exc
 from flask import Blueprint, Response, jsonify, request
@@ -226,6 +226,7 @@ def dashboard_user_restrictions_by_email() -> Tuple[
                 DashboardUserRestrictions.should_see_beta_charts,
                 DashboardUserRestrictions.routes,
                 DashboardUserRestrictions.user_hash,
+                DashboardUserRestrictions.internal_role,
             )
             .filter(
                 DashboardUserRestrictions.state_code == region_code.upper(),
@@ -274,30 +275,7 @@ def _format_db_results(
         "should_see_beta_charts": user_restrictions["should_see_beta_charts"],
         "routes": user_restrictions["routes"],
         "user_hash": user_restrictions["user_hash"],
-    }
-
-
-def _normalize_current_restrictions(
-    current_app_metadata: Mapping[str, Any],
-) -> Mapping[str, Any]:
-    return {
-        "allowed_supervision_location_ids": current_app_metadata.get(
-            "allowed_supervision_location_ids", []
-        ),
-        "allowed_supervision_location_level": current_app_metadata.get(
-            "allowed_supervision_location_level", None
-        ),
-        "can_access_leadership_dashboard": current_app_metadata.get(
-            "can_access_leadership_dashboard", False
-        ),
-        "can_access_case_triage": current_app_metadata.get(
-            "can_access_case_triage", False
-        ),
-        "should_see_beta_charts": current_app_metadata.get(
-            "should_see_beta_charts", False
-        ),
-        "routes": current_app_metadata.get("routes", {}),
-        "user_hash": current_app_metadata.get("user_hash"),
+        "role": user_restrictions["internal_role"],
     }
 
 
@@ -338,6 +316,7 @@ def dashboard_user_restrictions() -> Response:
                 "canAccessCaseTriage": res.can_access_case_triage,
                 "shouldSeeBetaCharts": res.should_see_beta_charts,
                 "routes": res.routes,
+                "role": res.internal_role,
             }
             for res in user_restrictions
         ]
