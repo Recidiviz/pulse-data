@@ -728,6 +728,55 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    @api_blueprint.route("/reports", methods=["PATCH"])
+    @auth_decorator
+    def update_multiple_report_statuses() -> Response:
+        """Update multiple reports' statuses."""
+        try:
+            request_json = assert_type(request.json, dict)
+            agency_id = assert_type(request_json.get("agency_id"), int)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            report_ids = request_json.get("report_ids")
+            updated_reports_json = []
+
+            if report_ids is None or len(report_ids) == 0:
+                raise JusticeCountsServerError(
+                    code="justice_counts_bad_request",
+                    description="Empty list of report ids passed to update multiple reports endpoint.",
+                )
+
+            all_reports = ReportInterface.get_reports_by_id(
+                current_session, report_ids, include_datapoints=False
+            )
+            editor_id_to_json = (
+                AgencyUserAccountAssociationInterface.get_editor_id_to_json(
+                    session=current_session, reports=all_reports, user=user
+                )
+            )
+
+            for current_report in all_reports:
+                ReportInterface.update_report_metadata(
+                    report=current_report,
+                    editor_id=user.id,
+                    status=request_json["status"],
+                )
+                report_json = ReportInterface.to_json_response(
+                    report=current_report,
+                    editor_id_to_json=editor_id_to_json,
+                )
+                updated_reports_json.append(report_json)
+
+            current_session.commit()
+            return jsonify(updated_reports_json)
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     @api_blueprint.route("/reports", methods=["DELETE"])
     @auth_decorator
     def delete_reports() -> Response:

@@ -192,6 +192,17 @@ class JusticeCountsSchemaTestObjects:
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             created_at=datetime.date.fromisoformat("2022-05-30"),
         )
+        self.test_report_monthly_two = schema.Report(
+            source=self.test_agency_A,
+            type="MONTHLY",
+            instance="07 2022 Metrics",
+            status=schema.ReportStatus.NOT_STARTED,
+            date_range_start=datetime.date.fromisoformat("2022-07-01"),
+            date_range_end=datetime.date.fromisoformat("2022-08-01"),
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            created_at=datetime.date.fromisoformat("2022-06-30"),
+        )
         self.test_report_annual = schema.Report(
             source=self.test_agency_B,
             type="ANNUAL",
@@ -204,6 +215,19 @@ class JusticeCountsSchemaTestObjects:
             acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
             last_modified_at=datetime.datetime.fromisoformat("2022-07-05T08:00:00"),
             created_at=datetime.date.fromisoformat("2021-12-30"),
+        )
+        self.test_report_annual_two = schema.Report(
+            source=self.test_agency_A,
+            type="ANNUAL",
+            instance="2023 Annual Metrics",
+            status=schema.ReportStatus.DRAFT,
+            date_range_start=datetime.date.fromisoformat("2023-01-01"),
+            date_range_end=datetime.date.fromisoformat("2024-01-01"),
+            modified_by=[self.test_user_B.id],
+            project=schema.Project.JUSTICE_COUNTS_CONTROL_PANEL,
+            acquisition_method=schema.AcquisitionMethod.CONTROL_PANEL,
+            last_modified_at=datetime.datetime.fromisoformat("2023-07-05T08:00:00"),
+            created_at=datetime.date.fromisoformat("2023-12-30"),
         )
         self.test_report_monthly_C = schema.Report(
             source=self.test_agency_C,
