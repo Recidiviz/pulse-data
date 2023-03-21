@@ -89,6 +89,7 @@ class Auth0ClientTest(TestCase):
             "should_see_beta_charts": False,
             "routes": None,
             "user_hash": "hash123",
+            "role": "supervision_staff",
         }
         self.auth0_client.update_user_app_metadata(
             user_id="1", app_metadata=app_metadata

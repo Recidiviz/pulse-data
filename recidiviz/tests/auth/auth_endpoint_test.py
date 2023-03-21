@@ -420,6 +420,7 @@ class AuthEndpointTests(TestCase):
                 "should_see_beta_charts": False,
                 "routes": None,
                 "user_hash": "user-1@test.gov::hashed",
+                "role": "supervision_staff",
             }
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
@@ -455,6 +456,7 @@ class AuthEndpointTests(TestCase):
                 "should_see_beta_charts": False,
                 "routes": None,
                 "user_hash": None,
+                "role": "supervision_staff",
             }
             response = self.client.get(
                 self.dashboard_user_restrictions_by_email_url,
@@ -532,6 +534,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_ND",
+                    "role": "supervision_staff",
                 }
             ]
         response = self.client.get(
@@ -575,6 +578,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_ND",
+                    "role": "supervision_staff",
                 },
                 {
                     "allowedSupervisionLocationIds": "1",
@@ -585,6 +589,7 @@ class AuthEndpointTests(TestCase):
                     "routes": {"A": "B", "B": "C"},
                     "shouldSeeBetaCharts": True,
                     "stateCode": "US_PA",
+                    "role": "supervision_staff",
                 },
                 {
                     "allowedSupervisionLocationIds": "A, B, C",
@@ -595,6 +600,7 @@ class AuthEndpointTests(TestCase):
                     "routes": None,
                     "shouldSeeBetaCharts": False,
                     "stateCode": "US_ME",
+                    "role": "supervision_staff",
                 },
             ]
         response = self.client.get(
