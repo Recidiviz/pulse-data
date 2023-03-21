@@ -110,8 +110,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # sheet with an invalid sheet name.
             create_excel_file(
                 system=schema.System.PROSECUTION,
-                invalid_month_sheetname="cases_disposed_by_type",
-                add_invalid_sheetname=True,
+                invalid_month_sheet_name="cases_disposed_by_type",
+                add_invalid_sheet_name=True,
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PROSECUTION,
@@ -190,7 +190,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 admissions_metric.aggregated_dimensions[  # type: ignore[index]
                     0
                 ].dimension_to_value[OffenseType.DRUG],
-                20,
+                0,
             )
             self.assertEqual(metrics[1].value, 20)
 
@@ -382,7 +382,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 supervision_metrics[2]  # type: ignore[index]
                 .aggregated_dimensions[0]
                 .dimension_to_value[StaffType.MANAGEMENT_AND_OPERATIONS],
-                None,
+                0,
             )
             self.assertEqual(supervision_metrics[3].key, "SUPERVISION_RECONVICTIONS")
             self.assertEqual(supervision_metrics[3].value, 10)
@@ -440,11 +440,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 .dimension_to_value,
                 {
                     ForceType.PHYSICAL: 10,
-                    ForceType.RESTRAINT: None,
-                    ForceType.FIREARM: None,
-                    ForceType.OTHER_WEAPON: None,
-                    ForceType.OTHER: None,
-                    ForceType.UNKNOWN: None,
+                    ForceType.RESTRAINT: 0,
+                    ForceType.FIREARM: 0,
+                    ForceType.OTHER_WEAPON: 0,
+                    ForceType.OTHER: 0,
+                    ForceType.UNKNOWN: 0,
                 },
             )
             monthly_report = reports_by_instance["01 2021 Metrics"]
@@ -467,9 +467,9 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 .dimension_to_value,
                 {
                     CallType.EMERGENCY: 10,
-                    CallType.NON_EMERGENCY: None,
-                    CallType.UNKNOWN: None,
-                    CallType.OTHER: None,
+                    CallType.NON_EMERGENCY: 0,
+                    CallType.OTHER: 0,
+                    CallType.UNKNOWN: 0,
                 },
             )
             # Reported Crime
@@ -482,11 +482,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 .dimension_to_value,
                 {
                     OffenseType.PERSON: 10,
-                    OffenseType.DRUG: None,
-                    OffenseType.OTHER: None,
-                    OffenseType.PROPERTY: None,
-                    OffenseType.PUBLIC_ORDER: None,
-                    OffenseType.UNKNOWN: None,
+                    OffenseType.PROPERTY: 0,
+                    OffenseType.DRUG: 0,
+                    OffenseType.PUBLIC_ORDER: 0,
+                    OffenseType.OTHER: 0,
+                    OffenseType.UNKNOWN: 0,
                 },
             )
 
@@ -507,8 +507,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
-                sheetnames_to_skip={"reported_crime"},
-                sheetnames_to_vary_values={"arrests"},
+                sheet_names_to_skip={"reported_crime"},
+                sheet_names_to_vary_values={"arrests"},
             )
 
             workbook_uploader = WorkbookUploader(
@@ -584,7 +584,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
-                sheetnames_to_skip={
+                sheet_names_to_skip={
                     "arrests",
                     "use_of_force",
                     "use_of_force_by_type",
@@ -694,7 +694,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
-                sheetnames_to_skip={
+                sheet_names_to_skip={
                     "calls_for_service",
                     "calls_for_service_by_type",
                 },
@@ -787,9 +787,9 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # disaggregation with disaggregation_column_name is None
             create_excel_file(
                 system=schema.System.PRISONS,
-                unexpected_month=True,
-                unexpected_column="system",
-                unexpected_disaggregation=True,
+                unexpected_month_sheet_name="staff",
+                unexpected_system_sheet_name="admissions",
+                unexpected_disaggregation_sheet_name="population_by_type",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -802,38 +802,13 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
-            self.assertEqual(len(metric_key_to_errors), 9)
-            # admission (monthly), admissions_by_type
-            # 2 'system' warnings, 1 disaggregation warning
-            self.assertEqual(len(metric_key_to_errors[prisons.admissions.key]), 3)
-            # expenses (annual), expenses_by_type
-            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
-            self.assertEqual(len(metric_key_to_errors[prisons.expenses.key]), 5)
-            # funding (annual), funding_by_type
-            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
-            self.assertEqual(len(metric_key_to_errors[prisons.funding.key]), 5)
-            # grievances_upheld (annual), grievances_upheld_by_type
-            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
-            self.assertEqual(
-                len(metric_key_to_errors[prisons.grievances_upheld.key]), 5
-            )
-            # population (monthly), population_by_type, population_by_race, population_by_biological_sex
-            # 4 'system' warnings, 1 disaggregation warning
-            self.assertEqual(len(metric_key_to_errors[prisons.daily_population.key]), 5)
-            # readmission (annual), readmissions_by_type
-            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
-            self.assertEqual(len(metric_key_to_errors[prisons.readmissions.key]), 5)
-            # releases (monthly), releases_by_type
-            # 2 'system' warnings, 1 disaggregation warning
-            self.assertEqual(len(metric_key_to_errors[prisons.releases.key]), 3)
-            # total_staff (annual), staff_by_type
-            # 2 'system' warnings, 1 disaggregation warning, 2 'month' warnings
-            self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 5)
-            # use_of_force_incidents (annual)
-            # 1 'system' warning, 1 disaggregation warning, 1 'month' warning
-            self.assertEqual(
-                len(metric_key_to_errors[prisons.staff_use_of_force_incidents.key]), 3
-            )
+            self.assertEqual(len(metric_key_to_errors), 3)
+            # 1 warning because metric was reported as monthly even though it is an annual metric.
+            self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 1)
+            # 1 warning because an unexpected system column was in the sheet.
+            self.assertEqual(len(metric_key_to_errors[prisons.admissions.key]), 1)
+            # 1 warning for unexpected disaggregation.
+            self.assertEqual(len(metric_key_to_errors[prisons.daily_population.key]), 1)
 
     def test_breakdown_sum_warning(
         self,
@@ -847,7 +822,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             create_excel_file(
                 system=schema.System.PRISONS,
-                sheetnames_to_vary_values={
+                sheet_names_to_vary_values={
                     "funding_by_type",
                     "expenses_by_type",
                     "staff_by_type",
