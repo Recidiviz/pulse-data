@@ -1827,6 +1827,18 @@ class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
         String(255),
         comment="The raw text value of the supervision period's custodial authority.",
     )
+    supervising_officer_staff_external_id = Column(
+        String(255),
+        comment="The external id of this person’s supervising officer during this period. "
+        "This field with the supervising_officer_staff_external_id_type field make up a primary "
+        "key for the state_staff_external_id table.",
+    )
+    supervising_officer_staff_external_id_type = Column(
+        String(255),
+        comment="The ID type associated with the external id of this person’s supervising officer "
+        "during this period. This field with the supervising_officer_staff_external_id field make up "
+        "a primary key for the state_staff_external_id table.",
+    )
 
     @declared_attr
     def supervising_officer_id(self) -> Column:
