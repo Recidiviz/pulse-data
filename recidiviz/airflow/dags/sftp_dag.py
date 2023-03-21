@@ -207,12 +207,13 @@ def discovered_files_lists_are_equal_and_non_empty(
     return task_id_if_equal
 
 
-def queues_are_unpaused(*queues: Optional[Dict[str, Any]]) -> List[str]:
+def get_running_queue_instances(*queues: Optional[Dict[str, Any]]) -> List[str]:
+    """Returns the queues that are currently running and will need to be unpaused later."""
     ingest_instances_to_unpause: List[str] = []
     for queue in queues:
         if queue is None:
             raise ValueError("Found null queue in queues list")
-        if queue["state"] == Queue.State.PAUSED:
+        if queue["state"] == Queue.State.RUNNING:
             if "secondary" in queue["name"]:
                 ingest_instances_to_unpause.append(
                     DirectIngestInstance.SECONDARY.value.lower()
@@ -225,22 +226,22 @@ def queues_are_unpaused(*queues: Optional[Dict[str, Any]]) -> List[str]:
 
 
 def queues_were_unpaused(
-    queues_paused: Optional[List[str]],
-    task_ids_if_unpaused: List[str],
-    task_id_if_paused: str,
+    queues_to_resume: Optional[List[str]],
+    task_ids_for_queues_to_resume: List[str],
+    task_id_if_no_queues_to_resume: str,
 ) -> Union[str, List[str]]:
-    if queues_paused is None:
+    if queues_to_resume is None:
         raise ValueError("Found unexpectedly null queues_paused list")
     tasks_to_return_if_unpaused: List[str] = []
-    for task_id in task_ids_if_unpaused:
-        for queue_paused in queues_paused:
-            if queue_paused in task_id:
+    for task_id in task_ids_for_queues_to_resume:
+        for queue in queues_to_resume:
+            if queue in task_id:
                 tasks_to_return_if_unpaused.append(task_id)
     if tasks_to_return_if_unpaused:
         # If any queues were paused and need to be unpaused, return those
         return tasks_to_return_if_unpaused
     # Otherwise, if no queues were paused and need to be unpaused, return this task
-    return task_id_if_paused
+    return task_id_if_no_queues_to_resume
 
 
 @dag(
@@ -446,9 +447,11 @@ def sftp_dag() -> None:
                     )
                     for ingest_instance, queue_name in scheduler_queues.items()
                 ]
-                gather_queue_pause_status = PythonOperator(
-                    task_id="gather_queue_pause_status",
-                    python_callable=queues_are_unpaused,
+                # Keep track of which queues are running at the beginning so we can
+                # re-start them later.
+                gather_previously_running_queue_instances = PythonOperator(
+                    task_id="gather_previously_running_queue_instances",
+                    python_callable=get_running_queue_instances,
                     op_args=[
                         XComArg(queue_status) for queue_status in prior_queue_statuses
                     ],
@@ -509,22 +512,29 @@ def sftp_dag() -> None:
                     task_id="do_not_resume_scheduler_queues"
                 )
 
-                check_queues_were_unpaused_prior = BranchPythonOperator(
-                    task_id="check_queues_were_unpaused_prior",
+                start_resume_queues_branch = BranchPythonOperator(
+                    task_id="start_resume_queues_branch",
                     python_callable=queues_were_unpaused,
                     op_kwargs={
-                        "queues_paused": XComArg(gather_queue_pause_status),
-                        "task_ids_if_unpaused": [
+                        "queues_to_resume": XComArg(
+                            gather_previously_running_queue_instances
+                        ),
+                        "task_ids_for_queues_to_resume": [
                             resume_scheduler_queue.task_id
                             for resume_scheduler_queue in resume_scheduler_queues
                         ],
-                        "task_id_if_paused": do_not_resume_scheduler_queues.task_id,
+                        "task_id_if_no_queues_to_resume": do_not_resume_scheduler_queues.task_id,
                     },
+                )
+
+                end_resume_queues_branch = EmptyOperator(
+                    task_id="end_resume_queues_branch",
+                    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
                 )
 
                 (
                     prior_queue_statuses
-                    >> gather_queue_pause_status
+                    >> gather_previously_running_queue_instances
                     >> pause_scheduler_queues
                     >> upload_files_to_ingest_bucket
                     >> check_ingest_ready_files_uploaded
@@ -533,8 +543,9 @@ def sftp_dag() -> None:
                         do_not_mark_ingest_ready_files_uploaded,
                     ]
                     >> end_ingest_ready_files_uploaded
-                    >> check_queues_were_unpaused_prior
+                    >> start_resume_queues_branch
                     >> [*resume_scheduler_queues, do_not_resume_scheduler_queues]
+                    >> end_resume_queues_branch
                 )
 
             check_if_ingest_ready_files_have_stabilized = BranchPythonOperator(

@@ -271,7 +271,7 @@ def main() -> int:
         "recidiviz/airflow/dags/calculation_dag.py",
         valid_module_prefixes=make_module_matcher(
             {
-                "recidiviz.airflow",
+                "recidiviz.airflow.dags",
                 "recidiviz.cloud_functions.cloud_function_utils",
                 "recidiviz.cloud_storage",
                 "recidiviz.common.attr_validators",
@@ -293,33 +293,30 @@ def main() -> int:
         ),
     )
 
+    valid_sftp_dag_prefixes = {
+        "recidiviz.airflow.dags",
+        "recidiviz.cloud_storage",
+        "recidiviz.common.attr_validators",
+        "recidiviz.common.constants.states",
+        "recidiviz.common.io",
+        "recidiviz.common.retry_predicate",
+        "recidiviz.ingest.direct",
+        "recidiviz.persistence.database.schema_type",
+        "recidiviz.utils.environment",
+        "recidiviz.utils.metadata",
+        "recidiviz.utils.yaml_dict",
+        "recidiviz.utils.types",
+    }
     success &= check_dependencies_for_entrypoint(
         "recidiviz/airflow/dags/sftp_dag.py",
-        valid_module_prefixes=make_module_matcher(
-            {
-                "recidiviz.airflow",
-                "recidiviz.cloud_storage",
-                "recidiviz.common.attr_validators",
-                "recidiviz.common.constants.states",
-                "recidiviz.common.io",
-                "recidiviz.common.retry_predicate",
-                "recidiviz.ingest.direct",
-                "recidiviz.persistence.database.schema_type",
-                "recidiviz.utils.environment",
-                "recidiviz.utils.metadata",
-                "recidiviz.utils.yaml_dict",
-                "recidiviz.utils.types",
-            }
-        ),
+        valid_module_prefixes=make_module_matcher(valid_sftp_dag_prefixes),
         allowed_missing_module_prefixes=make_module_matcher(set()),
     )
 
     success &= check_dependencies_for_entrypoint(
         "recidiviz/airflow/tests/sftp_dag_test.py",
         valid_module_prefixes=make_module_matcher(
-            {
-                "recidiviz.airflow",
-            }
+            {*valid_sftp_dag_prefixes, "recidiviz.airflow.tests"}
         ),
     )
 
