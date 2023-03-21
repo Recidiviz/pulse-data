@@ -16,13 +16,27 @@
 # =============================================================================
 """View logic to prepare US_ME supervision staff data for Workflows"""
 
-US_ME_INCARCERATION_STAFF_TEMPLATE = """
+US_ME_STAFF_TEMPLATE = """
     WITH 
     caseload_staff_ids AS (
         SELECT DISTINCT
             officer_id AS id,
             state_code,
+            false AS has_caseload,
+            true AS has_facility_caseload,
         FROM `{project_id}.{workflows_dataset}.resident_record_materialized`
+        WHERE state_code = "US_ME"
+        AND officer_id IS NOT NULL
+        
+        UNION ALL
+        
+        -- Supervision staff
+        SELECT DISTINCT
+            officer_id AS id,
+            state_code,
+            true AS has_caseload,
+            false AS has_facility_caseload,
+        FROM `{project_id}.{workflows_dataset}.client_record_materialized`
         WHERE state_code = "US_ME"
         AND officer_id IS NOT NULL
     )
@@ -33,8 +47,8 @@ US_ME_INCARCERATION_STAFF_TEMPLATE = """
             UPPER(state_table.First_Name || " " || state_table.Last_Name) AS name,
             CAST(NULL AS STRING) AS district,
             LOWER(state_table.Email_Tx) AS email,
-            false AS has_caseload,
-            true AS has_facility_caseload,
+            has_caseload,
+            has_facility_caseload,
             UPPER(state_table.First_Name) as given_names,
             UPPER(state_table.Last_Name) as surname,
         FROM caseload_staff_ids ids
