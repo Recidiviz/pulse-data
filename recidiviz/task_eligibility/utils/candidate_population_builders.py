@@ -41,11 +41,10 @@ SELECT DISTINCT
     state_code,
     person_id,
     start_date,
-    -- Convert end_date from inclusive to exclusive
-    DATE_ADD(end_date, INTERVAL 1 DAY) AS end_date,
-FROM `{{project_id}}.{{sessions_dataset}}.dataflow_sessions_materialized`,
-UNNEST(session_attributes) AS attr
-WHERE attr.compartment_level_1 = "{compartment_level_1}"
+    end_date_exclusive AS end_date,
+FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`
+WHERE compartment_level_1 = "{compartment_level_1}"
+AND metric_source != "INFERRED" 
     {filter_string}
  """
 

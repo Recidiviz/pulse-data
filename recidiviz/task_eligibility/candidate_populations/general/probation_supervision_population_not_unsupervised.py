@@ -37,8 +37,8 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
         additional_filters=[
-            'attr.compartment_level_2 = "PROBATION"',
-            'attr.correctional_level NOT IN ("UNSUPERVISED")',
+            'compartment_level_2 = "PROBATION"',
+            'correctional_level NOT IN ("UNSUPERVISED")',
         ],
         compartment_level_1="SUPERVISION",
     )
