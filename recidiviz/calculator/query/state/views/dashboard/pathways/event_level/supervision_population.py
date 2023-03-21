@@ -58,10 +58,7 @@ SUPERVISION_POPULATION_VIEW_QUERY_TEMPLATE = """
             EXTRACT(MONTH FROM date_in_population) AS month,
             {time_period_months} AS time_period,            
             UPPER(COALESCE(name_map.location_name, session_attributes.supervision_office, "UNKNOWN")) AS supervision_district,
-            COALESCE(CASE
-                WHEN sessions.state_code="US_ND" THEN NULL
-                ELSE {state_specific_supervision_level}
-            END, "UNKNOWN") AS supervision_level,
+            COALESCE({state_specific_supervision_level}, "UNKNOWN") AS supervision_level,
             COALESCE(compartment_sessions.prioritized_race_or_ethnicity, "UNKNOWN") as race
         FROM `{project_id}.{sessions_dataset}.dataflow_sessions_materialized` sessions,
             UNNEST(GENERATE_DATE_ARRAY(DATE_TRUNC(DATE_SUB(CURRENT_DATE("US/Eastern"), INTERVAL 5 YEAR), MONTH), 
