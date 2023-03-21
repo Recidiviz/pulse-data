@@ -25,6 +25,8 @@ columns:
   - name: created_by_tx
     is_pii: True
   - name: created_on_date
+    description: |-
+      Date of creation
   - name: jsc_max_to_receive_num
   - name: jsc_override_dist_ind
   - name: jsc_override_dist_pct
@@ -33,6 +35,8 @@ columns:
   - name: modified_by_tx
     is_pii: True
   - name: modified_on_date
+    description: |-
+      Date of last modification
   - name: total_owing_num
     description: |-
       Total amount owed.
