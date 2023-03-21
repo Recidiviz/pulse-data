@@ -55,7 +55,7 @@ _FIXTURE_PATH = os.path.abspath(
 _PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
 _ADD_USER_HASH = "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
 _LEADERSHIP_USER_HASH = "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
-_LINE_STAFF_USER_HASH = "ouqAco3o/ecYscFu0/MEUjdUrueErNL2PCrYmss4v8w="
+_SUPERVISION_STAFF_HASH = "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
 _USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
 
 
@@ -628,10 +628,10 @@ class AuthEndpointTests(TestCase):
             last_name="User",
         )
         user_2 = generate_fake_rosters(
-            email="line_staff@domain.org",
+            email="supervision_staff@domain.org",
             region_code="US_ID",
             external_id="abc",
-            role="line_staff",
+            role="supervision_staff",
             district="D3",
             first_name="John",
             last_name="Doe",
@@ -662,7 +662,7 @@ class AuthEndpointTests(TestCase):
         )
         default_3 = generate_fake_default_permissions(
             state="US_ID",
-            role="line_staff",
+            role="supervision_staff",
             can_access_leadership_dashboard=False,
             can_access_case_triage=True,
             should_see_beta_charts=True,
@@ -711,16 +711,16 @@ class AuthEndpointTests(TestCase):
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": False,
                     "district": "D3",
-                    "emailAddress": "line_staff@domain.org",
+                    "emailAddress": "supervision_staff@domain.org",
                     "externalId": "abc",
                     "firstName": "John",
                     "lastName": "Doe",
-                    "role": "line_staff",
+                    "role": "supervision_staff",
                     "stateCode": "US_ID",
                     "shouldSeeBetaCharts": True,
                     "routes": None,
                     "featureVariants": None,
-                    "userHash": _LINE_STAFF_USER_HASH,
+                    "userHash": _SUPERVISION_STAFF_HASH,
                 },
             ]
         response = self.client.get(
@@ -967,7 +967,7 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             external_id="XXXX",
-            role="line_staff_user",
+            role="supervision_staff",
             district="District",
         )
         default = generate_fake_default_permissions(
@@ -1010,7 +1010,7 @@ class AuthEndpointTests(TestCase):
             email="user@domain.org",
             region_code="US_CO",
             external_id="XXXX",
-            role="line_staff_user",
+            role="supervision_staff",
             district="District",
         )
 
@@ -1145,15 +1145,15 @@ class AuthEndpointTests(TestCase):
                     can_access_leadership_dashboard=False,
                     should_see_beta_charts=True,
                 )
-                line_staff_default = generate_fake_default_permissions(
+                supervision_staff_default = generate_fake_default_permissions(
                     state="US_XX",
-                    role="line_staff_user",
+                    role="supervision_staff",
                     can_access_case_triage=True,
                     can_access_leadership_dashboard=False,
                     should_see_beta_charts=True,
                 )
                 add_entity_to_database_session(
-                    self.database_key, [leadership_default, line_staff_default]
+                    self.database_key, [leadership_default, supervision_staff_default]
                 )
 
                 self.client.put(
@@ -1193,16 +1193,16 @@ class AuthEndpointTests(TestCase):
                         "canAccessCaseTriage": True,
                         "canAccessLeadershipDashboard": False,
                         "district": "",
-                        "emailAddress": "line_staff@domain.org",
+                        "emailAddress": "supervision_staff@domain.org",
                         "externalId": "3706",
-                        "firstName": "line_staff",
+                        "firstName": "supervision",
                         "lastName": "user",
-                        "role": "line_staff_user",
+                        "role": "supervision_staff",
                         "stateCode": "US_XX",
                         "shouldSeeBetaCharts": True,
                         "routes": None,
                         "featureVariants": None,
-                        "userHash": _LINE_STAFF_USER_HASH,
+                        "userHash": _SUPERVISION_STAFF_HASH,
                     },
                 ]
             response = self.client.get(
@@ -1290,7 +1290,7 @@ class AuthEndpointTests(TestCase):
                     content_type="multipart/form-data",
                 )
                 self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
-                error_message = "Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email line_staff@domain.org"
+                error_message = "Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email supervision_staff@domain.org"
                 self.assertEqual(error_message, response.data.decode("UTF-8"))
 
                 # Existing rows should not have been deleted
@@ -1329,10 +1329,10 @@ class AuthEndpointTests(TestCase):
             district="",
         )
         # This user will not change
-        roster_line_staff_user = generate_fake_rosters(
-            email="line_staff@domain.org",
+        roster_supervision_staff = generate_fake_rosters(
+            email="supervision_staff@domain.org",
             region_code="US_XX",
-            role="line_staff_user",
+            role="supervision_staff",
             district="",
         )
         # Create associated default permissions by role
@@ -1343,9 +1343,9 @@ class AuthEndpointTests(TestCase):
             can_access_leadership_dashboard=False,
             should_see_beta_charts=False,
         )
-        line_staff_default = generate_fake_default_permissions(
+        supervision_staff_default = generate_fake_default_permissions(
             state="US_XX",
-            role="line_staff_user",
+            role="supervision_staff",
             can_access_case_triage=False,
             can_access_leadership_dashboard=False,
             should_see_beta_charts=False,
@@ -1354,9 +1354,9 @@ class AuthEndpointTests(TestCase):
             self.database_key,
             [
                 roster_leadership_user,
-                roster_line_staff_user,
+                roster_supervision_staff,
                 leadership_default,
-                line_staff_default,
+                supervision_staff_default,
             ],
         )
 
@@ -1404,16 +1404,16 @@ class AuthEndpointTests(TestCase):
                         "canAccessCaseTriage": False,
                         "canAccessLeadershipDashboard": False,
                         "district": "",
-                        "emailAddress": "line_staff@domain.org",
+                        "emailAddress": "supervision_staff@domain.org",
                         "externalId": None,
                         "firstName": None,
                         "lastName": None,
-                        "role": "line_staff_user",
+                        "role": "supervision_staff",
                         "stateCode": "US_XX",
                         "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
-                        "userHash": _LINE_STAFF_USER_HASH,
+                        "userHash": _SUPERVISION_STAFF_HASH,
                     },
                 ]
             response = self.client.get(
@@ -1427,7 +1427,7 @@ class AuthEndpointTests(TestCase):
             email="parameter@domain.org",
             region_code="US_CO",
             external_id="123",
-            role="line_staff_user",
+            role="supervision_staff",
             district="D1",
             first_name="Test",
             last_name="User",
@@ -1553,11 +1553,11 @@ class AuthEndpointTests(TestCase):
         user = generate_fake_rosters(
             email="user@domain.org",
             region_code="US_CO",
-            role="line_staff_user",
+            role="supervision_staff",
         )
         default_co = generate_fake_default_permissions(
             state="US_CO",
-            role="line_staff_user",
+            role="supervision_staff",
             can_access_case_triage=True,
             can_access_leadership_dashboard=False,
             should_see_beta_charts=True,
@@ -1604,7 +1604,7 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "line_staff_user",
+                    "role": "supervision_staff",
                     "stateCode": "US_CO",
                     "shouldSeeBetaCharts": True,
                     "routes": {
@@ -1932,7 +1932,7 @@ class AuthEndpointTests(TestCase):
                 json={
                     "stateCode": "US_TN",
                     "emailAddress": "parameter@domain.org",
-                    "role": "line_staff_user",
+                    "role": "supervision_staff",
                     "reason": "test",
                 },
             )
@@ -1963,7 +1963,7 @@ class AuthEndpointTests(TestCase):
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
-                    "role": "line_staff_user",
+                    "role": "supervision_staff",
                     "routes": None,
                     "featureVariants": None,
                     "shouldSeeBetaCharts": False,
@@ -2018,7 +2018,7 @@ class AuthEndpointTests(TestCase):
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
-                self.add_state_role("US_MO", "line_staff_role"),
+                self.add_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
                 json={
                     "canAccessLeadershipDashboard": True,
@@ -2030,7 +2030,7 @@ class AuthEndpointTests(TestCase):
             )
             self.assertReasonLog(
                 log.output,
-                "adding permissions for state US_MO, role line_staff_role with reason: test",
+                "adding permissions for state US_MO, role supervision_staff_role with reason: test",
             )
             expected = [
                 {
@@ -2045,7 +2045,7 @@ class AuthEndpointTests(TestCase):
                 {
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": True,
-                    "role": "line_staff_role",
+                    "role": "supervision_staff_role",
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": False,
                     "routes": {"route_A": True, "routeB": False},
@@ -2061,7 +2061,7 @@ class AuthEndpointTests(TestCase):
     def test_states_add_state_role_missing_routes(self) -> None:
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
-                self.add_state_role("US_MO", "line_staff_role"),
+                self.add_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
                 json={
                     "canAccessLeadershipDashboard": True,
@@ -2072,13 +2072,13 @@ class AuthEndpointTests(TestCase):
             )
             self.assertReasonLog(
                 log.output,
-                "adding permissions for state US_MO, role line_staff_role with reason: test",
+                "adding permissions for state US_MO, role supervision_staff_role with reason: test",
             )
             expected = [
                 {
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": True,
-                    "role": "line_staff_role",
+                    "role": "supervision_staff_role",
                     "stateCode": "US_MO",
                     "shouldSeeBetaCharts": False,
                     "routes": None,
@@ -2263,7 +2263,7 @@ class AuthEndpointTests(TestCase):
         add_entity_to_database_session(self.database_key, [existing])
         with self.app.test_request_context():
             response = self.client.patch(
-                self.update_state_role("US_MO", "line_staff_role"),
+                self.update_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
                 json={
                     "canAccessCaseTriage": True,
@@ -2276,7 +2276,7 @@ class AuthEndpointTests(TestCase):
     def test_states_delete_role_no_entry(self) -> None:
         with self.app.test_request_context():
             response = self.client.delete(
-                self.delete_state_role("US_MO", "line_staff_role"),
+                self.delete_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
             )
             self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
@@ -2336,7 +2336,7 @@ class AuthEndpointTests(TestCase):
         )
         state_role_keep = generate_fake_default_permissions(
             state="US_MO",
-            role="line_staff_role",
+            role="supervision_staff_role",
             can_access_leadership_dashboard=False,
             can_access_case_triage=True,
             should_see_beta_charts=False,
@@ -2349,9 +2349,9 @@ class AuthEndpointTests(TestCase):
             role="leadership_role",
         )
         user_keep = generate_fake_rosters(
-            email="line_staff@domain.org",
+            email="supervision_staff@domain.org",
             region_code="US_MO",
-            role="line_staff_role",
+            role="supervision_staff_role",
         )
         override_user_delete = generate_fake_user_overrides(
             email="parameter@domain.org",
@@ -2365,7 +2365,9 @@ class AuthEndpointTests(TestCase):
             blocked=True,
         )
         override_keep = generate_fake_user_overrides(
-            email="line_staff_2@domain.org", region_code="US_MO", role="line_staff_role"
+            email="supervision_staff_2@domain.org",
+            region_code="US_MO",
+            role="supervision_staff_role",
         )
         add_entity_to_database_session(
             self.database_key,
@@ -2399,7 +2401,7 @@ class AuthEndpointTests(TestCase):
             expected_response = [
                 {
                     "stateCode": "US_MO",
-                    "role": "line_staff_role",
+                    "role": "supervision_staff_role",
                     "canAccessCaseTriage": True,
                     "canAccessLeadershipDashboard": False,
                     "shouldSeeBetaCharts": False,
@@ -2416,12 +2418,12 @@ class AuthEndpointTests(TestCase):
             )
             expected_users = [
                 {
-                    "emailAddress": "line_staff@domain.org",
-                    "role": "line_staff_role",
+                    "emailAddress": "supervision_staff@domain.org",
+                    "role": "supervision_staff_role",
                 },
                 {
-                    "emailAddress": "line_staff_2@domain.org",
-                    "role": "line_staff_role",
+                    "emailAddress": "supervision_staff_2@domain.org",
+                    "role": "supervision_staff_role",
                 },
             ]
             actual_users = [

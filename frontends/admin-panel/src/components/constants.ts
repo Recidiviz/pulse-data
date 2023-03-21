@@ -69,9 +69,3 @@ export const GENERAL_PERMISSIONS_LABELS = {
   canAccessCaseTriage: "Can access Case Triage",
   shouldSeeBetaCharts: "Should see beta charts",
 };
-
-export const USER_ROLES = [
-  "leadership_role",
-  "line_staff_user",
-  "level_1_access_role",
-];

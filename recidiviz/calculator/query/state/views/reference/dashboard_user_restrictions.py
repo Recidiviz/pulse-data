@@ -69,7 +69,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
             IF(internal_role IS NULL,
-                'line_staff_user',
+                'supervision_staff',
                 internal_role) AS internal_role,
             CASE
                 WHEN internal_role LIKE '%leadership_role%' THEN TRUE
@@ -114,7 +114,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
             IF(internal_role IS NULL,
-                'line_staff_user',
+                'supervision_staff',
                 internal_role) AS internal_role,
             CASE
                 WHEN internal_role LIKE '%leadership_role%' THEN TRUE
@@ -151,31 +151,31 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         USING (email_address)
     ),
     me_restricted_access AS (
-        WITH line_staff_users AS (
+        WITH facilities_staff AS (
             SELECT
                 'US_ME' AS state_code,
                 email_address,
             FROM `{project_id}.{static_reference_dataset_id}.us_me_roster`
         )
-        , line_staff_permissions AS (
+        , facilities_staff_permissions AS (
             SELECT DISTINCT
-                u.state_code,
-                u.email_address,
-                'line_staff_user' as internal_role,
+                f.state_code,
+                f.email_address,
+                'facilities_staff' as internal_role,
                 COALESCE(p.workflows, dflt.workflows) AS workflows
-            FROM line_staff_users u
+            FROM facilities_staff f
             LEFT JOIN `{project_id}.{static_reference_dataset_id}.line_staff_user_permissions` p
             USING (email_address, state_code)
             -- The default value for a given state_code line_staff_user_permissions has a null email_address
             JOIN `{project_id}.{static_reference_dataset_id}.line_staff_user_permissions` dflt
-            ON dflt.email_address is null and u.state_code = dflt.state_code
+            ON dflt.email_address is null and f.state_code = dflt.state_code
         )
         SELECT
             'US_ME' AS state_code,
-            LOWER(COALESCE(leadership.email_address, line_staff.email_address)) AS restricted_user_email,
+            LOWER(COALESCE(leadership.email_address, facilities_staff.email_address)) AS restricted_user_email,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
-            COALESCE(leadership.internal_role, line_staff.internal_role) AS internal_role,
+            COALESCE(leadership.internal_role, facilities_staff.internal_role) AS internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,
             FALSE AS should_see_beta_charts,
@@ -191,12 +191,12 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                       operations,
                       leadership.workflows
                   ))
-              ELSE TO_JSON_STRING(STRUCT(line_staff.workflows))
+              ELSE TO_JSON_STRING(STRUCT(facilities_staff.workflows))
             END AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_me_leadership_users` leadership
         FULL OUTER JOIN
-            line_staff_permissions line_staff
+            facilities_staff_permissions facilities_staff
         USING (email_address, state_code)
     ),
     mi_restricted_access AS (
@@ -233,10 +233,8 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             END AS allowed_supervision_location_ids,
             IF(STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL, 'level_1_supervision_location', NULL) AS allowed_supervision_location_level,
             CASE
-                WHEN STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL
-                    THEN 'level_1_access_role'
-                WHEN LOWER(workflows.facility)!='all'
-                    THEN 'line_staff_user'
+                WHEN (STRING_AGG(DISTINCT DISTRICT, ',') IS NOT NULL) OR LOWER(workflows.facility)!='all'
+                    THEN 'supervision_staff'
                 ELSE 'leadership_role'
             END as internal_role,
             IF(lantern.EMAIL IS NOT NULL, TRUE, FALSE) AS can_access_leadership_dashboard,
@@ -251,32 +249,32 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
         GROUP BY lantern.EMAIL, workflows.EMAIL, workflows.facility
     ),
     nd_restricted_access AS (
-        WITH line_staff_users AS (
+        WITH supervision_staff_users AS (
             SELECT
                 'US_ND' AS state_code,
                 CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
             FROM {project_id}.{us_nd_raw_data_up_to_date_dataset}.docstars_officers_latest
             WHERE CAST(status AS STRING) = "(1)"
         )
-        , line_staff_permissions AS (
+        , supervision_staff_permissions AS (
             SELECT DISTINCT
-                u.state_code,
-                u.email_address,
-                'line_staff_user' as internal_role,
+                s.state_code,
+                s.email_address,
+                'supervision_staff' as internal_role,
                 COALESCE(p.workflows, dflt.workflows) AS workflows
-            FROM line_staff_users u
+            FROM supervision_staff_users s
             LEFT JOIN `{project_id}.{static_reference_dataset_id}.line_staff_user_permissions` p
             USING (email_address, state_code)
             -- The default value for a given state_code line_staff_user_permissions has a null email_address
             JOIN `{project_id}.{static_reference_dataset_id}.line_staff_user_permissions` dflt
-            ON dflt.email_address is null and u.state_code = dflt.state_code
+            ON dflt.email_address is null and s.state_code = dflt.state_code
         )
         SELECT
             'US_ND' AS state_code,
-            LOWER(COALESCE(leadership.email_address, line_staff.email_address)) AS restricted_user_email,
+            LOWER(COALESCE(leadership.email_address, supervision_staff.email_address)) AS restricted_user_email,
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
-            COALESCE(leadership.internal_role, line_staff.internal_role) AS internal_role,
+            COALESCE(leadership.internal_role, supervision_staff.internal_role) AS internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,
             FALSE AS should_see_beta_charts,
@@ -292,12 +290,12 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
                       operations,
                       TRUE AS workflows
                   ))
-              ELSE TO_JSON_STRING(STRUCT(line_staff.workflows))
+              ELSE TO_JSON_STRING(STRUCT(supervision_staff.workflows))
             END AS routes
         FROM
             `{project_id}.{static_reference_dataset_id}.us_nd_leadership_users` leadership
         FULL OUTER JOIN
-            line_staff_permissions line_staff
+            supervision_staff_permissions supervision_staff
         USING (email_address, state_code)
     ),
     tn_restricted_access AS (
@@ -309,7 +307,7 @@ DASHBOARD_USER_RESTRICTIONS_QUERY_TEMPLATE = """
             '' AS allowed_supervision_location_ids,
             CAST(NULL AS STRING) as allowed_supervision_location_level,
             IF(internal_role IS NULL,
-                'line_staff_user',
+                'supervision_staff',
                 internal_role) AS internal_role,
             TRUE AS can_access_leadership_dashboard,
             FALSE AS can_access_case_triage,

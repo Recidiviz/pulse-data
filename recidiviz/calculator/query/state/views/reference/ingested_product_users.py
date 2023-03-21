@@ -40,7 +40,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
         SELECT
             'US_MO' AS state_code,
             LOWER(email) AS email_address,
-            IF(STRING_AGG(DISTINCT district, ',') IS NOT NULL, 'level_1_access_role', 'leadership_role') as role,
+            IF(STRING_AGG(DISTINCT district, ',') IS NOT NULL, 'supervision_staff', 'leadership_role') as role,
             -- dashboard_user_restrictions uses an empty string for no district instead of NULL, so
             -- keep that behavior here.
             IFNULL(STRING_AGG(DISTINCT district, ','), '') AS district,
@@ -55,7 +55,7 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
         SELECT
             'US_ND' AS state_code,
             CONCAT(LOWER(loginname), "@nd.gov") AS email_address,
-            'line_staff_user' AS role,
+            'supervision_staff' AS role,
             IFNULL(STRING_AGG(DISTINCT SITEID, ','), '') AS district,
             OFFICER as external_id,
             FNAME AS first_name,
