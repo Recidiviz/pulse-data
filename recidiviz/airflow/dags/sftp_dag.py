@@ -189,25 +189,30 @@ def xcom_output_is_non_empty_list(
     return task_id_if_empty
 
 
-def discovered_files_lists_are_equal(
+def discovered_files_lists_are_equal_and_non_empty(
     xcom_prior_discovered_files: Optional[List],
     xcom_discovered_files: Optional[List],
     task_id_if_equal: Union[str, List[str]],
-    task_id_if_not_equal: Union[str, List[str]],
+    task_id_if_not_equal_or_empty: Union[str, List[str]],
 ) -> Union[str, List[str]]:
+    if xcom_prior_discovered_files is None:
+        raise ValueError("Expected to have a non-null previously discovered files list")
+    if xcom_discovered_files is None:
+        raise ValueError("Expected to have a non-null discovered files list")
     if (
-        xcom_prior_discovered_files is not None
-        and xcom_discovered_files is not None
-        and len(xcom_prior_discovered_files) == len(xcom_discovered_files)
+        len(xcom_prior_discovered_files) != len(xcom_discovered_files)
+        or len(xcom_discovered_files) == 0
     ):
-        return task_id_if_equal
-    return task_id_if_not_equal
+        return task_id_if_not_equal_or_empty
+    return task_id_if_equal
 
 
 def queues_are_unpaused(*queues: Optional[Dict[str, Any]]) -> List[str]:
     ingest_instances_to_unpause: List[str] = []
     for queue in queues:
-        if queue and queue["state"] == Queue.State.PAUSED:
+        if queue is None:
+            raise ValueError("Found null queue in queues list")
+        if queue["state"] == Queue.State.PAUSED:
             if "secondary" in queue["name"]:
                 ingest_instances_to_unpause.append(
                     DirectIngestInstance.SECONDARY.value.lower()
@@ -224,13 +229,17 @@ def queues_were_unpaused(
     task_ids_if_unpaused: List[str],
     task_id_if_paused: str,
 ) -> Union[str, List[str]]:
-    if queues_paused is not None:
-        tasks_to_return_if_unpaused: List[str] = []
-        for task_id in task_ids_if_unpaused:
-            for queue_paused in queues_paused:
-                if queue_paused in task_id:
-                    tasks_to_return_if_unpaused.append(task_id)
+    if queues_paused is None:
+        raise ValueError("Found unexpectedly null queues_paused list")
+    tasks_to_return_if_unpaused: List[str] = []
+    for task_id in task_ids_if_unpaused:
+        for queue_paused in queues_paused:
+            if queue_paused in task_id:
+                tasks_to_return_if_unpaused.append(task_id)
+    if tasks_to_return_if_unpaused:
+        # If any queues were paused and need to be unpaused, return those
         return tasks_to_return_if_unpaused
+    # Otherwise, if no queues were paused and need to be unpaused, return this task
     return task_id_if_paused
 
 
@@ -479,12 +488,10 @@ def sftp_dag() -> None:
                         "task_id_if_non_empty": mark_ingest_ready_files_uploaded.task_id,
                         "task_id_if_empty": do_not_mark_ingest_ready_files_uploaded.task_id,
                     },
-                    # This task will always trigger no matter the status of the prior tasks.
-                    trigger_rule=TriggerRule.ALL_DONE,
                 )
                 end_ingest_ready_files_uploaded = EmptyOperator(
                     task_id="end_ingest_ready_files_uploaded",
-                    trigger_rule=TriggerRule.ALL_DONE,
+                    trigger_rule=TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS,
                 )
 
                 resume_scheduler_queues = [
@@ -513,8 +520,6 @@ def sftp_dag() -> None:
                         ],
                         "task_id_if_paused": do_not_resume_scheduler_queues.task_id,
                     },
-                    # This task will always trigger no matter the status of the prior tasks.
-                    trigger_rule=TriggerRule.ALL_DONE,
                 )
 
                 (
@@ -534,7 +539,7 @@ def sftp_dag() -> None:
 
             check_if_ingest_ready_files_have_stabilized = BranchPythonOperator(
                 task_id="check_if_ingest_ready_files_have_stabilized",
-                python_callable=discovered_files_lists_are_equal,
+                python_callable=discovered_files_lists_are_equal_and_non_empty,
                 op_kwargs={
                     "xcom_prior_discovered_files": XComArg(
                         gather_prior_discovered_ingest_ready_files
@@ -546,7 +551,9 @@ def sftp_dag() -> None:
                         prior_queue_status.task_id
                         for prior_queue_status in prior_queue_statuses
                     ],
-                    "task_id_if_not_equal": [do_not_upload_ingest_ready_files.task_id],
+                    "task_id_if_not_equal_or_empty": [
+                        do_not_upload_ingest_ready_files.task_id
+                    ],
                 },
                 # This task will always trigger no matter the status of the prior tasks.
                 trigger_rule=TriggerRule.ALL_DONE,

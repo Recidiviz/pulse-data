@@ -18,16 +18,16 @@
 source files to the Airflow experiment environment in staging.
 
     to copy all files (to go/airflow-experiment):
-    python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer
+    python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
         --environment experiment --dry-run False
 
     to copy all files (to go/airflow-experiment-2):
-    python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer
+    python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
         --environment experiment-2 --dry-run False
 
     to copy only specific files:
-    python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer
-       --dry-run False --environment experiment
+    python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
+       --dry-run False --environment experiment \
        --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
 """
 import argparse
