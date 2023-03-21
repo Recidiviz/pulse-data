@@ -38,10 +38,10 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
     population_name=_POPULATION_NAME,
     description=_DESCRIPTION,
     additional_filters=[
-        'attr.compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")',
+        'compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")',
         # exclude invidiuals already on LSU as well as individuals on UNSUPERVISED supervision
         # since that is a lower level of supervision
-        'attr.correctional_level NOT IN ("LIMITED", "UNSUPERVISED")',
+        'correctional_level NOT IN ("LIMITED", "UNSUPERVISED")',
     ],
     compartment_level_1="SUPERVISION",
 )

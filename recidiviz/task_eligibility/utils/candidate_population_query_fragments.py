@@ -33,9 +33,9 @@ def supervision_population_eligible_levels_additional_filters(
     """
     # TODO(#17654) align on ABSCONDED/ABSCONSION terminology
     return [
-        'attr.compartment_level_2 IN ("PAROLE", "PROBATION", "DUAL")',
-        f"attr.correctional_level NOT IN {excluded_correctional_levels}",
-        f"attr.compartment_level_2 NOT IN {excluded_compartment_level_2}",
+        'compartment_level_2 IN ("PAROLE", "PROBATION", "DUAL")',
+        f"correctional_level NOT IN {excluded_correctional_levels}",
+        f"compartment_level_2 NOT IN {excluded_compartment_level_2}",
         f"start_date >= '{start_date}'",
     ]
 
@@ -43,7 +43,7 @@ def supervision_population_eligible_levels_additional_filters(
 def active_supervision_population_additional_filters(
     start_date: str = "1900-01-01",
     excluded_correctional_levels: str = "('IN_CUSTODY','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN')",
-    included_compartment_level_2: str = "('PAROLE', 'DUAL', 'PROBATION')",
+    included_compartment_level_2: str = "('PAROLE', 'DUAL', 'PROBATION', 'INFORMAL_PROBATION', 'COMMUNITY_CONFINEMENT')",
     excluded_compartment_level_2: str = "('INTERNAL_UNKNOWN', 'ABSCONSION', 'BENCH_WARRANT')",
 ) -> list[str]:
     """Helper method that returns the filters to generate the
@@ -56,9 +56,9 @@ def active_supervision_population_additional_filters(
     """
     # TODO(#17654) align on ABSCONDED/ABSCONSION terminology
     return [
-        f"attr.compartment_level_2 IN {included_compartment_level_2}",
-        f"attr.compartment_level_2 NOT IN {excluded_compartment_level_2}",
+        f"compartment_level_2 IN {included_compartment_level_2}",
+        f"compartment_level_2 NOT IN {excluded_compartment_level_2}",
         # TODO(##19411) align on how to treat null supervision levels
-        f"attr.correctional_level NOT IN {excluded_correctional_levels}",
+        f"correctional_level NOT IN {excluded_correctional_levels}",
         f"start_date >= '{start_date}'",
     ]
