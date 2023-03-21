@@ -110,7 +110,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             session.add(spreadsheet)
             # Excel workbook will have an invalid sheet.
             create_excel_file(
-                system=schema.System.LAW_ENFORCEMENT, add_invalid_sheetname=True
+                system=schema.System.LAW_ENFORCEMENT, add_invalid_sheet_name=True
             )
             SpreadsheetInterface.ingest_spreadsheet(
                 session=session,

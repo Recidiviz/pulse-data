@@ -17,7 +17,7 @@
 """Implements helper methods for tests involving ingesting spreadsheets."""
 
 import os
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 
@@ -33,91 +33,170 @@ TEST_EXCEL_FILE = os.path.join(
 )
 
 
+def _get_dimension_columns(
+    month_list: List[str], dimension_list: List[str], vary_values: bool
+) -> Tuple[List[int], List[str], List[int], List[str]]:
+    """Helper function that creates the columns for the data frame based upon the reporting
+    frequency and breakdowns of the MetricFile.
+    """
+    year_col = [2021, 2022, 2023]
+    value_col = [12, 45, 30] if vary_values else [10, 20, 30]
+    month_col, dimension_col = ([], [])
+
+    if len(dimension_list) > 0:
+        # # [Person, Property, .. Unknown, Other] -> [Person, ... Unknown, Person ... Unknown]
+        dimension_col = dimension_list * len(value_col)
+        # [2021, 2022, 2023] -> [2021, 2021, 2022, 2022, 2023 ...]
+        year_col = [ele for ele in year_col for _ in range(len(dimension_list))]
+        # [10, 20, 30] -> [10, 0, 0, 0, 0, 20, 0, 0, 0, 0, 30 ,0 ,0 ,0 ,0] (if there are 5 breakdowns)
+        value_col_copy = value_col.copy()
+        value_col = []
+        for value in value_col_copy:
+            value_col.append(value)
+            value_col += [0] * (len(dimension_list) - 1)
+
+    if len(month_list) > 0:
+        month_col = month_list * len(
+            value_col
+        )  # [January, February] -> [January, February,... January, February ...]
+        year_col = [
+            val for val in year_col for _ in (0, 1)
+        ]  # [2021, 2022, 2023] -> [2021, 2021, 2022, 2022, 2023 ...]
+        value_col = [
+            val for val in value_col for _ in (0, 1)
+        ]  # [10, 20, 30] -> [10, 10, 20, 20, 30, 30]
+        if len(dimension_col) > 0:
+            dimension_col = [
+                val for val in dimension_col for _ in (0, 1)
+            ]  # [Person, Property, .. Unknown, Other] -> [Person, Person, Property, Property...]
+
+    return (
+        year_col,
+        month_col,
+        value_col,
+        dimension_col,
+    )
+
+
 def _create_dataframe_dict(
     metricfile: MetricFile,
     reporting_frequency: schema.ReportingFrequency,
     invalid_month: bool = False,
     vary_values: bool = False,
+    missing_column: Optional[bool] = False,
+    invalid_value_type: Optional[bool] = False,
+    too_many_rows: Optional[bool] = False,
     unexpected_month: Optional[bool] = False,
-    unexpected_column: Optional[str] = None,
+    unexpected_column: Optional[bool] = False,
     unexpected_disaggregation: Optional[bool] = False,
 ) -> Dict[str, Any]:
     """Helper function that creates a dictionary, which is later converted into a
     dataframe and exported as an excel file for testing purposes.
     """
-    year_col = [2021, 2022, 2023]
-    value_col = [12, 45, 30] if vary_values else [10, 20, 30]
+    dimension_list = (
+        [d.value for d in list(metricfile.disaggregation)]  # type: ignore[call-overload]
+        if metricfile.disaggregation is not None
+        else []
+    )
 
-    if reporting_frequency == schema.ReportingFrequency.ANNUAL:
-        annual_dataframe_dict = {"year": year_col, "value": value_col}
-        if unexpected_month is True:
-            annual_dataframe_dict["month"] = ["January", "January", "January"]  # type: ignore[list-item]
-        if unexpected_column == "system":
-            annual_dataframe_dict[unexpected_column] = ["PROBATION", "PAROLE", "ALL"]  # type: ignore[list-item]
-        if unexpected_disaggregation is True and metricfile.disaggregation is None:
-            annual_dataframe_dict["metric_by_type"] = ["metric_type_A", "metric_type_C", "metric_type_D"]  # type: ignore[list-item]
-        return annual_dataframe_dict
+    month_list = (
+        ["January", "February"]
+        if reporting_frequency == schema.ReportingFrequency.ANNUAL
+        and unexpected_month is True
+        or reporting_frequency == schema.ReportingFrequency.MONTHLY
+        else []
+    )
 
-    # If the metric is reported monthly, add a month column for
-    # January and February of each year.
-    dataframe_dict = {
-        "month": ["January", "February"] * len(value_col),  # type: ignore[list-item]
-        "year": [val for val in year_col for _ in (0, 1)],
-        "value": [val for val in value_col for _ in (0, 1)],
-    }
+    year_col, month_col, value_col, dimension_col, = _get_dimension_columns(
+        month_list=month_list, dimension_list=dimension_list, vary_values=vary_values
+    )
+
+    if invalid_value_type is True:
+        value_col[0] = "wrong value type - string"  # type: ignore[call-overload]
+
+    if too_many_rows is True:
+        year_col[1] = year_col[0]
+        if len(month_col) > 0:
+            month_col[1] = month_col[0]  # type: ignore[index]
+        if len(dimension_col) > 0:
+            dimension_col[1] = dimension_col[0]  # type: ignore[index]
 
     if invalid_month:
-        dataframe_dict["month"][0] = "Marchuary"  # type: ignore[index]
-    if unexpected_column == "system":
-        dataframe_dict[unexpected_column] = ["PROBATION" for _ in value_col for _ in (0, 1)]  # type: ignore[list-item]
-    if unexpected_disaggregation is True and metricfile.disaggregation is None:
-        dataframe_dict["metric_by_type"] = ["metric_type_A" for _ in value_col for _ in (0, 1)]  # type: ignore[list-item]
+        month_col[0] = "Marchuary"  # type: ignore[index]
+
+    # Spreadsheet columns have to be added in to the dict in the order
+    # to which they will appear.As a result we will add year, month, value,
+    # disaggregation, and system in that order.
+    dataframe_dict = {"year": year_col}
+
+    if len(month_list) > 0:
+        dataframe_dict["month"] = month_col  # type: ignore[assignment]
+
+    if missing_column is False:
+        dataframe_dict["value"] = value_col
+
+    if metricfile.disaggregation is not None:
+        dataframe_dict[metricfile.disaggregation_column_name] = dimension_col  # type: ignore[index, assignment]
+
+    if unexpected_disaggregation is True:
+        dataframe_dict["bloop_type"] = range(0, len(value_col))  # type: ignore[assignment]
+
+    if unexpected_column is True:
+        dataframe_dict["bloop"] = range(0, len(value_col))  # type: ignore[assignment]
 
     return dataframe_dict
 
 
 def create_excel_file(
     system: schema.System,
+    file_name: str = TEST_EXCEL_FILE,
     metric_key_to_subsystems: Optional[Dict[str, List[schema.System]]] = None,
-    invalid_month_sheetname: Optional[str] = None,
-    add_invalid_sheetname: Optional[bool] = False,
-    sheetnames_to_skip: Optional[Set[str]] = None,
-    sheetnames_to_vary_values: Optional[Set[str]] = None,
-    unexpected_month: Optional[bool] = False,
-    unexpected_column: Optional[str] = None,
-    unexpected_disaggregation: Optional[bool] = False,
+    invalid_month_sheet_name: Optional[str] = None,
+    add_invalid_sheet_name: Optional[bool] = False,
+    missing_column_sheet_name: Optional[str] = None,
+    invalid_value_type_sheet_name: Optional[str] = None,
+    too_many_rows_filename: Optional[str] = None,
+    sheet_names_to_skip: Optional[Set[str]] = None,
+    sheet_names_to_vary_values: Optional[Set[str]] = None,
+    unexpected_month_sheet_name: Optional[str] = None,
+    unexpected_column_sheet_name: Optional[str] = None,
+    unexpected_system_sheet_name: Optional[str] = None,
+    unexpected_disaggregation_sheet_name: Optional[str] = None,
 ) -> None:
     """Populates bulk_upload_test.xlsx with fake data to test functions that ingest spreadsheets"""
     filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
     with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-        TEST_EXCEL_FILE
+        file_name
     ) as writer:
         for filename, metricfile in filename_to_metricfile.items():
-            if sheetnames_to_skip is not None and filename in sheetnames_to_skip:
+            if sheet_names_to_skip is not None and filename in sheet_names_to_skip:
                 continue
-            # For every metric, add a value for 2021, 2022, and 2023
             dataframe_dict = _create_dataframe_dict(
                 metricfile=metricfile,
                 reporting_frequency=metricfile.definition.reporting_frequency,
-                invalid_month=filename == invalid_month_sheetname,
-                vary_values=sheetnames_to_vary_values is not None
-                and filename in sheetnames_to_vary_values,
-                unexpected_month=unexpected_month,
-                unexpected_column=unexpected_column,
-                unexpected_disaggregation=unexpected_disaggregation,
+                invalid_month=filename == invalid_month_sheet_name,
+                invalid_value_type=filename == invalid_value_type_sheet_name,
+                missing_column=missing_column_sheet_name == filename,
+                too_many_rows=too_many_rows_filename == filename,
+                vary_values=sheet_names_to_vary_values is not None
+                and filename in sheet_names_to_vary_values,
+                unexpected_month=filename == unexpected_month_sheet_name,
+                unexpected_column=filename == unexpected_column_sheet_name,
+                unexpected_disaggregation=filename
+                == unexpected_disaggregation_sheet_name,
             )
 
-            if metricfile.disaggregation_column_name is not None:
-                # If the metric is has a breakdown, add a column for the breakdown
-                dimension_list = list(metricfile.disaggregation)  # type: ignore[call-overload, arg-type]
-                dataframe_dict[metricfile.disaggregation_column_name] = [
-                    dimension_list[x % len(dimension_list)].value
-                    for x in range(0, len(dataframe_dict["value"]))
-                ]
+            # If the metric is for the supervision system or the sheet contains
+            # an unexpected system error, add a system column.
+            if (
+                system == schema.System.SUPERVISION
+                or unexpected_system_sheet_name == filename
+            ):
+                if "value" in dataframe_dict:
+                    # There will be no value column if the sheet being generated
+                    # has a missing_metric error.
+                    dataframe_dict["system"] = ["all"] * len(dataframe_dict["value"])
 
-            # If the metric is for the supervision system, add a system column.
-            if system == schema.System.SUPERVISION:
-                dataframe_dict["system"] = ["all"] * len(dataframe_dict["value"])
                 if metric_key_to_subsystems is not None:
                     subsystems = metric_key_to_subsystems.get(
                         metricfile.definition.key, []
@@ -136,6 +215,6 @@ def create_excel_file(
 
             df = pd.DataFrame(dataframe_dict)
             df.to_excel(writer, sheet_name=filename)
-        if add_invalid_sheetname:
+        if add_invalid_sheet_name:
             df = pd.DataFrame({})
             df.to_excel(writer, sheet_name="gender")

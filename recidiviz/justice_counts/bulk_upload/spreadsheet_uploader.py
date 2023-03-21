@@ -34,7 +34,7 @@ from recidiviz.justice_counts.exceptions import (
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
-    get_metricfile_by_sheetname,
+    get_metricfile_by_sheet_name,
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.report import ReportInterface
@@ -110,7 +110,7 @@ class SpreadsheetUploader:
 
             # Based on the system and the name of the CSV file, determine which
             # Justice Counts metric this file contains data for
-            metricfile = get_metricfile_by_sheetname(
+            metricfile = get_metricfile_by_sheet_name(
                 sheet_name=self.sheet_name, system=current_system
             )
             if not metricfile:

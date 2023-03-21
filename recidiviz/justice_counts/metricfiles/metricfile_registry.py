@@ -85,7 +85,7 @@ SYSTEM_METRIC_KEY_AND_DIM_ID_TO_METRICFILE = {
 }
 
 
-def get_metricfile_by_sheetname(
+def get_metricfile_by_sheet_name(
     sheet_name: str, system: schema.System
 ) -> Optional[MetricFile]:
     stripped_sheet_name = sheet_name.split("/")[-1].split(".")[0].strip()
