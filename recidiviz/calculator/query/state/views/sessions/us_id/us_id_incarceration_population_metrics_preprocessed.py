@@ -59,7 +59,6 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
             housing_unit_type_raw_text,
             CAST(NULL AS STRING) AS supervising_officer_external_id,
             CAST(NULL AS STRING) AS case_type,
-            judicial_district_code,
             prioritized_race_or_ethnicity,
             gender,
         FROM
@@ -88,7 +87,6 @@ US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_QUERY_TEMPLATE = """
         pop.housing_unit_type_raw_text,
         pop.supervising_officer_external_id,
         pop.case_type,
-        pop.judicial_district_code,
         pop.prioritized_race_or_ethnicity,
         pop.gender,
     FROM incarceration_population_cte pop

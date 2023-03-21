@@ -40,6 +40,12 @@ To load ALL views to a sandbox (this should be used only in rare circumstances),
     python -m recidiviz.tools.load_views_to_sandbox \
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] all
 
+To load all views downstream of a sandbox dataflow dataset, run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --dataflow_dataset_override [SANDBOX_DATAFLOW_DATASET] \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] manual \
+       --dataset_ids_to_load dataflow_metrics_materialized
+
 For any of the above commands, you can add a `--prompt` flag BEFORE the auto/manual/all
 keyword. This will make the script ask you if you want to proceed with loading the
 views after we've discovered all the views to be loaded to the sandbox. For example:

@@ -24,6 +24,9 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
+from recidiviz.calculator.query.state.state_specific_query_strings import (
+    pathways_state_specific_supervision_level,
+)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_metric_big_query_view import (
     PathwaysMetricBigQueryViewBuilder,
 )
@@ -42,9 +45,20 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_QUERY_TEMPLATE = """
     WITH 
     get_last_updated AS ({get_pathways_supervision_last_updated_date})
     , cte AS ( 
-        SELECT *
-        FROM `{project_id}.{dashboards_dataset}.pathways_deduped_supervision_sessions_materialized`
-        WHERE end_date IS NULL
+        SELECT
+            s.state_code,
+            s.person_id,
+            DATE_SUB(s.end_date_exclusive, INTERVAL 1 DAY) AS end_date,
+            COALESCE(name_map.location_name, supervision_office, "EXTERNAL_UNKNOWN") AS district,
+            {state_specific_supervision_level} AS supervision_level,
+            s.prioritized_race_or_ethnicity AS race,
+        FROM `{project_id}.{sessions_dataset}.compartment_sub_sessions_materialized` s
+        LEFT JOIN `{project_id}.{dashboards_dataset}.pathways_supervision_location_name_map_materialized` name_map
+            ON s.state_code = name_map.state_code
+            AND supervision_office = name_map.location_id
+        WHERE compartment_level_1 = "SUPERVISION"
+            AND metric_source != "INFERRED"
+            AND end_date_exclusive IS NULL
     )
     , filtered_rows AS (
         SELECT 
@@ -85,6 +99,11 @@ SUPERVISION_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER = PathwaysMetricBigQue
     get_pathways_supervision_last_updated_date=state_specific_query_strings.get_pathways_supervision_last_updated_date(),
     filter_to_enabled_states=filter_to_pathways_states(state_code_column="state_code"),
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
+    sessions_dataset=dataset_config.SESSIONS_DATASET,
+    state_specific_supervision_level=pathways_state_specific_supervision_level(
+        "s.state_code",
+        "correctional_level",
+    ),
 )
 
 if __name__ == "__main__":

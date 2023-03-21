@@ -32,7 +32,7 @@ This is typically used as a backup for the corresponding supervision_success* vi
 
 SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
     WITH supervision_terminations AS (
-      SELECT 
+      SELECT
         state_code,
         year,
         month,
@@ -40,16 +40,8 @@ SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_QUERY_TEMPLATE = """
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         LOGICAL_AND(termination_reason in ('COMMUTED', 'DISCHARGE','EXPIRATION','PARDONED', 'VACATED')) as successful_termination,
         person_id,
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`,
+      FROM `{project_id}.{shared_metric_dataset}.supervision_terminations_for_spotlight_materialized`,
       {district_dimension}
-      WHERE {thirty_six_month_filter} AND termination_reason NOT IN (
-        'DEATH',
-        'EXTERNAL_UNKNOWN',
-        'INTERNAL_UNKNOWN',
-        'RETURN_FROM_ABSCONSION',
-        'SUSPENSION',
-        'TRANSFER_WITHIN_STATE',
-        'TRANSFER_TO_OTHER_JURISDICTION')
       GROUP BY state_code, year, month, district, supervision_type, person_id
     ), supervision_termination_counts AS (
       SELECT
@@ -85,13 +77,12 @@ SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
         "district",
     ),
     description=SUPERVISION_TERMINATIONS_BY_MONTH_VIEW_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    shared_metric_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(
         state_specific_query_strings.state_supervision_specific_district_groupings(
             "supervising_district_external_id", "judicial_district_code"
         )
     ),
-    thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
 )
 

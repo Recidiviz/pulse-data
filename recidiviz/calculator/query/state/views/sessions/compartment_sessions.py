@@ -154,7 +154,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
     The differentiation between RESPECT NULLS and IGNORE NULLS when the arrays are constructed is used to specify
     whether we want to take the first non-null value in cases where the attribute is not present at time of compartment
     session start. This is applied to the following 5 fields: `compartment_location`, `supervising_officer_external_id`,
-     `correctional_level`, `case_type`, `judicial_district_code`, and `assessment_score`. 
+     `correctional_level`, `case_type`, and `assessment_score`.
      
     Additionally, there are two attributes (`prioritized_race_or_ethnicity` and `gender`) that do not have start/end
     values and therefore are aggregated with ANY_VALUE.    
@@ -201,8 +201,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         ARRAY_AGG(housing_unit_type IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS housing_unit_type_end,
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_start,
         ARRAY_AGG(case_type IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS case_type_end,
-        ARRAY_AGG(judicial_district_code IGNORE NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS judicial_district_code_start,
-        ARRAY_AGG(judicial_district_code IGNORE NULLS ORDER BY sub_session_id DESC LIMIT 1)[SAFE_OFFSET(0)] AS judicial_district_code_end,
         ANY_VALUE(gender) AS gender,
         ANY_VALUE(prioritized_race_or_ethnicity) AS prioritized_race_or_ethnicity,
         ARRAY_AGG(age RESPECT NULLS ORDER BY sub_session_id ASC LIMIT 1)[SAFE_OFFSET(0)] AS age_start,
@@ -276,8 +274,6 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = """
         housing_unit_type_end,
         case_type_start,
         case_type_end,
-        judicial_district_code_start,
-        judicial_district_code_end,
         CASE WHEN age_start <=24 THEN '<25'
             WHEN age_start <=29 THEN '25-29'
             WHEN age_start <=39 THEN '30-39'

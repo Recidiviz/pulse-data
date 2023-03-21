@@ -36,6 +36,7 @@ COMPARTMENT_SESSIONS_CLOSEST_SENTENCE_IMPOSED_GROUP_QUERY_TEMPLATE = """
         a.person_id,
         a.session_id,
         a.start_date,
+        a.end_date_exclusive,
         b.sentence_imposed_group_id,
         b.date_imposed,
     FROM 

@@ -30,7 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 DATAFLOW_SESSIONS_VIEW_NAME = "dataflow_sessions"
 
-INCARCERATION_POPULATION_SPECIAL_STATES = ("US_CO", "US_ID", "US_IX", "US_TN")
+INCARCERATION_POPULATION_SPECIAL_STATES = ("US_CO", "US_ID", "US_IX")
 SUPERVISION_POPULATION_SPECIAL_STATES = ("US_PA", "US_TN")
 
 DATAFLOW_SESSIONS_VIEW_DESCRIPTION = """
@@ -81,9 +81,10 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     
     Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2.
     
-    The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This 
+    The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This
     is done because SUPERVISION can come from either SUPERVISION_POPULATION and SUPERVISION_OUT_OF_STATE_POPULATION.
-    Compartment location is defined as facility for incarceration and judicial district for supervision periods.
+    Compartment location is defined as facility for incarceration and supervision office and district for supervision
+    periods.
     */
     (
     SELECT 
@@ -109,7 +110,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         housing_unit_type_raw_text,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type,
-        judicial_district_code,
         prioritized_race_or_ethnicity,
         gender,
     FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_span_metrics_materialized`
@@ -124,11 +124,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
     -- TODO(#15610): Remove CO preprocessing file when out of state facilities are flagged in sessions
     SELECT *
     FROM `{{project_id}}.{{sessions_dataset}}.us_co_incarceration_population_metrics_preprocessed_materialized`
-
-    UNION ALL
-    -- TODO(#10747): Remove TN judicial district preprocessing once hydrated in population metrics
-    SELECT *
-    FROM `{{project_id}}.{{sessions_dataset}}.us_tn_incarceration_population_metrics_preprocessed_materialized`
 
     UNION ALL
     SELECT
@@ -150,7 +145,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
         CAST(NULL AS STRING) AS housing_unit_type_raw_text,
         supervising_officer_external_id,
         case_type,
-        judicial_district_code,
         prioritized_race_or_ethnicity,
         gender,
     FROM
@@ -159,7 +153,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
 
     UNION ALL
     -- TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
-    -- TODO(#10747): Remove TN judicial district preprocessing once hydrated in population metrics
     SELECT
         *
     FROM `{{project_id}}.{{sessions_dataset}}.us_tn_supervision_population_metrics_preprocessed_materialized`
@@ -246,7 +239,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 housing_unit_type_raw_text,
                 supervising_officer_external_id,
                 case_type,
-                judicial_district_code,
                 prioritized_race_or_ethnicity,
                 gender
                 )
@@ -269,7 +261,6 @@ DATAFLOW_SESSIONS_QUERY_TEMPLATE = f"""
                 housing_unit_type_raw_text,
                 supervising_officer_external_id,
                 case_type,
-                judicial_district_code,
                 prioritized_race_or_ethnicity,
                 gender
             ) AS session_attributes,

@@ -20,9 +20,6 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
-from recidiviz.calculator.query.state.views.public_dashboard.utils import (
-    spotlight_age_buckets,
-)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -47,22 +44,13 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
-      FROM (SELECT *, 
-        {age_bucket}
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` termination_metrics),
+      FROM `{project_id}.{shared_metric_dataset}.supervision_terminations_for_spotlight_materialized` termination_metrics,
       {gender_dimension},
       {age_dimension},
       {district_dimension},
       -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months
-      WHERE {metric_period_condition} AND termination_reason NOT IN (
-        'DEATH',
-        'EXTERNAL_UNKNOWN',
-        'INTERNAL_UNKNOWN',
-        'RETURN_FROM_ABSCONSION',
-        'SUSPENSION',
-        'TRANSFER_WITHIN_STATE',
-        'TRANSFER_TO_OTHER_JURISDICTION')
+      WHERE {metric_period_condition}
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
     ), successful_termination_counts AS (
       SELECT
@@ -109,7 +97,7 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
         "age_bucket",
     ),
     description=SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    shared_metric_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
@@ -125,7 +113,6 @@ SUPERVISION_TERMINATIONS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
         "prioritized_race_or_ethnicity"
     ),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
-    age_bucket=spotlight_age_buckets(),
 )
 
 if __name__ == "__main__":

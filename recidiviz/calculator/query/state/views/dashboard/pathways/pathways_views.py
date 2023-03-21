@@ -66,9 +66,6 @@ from recidiviz.calculator.query.state.views.dashboard.pathways.event_level.super
 from recidiviz.calculator.query.state.views.dashboard.pathways.liberty_to_prison_population_snapshot_by_dimension import (
     LIBERTY_TO_PRISON_POPULATION_SNAPSHOT_BY_DIMENSION_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_deduped_supervision_sessions import (
-    PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_incarceration_location_name_map import (
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
 )
@@ -172,5 +169,4 @@ PATHWAYS_HELPER_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     *PATHWAYS_EVENT_LEVEL_VIEW_BUILDER_HELPERS,
     PATHWAYS_SUPERVISION_LOCATION_NAME_MAP_VIEW_BUILDER,
     PATHWAYS_INCARCERATION_LOCATION_NAME_MAP_VIEW_BUILDER,
-    PATHWAYS_DEDUPED_SUPERVISION_SESSIONS_VIEW_BUILDER,
 ]
