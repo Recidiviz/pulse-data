@@ -1300,6 +1300,18 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
         comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
         "a particular assessment.",
     )
+    conducting_staff_external_id = Column(
+        String(255),
+        comment="The external id of the staff member conducting this assessment. "
+        "This field with the conducting_staff_external_id_type field make up a primary "
+        "key for the state_staff_external_id table.",
+    )
+    conducting_staff_external_id_type = Column(
+        String(255),
+        comment="The ID type associated with external id of the staff member conducting this assessment. "
+        "This field with the conducting_staff_external_id field make up a primary key for the "
+        "state_staff_external_id table.",
+    )
 
     @declared_attr
     def conducting_agent_id(self) -> Column:
