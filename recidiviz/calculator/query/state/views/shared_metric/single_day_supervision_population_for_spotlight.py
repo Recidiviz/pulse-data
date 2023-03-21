@@ -47,7 +47,7 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       e.projected_completion_date_max AS projected_end_date,
       IFNULL(pop.gender, 'EXTERNAL_UNKNOWN') as gender,
       {age_bucket},
-      IFNULL(pop.judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
+      IFNULL(sent.judicial_district, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       IFNULL(pop.supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
       IFNULL(pop.supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
       CURRENT_DATE('US/Eastern') AS date_of_supervision,
@@ -57,6 +57,14 @@ SINGLE_DAY_SUPERVISION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
         ON pop.state_code = e.state_code
         AND pop.person_id = e.person_id
         AND CURRENT_DATE('US/Eastern') BETWEEN e.start_date AND COALESCE(e.end_date, CURRENT_DATE('US/Eastern'))
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_closest_sentence_imposed_group` sent_map
+        ON pop.state_code = sent_map.state_code
+        AND pop.person_id = sent_map.person_id
+        AND sent_map.end_date_exclusive IS NULL
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sent
+        ON sent_map.state_code = sent.state_code
+        AND sent_map.person_id = sent.person_id
+        AND sent_map.sentence_imposed_group_id = sent.sentence_imposed_group_id
     WHERE pop.included_in_state_population
         AND pop.end_date_exclusive IS NULL
     """

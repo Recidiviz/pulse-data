@@ -20,9 +20,6 @@ from recidiviz.calculator.query.state import (
     dataset_config,
     state_specific_query_strings,
 )
-from recidiviz.calculator.query.state.views.public_dashboard.utils import (
-    spotlight_age_buckets,
-)
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -47,9 +44,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         age_bucket,
         supervision_type,
         metric_period_months
-      FROM (SELECT *, 
-        {age_bucket}
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized` success_metrics),
+      FROM `{project_id}.{shared_metric_dataset}.supervision_success_for_spotlight_materialized` success_metrics,
       {gender_dimension},
       {age_dimension},
       {district_dimension},
@@ -102,7 +97,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
         "age_bucket",
     ),
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    shared_metric_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column(
         "race_or_ethnicity", "race_or_ethnicity"
@@ -118,7 +113,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
         "prioritized_race_or_ethnicity"
     ),
     state_specific_supervision_type_inclusion_filter=state_specific_query_strings.state_specific_supervision_type_inclusion_filter(),
-    age_bucket=spotlight_age_buckets(),
 )
 
 if __name__ == "__main__":

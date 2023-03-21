@@ -20,6 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,8 +35,14 @@ CHARGES_PREPROCESSED_SPECIAL_STATES = ["US_MO"]
 CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     SELECT
         charge.*,
-        COALESCE(charge.judicial_district_code, 'EXTERNAL_UNKNOWN') AS judicial_district,
+        COALESCE(
+            charge.judicial_district_code,
+            TRIM(scc.judicial_district_code),
+            'EXTERNAL_UNKNOWN'
+        ) AS judicial_district,
     FROM `{project_id}.{normalized_state_dataset}.state_charge` charge
+    LEFT JOIN `{project_id}.{static_reference_dataset}.state_county_codes` scc
+    USING (state_code, county_code)
     WHERE charge.state_code NOT IN ('{special_states}')
 
     UNION ALL
@@ -52,6 +59,7 @@ CHARGES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=CHARGES_PREPROCESSED_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     special_states="', '".join(CHARGES_PREPROCESSED_SPECIAL_STATES),
     should_materialize=False,
 )

@@ -39,7 +39,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = """
       district,
       supervising_officer_external_id AS officer_external_id,
       prioritized_race_or_ethnicity as race_or_ethnicity,
-      gender, {age_bucket}, assessment_score_bucket, judicial_district_code
+      gender, {age_bucket}, assessment_score_bucket,
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_span_to_single_day_metrics_materialized` pop
     LEFT JOIN `{project_id}.{sessions_dataset}.assessment_score_sessions_materialized` a
     ON a.state_code = pop.state_code AND

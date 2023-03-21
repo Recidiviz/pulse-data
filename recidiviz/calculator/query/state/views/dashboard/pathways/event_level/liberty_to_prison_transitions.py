@@ -63,13 +63,21 @@ LIBERTY_TO_PRISON_TRANSITIONS_QUERY_TEMPLATE = """
             {age_group}
             gender,
             prioritized_race_or_ethnicity AS race,
-            UPPER(IFNULL(judicial_district_code_start, 'UNKNOWN')) AS judicial_district,
+            UPPER(IFNULL(sent.judicial_district, 'UNKNOWN')) AS judicial_district,
             IFNULL(previous_incarceration.session_length_days, 0) AS previous_incarceration_session_length_days,
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` compartment
         LEFT JOIN `{project_id}.{sessions_dataset}.incarceration_super_sessions_materialized` previous_incarceration
         ON compartment.state_code = previous_incarceration.state_code
             AND compartment.person_id = previous_incarceration.person_id
             AND compartment.session_id > previous_incarceration.session_id_end
+        LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_closest_sentence_imposed_group` sent_map
+        ON compartment.state_code = sent_map.state_code
+            AND compartment.person_id = sent_map.person_id
+            AND compartment.session_id = sent_map.session_id
+        LEFT JOIN `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sent
+        ON sent_map.state_code = sent.state_code
+            AND sent_map.person_id = sent.person_id
+            AND sent_map.sentence_imposed_group_id = sent.sentence_imposed_group_id
         WHERE
             compartment.state_code IN {enabled_states}
             AND compartment.compartment_level_1 = 'INCARCERATION'

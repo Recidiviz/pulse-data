@@ -35,7 +35,7 @@ US_MO_CHARGES_PREPROCESSED_VIEW_DESCRIPTION = (
     """State-specific preprocessing for MO charge data to add judicial district"""
 )
 
-# TODO(#10747): Remove this preprocessing once judicial district code is ingested
+# TODO(#14113): Remove this preprocessing once judicial district code is ingested
 US_MO_CHARGES_PREPROCESSED_QUERY_TEMPLATE = """
     WITH parsed_judicial_district AS (
         SELECT

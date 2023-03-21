@@ -41,7 +41,7 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
       pop.prioritized_race_or_ethnicity,
       IFNULL(pop.gender, 'EXTERNAL_UNKNOWN') as gender,
       {age_bucket},
-      IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
+      IFNULL(sent.judicial_district, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       CURRENT_DATE('US/Eastern') AS date_of_stay,
       pop.facility,
       inc.supervision_type AS commitment_from_supervision_supervision_type
@@ -54,6 +54,14 @@ SINGLE_DAY_INCARCERATION_POPULATION_FOR_SPOTLIGHT_QUERY_TEMPLATE = """
     LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_commitment_from_supervision_metrics_included_in_state_population_materialized` inc
         ON sess.person_id = inc.person_id
         AND sess.start_date = inc.admission_date
+    LEFT JOIN `{project_id}.{sessions_dataset}.compartment_sessions_closest_sentence_imposed_group` sent_map
+        ON pop.state_code = sent_map.state_code
+        AND pop.person_id = sent_map.person_id
+        AND sent_map.end_date_exclusive IS NULL
+    LEFT JOIN `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sent
+        ON sent_map.state_code = sent.state_code
+        AND sent_map.person_id = sent.person_id
+        AND sent_map.sentence_imposed_group_id = sent.sentence_imposed_group_id
     WHERE {state_specific_facility_exclusion}
     """
 

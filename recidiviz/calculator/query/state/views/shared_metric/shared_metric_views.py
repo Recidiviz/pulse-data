@@ -54,8 +54,14 @@ from recidiviz.calculator.query.state.views.shared_metric.supervision_mismatches
 from recidiviz.calculator.query.state.views.shared_metric.supervision_officer_caseload import (
     SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.shared_metric.supervision_success_for_spotlight import (
+    SUPERVISION_SUCCESS_FOR_SPOTLIGHT_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.shared_metric.supervision_termination_matrix_by_person import (
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.shared_metric.supervision_terminations_for_spotlight import (
+    SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
 )
 
 SHARED_METRIC_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
@@ -72,4 +78,6 @@ SHARED_METRIC_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     SUPERVISION_CASE_COMPLIANCE_METRICS_VIEW_BUILDER,
     SUPERVISION_MISMATCHES_BY_DAY_VIEW_BUILDER,
     SUPERVISION_OFFICER_CASELOAD_VIEW_BUILDER,
+    SUPERVISION_SUCCESS_FOR_SPOTLIGHT_VIEW_BUILDER,
+    SUPERVISION_TERMINATIONS_FOR_SPOTLIGHT_VIEW_BUILDER,
 ]
