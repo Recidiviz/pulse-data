@@ -1327,6 +1327,57 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 datapoints[6].get_value(), "our metrics are different because xyz"
             )
 
+    def test_update_multiple_report_statuses(self) -> None:
+        monthly_report_1 = self.test_schema_objects.test_report_monthly
+        monthly_report_2 = self.test_schema_objects.test_report_monthly_two
+        annual_report_2 = self.test_schema_objects.test_report_annual_two
+        user = self.test_schema_objects.test_user_A
+        agency = self.test_schema_objects.test_agency_A
+
+        self.session.add_all(
+            [
+                user,
+                monthly_report_1,
+                monthly_report_2,
+                annual_report_2,
+                schema.AgencyUserAccountAssociation(
+                    user_account=user,
+                    agency=agency,
+                    role=schema.UserAccountRole.JUSTICE_COUNTS_ADMIN,
+                ),
+            ]
+        )
+        self.session.commit()
+        with self.app.test_request_context():
+            user_account = UserAccountInterface.get_user_by_auth0_user_id(
+                session=self.session, auth0_user_id=user.auth0_user_id
+            )
+            g.user_context = UserContext(
+                auth0_user_id=user.auth0_user_id,
+            )
+
+            response = self.client.patch(
+                "/api/reports",
+                json={
+                    "status": "PUBLISHED",
+                    "report_ids": [
+                        monthly_report_1.id,
+                        monthly_report_2.id,
+                        annual_report_2.id,
+                    ],
+                    "agency_id": agency.id,
+                },
+            )
+
+            self.assertEqual(response.status_code, 200)
+            reports = self.session.query(Report).all()
+            for current_report in reports:
+                self.assertEqual(current_report.status, ReportStatus.PUBLISHED)
+            self.assertEqual(
+                monthly_report_1.modified_by,
+                [user_account.id],
+            )
+
     def test_get_metric_settings_contexts(self) -> None:
         self.session.add_all(
             [

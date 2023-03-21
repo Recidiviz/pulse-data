@@ -77,6 +77,15 @@ class ReportInterface:
         return q.filter(schema.Report.id == report_id).one()
 
     @staticmethod
+    def get_reports_by_id(
+        session: Session, report_ids: list, include_datapoints: bool = True
+    ) -> schema.Report:
+        q = ReportInterface._get_report_query(
+            session, include_datapoints=include_datapoints
+        )
+        return q.filter(schema.Report.id.in_(report_ids)).all()
+
+    @staticmethod
     def get_reports_by_agency_id(
         session: Session,
         agency_id: int,
