@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: bop_BOPVoteResult
+file_description: Atlas parole board hearing vote results
+data_classification: source
+primary_key_cols:
+  - BOPVoteResultId
+columns:
+  - name: BOPVoteResultId
+    description: TODO(#19673)
+  - name: PBCaseId
+    description: TODO(#19673)
+  - name: BOPDocketId
+    description: TODO(#19673)
+  - name: BOPMemberId
+    description: TODO(#19673)
+  - name: BOPVoteStatusId
+    description: TODO(#19673)
+  - name: BOPVoteValueId
+    description: TODO(#19673)
+  - name: Locking
+    description: TODO(#19673)
+  - name: InsertDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: InsertUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: UpdateDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: UpdateUserId
+    description: TODO(#19673)
+    is_pii: True

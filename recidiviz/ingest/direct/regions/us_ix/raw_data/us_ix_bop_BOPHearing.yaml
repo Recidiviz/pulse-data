@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: bop_BOPHearing
+file_description: Atlas table containing records of each parole board hearing
+data_classification: source
+primary_key_cols:
+  - BOPHearingId
+columns:
+  - name: BOPHearingId
+    description: TODO(#19673)
+  - name: PBCaseId
+    description: TODO(#19673)
+  - name: BOPDocketId
+    description: TODO(#19673)
+  - name: BOPHearingTypeId
+    description: TODO(#19673)
+  - name: HearingStartDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: ExecutiveStartDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: HearingResumeDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: HearingEndDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: TentativeParoleDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: EstimateHearingDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: DecisionSubmitDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: ReinstateDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: Minute
+    description: TODO(#19673)
+    is_pii: True
+  - name: Comment
+    description: TODO(#19673)
+    is_pii: True
+  - name: Inactive
+    description: TODO(#19673)
+  - name: Locking
+    description: TODO(#19673)
+  - name: InsertDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: InsertUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: UpdateDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: UpdateUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: ForfeitureDays
+    description: TODO(#19673)
+  - name: SentencingCaseNumber
+    description: TODO(#19673)
+  - name: ForfeitureFinalizedDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: ForfeitureRecordedDate
+    description: TODO(#19673)
+    is_datetime: True

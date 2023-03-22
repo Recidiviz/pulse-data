@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: com_CommunityServiceRecord
+file_description: Atlas table for community service records
+data_classification: source
+primary_key_cols:
+  - CommunityServiceRecordId
+columns:
+  - name: CommunityServiceRecordId
+    description: TODO(#19673)
+  - name: OffenderId
+    description: TODO(#19673)
+    is_pii: True
+  - name: StartDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: EndDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: TimeServedSeconds
+    description: TODO(#19673)
+  - name: WorkSite
+    description: TODO(#19673)
+    is_pii: True
+  - name: Comment
+    description: TODO(#19673)
+    is_pii: True
+  - name: Inactive
+    description: TODO(#19673)
+  - name: Locking
+    description: TODO(#19673)
+  - name: InsertUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: InsertDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: UpdateUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: UpdateDate
+    description: TODO(#19673)
+    is_datetime: True

@@ -1,0 +1,31 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: bop_BOPVoteValue
+file_description: Atlas reference table for parole board hearing vote result options
+data_classification: source
+primary_key_cols:
+  - BOPVoteValueId
+columns:
+  - name: BOPVoteValueId
+    description: TODO(#19673)
+  - name: BOPVoteValueName
+    description: TODO(#19673)
+  - name: Inactive
+    description: TODO(#19673)
+  - name: Locking
+    description: TODO(#19673)
+  - name: InsertDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: InsertUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: UpdateDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: UpdateUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: SystemRow
+    description: TODO(#19673)
+  - name: IsCustom
+    description: TODO(#19673)

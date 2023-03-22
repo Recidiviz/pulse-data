@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prb_PBCaseType
+file_description: Atlas reference table for parole board case type
+data_classification: source
+primary_key_cols:
+  - PBCaseTypeId
+columns:
+  - name: PBCaseTypeId
+    description: TODO(#19673)
+  - name: PBCaseTypeDesc
+    description: TODO(#19673)
+  - name: Abbreviation
+    description: TODO(#19673)
+  - name: Inactive
+    description: TODO(#19673)
+  - name: Locking
+    description: TODO(#19673)
+  - name: InsertUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: InsertDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: UpdateUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: UpdateDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: IsCustom
+    description: TODO(#19673)
+  - name: SystemRow
+    description: TODO(#19673)
