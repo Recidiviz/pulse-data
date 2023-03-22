@@ -148,9 +148,6 @@ const StateUserPermissionsView = (): JSX.Element => {
     firstName,
     lastName,
     useCustomPermissions,
-    canAccessLeadershipDashboard,
-    canAccessCaseTriage,
-    shouldSeeBetaCharts,
     reason,
     ...rest
   }: StateUserPermissionsRequest) => {
@@ -197,9 +194,6 @@ const StateUserPermissionsView = (): JSX.Element => {
           const updatedPermissions = await updateUserPermissions(
             row.userHash,
             reason,
-            canAccessLeadershipDashboard,
-            canAccessCaseTriage,
-            shouldSeeBetaCharts,
             newRoutes,
             newFeatureVariants
           );

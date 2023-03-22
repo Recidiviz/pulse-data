@@ -111,9 +111,6 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
   const onAdd = async ({
     stateCode,
     role,
-    canAccessLeadershipDashboard,
-    canAccessCaseTriage,
-    shouldSeeBetaCharts,
     reason,
     ...rest
   }: StateRolePermissionsRequest) => {
@@ -122,9 +119,6 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
         stateCode,
         role,
         reason,
-        canAccessLeadershipDashboard,
-        canAccessCaseTriage,
-        shouldSeeBetaCharts,
         updatePermissionsObject({}, rest, ROUTES_PERMISSIONS_LABELS),
         updatePermissionsObject({}, rest, FEATURE_VARIANTS_LABELS)
       );
@@ -140,9 +134,6 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
   const onEdit = async ({
     stateCode,
     role,
-    canAccessLeadershipDashboard,
-    canAccessCaseTriage,
-    shouldSeeBetaCharts,
     reason,
     ...rest
   }: StateRolePermissionsRequest) => {
@@ -153,9 +144,6 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
           row.stateCode,
           row.role,
           reason,
-          canAccessLeadershipDashboard,
-          canAccessCaseTriage,
-          shouldSeeBetaCharts,
           updatePermissionsObject({}, rest, ROUTES_PERMISSIONS_LABELS),
           updatePermissionsObject({}, rest, FEATURE_VARIANTS_LABELS)
         );
@@ -182,15 +170,7 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     setTableKey(() => tableKey + 1);
   };
 
-  const enabledColumns = [
-    "stateCode",
-    "role",
-    "canAccessLeadershipDashboard",
-    "canAccessCaseTriage",
-    "shouldSeeBetaCharts",
-    "routes",
-    "featureVariants",
-  ];
+  const enabledColumns = ["stateCode", "role", "routes", "featureVariants"];
 
   const columns = getPermissionsTableColumns(
     data as StateRolePermissionsResponse[] & StateUserPermissionsResponse[],

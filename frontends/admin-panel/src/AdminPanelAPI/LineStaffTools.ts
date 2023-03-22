@@ -171,18 +171,12 @@ export const updateUser = async ({
 export const updateUserPermissions = async (
   userHash: string,
   reason: string,
-  canAccessLeadershipDashboard?: boolean,
-  canAccessCaseTriage?: boolean,
-  shouldSeeBetaCharts?: boolean,
   routes?: Record<string, boolean>,
   featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
   return putAuthWithURLAndBody(
     `/users/${encodeURIComponent(userHash)}/permissions`,
     {
-      canAccessLeadershipDashboard,
-      canAccessCaseTriage,
-      shouldSeeBetaCharts,
       routes,
       featureVariants,
       reason,
@@ -210,16 +204,10 @@ export const createStateRolePermissions = async (
   stateCode: string,
   role: string,
   reason: string,
-  canAccessLeadershipDashboard: boolean,
-  canAccessCaseTriage: boolean,
-  shouldSeeBetaCharts: boolean,
   routes: Record<string, boolean> | undefined,
   featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
   return postAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
-    canAccessLeadershipDashboard,
-    canAccessCaseTriage,
-    shouldSeeBetaCharts,
     routes,
     featureVariants,
     reason,
@@ -230,16 +218,10 @@ export const updateStateRolePermissions = async (
   stateCode: string,
   role: string,
   reason: string,
-  canAccessLeadershipDashboard: boolean,
-  canAccessCaseTriage: boolean,
-  shouldSeeBetaCharts: boolean,
   routes: Record<string, boolean> | undefined,
   featureVariants?: Record<string, boolean>
 ): Promise<Response> => {
   return patchAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
-    canAccessLeadershipDashboard,
-    canAccessCaseTriage,
-    shouldSeeBetaCharts,
     routes,
     featureVariants,
     reason,

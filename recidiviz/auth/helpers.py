@@ -50,9 +50,6 @@ def format_user_info(user: Any) -> dict[str, str]:
         "allowedSupervisionLocationLevel": "level_1_supervision_location"
         if user.state_code == "US_MO" and user.district is not None
         else "",
-        "canAccessLeadershipDashboard": user.can_access_leadership_dashboard,
-        "canAccessCaseTriage": user.can_access_case_triage,
-        "shouldSeeBetaCharts": user.should_see_beta_charts,
         "routes": user.routes,
         "featureVariants": user.feature_variants,
         "blocked": user.blocked,

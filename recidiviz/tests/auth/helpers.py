@@ -90,18 +90,12 @@ def generate_fake_rosters(
 def generate_fake_default_permissions(
     state: str,
     role: str,
-    can_access_leadership_dashboard: Optional[bool] = None,
-    can_access_case_triage: Optional[bool] = None,
-    should_see_beta_charts: Optional[bool] = None,
     routes: Optional[dict] = None,
     feature_variants: Optional[dict] = None,
 ) -> StateRolePermissions:
     return StateRolePermissions(
         state_code=state,
         role=role,
-        can_access_leadership_dashboard=can_access_leadership_dashboard,
-        can_access_case_triage=can_access_case_triage,
-        should_see_beta_charts=should_see_beta_charts,
         routes=routes,
         feature_variants=feature_variants,
     )
@@ -132,17 +126,11 @@ def generate_fake_user_overrides(
 
 def generate_fake_permissions_overrides(
     email: str,
-    can_access_leadership_dashboard: Optional[bool] = None,
-    can_access_case_triage: Optional[bool] = None,
-    should_see_beta_charts: Optional[bool] = None,
     routes: dict = sql.null(),
     feature_variants: dict = sql.null(),
 ) -> PermissionsOverride:
     return PermissionsOverride(
         email_address=email,
-        can_access_leadership_dashboard=can_access_leadership_dashboard,
-        can_access_case_triage=can_access_case_triage,
-        should_see_beta_charts=should_see_beta_charts,
         routes=routes,
         feature_variants=feature_variants,
     )

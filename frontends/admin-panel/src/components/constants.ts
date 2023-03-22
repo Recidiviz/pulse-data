@@ -63,9 +63,3 @@ export const ROUTES_PERMISSIONS_LABELS = {
   ...VITALS_PERMISSIONS_LABELS,
   ...PATHWAYS_PERMISSIONS_LABELS,
 };
-
-export const GENERAL_PERMISSIONS_LABELS = {
-  canAccessLeadershipDashboard: "Can access Leadership Dashboard",
-  canAccessCaseTriage: "Can access Case Triage",
-  shouldSeeBetaCharts: "Should see beta charts",
-};

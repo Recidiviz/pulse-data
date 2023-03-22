@@ -589,9 +589,6 @@ class StateRolePermissions(CaseTriageBase):
     __tablename__ = "state_role_permissions"
     state_code = Column(String(255), nullable=False, primary_key=True)
     role = Column(String(255), nullable=False, primary_key=True)
-    can_access_leadership_dashboard = Column(Boolean, nullable=True)
-    can_access_case_triage = Column(Boolean, nullable=True)
-    should_see_beta_charts = Column(Boolean, nullable=True)
     routes = Column(JSONB, nullable=True)
     feature_variants = Column(JSONB, nullable=True)
 
@@ -601,8 +598,5 @@ class PermissionsOverride(CaseTriageBase):
 
     __tablename__ = "permissions_override"
     email_address = Column(String(255), nullable=False, primary_key=True)
-    can_access_leadership_dashboard = Column(Boolean, nullable=True)
-    can_access_case_triage = Column(Boolean, nullable=True)
-    should_see_beta_charts = Column(Boolean, nullable=True)
     routes = Column(JSONB, nullable=True)
     feature_variants = Column(JSONB, nullable=True)
