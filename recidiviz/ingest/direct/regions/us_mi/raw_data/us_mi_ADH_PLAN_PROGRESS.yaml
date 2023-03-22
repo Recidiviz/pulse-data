@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_PLAN_PROGRESS
+file_description: OMNI database table that records plan of supervision progress
+data_classification: source
+primary_key_cols:
+  - plan_progress_id
+columns:
+  - name: plan_progress_id
+    description: TODO(#19675)
+  - name: plan_detail_id
+    description: TODO(#19675)
+  - name: created_date
+    description: TODO(#19675)
+  - name: notes
+    description: TODO(#19675)
+    is_pii: True
+  - name: notes2
+    description: TODO(#19675)
+    is_pii: True
+  - name: notes3
+    description: TODO(#19675)
+    is_pii: True
+  - name: last_update_user
+    description: TODO(#19675)
+    is_pii: True
+  - name: last_update_date
+    description: TODO(#19675)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+    description: TODO(#19675)

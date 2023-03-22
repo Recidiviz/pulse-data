@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: ADH_PLAN_DETAIL
+file_description: OMNI table for supervision plan details
+data_classification: source
+primary_key_cols:
+  - plan_detail_id
+columns:
+  - name: plan_detail_id
+    description: TODO(#19675)
+  - name: plan_of_supervision_id
+    description: TODO(#19675)
+  - name: plan_goal_id
+    description: TODO(#19675)
+  - name: plan_goal_method_id
+    description: TODO(#19675)
+  - name: notes
+    description: TODO(#19675)
+    is_pii: True
+  - name: complete_date
+    description: TODO(#19675)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: complete_reason_id
+    description: TODO(#19675)
+  - name: last_update_user
+    description: TODO(#19675)
+    is_pii: True
+  - name: last_update_date
+    description: TODO(#19675)
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+  - name: last_update_node
+    description: TODO(#19675)
