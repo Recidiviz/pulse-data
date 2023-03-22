@@ -2523,6 +2523,18 @@ class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
         comment="Arbitrary JSON-formatted metadata relevant to a fine understanding of "
         "a particular referral.",
     )
+    referring_staff_external_id = Column(
+        String(255),
+        comment="The external id of the staff member who made the program referral. "
+        "This field with the referring_staff_external_id_type field make up a primary key "
+        "for the state_staff_external_id table.",
+    )
+    referring_staff_external_id_type = Column(
+        String(255),
+        comment="The ID type associated with the external id of the staff member who made the program referral. "
+        "This field with the referring_staff_external_id field make up a primary key for the state_staff_external_id "
+        "table.",
+    )
 
     @declared_attr
     def referring_agent_id(self) -> Column:
