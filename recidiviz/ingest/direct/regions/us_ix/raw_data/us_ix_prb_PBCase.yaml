@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: prb_PBCase
+file_description: Atlas table for parole board cases (or probation cases according to ID research? TODO(#19673))
+data_classification: source
+primary_key_cols:
+  - PBCaseId
+columns:
+  - name: PBCaseId
+    description: TODO(#19673)
+  - name: OffenderId
+    description: TODO(#19673)
+    is_pii: True
+  - name: TermId
+    description: TODO(#19673)
+  - name: PBDocketId
+    description: TODO(#19673)
+  - name: PBCaseStageId
+    description: TODO(#19673)
+  - name: PBExceptionId
+    description: TODO(#19673)
+  - name: VotingMemberId
+    description: TODO(#19673)
+    is_pii: True
+  - name: ForwardDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: InProgress
+    description: TODO(#19673)
+  - name: PriorityCase
+    description: TODO(#19673)
+  - name: ViolationId
+    description: TODO(#19673)
+  - name: RescissionReconsiderationDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: Notes
+    description: TODO(#19673)
+    is_pii: True
+  - name: Locking
+    description: TODO(#19673)
+  - name: InsertUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: InsertDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: UpdateUserId
+    description: TODO(#19673)
+    is_pii: True
+  - name: UpdateDate
+    description: TODO(#19673)
+    is_datetime: True
+  - name: CurrentVotingRound
+    description: TODO(#19673)
+  - name: PBCaseTypeId
+    description: TODO(#19673)
+  - name: PBCaseSubTypeId
+    description: TODO(#19673)
+  - name: PBCasePeriodId
+    description: TODO(#19673)
