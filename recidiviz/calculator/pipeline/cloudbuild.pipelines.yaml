@@ -5,15 +5,10 @@
 # Example usage:
 # gcloud builds submit --project=recidiviz-staging --config recidiviz/calculator/pipeline/cloudbuild.pipelines.yaml
 steps:
-  - name: "gcr.io/cloud-builders/docker"
+  - name: "gcr.io/kaniko-project/executor:v1.8.1"
     args:
       [
-        "build",
-        "-t",
-        "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
-        "-f",
-        "recidiviz/calculator/pipeline/Dockerfile.pipelines",
-        ".",
+        "--destination=us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA",
+        "--cache=true",
+        "--dockerfile=recidiviz/calculator/pipeline/Dockerfile.pipelines",
       ]
-images:
-  - "us-docker.pkg.dev/$PROJECT_ID/dataflow/build:$COMMIT_SHA"
