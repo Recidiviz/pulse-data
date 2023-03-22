@@ -564,6 +564,74 @@ def get_api_blueprint(
         except Exception as e:
             raise _get_error(error=e) from e
 
+    ### Multiple Reports ###
+
+    @api_blueprint.route("/reports", methods=["GET"])
+    @auth_decorator
+    def get_reports_by_id() -> Response:
+        """Get the details for multiple reports."""
+        try:
+            # The request will include the following params in the path URL:
+            # 1. agency_id (String): the agency id
+            # 2. report_ids (String): a comma separated string of report ids the FE is requesting
+            # Example path URL for requesting reports 1877 and 1878 for agency 147:
+            # /api/reports?agency_id=147&report_ids=1877,1878
+
+            request_json = assert_type(request.values, dict)
+            raw_report_ids = assert_type(request_json.get("report_ids"), str)
+            report_ids = (
+                [int(id) for id in raw_report_ids.split(",")]
+                if raw_report_ids != ""
+                else None
+            )
+            raw_agency_id = assert_type(request_json.get("agency_id"), str)
+            agency_id = int(raw_agency_id)
+            user = UserAccountInterface.get_user_by_auth0_user_id(
+                session=current_session,
+                auth0_user_id=get_auth0_user_id(request_dict=request_json),
+            )
+
+            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+
+            if report_ids is None or len(report_ids) == 0:
+                raise JusticeCountsServerError(
+                    code="justice_counts_bad_request",
+                    description="Empty list of report_ids passed to get reports endpoint.",
+                )
+
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=current_session, agency_id=agency_id
+            )
+            all_reports = ReportInterface.get_reports_by_id(
+                session=current_session, report_ids=report_ids
+            )
+            reports = []
+
+            for report in all_reports:
+                report_metrics = ReportInterface.get_metrics_by_report(
+                    session=current_session,
+                    report=report,
+                    agency_datapoints=agency_datapoints,
+                )
+                report_definition_json = ReportInterface.to_json_response(
+                    report=report,
+                    # Right now, this method is only used for bulk publishing
+                    # which does not require the editor details.
+                    editor_id_to_json={},
+                )
+                metrics_json = [
+                    report_metric.to_json(
+                        entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
+                    )
+                    for report_metric in report_metrics
+                ]
+                report_definition_json["metrics"] = metrics_json
+                reports.append(report_definition_json)
+
+            return jsonify(reports)
+        except Exception as e:
+            raise _get_error(error=e) from e
+
     ### Individual Reports ###
 
     @api_blueprint.route("/reports/<report_id>", methods=["GET"])
@@ -584,15 +652,19 @@ def get_api_blueprint(
 
             raise_if_user_is_not_in_agency(user=user, agency_id=report.source_id)
 
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=current_session, agency_id=report.source_id
+            )
             report_metrics = ReportInterface.get_metrics_by_report(
-                report=report, session=current_session
+                session=current_session,
+                report=report,
+                agency_datapoints=agency_datapoints,
             )
             editor_id_to_json = (
                 AgencyUserAccountAssociationInterface.get_editor_id_to_json(
                     session=current_session, reports=[report], user=user
                 )
             )
-
             report_definition_json = ReportInterface.to_json_response(
                 report=report,
                 editor_id_to_json=editor_id_to_json,

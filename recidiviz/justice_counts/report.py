@@ -330,7 +330,9 @@ class ReportInterface:
 
     @staticmethod
     def get_metrics_by_report(
-        session: Session, report: schema.Report
+        session: Session,
+        report: schema.Report,
+        agency_datapoints: Optional[List[schema.Datapoint]] = None,
     ) -> List[MetricInterface]:
         """Given a report, determine all MetricDefinitions that must be populated
         on this report, and convert them to MetricInterfaces. If the agency has already
@@ -349,9 +351,11 @@ class ReportInterface:
            metric, its values will be None; otherwise they will be populated from the data
            already stored in our database.
         """
-        agency_datapoints = DatapointInterface.get_agency_datapoints(
-            session=session, agency_id=report.source_id
-        )
+
+        if agency_datapoints is None:
+            agency_datapoints = DatapointInterface.get_agency_datapoints(
+                session=session, agency_id=report.source_id
+            )
 
         # If data has already been reported for some metrics on this report,
         # then `report.datapoints` will be non-empty. We also send build the
