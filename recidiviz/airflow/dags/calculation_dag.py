@@ -169,10 +169,8 @@ def flex_dataflow_operator_for_pipeline(
 
     region = pipeline_parameters.region
 
-    # TODO(#19131): remove -flex
-    task_id = f"{pipeline_parameters.job_name}-flex"
     return RecidivizDataflowFlexTemplateOperator(
-        task_id=task_id,
+        task_id=pipeline_parameters.job_name,
         location=region,
         body=pipeline_parameters.flex_template_launch_body(project_id=project_id),
         project_id=project_id,
