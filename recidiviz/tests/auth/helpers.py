@@ -139,7 +139,7 @@ def generate_fake_permissions_overrides(
     feature_variants: dict = sql.null(),
 ) -> PermissionsOverride:
     return PermissionsOverride(
-        user_email=email,
+        email_address=email,
         can_access_leadership_dashboard=can_access_leadership_dashboard,
         can_access_case_triage=can_access_case_triage,
         should_see_beta_charts=should_see_beta_charts,

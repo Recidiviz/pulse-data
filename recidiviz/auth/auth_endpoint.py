@@ -426,7 +426,7 @@ def users(user_hash: Optional[str] = None) -> Tuple[Union[str, Response], HTTPSt
                 .outerjoin(
                     PermissionsOverride,
                     func.coalesce(UserOverride.email_address, Roster.email_address)
-                    == PermissionsOverride.user_email,
+                    == PermissionsOverride.email_address,
                 )
             )
             user_info = (
@@ -1040,14 +1040,14 @@ def update_user_permissions(
                     f"User not found for email address hash {user_hash}, please file a bug"
                 )
 
-            user_dict["user_email"] = email
+            user_dict["email_address"] = email
             log_reason(
-                user_dict, f"updating permissions for user {user_dict['user_email']}"
+                user_dict, f"updating permissions for user {user_dict['email_address']}"
             )
 
             if (
                 session.query(PermissionsOverride)
-                .filter(PermissionsOverride.user_email == email)
+                .filter(PermissionsOverride.email_address == email)
                 .first()
                 is None
             ):
@@ -1057,7 +1057,7 @@ def update_user_permissions(
                 return (
                     jsonify(
                         {
-                            "emailAddress": new_permissions.user_email,
+                            "emailAddress": new_permissions.email_address,
                             "canAccessLeadershipDashboard": new_permissions.can_access_leadership_dashboard,
                             "canAccessCaseTriage": new_permissions.can_access_case_triage,
                             "shouldSeeBetaCharts": new_permissions.should_see_beta_charts,
@@ -1069,18 +1069,18 @@ def update_user_permissions(
                 )
             session.execute(
                 Update(PermissionsOverride)
-                .where(PermissionsOverride.user_email == email)
+                .where(PermissionsOverride.email_address == email)
                 .values(user_dict)
             )
             updated_permissions = (
                 session.query(PermissionsOverride)
-                .filter(PermissionsOverride.user_email == email)
+                .filter(PermissionsOverride.email_address == email)
                 .first()
             )
             return (
                 jsonify(
                     {
-                        "emailAddress": updated_permissions.user_email,
+                        "emailAddress": updated_permissions.email_address,
                         "canAccessLeadershipDashboard": updated_permissions.can_access_leadership_dashboard,
                         "canAccessCaseTriage": updated_permissions.can_access_case_triage,
                         "shouldSeeBetaCharts": updated_permissions.should_see_beta_charts,
@@ -1113,7 +1113,7 @@ def delete_user_permissions(user_hash: str) -> tuple[str, int]:
                 )
 
             overrides = session.query(PermissionsOverride).filter(
-                PermissionsOverride.user_email == email
+                PermissionsOverride.email_address == email
             )
             if overrides.first() is None:
                 raise ValueError(
