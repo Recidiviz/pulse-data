@@ -29,6 +29,9 @@ from recidiviz.workflows.etl.workflows_client_etl_delegate import (
     WorkflowsClientETLDelegate,
 )
 from recidiviz.workflows.etl.workflows_etl_delegate import WorkflowsFirestoreETLDelegate
+from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
+    WorkflowsOpportunityETLDelegate,
+)
 from recidiviz.workflows.etl.workflows_staff_etl_delegate import (
     WorkflowsStaffETLDelegate,
 )
@@ -72,6 +75,16 @@ def load_all_demo_data() -> None:
         CompliantReportingReferralRecordETLDelegate,
         "US_TN",
         "compliant_reporting_referral_record.json",
+    )
+    load_demo_fixture(
+        WorkflowsOpportunityETLDelegate,
+        "US_TN",
+        "us_tn_supervision_level_downgrade_record.json",
+    )
+    load_demo_fixture(
+        WorkflowsOpportunityETLDelegate,
+        "US_TN",
+        "us_tn_full_term_supervision_discharge_record.json",
     )
 
 

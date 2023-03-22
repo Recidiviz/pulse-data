@@ -1,0 +1,1 @@
+{"external_id":"AB123456","state_code":"US_TN","reasons":[{"criteria_name":"US_TN_SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL","reason":{"assessment_level":"LOW","latest_assessment_date":"2021-12-10","supervision_level":"MEDIUM"}}],"metadata_violations":[{"violation_date":"2021-07-17","violation_code":"VWAR"},{"violation_date":"2021-07-05","violation_code":"VRPT"}]}
