@@ -296,6 +296,40 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json["status"], ReportStatus.NOT_STARTED.value)
         self.assertEqual(response_json["year"], 2022)
 
+    def test_get_multiple_reports(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        agency_A = self.test_schema_objects.test_agency_A
+        monthly_report_1 = self.test_schema_objects.test_report_monthly
+        monthly_report_2 = self.test_schema_objects.test_report_monthly_two
+        self.session.add_all(
+            [
+                user_A,
+                agency_A,
+                monthly_report_1,
+                monthly_report_2,
+                schema.AgencyUserAccountAssociation(
+                    user_account=user_A,
+                    agency=agency_A,
+                ),
+            ]
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            g.user_context = UserContext(auth0_user_id=user_A.auth0_user_id)
+            response = self.client.get(
+                f"/api/reports?agency_id={agency_A.id}&report_ids={monthly_report_1.id},{monthly_report_2.id}",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        response_list = assert_type(response.json, list)
+        self.assertEqual(len(response_list), 2)
+        self.assertEqual(
+            {report["id"] for report in response_list},
+            {monthly_report_1.id, monthly_report_2.id},
+        )
+        self.assertEqual({report["month"] for report in response_list}, {6, 7})
+
     def test_get_report_metrics(self) -> None:
         user_A = self.test_schema_objects.test_user_A
         report = self.test_schema_objects.test_report_monthly
