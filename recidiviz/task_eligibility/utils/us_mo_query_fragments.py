@@ -30,6 +30,7 @@ def hearings_dedup_cte() -> str:
         SELECT DISTINCT
             p.state_code, 
             p.person_id, 
+            FIRST_VALUE(h.JU_CSQ) OVER same_hearing_dates AS hearing_id,
             -- JU_BA: Classification Hearing Date
             SAFE.PARSE_DATE("%Y%m%d", h.JU_BA) AS hearing_date,
             -- JU_AY: Classification Hearing Next Review Date ("0" is null, handled by SAFE.PARSE_DATE)
@@ -61,6 +62,7 @@ def hearings_dedup_cte() -> str:
             state_code,
             person_id,
             hearing_date,
+            FIRST_VALUE(hearing_id) OVER w as hearing_id,
             FIRST_VALUE(next_review_date) OVER w AS next_review_date,
             FIRST_VALUE(hearing_type) OVER w AS hearing_type,
             FIRST_VALUE(hearing_facility) OVER w AS hearing_facility,
