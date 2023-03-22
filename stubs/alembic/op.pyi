@@ -36,6 +36,7 @@ def add_column(table_name: str, column: str) -> None: ...
 def alter_column(
     table_name: str,
     column_name: str,
+    new_column_name: Optional[str] = None,
     type_: Optional[postgresql.TypeEngine] = None,
     postgresql_using: Optional[str] = None,
     existing_type: Optional[postgresql.TypeEngine] = None,

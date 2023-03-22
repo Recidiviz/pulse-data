@@ -600,7 +600,7 @@ class PermissionsOverride(CaseTriageBase):
     """Used when a specific user's permissions need to be changed from the default for their state/role."""
 
     __tablename__ = "permissions_override"
-    user_email = Column(String(255), nullable=False, primary_key=True)
+    email_address = Column(String(255), nullable=False, primary_key=True)
     can_access_leadership_dashboard = Column(Boolean, nullable=True)
     can_access_case_triage = Column(Boolean, nullable=True)
     should_see_beta_charts = Column(Boolean, nullable=True)
