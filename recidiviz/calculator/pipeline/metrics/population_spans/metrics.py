@@ -112,10 +112,6 @@ This metric is derived from the `StateIncarcerationPeriod` entities, which store
     # Custodial authority
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 
-    # Area of jurisdictional coverage of the court that sentenced the person to this
-    # incarceration
-    judicial_district_code: Optional[str] = attr.ib(default=None)
-
     # The level of staff supervision and security employed for a person held in custody
     custody_level: Optional[StateIncarcerationPeriodCustodyLevel] = attr.ib(
         default=None
@@ -180,7 +176,3 @@ This metric is derived from the `StateSupervisionPeriod` entities, which store i
 
     # External ID of the officer who is supervising the person during this span of time
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
-    # Area of jurisdictional coverage of the court that sentenced the person to this
-    # period of supervision
-    judicial_district_code: Optional[str] = attr.ib(default=None)

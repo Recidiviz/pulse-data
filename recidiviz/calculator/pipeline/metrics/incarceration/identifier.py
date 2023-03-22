@@ -260,28 +260,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
 
         return incarceration_events
 
-    def _get_judicial_district_code(
-        self,
-        incarceration_period: NormalizedStateIncarcerationPeriod,
-        incarceration_period_to_judicial_district: Dict[int, Dict[str, Any]],
-    ) -> Optional[str]:
-        """Retrieves the judicial_district_code corresponding to the incarceration period, if one exists."""
-        incarceration_period_id: Optional[
-            int
-        ] = incarceration_period.incarceration_period_id
-
-        if incarceration_period_id is None:
-            raise ValueError("Unexpected unset incarceration_period_id.")
-
-        ip_info: Optional[
-            Dict[Any, Any]
-        ] = incarceration_period_to_judicial_district.get(incarceration_period_id)
-
-        if ip_info is not None:
-            return ip_info.get("judicial_district_code")
-
-        return None
-
     def _admission_event_for_period(
         self,
         incarceration_delegate: StateSpecificIncarcerationDelegate,

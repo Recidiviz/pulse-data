@@ -38,14 +38,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceratio
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
-from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-)
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
-    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
@@ -70,8 +64,6 @@ class PopulationSpanMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 normalized_entities.NormalizedStateSupervisionCaseTypeEntry,
             ],
             required_reference_tables=[
-                INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-                SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
                 SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
             ],
             required_state_based_reference_tables=[

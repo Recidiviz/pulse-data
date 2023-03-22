@@ -95,9 +95,6 @@ class SupervisionMetric(
     # External ID of the officer who was supervising the person described by this metric.
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
 
-    # Area of jurisdictional coverage of the court that sentenced the person to this supervision
-    judicial_district_code: Optional[str] = attr.ib(default=None)
-
     # The type of government entity that has responsibility for this period of supervision
     custodial_authority: Optional[StateCustodialAuthority] = attr.ib(default=None)
 

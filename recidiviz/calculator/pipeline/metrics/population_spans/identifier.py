@@ -17,7 +17,7 @@
 """Identifier class for events related to incarceration."""
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
+from typing import Dict, List, Optional, Set, Tuple, cast
 
 import attr
 
@@ -42,9 +42,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarce
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    list_of_dicts_to_dict_with_keys,
-)
 from recidiviz.calculator.pipeline.utils.identifier_models import Span
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
@@ -54,12 +51,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_
 )
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
     identify_most_severe_case_type,
-)
-from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
-    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
@@ -95,18 +86,12 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
             incarceration_periods=identifier_context[
                 NormalizedStateIncarcerationPeriod.base_class_name()
             ],
-            incarceration_period_judicial_district_association=identifier_context[
-                INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
-            ],
         ) + self._find_supervision_spans(
             supervision_delegate=identifier_context[
                 StateSpecificSupervisionDelegate.__name__
             ],
             supervision_periods=identifier_context[
                 NormalizedStateSupervisionPeriod.base_class_name()
-            ],
-            supervision_period_judicial_district_association=identifier_context[
-                SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
             ],
             incarceration_periods=identifier_context[
                 NormalizedStateIncarcerationPeriod.base_class_name()
@@ -120,7 +105,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         self,
         incarceration_delegate: StateSpecificIncarcerationDelegate,
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
-        incarceration_period_judicial_district_association: List[Dict[str, Any]],
     ) -> List[Span]:
         """Finds instances of various events related to incarceration.
         Transforms the person's StateIncarcerationPeriods into IncarcerationPopulationSpans.
@@ -132,15 +116,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
         if not incarceration_periods:
             return cast(List[Span], incarceration_spans)
-
-        # Convert the list of dictionaries into one dictionary where the keys are the
-        # incarceration_period_id values
-        incarceration_period_to_judicial_district: Dict[
-            int, Dict[str, Any]
-        ] = list_of_dicts_to_dict_with_keys(
-            incarceration_period_judicial_district_association,
-            key=NormalizedStateIncarcerationPeriod.get_class_id_name(),
-        )
 
         ip_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
@@ -166,10 +141,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     facility=incarceration_period.facility,
                     purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration,
                     custodial_authority=incarceration_period.custodial_authority,
-                    judicial_district_code=self._get_judicial_district_code_for_period(
-                        incarceration_period,
-                        incarceration_period_to_judicial_district,
-                    ),
                     custody_level=incarceration_period.custody_level,
                     custody_level_raw_text=incarceration_period.custody_level_raw_text,
                     housing_unit=incarceration_period.housing_unit,
@@ -184,7 +155,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
         self,
         supervision_delegate: StateSpecificSupervisionDelegate,
         supervision_periods: List[NormalizedStateSupervisionPeriod],
-        supervision_period_judicial_district_association: List[Dict[str, Any]],
         incarceration_periods: List[NormalizedStateIncarcerationPeriod],
         incarceration_delegate: StateSpecificIncarcerationDelegate,
     ) -> List[Span]:
@@ -198,15 +168,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
         if not supervision_periods:
             return cast(List[Span], supervision_spans)
-
-        # Convert the list of dictionaries into one dictionary where the keys are the
-        # incarceration_period_id values
-        supervision_period_to_judicial_district: Dict[
-            int, Dict[str, Any]
-        ] = list_of_dicts_to_dict_with_keys(
-            supervision_period_judicial_district_association,
-            key=NormalizedStateSupervisionPeriod.get_class_id_name(),
-        )
 
         sp_index = NormalizedSupervisionPeriodIndex(
             sorted_supervision_periods=supervision_periods
@@ -290,10 +251,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                 supervision_period
             )
             case_type = identify_most_severe_case_type(supervision_period)
-            judicial_district_code = self._get_judicial_district_code_for_period(
-                supervision_period,
-                supervision_period_to_judicial_district,
-            )
             sp_in_state_population_based_on_metadata = supervision_delegate.supervision_period_in_supervision_population_in_non_excluded_date_range(
                 supervision_period, supervising_officer_external_id
             )
@@ -325,7 +282,6 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
                     supervision_type=supervision_type,
                     case_type=case_type,
                     custodial_authority=supervision_period.custodial_authority,
-                    judicial_district_code=judicial_district_code,
                     supervising_officer_external_id=supervising_officer_external_id,
                     supervising_district_external_id=deprecated_supervising_district_external_id,
                     level_1_supervision_location_external_id=level_1_supervision_location,
@@ -471,23 +427,3 @@ class PopulationSpanIdentifier(BaseIdentifier[List[Span]]):
 
         supervision_spans.extend(additional_supervision_spans)
         return supervision_spans
-
-    def _get_judicial_district_code_for_period(
-        self,
-        period: Union[
-            NormalizedStateIncarcerationPeriod, NormalizedStateSupervisionPeriod
-        ],
-        period_to_judicial_district: Dict[int, Dict[str, Any]],
-    ) -> Optional[str]:
-        """Retrieves the judicial_district_code corresponding to the period, if one exists."""
-        period_id: Optional[int] = period.get_id()
-
-        if period_id is None:
-            raise ValueError(f"Missing primary key on period of type [{type(period)}].")
-
-        info: Optional[Dict[str, Any]] = period_to_judicial_district.get(period_id)
-
-        if info is not None:
-            return info["judicial_district_code"]
-
-        return None

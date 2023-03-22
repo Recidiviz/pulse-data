@@ -148,10 +148,6 @@ _DEFAULT_IP_ID = 123
 _DEFAULT_SP_ID = 999
 _DEFAULT_SSVR_ID = 789
 
-_DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
-    {"incarceration_period_id": _DEFAULT_IP_ID, "judicial_district_code": "NW"}
-]
-
 _DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     _DEFAULT_SP_ID: {
         "agent_id": 000,
@@ -200,7 +196,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 supervision_period_to_agent_association
                 or _DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
             ),
-            "incarceration_period_judicial_district_association": _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
             "persons_to_recent_county_of_residence": _COUNTY_OF_RESIDENCE_ROWS,
         }
 
