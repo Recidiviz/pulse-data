@@ -98,8 +98,7 @@ class PipelineParameters:
         return {
             "launchParameter": {
                 "containerSpecGcsPath": self.template_gcs_path(project_id),
-                # TODO(#19131): remove -flex
-                "jobName": self.job_name + "-flex",
+                "jobName": self.job_name,
                 "parameters": self.template_parameters(),
                 # DEFAULTS
                 "environment": {
