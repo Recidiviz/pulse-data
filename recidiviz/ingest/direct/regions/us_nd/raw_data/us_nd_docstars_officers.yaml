@@ -26,11 +26,11 @@ columns:
       Current employment status of this officer.
   - name: SUPERVISOR
     description: |-
-      Name of the supervisor of this officer.
-    is_pii: True
+      Whether or not this officer is a supervisor. (Y/N)
   - name: SUPERVISOR_ID
     description: |-
-      ID of the supervisor of this officer.
+      If this officer is not a supervisor, ID of the supervisor of this officer.
+      If this officer is a supervisor, their own ID as a supervisor.
     is_pii: True
   - name: LOGINNAME
     description: |-
