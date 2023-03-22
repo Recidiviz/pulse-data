@@ -14,19 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Driver script to launch test calculation pipeline jobs with output directed to
+"""Driver script to launch test flex template calculation pipeline jobs with output directed to
 sandbox dataflow datasets.
-
-All of the code needed to execute the jobs is in the recidiviz/ package. It is organized in this way so that it can be
-packaged as a Python package and later installed in the VM workers executing the job on Dataflow.
-
-See recidiviz/calculator/pipeline/utils/legacy_pipeline_args_utils.py for more details on each of the arguments.
 
 See http://go/run-dataflow/ for more information on running Dataflow pipelines.
 
 usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
-          --pipeline PIPELINE_TYPE \
-          --job_name JOB-NAME \
+          --pipeline PIPELINE_NAME \
+          --pipeline_type PIPELINE_TYPE \
+          --job_name JOB_NAME \
           --project PROJECT \
           --state_code STATE_CODE \
           --sandbox_output_dataset SANDBOX_OUTPUT_DATASET \
@@ -41,36 +37,116 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           ..and any other pipeline-specific args
 
 Examples:
-    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline
-        --pipeline incarceration_metrics \
+    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
+        --pipeline recidivism_metrics \
+        --pipeline_type metrics \
         --project recidiviz-staging \
-        --job_name incarceration-test \
+        --job_name my-nd-recidivism-metrics-test \
         --sandbox_output_dataset username_dataflow_metrics \
+        --state_code US_ND \
+        --metric_types REINCARCERATION_COUNT REINCARCERATION_RATE
+
+    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
+        --pipeline comprehensive_normalization \
+        --pipeline_type normalization \
+        --project recidiviz-staging \
+        --job_name my-nd-normalization-test \
+        --sandbox_output_dataset username_normalized_state \
         --state_code US_ND
+
+    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
+        --pipeline us_ix_case_note_extracted_entities_supplemental \
+        --pipeline_type supplemental \
+        --project recidiviz-staging \
+        --job_name my-id-supplemental-test \
+        --sandbox_output_dataset username_supplemental_data \
+        --state_code US_IX
+
 
 You must also include any arguments required by the given pipeline.
 """
 from __future__ import absolute_import
 
 import argparse
+import json
 import logging
-import sys
-from typing import List, Optional, Tuple
+import os
+import time
+from typing import Any, Dict
 
-from recidiviz.calculator.pipeline.pipeline_runner import (
-    collect_all_pipeline_names,
-    load_all_pipelines,
-    run_pipeline,
+import google.auth
+import google.auth.transport.requests
+import requests
+
+from recidiviz.airflow.dags.utils.pipeline_parameters import (
+    MetricsPipelineParameters,
+    NormalizationPipelineParameters,
+    PipelineParameters,
+    SupplementalPipelineParameters,
+)
+from recidiviz.calculator import pipeline
+from recidiviz.calculator.pipeline.pipeline_runner import collect_all_pipeline_names
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    calculation_month_count_arg,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
-from recidiviz.tools.deploy.build_dataflow_source_distribution import (
-    build_source_distribution,
-)
-from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.tools.utils.script_helpers import prompt_for_confirmation, run_command
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
-def parse_run_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
-    """Parses the arguments needed to start a sandbox pipeline."""
+class ValidateSandboxDataset(argparse.Action):
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Any = None,
+    ) -> None:
+        if values == DATAFLOW_METRICS_DATASET:
+            parser.error(
+                f"--sandbox_output_dataset argument for test pipelines must be "
+                f"different than the standard Dataflow metrics dataset: "
+                f"{DATAFLOW_METRICS_DATASET}."
+            )
+        setattr(namespace, self.dest, values)
+
+
+class NormalizeJobName(argparse.Action):
+    """Since this is a test run, make sure the job name has a -test suffix."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Any = None,
+    ) -> None:
+        job_name = values
+        if not job_name.endswith("-test"):
+            job_name = job_name + "-test"
+            logging.info(
+                "Appending -test to the job_name because this is a test job: [%s]",
+                job_name,
+            )
+        setattr(namespace, self.dest, job_name)
+
+
+class NormalizeMetricTypes(argparse.Action):
+    """Since this is a test run, make sure the job name has a -test suffix."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Any = None,
+    ) -> None:
+        metric_types_str = " ".join(values)
+        setattr(namespace, self.dest, metric_types_str)
+
+
+def parse_run_arguments() -> argparse.Namespace:
+    """Parses the arguments needed to start a sandbox pipeline to a Namespace."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -88,111 +164,234 @@ def parse_run_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]
         type=str,
         help="The name of the pipeline job to be run.",
         required=True,
+        action=NormalizeJobName,
     )
 
     parser.add_argument(
         "--sandbox_output_dataset",
-        dest="sandbox_output_dataset",
+        # Change output name to match what pipeline args expect
+        dest="output",
         type=str,
         help="Output metrics dataset where results should be written to for test jobs.",
         required=True,
+        action=ValidateSandboxDataset,
     )
 
-    return parser.parse_known_args(argv)
+    parser.add_argument(
+        "--state_code",
+        dest="state_code",
+        type=str,
+        help="state code",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--project",
+        type=str,
+        help="ID of the GCP project.",
+        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+        required=True,
+    )
+
+    parser.add_argument(
+        "--pipeline_type",
+        type=str,
+        help="type of the pipeline",
+        choices=["metrics", "normalization", "supplemental"],
+        required=True,
+    )
+
+    parser.add_argument(
+        "--region",
+        type=str,
+        help="The Google Cloud region to run the job on (e.g. us-west1).",
+        default="us-west1",
+    )
+
+    parser.add_argument(
+        "--normalized_input",
+        type=str,
+        help="BigQuery dataset to query for normalized versions of entities.",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--data_input", type=str, help="BigQuery dataset to query.", required=False
+    )
+
+    parser.add_argument(
+        "--reference_view_input",
+        type=str,
+        help="BigQuery reference view dataset to query.",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--person_filter_ids",
+        type=int,
+        nargs="+",
+        help="An optional list of DB person_id values. When present, the pipeline "
+        "will only calculate metrics for these people and will not output to BQ.",
+    )
+
+    # metric_types, calculation_month_count, static_reference_input can only be used for metric type pipelines
+    parser.add_argument(
+        "--metric_types",
+        dest="metric_types",
+        type=str,
+        nargs="+",
+        help="A list of the types of metric to calculate.",
+        action=NormalizeMetricTypes,
+        required=False,
+    )
+
+    parser.add_argument(
+        "--calculation_month_count",
+        dest="calculation_month_count",
+        type=calculation_month_count_arg,
+        help="The number of months (including this one) to limit the monthly "
+        "calculation output to. If set to -1, does not limit the "
+        "calculations.",
+        required=False,
+    )
+
+    parser.add_argument(
+        "--static_reference_input",
+        type=str,
+        help="BigQuery static reference table dataset to query.",
+        required=False,
+    )
+
+    return parser.parse_args()
 
 
-def validated_run_arguments(
-    arguments: List[str],
-    job_name: str,
-    sandbox_output_dataset: Optional[str],
-) -> List[str]:
-    """Validates the provided combination of provided arguments."""
-    job_name_for_pipeline = job_name
+def fetch_google_auth_token() -> str:
+    creds, _ = google.auth.default()
 
-    # Test runs require a specified sandbox output dataset
-    if not sandbox_output_dataset:
-        raise argparse.ArgumentError(
-            argument=None,
-            message="Test pipeline runs require a specified "
-            "--sandbox_output_dataset argument.",
+    # creds.valid is False, and creds.token is None
+    # Need to refresh credentials to populate those
+    auth_req = google.auth.transport.requests.Request()
+    creds.refresh(auth_req)
+
+    return creds.token  # type: ignore[attr-defined]
+
+
+def get_pipeline_parameters(
+    pipeline_type: str, template_metadata_subdir: str, arguments_dict: Dict[str, Any]
+) -> PipelineParameters:
+    if pipeline_type == "metrics":
+        return MetricsPipelineParameters(
+            **arguments_dict, template_metadata_subdir=template_metadata_subdir
         )
-
-    if sandbox_output_dataset == DATAFLOW_METRICS_DATASET:
-        raise argparse.ArgumentError(
-            argument=None,
-            message="--sandbox_output_dataset argument for test pipelines must be "
-            "different than the standard Dataflow metrics dataset.",
+    if pipeline_type == "normalization":
+        return NormalizationPipelineParameters(
+            **arguments_dict, template_metadata_subdir=template_metadata_subdir
         )
+    if pipeline_type == "supplemental":
+        return SupplementalPipelineParameters(
+            **arguments_dict, template_metadata_subdir=template_metadata_subdir
+        )
+    raise ValueError(f"Received invalid pipeline type: {pipeline_type}")
+
+
+def get_cloudbuild_path() -> str:
+    pipeline_root_path = os.path.dirname(pipeline.__file__)
+    cloudbuild_path = "cloudbuild.pipelines.dev.yaml"
+
+    return os.path.join(pipeline_root_path, cloudbuild_path)
+
+
+def get_template_path(pipeline_type: str) -> str:
+    pipeline_root_path = os.path.dirname(pipeline.__file__)
+    template_path = f"{pipeline_type}/template_metadata.json"
+    return os.path.join(pipeline_root_path, template_path)
+
+
+def run_sandbox_calculation_pipeline(
+    project: str,
+    pipeline_type: str,
+    # Remainder of arguments passed through to pipelines
+    **arguments_dict: Any,
+) -> None:
+    """Runs the pipeline designated by the given --pipeline argument."""
+
+    username = run_command("git config user.name", timeout_sec=300)
+    username = username.replace(" ", "").strip().lower()
+    if not username:
+        raise ValueError("Found no configured git username")
+
+    template_metadata_subdir = f"template_metadata_dev/{username}"
+    params: PipelineParameters = get_pipeline_parameters(
+        pipeline_type, template_metadata_subdir, arguments_dict
+    )
+    launch_body = params.flex_template_launch_body(project)
+    template_gcs_path = params.template_gcs_path(project)
+    cloudbuild_absolute_path = get_cloudbuild_path()
+    template_absolute_path = get_template_path(pipeline_type)
+    artifact_reg_image_path = (
+        f"us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}/build:latest"
+    )
 
     # Have the user confirm that the sandbox dataflow dataset exists.
     prompt_for_confirmation(
         "Have you already created a sandbox dataflow dataset called "
-        f"`{sandbox_output_dataset}` using `create_or_update_dataflow_sandbox`?"
+        f"`{params.output}` using `create_or_update_dataflow_sandbox`?"
     )
 
-    if "--output" in arguments:
-        raise argparse.ArgumentError(
-            argument=None,
-            message="Cannot specify an --output argument when running a sandbox "
-            "calculation pipeline. Please use the --sandbox_output_dataset "
-            "argument instead.",
+    submit_build_start = time.time()
+
+    # Build and submit the image to "us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}-build:latest"
+    print(
+        "Submitting build (this takes a few minutes, or longer on the first run).....\n"
+    )
+    run_command(
+        f"gcloud builds submit --project={project} --config {cloudbuild_absolute_path} --substitutions=_IMAGE_PATH={artifact_reg_image_path}",
+        timeout_sec=900,
+    )
+
+    submit_build_exec_seconds = time.time() - submit_build_start
+    build_minutes, build_seconds = divmod(submit_build_exec_seconds, 60)
+    print(f"Submitted build in {build_minutes} minutes and {build_seconds} seconds.\n")
+
+    # Upload the flex template json, tagged with the image that should be used
+    # This step is only necessary when the template_metadata.json file or image path has been changed
+    print(f"Building flex template (uploading to {template_gcs_path}) .....\n")
+    run_command(
+        f"gcloud dataflow flex-template build \
+        {template_gcs_path} \
+        --image {artifact_reg_image_path} \
+        --sdk-language PYTHON \
+        --metadata-file {template_absolute_path}"
+    )
+
+    # Run the dataflow job
+    pipeline_launch_body = json.dumps(launch_body, indent=2)
+    print("Starting flex template job with body:")
+    print(pipeline_launch_body)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + fetch_google_auth_token(),
+    }
+    response = requests.post(
+        f"https://dataflow.googleapis.com/v1b3/projects/recidiviz-staging/locations/{params.region}/flexTemplates:launch",
+        headers=headers,
+        data=pipeline_launch_body,
+        timeout=60,
+    )
+
+    if response.ok:
+        print(
+            f"Job {params.job_name} successfully launched - go to https://console.cloud.google.com/dataflow/jobs?project={project} to monitor job progress"
         )
-
-    # Adding to the beginning of the list since the --metric_types argument
-    # must be last
-    arguments.insert(0, sandbox_output_dataset)
-    arguments.insert(0, "--output")
-
-    # If this is a test run, make sure the job name has a -test suffix and that a
-    #  has been specified
-    if not job_name.endswith("-test"):
-        job_name_for_pipeline = job_name + "-test"
-        logging.info(
-            "Appending -test to the job_name because this is a test job: [%s]",
-            job_name_for_pipeline,
-        )
-
-    # Adding to the beginning of the list since the --metric_types argument
-    # must be last
-    arguments.insert(0, job_name_for_pipeline)
-    arguments.insert(0, "--job_name")
-
-    arguments.insert(0, build_source_distribution())
-    arguments.insert(0, "--extra_package")
-
-    return arguments
-
-
-def pipeline_module_name_and_arguments(arguments: List[str]) -> Tuple[str, List[str]]:
-    """Parses and validates arguments needed to start running a pipelines. Returns the
-    name of the pipeline module to be run and the list of arguments remaining for the
-    pipeline execution."""
-    # We drop arguments[0] because it's the script name
-    run_arguments_to_validate, remaining_pipeline_args = parse_run_arguments(
-        arguments[1:]
-    )
-
-    pipeline_module_name = run_arguments_to_validate.pipeline
-
-    pipeline_arguments = validated_run_arguments(
-        remaining_pipeline_args,
-        run_arguments_to_validate.job_name,
-        run_arguments_to_validate.sandbox_output_dataset,
-    )
-
-    return pipeline_module_name, pipeline_arguments
-
-
-def run_sandbox_calculation_pipeline() -> None:
-    """Runs the pipeline designated by the given --pipeline argument."""
-    load_all_pipelines()
-    pipeline_module_name, pipeline_arguments = pipeline_module_name_and_arguments(
-        sys.argv
-    )
-
-    run_pipeline(pipeline_module_name, pipeline_arguments)
+    else:
+        print("Job launch failed..")
+        print(response.text)
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    run_sandbox_calculation_pipeline()
+    args = parse_run_arguments()
+    # Collect all parsed arguments and filter out the ones that are not set
+    set_kwargs = {k: v for k, v in vars(args).items() if v is not None}
+    run_sandbox_calculation_pipeline(**set_kwargs)

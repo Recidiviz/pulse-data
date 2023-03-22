@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for run_sandbox_flex_calculation_pipeline.py"""
+"""Tests for run_sandbox_calculation_pipeline.py"""
 
 import os
 import unittest
 
-from recidiviz.tools.calculator.run_sandbox_flex_calculation_pipeline import (
+from recidiviz.tools.calculator.run_sandbox_calculation_pipeline import (
     get_cloudbuild_path,
     get_template_path,
 )
