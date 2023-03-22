@@ -26,8 +26,6 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.utils import environment
 
 
-# TODO(#8901): Delete LegacyIngestViewProcessorDelegate superclass when we have fully
-#  migrated this state to new ingest mappings version.
 class UsNdController(BaseDirectIngestController):
     """Direct ingest controller implementation for us_nd."""
 
