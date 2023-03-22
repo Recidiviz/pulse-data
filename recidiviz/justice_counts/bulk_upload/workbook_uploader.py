@@ -21,7 +21,7 @@ import itertools
 import logging
 from collections import defaultdict
 from itertools import groupby
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -121,6 +121,10 @@ class WorkbookUploader:
         existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
             reports=reports
         )
+        existing_datapoints_dict_unchanged = {
+            unique_key: float(datapoint.value) if datapoint.value is not None else None
+            for unique_key, datapoint in existing_datapoints_dict.items()
+        }
         # Sheets that have been successfully ingested in upload_rows will be added to
         # metric_key_to_successfully_ingested_sheet_names.
         metric_key_to_successfully_ingested_sheet_names: Dict[
@@ -174,13 +178,11 @@ class WorkbookUploader:
             )
 
         # 4. For any report that was updated, set its status to DRAFT
-        report: schema.Report  # make mypy happy
-        for report in itertools.chain(*reports_by_time_range.values()):
-            ReportInterface.update_report_metadata(
-                report=report,
-                editor_id=self.user_account.id,
-                status=ReportStatus.DRAFT.value,
-            )
+        self._update_report_status(
+            existing_datapoints_dict_changed=existing_datapoints_dict,
+            existing_datapoints_dict_unchanged=existing_datapoints_dict_unchanged,
+            reports_by_time_range=reports_by_time_range,
+        )
 
         # 5. Add any workbook errors to metric_key_to_errors
         self._add_workbook_errors(
@@ -191,6 +193,62 @@ class WorkbookUploader:
         )
 
         return self.metric_key_to_datapoint_jsons, self.metric_key_to_errors
+
+    def _update_report_status(
+        self,
+        existing_datapoints_dict_changed: Dict[
+            Tuple[datetime.date, datetime.date, str, Optional[str], Optional[str]],
+            schema.Datapoint,
+        ],
+        existing_datapoints_dict_unchanged: Dict[
+            Tuple[datetime.date, datetime.date, str, Optional[str], Optional[str]],
+            Optional[float],
+        ],
+        reports_by_time_range: Dict[Tuple[Any, Any], List[schema.Report]],
+    ) -> None:
+        """
+        If a user uploads a workbook that changes a Report associated with
+        previously uploaded data, that report's status is set to DRAFT. This can occur
+        in the following cases:
+            1. Previously uploaded datapoints have been changed
+            2. A datapoint has been added to a previously uploaded Report
+        """
+        unique_key_difference = set(existing_datapoints_dict_changed.keys()).difference(
+            existing_datapoints_dict_unchanged.keys()
+        )
+        for different_key in unique_key_difference:
+            # datapoint that previoiusly did not exist has been added to report
+            updated_report = reports_by_time_range[
+                (different_key[0], different_key[1])
+            ][0]
+            if updated_report.status.value != "DRAFT":
+                ReportInterface.update_report_metadata(
+                    report=updated_report,
+                    editor_id=self.user_account.id,
+                    status=ReportStatus.DRAFT.value,
+                )
+
+        for (
+            unique_key,
+            datapoint,
+        ) in existing_datapoints_dict_changed.items():
+            if (
+                unique_key in existing_datapoints_dict_unchanged
+                and existing_datapoints_dict_unchanged[unique_key]
+                != float(datapoint.value)
+                if datapoint.value is not None
+                else None
+            ):
+                # datapoint that previously existed has been updated/changed
+                updated_report = reports_by_time_range[(unique_key[0], unique_key[1])][
+                    0
+                ]
+                if updated_report.status.value != "DRAFT":
+                    ReportInterface.update_report_metadata(
+                        report=updated_report,
+                        editor_id=self.user_account.id,
+                        status=ReportStatus.DRAFT.value,
+                    )
 
     def _add_workbook_errors(
         self,
