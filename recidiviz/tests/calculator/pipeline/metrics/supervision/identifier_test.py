@@ -154,16 +154,6 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(
     DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values()
 )
 
-DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS = {
-    _DEFAULT_SUPERVISION_PERIOD_ID: {
-        "supervision_period_id": _DEFAULT_SUPERVISION_PERIOD_ID,
-        "judicial_district_code": "XXX",
-    }
-}
-DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST = list(
-    DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS.values()
-)
-
 DEFAULT_LEVEL_1_SUPERVISION_LOCATION = "level_1"
 DEFAULT_LEVEL_2_SUPERVISION_LOCATION = "level_2"
 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATIONS = {
@@ -199,9 +189,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
         supervision_period_to_agent_association: Optional[List[Dict[str, Any]]] = None,
-        supervision_period_judicial_district_association: Optional[
-            List[Dict[str, Any]]
-        ] = None,
         us_mo_sentence_statuses: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
     ) -> List[SupervisionEvent]:
@@ -218,8 +205,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             NormalizedStateSupervisionViolationResponse.base_class_name(): violation_responses,
             "supervision_period_to_agent_association": supervision_period_to_agent_association
             or DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            "supervision_period_judicial_district_association": supervision_period_judicial_district_association
-            or DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             "supervision_location_ids_to_names": DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
             "us_mo_sentence_statuses": us_mo_sentence_statuses or [],
         }
@@ -365,7 +350,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -439,7 +423,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -546,7 +529,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -654,7 +636,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -766,7 +747,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -823,7 +803,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             state_code_override="US_ID",
         )
 
@@ -882,7 +861,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             state_code_override="US_ND",
         )
 
@@ -1020,7 +998,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1124,7 +1101,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1250,7 +1226,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1366,7 +1341,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1471,7 +1445,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1525,7 +1498,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervision_period,
                 supervision_type=supervision_type,
                 supervising_officer_external_id="XXX",
-                judicial_district_code="XXX",
                 supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
@@ -1534,7 +1506,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             create_start_event_from_period(
                 supervision_period,
                 supervising_officer_external_id="XXX",
-                judicial_district_code="XXX",
                 supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
             ),
@@ -1547,7 +1518,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 supervising_officer_external_id="XXX",
                 level_1_supervision_location_external_id="X",
                 level_2_supervision_location_external_id=None,
-                judicial_district_code="XXX",
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -1566,7 +1536,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1710,7 +1679,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1898,7 +1866,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -1998,7 +1965,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2127,7 +2093,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2209,7 +2174,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2322,7 +2286,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             state_code_override="US_ID",
         )
 
@@ -2377,7 +2340,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             state_code_override="US_PA",
         )
 
@@ -2391,7 +2353,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
-                judicial_district_code="XXX",
             ),
             create_termination_event_from_period(
                 supervision_period,
@@ -2400,7 +2361,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
-                judicial_district_code="XXX",
                 in_supervision_population_on_date=True,
             ),
         ]
@@ -2416,7 +2376,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="OFFICE_2",
                 level_2_supervision_location_external_id="DISTRICT_1",
                 supervising_officer_external_id="XXX",
-                judicial_district_code="XXX",
                 case_compliances=_generate_case_compliances(
                     person=self.person,
                     start_date=supervision_period.start_date,
@@ -2499,7 +2458,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
                     "agent_end_date": supervision_period_termination_date,
                 }
             ],
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             [
                 {
                     "sentence_external_id": supervision_sentence.external_id,
@@ -2616,7 +2574,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
             state_code_override="US_ID",
         )
 
@@ -2694,7 +2651,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_responses,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2790,7 +2746,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_reports,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -2960,7 +2915,6 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             violation_reports,
             supervision_contacts,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST,
         )
 
         self.assertCountEqual(expected_events, supervision_events)
@@ -4067,11 +4021,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
     """Tests the classify_supervision_success function."""
 
     def setUp(self) -> None:
-        self.default_supervision_period_to_judicial_district_associations = {
-            _DEFAULT_SUPERVISION_PERIOD_ID: DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST[
-                0
-            ]
-        }
         self.identifier = identifier.SupervisionIdentifier()
 
     def test_classify_supervision_success(self) -> None:
@@ -4112,7 +4061,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4190,7 +4138,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4269,7 +4216,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4365,7 +4311,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(2, len(projected_completion_events))
@@ -4475,7 +4420,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(2, len(projected_completion_events))
@@ -4549,10 +4493,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             }
         }
 
-        supervision_period_to_judicial_district_associations = {
-            111: {"supervision_period_id": 111, "judicial_district_code": "NORTHWEST"}
-        }
-
         supervision_sentences = [supervision_sentence]
 
         projected_completion_events = self.identifier._classify_supervision_success(
@@ -4566,7 +4506,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 list(supervision_period_agent_association.values()),
             ),
-            supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4586,7 +4525,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     supervising_officer_external_id="AGENTX",
                     supervising_district_external_id="DISTRICTX",
                     level_1_supervision_location_external_id="DISTRICTX",
-                    judicial_district_code="NORTHWEST",
                     sentence_days_served=(
                         supervision_sentence_completion_date
                         - supervision_sentence_effective_date
@@ -4629,10 +4567,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             }
         }
 
-        supervision_period_to_judicial_district_associations = {
-            111: {"supervision_period_id": 111, "judicial_district_code": None}
-        }
-
         supervision_sentences = [supervision_sentence]
 
         projected_completion_events = self.identifier._classify_supervision_success(
@@ -4646,7 +4580,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 list(supervision_period_agent_association.values()),
             ),
-            supervision_period_to_judicial_district_associations,
         )
         self.assertEqual(1, len(projected_completion_events))
 
@@ -4668,7 +4601,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                     ).days,
                     supervising_officer_external_id=None,
                     supervising_district_external_id=None,
-                    judicial_district_code=None,
                 )
             ],
             projected_completion_events,
@@ -4714,7 +4646,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4776,7 +4707,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4819,7 +4749,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4863,7 +4792,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -4920,7 +4848,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -4983,7 +4910,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(1, len(projected_completion_events))
@@ -5045,7 +4971,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -5088,7 +5013,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -5132,7 +5056,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(0, len(projected_completion_events))
@@ -5211,7 +5134,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            self.default_supervision_period_to_judicial_district_associations,
         )
 
         self.assertEqual(2, len(projected_completion_events))
@@ -6038,7 +5960,6 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            None,
         )
 
         if first_supervision_period.termination_date is None:
@@ -6118,7 +6039,6 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            None,
         )
 
         if first_supervision_period.termination_date is None:
@@ -6184,7 +6104,6 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
                 DEFAULT_SUPERVISION_LOCATIONS_TO_NAMES_ASSOCIATION_LIST,
                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             ),
-            None,
         )
 
         if supervision_period.start_date is None:
@@ -6513,7 +6432,6 @@ def expected_population_events(
     level_1_supervision_location_external_id: Optional[str] = None,
     level_2_supervision_location_external_id: Optional[str] = None,
     case_compliances: Optional[Dict[date, SupervisionCaseCompliance]] = None,
-    judicial_district_code: Optional[str] = None,
     supervision_downgrade_date: Optional[date] = None,
     supervision_downgrade_occurred: Optional[bool] = False,
     previous_supervision_level: Optional[StateSupervisionLevel] = None,
@@ -6598,7 +6516,6 @@ def expected_population_events(
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 case_compliance=case_compliance,
-                judicial_district_code=judicial_district_code,
                 supervision_level_downgrade_occurred=downgrade_occurred,
                 previous_supervision_level=previous_level,
                 projected_end_date=projected_supervision_completion_date,

@@ -357,15 +357,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_period_judicial_district_association_data = [
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "supervision_period_id": fake_supervision_period_id,
-                "judicial_district_code": "XXX",
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -463,7 +454,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
-            "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "us_mo_sentence_statuses": us_mo_sentence_status_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
@@ -768,15 +758,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_period_judicial_district_association_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id,
-                "supervision_period_id": supervision_period.supervision_period_id,
-                "judicial_district_code": "XXX",
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -807,7 +788,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
-            "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -1008,15 +988,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        supervision_period_judicial_district_association_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id_1,
-                "supervision_period_id": supervision_period__1.supervision_period_id,
-                "judicial_district_code": "XXX",
-            }
-        ]
-
         supervision_locations_to_names_data = [
             {
                 "state_code": "US_XX",
@@ -1046,7 +1017,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateCharge.__tablename__: charge_data,
             schema.StateAssessment.__tablename__: assessment_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
-            "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -1097,9 +1067,6 @@ class TestClassifyEvents(unittest.TestCase):
         ] = None,
         assessments: Optional[List[entities.StateAssessment]] = None,
         supervision_contacts: Optional[List[entities.StateSupervisionContact]] = None,
-        supervision_period_judicial_district_association: Optional[
-            List[Dict[Any, Any]]
-        ] = None,
         supervision_period_to_agent_association: Optional[List[Dict[Any, Any]]] = None,
         supervision_location_to_names_association: Optional[
             List[Dict[Any, Any]]
@@ -1126,11 +1093,6 @@ class TestClassifyEvents(unittest.TestCase):
             entities.StateSupervisionContact.__name__: supervision_contacts
             if supervision_contacts
             else [],
-            "supervision_period_judicial_district_association": (
-                supervision_period_judicial_district_association
-                if supervision_period_judicial_district_association
-                else []
-            ),
             "supervision_period_to_agent_association": supervision_period_to_agent_association
             or [],
             "supervision_location_ids_to_names": supervision_location_to_names_association
@@ -1206,14 +1168,6 @@ class TestClassifyEvents(unittest.TestCase):
             sequence_num=0,
         )
 
-        judicial_district_code = "NORTHEAST"
-
-        supervision_period_to_judicial_district_row = {
-            "person_id": fake_person_id,
-            "supervision_period_id": supervision_period.supervision_period_id,
-            "judicial_district_code": judicial_district_code,
-        }
-
         supervision_period_to_agent_map = {
             "agent_id": 1010,
             "person_id": fake_person_id,
@@ -1228,9 +1182,6 @@ class TestClassifyEvents(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             incarceration_sentences=[incarceration_sentence],
             supervision_sentences=[supervision_sentence],
-            supervision_period_judicial_district_association=[
-                supervision_period_to_judicial_district_row
-            ],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
         )
 
@@ -1245,7 +1196,6 @@ class TestClassifyEvents(unittest.TestCase):
                 level_1_supervision_location_external_id="10",
                 successful_completion=True,
                 incarcerated_during_sentence=True,
-                judicial_district_code=judicial_district_code,
                 sentence_days_served=(completion_date - effective_date).days,
             )
         ]
@@ -1261,7 +1211,6 @@ class TestClassifyEvents(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 supervising_officer_external_id="OFFICER0009",
                 level_1_supervision_location_external_id="10",
-                judicial_district_code=judicial_district_code,
                 projected_supervision_completion_date=supervision_sentence.projected_completion_date,
             )
         )
@@ -1273,7 +1222,6 @@ class TestClassifyEvents(unittest.TestCase):
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
                 level_1_supervision_location_external_id="10",
-                judicial_district_code=judicial_district_code,
                 in_supervision_population_on_date=True,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             )
@@ -1283,7 +1231,6 @@ class TestClassifyEvents(unittest.TestCase):
                 supervision_period,
                 supervising_officer_external_id="OFFICER0009",
                 supervising_district_external_id="10",
-                judicial_district_code=judicial_district_code,
             )
         )
 

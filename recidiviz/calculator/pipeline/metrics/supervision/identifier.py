@@ -19,7 +19,7 @@ import datetime
 import logging
 from collections import defaultdict
 from datetime import date
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 import attr
 from dateutil.relativedelta import relativedelta
@@ -70,9 +70,6 @@ from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_incarce
 from recidiviz.calculator.pipeline.utils.entity_normalization.normalized_supervision_period_index import (
     NormalizedSupervisionPeriodIndex,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    list_of_dicts_to_dict_with_keys,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
     get_state_specific_case_compliance_manager,
 )
@@ -92,9 +89,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import (
 )
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import (
     sentence_supervision_type_to_supervision_periods_supervision_type,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
-    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
 )
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -155,9 +149,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 NormalizedStateSupervisionViolationResponse.base_class_name()
             ],
             supervision_contacts=identifier_context[StateSupervisionContact.__name__],
-            supervision_period_judicial_district_association=identifier_context[
-                SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
-            ],
         )
 
     def _find_supervision_events(
@@ -173,7 +164,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         assessments: List[NormalizedStateAssessment],
         violation_responses: List[NormalizedStateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
-        supervision_period_judicial_district_association: List[Dict[str, Any]],
     ) -> List[SupervisionEvent]:
         """Identifies various events related to being on supervision.
 
@@ -184,8 +174,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             - assessments: list of StateAssessments for a person
             - violations: list of StateSupervisionViolations for a person
             - violation_responses: list of StateSupervisionViolationResponses for a person
-            - supervision_period_judicial_district_association: a list of dictionaries with information connecting
-                StateSupervisionPeriod ids to the judicial district responsible for the period of supervision
 
         Returns:
             A list of SupervisionEvents for the person.
@@ -195,13 +183,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         if not supervision_periods and not incarceration_periods:
             return []
-
-        supervision_period_to_judicial_district_associations = (
-            list_of_dicts_to_dict_with_keys(
-                supervision_period_judicial_district_association,
-                NormalizedStateSupervisionPeriod.get_class_id_name(),
-            )
-        )
 
         incarceration_period_index = NormalizedIncarcerationPeriodIndex(
             sorted_incarceration_periods=incarceration_periods,
@@ -232,16 +213,11 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervision_period_index,
             incarceration_period_index,
             supervision_delegate,
-            supervision_period_to_judicial_district_associations,
         )
 
         supervision_events.extend(projected_supervision_completion_events)
         for supervision_period in supervision_period_index.sorted_supervision_periods:
             if should_produce_supervision_event_for_period(supervision_period):
-                judicial_district_code = self._get_judicial_district_code(
-                    supervision_period,
-                    supervision_period_to_judicial_district_associations,
-                )
 
                 supervision_events.extend(
                     self._find_population_events_for_supervision_period(
@@ -256,7 +232,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         supervision_contacts=supervision_contacts,
                         violation_delegate=violation_delegate,
                         supervision_delegate=supervision_delegate,
-                        judicial_district_code=judicial_district_code,
                     )
                 )
 
@@ -269,7 +244,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                         violation_responses_for_history=violation_responses_for_history,
                         violation_delegate=violation_delegate,
                         supervision_delegate=supervision_delegate,
-                        judicial_district_code=judicial_district_code,
                     )
                 )
 
@@ -281,7 +255,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_period_index=supervision_period_index,
                     incarceration_period_index=incarceration_period_index,
                     supervision_delegate=supervision_delegate,
-                    judicial_district_code=judicial_district_code,
                 )
                 if supervision_start_event:
                     supervision_events.append(supervision_start_event)
@@ -310,7 +283,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_contacts: List[StateSupervisionContact],
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
-        judicial_district_code: Optional[str] = None,
     ) -> List[SupervisionPopulationEvent]:
         """Finds days that this person was on supervision for the given
         StateSupervisionPeriod.
@@ -327,7 +299,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 StateSupervisionViolationResponse for a person, sorted by response_date and
                 filtered to those that are applicable when analyzing violation history
             - violation_delegate: the state-specific violation delegate
-            - judicial_district_code: The judicial district responsible for the period of supervision
         Returns
             - A set of unique SupervisionPopulationEvents for the person for the given
             StateSupervisionPeriod.
@@ -494,7 +465,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     case_compliance=case_compliance,
-                    judicial_district_code=judicial_district_code,
                     custodial_authority=supervision_period.custodial_authority,
                     supervision_level_downgrade_occurred=supervision_level_downgrade_occurred,
                     previous_supervision_level=previous_supervision_level,
@@ -602,7 +572,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
-        judicial_district_code: Optional[str] = None,
     ) -> Optional[SupervisionEvent]:
         """Identifies an instance of supervision start, assuming the provided |supervision_period| has a valid start
         date, and returns all relevant info as a SupervisionStartEvent.
@@ -659,7 +628,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,
             level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-            judicial_district_code=judicial_district_code,
             custodial_authority=supervision_period.custodial_authority,
         )
 
@@ -674,7 +642,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         ],
         violation_delegate: StateSpecificViolationDelegate,
         supervision_delegate: StateSpecificSupervisionDelegate,
-        judicial_district_code: Optional[str] = None,
     ) -> Optional[SupervisionEvent]:
         """Identifies an instance of supervision termination. If the given supervision_period has a valid start_date and
         termination_date, then returns a SupervisionTerminationEvent with the details of the termination.
@@ -817,7 +784,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 supervising_district_external_id=deprecated_supervising_district_external_id,
                 level_1_supervision_location_external_id=level_1_supervision_location_external_id,
                 level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-                judicial_district_code=judicial_district_code,
                 custodial_authority=supervision_period.custodial_authority,
                 response_count=violation_history.response_count,
                 most_severe_response_decision=violation_history.most_severe_response_decision,
@@ -835,7 +801,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_period_index: NormalizedSupervisionPeriodIndex,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
-        supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
     ) -> List[ProjectedSupervisionCompletionEvent]:
         """This classifies whether supervision projected to end in a given month was completed successfully.
 
@@ -950,7 +915,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     supervision_type_for_event=supervision_period_supervision_type_for_sentence,
                     incarceration_period_index=incarceration_period_index,
                     supervision_delegate=supervision_delegate,
-                    supervision_period_to_judicial_district_associations=supervision_period_to_judicial_district_associations,
                 )
 
                 if completion_event:
@@ -968,7 +932,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         supervision_type_for_event: StateSupervisionPeriodSupervisionType,
         incarceration_period_index: NormalizedIncarcerationPeriodIndex,
         supervision_delegate: StateSpecificSupervisionDelegate,
-        supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
     ) -> Optional[ProjectedSupervisionCompletionEvent]:
         """Returns a ProjectedSupervisionCompletionEvent for the given supervision
         sentence and its last terminated period, if the sentence should be included
@@ -1029,10 +992,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
 
         case_type = identify_most_severe_case_type(supervision_period)
 
-        judicial_district_code = self._get_judicial_district_code(
-            supervision_period, supervision_period_to_judicial_district_associations
-        )
-
         last_day_of_projected_month = last_day_of_month(projected_completion_date)
 
         deprecated_supervising_district_external_id = (
@@ -1060,7 +1019,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
             supervising_district_external_id=deprecated_supervising_district_external_id,
             level_1_supervision_location_external_id=level_1_supervision_location_external_id,
             level_2_supervision_location_external_id=level_2_supervision_location_external_id,
-            judicial_district_code=judicial_district_code,
             custodial_authority=supervision_period.custodial_authority,
         )
 
@@ -1252,24 +1210,6 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
         """Returns each SupervisionEvent in events if the supervision_type on the event matches the given
         supervision_type."""
         return [event for event in events if event.supervision_type == supervision_type]
-
-    def _get_judicial_district_code(
-        self,
-        supervision_period: NormalizedStateSupervisionPeriod,
-        supervision_period_to_judicial_district: Dict[int, Dict[Any, Any]],
-    ) -> Optional[str]:
-        """Retrieves the judicial_district_code corresponding to the supervision_period, if one exists."""
-        supervision_period_id = supervision_period.supervision_period_id
-
-        if supervision_period_id is None:
-            raise ValueError("Unexpected unset supervision_period_id.")
-
-        ip_info = supervision_period_to_judicial_district.get(supervision_period_id)
-
-        if ip_info is not None:
-            return ip_info.get("judicial_district_code")
-
-        return None
 
     def _find_assessment_score_change(
         self,

@@ -314,15 +314,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        incarceration_period_judicial_district_association_data = [
-            {
-                "state_code": state_code,
-                "person_id": fake_person_id,
-                "incarceration_period_id": 123,
-                "judicial_district_code": "NW",
-            }
-        ]
-
         supervision_period_to_agent_data = [
             {
                 "state_code": state_code,
@@ -363,7 +354,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
             schema.StateAssessment.__tablename__: assessment_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
@@ -501,15 +491,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
             }
         ]
 
-        incarceration_period_judicial_district_association_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id,
-                "incarceration_period_id": None,
-                "judicial_district_code": "NW",
-            }
-        ]
-
         supervision_period_to_agent_data = [
             {
                 "state_code": "US_XX",
@@ -541,7 +522,6 @@ class TestIncarcerationPipeline(unittest.TestCase):
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             "persons_to_recent_county_of_residence": fake_person_id_to_county_query_result,
-            "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_data,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
@@ -587,7 +567,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             List[entities.StateSupervisionViolationResponse]
         ] = None,
         assessments: Optional[List[entities.StateAssessment]] = None,
-        ip_to_judicial_district_kv: Optional[List[Dict[Any, Any]]] = None,
         person_id_to_county_kv: Optional[List[Dict[Any, Any]]] = None,
     ) -> Dict[str, List]:
         return {
@@ -602,8 +581,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             entities.StateSupervisionViolationResponse.__name__: violation_responses
             if violation_responses
             else [],
-            "incarceration_period_judicial_district_association": ip_to_judicial_district_kv
-            or [],
             "persons_to_recent_county_of_residence": person_id_to_county_kv or [],
         }
 
@@ -654,12 +631,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             "county_of_residence": _COUNTY_OF_RESIDENCE,
         }
 
-        fake_incarceration_period_judicial_district_association_result = {
-            "person_id": fake_person_id,
-            "incarceration_period_id": 123,
-            "judicial_district_code": "NW",
-        }
-
         assert incarceration_period.admission_date is not None
         assert incarceration_period.admission_reason is not None
         assert incarceration_period.release_date is not None
@@ -706,9 +677,6 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             person=fake_person,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
-            ip_to_judicial_district_kv=[
-                fake_incarceration_period_judicial_district_association_result
-            ],
             person_id_to_county_kv=[fake_person_id_to_county_query_result],
         )
 

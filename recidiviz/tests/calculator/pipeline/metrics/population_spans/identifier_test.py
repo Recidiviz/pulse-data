@@ -17,7 +17,7 @@
 """Tests for population_spans/identifier.py."""
 import unittest
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Union
 
 from recidiviz.calculator.pipeline.metrics.population_spans import identifier
 from recidiviz.calculator.pipeline.metrics.population_spans.spans import (
@@ -68,15 +68,7 @@ from recidiviz.persistence.entity.state.entities import (
 
 _DEFAULT_IP_ID = 123
 
-_DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
-    {"incarceration_period_id": _DEFAULT_IP_ID, "judicial_district_code": "NW"}
-]
-
 _DEFAULT_SP_ID = 234
-
-_DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION = [
-    {"supervision_period_id": _DEFAULT_SP_ID, "judicial_district_code": "NW"}
-]
 
 _DEFAULT_SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION = [
     {"supervision_period_id": _DEFAULT_SP_ID, "agent_external_id": "TODDB"}
@@ -114,25 +106,15 @@ class TestFindPopulationSpans(unittest.TestCase):
             List[NormalizedStateIncarcerationPeriod]
         ] = None,
         incarceration_delegate: Optional[StateSpecificIncarcerationDelegate] = None,
-        incarceration_period_judicial_district_association: Optional[
-            List[Dict[str, Any]]
-        ] = None,
         supervision_periods: Optional[List[NormalizedStateSupervisionPeriod]] = None,
         supervision_delegate: Optional[StateSpecificSupervisionDelegate] = None,
-        supervision_period_judicial_district_association: Optional[
-            List[Dict[str, Any]]
-        ] = None,
     ) -> List[Span]:
         """Helper for testing the identify function on the identifier."""
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
             NormalizedStateIncarcerationPeriod.base_class_name(): incarceration_periods
             or [],
-            "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association
-            or _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
             NormalizedStateSupervisionPeriod.base_class_name(): supervision_periods
             or [],
-            "supervision_period_judicial_district_association": supervision_period_judicial_district_association
-            or _DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION,
         }
         required_delegates: Dict[str, StateSpecificDelegate] = {
             "StateSpecificIncarcerationDelegate": incarceration_delegate
@@ -170,7 +152,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period,
-                judicial_district_code="NW",
             )
         ]
 
@@ -211,7 +192,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period_1,
-                judicial_district_code="NW",
             ),
             expected_incarceration_span(
                 incarceration_period_2,
@@ -275,7 +255,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_supervision_span(
                 supervision_period,
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -330,7 +309,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_supervision_span(
                 supervision_period_1,
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -392,11 +370,9 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period,
-                judicial_district_code="NW",
             ),
             expected_supervision_span(
                 supervision_period,
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -448,13 +424,11 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period,
-                judicial_district_code="NW",
             ),
             expected_supervision_span(
                 supervision_period,
                 start_date_inclusive=date(2008, 12, 20),
                 end_date_exclusive=date(2009, 1, 4),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -465,7 +439,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2009, 1, 4),
                 end_date_exclusive=date(2015, 2, 3),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -518,13 +491,11 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period,
-                judicial_district_code="NW",
             ),
             expected_supervision_span(
                 supervision_period,
                 start_date_inclusive=date(2008, 8, 20),
                 end_date_exclusive=date(2008, 11, 20),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -535,7 +506,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2008, 11, 20),
                 end_date_exclusive=None,
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -603,14 +573,12 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period_1,
-                judicial_district_code="NW",
             ),
             expected_incarceration_span(incarceration_period_2),
             expected_supervision_span(
                 supervision_period,
                 start_date_inclusive=date(2010, 12, 1),
                 end_date_exclusive=date(2011, 3, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -621,7 +589,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2011, 3, 1),
                 end_date_exclusive=date(2012, 1, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -689,14 +656,12 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period_1,
-                judicial_district_code="NW",
             ),
             expected_incarceration_span(incarceration_period_2),
             expected_supervision_span(
                 supervision_period,
                 start_date_inclusive=date(2010, 12, 1),
                 end_date_exclusive=date(2011, 1, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -707,7 +672,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2011, 1, 1),
                 end_date_exclusive=date(2011, 3, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -718,7 +682,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2011, 3, 1),
                 end_date_exclusive=date(2011, 5, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -729,7 +692,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2011, 5, 1),
                 end_date_exclusive=date(2011, 7, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -740,7 +702,6 @@ class TestFindPopulationSpans(unittest.TestCase):
                 supervision_period,
                 start_date_inclusive=date(2011, 7, 1),
                 end_date_exclusive=date(2012, 1, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -811,13 +772,11 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_incarceration_span(
                 incarceration_period,
-                judicial_district_code="NW",
             ),
             expected_supervision_span(
                 supervision_period_1,
                 start_date_inclusive=date(2011, 1, 1),
                 end_date_exclusive=date(2011, 3, 1),
-                judicial_district_code="NW",
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
@@ -864,7 +823,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_supervision_span(
                 dual_supervision_period,
-                judicial_district_code="NW",
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id="DISTRICT",
@@ -873,7 +831,6 @@ class TestFindPopulationSpans(unittest.TestCase):
             expected_supervision_span(
                 dual_supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                judicial_district_code="NW",
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id="DISTRICT",
@@ -882,7 +839,6 @@ class TestFindPopulationSpans(unittest.TestCase):
             expected_supervision_span(
                 dual_supervision_period,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                judicial_district_code="NW",
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id="DISTRICT",
@@ -1006,7 +962,6 @@ class TestFindPopulationSpans(unittest.TestCase):
         expected_spans = [
             expected_supervision_span(
                 parole_period_1,
-                judicial_district_code="NW",
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id="DISTRICT",
@@ -1017,7 +972,6 @@ class TestFindPopulationSpans(unittest.TestCase):
             ),
             expected_supervision_span(
                 parole_period_1,
-                judicial_district_code="NW",
                 supervising_officer_external_id="TODDB",
                 level_1_supervision_location_external_id="SUPERVISION SITE 3",
                 level_2_supervision_location_external_id="DISTRICT",
@@ -1105,7 +1059,6 @@ class TestFindPopulationSpans(unittest.TestCase):
 
 def expected_incarceration_span(
     incarceration_period: NormalizedStateIncarcerationPeriod,
-    judicial_district_code: Optional[str] = None,
     included_in_state_population: bool = True,
     custodial_authority: Optional[StateCustodialAuthority] = None,
 ) -> IncarcerationPopulationSpan:
@@ -1118,7 +1071,6 @@ def expected_incarceration_span(
         facility=incarceration_period.facility,
         start_date_inclusive=incarceration_period.admission_date,
         end_date_exclusive=incarceration_period.release_date,
-        judicial_district_code=judicial_district_code,
         purpose_for_incarceration=incarceration_period.specialized_purpose_for_incarceration
         or StateSpecializedPurposeForIncarceration.GENERAL,
         included_in_state_population=included_in_state_population,
@@ -1130,7 +1082,6 @@ def expected_supervision_span(
     supervision_period: NormalizedStateSupervisionPeriod,
     start_date_inclusive: Optional[date] = None,
     end_date_exclusive: Optional[date] = None,
-    judicial_district_code: Optional[str] = None,
     case_type: Optional[StateSupervisionCaseType] = None,
     supervising_officer_external_id: Optional[str] = None,
     supervision_type: Optional[StateSupervisionPeriodSupervisionType] = None,
@@ -1146,7 +1097,6 @@ def expected_supervision_span(
         state_code=supervision_period.state_code,
         start_date_inclusive=start_date_inclusive or supervision_period.start_date,
         end_date_exclusive=end_date_exclusive or supervision_period.termination_date,
-        judicial_district_code=judicial_district_code,
         case_type=case_type,
         custodial_authority=supervision_period.custodial_authority,
         supervising_officer_external_id=supervising_officer_external_id,

@@ -30,9 +30,6 @@ from recidiviz.calculator.query.state.views.reference.dashboard_user_restriction
 from recidiviz.calculator.query.state.views.reference.incarceration_location_ids_to_names import (
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import (
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.ingested_product_users import (
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,
 )
@@ -51,17 +48,11 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
 from recidiviz.calculator.query.state.views.reference.product_roster import (
     PRODUCT_ROSTER_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.sentence_judicial_district_association import (
-    SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import (
-    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
@@ -89,10 +80,7 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
     INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
-    INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER,
-    SENTENCE_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-    SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER,
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,

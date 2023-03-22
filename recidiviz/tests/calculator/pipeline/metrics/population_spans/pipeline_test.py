@@ -205,15 +205,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             normalized_database_base_dict(incarceration_period, {"sequence_num": 0})
         ]
 
-        incarceration_period_judicial_district_association_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id,
-                "incarceration_period_id": fake_incarceration_period_id,
-                "judicial_district_code": "NW",
-            }
-        ]
-
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=fake_supervision_period_id,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -231,15 +222,6 @@ class TestPopulationSpanPipeline(unittest.TestCase):
 
         supervision_periods_data = [
             normalized_database_base_dict(supervision_period, {"sequence_num": 0})
-        ]
-
-        supervision_period_judicial_district_association_data = [
-            {
-                "state_code": "US_XX",
-                "person_id": fake_person_id,
-                "supervision_period_id": fake_supervision_period_id,
-                "judicial_district_code": "NW",
-            }
         ]
 
         supervision_period_to_agent_association = [
@@ -275,9 +257,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             schema.StatePersonEthnicity.__tablename__: ethnicity_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            "incarceration_period_judicial_district_association": incarceration_period_judicial_district_association_data,
             "state_race_ethnicity_population_counts": state_race_ethnicity_population_count_data,
-            "supervision_period_judicial_district_association": supervision_period_judicial_district_association_data,
             "supervision_period_to_agent_association": supervision_period_to_agent_association,
             "supervision_location_ids_to_names": supervision_locations_to_names_data,
         }
@@ -396,9 +376,7 @@ class TestClassifyResults(unittest.TestCase):
     def load_person_entities_dict(
         person: entities.StatePerson,
         incarceration_periods: Optional[List[entities.StateIncarcerationPeriod]] = None,
-        ip_to_judicial_district_kv: Optional[List[Dict[Any, Any]]] = None,
         supervision_periods: Optional[List[entities.StateSupervisionPeriod]] = None,
-        sp_to_judicial_district_kv: Optional[List[Dict[Any, Any]]] = None,
         sp_to_agent_kv: Optional[List[Dict[Any, Any]]] = None,
         supervision_locations_to_names_associations_kv: Optional[
             List[Dict[Any, Any]]
@@ -409,10 +387,6 @@ class TestClassifyResults(unittest.TestCase):
             entities.StateIncarcerationPeriod.__name__: incarceration_periods
             if incarceration_periods
             else [],
-            "incarceration_period_judicial_district_association": ip_to_judicial_district_kv
-            or [],
-            "supervision_period_judicial_district_association": sp_to_judicial_district_kv
-            or [],
             entities.StateSupervisionPeriod.__name__: supervision_periods
             if supervision_periods
             else [],
@@ -438,12 +412,6 @@ class TestClassifyResults(unittest.TestCase):
             sequence_num=0,
         )
 
-        incarceration_period_judicial_district_association_result = {
-            "person_id": self.fake_person_id,
-            "incarceration_period_id": 1111,
-            "judicial_district_code": "NW",
-        }
-
         supervision_period = (
             normalized_entities.NormalizedStateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=2222,
@@ -460,12 +428,6 @@ class TestClassifyResults(unittest.TestCase):
                 sequence_num=0,
             )
         )
-
-        supervision_period_judicial_district_association_result = {
-            "person_id": self.fake_person_id,
-            "supervision_period_id": 2222,
-            "judicial_district_code": "NW",
-        }
 
         supervision_period_agent_association_result = {
             "person_id": self.fake_person_id,
@@ -498,7 +460,6 @@ class TestClassifyResults(unittest.TestCase):
                 facility="FA",
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                judicial_district_code="NW",
             ),
             SupervisionPopulationSpan(
                 included_in_state_population=True,
@@ -514,7 +475,6 @@ class TestClassifyResults(unittest.TestCase):
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id="OFFICER 1",
                 custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                judicial_district_code="NW",
             ),
         ]
 
@@ -524,12 +484,6 @@ class TestClassifyResults(unittest.TestCase):
             person=self.fake_person,
             incarceration_periods=[incarceration_period],
             supervision_periods=[supervision_period],
-            ip_to_judicial_district_kv=[
-                incarceration_period_judicial_district_association_result,
-            ],
-            sp_to_judicial_district_kv=[
-                supervision_period_judicial_district_association_result
-            ],
             sp_to_agent_kv=[supervision_period_agent_association_result],
             supervision_locations_to_names_associations_kv=[
                 supervision_location_to_name_map
@@ -656,7 +610,6 @@ class TestProduceMetrics(unittest.TestCase):
                 facility="FA",
                 purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                 custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                judicial_district_code="NW",
             ),
             SupervisionPopulationSpan(
                 included_in_state_population=True,
@@ -672,7 +625,6 @@ class TestProduceMetrics(unittest.TestCase):
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id="OFFICER 1",
                 custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                judicial_district_code="NW",
             ),
         ]
 

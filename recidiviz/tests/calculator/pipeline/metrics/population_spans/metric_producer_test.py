@@ -124,7 +124,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             facility="FACILITY X",
             start_date_inclusive=date(2000, 3, 12),
             end_date_exclusive=date(2000, 7, 2),
-            judicial_district_code="XXX",
             purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             included_in_state_population=True,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -162,7 +161,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                     custody_level=StateIncarcerationPeriodCustodyLevel.MEDIUM,
                     custody_level_raw_text="MEDIUM",
@@ -180,7 +178,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             facility="FACILITY X",
             start_date_inclusive=date(2000, 3, 12),
             end_date_exclusive=date(2002, 1, 2),
-            judicial_district_code="XXX",
             purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             included_in_state_population=True,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -213,7 +210,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
@@ -231,7 +227,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
@@ -249,7 +244,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
             ],
@@ -264,7 +258,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             facility="FACILITY X",
             start_date_inclusive=date(2000, 3, 12),
             end_date_exclusive=date(2002, 7, 2),
-            judicial_district_code="XXX",
             purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             included_in_state_population=True,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -296,7 +289,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 )
             ],
@@ -309,7 +301,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             facility="FACILITY X",
             start_date_inclusive=date(2019, 3, 12),
             end_date_exclusive=None,
-            judicial_district_code="XXX",
             purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             included_in_state_population=True,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -342,7 +333,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
@@ -360,7 +350,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
             ],
@@ -381,7 +370,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
-            judicial_district_code="XXX",
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -416,7 +404,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="DIVERSION",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 )
             ],
         )
@@ -436,7 +423,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
-            judicial_district_code="XXX",
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -471,7 +457,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
@@ -493,7 +478,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
@@ -515,7 +499,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
             ],
         )
@@ -537,7 +520,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
-            judicial_district_code="XXX",
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -571,7 +553,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
             ],
         )
@@ -591,7 +572,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
-            judicial_district_code="XXX",
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -626,7 +606,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
@@ -648,7 +627,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
             ],
         )
@@ -660,7 +638,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             facility="FACILITY X",
             start_date_inclusive=date(2015, 3, 1),
             end_date_exclusive=date(2017, 3, 1),
-            judicial_district_code="XXX",
             purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             included_in_state_population=True,
             custodial_authority=StateCustodialAuthority.STATE_PRISON,
@@ -678,7 +655,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
-            judicial_district_code="XXX",
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -708,7 +684,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
@@ -726,7 +701,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
                 IncarcerationPopulationSpanMetric(
@@ -744,7 +718,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     facility="FACILITY X",
                     purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
                     custodial_authority=StateCustodialAuthority.STATE_PRISON,
-                    judicial_district_code="XXX",
                     secondary_person_external_id="SID9889",
                 ),
                 SupervisionPopulationSpanMetric(
@@ -767,7 +740,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
@@ -789,7 +761,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
@@ -811,7 +782,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
                 SupervisionPopulationSpanMetric(
                     person_id=12345,
@@ -833,7 +803,6 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     supervision_level_raw_text="MEDIUM",
                     case_type=StateSupervisionCaseType.GENERAL,
                     custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-                    judicial_district_code="XXX",
                 ),
             ],
         )
