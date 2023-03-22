@@ -2738,6 +2738,18 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
     contact_method_raw_text = Column(
         String(255), comment="The raw text value of the contact method."
     )
+    contacting_staff_external_id = Column(
+        String(255),
+        comment="The external id of the staff member who made the contact. "
+        "This field with the contacting_staff_external_id_type field make up a "
+        "primary key for the state_staff_external_id table.",
+    )
+    contacting_staff_external_id_type = Column(
+        String(255),
+        comment="The ID type associated with the external id of the staff member who made the contact. "
+        "This field with the contacting_staff_external_id field make up a primary key for the state_staff_"
+        "external_id table.",
+    )
     location = Column(
         state_supervision_contact_location, comment="Where this contact took place."
     )
