@@ -870,3 +870,138 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(len(metric_key_to_errors[prisons.releases.key]), 4)
             # total_staff (annual) x staff_by_type = 2
             self.assertEqual(len(metric_key_to_errors[prisons.staff.key]), 2)
+
+    def test_update_report_status(
+        self,
+    ) -> None:
+        """Checks that we only set reports to draft if changes were made to the report."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheet_names_to_skip={"funding", "funding_by_type"},
+                sheetnames_with_null_data={"use_of_force"},
+            )
+            workbook_uploader = WorkbookUploader(
+                system=schema.System.PRISONS,
+                agency_id=self.prison_agency_id,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
+            # Get existing reports for this agency (there should not be any at first)
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(reports, [])
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            # Make sure reports were created
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+            # Set all report statuses to PUBLISHED
+            for report in reports:
+                ReportInterface.update_report_metadata(
+                    report=report,
+                    editor_id=user_account.id,
+                    status="PUBLISHED",
+                )
+
+            # Case 1: Upload workbook with no changes to the datapoints
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            # Check that reports have not been set to draft (no changes were actually made)
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+            for report in reports:
+                self.assertEqual(report.status.value, "PUBLISHED")
+
+            # Case 2: Upload workbook with changes to the datapoints (admissions sheet)
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheet_names_to_vary_values={"admissions"},
+                sheet_names_to_skip={"funding", "funding_by_type"},
+                sheetnames_with_null_data={"use_of_force"},
+            )
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+            # 4 reports have been set to draft
+            self.assertEqual(reports[4].status.value, "DRAFT")
+            self.assertEqual(reports[5].status.value, "DRAFT")
+            self.assertEqual(reports[7].status.value, "DRAFT")
+            self.assertEqual(reports[8].status.value, "DRAFT")
+
+            # Set all reports back to published
+            for report in reports:
+                ReportInterface.update_report_metadata(
+                    report=report,
+                    editor_id=user_account.id,
+                    status="PUBLISHED",
+                )
+
+            # Case 3: Upload workbook with new/additional datapoints (funding and funding_by_type sheets)
+            # In this case, the sheets did not exist at all previously
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheet_names_to_vary_values={"admissions"},
+                sheetnames_with_null_data={"use_of_force"},
+            )
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+            # 3 reports have been set to draft
+            self.assertEqual(reports[0].status.value, "DRAFT")
+            self.assertEqual(reports[3].status.value, "DRAFT")
+            self.assertEqual(reports[6].status.value, "DRAFT")
+
+            # Set all reports back to published
+            for report in reports:
+                ReportInterface.update_report_metadata(
+                    report=report,
+                    editor_id=user_account.id,
+                    status="PUBLISHED",
+                )
+
+            # Case 4: Upload workbook with new/additional datapoints (use_of_force sheet)
+            # In this case, the sheet previously existed but no data was provided
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheet_names_to_vary_values={"admissions"},
+            )
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+            # 3 reports have been set to draft
+            self.assertEqual(reports[0].status.value, "DRAFT")
+            self.assertEqual(reports[3].status.value, "DRAFT")
+            self.assertEqual(reports[6].status.value, "DRAFT")

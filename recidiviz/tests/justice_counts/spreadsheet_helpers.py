@@ -34,13 +34,19 @@ TEST_EXCEL_FILE = os.path.join(
 
 
 def _get_dimension_columns(
-    month_list: List[str], dimension_list: List[str], vary_values: bool
+    month_list: List[str],
+    dimension_list: List[str],
+    vary_values: bool,
+    null_data: Optional[bool] = False,
 ) -> Tuple[List[int], List[str], List[int], List[str]]:
     """Helper function that creates the columns for the data frame based upon the reporting
     frequency and breakdowns of the MetricFile.
     """
     year_col = [2021, 2022, 2023]
-    value_col = [12, 45, 30] if vary_values else [10, 20, 30]
+    if null_data is False:
+        value_col = [12, 45, 30] if vary_values else [10, 20, 30]
+    else:
+        value_col = [None, None, None]  # type: ignore[list-item]
     month_col, dimension_col = ([], [])
 
     if len(dimension_list) > 0:
@@ -53,7 +59,10 @@ def _get_dimension_columns(
         value_col = []
         for value in value_col_copy:
             value_col.append(value)
-            value_col += [0] * (len(dimension_list) - 1)
+            if null_data is False:
+                value_col += [0] * (len(dimension_list) - 1)
+            else:
+                value_col += [None] * (len(dimension_list) - 1)  # type: ignore[list-item]
 
     if len(month_list) > 0:
         month_col = month_list * len(
@@ -89,6 +98,7 @@ def _create_dataframe_dict(
     unexpected_month: Optional[bool] = False,
     unexpected_column: Optional[bool] = False,
     unexpected_disaggregation: Optional[bool] = False,
+    null_data: Optional[bool] = False,
 ) -> Dict[str, Any]:
     """Helper function that creates a dictionary, which is later converted into a
     dataframe and exported as an excel file for testing purposes.
@@ -108,7 +118,10 @@ def _create_dataframe_dict(
     )
 
     year_col, month_col, value_col, dimension_col, = _get_dimension_columns(
-        month_list=month_list, dimension_list=dimension_list, vary_values=vary_values
+        month_list=month_list,
+        dimension_list=dimension_list,
+        vary_values=vary_values,
+        null_data=null_data,
     )
 
     if invalid_value_type is True:
@@ -162,6 +175,7 @@ def create_excel_file(
     unexpected_column_sheet_name: Optional[str] = None,
     unexpected_system_sheet_name: Optional[str] = None,
     unexpected_disaggregation_sheet_name: Optional[str] = None,
+    sheetnames_with_null_data: Optional[Set[str]] = None,
 ) -> None:
     """Populates bulk_upload_test.xlsx with fake data to test functions that ingest spreadsheets"""
     filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
@@ -171,20 +185,41 @@ def create_excel_file(
         for filename, metricfile in filename_to_metricfile.items():
             if sheet_names_to_skip is not None and filename in sheet_names_to_skip:
                 continue
-            dataframe_dict = _create_dataframe_dict(
-                metricfile=metricfile,
-                reporting_frequency=metricfile.definition.reporting_frequency,
-                invalid_month=filename == invalid_month_sheet_name,
-                invalid_value_type=filename == invalid_value_type_sheet_name,
-                missing_column=missing_column_sheet_name == filename,
-                too_many_rows=too_many_rows_filename == filename,
-                vary_values=sheet_names_to_vary_values is not None
-                and filename in sheet_names_to_vary_values,
-                unexpected_month=filename == unexpected_month_sheet_name,
-                unexpected_column=filename == unexpected_column_sheet_name,
-                unexpected_disaggregation=filename
-                == unexpected_disaggregation_sheet_name,
-            )
+            if (
+                sheetnames_with_null_data is not None
+                and filename in sheetnames_with_null_data
+            ):
+                dataframe_dict = _create_dataframe_dict(
+                    metricfile=metricfile,
+                    reporting_frequency=metricfile.definition.reporting_frequency,
+                    invalid_month=filename == invalid_month_sheet_name,
+                    invalid_value_type=filename == invalid_value_type_sheet_name,
+                    missing_column=missing_column_sheet_name == filename,
+                    too_many_rows=too_many_rows_filename == filename,
+                    vary_values=sheet_names_to_vary_values is not None
+                    and filename in sheet_names_to_vary_values,
+                    unexpected_month=filename == unexpected_month_sheet_name,
+                    unexpected_column=filename == unexpected_column_sheet_name,
+                    unexpected_disaggregation=filename
+                    == unexpected_disaggregation_sheet_name,
+                    null_data=True,
+                )
+            else:
+                dataframe_dict = _create_dataframe_dict(
+                    metricfile=metricfile,
+                    reporting_frequency=metricfile.definition.reporting_frequency,
+                    invalid_month=filename == invalid_month_sheet_name,
+                    invalid_value_type=filename == invalid_value_type_sheet_name,
+                    missing_column=missing_column_sheet_name == filename,
+                    too_many_rows=too_many_rows_filename == filename,
+                    vary_values=sheet_names_to_vary_values is not None
+                    and filename in sheet_names_to_vary_values,
+                    unexpected_month=filename == unexpected_month_sheet_name,
+                    unexpected_column=filename == unexpected_column_sheet_name,
+                    unexpected_disaggregation=filename
+                    == unexpected_disaggregation_sheet_name,
+                    null_data=False,
+                )
 
             # If the metric is for the supervision system or the sheet contains
             # an unexpected system error, add a system column.

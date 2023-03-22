@@ -76,7 +76,7 @@ class TimeRangeUploader:
             Tuple[datetime.date, datetime.date], Tuple[int, int]
         ],
         reporting_frequency: schema.ReportingFrequency,
-        existing_report: Optional[schema.Report] = None,
+        existing_report: Optional[List[schema.Report]] = None,
     ) -> Tuple[schema.Report, List[DatapointJson]]:
         """Uploads rows for a certain time period and saves them in the JC database."""
         if existing_report is not None:
