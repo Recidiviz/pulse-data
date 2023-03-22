@@ -379,21 +379,6 @@ def users(user_hash: Optional[str] = None) -> Tuple[Union[str, Response], HTTPSt
                     ),
                     func.coalesce(UserOverride.blocked, False).label("blocked"),
                     func.coalesce(
-                        PermissionsOverride.can_access_leadership_dashboard,
-                        StateRolePermissions.can_access_leadership_dashboard,
-                        False,
-                    ).label("can_access_leadership_dashboard"),
-                    func.coalesce(
-                        PermissionsOverride.can_access_case_triage,
-                        StateRolePermissions.can_access_case_triage,
-                        False,
-                    ).label("can_access_case_triage"),
-                    func.coalesce(
-                        PermissionsOverride.should_see_beta_charts,
-                        StateRolePermissions.should_see_beta_charts,
-                        False,
-                    ).label("should_see_beta_charts"),
-                    func.coalesce(
                         PermissionsOverride.routes,
                         StateRolePermissions.routes,
                     ).label("routes"),
@@ -631,9 +616,6 @@ def states() -> Response:
                 {
                     "stateCode": res.state_code,
                     "role": res.role,
-                    "canAccessLeadershipDashboard": res.can_access_leadership_dashboard,
-                    "canAccessCaseTriage": res.can_access_case_triage,
-                    "shouldSeeBetaCharts": res.should_see_beta_charts,
                     "routes": res.routes,
                     "featureVariants": res.feature_variants,
                 }
@@ -668,9 +650,6 @@ def state_info(state_code: str) -> Response:
                         {
                             "name": per.role,
                             "permissions": {
-                                "can_access_leadership_dashboard": per.can_access_leadership_dashboard,
-                                "can_access_case_triage": per.can_access_case_triage,
-                                "should_see_beta_charts": per.should_see_beta_charts,
                                 "routes": per.routes,
                                 "feature_variants": per.feature_variants,
                             },
@@ -720,9 +699,6 @@ def add_state_role(
                     {
                         "stateCode": state_role.state_code,
                         "role": state_role.role,
-                        "canAccessCaseTriage": state_role.can_access_case_triage,
-                        "canAccessLeadershipDashboard": state_role.can_access_leadership_dashboard,
-                        "shouldSeeBetaCharts": state_role.should_see_beta_charts,
                         "routes": state_role.routes,
                         "featureVariants": state_role.feature_variants,
                     }
@@ -824,9 +800,6 @@ def update_state_role(
                     {
                         "stateCode": state_role.state_code,
                         "role": state_role.role,
-                        "canAccessCaseTriage": state_role.can_access_case_triage,
-                        "canAccessLeadershipDashboard": state_role.can_access_leadership_dashboard,
-                        "shouldSeeBetaCharts": state_role.should_see_beta_charts,
                         "routes": state_role.routes,
                         "featureVariants": state_role.feature_variants,
                     }
@@ -1058,9 +1031,6 @@ def update_user_permissions(
                     jsonify(
                         {
                             "emailAddress": new_permissions.email_address,
-                            "canAccessLeadershipDashboard": new_permissions.can_access_leadership_dashboard,
-                            "canAccessCaseTriage": new_permissions.can_access_case_triage,
-                            "shouldSeeBetaCharts": new_permissions.should_see_beta_charts,
                             "routes": new_permissions.routes,
                             "featureVariants": new_permissions.feature_variants,
                         }
@@ -1081,9 +1051,6 @@ def update_user_permissions(
                 jsonify(
                     {
                         "emailAddress": updated_permissions.email_address,
-                        "canAccessLeadershipDashboard": updated_permissions.can_access_leadership_dashboard,
-                        "canAccessCaseTriage": updated_permissions.can_access_case_triage,
-                        "shouldSeeBetaCharts": updated_permissions.should_see_beta_charts,
                         "routes": updated_permissions.routes,
                         "featureVariants": updated_permissions.feature_variants,
                     }

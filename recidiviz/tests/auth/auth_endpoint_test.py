@@ -646,26 +646,17 @@ class AuthEndpointTests(TestCase):
         default_1 = generate_fake_default_permissions(
             state="US_ND",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": False, "B": True},
             feature_variants={"C": False},
         )
         default_2 = generate_fake_default_permissions(
             state="US_ND",
             role="user_1_override.role",
-            can_access_leadership_dashboard=False,
-            can_access_case_triage=True,
-            should_see_beta_charts=True,
             feature_variants={"C": False},
         )
         default_3 = generate_fake_default_permissions(
             state="US_ID",
             role="supervision_staff",
-            can_access_leadership_dashboard=False,
-            can_access_case_triage=True,
-            should_see_beta_charts=True,
         )
         new_permissions = generate_fake_permissions_overrides(
             email="leadership@domain.org",
@@ -690,8 +681,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": False,
                     "district": "D1",
                     "emailAddress": "leadership@domain.org",
                     "externalId": "user_1_override.external_id",
@@ -699,7 +688,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": "User",
                     "role": "user_1_override.role",
                     "stateCode": "US_ND",
-                    "shouldSeeBetaCharts": True,
                     "routes": {"overridden route": True},
                     "featureVariants": {"overridden variant": True},
                     "userHash": _LEADERSHIP_USER_HASH,
@@ -708,8 +696,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": False,
                     "district": "D3",
                     "emailAddress": "supervision_staff@domain.org",
                     "externalId": "abc",
@@ -717,7 +703,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": "Doe",
                     "role": "supervision_staff",
                     "stateCode": "US_ID",
-                    "shouldSeeBetaCharts": True,
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _SUPERVISION_STAFF_HASH,
@@ -742,9 +727,7 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
+            routes={"A": True},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
         with self.app.test_request_context():
@@ -753,8 +736,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "4, 10A",
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": True,
                     "district": "4, 10A",
                     "emailAddress": "leadership@domain.org",
                     "externalId": "12345",
@@ -762,8 +743,7 @@ class AuthEndpointTests(TestCase):
                     "lastName": "User",
                     "role": "leadership_role",
                     "stateCode": "US_MO",
-                    "shouldSeeBetaCharts": True,
-                    "routes": None,
+                    "routes": {"A": True},
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
                 },
@@ -789,7 +769,7 @@ class AuthEndpointTests(TestCase):
         default_1 = generate_fake_default_permissions(
             state="US_ME",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
+            routes={"A": "B"},
         )
         new_permissions = generate_fake_permissions_overrides(
             email="leadership@domain.org",
@@ -805,8 +785,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": True,
                     "district": None,
                     "emailAddress": "leadership@domain.org",
                     "externalId": "A1B2",
@@ -814,7 +792,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "stateCode": "US_ME",
-                    "shouldSeeBetaCharts": False,
                     "routes": {"A": True, "C": False},
                     "featureVariants": {"C": True},
                     "userHash": _LEADERSHIP_USER_HASH,
@@ -852,8 +829,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": "District 4",
                     "emailAddress": "leadership@domain.org",
                     "externalId": "12345",
@@ -861,7 +836,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": "User",
                     "role": "leadership_role",
                     "stateCode": "US_CO",
-                    "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _LEADERSHIP_USER_HASH,
@@ -884,9 +858,6 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": "B", "B": "C"},
             feature_variants={"D": "E"},
         )
@@ -916,8 +887,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": "District",
                     "emailAddress": "add_user@domain.org",
                     "externalId": "ABC",
@@ -925,7 +894,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "stateCode": "US_CO",
-                    "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _ADD_USER_HASH,
@@ -934,8 +902,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "1, 2",
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": True,
                     "district": "1, 2",
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
@@ -943,7 +909,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "leadership_role",
                     "stateCode": "US_MO",
-                    "shouldSeeBetaCharts": True,
                     "routes": {"A": "B", "B": "C"},
                     "featureVariants": {"D": "E"},
                     "userHash": _PARAMETER_USER_HASH,
@@ -973,9 +938,6 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_CO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": "B", "B": "C"},
             feature_variants={"D": "E"},
         )
@@ -985,8 +947,6 @@ class AuthEndpointTests(TestCase):
             "allowedSupervisionLocationIds": "",
             "allowedSupervisionLocationLevel": "",
             "blocked": False,
-            "canAccessCaseTriage": False,
-            "canAccessLeadershipDashboard": True,
             "district": "District",
             "emailAddress": "parameter@domain.org",
             "externalId": "ABC",
@@ -994,7 +954,6 @@ class AuthEndpointTests(TestCase):
             "lastName": None,
             "role": "leadership_role",
             "stateCode": "US_CO",
-            "shouldSeeBetaCharts": True,
             "routes": {"A": "B", "B": "C"},
             "featureVariants": {"D": "E"},
             "userHash": _PARAMETER_USER_HASH,
@@ -1141,16 +1100,12 @@ class AuthEndpointTests(TestCase):
                 leadership_default = generate_fake_default_permissions(
                     state="US_XX",
                     role="leadership_role",
-                    can_access_case_triage=True,
-                    can_access_leadership_dashboard=False,
-                    should_see_beta_charts=True,
+                    routes={"A": True},
                 )
                 supervision_staff_default = generate_fake_default_permissions(
                     state="US_XX",
                     role="supervision_staff",
-                    can_access_case_triage=True,
-                    can_access_leadership_dashboard=False,
-                    should_see_beta_charts=True,
+                    routes={"B": True},
                 )
                 add_entity_to_database_session(
                     self.database_key, [leadership_default, supervision_staff_default]
@@ -1172,8 +1127,6 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": True,
-                        "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "leadership@domain.org",
                         "externalId": "3975",
@@ -1181,8 +1134,7 @@ class AuthEndpointTests(TestCase):
                         "lastName": "user",
                         "role": "leadership_role",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": True,
-                        "routes": None,
+                        "routes": {"A": True},
                         "featureVariants": None,
                         "userHash": _LEADERSHIP_USER_HASH,
                     },
@@ -1190,8 +1142,6 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": True,
-                        "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "supervision_staff@domain.org",
                         "externalId": "3706",
@@ -1199,8 +1149,7 @@ class AuthEndpointTests(TestCase):
                         "lastName": "user",
                         "role": "supervision_staff",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": True,
-                        "routes": None,
+                        "routes": {"B": True},
                         "featureVariants": None,
                         "userHash": _SUPERVISION_STAFF_HASH,
                     },
@@ -1246,8 +1195,6 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": False,
-                        "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "leadership@domain.org",
                         "externalId": "0000",
@@ -1255,7 +1202,6 @@ class AuthEndpointTests(TestCase):
                         "lastName": None,
                         "role": "leadership_role",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
                         "userHash": _LEADERSHIP_USER_HASH,
@@ -1299,8 +1245,6 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": False,
-                        "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "leadership@domain.org",
                         "externalId": "0000",
@@ -1308,7 +1252,6 @@ class AuthEndpointTests(TestCase):
                         "lastName": None,
                         "role": "leadership_role",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
                         "routes": None,
                         "featureVariants": None,
                         "userHash": _LEADERSHIP_USER_HASH,
@@ -1339,16 +1282,12 @@ class AuthEndpointTests(TestCase):
         leadership_default = generate_fake_default_permissions(
             state="US_XX",
             role="leadership_role",
-            can_access_case_triage=False,
-            can_access_leadership_dashboard=False,
-            should_see_beta_charts=False,
+            routes={"A": True},
         )
         supervision_staff_default = generate_fake_default_permissions(
             state="US_XX",
             role="supervision_staff",
-            can_access_case_triage=False,
-            can_access_leadership_dashboard=False,
-            should_see_beta_charts=False,
+            routes={"B": True},
         )
         add_entity_to_database_session(
             self.database_key,
@@ -1383,8 +1322,6 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": False,
-                        "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "leadership@domain.org",
                         "externalId": "3975",
@@ -1392,8 +1329,7 @@ class AuthEndpointTests(TestCase):
                         "lastName": "user",
                         "role": "leadership_role",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
-                        "routes": None,
+                        "routes": {"A": True},
                         "featureVariants": None,
                         "userHash": _LEADERSHIP_USER_HASH,
                     },
@@ -1401,8 +1337,6 @@ class AuthEndpointTests(TestCase):
                         "allowedSupervisionLocationIds": "",
                         "allowedSupervisionLocationLevel": "",
                         "blocked": False,
-                        "canAccessCaseTriage": False,
-                        "canAccessLeadershipDashboard": False,
                         "district": "",
                         "emailAddress": "supervision_staff@domain.org",
                         "externalId": None,
@@ -1410,8 +1344,7 @@ class AuthEndpointTests(TestCase):
                         "lastName": None,
                         "role": "supervision_staff",
                         "stateCode": "US_XX",
-                        "shouldSeeBetaCharts": False,
-                        "routes": None,
+                        "routes": {"B": True},
                         "featureVariants": None,
                         "userHash": _SUPERVISION_STAFF_HASH,
                     },
@@ -1449,8 +1382,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": "D1",
                     "emailAddress": "parameter@domain.org",
                     "externalId": "123",
@@ -1458,7 +1389,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": "User",
                     "role": "leadership_role",
                     "stateCode": "US_CO",
-                    "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _PARAMETER_USER_HASH,
@@ -1501,8 +1431,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": None,
                     "emailAddress": "parameter@domain.org",
                     "externalId": "Updated ID",
@@ -1510,7 +1438,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": "Name",
                     "role": "leadership_role",
                     "stateCode": "US_TN",
-                    "shouldSeeBetaCharts": False,
                     "routes": None,
                     "featureVariants": None,
                     "userHash": _PARAMETER_USER_HASH,
@@ -1558,9 +1485,7 @@ class AuthEndpointTests(TestCase):
         default_co = generate_fake_default_permissions(
             state="US_CO",
             role="supervision_staff",
-            can_access_case_triage=True,
-            can_access_leadership_dashboard=False,
-            should_see_beta_charts=True,
+            routes={"A": True},
         )
         add_entity_to_database_session(self.database_key, [user, default_co])
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
@@ -1597,8 +1522,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": False,
                     "district": None,
                     "emailAddress": "user@domain.org",
                     "externalId": None,
@@ -1606,7 +1529,6 @@ class AuthEndpointTests(TestCase):
                     "lastName": None,
                     "role": "supervision_staff",
                     "stateCode": "US_CO",
-                    "shouldSeeBetaCharts": True,
                     "routes": {
                         "system_prisonToSupervision": "A",
                         "community_practices": "4",
@@ -1632,9 +1554,6 @@ class AuthEndpointTests(TestCase):
         default_tn = generate_fake_default_permissions(
             state="US_TN",
             role="leadership_role",
-            can_access_case_triage=True,
-            can_access_leadership_dashboard=True,
-            should_see_beta_charts=True,
             routes={"A": "B"},
             feature_variants={"C": "D"},
         )
@@ -1644,8 +1563,7 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "canAccessLeadershipDashboard": False,
-                    "canAccessCaseTriage": False,
+                    "routes": {"C": "D"},
                     "reason": "test",
                 },
             )
@@ -1660,7 +1578,7 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "canAccessLeadershipDashboard": "Should be boolean",
+                    "routes": "Should not be a string",
                     "reason": "test",
                 },
             )
@@ -1672,17 +1590,14 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": None,
                     "emailAddress": "user@domain.org",
                     "externalId": None,
                     "firstName": None,
                     "lastName": None,
                     "role": "leadership_role",
-                    "routes": {"A": "B"},
+                    "routes": {"C": "D"},
                     "featureVariants": {"C": "D"},
-                    "shouldSeeBetaCharts": True,
                     "stateCode": "US_TN",
                     "userHash": _USER_HASH,
                 },
@@ -1701,9 +1616,6 @@ class AuthEndpointTests(TestCase):
         )
         override_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
-            can_access_case_triage=True,
-            can_access_leadership_dashboard=False,
-            should_see_beta_charts=False,
             routes={"A": "B"},
             feature_variants={"C": "D"},
         )
@@ -1715,8 +1627,7 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "canAccessLeadershipDashboard": True,
-                    "canAccessCaseTriage": False,
+                    "routes": {"E": "F"},
                     "reason": "test",
                 },
             )
@@ -1726,12 +1637,9 @@ class AuthEndpointTests(TestCase):
                 "updating permissions for user user@domain.org with reason: test",
             )
             expected = {
-                "canAccessCaseTriage": False,
-                "canAccessLeadershipDashboard": True,
                 "emailAddress": "user@domain.org",
-                "routes": {"A": "B"},
+                "routes": {"E": "F"},
                 "featureVariants": {"C": "D"},
-                "shouldSeeBetaCharts": False,
             }
             self.assertEqual(expected, json.loads(response.data))
 
@@ -1745,15 +1653,11 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_case_triage=True,
-            can_access_leadership_dashboard=False,
-            should_see_beta_charts=True,
             routes={"A": "B", "C": "D"},
             feature_variants={"E": "F"},
         )
         roster_user_override_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
-            can_access_case_triage=False,
             routes={"A": "B"},
             feature_variants={"C": "D"},
         )
@@ -1778,8 +1682,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "D1",
                     "allowedSupervisionLocationLevel": "level_1_supervision_location",
                     "blocked": False,
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": False,
                     "district": "D1",
                     "emailAddress": "user@domain.org",
                     "externalId": None,
@@ -1788,7 +1690,6 @@ class AuthEndpointTests(TestCase):
                     "role": "leadership_role",
                     "routes": {"A": "B", "C": "D"},
                     "featureVariants": {"E": "F"},
-                    "shouldSeeBetaCharts": True,
                     "stateCode": "US_MO",
                     "userHash": _USER_HASH,
                 },
@@ -1808,9 +1709,6 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_CO",
             role="leadership_role",
-            can_access_case_triage=True,
-            can_access_leadership_dashboard=True,
-            should_see_beta_charts=True,
             routes={"A": "B", "C": "D"},
             feature_variants={"E": "F", "G": "H"},
         )
@@ -1820,8 +1718,6 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "canAccessCaseTriage": False,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"A": "B"},
                     "featureVariants": {"E": "F"},
                     "reason": "test",
@@ -1844,8 +1740,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": False,
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": True,
                     "district": None,
                     "emailAddress": "user@domain.org",
                     "externalId": None,
@@ -1854,7 +1748,6 @@ class AuthEndpointTests(TestCase):
                     "role": "leadership_role",
                     "routes": {"A": "B", "C": "D"},
                     "featureVariants": {"E": "F", "G": "H"},
-                    "shouldSeeBetaCharts": True,
                     "stateCode": "US_CO",
                     "userHash": _USER_HASH,
                 },
@@ -1907,8 +1800,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": None,
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
@@ -1917,7 +1808,6 @@ class AuthEndpointTests(TestCase):
                     "role": "leadership_role",
                     "routes": None,
                     "featureVariants": None,
-                    "shouldSeeBetaCharts": False,
                     "stateCode": "US_ID",
                     "userHash": _PARAMETER_USER_HASH,
                 },
@@ -1956,8 +1846,6 @@ class AuthEndpointTests(TestCase):
                     "allowedSupervisionLocationIds": "",
                     "allowedSupervisionLocationLevel": "",
                     "blocked": True,
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": False,
                     "district": None,
                     "emailAddress": "parameter@domain.org",
                     "externalId": None,
@@ -1966,7 +1854,6 @@ class AuthEndpointTests(TestCase):
                     "role": "supervision_staff",
                     "routes": None,
                     "featureVariants": None,
-                    "shouldSeeBetaCharts": False,
                     "stateCode": "US_TN",
                     "userHash": _PARAMETER_USER_HASH,
                 },
@@ -1985,8 +1872,6 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
             routes={"A": "B", "B": "C"},
             feature_variants={"D": "E"},
         )
@@ -1997,9 +1882,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": "leadership_role",
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": True,
-                    "shouldSeeBetaCharts": None,
                     "routes": {"A": "B", "B": "C"},
                     "featureVariants": {"D": "E"},
                 },
@@ -2010,9 +1892,6 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"route_A": True, "routeB": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
@@ -2021,9 +1900,6 @@ class AuthEndpointTests(TestCase):
                 self.add_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
                 json={
-                    "canAccessLeadershipDashboard": True,
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"route_A": True, "routeB": False},
                     "reason": "test",
                 },
@@ -2034,20 +1910,14 @@ class AuthEndpointTests(TestCase):
             )
             expected = [
                 {
-                    "canAccessCaseTriage": False,
-                    "canAccessLeadershipDashboard": True,
                     "role": "leadership_role",
                     "stateCode": "US_MO",
-                    "shouldSeeBetaCharts": True,
                     "routes": {"route_A": True, "routeB": True, "C": False},
                     "featureVariants": None,
                 },
                 {
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": True,
                     "role": "supervision_staff_role",
                     "stateCode": "US_MO",
-                    "shouldSeeBetaCharts": False,
                     "routes": {"route_A": True, "routeB": False},
                     "featureVariants": None,
                 },
@@ -2064,9 +1934,7 @@ class AuthEndpointTests(TestCase):
                 self.add_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
                 json={
-                    "canAccessLeadershipDashboard": True,
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
+                    "featureVariants": {"A": True},
                     "reason": "test",
                 },
             )
@@ -2076,13 +1944,10 @@ class AuthEndpointTests(TestCase):
             )
             expected = [
                 {
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": True,
                     "role": "supervision_staff_role",
                     "stateCode": "US_MO",
-                    "shouldSeeBetaCharts": False,
                     "routes": None,
-                    "featureVariants": None,
+                    "featureVariants": {"A": True},
                 },
             ]
             response = self.client.get(
@@ -2095,9 +1960,6 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
@@ -2106,9 +1968,7 @@ class AuthEndpointTests(TestCase):
                 self.add_state_role("US_MO", "leadership_role"),
                 headers=self.headers,
                 json={
-                    "canAccessLeadershipDashboard": True,
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
+                    "featureVariants": {"D": True},
                     "routes": {"A": True, "B": False},
                 },
             )
@@ -2118,9 +1978,6 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
             feature_variants={"C": True, "D": False},
         )
@@ -2130,8 +1987,6 @@ class AuthEndpointTests(TestCase):
                 self.update_state_role("US_MO", "leadership_role"),
                 headers=self.headers,
                 json={
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
                     "featureVariants": {"D": True, "E": False},
                     "reason": "test",
@@ -2141,9 +1996,6 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_MO",
                 "role": "leadership_role",
-                "canAccessCaseTriage": True,
-                "canAccessLeadershipDashboard": True,
-                "shouldSeeBetaCharts": False,
                 "routes": {"A": True, "B": False, "C": True},
                 "featureVariants": {"C": True, "D": True, "E": False},
             }
@@ -2164,9 +2016,6 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes=None,
             feature_variants={"C": True, "D": False},
         )
@@ -2176,8 +2025,6 @@ class AuthEndpointTests(TestCase):
                 self.update_state_role("US_MO", "leadership_role"),
                 headers=self.headers,
                 json={
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
                     "featureVariants": {"D": True, "E": False},
                     "reason": "test",
@@ -2187,9 +2034,6 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_MO",
                 "role": "leadership_role",
-                "canAccessCaseTriage": True,
-                "canAccessLeadershipDashboard": True,
-                "shouldSeeBetaCharts": False,
                 "routes": {"B": False, "C": True},
                 "featureVariants": {"C": True, "D": True, "E": False},
             }
@@ -2210,9 +2054,6 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
@@ -2222,8 +2063,6 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
                     "reason": "test",
                 },
@@ -2232,9 +2071,6 @@ class AuthEndpointTests(TestCase):
             expected = {
                 "stateCode": "US_TN",
                 "role": "leadership_role",
-                "canAccessCaseTriage": True,
-                "canAccessLeadershipDashboard": True,
-                "shouldSeeBetaCharts": False,
                 "routes": {"A": True, "B": False, "C": True},
                 "featureVariants": None,
             }
@@ -2255,9 +2091,6 @@ class AuthEndpointTests(TestCase):
         existing = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
         )
         add_entity_to_database_session(self.database_key, [existing])
@@ -2266,8 +2099,6 @@ class AuthEndpointTests(TestCase):
                 self.update_state_role("US_MO", "supervision_staff_role"),
                 headers=self.headers,
                 json={
-                    "canAccessCaseTriage": True,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"C": True, "B": False},
                 },
             )
@@ -2285,9 +2116,6 @@ class AuthEndpointTests(TestCase):
         state_role = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
         )
         user = generate_fake_rosters(
@@ -2307,9 +2135,6 @@ class AuthEndpointTests(TestCase):
         state_role = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
         )
         user = generate_fake_user_overrides(
@@ -2329,17 +2154,11 @@ class AuthEndpointTests(TestCase):
         state_role_delete = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            can_access_leadership_dashboard=True,
-            can_access_case_triage=False,
-            should_see_beta_charts=True,
             routes={"A": True, "B": True, "C": False},
         )
         state_role_keep = generate_fake_default_permissions(
             state="US_MO",
             role="supervision_staff_role",
-            can_access_leadership_dashboard=False,
-            can_access_case_triage=True,
-            should_see_beta_charts=False,
             routes={"A": True, "B": False, "C": False},
             feature_variants={"D": True},
         )
@@ -2402,9 +2221,6 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": "supervision_staff_role",
-                    "canAccessCaseTriage": True,
-                    "canAccessLeadershipDashboard": False,
-                    "shouldSeeBetaCharts": False,
                     "routes": {"A": True, "B": False, "C": False},
                     "featureVariants": {"D": True},
                 },

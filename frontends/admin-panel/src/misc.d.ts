@@ -68,10 +68,7 @@ interface StateUserPermissionsResponse {
   stateCode: string;
   allowedSupervisionLocationIds: string;
   allowedSupervisionLocationLevel: string;
-  canAccessLeadershipDashboard: boolean;
-  canAccessCaseTriage: boolean;
   routes: Record<string, boolean>;
-  shouldSeeBetaCharts: boolean;
   blocked: boolean;
   firstName: string;
   lastName: string;
@@ -91,9 +88,6 @@ interface StateUserPermissionsRequest extends StateUserPermissionsResponse {
 interface StateRolePermissionsResponse {
   stateCode: string;
   role: string;
-  canAccessLeadershipDashboard: boolean;
-  canAccessCaseTriage: boolean;
-  shouldSeeBetaCharts: boolean;
   routes: Record<string, boolean>;
   featureVariants: Record<string, boolean>;
 }
