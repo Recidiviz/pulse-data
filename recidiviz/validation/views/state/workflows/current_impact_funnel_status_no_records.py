@@ -32,7 +32,7 @@ CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_DESCRIPTION = """Opportunity
 CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_QUERY_TEMPLATE = """
 SELECT
   state_code AS region_code, opportunity_type
-FROM `{project_id}.{reference_views_dataset}.opportunity_to_completion_event`
+FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
 LEFT JOIN `{project_id}.{workflows_dataset}.current_impact_funnel_status_materialized` funnel_status
     USING (state_code, opportunity_type)
 WHERE funnel_status.person_external_id IS NULL

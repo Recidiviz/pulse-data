@@ -29,6 +29,9 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
     OfficerEvent,
 )
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -238,6 +241,26 @@ def get_all_workflows_officer_events() -> str:
     return full_query
 
 
+def get_case_when_path_then_opportunity_type_str() -> str:
+    conditionals = "\n        ".join(
+        [
+            f"""WHEN state_code='{config.state_code.value}' AND context_page='{config.opportunity_type_path_str}' THEN '{config.opportunity_type}'"""
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
+        ]
+    )
+
+    return f"""
+    CASE  -- infer opportunity type from context_page if the path includes an opportunity-related substring
+        WHEN opportunity_type is NOT null THEN opportunity_type
+        {conditionals}
+        -- Check US_ID state code for events that occurred pre-ATLAS migration
+        WHEN state_code='US_ID' AND context_page IN ('pastFTRD', 'LSU', 'earnedDischarge') THEN context_page 
+        WHEN state_code='US_ID' AND context_page='supervisionLevelMismatch' THEN 'usIdSupervisionLevelDowngrade' 
+        ELSE null
+    END AS opportunity_type,
+    """
+
+
 WORKFLOWS_OFFICER_EVENTS_QUERY_TEMPLATE = f"""
 WITH events AS (
     {get_all_workflows_officer_events()}
@@ -266,15 +289,7 @@ SELECT
     event_ts, 
     event_type,
     person_external_id,
-    -- TODO(#19054): Read from a unified config
-    CASE  -- infer opportunity type from context_page if the path includes an opportunity-related substring
-        WHEN opportunity_type is NOT null THEN opportunity_type
-        WHEN context_page = 'supervisionLevelDowngrade' AND state_code IN ('US_ID', 'US_IX') THEN 'usIdSupervisionLevelDowngrade'
-        WHEN context_page = 'SCCP' AND state_code = 'US_ME' THEN 'usMeSCCP'
-        WHEN context_page = 'expiration' AND state_code = 'US_TN' THEN 'usTnExpiration'
-        WHEN context_page IN ('LSU', 'earnedDischarge', 'pastFTRD', 'compliantReporting', 'earlyTermination', 'supervisionLevelDowngrade') THEN context_page
-        ELSE null
-    END AS opportunity_type,
+    {get_case_when_path_then_opportunity_type_str()}
     new_status,
     context_page
 FROM events

@@ -19,8 +19,11 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+    PersonRecordType,
+)
 from recidiviz.calculator.query.state.views.workflows.firestore.client_record import (
-    EligibilityQueryConfig,
     get_eligibility_ctes,
 )
 from recidiviz.calculator.query.state.views.workflows.firestore.resident_record_ctes import (
@@ -32,9 +35,6 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    TaskCompletionEventType,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -61,24 +61,15 @@ PSEUDONYMIZED_ID = """
         16
     )"""
 
-ELIGIBILITY_QUERY_CONFIGS = [
-    EligibilityQueryConfig(
-        "US_ME",
-        "usMeSCCP",
-        "us_me_complete_transfer_to_sccp_form_record_materialized",
-        TaskCompletionEventType.RELEASE_TO_COMMUNITY_CONFINEMENT_SUPERVISION,
-    ),
-    EligibilityQueryConfig(
-        "US_MO",
-        "usMoRestrictiveHousingStatusHearing",
-        "us_mo_upcoming_restrictive_housing_hearing_record_materialized",
-        TaskCompletionEventType.HEARING_OCCURRED_OR_PAST_REVIEW_DATE,
-    ),
+WORKFLOWS_CONFIGS_WITH_RESIDENTS = [
+    config
+    for config in WORKFLOWS_OPPORTUNITY_CONFIGS
+    if config.person_record_type == PersonRecordType.RESIDENT
 ]
 
 RESIDENT_RECORD_QUERY_TEMPLATE = f"""
     WITH
-        {get_eligibility_ctes(ELIGIBILITY_QUERY_CONFIGS)},
+        {get_eligibility_ctes(WORKFLOWS_CONFIGS_WITH_RESIDENTS)},
         {full_resident_record()}
     SELECT
         * EXCEPT(key, value),

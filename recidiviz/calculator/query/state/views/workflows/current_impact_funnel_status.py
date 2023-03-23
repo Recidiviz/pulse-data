@@ -85,7 +85,7 @@ SELECT
     || INITCAP(JSON_VALUE(PARSE_JSON(officer_name), '$.surname')) AS officer_name,
 FROM `{{project_id}}.{{workflows_views_dataset}}.person_record_materialized` records,
 UNNEST (all_eligible_opportunities) AS opportunity_type
-LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.opportunity_to_completion_event`
+LEFT JOIN `{{project_id}}.{{reference_views_dataset}}.workflows_opportunity_configs_materialized`
   USING (state_code, opportunity_type)
 LEFT JOIN eligibility
   USING (state_code, person_external_id, completion_event_type)

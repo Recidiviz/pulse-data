@@ -39,9 +39,6 @@ from recidiviz.calculator.query.state.views.reference.location_metadata.location
 from recidiviz.calculator.query.state.views.reference.location_metadata.us_pa_location_metadata import (
     US_PA_LOCATION_METADATA_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.reference.opportunity_to_completion_event import (
-    OPPORTUNITY_TO_COMPLETION_EVENT_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import (
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,
 )
@@ -85,7 +82,6 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ID_CASE_UPDATE_INFO_VIEW_BUILDER,
     US_IX_CASE_UPDATE_INFO_VIEW_BUILDER,
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
-    OPPORTUNITY_TO_COMPLETION_EVENT_VIEW_BUILDER,
     TASK_TO_COMPLETION_EVENT_VIEW_BUILDER,
     PRODUCT_ROSTER_VIEW_BUILDER,
     INGESTED_PRODUCT_USERS_VIEW_BUILDER,

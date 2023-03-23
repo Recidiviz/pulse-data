@@ -19,9 +19,11 @@ import json
 from copy import deepcopy
 from unittest import TestCase
 
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.workflows.etl.workflows_opportunity_etl_delegate import (
-    CONFIG_BY_STATE,
     WorkflowsOpportunityETLDelegate,
 )
 
@@ -282,10 +284,9 @@ class TestWorkflowsETLConfig(TestCase):
 
     def test_source_filename_format(self) -> None:
         """Tests for common mistakes one can make when configuring filenames"""
-        for configs in CONFIG_BY_STATE.values():
-            for config in configs:
-                # filename must have json extension
-                self.assertEqual(".json", config.source_filename[-5:])
+        for config in WORKFLOWS_OPPORTUNITY_CONFIGS:
+            # filename must have json extension
+            self.assertEqual(".json", config.source_filename[-5:])
 
-                # filename (unlike corresponding view) must not have materialized suffix
-                self.assertNotRegex(config.source_filename, r"_materialized.json$")
+            # filename (unlike corresponding view) must not have materialized suffix
+            self.assertNotRegex(config.source_filename, r"_materialized.json$")

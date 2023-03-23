@@ -21,6 +21,9 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import attr
 
+from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
+    WORKFLOWS_OPPORTUNITY_CONFIGS,
+)
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.str_field_utils import snake_to_camel
@@ -32,55 +35,6 @@ class OpportunityExportConfig:
     source_filename: str = attr.ib()
     export_collection_name: str = attr.ib()
 
-
-CONFIG_BY_STATE: Dict[StateCode, List[OpportunityExportConfig]] = {
-    StateCode.US_ID: [
-        OpportunityExportConfig(
-            source_filename="us_ix_complete_discharge_early_from_supervision_request_record.json",
-            export_collection_name="US_ID-earnedDischargeReferrals",
-        ),
-        OpportunityExportConfig(
-            source_filename="us_ix_complete_transfer_to_limited_supervision_form_record.json",
-            export_collection_name="US_ID-LSUReferrals",
-        ),
-        OpportunityExportConfig(
-            source_filename="us_ix_complete_full_term_discharge_from_supervision_request_record.json",
-            export_collection_name="US_ID-pastFTRDReferrals",
-        ),
-        OpportunityExportConfig(
-            source_filename="us_ix_supervision_level_downgrade_record.json",
-            export_collection_name="US_ID-supervisionLevelDowngrade",
-        ),
-    ],
-    StateCode.US_ND: [
-        OpportunityExportConfig(
-            source_filename="us_nd_complete_discharge_early_from_supervision_record.json",
-            export_collection_name="earlyTerminationReferrals",
-        ),
-    ],
-    StateCode.US_TN: [
-        OpportunityExportConfig(
-            source_filename="us_tn_supervision_level_downgrade_record.json",
-            export_collection_name="US_TN-supervisionLevelDowngrade",
-        ),
-        OpportunityExportConfig(
-            source_filename="us_tn_full_term_supervision_discharge_record.json",
-            export_collection_name="US_TN-expirationReferrals",
-        ),
-    ],
-    StateCode.US_ME: [
-        OpportunityExportConfig(
-            source_filename="us_me_complete_transfer_to_sccp_form_record.json",
-            export_collection_name="US_ME-SCCPReferrals",
-        ),
-    ],
-    StateCode.US_MO: [
-        OpportunityExportConfig(
-            source_filename="us_mo_upcoming_restrictive_housing_hearing_record.json",
-            export_collection_name="US_MO-restrictiveHousingStatusHearingReferrals",
-        ),
-    ],
-}
 
 CRITERIA_TO_DEPREFIX: List[str] = [
     "SUPERVISION_LEVEL_HIGHER_THAN_ASSESSMENT_LEVEL",
@@ -109,14 +63,19 @@ class WorkflowsOpportunityETLDelegate(WorkflowsFirestoreETLDelegate):
     def COLLECTION_BY_FILENAME(self) -> Dict[str, str]:
         return {
             config.source_filename: config.export_collection_name
-            for config_list in CONFIG_BY_STATE.values()
-            for config in config_list
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
         }
 
     def get_supported_files(self) -> List[str]:
         return [
             config.source_filename
-            for config in CONFIG_BY_STATE.get(self.state_code, [])
+            for config in WORKFLOWS_OPPORTUNITY_CONFIGS
+            if config.state_code == self.state_code
+            or (
+                # The bucket for US_IX files is still US_ID
+                config.state_code == StateCode.US_IX
+                and self.state_code == StateCode.US_ID
+            )
         ]
 
     @property
