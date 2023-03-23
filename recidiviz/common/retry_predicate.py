@@ -23,6 +23,8 @@ from google.api_core import retry
 
 def google_api_retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
     """ "A function that will determine whether we should retry a given Google exception."""
-    return retry.if_transient_error(exception) or retry.if_exception_type(
-        exceptions.GatewayTimeout
-    )(exception)
+    return (
+        retry.if_transient_error(exception)
+        or retry.if_exception_type(exceptions.GatewayTimeout)(exception)
+        or retry.if_exception_type(exceptions.BadGateway)(exception)
+    )
