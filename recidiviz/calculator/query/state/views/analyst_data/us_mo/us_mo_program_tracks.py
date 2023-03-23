@@ -125,6 +125,7 @@ latest_sentencing_dates AS (
   -- Previously unique at the person-cycle level, this takes max across a given person
   SELECT person_id,
          MAX(minimum_eligibility_date) AS minimum_eligibility_date,
+         MAX(minimum_mandatory_release_date) AS minimum_mandatory_release_date,
          MAX(board_determined_release_date) AS board_determined_release_date,
          MAX(conditional_release) AS conditional_release,
          MAX(max_discharge) AS max_discharge
@@ -177,7 +178,8 @@ pivoted_asmts AS (
             IN ('ORAS','ICASA','TCUD','CMHS','mental_health','education','SACA')
           )
 ),
-{current_bed_stay_cte()}
+{current_bed_stay_cte()},
+unprioritized_program_tracks AS (
 SELECT p.*,
        housing.* EXCEPT(person_id, state_code),
        CONCAT(JSON_VALUE(full_name, '$.given_names'), ' ', JSON_VALUE(full_name, '$.surname')) AS person_name,
@@ -186,6 +188,11 @@ SELECT p.*,
             latest_sentencing_dates.minimum_eligibility_date,
             NULL
         ) AS minimum_eligibility_date,
+       IF(
+            latest_sentencing_dates.minimum_mandatory_release_date >= start_date,
+            latest_sentencing_dates.minimum_mandatory_release_date,
+            NULL
+        ) AS minimum_mandatory_release_date,
        IF(
             latest_sentencing_dates.board_determined_release_date >= start_date, 
             latest_sentencing_dates.board_determined_release_date,
@@ -276,6 +283,16 @@ LEFT JOIN
 "serving a Missouri sentence(s) concurrently with an out-of-state or federal facility.
 Both Missouri and the confining agency have jurisdiction over the offender." based on https://doc.mo.gov/glossary */
 WHERE facility NOT IN ('AIFED', 'EXTERNAL_UNKNOWN')
+)
+SELECT 
+  *,
+  COALESCE(
+    board_determined_release_date,
+    GREATEST(IFNULL(minimum_eligibility_date,minimum_mandatory_release_date), IFNULL(minimum_mandatory_release_date,minimum_eligibility_date)),
+    conditional_release,
+    max_discharge
+  ) as prioritized_date
+FROM unprioritized_program_tracks
 """
 
 US_MO_PROGRAM_TRACKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
