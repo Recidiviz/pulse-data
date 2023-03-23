@@ -25,16 +25,13 @@ from opencensus.stats import aggregation, measure, view
 from opencensus.stats.measurement_map import MeasurementMap
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
 
-from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
-from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database_invariant_validator import (
     database_invariant_validator,
 )
 from recidiviz.persistence.entity_matching import entity_matching
-from recidiviz.persistence.ingest_info_converter import ingest_info_converter
-from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import (
     EntityDeserializationResult,
     RootEntityT,
@@ -127,12 +124,12 @@ def _should_abort(
     database_invariant_errors: int = 0,
 ) -> bool:
     """
-    Returns true if we should abort the current attempt to persist an IngestInfo
-    object, given the number of errors we've encountered.
+    Returns true if we should abort the current attempt to persist entities to the
+    database, given the number of errors we've encountered.
     """
     if total_root_entities == 0:
         logging.info(
-            "Aborting because the ingest info object contains no "
+            "Aborting because the deserialization result contains no "
             "root entity objects to persist."
         )
         return True
@@ -293,45 +290,6 @@ def retry_transaction(
                 raise
     finally:
         measurements.measure_int_put(m_retries, num_retries)
-
-
-# TODO(#8905): Once direct ingest regions have migrated to ingest mappings overhaul,
-#  delete this function.
-@trace.span
-def write_ingest_info(
-    ingest_info: IngestInfo,
-    ingest_metadata: LegacyStateIngestMetadata,
-    run_txn_fn: Callable[
-        [Session, MeasurementMap, Callable[[Session], bool], Optional[int]], bool
-    ] = retry_transaction,
-) -> bool:
-    """
-    If should_persist(), persist each person in the ingest_info. If a person with the
-    given surname/birthday already exists, then update that person.
-
-    Otherwise, simply log the given ingest_infos for debugging
-
-    `run_txn_fn` is exposed primarily for testing and should typically be left as
-    `retry_transaction`. `run_txn_fn` must handle the coordination of the transaction
-    including, when to run the body of the transaction and when to commit or rollback
-    the session.
-    """
-    ingest_info_validator.validate(ingest_info)
-
-    # Convert the people one at a time and count the errors as they happen.
-    conversion_result: EntityDeserializationResult = (
-        ingest_info_converter.convert_to_persistence_entities(
-            ingest_info, ingest_metadata
-        )
-    )
-    total_root_entities = len(ingest_info.state_people)
-
-    return write_entities(
-        conversion_result,
-        ingest_metadata,
-        total_root_entities,
-        run_txn_fn,
-    )
 
 
 @trace.span

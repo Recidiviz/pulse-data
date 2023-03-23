@@ -27,6 +27,7 @@ from recidiviz.common.constants.state import (
     enum_canonical_strings,
     state_agent,
     state_assessment,
+    state_case_type,
     state_charge,
     state_incarceration,
     state_incarceration_incident,
@@ -66,9 +67,6 @@ from recidiviz.persistence.database.schema_utils import (
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-from recidiviz.persistence.ingest_info_converter.state.entity_helpers import (
-    state_supervision_case_type_entry,
-)
 from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaEnums,
     TestSchemaTableConsistency,
@@ -138,7 +136,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             "state_program_assignment_participation_status": state_program_assignment.StateProgramAssignmentParticipationStatus,
             "state_staff_role_type": state_staff_role_period.StateStaffRoleType,
             "state_staff_role_subtype": state_staff_role_period.StateStaffRoleSubtype,
-            "state_supervision_case_type": state_supervision_case_type_entry.StateSupervisionCaseType,
+            "state_supervision_case_type": state_case_type.StateSupervisionCaseType,
             "state_supervision_contact_location": state_supervision_contact.StateSupervisionContactLocation,
             "state_supervision_contact_reason": state_supervision_contact.StateSupervisionContactReason,
             "state_supervision_contact_status": state_supervision_contact.StateSupervisionContactStatus,
