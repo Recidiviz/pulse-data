@@ -36,17 +36,29 @@ sentencing-relevant dates not yet ingested"""
 
 US_MO_SENTENCING_DATES_PREPROCESSED_QUERY_TEMPLATE = """
 
-WITH ME_date AS (
-  -- Pulls latest Minimum Eligibility Date for each person-cycle. Only keeps ME dates that are non-zero and then
-  -- dedups to the latest one in a given person-cycle
+WITH ME_MM_dates AS (
+  -- Pulls latest Minimum Eligibility Date and Minimum Mandatory Release Date for each 
+  -- person-cycle. For each date type, only keeps dates that are non-zero and then
+  -- dedups to the latest one of that date type in a given person-cycle.
   -- TODO(#19221): Use ingested value when available
-  SELECT CG_DOC AS doc_id,
-         CG_CYC AS cycle_num,
-         SAFE.PARSE_DATE('%Y%m%d',NULLIF(CG_MD,'0')) AS minimum_eligibility_date 
-  FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
-  WHERE CG_MD !='0'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
-
+  SELECT 
+    CG_DOC AS doc_id,
+    CG_CYC AS cycle_num,
+    SAFE.PARSE_DATE('%Y%m%d',has_md.CG_MD) AS minimum_eligibility_date,
+    SAFE.PARSE_DATE('%Y%m%d',has_mm.CG_MM) AS minimum_mandatory_release_date 
+    FROM (
+      SELECT * 
+      FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
+      WHERE CG_MD !='0'
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
+    ) has_md
+    FULL OUTER JOIN (
+      SELECT * 
+      FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK044_latest`
+      WHERE CG_MM !='0'
+      QUALIFY ROW_NUMBER() OVER(PARTITION BY CG_DOC, CG_CYC ORDER BY CAST(CG_ESN AS INT) DESC) = 1
+    ) has_mm
+    USING (CG_DOC,CG_CYC)
 ), 
 -- TODO(#19222): Use ingested values when available
 PPR_date AS (
@@ -107,14 +119,14 @@ PPR_date AS (
          SAFE.PARSE_DATE('%Y%m%d',NULLIF(CV_MR,'0')) AS conditional_release
   FROM `{project_id}.{raw_data_up_to_date_views_dataset}.LBAKRDTA_TAK071_latest`
 )
-SELECT ME_date.*, 
+SELECT ME_MM_dates.*, 
       PPR_date.board_determined_release_date, 
       PPR_date.special_condition_needed,
       PPR_date.seq_num,
       MAX_CR.max_discharge, 
       MAX_CR.conditional_release,
       pei.person_id
-FROM ME_date
+FROM ME_MM_dates
 FULL OUTER JOIN PPR_date 
   USING(doc_id, cycle_num)
 FULL OUTER JOIN MAX_CR 
