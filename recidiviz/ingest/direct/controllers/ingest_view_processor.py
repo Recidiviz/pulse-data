@@ -14,11 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Interface and standard implementation for a class that will take ingest view query
-results and persist the contents appropriately to the Recidiviz schema in Postgres.
+"""Class that will take ingest view query results and persist the contents appropriately
+to the Recidiviz schema in Postgres.
 """
 
-import abc
 import csv
 from typing import Dict, Iterator, List, Union, cast
 
@@ -38,36 +37,8 @@ from recidiviz.persistence.persistence_utils import EntityDeserializationResult
 
 
 class IngestViewProcessor:
-    """Interface for a class that will take ingest view query results and persist the
-    contents appropriately to the Recidiviz schema in Postgres.
-    """
-
-    @abc.abstractmethod
-    def parse_and_persist_contents(
-        self,
-        args: ExtractAndMergeArgs,
-        contents_handle: ContentsHandle,
-        ingest_metadata: IngestMetadata,
-    ) -> bool:
-        pass
-
-    @staticmethod
-    def row_iterator_from_contents_handle(
-        contents_handle: ContentsHandle,
-    ) -> Iterator[Dict[str, str]]:
-        if isinstance(contents_handle, LocalFileContentsHandle):
-            return csv.DictReader(contents_handle.get_contents_iterator())
-        if isinstance(contents_handle, BigQueryResultsContentsHandle):
-            return contents_handle.get_contents_iterator()
-        raise ValueError(
-            f"Unsupported contents handle type: [{type(contents_handle)}]."
-        )
-
-
-class IngestViewProcessorImpl(IngestViewProcessor):
-    """Standard (new) implementation of the IngestViewProcessor, which takes ingest view
-    query results and persists the contents appropriately to the Recidiviz schema in
-    Postgres.
+    """Class which takes ingest view query results and persists the contents
+    appropriately to the Recidiviz schema in Postgres.
     """
 
     def __init__(self, ingest_view_file_parser: IngestViewResultsParser):
@@ -107,4 +78,16 @@ class IngestViewProcessorImpl(IngestViewProcessor):
             ),
             ingest_metadata=ingest_metadata,
             total_root_entities=len(parsed_entities),
+        )
+
+    @staticmethod
+    def row_iterator_from_contents_handle(
+        contents_handle: ContentsHandle,
+    ) -> Iterator[Dict[str, str]]:
+        if isinstance(contents_handle, LocalFileContentsHandle):
+            return csv.DictReader(contents_handle.get_contents_iterator())
+        if isinstance(contents_handle, BigQueryResultsContentsHandle):
+            return contents_handle.get_contents_iterator()
+        raise ValueError(
+            f"Unsupported contents handle type: [{type(contents_handle)}]."
         )
