@@ -57,7 +57,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1005"
-        expression  = "evaluatePreconfiguredWaf('methodenforcement-v33-stable', {'sensitivity': 1})"
+        expression  = "evaluatePreconfiguredWaf('methodenforcement-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id911100-methodenforcement']})"
         description = "Method enforcement"
       },
       {
