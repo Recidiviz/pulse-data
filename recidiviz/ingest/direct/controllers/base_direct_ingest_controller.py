@@ -40,7 +40,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
     DirectIngestStatus,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.common.ingest_metadata import IngestMetadata, LegacyStateIngestMetadata
+from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.io.contents_handle import ContentsHandle
 from recidiviz.ingest.direct import direct_ingest_regions
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
@@ -52,7 +52,6 @@ from recidiviz.ingest.direct.controllers.extract_and_merge_job_prioritizer impor
 )
 from recidiviz.ingest.direct.controllers.ingest_view_processor import (
     IngestViewProcessor,
-    IngestViewProcessorImpl,
 )
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
@@ -69,12 +68,10 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_direct_ingest_temporary_output_directory_path,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
-    MANIFEST_LANGUAGE_VERSION_KEY,
     IngestViewResultsParser,
 )
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegateImpl,
-    yaml_mappings_filepath,
 )
 from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialization_args_generator import (
     IngestViewMaterializationArgsGenerator,
@@ -84,10 +81,6 @@ from recidiviz.ingest.direct.ingest_view_materialization.ingest_view_materialize
 )
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
-)
-from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
-    LegacyIngestViewProcessor,
-    LegacyIngestViewProcessorDelegate,
 )
 from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadata_manager import (
     DirectIngestViewMaterializationMetadataManagerImpl,
@@ -122,7 +115,6 @@ from recidiviz.persistence.database.schema.operations.dao import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.utils import environment, trace
-from recidiviz.utils.yaml_dict import YAMLDict
 
 
 class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
@@ -767,41 +759,15 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
 
         return True
 
-    def get_ingest_view_processor(
-        self, args: ExtractAndMergeArgs
-    ) -> IngestViewProcessor:
-        """Returns the appropriate ingest view processor for this extract and merge
-        job.
+    @trace.span
+    def _parse_and_persist_contents(
+        self, args: ExtractAndMergeArgs, contents_handle: ContentsHandle
+    ) -> None:
         """
-        yaml_mappings_dict = YAMLDict.from_path(
-            yaml_mappings_filepath(self.region, args.ingest_view_name)
-        )
-        version_str = yaml_mappings_dict.peek_optional(
-            MANIFEST_LANGUAGE_VERSION_KEY, str
-        )
-
-        if not version_str:
-            # TODO(#8905): Delete this branch once all regions have migrated to new
-            #  ingest mappings structure.
-            delegate: Optional[LegacyIngestViewProcessorDelegate] = None
-            if isinstance(self, LegacyIngestViewProcessorDelegate):
-                delegate = self
-
-            if not delegate:
-                raise ValueError(
-                    f"Must implement "
-                    f"{LegacyIngestViewProcessorDelegate.__name__} interface "
-                    f"on object with type [{type(self)} to support legacy ingest."
-                )
-
-            return LegacyIngestViewProcessor(
-                region=self.region,
-                ingest_instance=self.ingest_instance,
-                delegate=delegate,
-            )
-
-        # If a version string is present, it's v2
-        return IngestViewProcessorImpl(
+        Runs the full ingest process for this controller for files with
+        non-empty contents.
+        """
+        processor = IngestViewProcessor(
             ingest_view_file_parser=IngestViewResultsParser(
                 delegate=IngestViewResultsParserDelegateImpl(
                     region=self.region,
@@ -811,20 +777,14 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
                 )
             )
         )
-
-    @trace.span
-    def _parse_and_persist_contents(
-        self, args: ExtractAndMergeArgs, contents_handle: ContentsHandle
-    ) -> None:
-        """
-        Runs the full ingest process for this controller for files with
-        non-empty contents.
-        """
-        processor = self.get_ingest_view_processor(args)
         persist_success = processor.parse_and_persist_contents(
             args=args,
             contents_handle=contents_handle,
-            ingest_metadata=self._get_ingest_metadata(args),
+            ingest_metadata=IngestMetadata(
+                region=self.region.region_code,
+                ingest_time=args.ingest_time,
+                database_key=self.ingest_database_key,
+            ),
         )
 
         if not persist_success:
@@ -834,28 +794,6 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
             )
 
         logging.info("Successfully persisted for ingest run [%s]", args.job_tag())
-
-    def _get_ingest_metadata(self, args: ExtractAndMergeArgs) -> IngestMetadata:
-        if isinstance(self, LegacyIngestViewProcessorDelegate):
-            # TODO(#8905): Remove this block once we have migrated all direct ingest
-            #  states to ingest mappings v2.
-            enum_overrides = self.get_enum_overrides()
-            if not isinstance(self, BaseDirectIngestController):
-                raise ValueError(
-                    f"Expected LegacyIngestViewProcessorDelegate to also be a "
-                    f"BaseDirectIngestController, found [{type(self)}]."
-                )
-            return LegacyStateIngestMetadata(
-                region=self.region.region_code,
-                ingest_time=args.ingest_time,
-                enum_overrides=enum_overrides,
-                database_key=self.ingest_database_key,
-            )
-        return IngestMetadata(
-            region=self.region.region_code,
-            ingest_time=args.ingest_time,
-            database_key=self.ingest_database_key,
-        )
 
     def _get_contents_handle(
         self, args: ExtractAndMergeArgs

@@ -37,16 +37,9 @@ from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import (
     BaseDirectIngestController,
 )
-from recidiviz.ingest.direct.legacy_ingest_mappings.legacy_ingest_view_processor import (
-    LegacyIngestViewProcessor,
-)
-from recidiviz.ingest.direct.types.cloud_task_args import (
-    ExtractAndMergeArgs,
-    IngestViewMaterializationArgs,
-)
+from recidiviz.ingest.direct.types.cloud_task_args import IngestViewMaterializationArgs
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
-from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 from recidiviz.persistence.database.schema.state import dao
@@ -239,78 +232,6 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
             cls.temp_db_dir
         )
-
-    # TODO(#8905): Delete this function once we have migrated all states to use the new
-    #   version of ingest mappings that skip ingest info entirely.
-    def run_legacy_parse_file_test(
-        self, expected: IngestInfo, ingest_view_name: str
-    ) -> IngestInfo:
-        """Runs a test that reads and parses a given fixture file. Returns the
-        parsed IngestInfo object for tests to run further validations."""
-
-        if not self.controller.region.is_ingest_launched_in_env():
-            raise ValueError(
-                "This function is only for use in legacy states where ingest is fully launched."
-            )
-
-        if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
-            raise ValueError(
-                f"Controller fs must have type "
-                f"FakeGCSFileSystem. Found instead "
-                f"type [{type(self.controller.fs.gcs_file_system)}]"
-            )
-
-        now = datetime.datetime.now()
-        yesterday = now - datetime.timedelta(days=1)
-
-        materialization_job_args = self._register_materialization_job(
-            controller=self.controller,
-            ingest_view_name=ingest_view_name,
-            upper_bound_datetime=now,
-            lower_bound_datetime=yesterday,
-        )
-
-        ingest_view_contents = assert_type(
-            self.controller.ingest_view_contents, FakeInstanceIngestViewContents
-        )
-        # Make batch size large so all fixture data is processed in one batch
-        ingest_view_contents.batch_size = 10000
-
-        self.controller.ingest_view_materializer().materialize_view_for_args(
-            materialization_job_args
-        )
-
-        extract_and_merge_args = assert_type(
-            self.controller.job_prioritizer.get_next_job_args(),
-            ExtractAndMergeArgs,
-        )
-
-        # pylint:disable=protected-access
-        fixture_contents_handle = self.controller._get_contents_handle(
-            extract_and_merge_args
-        )
-
-        if fixture_contents_handle is None:
-            self.fail("fixture_contents_handle should not be None")
-        processor = self.controller.get_ingest_view_processor(extract_and_merge_args)
-
-        if not isinstance(processor, LegacyIngestViewProcessor):
-            raise ValueError(f"Unexpected processor type: {type(processor)}")
-
-        # pylint:disable=protected-access
-        final_info = processor._parse_ingest_info(
-            extract_and_merge_args, fixture_contents_handle
-        )
-
-        print_visible_header_label("FINAL")
-        print(final_info)
-
-        print_visible_header_label("EXPECTED")
-        print(expected)
-
-        self.assertEqual(expected, final_info)
-
-        return final_info
 
     def invalidate_ingest_view_metadata(self) -> None:
         with SessionFactory.using_database(self.operations_database_key) as session:
