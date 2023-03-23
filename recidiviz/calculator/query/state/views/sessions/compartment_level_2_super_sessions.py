@@ -126,6 +126,8 @@ COMPARTMENT_LEVEL_2_SUPER_SESSIONS_QUERY_TEMPLATE = """
         first.start_reason,
         first.start_sub_reason,
         last.end_reason,
+        first.compartment_level_1 AS compartment_level_1_start,
+        last.compartment_level_1 AS compartment_level_1_end,
         first.inflow_from_level_1,
         first.inflow_from_level_2,
         last.outflow_to_level_1,
