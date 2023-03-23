@@ -148,3 +148,5 @@ products:
         environment: production
       - state_code: US_MO
         environment: production
+      - state_code: US_MI
+        environment: production

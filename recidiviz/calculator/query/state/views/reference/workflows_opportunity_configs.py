@@ -183,6 +183,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="restrictiveHousingStatusHearing",
         person_record_type=PersonRecordType.RESIDENT,
     ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_MI,
+        opportunity_type="usMiEarlyDischarge",
+        experiment_id="US_MI_EARLY_DISCHARGE_WORKFLOWS",
+        opportunity_record_view_name="us_mi_complete_discharge_early_from_supervision_request_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_mi_complete_discharge_early_from_supervision_request_record.json",
+        export_collection_name="US_MI-earlyDischargeReferrals",
+        opportunity_type_path_str="earlyDischarge",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
 ]
 
 WORKFLOWS_OPPORTUNITY_CONFIGS_QUERY_TEMPLATE = "UNION ALL".join(
