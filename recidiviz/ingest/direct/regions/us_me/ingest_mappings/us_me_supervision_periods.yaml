@@ -100,12 +100,6 @@ output:
                   - "19" # Transfer - U.S Marshal, Federal, Oxford County S.O.,
                 StateCustodialAuthority.OTHER_STATE:
                   - "8" # US and Canadian States and territories,
-          supervising_officer_staff_external_id: officer_external_id
-          supervising_officer_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $not_null: officer_external_id
-                $then: $literal("US_ME_EMPLOYEE")
           supervising_officer:
             StateAgent:
               external_id: officer_external_id

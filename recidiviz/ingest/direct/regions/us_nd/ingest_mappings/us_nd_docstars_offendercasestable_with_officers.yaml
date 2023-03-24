@@ -309,25 +309,6 @@ output:
               - $else_if:
                   $is_null: TERM_DATE
                 $then: recent_officer_siteid
-          supervising_officer_staff_external_id:
-            $conditional:
-              - $if:
-                  $not_null: terminating_officer_id
-                $then: terminating_officer_id
-              - $else_if:
-                  $and:
-                    - $is_null: TERM_DATE
-                    - $not_null: recent_officer_id
-                $then: recent_officer_id
-          supervising_officer_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $or:
-                    - $not_null: terminating_officer_id
-                    - $and:
-                        - $is_null: TERM_DATE
-                        - $not_null: recent_officer_id
-                $then: $literal("US_ND_DOCSTARS_OFFICER")
           supervising_officer:
             $conditional:
               - $if:

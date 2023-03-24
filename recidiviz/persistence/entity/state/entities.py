@@ -939,12 +939,6 @@ class StateSupervisionPeriod(
 
     #   - Who
     # See |person| in entity relationships below.
-    supervising_officer_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    supervising_officer_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
@@ -1548,12 +1542,6 @@ class StateSupervisionContact(HasExternalIdEntity, BuildableAttr, DefaultableAtt
 
     #   - Who
     # See |person| in entity relationships below.
-    contacting_staff_external_id: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    contacting_staff_external_id_type: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer

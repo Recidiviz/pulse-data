@@ -243,8 +243,6 @@ def add_supervision_period_to_person(
     start_date: datetime.date,
     termination_date: Optional[datetime.date],
     supervision_site: str,
-    supervising_officer_staff_external_id: Optional[str],
-    supervising_officer_staff_external_id_type: Optional[str],
     supervising_officer: Optional[entities.StateAgent],
     admission_reason: Optional[StateSupervisionPeriodAdmissionReason],
     termination_reason: Optional[StateSupervisionPeriodTerminationReason],
@@ -269,8 +267,6 @@ def add_supervision_period_to_person(
         termination_date=termination_date,
         county_code=county_code,
         supervision_site=supervision_site,
-        supervising_officer_staff_external_id=supervising_officer_staff_external_id,
-        supervising_officer_staff_external_id_type=supervising_officer_staff_external_id_type,
         supervising_officer=supervising_officer,
         admission_reason=admission_reason,
         admission_reason_raw_text=admission_reason_raw_text,
@@ -455,8 +451,6 @@ def add_supervision_contact_to_person(
     status_raw_text: Optional[str] = None,
     verified_employment: Optional[bool] = None,
     supervision_contact_id: Optional[int] = None,
-    contacting_staff_external_id: Optional[str] = None,
-    contacting_staff_external_id_type: Optional[str] = None,
     contacted_agent: Optional[entities.StateAgent] = None,
 ) -> entities.StateSupervisionContact:
     """Append a supervision contact to the person (updates the person entity in place)."""
@@ -478,8 +472,6 @@ def add_supervision_contact_to_person(
         status_raw_text=status_raw_text,
         verified_employment=verified_employment,
         supervision_contact_id=supervision_contact_id,
-        contacting_staff_external_id=contacting_staff_external_id,
-        contacting_staff_external_id_type=contacting_staff_external_id_type,
         contacted_agent=contacted_agent,
         person=person,
     )

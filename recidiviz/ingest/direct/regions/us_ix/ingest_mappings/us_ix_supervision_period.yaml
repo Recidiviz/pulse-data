@@ -40,12 +40,6 @@ output:
           termination_date: end_date
           # TODO(#16848): Update to account for absconsions
           supervision_site: DOCLocationToName
-          supervising_officer_staff_external_id: StaffId
-          supervising_officer_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $not_null: StaffId
-                $then: $literal("US_IX_EMPLOYEE")
           supervising_officer:
             $conditional:
               - $if:

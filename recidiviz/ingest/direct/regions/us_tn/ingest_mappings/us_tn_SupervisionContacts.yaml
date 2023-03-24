@@ -23,12 +23,6 @@ output:
                 - OffenderID
                 - ContactSequenceNumber
           contact_date: ContactNoteDateTime
-          contacting_staff_external_id: StaffID
-          contacting_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $not_null: StaffID
-                $then: $literal("US_TN_STAFF_TOMIS")
           contacted_agent:
             $conditional:
               - $if:
