@@ -24,26 +24,58 @@ from recidiviz.utils.metadata import local_project_id_override
 
 PRODUCT_ROSTER_VIEW_NAME = "product_roster"
 
-PRODUCT_ROSTER_DESCRIPTION = """******NOT READY YET, DO NOT USE.******
-View of all users that may have access to Polaris products. Pulls data from roster Cloud SQL tables.
-Should only be used for Polaris product-related views."""
+PRODUCT_ROSTER_DESCRIPTION = """View of all users that may have access to Polaris products.
+Pulls data from roster Cloud SQL tables. Should only be used for Polaris product-related views."""
 
 PRODUCT_ROSTER_QUERY_TEMPLATE = """
+    WITH product_roster_permissions AS (
+        SELECT
+            {columns_query}
+        FROM
+            `{project_id}.{case_triage_federated_dataset_id}.roster` roster
+        FULL OUTER JOIN
+            `{project_id}.{case_triage_federated_dataset_id}.user_override` user_override
+        USING (email_address)
+        FULL OUTER JOIN
+            `{project_id}.{case_triage_federated_dataset_id}.state_role_permissions` state_role
+        ON
+            COALESCE(user_override.state_code, roster.state_code) = state_role.state_code
+            AND COALESCE(user_override.role, roster.role) = state_role.role
+        FULL OUTER JOIN
+            `{project_id}.{case_triage_federated_dataset_id}.permissions_override` permissions_override
+        USING (email_address)
+    )
     SELECT
-        {columns_query}
-    FROM
-        `{project_id}.{case_triage_federated_dataset_id}.roster` roster
-    FULL OUTER JOIN
-        `{project_id}.{case_triage_federated_dataset_id}.user_override` override
-    USING (email_address)
+        {joined_columns},
+        {expanded_routes}
+    FROM product_roster_permissions
 """
 
-PRODUCT_ROSTER_COLUMNS = [
+ROSTER_COLUMNS = [
     "state_code",
     "external_id",
     "email_address",
     "role",
     "district",
+    "user_hash",
+    "first_name",
+    "last_name",
+]
+
+PERMISSIONS_COLUMNS = [
+    "routes",
+    "feature_variants",
+]
+
+ROUTES = [
+    "system_libertyToPrison",
+    "system_prison",
+    "system_prisonToSupervision",
+    "system_supervision",
+    "system_supervisionToPrison",
+    "system_supervisionToLiberty",
+    "operations",
+    "workflows",
 ]
 
 PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -53,10 +85,21 @@ PRODUCT_ROSTER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PRODUCT_ROSTER_QUERY_TEMPLATE,
     description=PRODUCT_ROSTER_DESCRIPTION,
     should_materialize=True,
-    columns_query="\n        ".join(
+    columns_query="\n            ".join(
         [
-            f"COALESCE(override.{col}, roster.{col}) AS {col},"
-            for col in PRODUCT_ROSTER_COLUMNS
+            f"COALESCE(user_override.{col}, roster.{col}) AS {col},"
+            for col in ROSTER_COLUMNS
+        ]
+        + [
+            f"COALESCE(permissions_override.{col}, state_role.{col}) AS {col},"
+            for col in PERMISSIONS_COLUMNS
+        ]
+    ),
+    joined_columns=",\n        ".join(ROSTER_COLUMNS + PERMISSIONS_COLUMNS),
+    expanded_routes="\n        ".join(
+        [
+            f"IFNULL(CAST(JSON_VALUE(routes, '$.{route}') AS BOOL), FALSE) AS routes_{route},"
+            for route in ROUTES
         ]
     ),
 )
