@@ -40,9 +40,13 @@ columns:
   - name: created_by_tx
     is_pii: True
   - name: created_on_date
+    description: |-
+      Date of creation.
   - name: modified_by_tx
     is_pii: True
   - name: modified_on_date
+    description: |-
+      Last modification date.
   - name: reason_tx
     description: |-
       Free text field to specify the reason for the last status change.

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: CIS_573_CLIENT_CASE_DETAIL
 file_description: |-
-  This table contains the total amount each client owes in restitution payments: it adds up all restitution cases a client has.
+  This table contains the adjusted restitution amount. It does not take into account any payments.
 data_classification: source
 primary_key_cols:
   - client_case_id
@@ -15,6 +15,8 @@ columns:
       Column used to merge with CIS_570_REST_CASE.
   - name: cis_5750_disburse_to_other_id
   - name: cis_589_restitution_id
+    description: |-
+      Restitution ID used to merge with CIS_589
   - name: client_case_id
     description: |-
       Primary key: Client case id
@@ -39,4 +41,4 @@ columns:
       Date of last modification
   - name: total_owing_num
     description: |-
-      Total amount owed.
+      Adjusted original restitution amount. This field and the payments table is what's used to calculate the amount still owed
