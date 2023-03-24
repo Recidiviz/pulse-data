@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which there
-is no violent misdemeanor within 12 months on supervision
-"""
+is no technical violations within 6 months on supervision."""
+
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
@@ -25,36 +25,44 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    VIOLATIONS_FOUND_WHERE_CLAUSE,
     violations_within_time_interval_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "NO_VIOLENT_MISDEMEANOR_WITHIN_12_MONTHS"
+_CRITERIA_NAME = "NO_TECHNICAL_WITHIN_6_MONTHS"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which there
-is no violent misdemeanor within 12 months on supervision."""
+is no technical violations within 6 months on supervision."""
 
 _QUERY_TEMPLATE = f"""
 WITH supervision_violations AS (
-    /*This CTE identifies violent misdemeanor violations and sets a 12 month 
-    window where felony_violation is TRUE*/
+    /*
+    This CTE identifies relevant violations and sets a 6 month 
+    window where meets_criteria is TRUE.
+
+    Relevant violations in this context refers to those that weren't dismissed, 
+    graduated, withdrawn, not approved or dismissed and includes the following types:
+        - TECHNICAL
+    */
     {violations_within_time_interval_cte(
-        where_clause = 'WHERE v.is_violent', 
-        violation_type = "AND vt.violation_type = 'MISDEMEANOR'", 
-        bool_column = "TRUE AS violent_misdemeanor_violation")}
-),
+        date_interval = 6, 
+        violation_type = "AND vt.violation_type = 'TECHNICAL'",
+        where_clause = VIOLATIONS_FOUND_WHERE_CLAUSE)}
+    ),
 {create_sub_sessions_with_attributes('supervision_violations')}
 SELECT 
     state_code,
     person_id,
     start_date,
     end_date,
-    NOT violent_misdemeanor_violation AS meets_criteria,
-    TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS latest_violent_convictions)) AS reason,
+    LOGICAL_AND(meets_criteria) AS meets_criteria,
+    TO_JSON(STRUCT(ARRAY_AGG(violation_date IGNORE NULLS) AS latest_convictions)) AS reason,
 FROM sub_sessions_with_attributes
-GROUP BY 1,2,3,4,5
+GROUP BY 1,2,3,4
 """
+
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
