@@ -554,7 +554,14 @@ class OfficerMetadata(CaseTriageBase):
         )
 
 
-class Roster(CaseTriageBase):
+class CreatedAndUpdatedDateTimesMixin:
+    created_datetime = Column(DateTime, nullable=False, server_default=func.now())
+    updated_datetime = Column(
+        DateTime, nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class Roster(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     """Represents the list of users for each state."""
 
     __tablename__ = "roster"
@@ -568,7 +575,7 @@ class Roster(CaseTriageBase):
     user_hash = Column(String(255), nullable=False)
 
 
-class UserOverride(CaseTriageBase):
+class UserOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     """Used when a single user needs to be added, removed, or modified without uploading a new roster."""
 
     __tablename__ = "user_override"
@@ -583,7 +590,7 @@ class UserOverride(CaseTriageBase):
     user_hash = Column(String(255), nullable=False)
 
 
-class StateRolePermissions(CaseTriageBase):
+class StateRolePermissions(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     """Represents the default permissions for a given state/role combination."""
 
     __tablename__ = "state_role_permissions"
@@ -593,7 +600,7 @@ class StateRolePermissions(CaseTriageBase):
     feature_variants = Column(JSONB, nullable=True)
 
 
-class PermissionsOverride(CaseTriageBase):
+class PermissionsOverride(CaseTriageBase, CreatedAndUpdatedDateTimesMixin):
     """Used when a specific user's permissions need to be changed from the default for their state/role."""
 
     __tablename__ = "permissions_override"

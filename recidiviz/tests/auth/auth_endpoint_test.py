@@ -29,7 +29,10 @@ from flask import Flask
 from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
     Roster,
@@ -97,8 +100,11 @@ class AuthEndpointTests(TestCase):
             f"{self.bucket}/{self.region_code}/dashboard_user_restrictions.csv"
         )
         self.ingested_users_gcs_csv_uri = GcsfsFilePath.from_absolute_path(
-            f"{self.ingested_users_bucket}/{self.region_code}/ingested_product_users.csv"
+            f"{self.ingested_users_bucket}/US_XX/ingested_product_users.csv"
         )
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
         self.columns = [col.name for col in DashboardUserRestrictions.__table__.columns]
         self.roster_columns = [col.name for col in Roster.__table__.columns]
         self.maxDiff = None
@@ -172,6 +178,7 @@ class AuthEndpointTests(TestCase):
             )
 
     def tearDown(self) -> None:
+        self.fs_patcher.stop()
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
@@ -2332,29 +2339,105 @@ class AuthEndpointTests(TestCase):
 
             mock_task_manager.return_value.create_task.assert_not_called()
 
-    @patch("recidiviz.auth.auth_endpoint.import_gcs_csv_to_cloud_sql")
-    def test_import_ingested_users_successful(self, mock_import_csv: MagicMock) -> None:
+    def test_import_ingested_users_successful(self) -> None:
+        self.fs.upload_from_contents_handle_stream(
+            self.ingested_users_gcs_csv_uri,
+            contents_handle=LocalFileContentsHandle(
+                local_file_path=os.path.join(_FIXTURE_PATH, "us_xx_ingested_users.csv"),
+                cleanup_file=False,
+            ),
+            content_type="text/csv",
+        )
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should change with the new upload
+            district="",
+        )
+        roster_leadership_user_override = generate_fake_user_overrides(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            first_name="override",  # This should not change with the new upload
+        )
+        # This user will be deleted
+        roster_supervision_staff = generate_fake_rosters(
+            email="parameter@domain.org",
+            region_code="US_XX",
+            role="supervision_staff",
+            district="",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="supervision_staff",
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_leadership_user,
+                roster_leadership_user_override,
+                roster_supervision_staff,
+                leadership_default,
+                supervision_staff_default,
+            ],
+        )
+
         with self.app.test_request_context():
             response = self.client.post(
                 self.import_ingested_users,
                 headers=self.headers,
                 json={
-                    "state_code": self.region_code,
+                    "state_code": "US_XX",
                 },
             )
-            mock_import_csv.assert_called_with(
-                database_key=self.database_key,
-                model=Roster,
-                gcs_uri=self.ingested_users_gcs_csv_uri,
-                columns=self.roster_columns,
-                region_code=self.region_code,
-            )
-            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertEqual(HTTPStatus.OK, response.status_code, response.data)
             self.assertEqual(
-                b"CSV US_MO/ingested_product_users.csv successfully imported to "
-                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_MO",
+                b"CSV US_XX/ingested_product_users.csv successfully imported to "
+                b"Cloud SQL schema SchemaType.CASE_TRIAGE for region code US_XX",
                 response.data,
             )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": None,
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": None,
+                    "firstName": "override",
+                    "lastName": "user",
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "D1",
+                    "emailAddress": "supervision_staff@domain.org",
+                    "externalId": "3706",
+                    "firstName": "supervision",
+                    "lastName": "user",
+                    "role": "supervision_staff",
+                    "stateCode": "US_XX",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
 
     def test_import_ingested_users_missing_region_code(self) -> None:
         with self.app.test_request_context():
@@ -2384,9 +2467,11 @@ class AuthEndpointTests(TestCase):
                 response.data,
             )
 
-    @patch("recidiviz.auth.auth_endpoint.import_gcs_csv_to_cloud_sql")
-    def test_import_ingested_users_exception(self, mock_import_csv: MagicMock) -> None:
-        mock_import_csv.side_effect = Exception("Error while importing CSV")
+    @patch(
+        "recidiviz.auth.auth_endpoint.GcsfsCsvReader",
+        side_effect=Exception("Error while reading CSV"),
+    )
+    def test_import_ingested_users_exception(self, _mock_csv_reader: MagicMock) -> None:
         with self.app.test_request_context():
             response = self.client.post(
                 self.import_ingested_users,
@@ -2397,6 +2482,6 @@ class AuthEndpointTests(TestCase):
             )
             self.assertEqual(HTTPStatus.INTERNAL_SERVER_ERROR, response.status_code)
             self.assertEqual(
-                b"Error while importing CSV",
+                b"Error while reading CSV",
                 response.data,
             )
