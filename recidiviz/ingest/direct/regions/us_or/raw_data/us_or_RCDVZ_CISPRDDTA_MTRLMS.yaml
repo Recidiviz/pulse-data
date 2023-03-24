@@ -1,9 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_MTRLMS
 file_description: |-
-  TODO(#17148): Fill in with more context from OR
+  Disciplinary Report. Table of misconduct rules and severity level.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RULE_ALLEGED
+  - MISCONDUCT_SEV_LEVEL
 columns:
   - name: RULE_ALLEGED
   - name: EFFECTIVE_DATE

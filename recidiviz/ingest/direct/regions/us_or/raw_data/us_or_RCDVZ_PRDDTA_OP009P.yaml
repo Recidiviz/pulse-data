@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP009P
 file_description: |-
-  This file contains admission and release dates.
+  Admission and Release. Adult in Custody (AIC_ admission and release cycle information. Includes information on the 
+  period and type of supervision given an AIC. Indicates reason for release from a supervision status.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

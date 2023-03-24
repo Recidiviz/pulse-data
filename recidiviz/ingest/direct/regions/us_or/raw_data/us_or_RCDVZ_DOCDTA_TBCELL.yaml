@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_DOCDTA_TBCELL
 file_description: |-
-  This file contains information about units and cells.
+  REFERENCE - Cell/Bunk Table. Table of all institution cell/bunks.  Contains historical information since 5/4/98.
 data_classification: source
 primary_key_cols:
   - LOCATION_CODE

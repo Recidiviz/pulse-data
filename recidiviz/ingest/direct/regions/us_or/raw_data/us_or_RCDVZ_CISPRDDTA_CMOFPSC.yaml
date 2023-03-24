@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_CMOFPSC
 file_description: |-
-  Risk and assesment scores, as well as previous arrest history, for Adults in Custody (AIC).
+  Related to PSC risk score, risk level, arrest score.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_EDUTEST_T_EDUCNEED
 file_description: |-
-  TODO(#17148): Fill in the file description - This table has no PKs.
+  Location, sid, name, admit date, sex, race, age, job, rslform, readdate, scores - This table has no PKs.
 data_classification: source
 primary_key_cols: []
 columns:

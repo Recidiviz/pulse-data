@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP010P
 file_description: |-
-  This file contains transfer information.
+  Transfer. Adult in Custody (AIC) transfer cycle information. Includes information on the period and location of 
+  supervision of an AIC.  Indicates the reason an AIC was moved from a given location.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

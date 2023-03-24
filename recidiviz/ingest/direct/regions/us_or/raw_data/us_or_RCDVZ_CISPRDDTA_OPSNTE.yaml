@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_OPSNTE
 file_description: |-
-  This file contains supervision and revocation data.
+  Sentence Extension. Additional sentence information for an AIC.  This table is an extension to table OP054P 
+  and includes Measure 11 and repeat AIC sentence information.
 data_classification: source
 primary_key_cols:
   - SENT_NEXT_NUMBER

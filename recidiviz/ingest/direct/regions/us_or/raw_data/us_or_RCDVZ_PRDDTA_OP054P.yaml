@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP054P
 file_description: |-
-  This file contains offense and good time information.
+  Sentence Calculation. History of AIC sentences. Includes sentence type, begin date, sentence length, time served, 
+  sentence consecutive to or merged with, minimums, good time, earned time, maximum termination date, actual 
+  termination date and code, and other related flags.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

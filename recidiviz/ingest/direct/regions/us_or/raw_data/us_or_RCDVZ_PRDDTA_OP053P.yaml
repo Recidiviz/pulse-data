@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP053P
 file_description: |-
-  This file contains offense and judicial information.
+  Offense Description. History of AIC offenses. Includes court case number, county and count; ORS number, description 
+  and categories; arrest, crime committed and convicted dates; and DA and DA case number, defense counsel and judge.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY
@@ -107,7 +108,7 @@ columns:
       - value: UM
         description: Unassigned Misdemeanor
       - value: OC
-        description: #TODO(#17148): Fill in with answer from OR
+        description: Other Charge
       - value: UF
         description: Unassignmed Felony
   - name: CRIME_CATEGORY

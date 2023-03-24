@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_ACRSF
 file_description: |-
-  This file contains adult in custody sentence calculations.
+  Automated Criminal Risk Score (ACRS) History. ACRS element scores and overall score.
 data_classification: source
 primary_key_cols:
   - EFFECTIVE_DATE

@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDT_CLCLHD
 file_description: |-
-  TODO(#17148): Fill in with more context from OR
+  This file contains Adult in Custody (AIC) Assessment Header information.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

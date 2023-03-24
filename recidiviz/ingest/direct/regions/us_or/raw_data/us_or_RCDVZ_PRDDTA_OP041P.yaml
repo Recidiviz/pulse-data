@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP041P
 file_description: |-
-  This file contains Adults in Custody (AIC) offense information.
+  Unauthorized Absence/Escape/Abscond. Adults in Custody (AIC) abscond, escape, and unauthorized absence detail.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

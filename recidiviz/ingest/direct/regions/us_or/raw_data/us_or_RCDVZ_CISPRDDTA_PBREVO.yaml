@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_PBREVO
 file_description: |-
-  TODO(#17148): Fill in the file description
+  This file contains information on Parole Board Revocations.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY
