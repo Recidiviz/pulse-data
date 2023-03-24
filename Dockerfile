@@ -39,15 +39,39 @@ ENV PIPENV_VENV_IN_PROJECT="1"
 WORKDIR /app
 
 FROM recidiviz-init AS recidiviz-dev
+RUN apt update -y &&    \
+    apt install -y      \
+    apt-transport-https \
+    iproute2            \
+    npm                 \
+    vim                 \
+    wget
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg]"              \
+         "http://packages.cloud.google.com/apt cloud-sdk main" |             \
+    tee -a /etc/apt/sources.list.d/google-cloud-sdk.list &&                  \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg |             \
+    apt-key --keyring /usr/share/keyrings/cloud.google.gpg add /dev/stdin && \
+    apt-get update -y && apt-get install google-cloud-cli -y
+RUN wget -O /dev/stdout https://apt.releases.hashicorp.com/gpg             | \
+    gpg --dearmor                                                          | \
+    tee /usr/share/keyrings/hashicorp-archive-keyring.gpg &&                 \
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]" \
+         "https://apt.releases.hashicorp.com $(lsb_release -cs) main"      | \
+    tee /etc/apt/sources.list.d/hashicorp.list &&                            \
+    apt-get update -y && apt-get install terraform=1.2.9 -y &&               \
+    apt-mark hold terraform
 # Install postgres to be used by tests that need to write to a database from multiple threads.
-RUN apt-get install wget && \
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+ARG PG_VERSION=13
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list && \
-    apt-get update && apt-get install postgresql-13 -y
-ENV PATH=/usr/lib/postgresql/13/bin/:$PATH
+    apt-get update && apt-get install postgresql-${PG_VERSION} -y
+ENV PATH=/usr/lib/postgresql/${PG_VERSION}/bin/:$PATH
+RUN apt-get update -y && apt-get upgrade -y
+RUN npm install prettier
 COPY Pipfile /app/
 COPY Pipfile.lock /app/
 RUN pipenv sync --dev
+EXPOSE 8888
 
 FROM node:14-alpine AS admin-panel-build
 WORKDIR /usr/admin-panel
