@@ -16,14 +16,12 @@
 # =============================================================================
 
 """Tests the validate_source_modifications script."""
-import os
 import unittest
 from typing import FrozenSet, List, Tuple
 
-from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.tools.validate_source_modifications import (
+    BUILD_INFRA_KEY,
     INGEST_DOCS_KEY,
-    INGEST_KEY,
     PIPFILE_KEY,
     check_assertions,
 )
@@ -34,45 +32,35 @@ class CheckAssertionsTest(unittest.TestCase):
 
     def test_ingest_info_happy(self) -> None:
         modified_files = [
-            os.path.relpath(ingest_info.__file__),
-            os.path.relpath(ingest_info.__file__)[:-2] + "proto",
-            os.path.relpath(ingest_info_pb2.__file__),
-            os.path.relpath(ingest_info_pb2.__file__) + "i",
+            "mirror/copy.bara.sky",
+            "Dockerfile.case-triage-pathways.dockerignore",
+            "Dockerfile.justice-counts.dockerignore",
         ]
         self._run_test(modified_files, [], [])
 
     def test_ingest_info_unhappy(self) -> None:
         modified_files = [
-            os.path.relpath(ingest_info.__file__),
-            os.path.relpath(ingest_info.__file__)[:-2] + "proto",
+            "mirror/copy.bara.sky",
         ]
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str], str]] = [
             (
+                frozenset({"mirror/copy.bara.sky"}),
                 frozenset(
-                    (
-                        os.path.relpath(ingest_info.__file__),
-                        os.path.relpath(ingest_info.__file__)[:-2] + "proto",
-                    )
+                    {
+                        "Dockerfile.case-triage-pathways.dockerignore",
+                        "Dockerfile.justice-counts.dockerignore",
+                    }
                 ),
-                frozenset(
-                    (
-                        os.path.relpath(ingest_info_pb2.__file__),
-                        os.path.relpath(ingest_info_pb2.__file__) + "i",
-                    )
-                ),
-                "ingest",
+                BUILD_INFRA_KEY,
             )
         ]
 
         self._run_test(modified_files, expected_failures, [])
 
     def test_ingest_info_skipped(self) -> None:
-        modified_files = [
-            os.path.relpath(ingest_info.__file__),
-            os.path.relpath(ingest_info.__file__)[:-2] + "proto",
-        ]
+        modified_files = ["mirror/copy.bara.sky"]
 
-        self._run_test(modified_files, [], [INGEST_KEY])
+        self._run_test(modified_files, [], [BUILD_INFRA_KEY])
 
     def test_pipfile_happy(self) -> None:
         modified_files = ["Pipfile", "Pipfile.lock"]
