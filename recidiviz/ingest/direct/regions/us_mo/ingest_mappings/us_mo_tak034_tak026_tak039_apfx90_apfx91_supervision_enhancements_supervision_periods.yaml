@@ -114,12 +114,6 @@ output:
                   - "JAL" # Incarceration/Jail
                   - "PRS" # Incarceration/Prison
                   - "SHK" # 120 Day Incarceration
-          supervising_officer_staff_external_id: BDGNO
-          supervising_officer_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $not_null: BDGNO
-                $then: $literal("US_MO_STAFF_BADGE_NUMBER")
           supervising_officer:
             StateAgent:
               external_id: BDGNO

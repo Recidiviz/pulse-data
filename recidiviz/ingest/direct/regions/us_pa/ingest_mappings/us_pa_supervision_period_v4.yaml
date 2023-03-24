@@ -175,12 +175,6 @@ output:
                   - "5J"
                   - "5K"
           conditions: condition_codes
-          supervising_officer_staff_external_id: supervising_officer_id
-          supervising_officer_staff_external_id_type:
-            $conditional:
-              - $if:
-                  $not_null: supervising_officer_id
-                $then: $literal("US_PA_PBPP_EMPLOYEE_NUM")
           supervising_officer:
             StateAgent:
               external_id: supervising_officer_id
