@@ -982,6 +982,12 @@ output:
           conditions: special_condition_ids
           # NOTE: MI states that all instances of supervision observed in their data is administered by them
           custodial_authority: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
+          supervising_officer_staff_external_id: employee_id
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: employee_id
+                $then: $literal("US_MI_COMPAS_USER")
           supervising_officer:
             $conditional:
               - $if:
