@@ -260,6 +260,12 @@ output:
             $json_dict:
               scale_set: corfscaleset_name
               scale: cosyscale_name
+          conducting_staff_external_id: FkShUserScreener
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: FkShUserScreener
+                $then: $literal("US_MI_COMPAS_USER")
           conducting_agent:
             StateAgent:
               external_id: FkShUserScreener

@@ -513,6 +513,12 @@ class StateAssessment(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - Who
     # See |conducting_agent| below
+    conducting_staff_external_id: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    conducting_staff_external_id_type: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer

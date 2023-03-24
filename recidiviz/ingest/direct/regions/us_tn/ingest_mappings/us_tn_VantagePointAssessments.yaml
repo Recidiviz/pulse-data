@@ -58,6 +58,12 @@ output:
               family_need_level: FamilyNeedLevel
               employment_need_level: EmploymentNeedLevel
               education_need_level: EducationNeedLevel
+          conducting_staff_external_id: ConductingStaffID
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: ConductingStaffID
+                $then: $literal("US_TN_STAFF_TOMIS")
           conducting_agent:
             StateAgent:
               external_id: ConductingStaffID
