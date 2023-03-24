@@ -18,18 +18,20 @@
 """Endpoints related to auth operations.
 """
 import csv
+import json
 import logging
 import os
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Tuple, Union
 
+import pandas as pd
 import sqlalchemy.orm.exc
 from flask import Blueprint, Response, jsonify, request
 from psycopg2.errors import (  # pylint: disable=no-name-in-module
     NotNullViolation,
     UniqueViolation,
 )
-from sqlalchemy import func, inspect
+from sqlalchemy import delete, func, inspect
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, ProgrammingError, StatementError
 from sqlalchemy.sql import Update
@@ -44,6 +46,11 @@ from recidiviz.calculator.query.state.views.reference.ingested_product_users imp
 )
 from recidiviz.case_triage.ops_routes import CASE_TRIAGE_DB_OPERATIONS_QUEUE
 from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
+from recidiviz.cloud_storage.gcsfs_csv_reader import GcsfsCsvReader
+from recidiviz.cloud_storage.gcsfs_csv_reader_delegates import (
+    SimpleGcsfsCsvReaderDelegate,
+)
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
 from recidiviz.common.constants.states import StateCode
@@ -512,6 +519,52 @@ def add_user() -> Union[tuple[Response, int], tuple[str, int]]:
         )
 
 
+def _upsert_roster_rows(
+    session: Session, state_code: str, rows: List[Dict[str, Any]]
+) -> None:
+    """Upserts rows into the Roster table, along with some validation."""
+    for row in rows:
+        if not row["email_address"]:
+            raise ValueError(
+                "Roster contains a row that is missing an email address (required)"
+            )
+        role = row["role"].lower()
+        email = row["email_address"].lower()
+        associated_state_role = (
+            session.query(StateRolePermissions)
+            .filter_by(state_code=f"{state_code.upper()}", role=f"{role}")
+            .first()
+        )
+        if not associated_state_role:
+            raise ValueError(
+                f"Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email {email}"
+            )
+
+        # Enforce casing for columns where we have a preference.
+        row["state_code"] = state_code.upper()
+        row["email_address"] = email
+        row["external_id"] = (
+            row["external_id"].upper() if row.get("external_id") is not None else None
+        )
+        row["role"] = row["role"].lower()
+        row["user_hash"] = generate_user_hash(row["email_address"])
+
+        # update existing roster or create add new roster
+        existing = (
+            session.query(Roster)
+            .filter_by(state_code=f"{state_code.upper()}", email_address=f"{email}")
+            .first()
+        )
+        if existing:
+            for key, value in row.items():
+                setattr(existing, key, value)
+        else:
+            roster = Roster(**row)
+            session.add(roster)
+
+    session.commit()
+
+
 @auth_endpoint_blueprint.route("/users", methods=["PUT"])
 @requires_gae_auth
 def upload_roster() -> Tuple[str, HTTPStatus]:
@@ -541,48 +594,7 @@ def upload_roster() -> Tuple[str, HTTPStatus]:
                 request.files["file"].read().decode("utf-8-sig").splitlines()
             )
             rows = list(dict_reader)
-
-            for row in rows:
-                if not row["email_address"]:
-                    raise ValueError(
-                        "Roster contains a row that is missing an email address (required)"
-                    )
-                role = row["role"].lower()
-                email = row["email_address"].lower()
-                associated_state_role = (
-                    session.query(StateRolePermissions)
-                    .filter_by(state_code=f"{state_code.upper()}", role=f"{role}")
-                    .first()
-                )
-                if not associated_state_role:
-                    raise ValueError(
-                        f"Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email {email}"
-                    )
-
-                # Enforce casing for columns where we have a preference.
-                row["state_code"] = state_code.upper()
-                row["email_address"] = email
-                row["external_id"] = row["external_id"].upper()
-                row["role"] = row["role"].lower()
-                row["user_hash"] = generate_user_hash(row["email_address"])
-
-                # update existing roster or create add new roster
-                existing = (
-                    session.query(Roster)
-                    .filter_by(
-                        state_code=f"{state_code.upper()}", email_address=f"{email}"
-                    )
-                    .first()
-                )
-                if existing:
-                    for key, value in row.items():
-                        setattr(existing, key, value)
-                else:
-                    roster = Roster(**row)
-                    session.add(roster)
-
-            session.commit()
-
+            _upsert_roster_rows(session, state_code, rows)
             return (
                 f"{len(rows)} users added/updated to the roster",
                 HTTPStatus.OK,
@@ -1200,6 +1212,23 @@ def import_ingested_users_async() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
+class ImportIngestedUsersGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
+    """Helper class to upsert chunks of data read from GCS to the Roster table"""
+
+    def __init__(self, session: Session, state_code: str) -> None:
+        self.emails: List[str] = []
+        self.session = session
+        self.state_code = state_code
+
+    def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
+        df.columns = INGESTED_PRODUCT_USERS_VIEW_BUILDER.columns
+        # df.to_dict exports missing values as 'nan', so export to json instead
+        rows = json.loads(df.to_json(orient="records"))
+        _upsert_roster_rows(self.session, self.state_code, rows)
+        self.emails.extend(r["email_address"] for r in rows)
+        return True
+
+
 @auth_endpoint_blueprint.route("/import_ingested_users", methods=["POST"])
 @requires_gae_auth
 def import_ingested_users() -> Tuple[str, HTTPStatus]:
@@ -1218,7 +1247,6 @@ def import_ingested_users() -> Tuple[str, HTTPStatus]:
             logging.error(error)
             return str(error), HTTPStatus.BAD_REQUEST
 
-        view_builder = INGESTED_PRODUCT_USERS_VIEW_BUILDER
         csv_path = GcsfsFilePath.from_absolute_path(
             os.path.join(
                 StrictStringFormatter().format(
@@ -1226,17 +1254,32 @@ def import_ingested_users() -> Tuple[str, HTTPStatus]:
                     project_id=metadata.project_id(),
                 ),
                 state_code,
-                f"{view_builder.view_id}.csv",
+                f"{INGESTED_PRODUCT_USERS_VIEW_BUILDER.view_id}.csv",
             )
         )
-
-        import_gcs_csv_to_cloud_sql(
-            database_key=SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
-            model=Roster,
-            gcs_uri=csv_path,
-            columns=view_builder.columns,
-            region_code=state_code.upper(),
+        database_key = SQLAlchemyDatabaseKey.for_schema(
+            schema_type=SchemaType.CASE_TRIAGE
         )
+        with SessionFactory.using_database(database_key) as session:
+            # First, upsert users that exist in the CSV file. Then, delete any user that does not
+            # exist in the CSV file. Do this instead of import_gcs_csv_to_cloud_sql in order to have
+            # more accurate created/updated timestamps
+            reader_delegate = ImportIngestedUsersGcsfsCsvReaderDelegate(
+                session, state_code
+            )
+            csv_reader = GcsfsCsvReader(fs=GcsfsFactory.build())
+            csv_reader.streaming_read(
+                path=csv_path,
+                delegate=reader_delegate,
+                chunk_size=1000,
+                header=None,
+            )
+            delete_stmt = delete(Roster).where(
+                Roster.state_code == state_code,
+                Roster.email_address.not_in(reader_delegate.emails),
+            )
+            session.execute(delete_stmt)
+
         logging.info(
             "CSV (%s) successfully imported to Cloud SQL schema %s for region code %s",
             csv_path.blob_name,
@@ -1248,6 +1291,20 @@ def import_ingested_users() -> Tuple[str, HTTPStatus]:
             f"CSV {csv_path.blob_name} successfully "
             f"imported to Cloud SQL schema {SchemaType.CASE_TRIAGE} for region code {state_code}",
             HTTPStatus.OK,
+        )
+    except IntegrityError as e:
+        if isinstance(e.orig, NotNullViolation):
+            logging.error(e)
+            return (
+                f"{e}",
+                HTTPStatus.BAD_REQUEST,
+            )
+        raise e
+    except (ProgrammingError, ValueError) as error:
+        logging.error(error)
+        return (
+            f"{error}",
+            HTTPStatus.BAD_REQUEST,
         )
     except Exception as error:
         logging.error(error)
