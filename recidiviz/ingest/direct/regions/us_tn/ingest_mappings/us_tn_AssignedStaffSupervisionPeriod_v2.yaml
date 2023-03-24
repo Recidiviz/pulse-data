@@ -34,6 +34,12 @@ output:
           start_date: StartDate
           termination_date: EndDate
           supervision_site: Site
+          supervising_officer_staff_external_id: SupervisionOfficerID
+          supervising_officer_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: SupervisionOfficerID
+                $then: $literal("US_TN_STAFF_TOMIS")
           supervising_officer:
             StateAgent:
               external_id: SupervisionOfficerID
