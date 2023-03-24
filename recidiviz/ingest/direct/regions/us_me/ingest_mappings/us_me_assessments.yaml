@@ -117,6 +117,12 @@ output:
               lsi_rating_approved: Lsi_Rating_Approved
               lsi_rating_override: Lsi_Rating_Override
               lsi_rating: Lsi_Rating
+          conducting_staff_external_id: Conductor_Id
+          conducting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: Conductor_Id
+                $then: $literal("US_ME_EMPLOYEE")
           conducting_agent:
             StateAgent:
               external_id: Conductor_Id

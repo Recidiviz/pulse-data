@@ -68,16 +68,21 @@ US_PA_SID = "US_PA_SID"
 US_PA_PBPP_EMPLOYEE_NUM = "US_PA_PBPP_EMPLOYEE_NUM"
 
 US_TN_DOC = "US_TN_DOC"
+# Identifier for the type of state staff id provided by the TN system
+US_TN_STAFF_TOMIS = "US_TN_STAFF_TOMIS"
+
 US_ME_DOC = "US_ME_DOC"
+# Identifier for the type of state staff id provided by the ME system
+US_ME_EMPLOYEE = "US_ME_EMPLOYEE"
 
 # MI Offender Number
 US_MI_DOC = "US_MI_DOC"
-
 # MI Offender ID
 US_MI_DOC_ID = "US_MI_DOC_ID"
-
 # MI Offender Booking
 US_MI_DOC_BOOK = "US_MI_DOC_BOOK"
+# Identifier for the type of state staff id provided by the MI system
+US_MI_COMPAS_USER = "US_MI_COMPAS_USER"
 
 # CA Offender Number
 US_CA_DOC = "US_CA_DOC"

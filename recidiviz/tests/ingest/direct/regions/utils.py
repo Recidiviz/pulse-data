@@ -303,6 +303,8 @@ def add_assessment_to_person(
     conducting_agent: Optional[entities.StateAgent],
     assessment_class_raw_text: Optional[str] = None,
     assessment_type_raw_text: Optional[str] = None,
+    conducting_staff_external_id: Optional[str] = None,
+    conducting_staff_external_id_type: Optional[str] = None,
 ) -> None:
     """Append an assessment to the person (updates the person entity in place)."""
 
@@ -318,6 +320,8 @@ def add_assessment_to_person(
         assessment_level=assessment_level,
         assessment_level_raw_text=assessment_level_raw_text,
         assessment_metadata=assessment_metadata,
+        conducting_staff_external_id=conducting_staff_external_id,
+        conducting_staff_external_id_type=conducting_staff_external_id_type,
         conducting_agent=conducting_agent,
         person=person,
     )
