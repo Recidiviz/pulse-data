@@ -19,7 +19,6 @@ export const GCS_CSV_TO_CLOUD_SQL_ROUTE = `${LINE_STAFF_TOOLS_BASE}/gcs_csv_to_c
 export const CLOUD_SQL_TO_GCS_CSV_ROUTE = `${LINE_STAFF_TOOLS_BASE}/cloud_sql_to_gcs_csv`;
 export const PO_FEEDBACK_ROUTE = `${LINE_STAFF_TOOLS_BASE}/po_feedback`;
 export const EMAIL_REPORTS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/email_reports`;
-export const UPLOAD_ROSTERS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/upload_rosters`;
 export const UPLOAD_RAW_FILES_ROUTE = `${LINE_STAFF_TOOLS_BASE}/upload_raw_files`;
 export const STATE_USER_PERMISSIONS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/state_user_permissions`;
 export const STATE_ROLE_DEFAULT_PERMISSIONS_ROUTE = `${LINE_STAFF_TOOLS_BASE}/state_role_default_permissions`;

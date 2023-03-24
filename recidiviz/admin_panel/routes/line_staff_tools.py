@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines routes for the Case Triage API endpoints in the admin panel."""
-import csv
 import logging
 import os
 import tempfile
@@ -37,9 +36,7 @@ from recidiviz.admin_panel.case_triage_helpers import (
 from recidiviz.admin_panel.line_staff_tools.constants import (
     EMAIL_STATE_CODES,
     RAW_FILES_CONFIG,
-    ROSTER_STATE_CODES,
 )
-from recidiviz.admin_panel.line_staff_tools.rosters import RosterManager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.calculator.query.state.dataset_config import (
@@ -231,12 +228,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
     def _fetch_email_state_codes() -> Tuple[Response, HTTPStatus]:
         # hard coding Idaho and Pennsylvania for now
         state_code_info = fetch_state_codes(EMAIL_STATE_CODES)
-        return jsonify(state_code_info), HTTPStatus.OK
-
-    @bp.route("/api/line_staff_tools/fetch_roster_state_codes", methods=["POST"])
-    @requires_gae_auth
-    def _fetch_roster_state_codes() -> Tuple[Response, HTTPStatus]:
-        state_code_info = fetch_state_codes(ROSTER_STATE_CODES)
         return jsonify(state_code_info), HTTPStatus.OK
 
     @bp.route("/api/line_staff_tools/fetch_raw_files_state_codes", methods=["POST"])
@@ -466,40 +457,6 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
             jsonify({"batchInfo": batch_info}),
             HTTPStatus.OK,
         )
-
-    @bp.route("/api/line_staff_tools/<state_code_str>/upload_roster", methods=["POST"])
-    @requires_gae_auth
-    def _upload_roster(state_code_str: str) -> Tuple[str, HTTPStatus]:
-        """This method handles uploading rosters for line staff tools access.
-        It assumes that the caller has manually formatted the CSV appropriately."""
-
-        state_code = StateCode(state_code_str)
-        if state_code not in ROSTER_STATE_CODES:
-            return (
-                f"Rosters are not supported for {state_code.value}",
-                HTTPStatus.BAD_REQUEST,
-            )
-
-        dict_reader = csv.DictReader(
-            request.files["file"].read().decode("utf-8-sig").splitlines()
-        )
-        rows = list(dict_reader)
-
-        manager = RosterManager(state_code, rows)
-
-        try:
-            manager.validate_roster_upload()
-        except ValueError as e:
-            return str(e), HTTPStatus.BAD_REQUEST
-
-        manager.normalize_roster_values()
-
-        manager.grant_access()
-
-        # Update roster after access is fully granted.
-        manager.store_roster()
-
-        return "", HTTPStatus.OK
 
     @bp.route(
         "/api/line_staff_tools/<state_code_str>/upload_raw_files", methods=["POST"]
