@@ -45,7 +45,6 @@ from recidiviz.admin_panel.models import validation_pb2
 from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
     get_existing_region_codes,
 )
-from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.tools.docs.endpoint_documentation_generator import (
     EndpointDocumentationGenerator,
     app_rules,
@@ -143,7 +142,6 @@ def _get_modified_endpoints() -> List[RequiredModificationSets]:
 # to be performed for that new set as well.
 
 ADMIN_PANEL_KEY = "admin_panel"
-INGEST_KEY = "ingest"
 PIPFILE_KEY = "pipfile"
 INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = "case_triage_fixtures"
@@ -177,25 +175,6 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
                         os.path.relpath(validation_pb2.__file__)[: -len("2.py")]
                         + ".d.ts",
                     ),  # typescript
-                }
-            ),
-        )
-    ],
-    # ingest info files
-    INGEST_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {
-                    os.path.relpath(ingest_info.__file__),  # python object
-                    os.path.relpath(ingest_info.__file__)[:-2] + "proto",  # proto
-                }
-            ),
-            then_modified_files=frozenset(
-                {
-                    os.path.relpath(ingest_info.__file__),  # python object
-                    os.path.relpath(ingest_info.__file__)[:-2] + "proto",  # proto
-                    os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
-                    os.path.relpath(ingest_info_pb2.__file__) + "i",  # proto type hints
                 }
             ),
         )
@@ -265,33 +244,6 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
             ),
             then_modified_files=frozenset(
                 {"recidiviz/calculator/pipeline/utils/state_utils/us_ix/"}
-            ),
-        ),
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {
-                    "recidiviz/ingest/direct/regions/us_ix/ingest_mappings/us_ix_supervision_violation_legacy.yaml"
-                }
-            ),
-            then_modified_files=frozenset(
-                {
-                    "recidiviz/ingest/direct/regions/us_id/ingest_mappings/us_id_ofndr_tst_tst_qstn_rspns_violation_reports.yaml",
-                    "recidiviz/ingest/direct/regions/us_id/ingest_mappings/us_id_ofndr_tst_tst_qstn_rspns_violation_reports_old.yaml",
-                }
-            ),
-        ),
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {
-                    "recidiviz/ingest/direct/regions/us_ix/ingest_views/view_supervision_violation_legacy.py"
-                }
-            ),
-            then_modified_files=frozenset(
-                {
-                    "recidiviz/ingest/direct/regions/us_id/ingest_views/view_ofndr_tst_tst_qstn_rspns_violation_reports.py",
-                    "recidiviz/ingest/direct/regions/us_id/ingest_views/view_ofndr_tst_tst_qstn_rspns_violation_reports_old.py",
-                    "recidiviz/ingest/direct/regions/us_id/ingest_views/templates_test_questions.py",
-                }
             ),
         ),
     ],

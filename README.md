@@ -309,16 +309,6 @@ Once installed, increase the memory available to Docker to ensure it has enough 
 Recidiviz depends on sensitive information to run. This data is stored in Cloud Datastore, which should be added
 manually to your production environment (see `utils/secrets` for more information on the Datastore kind used).
 
-#### Data model updates
-
-The two main data models used in the system are the [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) object and the database [`schema`](recidiviz/persistence/database/schema), defined in various `schema.py` files.
-
-When updating [`IngestInfo`](recidiviz/ingest/models/ingest_info.proto) be sure to update both the proto and the [python object](recidiviz/ingest/models/ingest_info.py). Then, re-generate the proto source: `protoc recidiviz/ingest/models/ingest_info.proto --python_out . --mypy_out .`. Be sure that `mypy-protobuf` is installed when compiling the protos. If it is not then pull it in from the dev packages using `pipenv install --dev`. If you do not have `protoc` installed, follow instructions to install [here](http://google.github.io/proto-lens/installing-protoc.html).
-
-When updating any `schema.py` file in the [`schema`](recidiviz/persistence/database/schema), follow the directions on the [database wiki page](https://github.com/Recidiviz/pulse-data/wiki/Database) to create a schema migration.
-
-When updating either, it may be necessary to update the [`converter`](recidiviz/persistence/ingest_info_converter/) code that handles converting between the two models.
-
 #### Running tests
 
 Individual tests can be run via `pytest filename.py`. To run all tests, go to the root directory and run `pytest recidiviz`.
