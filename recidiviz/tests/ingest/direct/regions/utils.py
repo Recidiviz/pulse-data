@@ -455,6 +455,8 @@ def add_supervision_contact_to_person(
     status_raw_text: Optional[str] = None,
     verified_employment: Optional[bool] = None,
     supervision_contact_id: Optional[int] = None,
+    contacting_staff_external_id: Optional[str] = None,
+    contacting_staff_external_id_type: Optional[str] = None,
     contacted_agent: Optional[entities.StateAgent] = None,
 ) -> entities.StateSupervisionContact:
     """Append a supervision contact to the person (updates the person entity in place)."""
@@ -476,6 +478,8 @@ def add_supervision_contact_to_person(
         status_raw_text=status_raw_text,
         verified_employment=verified_employment,
         supervision_contact_id=supervision_contact_id,
+        contacting_staff_external_id=contacting_staff_external_id,
+        contacting_staff_external_id_type=contacting_staff_external_id_type,
         contacted_agent=contacted_agent,
         person=person,
     )
