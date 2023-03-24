@@ -17,8 +17,6 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Alert, Button, Input, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
-import { fetchRosterStateCodes } from "../../AdminPanelAPI";
-import StateSelector from "../Utilities/StateSelector";
 
 type UploadRosterProps = {
   action: string;
@@ -26,7 +24,6 @@ type UploadRosterProps = {
   columns: string[];
   setStateCode: (stateCode: string) => void;
   stateCode?: string;
-  stateUserRoster?: boolean;
   setReason: (reason: string) => void;
   reason?: string;
   stateRoleData?: StateRolePermissionsResponse[];
@@ -46,7 +43,6 @@ const UploadRoster = ({
   stateCode,
   setReason,
   reason,
-  stateUserRoster = false,
   stateRoleData = [],
   warningMessage,
 }: UploadRosterProps): JSX.Element => {
@@ -64,20 +60,13 @@ const UploadRoster = ({
   return (
     <>
       <Space direction="vertical">
-        {stateUserRoster ? (
-          <Select
-            placeholder="Select a state"
-            onChange={(s) => setStateCode(s)}
-            options={stateRoleStateCodes.map((c) => {
-              return { value: c, label: c };
-            })}
-          />
-        ) : (
-          <StateSelector
-            fetchStateList={fetchRosterStateCodes}
-            onChange={(stateInfo) => setStateCode(stateInfo.code)}
-          />
-        )}
+        <Select
+          placeholder="Select a state"
+          onChange={(s) => setStateCode(s)}
+          options={stateRoleStateCodes.map((c) => {
+            return { value: c, label: c };
+          })}
+        />
         <Input
           name="reason"
           placeholder="Reason for roster upload"

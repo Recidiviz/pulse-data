@@ -46,7 +46,6 @@ import POEmailsView from "./POEmailsView";
 import POFeedbackView from "./POFeedbackView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
-import UploadLineStaffRostersView from "./UploadRostersView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
@@ -133,7 +132,6 @@ const items: MenuProps["items"] = [
     getItem("Cloud SQL & GCS", LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE),
     getItem("PO Feedback", LineStaffTools.PO_FEEDBACK_ROUTE),
     getItem("Email Reports", LineStaffTools.EMAIL_REPORTS_ROUTE),
-    getItem("Upload Rosters", LineStaffTools.UPLOAD_ROSTERS_ROUTE),
     getItem("Upload Raw Files", LineStaffTools.UPLOAD_RAW_FILES_ROUTE),
     getItem(
       "State User Permissions",
@@ -276,10 +274,6 @@ const App = (): JSX.Element => {
           <Route
             path={LineStaffTools.EMAIL_REPORTS_ROUTE}
             component={POEmailsView}
-          />
-          <Route
-            path={LineStaffTools.UPLOAD_ROSTERS_ROUTE}
-            component={UploadLineStaffRostersView}
           />
           <Route
             path={LineStaffTools.UPLOAD_RAW_FILES_ROUTE}

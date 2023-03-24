@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { useState } from "react";
-import UploadRoster from "../UploadRostersView/UploadRoster";
+import UploadRoster from "./UploadRoster";
 import { DraggableModal } from "../Utilities/DraggableModal";
 
 export const UploadStateUserRosterModal = ({
@@ -56,7 +56,6 @@ export const UploadStateUserRosterModal = ({
         ]}
         setStateCode={setStateCode}
         stateCode={stateCode}
-        stateUserRoster
         setReason={setReason}
         reason={reason}
         stateRoleData={stateRoleData}
