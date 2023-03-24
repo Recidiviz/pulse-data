@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_DOCDTA_TBLOCA
 file_description: |-
-  This table contains the physical location of the various locations and institutions.
+  REFERENCE - Location Table. Table of all institution, county, records, rental bed, jail and administration locations.  
+  Includes location code, description, supervising location flag, address, county and phone, and discontinued date.
 data_classification: source
 primary_key_cols:
   - LOCATION_CODE

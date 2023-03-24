@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_DOCDTA_TB209P
 file_description: |-
-  TODO(#17148): Fill in with more context from OR
+  REFERENCE - ORS Table. Table of Oregon Revised Statutes that relate to DOC supervision of offenders.  
+  Includes ORS effective and discontinued dates, descriptions, several ORS groupings, a severity rating, and a community corrections funding indicator.
 data_classification: source
 primary_key_cols:
   - ORS_NUMBER

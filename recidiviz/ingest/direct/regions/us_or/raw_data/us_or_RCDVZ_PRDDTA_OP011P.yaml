@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OP011P
 file_description: |-
-  This file contains transfer information. #TODO(#17148): Get more detail on file descriptios to differentiate from OP010P.
+  Housing. Adult in Custody (AIC) housing information. Includes information on the period an AIC spent in a cell, on an 
+  outcount, or on a caseload.  More accurate information on caseload history can be found in table CMCOFH.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

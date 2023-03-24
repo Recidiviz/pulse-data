@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_DOCDTA_TBTABL
 file_description: |-
-  This table is used as a generic decode for all other tables.
+  Reference - System Table Code. Table of reference table codes with descriptions.
 data_classification: source
 primary_key_cols:
   - APPLICATION_ID

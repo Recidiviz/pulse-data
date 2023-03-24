@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_PBACTN
 file_description: |-
-  This file contains supervision data - TODO(#17148): Fill in with more context from OR
+  Parole Board Summary Extension. Current summary parole board related information for the AIC.  Includes action dates, 
+  indicators for inactive supervision, BM10, high risk dangerous offender and predatory sex offender, and post-prison 
+  supervision minimum and sentence months.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

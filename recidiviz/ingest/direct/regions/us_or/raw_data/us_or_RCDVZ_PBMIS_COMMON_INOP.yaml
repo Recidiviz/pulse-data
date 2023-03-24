@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PBMIS_COMMON_INOP
 file_description: |-
-  TODO(#17148): Fill in the file description
+  TODO(#17148): Fill in the file description - potentially inoperative days
 data_classification: source
 primary_key_cols:
   - INOP_ID

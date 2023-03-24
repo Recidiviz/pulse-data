@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_PRDDTA_OPCOUR
 file_description: |-
-  This file contains court case information.
+  Court Case. History of AIC court cases. Contains information that is duplicated from tables OP053P and OP054P as well
+  as some additional fields. Additional information includes Sentencing Guidelines criminal history level, court case
+  termination reason and date, and sanction supervision status.
 data_classification: source
 primary_key_cols:
   - RECORD_KEY

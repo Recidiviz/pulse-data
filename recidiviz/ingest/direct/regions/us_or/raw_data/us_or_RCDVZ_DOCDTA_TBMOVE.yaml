@@ -1,7 +1,9 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_DOCDTA_TBMOVE
 file_description: |-
-  This file contains transfer/movement descriptions.
+  REFERENCE - Table of offender movement codes with description.  Includes movement type, description, comments, 
+  indication of use by community corrections and institution, indication of use as an offender supervision release 
+  reason or supervision status, indication of use in local jurisdictions, and effective and discontinued dates.
 data_classification: source
 primary_key_cols:
   - MOVEMENT_CODE

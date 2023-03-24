@@ -1,9 +1,11 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: RCDVZ_CISPRDDTA_MTOFDR
 file_description: |-
-  TODO(#17148): Fill in with more context from OR
+  Disciplinary Report. Summary of offender misconducts/discipinary reports.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - RECORD_KEY
+  - NEXT_NUMBER
 columns:
   - name: RECORD_KEY
   - name: NEXT_NUMBER
