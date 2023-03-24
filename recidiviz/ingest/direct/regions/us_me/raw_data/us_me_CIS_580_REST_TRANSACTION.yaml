@@ -43,6 +43,8 @@ columns:
   - name: da_contact_name
     is_pii: True
   - name: fin_approval_ind
+    description: |-
+      Final approval. Drop if 'N'
   - name: manual_receipt_num
   - name: modified_by_tx
     is_pii: True
@@ -53,6 +55,7 @@ columns:
   - name: reject_reason_tx
     is_pii: True
   - name: rejected_ind
+    description: Payment rejected. Drop if 'Y'.
   - name: rest_trans_id
     description: |-
       Primary key: Restitution Transaction Id
