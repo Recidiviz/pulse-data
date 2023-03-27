@@ -194,6 +194,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
         opportunity_type_path_str="earlyDischarge",
         person_record_type=PersonRecordType.CLIENT,
     ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_ME,
+        opportunity_type="usMeEarlyTermination",
+        experiment_id="US_ME_EARLY_TERMINATION_WORKFLOWS",
+        opportunity_record_view_name="us_me_complete_early_termination_record_materialized",
+        task_completion_event=TaskCompletionEventType.EARLY_DISCHARGE,
+        source_filename="us_me_complete_early_termination_record.json",
+        export_collection_name="US_ME-earlyTerminationReferrals",
+        opportunity_type_path_str="earlyTermination",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
 ]
 
 WORKFLOWS_OPPORTUNITY_CONFIGS_QUERY_TEMPLATE = "UNION ALL".join(
