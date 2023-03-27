@@ -36,8 +36,10 @@ from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.schema.case_triage.schema import (
     DashboardUserRestrictions,
     Roster,
+    UserOverride,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,
@@ -1361,6 +1363,89 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
             )
             self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_update_user_with_override(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should change with the new upload
+            district="",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+            routes={"A": True},
+        )
+        # Create associated user_override - this should be deleted during the upload
+        override = generate_fake_user_overrides(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="xxxx",
+            district="XYZ",
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_leadership_user,
+                leadership_default,
+                override,
+            ],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
+        ) as fixture:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
+                response = self.client.get(
+                    self.users,
+                    headers=self.headers,
+                )
+                self.client.put(
+                    self.upload_roster("us_xx"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertReasonLog(
+                    log.output,
+                    "uploading roster for state us_xx with reason: test",
+                )
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "3975",
+                        "firstName": "leadership",
+                        "lastName": "user",
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "routes": {"A": True},
+                        "featureVariants": None,
+                        "userHash": _LEADERSHIP_USER_HASH,
+                    },
+                ]
+            response = self.client.get(
+                self.users,
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+            with SessionFactory.using_database(self.database_key) as session:
+                existing_user_override = (
+                    session.query(UserOverride)
+                    .filter(UserOverride.email_address == "leadership@domain.org")
+                    .first()
+                )
+                self.assertEqual(existing_user_override, None)
 
     def test_update_user_in_roster(self) -> None:
         user = generate_fake_rosters(
