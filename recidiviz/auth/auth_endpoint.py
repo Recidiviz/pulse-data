@@ -595,6 +595,19 @@ def upload_roster() -> Tuple[str, HTTPStatus]:
             )
             rows = list(dict_reader)
             _upsert_roster_rows(session, state_code, rows)
+
+            for row in rows:
+                # If UserOverride exists, delete it
+                existing_user_override = (
+                    session.query(UserOverride)
+                    .filter(UserOverride.email_address == row["email_address"].lower())
+                    .first()
+                )
+                if existing_user_override:
+                    session.delete(existing_user_override)
+
+            session.commit()
+
             return (
                 f"{len(rows)} users added/updated to the roster",
                 HTTPStatus.OK,
