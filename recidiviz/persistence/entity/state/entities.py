@@ -1403,7 +1403,12 @@ class StateProgramAssignment(HasExternalIdEntity, BuildableAttr, DefaultableAttr
 
     #   - Who
     # See |person| in entity relationships below.
-
+    referring_staff_external_id: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+    referring_staff_external_id_type: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     program_assignment_id: Optional[int] = attr.ib(
