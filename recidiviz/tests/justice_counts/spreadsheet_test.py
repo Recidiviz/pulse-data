@@ -151,14 +151,38 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 dimension_identifier_to_member=None,
                 value=str(True),
             )
+            # Set metrics to Enabled
+            setting_datapoint_enabled = schema.Datapoint(
+                metric_definition_key=supervision.expenses.key,
+                source=agency,
+                enabled=True,
+            )
+            # Set metrics to Disabled
+            setting_datapoint_disabled = schema.Datapoint(
+                metric_definition_key=supervision.discharges.key,
+                source=agency,
+                enabled=False,
+            )
+
             spreadsheet = self.test_schema_objects.get_test_spreadsheet(
                 system=schema.System.SUPERVISION,
                 user_id=user.auth0_user_id,
                 agency_id=agency.id,
             )
-            session.add_all([disaggregation_datapoint, spreadsheet])
+            session.add_all(
+                [
+                    disaggregation_datapoint,
+                    spreadsheet,
+                    setting_datapoint_enabled,
+                    setting_datapoint_disabled,
+                ]
+            )
             metric_key_to_agency_datapoints = {
-                supervision.funding.key: [disaggregation_datapoint],
+                supervision.funding.key: [
+                    disaggregation_datapoint,
+                ],
+                supervision.expenses.key: [setting_datapoint_enabled],
+                supervision.discharges.key: [setting_datapoint_disabled],
             }
             # Excel worbook will have an invalid sheet.
             create_excel_file(
@@ -209,6 +233,17 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     if metric_key_to_json.get(definition.key) is not None:
                         # Funding metric should be aggregated by the supervision subsystems.
                         self.assertTrue("BUDGET" in definition.key)
+                elif definition.key == supervision.expenses.key:
+                    self.assertEqual(
+                        metric_key_to_json[supervision.expenses.key]["enabled"], True
+                    )
+                elif definition.key == supervision.discharges.key:
+                    self.assertEqual(
+                        metric_key_to_json[supervision.discharges.key]["enabled"], False
+                    )
                 else:
                     # Every other metric should be represented in the json.
                     self.assertIsNotNone(metric_key_to_json.get(definition.key))
+                    self.assertEqual(
+                        metric_key_to_json[definition.key]["enabled"], None
+                    )
