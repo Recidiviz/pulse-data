@@ -18,8 +18,8 @@
 import unittest
 from typing import Set
 
-from recidiviz.calculator.pipeline.pipeline_runner import collect_all_pipeline_names
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
+    collect_all_pipeline_names,
     collect_all_pipeline_run_delegate_classes,
 )
 from recidiviz.calculator.query.state.views.reference.reference_views import (

@@ -32,6 +32,18 @@ from recidiviz.calculator.pipeline.base_pipeline import PipelineRunDelegate
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 
+def collect_all_pipeline_names() -> List[str]:
+    """Collects all of the pipeline names from all of the implementations of the
+    PipelineRunDelegate. A PipelineRunDelegate must exist inside one of the modules
+    listed in the TOP_LEVEL_PIPELINE_MODULES for it to be included."""
+    run_delegates = collect_all_pipeline_run_delegate_classes()
+
+    return [
+        run_delegate.pipeline_config().pipeline_name.lower()
+        for run_delegate in run_delegates
+    ]
+
+
 def collect_all_pipeline_run_delegate_classes() -> List[Type[PipelineRunDelegate]]:
     """Collects all of the versions of the PipelineRunDelegate."""
 

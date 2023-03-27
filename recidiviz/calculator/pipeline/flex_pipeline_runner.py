@@ -52,11 +52,7 @@ def delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelega
 def run_flex_pipeline(pipeline_name: str, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
     delegate_cls = delegate_cls_for_pipeline_name(pipeline_name)
-    pipeline = BasePipeline(
-        pipeline_run_delegate=delegate_cls.build_from_args(
-            argv, use_flex_templates=True
-        )
-    )
+    pipeline = BasePipeline(pipeline_run_delegate=delegate_cls.build_from_args(argv))
     pipeline.run()
 
 
