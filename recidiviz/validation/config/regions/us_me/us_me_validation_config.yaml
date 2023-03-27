@@ -3,17 +3,82 @@
 region_code: US_ME
 dev_mode: False
 exclusions: []
-max_allowed_error_overrides: []
+max_allowed_error_overrides:
+  - validation_name: supervision_termination_person_level_external_comparison
+    hard_max_allowed_error_override: 0.65
+    override_reason: >-
+      P2 Making noise and not currently relevant to any of our prodcuts.
+  - validation_name: supervision_population_person_level_external_comparison_matching_people_district
+    hard_max_allowed_error_override: 1.00
+    override_reason: >-
+      P2 I think this is may be a simple mapping error with what we consider
+      districts internally and externally. More details here:
+      https://docs.google.com/document/d/1z3SSsvStnGZyOLE3ZUR4v2CCAuqseH03Y4AiWoa34FY/edit#bookmark=id.9cmtjvmc91wg.
+  - validation_name: incarceration_release_person_level_external_comparison
+    hard_max_allowed_error_override: 0.3
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: incarceration_population_by_facility_external_comparison
+    hard_max_allowed_error_override: 0.10
+    override_reason: >-
+      P2 Not relevant to currently launched products
 num_allowed_rows_overrides:
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 150000
-    override_reason: Needs investigation.  Current failing level as of 10/21 is 121,838 rows #TODO(#16183)
+    override_reason: >-
+      Needs investigation.  Current failing level as of 10/21 is 121,838 rows
+      #TODO(#16183)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 60000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 49,776 rows #TODO(#16225)
+    override_reason: >-
+      Needs investigation.  Current failing level as of 10/26 is 49,776 rows
+      #TODO(#16225)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 40000
-    override_reason: Needs investigation.  Current failing level as of 10/26 is 32,531 rows #TODO(#16233)
+    override_reason: >-
+      Needs investigation.  Current failing level as of 10/26 is 32,531 rows
+      #TODO(#16233)
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 150
-    override_reason: Needs investigation. Current failing level as of 2/24/23 is 62 rows #TODO(#19047)
+    override_reason: >-
+      Needs investigation. Current failing level as of 2/24/23 is 62 rows
+      #TODO(#19047)
+  - validation_name: overlapping_supervision_periods
+    hard_num_allowed_rows_override: 24000
+    override_reason: >-
+      P1 Not relevant to any of our products currently as we mostly care about
+      just having an accurate population count (which we can see from
+      supervision_population_person_level_external_comparison we do), though
+      concerning.
+  - validation_name: overlapping_incarceration_periods
+    hard_num_allowed_rows_override: 5
+    override_reason: >-
+      P2 we currently use raw data for SCCP, so while relevant, it isn't used.
+  - validation_name: invalid_release_reasons_for_temporary_custody
+    hard_num_allowed_rows_override: 5
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: invalid_admission_reasons_for_temporary_custody
+    hard_num_allowed_rows_override: 5
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: invalid_admission_reason_and_pfi
+    hard_num_allowed_rows_override: 2100
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: incarceration_release_prior_to_admission
+    hard_num_allowed_rows_override: 5
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: incarceration_admission_after_open_period
+    hard_num_allowed_rows_override: 5
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: current_impact_funnel_status_duplicate_external_ids
+    hard_num_allowed_rows_override: 200
+    override_reason: >-
+      P2 Not relevant to currently launched products
+  - validation_name: admission_pfi_pop_pfi_mismatch
+    hard_num_allowed_rows_override: 20
+    override_reason: >-
+      P2 Not relevant to currently launched products
