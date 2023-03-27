@@ -98,8 +98,8 @@ opencensus-ext-stackdriver = "*"
 # TODO(#9157): Unpin alembic -- blocked by sqlalchemy/alembic#900 and sqlalchemy/alembic#903
 alembic = "==1.6.5"
 # TODO(#18145): Remove the <2.0.0 pin
-# if this version is bumped or changed, the sqlalchmey versions in recidiviz/calculator/pipeline/dataflow_flex_setup.py
-# and legacy_dataflow_setup.py must be changed as well.
+# if this version is bumped or changed, the sqlalchmey version in
+# recidiviz/calculator/pipeline/dataflow_flex_setup.py must be changed as well.
 sqlalchemy = ">=1.4.25, <2.0.0"
 flask = ">=2.0.0"
 Flask-Limiter = "*"

@@ -247,18 +247,6 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
             ),
         ),
     ],
-    # flex template migration keep setup.py in sync
-    # TODO(#17989): delete once migration is complete and legacy_dataflow_setup.py is deleted
-    FLEX_KEY: [
-        RequiredModificationSets(
-            if_modified_files=frozenset(
-                {"recidiviz/tools/deploy/legacy_dataflow_setup.py"}
-            ),
-            then_modified_files=frozenset(
-                {"recidiviz/calculator/pipeline/dataflow_flex_setup.py"}
-            ),
-        ),
-    ],
 }
 
 
