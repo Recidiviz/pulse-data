@@ -85,9 +85,11 @@ from recidiviz.airflow.dags.utils.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
 from recidiviz.calculator import pipeline
-from recidiviz.calculator.pipeline.pipeline_runner import collect_all_pipeline_names
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     calculation_month_count_arg,
+)
+from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
+    collect_all_pipeline_names,
 )
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation, run_command

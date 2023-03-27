@@ -50,9 +50,6 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetric,
 )
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
-from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
-    derive_apache_beam_pipeline_args,
-)
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
@@ -568,9 +565,7 @@ class TestProduceMetrics(unittest.TestCase):
             "test",
         ]
 
-        beam_pipeline_options = PipelineOptions(
-            derive_apache_beam_pipeline_args(default_beam_args)
-        )
+        beam_pipeline_options = PipelineOptions(default_beam_args)
 
         self.pipeline_job_args = MetricPipelineJobArgs(
             state_code="US_XX",

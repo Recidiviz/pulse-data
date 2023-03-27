@@ -31,9 +31,6 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
 )
-from recidiviz.calculator.pipeline.utils.beam_utils.legacy_pipeline_args_utils import (
-    derive_apache_beam_pipeline_args,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
@@ -130,22 +127,13 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
     ##### FACTORY #####
     @classmethod
     def build_from_args(
-        cls: Type[PipelineRunDelegateT],
-        argv: List[str],
-        # TODO(#17989): Remove use_flex_templates flag everywhere and default to True
-        #  once Flex migration is complete.
-        use_flex_templates: bool = False,
+        cls: Type[PipelineRunDelegateT], argv: List[str]
     ) -> PipelineRunDelegateT:
         """Builds a PipelineRunDelegate from the provided arguments."""
-        if use_flex_templates:
-            parser: argparse.ArgumentParser = SplitSpacesArgumentParser()
-        else:
-            parser = argparse.ArgumentParser()
+        parser: argparse.ArgumentParser = SplitSpacesArgumentParser()
         cls.add_pipeline_job_args_to_parser(parser)
 
-        pipeline_job_args = cls._build_pipeline_job_args(
-            parser, argv, use_flex_templates=use_flex_templates
-        )
+        pipeline_job_args = cls._build_pipeline_job_args(parser, argv)
 
         return cls(
             pipeline_job_args=pipeline_job_args,
@@ -202,24 +190,18 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
     @classmethod
     @abc.abstractmethod
     def _build_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
+        cls, parser: argparse.ArgumentParser, argv: List[str]
     ) -> PipelineJobArgsT:
         """Builds the PipelineJobArgs object from the provided args."""
 
     @classmethod
     def _get_base_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
+        cls, parser: argparse.ArgumentParser, argv: List[str]
     ) -> PipelineJobArgs:
         (
             known_args,
             remaining_args,
         ) = parser.parse_known_args(argv)
-
-        if not use_flex_templates:
-            # For pipelines run with legacy templates only, we derive a slightly
-            # different list of arguments given the provided command-line args
-            # TODO(#17989): Delete this logic when we have fully switched to Flex
-            remaining_args = derive_apache_beam_pipeline_args(remaining_args)
 
         apache_beam_pipeline_options = PipelineOptions(remaining_args)
         apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
@@ -343,7 +325,7 @@ class SplitSpacesArgumentParser(argparse.ArgumentParser):
     it to ["ARG1", "ARG2", "ARG3"]. The regular ArgumentParser would parse it incorrectly to a single
     argument "ARG1 ARG2 ARG3".
 
-    This parser is needed because while a yaml config file (job-flags.yaml) can parse a list,
+    This parser is needed because while a yaml config file can parse a list,
     the metadata file for flex template jobs (template_metadat.json) must follow the format in
     com.google.api.services.dataflow.model.TemplateMetadata, which only takes strings
     (https://cloud.google.com/dataflow/docs/guides/templates/configuring-flex-templates).

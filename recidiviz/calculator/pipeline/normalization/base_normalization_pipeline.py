@@ -107,12 +107,10 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
 
     @classmethod
     def _build_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str], use_flex_templates: bool
+        cls, parser: argparse.ArgumentParser, argv: List[str]
     ) -> PipelineJobArgs:
         """Builds the PipelineJobArgs object from the provided args."""
-        return cls._get_base_pipeline_job_args(
-            parser, argv, use_flex_templates=use_flex_templates
-        )
+        return cls._get_base_pipeline_job_args(parser, argv)
 
     @classmethod
     def default_output_dataset(cls, state_code: str) -> str:
