@@ -277,13 +277,26 @@ class SpreadsheetInterface:
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
-        metric_key_to_disaggregation_status = {
-            datapoint.metric_definition_key: datapoint.value == str(True)
-            for datapoint in list(
-                itertools.chain(*metric_key_to_agency_datapoints.values())
-            )
-            if datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS
+        metric_key_to_enabled = {
+            metric_definition.key: None for metric_definition in metric_definitions
         }
+        metric_key_to_disaggregation_status = {}
+        for _, agency_datapoints in metric_key_to_agency_datapoints.items():
+            for datapoint in agency_datapoints:
+                if (
+                    datapoint.report_id is None
+                    and datapoint.value is None
+                    and datapoint.get_dimension_id() is None
+                ):
+                    metric_key_to_enabled[
+                        datapoint.metric_definition_key
+                    ] = datapoint.enabled
+
+                if datapoint.context_key == DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS:
+                    metric_key_to_disaggregation_status[
+                        datapoint.metric_definition_key
+                    ] = datapoint.value == str(True)
+
         for metric_definition in metric_definitions:
             # Do not add metric to response if the metric definition has
             # been disabled by JC.
@@ -337,6 +350,7 @@ class SpreadsheetInterface:
                     "datapoints": metric_key_to_datapoint_jsons.get(
                         metric_definition.key, []
                     ),
+                    "enabled": metric_key_to_enabled[metric_definition.key],
                 }
             )
         # Errors that are not associated with a metric are non-metric errors.

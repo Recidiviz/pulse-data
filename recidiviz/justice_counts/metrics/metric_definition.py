@@ -211,6 +211,8 @@ class MetricDefinition:
     # Dimensions that this metric should be disaggregated by in the reporting
     aggregated_dimensions: Optional[List[AggregatedDimension]] = None
     # If disabled, don't send to the frontend to render
+    # Note, this is not the same as the metric being disabled in metric settings
+    # This field is used internally to indicate if a metric is deprecated or not
     disabled: bool = False
     # Describes what data is included/excluded in the metrics aggregate value.
     # The IncludesExcludesSet is rendered as toggles in the metric settings page.

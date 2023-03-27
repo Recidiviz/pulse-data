@@ -654,8 +654,10 @@ class Datapoint(JusticeCountsBase):
     # datapoints that represent unreported metric values will have a value of None.
     value = Column(String, nullable=True)
 
-    # Agency datapoints will have an a non-null enabled value. Disabled metrics will have
-    # a value of False and enabled metrics will have a value of True.
+    # Agency datapoints will have a nullable enabled value.
+    # Disabled metrics will have a value of False.
+    # Enabled metrics will have a value of True.
+    # Metrics that have not been set/touched by the agency will have a value of None (default).
     enabled = Column(BOOLEAN, nullable=True)
 
     __table_args__ = tuple(
