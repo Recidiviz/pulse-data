@@ -22,7 +22,7 @@ import json
 import os
 import uuid
 from collections import defaultdict
-from typing import Any, Dict, List, NamedTuple, Optional, Union
+from typing import Dict, List, Optional
 
 from airflow.decorators import dag
 from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateOperator
@@ -47,7 +47,6 @@ try:
     from operators.iap_httprequest_sensor import IAPHTTPRequestSensor  # type: ignore
     from operators.recidiviz_dataflow_operator import (  # type: ignore
         RecidivizDataflowFlexTemplateOperator,
-        RecidivizDataflowTemplateOperator,
     )
     from utils.default_args import DEFAULT_ARGS  # type: ignore
     from utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS  # type: ignore
@@ -72,7 +71,6 @@ except ImportError:
     )
     from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
         RecidivizDataflowFlexTemplateOperator,
-        RecidivizDataflowTemplateOperator,
     )
     from recidiviz.airflow.dags.operators.iap_httprequest_sensor import (
         IAPHTTPRequestSensor,
@@ -100,65 +98,6 @@ project_id = os.environ.get("GCP_PROJECT")
 config_file = os.environ.get("CONFIG_FILE")
 
 retry: Retry = Retry(predicate=lambda _: False)
-
-PipelineConfigArgs = NamedTuple(
-    "PipelineConfigArgs",
-    [("state_code", str), ("pipeline_name", str), ("staging_only", Optional[bool])],
-)
-
-
-def get_zone_for_region(pipeline_region: str) -> str:
-    if pipeline_region in {"us-west1", "us-west3", "us-central1"}:
-        return f"{pipeline_region}-a"
-
-    if pipeline_region == "us-east1":
-        return "us-east1-b"  # For some reason, 'us-east1-a' doesn't exist
-
-    raise ValueError(f"Unexpected region: {pipeline_region}")
-
-
-# TODO(#19453): delete this method and other legacy dataflow code from the calculation dag
-def get_dataflow_default_args(pipeline_config: YAMLDict) -> Dict[str, Any]:
-    region = pipeline_config.peek("region", str)
-    zone = get_zone_for_region(region)
-
-    dataflow_args = DEFAULT_ARGS.copy()
-    dataflow_args.update(
-        {
-            "project": project_id,
-            "region": region,
-            "zone": zone,
-            "tempLocation": f"gs://{project_id}-dataflow-templates-scratch/temp/",
-        }
-    )
-
-    return dataflow_args
-
-
-def get_pipeline_config_args(pipeline_config: YAMLDict) -> PipelineConfigArgs:
-    state_code = pipeline_config.peek("state_code", str)
-    pipeline_name = pipeline_config.peek("job_name", str)
-    staging_only = pipeline_config.peek_optional("staging_only", bool)
-
-    return PipelineConfigArgs(
-        state_code=state_code, pipeline_name=pipeline_name, staging_only=staging_only
-    )
-
-
-def dataflow_operator_for_pipeline(
-    pipeline_args: PipelineConfigArgs,
-    pipeline_config: YAMLDict,
-    task_group: Optional[TaskGroup] = None,
-) -> RecidivizDataflowTemplateOperator:
-    dataflow_default_args = get_dataflow_default_args(pipeline_config)
-
-    return RecidivizDataflowTemplateOperator(
-        task_id=pipeline_args.pipeline_name,
-        template=f"gs://{project_id}-dataflow-templates/templates/{pipeline_args.pipeline_name}",
-        job_name=pipeline_args.pipeline_name,
-        dataflow_default_options=dataflow_default_args,
-        task_group=task_group,
-    )
 
 
 def flex_dataflow_operator_for_pipeline(
@@ -473,7 +412,7 @@ def create_calculation_dag() -> None:
 
     metric_pipelines_by_state: Dict[
         str,
-        Union[RecidivizDataflowTemplateOperator, RecidivizDataflowFlexTemplateOperator],
+        RecidivizDataflowFlexTemplateOperator,
     ] = defaultdict(list)
 
     dataflow_pipeline_task_groups: Dict[str, TaskGroup] = {}

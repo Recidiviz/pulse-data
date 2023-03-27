@@ -23,58 +23,8 @@ from typing import Any, Dict
 from airflow.providers.google.cloud.hooks.dataflow import DataflowHook
 from airflow.providers.google.cloud.operators.dataflow import (
     DataflowStartFlexTemplateOperator,
-    DataflowTemplatedJobStartOperator,
 )
 from airflow.utils.context import Context
-
-
-class RecidivizDataflowTemplateOperator(DataflowTemplatedJobStartOperator):
-    """A custom implementation of the DataflowTemplatedJobStartOperator that overrides
-    job_ids to have the same id over time."""
-
-    def execute(
-        self,
-        # Some context about the context: https://bcb.github.io/airflow/execute-context
-        context: Context,  # pylint: disable=unused-argument
-    ) -> Dict[Any, Any]:
-        """Checks if a Dataflow job is running (in case of task retry), otherwise starts
-        the job. Polls the status of the job until it's finished or failed."""
-
-        hook = DataflowHook(
-            gcp_conn_id=self.gcp_conn_id,
-            delegate_to=self.delegate_to,
-            poll_sleep=self.poll_sleep,
-        )
-        # The last element is always the task name we want to name the pipeline
-        job_name = self.task_id.split(".")[-1]
-
-        # If the operator is on a retry loop, we ignore the start operation by checking
-        # if the job is running.
-        region = self.dataflow_default_options["region"]
-        if hook.is_job_dataflow_running(
-            name=job_name, project_id=self.project_id, location=region
-        ):
-            hook.wait_for_done(
-                job_name=job_name,
-                project_id=self.project_id,
-                location=region,
-            )
-            return hook.get_job(
-                job_id=job_name,
-                project_id=self.project_id,
-                location=region,
-            )
-
-        # In DataflowTemplateOperator,  start_template_dataflow has the default append_job_name set to True
-        # so it adds a unique-id to the end of the job name. This overwrites that default argument.
-        return hook.start_template_dataflow(
-            job_name=job_name,
-            variables=self.dataflow_default_options,
-            parameters=self.parameters,
-            dataflow_template=self.template,
-            project_id=self.project_id,
-            append_job_name=False,
-        )
 
 
 class RecidivizDataflowFlexTemplateOperator(DataflowStartFlexTemplateOperator):
