@@ -1,54 +1,60 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: ParoleViolation
-file_description: |-
-  TODO(#15297): Fill in the file description
+file_description: >-
+  Contains violations for the parole population. Only includes violation for the
+  current period of parole.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - Violation_ID
 columns:
   - name: OffenderId
     is_pii: True
-    description: |-
-      An ID to reference a specific individual in who is in custody or under supervision of CDCR.
+    description: >-
+      An ID to reference a specific individual in who is in custody or under
+      supervision of CDCR.
   - name: ORTGID
+    description: >-
+      The ORTGID this violation is associated with. We only recieve violations
+      for the current ORTGID, but overtime we may see different ORTGIDs.
   - name: Referral_Agent_Badge
     is_pii: True
-    description: |-
+    description: >-
       Badge number of the referring agent.
   - name: Violation_ID
-    description: |-
-      TODO(#15297)
+    description: >-
+      Unique ID for this violation.
   - name: Violation_Date
-    description: |-
-      TODO(#15297)
+    description: >-
+      The date the violation occured.
     is_datetime: True
   - name: Violated_Conditions
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Response_Date
-    description: |-
+    description: >-
       TODO(#15297)
     is_datetime: True
   - name: Response_Type
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Response_Region
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Response_District
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Response_ParoleUnit
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Responding_Agent
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Response_Decision_Type
-    description: |-
+    description: >-
       TODO(#15297)
   - name: Final
-    description: |-
-      TODO(#15297)
+    description: >-
+      If N, the decision is not final and may change.
   - name: DecidingBodyType
-    description: |-
+    description: >-
       TODO(#15297)
