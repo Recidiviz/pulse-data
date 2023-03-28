@@ -74,6 +74,10 @@ WORKFLOWS_CONFIGS_WITH_CLIENTS = [
     and config.state_code != StateCode.US_TN
 ]
 
+WORKFLOWS_SUPERVISION_STATES = [
+    config.state_code.value for config in WORKFLOWS_CONFIGS_WITH_CLIENTS
+]
+
 
 def get_eligibility_ctes(configs: List[WorkflowsOpportunityConfig]) -> str:
     cte_body = "\n        UNION ALL\n".join(
@@ -143,7 +147,9 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_id_type=state_specific_query_strings.state_specific_external_id_type(
         "sessions"
     ),
-    workflows_supervision_states=list_to_query_string(["US_ND", "US_IX"], quoted=True),
+    workflows_supervision_states=list_to_query_string(
+        WORKFLOWS_SUPERVISION_STATES, quoted=True
+    ),
     static_reference_tables_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
 )
 

@@ -288,6 +288,9 @@ from recidiviz.validation.views.state.workflows.current_impact_funnel_status_dup
 from recidiviz.validation.views.state.workflows.current_impact_funnel_status_no_records import (
     CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.person_record_missing_opportunities import (
+    OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.configured_validations import (
     get_all_task_eligibility_validations,
 )
@@ -504,6 +507,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
