@@ -55,7 +55,7 @@ POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = """
         {age_dimension}
       -- TODO(#14294) Remove hard-coded state-specific logic here
       WHERE
-        CASE WHEN state_code = 'US_ID' THEN facility IS NOT NULL ELSE TRUE END
+        CASE WHEN state_code IN ('US_ID', 'US_IX') THEN facility IS NOT NULL ELSE TRUE END
     )
 
     SELECT
