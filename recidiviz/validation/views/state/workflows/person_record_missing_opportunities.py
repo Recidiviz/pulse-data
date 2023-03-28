@@ -15,46 +15,43 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""A view revealing opportunity types with no rows in the `current_impact_funnel_status` view."""
+"""A view revealing opportunity types with no rows in the `person_record` view."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.experiments import (
-    dataset_config as experiments_dataset_config,
-)
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
 
-CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_NAME = (
-    "current_impact_funnel_status_no_opportunity_records"
+OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_NAME = "opportunites_without_person_records"
+
+OPPORTUNITIES_WITHOUT_PERSON_RECORDS_DESCRIPTION = (
+    """Opportunity types that do not have any clients/residents in `person_record`"""
 )
 
-CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_DESCRIPTION = """Opportunity types that have a launch date in the past and do not have any clients/residents in `current_impact_funnel_status`"""
+OPPORTUNITIES_WITHOUT_PERSON_RECORDS_QUERY_TEMPLATE = """
+WITH unnested_records AS (
+  SELECT * except (all_eligible_opportunities)
+  FROM `{project_id}.{workflows_dataset}.person_record_materialized` records, UNNEST(all_eligible_opportunities) AS opportunity_type
+)
 
-CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_QUERY_TEMPLATE = """
 SELECT
   state_code AS region_code, opportunity_type
 FROM `{project_id}.{reference_views_dataset}.workflows_opportunity_configs_materialized`
-INNER JOIN `{project_id}.{experiments_dataset}.officer_assignments_materialized` assignments
-    USING (state_code, experiment_id)
-LEFT JOIN `{project_id}.{workflows_dataset}.current_impact_funnel_status_materialized` funnel_status
-    USING (state_code, opportunity_type)
-WHERE funnel_status.person_external_id IS NULL
-AND assignments.variant_date <= CURRENT_DATE('US/Eastern')
+LEFT JOIN unnested_records USING (state_code, opportunity_type)
+WHERE unnested_records.person_external_id IS NULL
 """
 
-CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.VIEWS_DATASET,
-    view_id=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_NAME,
-    view_query_template=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_QUERY_TEMPLATE,
-    description=CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_DESCRIPTION,
+    view_id=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_NAME,
+    view_query_template=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_QUERY_TEMPLATE,
+    description=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_DESCRIPTION,
     reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET,
     workflows_dataset=state_dataset_config.WORKFLOWS_VIEWS_DATASET,
-    experiments_dataset=experiments_dataset_config.EXPERIMENTS_DATASET,
     should_materialize=True,
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        CURRENT_IMPACT_FUNNEL_STATUS_NO_OPPORTUNITY_RECORDS_VIEW_BUILDER.build_and_print()
+        OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER.build_and_print()
