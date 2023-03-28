@@ -74,10 +74,6 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 5
     override_reason: >-
       P2 Not relevant to currently launched products
-  - validation_name: current_impact_funnel_status_duplicate_external_ids
-    hard_num_allowed_rows_override: 200
-    override_reason: >-
-      P2 Not relevant to currently launched products
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20
     override_reason: >-

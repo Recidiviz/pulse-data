@@ -41,11 +41,16 @@ RESIDENT_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         WHERE _FILE_NAME NOT LIKE "%/staging/%"
     )
     SELECT DISTINCT
-        * EXCEPT (path_parts, all_eligible_opportunities),
+        split_path.* EXCEPT (path_parts, all_eligible_opportunities, person_id),
         ARRAY_TO_STRING(all_eligible_opportunities, ",") AS all_eligible_opportunities,
-        DATE(path_parts[OFFSET(1)]) AS export_date,
-        path_parts[OFFSET(2)] AS state_code,
+        DATE(path_parts[SAFE_OFFSET(1)]) AS export_date,
+        path_parts[SAFE_OFFSET(2)] AS state_code,
+        latest_person_id.person_id,
     FROM split_path
+    -- Pull the person_id from the latest version of ingested data
+    INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id` latest_person_id
+        ON latest_person_id.state_code = path_parts[SAFE_OFFSET(2)]
+        AND latest_person_id.person_external_id = split_path.person_external_id
 """
 
 RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -53,6 +58,7 @@ RESIDENT_RECORD_ARCHIVE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=RESIDENT_RECORD_ARCHIVE_VIEW_NAME,
     description=RESIDENT_RECORD_ARCHIVE_VIEW_DESCRIPTION,
     view_query_template=RESIDENT_RECORD_ARCHIVE_QUERY_TEMPLATE,
+    workflows_dataset=WORKFLOWS_VIEWS_DATASET,
     should_materialize=True,
     export_archives_dataset=EXPORT_ARCHIVES_DATASET,
 )
