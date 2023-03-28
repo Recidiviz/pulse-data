@@ -9,13 +9,13 @@ primary_key_cols:
   - HearingType
 columns:
   - name: OffenderID
-    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular person in the TOMIS system or a current, valid OBSCID ID number.
+    is_pii: True
   - name: HearingDate
-    is_datetime: True
     description: |-
       The date that a hearing is originally scheduled to take place. This item is used to uniquely identify a particular person.
+    is_datetime: True
   - name: HearingType
     description: |-
       An abbreviation to describe the type of hearing.
@@ -79,13 +79,13 @@ columns:
       - value: TS
         description: TIME SETTING
   - name: CertificateReleaseDate
-    is_datetime: True
     description: |-
       A person's parole date which the Board of Parole agrees to release.
-  - name: AlternateReleaseDate
     is_datetime: True
+  - name: AlternateReleaseDate
     description: |-
       A date which the board of paroles agrees to release a person.
+    is_datetime: True
   - name: RecommendedDecision
     description: |-
       An abbreviated recommendation that describes a suggested parole hearing decision.
@@ -146,6 +146,8 @@ columns:
         description: REINSTATE ON PAROLE R
       - value: RV
         description: REVOKE              D
+      - value: SR
+        description: SHORT-TERM REVOKE   D
       - value: TS
         description: BEG NEW SENT        D
       - value: ZC
@@ -166,10 +168,14 @@ columns:
         description: PROGRAM REJECTED
       - value: AB
         description: ABSCONDER
+      - value: AC
+        description: ADMINISTRATIVE DOCKET
       - value: AD
         description: ADVERSELY AFFECTS DISCIPLINE
       - value: BV
         description: PRIOR PROBATION VIOLATON
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
       - value: CC
@@ -194,6 +200,8 @@ columns:
         description: COMPLETE PSLS OR CBIP
       - value: GT
         description: GRANT ALL TIME
+      - value: HO
+        description: HEARING OFFICER DOCKET
       - value: HR
         description: HIGH RISK
       - value: IR
@@ -216,6 +224,8 @@ columns:
         description: NOTIFY VICTIM
       - value: NW
         description: NOTIFY WITNESSES
+      - value: OM
+        description: COMPLETE MEDICAL PROGRAM
       - value: OR
         description: OFFENDER REQUEST
       - value: OW
@@ -242,6 +252,8 @@ columns:
         description: REFER TO DEPT OF CORR
       - value: RV
         description: PRIOR PAROLE VIOLATION
+      - value: SE
+        description: LEISURE CRAFT/SMALL ENGINE TECHNOLOGY
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
@@ -286,6 +298,8 @@ columns:
         description: ADVERSELY AFFECTS DISCIPLINE
       - value: BV
         description: PRIOR PROBATION VIOLATON
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
       - value: CC
@@ -316,6 +330,8 @@ columns:
         description: INADEQUATE RELEASE PLAN
       - value: LL
         description: LOWER CUSTODY LEVEL
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
       - value: MI
         description: MISSING INFORMATION
       - value: MP
@@ -358,6 +374,8 @@ columns:
         description: REFER TO DEPT OF CORR
       - value: RV
         description: PRIOR PAROLE VIOLATION
+      - value: S1
+        description: MOD TO SEVERE SUBSTANCE ABUSE-PRE REL
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
@@ -394,6 +412,8 @@ columns:
         description: ADVERSELY AFFECTS DISCIPLINE
       - value: BR
         description: BARBERING
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
       - value: CC
@@ -412,6 +432,8 @@ columns:
         description: COMPLETE GROUP THERAPY
       - value: FP
         description: NEW FELONY PENDING
+      - value: FR
+        description: FACTS OF OFFENSE RPT
       - value: GE
         description: PARTICIPATE IN ACADEMIC PROGRAM
       - value: GL
@@ -422,6 +444,8 @@ columns:
         description: HIGH RISK
       - value: LG
         description: LANDSCAPING/HORTICULTURE/GROUNDS KEEPING
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
       - value: MI
         description: MISSING INFORMATION
       - value: NA
@@ -444,6 +468,8 @@ columns:
         description: PARTICIPATE IN VOCATIONAL PROGRAM
       - value: RD
         description: REFER TO DEPT OF CORR
+      - value: S1
+        description: MOD TO SEVERE SUBSTANCE ABUSE-PRE REL
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
@@ -474,6 +500,8 @@ columns:
         description: ADMINISTRATIVE DOCKET
       - value: AD
         description: ADVERSELY AFFECTS DISCIPLINE
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
       - value: CM
@@ -492,6 +520,8 @@ columns:
         description: CORE, HVAC & REFRIGERATION I & II
       - value: HR
         description: HIGH RISK
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
       - value: OR
         description: OFFENDER REQUEST
       - value: OW
@@ -504,8 +534,12 @@ columns:
         description: PSYCHOLOGICAL EVALUATION
       - value: PV
         description: PARTICIPATE IN VOCATIONAL PROGRAM
+      - value: RD
+        description: REFER TO DEPT OF CORR
       - value: RV
         description: PRIOR PAROLE VIOLATION
+      - value: S1
+        description: MOD TO SEVERE SUBSTANCE ABUSE-PRE REL
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
@@ -530,6 +564,10 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -570,6 +608,10 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -624,6 +666,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -676,6 +720,10 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -716,6 +764,10 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -770,6 +822,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -822,6 +876,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -862,6 +918,8 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -916,6 +974,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -968,6 +1028,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1008,6 +1070,8 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -1062,6 +1126,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -1114,6 +1180,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1154,6 +1222,8 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -1208,6 +1278,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -1337,14 +1409,16 @@ columns:
         description: REINSTATE ON PAROLE R
       - value: RV
         description: REVOKE              D
+      - value: SR
+        description: SHORT-TERM REVOKE   D
       - value: TS
         description: BEG NEW SENT        D
       - value: ZR
         description: OTHER, SEE COMMENTS R
   - name: ParoleDecisionDate
-    is_datetime: True
     description: |-
       The date on which three parole board members agree on a parole decision.
+    is_datetime: True
   - name: ParoleCondition1
     description: |-
       An abbreviation representing an condition for parole.
@@ -1357,6 +1431,10 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1397,6 +1475,10 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -1451,6 +1533,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -1503,6 +1587,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1543,6 +1629,10 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -1597,6 +1687,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -1649,6 +1741,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1689,6 +1783,8 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -1743,6 +1839,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -1795,6 +1893,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1835,6 +1935,8 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -1889,6 +1991,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -1941,6 +2045,8 @@ columns:
         description: BATTERER'S INTERVENTION CLASS
       - value: BR
         description: BARBERING
+      - value: C2
+        description: CRIMINAL COGNITION & LIFESTYLES-POST REL
       - value: CA
         description: COMPLETE ANGER MANAGEMENT PROGRAM
       - value: CB
@@ -1981,6 +2087,8 @@ columns:
         description: LIVING CONDITIONS SPECIFIED
       - value: LP
         description: LIFELINE PROGRAM
+      - value: M2
+        description: MILD SUBSTANCE ABUSE - POST REL
       - value: MH
         description: EVAL FOR MH TREATMENT
       - value: MS
@@ -2035,6 +2143,8 @@ columns:
         description: RANDOM DRUG SCREENS
       - value: RS
         description: RESTITUTION PROGRAM
+      - value: S2
+        description: MOD TO SEVERE SUBSTANCE ABUSE-POST REL
       - value: SA
         description: SUBSTANCE ABUSE TREATMENT/PO DISCRETION
       - value: SC
@@ -2097,6 +2207,8 @@ columns:
         description: BOARD PANEL DOCKET
       - value: BV
         description: PRIOR PROBATION VIOLATON
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
       - value: CT
@@ -2188,7 +2300,7 @@ columns:
       - value: TT
         description: TAKE AMOUNT/DATE
       - value: ZA
-        description: "TODO(#7424): Update with definition."
+        description: #TODO(#7424): Update with definition.
       - value: ZC
         description: OTHER CONTINUE REASON
       - value: ZD
@@ -2217,10 +2329,20 @@ columns:
         description: ADVERSELY AFFECTS DISCIPLINE
       - value: BP
         description: BOARD PANEL DOCKET
+      - value: BR
+        description: BARBERING
       - value: BV
         description: PRIOR PROBATION VIOLATON
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
+      - value: CC
+        description: CORE CARPENTRY I & II
+      - value: CE
+        description: CORE ELECTRICAL I & II
+      - value: CO
+        description: COSMETOLOGY
       - value: CT
         description: COMPLETE THERAPEUTIC COMMUNITY
       - value: DC
@@ -2231,6 +2353,8 @@ columns:
         description: DISCIPLINARY REPORTS
       - value: FB
         description: FULL BOARD DOCKET
+      - value: FH
+        description: FNDTNS HOSPTLTY IND CULNRY ARTS I II III
       - value: FP
         description: NEW FELONY PENDING
       - value: FR
@@ -2249,6 +2373,8 @@ columns:
         description: INADEQUATE RELEASE PLAN
       - value: LL
         description: LOWER CUSTODY LEVEL
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
       - value: MI
         description: MISSING INFORMATION
       - value: MP
@@ -2267,6 +2393,8 @@ columns:
         description: NOTIFY WITNESSES
       - value: OC
         description: OTHER-SEE COMMENT
+      - value: OM
+        description: COMPLETE MEDICAL PROGRAM
       - value: OR
         description: OFFENDER REQUEST
       - value: OW
@@ -2293,10 +2421,14 @@ columns:
         description: REFER TO DEPT OF CORR
       - value: RV
         description: PRIOR PAROLE VIOLATION
+      - value: S1
+        description: MOD TO SEVERE SUBSTANCE ABUSE-PRE REL
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
         description: COMPLETE SUCCESS PROGRAM
+      - value: ST
+        description: STREET TIME
       - value: TC
         description: TECHNICAL
       - value: TF
@@ -2331,8 +2463,22 @@ columns:
         description: BOARD PANEL DOCKET
       - value: BV
         description: PRIOR PROBATION VIOLATON
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
+      - value: CC
+        description: CORE CARPENTRY I & II
+      - value: CE
+        description: CORE ELECTRICAL I & II
+      - value: CI
+        description: COMP COG BEHAV INTERVENT PROG-POST REL
+      - value: CM
+        description: CORE, MASONRY I & II
+      - value: CO
+        description: COSMETOLOGY
+      - value: CR
+        description: CONSTRUCTION CORE
       - value: CT
         description: COMPLETE THERAPEUTIC COMMUNITY
       - value: DC
@@ -2343,6 +2489,8 @@ columns:
         description: DISCIPLINARY REPORTS
       - value: FB
         description: FULL BOARD DOCKET
+      - value: FH
+        description: FNDTNS HOSPTLTY IND CULNRY ARTS I II III
       - value: FP
         description: NEW FELONY PENDING
       - value: FR
@@ -2353,14 +2501,20 @@ columns:
         description: COMPLETE PRO-SOCIAL LIFE SKILLS
       - value: GT
         description: GRANT ALL TIME
+      - value: HC
+        description: CORE, HVAC & REFRIGERATION I & II
       - value: HO
         description: HEARING OFFICER DOCKET
       - value: HR
         description: HIGH RISK
       - value: IR
         description: INADEQUATE RELEASE PLAN
+      - value: LG
+        description: LANDSCAPING/HORTICULTURE/GROUNDS KEEPING
       - value: LL
         description: LOWER CUSTODY LEVEL
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
       - value: MI
         description: MISSING INFORMATION
       - value: MP
@@ -2405,10 +2559,14 @@ columns:
         description: REFER TO DEPT OF CORR
       - value: RV
         description: PRIOR PAROLE VIOLATION
+      - value: S1
+        description: MOD TO SEVERE SUBSTANCE ABUSE-PRE REL
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
         description: COMPLETE SUCCESS PROGRAM
+      - value: ST
+        description: STREET TIME
       - value: TC
         description: TECHNICAL
       - value: TF
@@ -2439,10 +2597,18 @@ columns:
         description: ADVERSELY AFFECTS DISCIPLINE
       - value: BP
         description: BOARD PANEL DOCKET
+      - value: BR
+        description: BARBERING
       - value: BV
         description: PRIOR PROBATION VIOLATON
+      - value: C1
+        description: CRIMINAL COGNITION & LIFESTYLES-PRE REL
       - value: CB
         description: COMP COG BEHAV INTERVENT PROG-PRE-REL
+      - value: CC
+        description: CORE CARPENTRY I & II
+      - value: CM
+        description: CORE, MASONRY I & II
       - value: CT
         description: COMPLETE THERAPEUTIC COMMUNITY
       - value: DC
@@ -2463,6 +2629,8 @@ columns:
         description: COMPLETE PRO-SOCIAL LIFE SKILLS
       - value: GT
         description: GRANT ALL TIME
+      - value: HC
+        description: CORE, HVAC & REFRIGERATION I & II
       - value: HO
         description: HEARING OFFICER DOCKET
       - value: HR
@@ -2471,6 +2639,8 @@ columns:
         description: INADEQUATE RELEASE PLAN
       - value: LL
         description: LOWER CUSTODY LEVEL
+      - value: M1
+        description: MILD SUBSTANCE ABUSE - PRE REL
       - value: MI
         description: MISSING INFORMATION
       - value: MP
@@ -2515,6 +2685,8 @@ columns:
         description: REFER TO DEPT OF CORR
       - value: RV
         description: PRIOR PAROLE VIOLATION
+      - value: S1
+        description: MOD TO SEVERE SUBSTANCE ABUSE-PRE REL
       - value: SO
         description: SERIOUSNESS OF OFFENSE
       - value: SP
@@ -2531,8 +2703,10 @@ columns:
         description: TIME SETTING
       - value: TT
         description: TAKE AMOUNT/DATE
+      - value: WD
+        description: WELDING
       - value: ZA
-        description: "TODO(#7424): Update with definition."
+        description: #TODO(#7424): Update with definition.
       - value: ZC
         description: OTHER CONTINUE REASON
       - value: ZD
@@ -2588,34 +2762,34 @@ columns:
       - value: TSH
         description: TIME-SETTING HEARING
   - name: FutureActionDate
-    is_datetime: True
     description: |-
       The date on which some future action will be taken.
-  - name: BoardOfParoleDate
     is_datetime: True
+  - name: BoardOfParoleDate
     description: |-
       The date the Board of Parole assigns to a sentence to replace the normal starting date of the sentence.
-  - name: RecommendedBoardOfParoleDate
     is_datetime: True
+  - name: RecommendedBoardOfParoleDate
     description: |-
       The date the recommended date the Board of Parole assigns to a sentence to replace the normal starting date of the sentence.
-  - name: RecommendedAlternateReleaseDate
     is_datetime: True
+  - name: RecommendedAlternateReleaseDate
     description: |-
       A date which the hearing recomends to release an offender.
+    is_datetime: True
   - name: RecommenedFutureActionType
     description: |-
       The code of the recommended  parole action  to take place in the future.
   - name: RecommendedFutureActionDate
-    is_datetime: True
     description: |-
       The recomnmended date on which some future action will be taken.
+    is_datetime: True
   - name: Pre1998HearingFlag
     description: |-
       This flag indicates the hearing is a pre 1998 hearing. If null, hearing is not a pre-1998 hearing.
     known_values:
       - value: Y
-        description: "YES - Is a Pre 1998 Hearing. "
+        description: YES - Is a Pre 1998 Hearing.
   - name: TechnicalViolatorFlag
     description: |-
       The code to indicate the type of technical violator a person  is.
@@ -2655,13 +2829,13 @@ columns:
       - value: VC
         description: VIOLENT CRIMES
   - name: HearingOfficerStaffID
-    is_pii: True
     description: |-
       This is a unique identifier assigned to a particular staff member. This includes all types of staff people including judges, guards, etc.
-  - name: LastUpdateUserID
     is_pii: True
+  - name: LastUpdateUserID
     description: |-
       This is the ID of the last person to access a table. This ID, combined with a timestamp, will provide an accurate audit trail to determine the last person to modify a table.
+    is_pii: True
   - name: LastUpdateDate
     description: |-
       This element will be associated with each record in each DB2 table in TOMIS.  It is the timestamp of the last time this record was updated.
