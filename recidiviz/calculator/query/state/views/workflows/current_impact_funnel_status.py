@@ -44,17 +44,15 @@ WITH eligibility AS (
   -- Query the current eligibility status (remaining criteria needed) for each opportunity
   SELECT
     state_code,
-    pei.external_id AS person_external_id,
+    pei.person_external_id,
     completion_event_type,
     ARRAY_LENGTH(ineligible_criteria) AS remaining_criteria_needed,
   FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
   INNER JOIN `{{project_id}}.{{reference_views_dataset}}.task_to_completion_event` tce
     USING (task_name)
-  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+  INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id` pei
     USING (state_code, person_id)
   WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_exclusive_clause("end_date")}
-    -- Pick one external id type for US_ND to avoid duplicates
-    AND (state_code != "US_ND" OR pei.id_type = "US_ND_SID")
     -- TODO(#19015): Exclude TN CR until the subsequent sub-query is removed
     AND (state_code != "US_TN" OR completion_event_type != "TRANSFER_TO_LIMITED_SUPERVISION")
 
