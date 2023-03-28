@@ -476,7 +476,7 @@ def spotlight_state_specific_facility() -> str:
                     -- includes out-of-state placements and misc others
                     ELSE 'OTHER'
                 END)
-            WHEN state_code in ('US_ID', 'US_IX') THEN
+            WHEN state_code = 'US_ID' THEN
                 CASE
                     WHEN facility = "KOOTENAI COUNTY SHERIFF DEPARTMENT" THEN "County Jail"
                     WHEN facility = "JEFFERSON COUNTY SHERIFF DEPARTMENT" THEN "County Jail"
@@ -609,6 +609,65 @@ def spotlight_state_specific_facility() -> str:
                     WHEN facility = "ST. ALPHONSUS HOSPITAL, BOISE" THEN NULL
                     WHEN facility = "SOUTH BOISE WOMEN'S CORRECTIONAL CENTER" THEN "South Boise Women's Correctional Center"
                 END
+            WHEN state_code = 'US_IX' THEN
+                CASE
+                    WHEN facility = "ADA JAIL" THEN "County Jail"  
+                    WHEN facility = "CASSIA JAIL" THEN "County Jail"  
+                    WHEN facility = "JEROME JAIL" THEN "County Jail"  
+                    WHEN facility = "BANNOCK JAIL" THEN "County Jail"  
+                    WHEN facility = "KOOTENAI JAIL" THEN "County Jail"
+                    WHEN facility = "IDAHO STATE CORRECTIONAL CENTER" THEN "Idaho State Correctional Center"
+                    WHEN facility = "IDAHO MAXIMUM SECURITY INSTITUTION" THEN "Idaho Maximum Security Institution"
+                    WHEN facility = "IDAHO STATE CORRECTIONAL INSTITUTION" THEN "Idaho State Correctional Institution"
+                    WHEN facility = "SOUTH BOISE WOMEN'S CORRECTIONAL CENTER" THEN "South Boise Women's Correctional Center" 
+                    WHEN facility = "POCATELLO WOMEN'S CORRECTIONAL CENTER" THEN "Pocatello Women's Correctional Center"
+                    WHEN facility = "GEM JAIL" THEN "County Jail"  
+                    WHEN facility = "ADAMS JAIL" THEN "County Jail"  
+                    WHEN facility = "IDAHO JAIL" THEN "County Jail"  
+                    WHEN facility = "LATAH JAIL" THEN "County Jail"  
+                    WHEN facility = "LEMHI JAIL" THEN "County Jail"  
+                    WHEN facility = "OTHER JAIL" THEN "County Jail"  
+                    WHEN facility = "POWER JAIL" THEN "County Jail"  
+                    WHEN facility = "BLAINE JAIL" THEN "County Jail"  
+                    WHEN facility = "BONNER JAIL" THEN "County Jail"  
+                    WHEN facility = "CANYON JAIL" THEN "County Jail"  
+                    WHEN facility = "ELMORE JAIL" THEN "County Jail"  
+                    WHEN facility = "OWYHEE JAIL" THEN "County Jail"  
+                    WHEN facility = "VALLEY JAIL" THEN "County Jail"  
+                    WHEN facility = "BINGHAM JAIL" THEN "County Jail"  
+                    WHEN facility = "CARIBOU JAIL" THEN "County Jail"  
+                    WHEN facility = "FREMONT JAIL" THEN "County Jail"  
+                    WHEN facility = "GOODING JAIL" THEN "County Jail"  
+                    WHEN facility = "MADISON JAIL" THEN "County Jail"  
+                    WHEN facility = "PAYETTE JAIL" THEN "County Jail"  
+                    WHEN facility = "BOUNDARY JAIL" THEN "County Jail"  
+                    WHEN facility = "MINIDOKA JAIL" THEN "County Jail"  
+                    WHEN facility = "SHOSHONE JAIL" THEN "County Jail"  
+                    WHEN facility = "JEFFERSON JAIL" THEN "County Jail"  
+                    WHEN facility = "NEZ PERCE JAIL" THEN "County Jail"  
+                    WHEN facility = "BONNEVILLE JAIL" THEN "County Jail"  
+                    WHEN facility = "CLEARWATER JAIL" THEN "County Jail"  
+                    WHEN facility = "TWIN FALLS JAIL" THEN "County Jail"  
+                    WHEN facility = "WASHINGTON JAIL" THEN "County Jail" 
+                    WHEN facility = "FEDERAL FACILITY" THEN NULL
+                    WHEN facility = "OUT OF STATE JAIL" THEN NULL
+                    WHEN facility = "US MARSHAL CUSTODY" THEN NULL
+                    WHEN facility = "ST. ANTHONY WORK CAMP" THEN "St. Anthony Work Camp"
+                    WHEN facility = "NAMPA COMMUNITY REENTRY CENTER" THEN  "Community Reentry Centers"
+                    WHEN facility = "EAST BOISE COMMUNITY REENTRY CENTER" THEN "Community Reentry Centers"
+                    WHEN facility = "SAGUARO CORRECTIONAL CENTER ARIZONA" THEN "Saguaro Correctional Center, Arizona"
+                    WHEN facility = "IDAHO FALLS COMMUNITY REENTRY CENTER" THEN "Community Reentry Centers"
+                    WHEN facility = "NORTH IDAHO CORRECTIONAL INSTITUTION" THEN  "North Idaho Correctional Institution"
+                    WHEN facility = "SOUTH IDAHO CORRECTIONAL INSTITUTION" THEN "South Idaho Correctional Institution"
+                    WHEN facility = "IDAHO CORRECTIONAL INSTITUTION-OROFINO" THEN "Idaho Correctional Institution-Orofino"
+                    WHEN facility = "TREASURE VALLEY COMMUNITY REENTRY CENTER" THEN  "Community Reentry Centers"
+                    WHEN facility = "CORRECTIONAL ALTERNATIVE PLACEMENT PROGRAM" THEN "Correctional Alternative Placement Program"
+                    WHEN facility = "ONEIDA JAIL" THEN "County Jail"
+                    WHEN facility = "BENEWAH JAIL" THEN "County Jail"
+                    WHEN facility = "FUGITIVE UNIT" THEN NULL
+                    WHEN facility = "TWIN FALLS COMMUNITY WORK CENTER" THEN "Community Reentry Centers"
+                    WHEN facility = "US IMMIGRATION" THEN NULL
+            END
             ELSE facility
         END
         AS facility
