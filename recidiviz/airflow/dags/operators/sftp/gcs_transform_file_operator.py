@@ -23,6 +23,12 @@ from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.context import Context
 
+from recidiviz.airflow.dags.sftp.metadata import (
+    DOWNLOADED_FILE_PATH,
+    POST_PROCESSED_FILE_PATH,
+    REMOTE_FILE_PATH,
+    SFTP_TIMESTAMP,
+)
 from recidiviz.cloud_storage.gcs_file_system_impl import GCSFileSystemImpl
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.directory_path_utils import (
@@ -31,25 +37,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
-
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
-# Cloud Composer environment at the top-level. However, for unit tests, we still need to
-# import the recidiviz-top-level.
-# pylint: disable=ungrouped-imports
-try:
-    from sftp.metadata import (  # type: ignore
-        DOWNLOADED_FILE_PATH,
-        POST_PROCESSED_FILE_PATH,
-        REMOTE_FILE_PATH,
-        SFTP_TIMESTAMP,
-    )
-except ImportError:
-    from recidiviz.airflow.dags.sftp.metadata import (
-        DOWNLOADED_FILE_PATH,
-        POST_PROCESSED_FILE_PATH,
-        REMOTE_FILE_PATH,
-        SFTP_TIMESTAMP,
-    )
 
 
 class RecidivizGcsFileTransformOperator(BaseOperator):

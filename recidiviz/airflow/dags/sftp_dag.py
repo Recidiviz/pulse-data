@@ -38,6 +38,47 @@ from airflow.utils.trigger_rule import TriggerRule
 from google.api_core.retry import Retry
 from google.cloud.tasks_v2.types.queue import Queue
 
+from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
+    CloudSqlQueryOperator,
+)
+from recidiviz.airflow.dags.operators.sftp.filter_invalid_gcs_files import (
+    FilterInvalidGcsFilesOperator,
+)
+from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
+    FindSftpFilesOperator,
+)
+from recidiviz.airflow.dags.operators.sftp.gcs_to_gcs_operator import (
+    SFTPGcsToGcsOperator,
+)
+from recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator import (
+    RecidivizGcsFileTransformOperator,
+)
+from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
+    RecidivizSftpToGcsOperator,
+)
+from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
+    FilterDownloadedFilesSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.sftp.gather_discovered_ingest_ready_files_sql_query_generator import (
+    GatherDiscoveredIngestReadyFilesSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.sftp.gather_discovered_remote_files_sql_query_generator import (
+    GatherDiscoveredRemoteFilesSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_discovered_sql_query_generator import (
+    MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_uploaded_sql_query_generator import (
+    MarkIngestReadyFilesUploadedSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generator import (
+    MarkRemoteFilesDiscoveredSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generator import (
+    MarkRemoteFilesDownloadedSqlQueryGenerator,
+)
+from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
+from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
@@ -45,91 +86,6 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.yaml_dict import YAMLDict
-
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
-# Cloud Composer environment at the top-level. However, for unit tests, we still need to
-# import the recidiviz-top-level.
-# pylint: disable=ungrouped-imports
-try:
-    from operators.cloud_sql_query_operator import CloudSqlQueryOperator  # type: ignore
-    from operators.sftp.filter_invalid_gcs_files import (  # type: ignore
-        FilterInvalidGcsFilesOperator,
-    )
-    from operators.sftp.find_sftp_files_operator import (  # type: ignore
-        FindSftpFilesOperator,
-    )
-    from operators.sftp.gcs_to_gcs_operator import SFTPGcsToGcsOperator  # type: ignore
-    from operators.sftp.gcs_transform_file_operator import (  # type:ignore
-        RecidivizGcsFileTransformOperator,
-    )
-    from operators.sftp.sftp_to_gcs_operator import (  # type: ignore
-        RecidivizSftpToGcsOperator,
-    )
-    from sftp.filter_downloaded_files_sql_query_generator import (  # type: ignore
-        FilterDownloadedFilesSqlQueryGenerator,
-    )
-    from sftp.gather_discovered_ingest_ready_files_sql_query_generator import (  # type: ignore
-        GatherDiscoveredIngestReadyFilesSqlQueryGenerator,
-    )
-    from sftp.gather_discovered_remote_files_sql_query_generator import (  # type: ignore
-        GatherDiscoveredRemoteFilesSqlQueryGenerator,
-    )
-    from sftp.mark_ingest_ready_files_discovered_sql_query_generator import (  # type: ignore
-        MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
-    )
-    from sftp.mark_ingest_ready_files_uploaded_sql_query_generator import (  # type: ignore
-        MarkIngestReadyFilesUploadedSqlQueryGenerator,
-    )
-    from sftp.mark_remote_files_discovered_sql_query_generator import (  # type: ignore
-        MarkRemoteFilesDiscoveredSqlQueryGenerator,
-    )
-    from sftp.mark_remote_files_downloaded_sql_query_generator import (  # type: ignore
-        MarkRemoteFilesDownloadedSqlQueryGenerator,
-    )
-    from utils.cloud_sql import cloud_sql_conn_id_for_schema_type  # type: ignore
-    from utils.default_args import DEFAULT_ARGS  # type: ignore
-except ImportError:
-    from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
-        CloudSqlQueryOperator,
-    )
-    from recidiviz.airflow.dags.operators.sftp.filter_invalid_gcs_files import (
-        FilterInvalidGcsFilesOperator,
-    )
-    from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
-        FindSftpFilesOperator,
-    )
-    from recidiviz.airflow.dags.operators.sftp.gcs_to_gcs_operator import (
-        SFTPGcsToGcsOperator,
-    )
-    from recidiviz.airflow.dags.operators.sftp.gcs_transform_file_operator import (
-        RecidivizGcsFileTransformOperator,
-    )
-    from recidiviz.airflow.dags.operators.sftp.sftp_to_gcs_operator import (
-        RecidivizSftpToGcsOperator,
-    )
-    from recidiviz.airflow.dags.sftp.filter_downloaded_files_sql_query_generator import (
-        FilterDownloadedFilesSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.sftp.gather_discovered_ingest_ready_files_sql_query_generator import (
-        GatherDiscoveredIngestReadyFilesSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.sftp.gather_discovered_remote_files_sql_query_generator import (
-        GatherDiscoveredRemoteFilesSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_discovered_sql_query_generator import (
-        MarkIngestReadyFilesDiscoveredSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.sftp.mark_ingest_ready_files_uploaded_sql_query_generator import (
-        MarkIngestReadyFilesUploadedSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.sftp.mark_remote_files_discovered_sql_query_generator import (
-        MarkRemoteFilesDiscoveredSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generator import (
-        MarkRemoteFilesDownloadedSqlQueryGenerator,
-    )
-    from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
-    from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -247,7 +203,7 @@ def queues_were_unpaused(
 @dag(
     dag_id=f"{project_id}_sftp_dag",
     # TODO(apache/airflow#29903) Remove this override and only override mapped task-level retries.
-    default_args={**DEFAULT_ARGS, "retries": 3},
+    default_args={**DEFAULT_ARGS, "retries": 3},  # type: ignore
     schedule_interval=None,
     catchup=False,
     max_active_runs=1,

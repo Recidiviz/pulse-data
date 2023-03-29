@@ -24,19 +24,10 @@ from typing import Dict
 from airflow.utils.log.logging_mixin import LoggingMixin
 from google.cloud.tasks_v2 import CloudTasksClient
 
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported
-# into the Cloud Composer environment at the top-level. However, for unit tests, we
-# still need to import the recidiviz-top-level.
-try:
-    from operators.bq_result_sensor import (  # type: ignore
-        BQResultSensor,
-        BQResultSensorQueryGenerator,
-    )
-except ImportError:
-    from recidiviz.airflow.dags.operators.bq_result_sensor import (
-        BQResultSensor,
-        BQResultSensorQueryGenerator,
-    )
+from recidiviz.airflow.dags.operators.bq_result_sensor import (
+    BQResultSensor,
+    BQResultSensorQueryGenerator,
+)
 
 
 class FinishedCloudTaskQueryGenerator(BQResultSensorQueryGenerator, LoggingMixin):

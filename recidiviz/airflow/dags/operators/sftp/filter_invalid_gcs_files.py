@@ -23,29 +23,17 @@ from airflow.models.baseoperator import BaseOperator
 from airflow.providers.google.cloud.hooks.gcs import GCSHook
 from airflow.utils.context import Context
 
+from recidiviz.airflow.dags.sftp.metadata import (
+    INGEST_READY_FILE_PATH,
+    POST_PROCESSED_FILE_PATH,
+    POST_PROCESSED_NORMALIZED_FILE_PATH,
+)
 from recidiviz.cloud_storage.gcs_file_system_impl import (
     GCSFileSystem,
     GCSFileSystemImpl,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.types import assert_type
-
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
-# Cloud Composer environment at the top-level. However, for unit tests, we still need to
-# import the recidiviz-top-level.
-# pylint: disable=ungrouped-imports
-try:
-    from sftp.metadata import (  # type: ignore
-        INGEST_READY_FILE_PATH,
-        POST_PROCESSED_FILE_PATH,
-        POST_PROCESSED_NORMALIZED_FILE_PATH,
-    )
-except ImportError:
-    from recidiviz.airflow.dags.sftp.metadata import (
-        INGEST_READY_FILE_PATH,
-        POST_PROCESSED_FILE_PATH,
-        POST_PROCESSED_NORMALIZED_FILE_PATH,
-    )
 
 
 class FilterInvalidGcsFilesOperator(BaseOperator):

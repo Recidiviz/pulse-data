@@ -33,56 +33,25 @@ from google.cloud import tasks_v2
 from google.cloud.tasks_v2 import CloudTasksClient
 from requests import Response
 
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
-# Cloud Composer environment at the top-level. However, for unit tests, we still need to
-# import the recidiviz-top-level.
-try:
-    from calculation.finished_cloud_task_query_generator import (  # type: ignore
-        FinishedCloudTaskQueryGenerator,
-    )
-    from operators.bq_result_sensor import BQResultSensor  # type: ignore
-    from operators.iap_httprequest_operator import (  # type: ignore
-        IAPHTTPRequestOperator,
-    )
-    from operators.iap_httprequest_sensor import IAPHTTPRequestSensor  # type: ignore
-    from operators.recidiviz_dataflow_operator import (  # type: ignore
-        RecidivizDataflowFlexTemplateOperator,
-    )
-    from utils.default_args import DEFAULT_ARGS  # type: ignore
-    from utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS  # type: ignore
-    from utils.pipeline_parameters import (  # type: ignore
-        MetricsPipelineParameters,
-        NormalizationPipelineParameters,
-        PipelineParameters,
-        SupplementalPipelineParameters,
-    )
-except ImportError:
-    from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
-        FinishedCloudTaskQueryGenerator,
-    )
-    from recidiviz.airflow.dags.operators.bq_result_sensor import (
-        BQResultSensor,
-    )
-    from recidiviz.airflow.dags.utils.export_tasks_config import (
-        PIPELINE_AGNOSTIC_EXPORTS,
-    )
-    from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
-        IAPHTTPRequestOperator,
-    )
-    from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
-        RecidivizDataflowFlexTemplateOperator,
-    )
-    from recidiviz.airflow.dags.operators.iap_httprequest_sensor import (
-        IAPHTTPRequestSensor,
-    )
-    from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
-    from recidiviz.airflow.dags.utils.pipeline_parameters import (
-        MetricsPipelineParameters,
-        PipelineParameters,
-        SupplementalPipelineParameters,
-        NormalizationPipelineParameters,
-    )
-
+from recidiviz.airflow.dags.calculation.finished_cloud_task_query_generator import (
+    FinishedCloudTaskQueryGenerator,
+)
+from recidiviz.airflow.dags.operators.bq_result_sensor import BQResultSensor
+from recidiviz.airflow.dags.operators.iap_httprequest_operator import (
+    IAPHTTPRequestOperator,
+)
+from recidiviz.airflow.dags.operators.iap_httprequest_sensor import IAPHTTPRequestSensor
+from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
+    RecidivizDataflowFlexTemplateOperator,
+)
+from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
+from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
+from recidiviz.airflow.dags.utils.pipeline_parameters import (
+    MetricsPipelineParameters,
+    NormalizationPipelineParameters,
+    PipelineParameters,
+    SupplementalPipelineParameters,
+)
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
@@ -106,6 +75,8 @@ def flex_dataflow_operator_for_pipeline(
 ) -> RecidivizDataflowFlexTemplateOperator:
 
     region = pipeline_parameters.region
+    if not project_id:
+        raise ValueError("project_id must be configured.")
 
     return RecidivizDataflowFlexTemplateOperator(
         task_id=pipeline_parameters.job_name,
@@ -256,6 +227,9 @@ def create_metric_view_data_export_nodes(
         path=PRODUCTS_CONFIG_PATH
     ).get_export_configs_for_job_filter(export_job_filter)
 
+    if not project_id:
+        raise ValueError("project_id must be configured.")
+
     metric_view_data_triggers: List[CloudTasksTaskCreateOperator] = []
     for export in relevant_product_exports:
         export_job_name = export["export_job_name"]
@@ -293,6 +267,9 @@ def response_can_refresh_proceed_check(response: Response) -> bool:
 
 def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
     """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
+    if not project_id:
+        raise ValueError("project_id must be configured.")
+
     task_group = TaskGroup(f"{schema_type.lower()}_bq_refresh")
     acquire_lock = IAPHTTPRequestOperator(
         task_id=f"acquire_lock_{schema_type}",
@@ -365,6 +342,9 @@ def create_calculation_dag() -> None:
 
     if config_file is None:
         raise ValueError("Configuration file not specified")
+    if not project_id:
+        raise ValueError("project_id must be configured.")
+
     with TaskGroup("bq_refresh") as _:
         state_bq_refresh_completion = create_bq_refresh_nodes("STATE")
         operations_bq_refresh_completion = create_bq_refresh_nodes("OPERATIONS")
@@ -412,7 +392,7 @@ def create_calculation_dag() -> None:
 
     metric_pipelines_by_state: Dict[
         str,
-        RecidivizDataflowFlexTemplateOperator,
+        List[RecidivizDataflowFlexTemplateOperator],
     ] = defaultdict(list)
 
     dataflow_pipeline_task_groups: Dict[str, TaskGroup] = {}
@@ -421,7 +401,7 @@ def create_calculation_dag() -> None:
     for metric_pipeline in metric_pipelines:
 
         # define both a MetricsPipelineParameters for flex templates and a legacy PipelineConfigArgs
-        pipeline_config_parameters = MetricsPipelineParameters(**metric_pipeline.get())
+        pipeline_config_parameters = MetricsPipelineParameters(**metric_pipeline.get())  # type: ignore
 
         state_code = pipeline_config_parameters.state_code
 
@@ -456,7 +436,7 @@ def create_calculation_dag() -> None:
     normalization_task_group = TaskGroup("normalization")
     for normalization_pipeline in normalization_pipelines:
         normalization_pipeline_parameters = NormalizationPipelineParameters(
-            **normalization_pipeline.get()
+            **normalization_pipeline.get()  # type: ignore
         )
 
         if (
@@ -481,7 +461,7 @@ def create_calculation_dag() -> None:
     )
     for supplemental_pipeline in supplemental_dataset_pipelines:
         supplemental_pipeline_parameters = SupplementalPipelineParameters(
-            **supplemental_pipeline.get()
+            **supplemental_pipeline.get()  # type: ignore
         )
         state_code = supplemental_pipeline_parameters.state_code
 

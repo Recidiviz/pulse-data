@@ -65,7 +65,7 @@ EXPERIMENT_2 = "us-central1-experiment-2-8bb6ce5a-bucket"
 
 def gcloud_path_for_local_path(local_path: str) -> str:
     dags_local_path = f"{ROOT}/airflow/dags/"
-    if local_path.startswith(dags_local_path):
+    if local_path.endswith("dag.py"):
         prefix_to_replace = dags_local_path
         prefix_to_replace_with = ""
     else:
