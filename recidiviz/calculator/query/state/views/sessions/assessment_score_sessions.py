@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,83 +26,100 @@ from recidiviz.utils.metadata import local_project_id_override
 ASSESSMENT_SCORE_SESSIONS_VIEW_NAME = "assessment_score_sessions"
 
 ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
-    """Assessment scores with range of dates for each score"""
+    "Assessment scores with range of dates for each score. Spans are non-overlapping "
+    "by person-assessment_type. Note that for ORAS scores, this non-overlapping "
+    "condition holds across all ORAS assessment types as if they are one common "
+    "assessment, which may lead to unexpected assessment frequency or score change "
+    "metrics if calculated from this table."
 )
 
 ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
 WITH state_assessment AS (
-    SELECT 
-        person_id,
-        assessment_id,
-        state_code,
-        assessment_date,
-        assessment_type,
-        assessment_class,
-        assessment_score,
-        assessment_level,
-        assessment_level_raw_text,
-        assessment_score_bucket,
-        sequence_num
-    FROM `{project_id}.{normalized_state_dataset}.state_assessment`
-    WHERE state_code NOT IN ("US_MI")
-        AND assessment_date IS NOT NULL
-        AND (assessment_type IN ('LSIR','STRONG_R') OR assessment_type LIKE 'ORAS%')
-    
-    UNION ALL 
-    
-    #For Michigan, COMPAS data is preprocessed to combine VFO/NVFO scales to create the assessment_level_raw_text field
-    SELECT 
-        person_id,
-        assessment_id,
-        state_code,
-        assessment_date,
-        assessment_type,
-        assessment_class,
-        assessment_score,
-        assessment_level,
-        assessment_level_raw_text,
-        assessment_score_bucket,
-        sequence_num
-    FROM `{project_id}.{sessions_dataset}.us_mi_state_assessment_preprocessed_materialized`
-    WHERE assessment_date IS NOT NULL
-    )
-    
     SELECT
-        person_id,
-        assessment_id,
-        state_code,
-        assessment_date,
-        -- Use a person's subsequent assessment date for a given assessment type as the session end date.
-        -- Combines all ORAS assessment types into a single category.
-        LEAD(assessment_date) OVER(
-            PARTITION BY
-                person_id,
-                CASE WHEN assessment_type LIKE "ORAS%" THEN "ORAS" ELSE assessment_type END
-            ORDER BY assessment_date
-        ) AS score_end_date_exclusive,
-        LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER(
-            PARTITION BY
-                person_id,
-                CASE WHEN assessment_type LIKE "ORAS%" THEN "ORAS" ELSE assessment_type END
-            ORDER BY assessment_date
-        ) AS score_end_date,
-        assessment_type,
-        assessment_class,
-        assessment_score,
-        assessment_level,
-        assessment_level_raw_text,
-        assessment_score_bucket,
-    FROM
-        (
-        SELECT *,
-            ROW_NUMBER() OVER(
-                PARTITION BY person_id, assessment_date
-                ORDER BY sequence_num DESC
-            ) AS rn
-        FROM state_assessment
+        *
+    FROM (
+        SELECT 
+            person_id,
+            assessment_id,
+            state_code,
+            assessment_date,
+            assessment_type,
+            CASE
+                WHEN assessment_type LIKE "ORAS%" THEN "ORAS"
+                ELSE assessment_type END AS assessment_type_short,
+            assessment_class,
+            assessment_score,
+            assessment_level,
+            assessment_level_raw_text,
+            assessment_score_bucket,
+            sequence_num
+        FROM
+            `{project_id}.{normalized_state_dataset}.state_assessment`
+        WHERE
+            state_code NOT IN ("US_MI")   
+            -- keep only relevant assessment types
+            AND (
+                assessment_type IN ("LSIR", "STRONG_R")
+                 OR assessment_type LIKE "ORAS%"
+            )
+        
+        UNION ALL
+        
+        -- For Michigan, COMPAS data is preprocessed to combine VFO/NVFO scales to create 
+        -- the assessment_level_raw_text field
+        SELECT 
+            person_id,
+            assessment_id,
+            state_code,
+            assessment_date,
+            assessment_type,
+            assessment_type AS assessment_type_short,
+            assessment_class,
+            assessment_score,
+            assessment_level,
+            assessment_level_raw_text,
+            assessment_score_bucket,
+            sequence_num
+        FROM
+            `{project_id}.{sessions_dataset}.us_mi_state_assessment_preprocessed_materialized`
+    )
+    WHERE
+        assessment_date IS NOT NULL
+        -- keep only assessments with scores or levels
+        AND (
+            assessment_score IS NOT NULL
+            OR assessment_level IS NOT NULL
         )
-    WHERE rn = 1
-    """
+    -- Keep the latest assessment per person-assessment_type per day
+    QUALIFY
+        ROW_NUMBER() OVER(
+            PARTITION BY person_id, assessment_type_short, assessment_date
+            ORDER BY sequence_num DESC
+        ) = 1
+)
+
+SELECT
+    person_id,
+    assessment_id,
+    state_code,
+    assessment_date,
+    -- Use a person's subsequent assessment date for a given assessment type as the session end date.
+    -- Combines all ORAS assessment types into a single category.
+    LEAD(assessment_date) OVER(
+        PARTITION BY person_id, assessment_type_short ORDER BY assessment_date ASC
+    ) AS score_end_date_exclusive,
+    LEAD(DATE_SUB(assessment_date, INTERVAL 1 DAY)) OVER(
+        PARTITION BY person_id, assessment_type_short ORDER BY assessment_date ASC
+    ) AS score_end_date,
+    assessment_type,
+    assessment_class,
+    assessment_score,
+    assessment_level,
+    assessment_level_raw_text,
+    assessment_score_bucket,
+FROM
+    state_assessment
+"""
 
 ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
