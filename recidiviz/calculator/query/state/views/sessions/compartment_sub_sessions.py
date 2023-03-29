@@ -219,6 +219,10 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = f"""
         end_date_exclusive,
         compartment_level_1,
         compartment_level_2,
+        --This logic converts the end date to inclusive, coalesces with the last day of data (also inclusive), 
+        --takes the date difference, and then adds 1 day.
+        DATE_DIFF(COALESCE(DATE_SUB(end_date_exclusive, INTERVAL 1 DAY), last_day_of_data), start_date, DAY)+1 
+            AS session_length_days,
         supervising_officer_external_id,
         compartment_location,
         facility,
