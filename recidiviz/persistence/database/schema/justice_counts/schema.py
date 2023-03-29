@@ -464,7 +464,7 @@ class Spreadsheet(JusticeCountsBase):
     # The date the spreadsheet was uploaded
     uploaded_at = Column(DateTime, nullable=False)
     # The auth0_user_id of the user who uploaded the spreadsheet
-    uploaded_by = Column(String, nullable=False)
+    uploaded_by = Column(String, nullable=True)
     # The auth0_user_id of the user who ingested the spreadsheet
     ingested_by = Column(String, nullable=True)
     # The date the spreadsheet was ingested

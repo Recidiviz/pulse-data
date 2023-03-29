@@ -7,6 +7,9 @@ Performs the following actions:
 2) Deploys a new Cloud Run revision from this image without allocating traffic,
    but with the specified tag.
 
+Note: If your branch includes a database migration, this script does not run the migration. 
+The migration will be run when the commits from your branch are deployed to staging. 
+
 Example usage:
 ./recidiviz/tools/deploy/justice_counts/deploy_for_playtesting.sh -b main -f settings-feature -a publisher -t playtesting
 "
