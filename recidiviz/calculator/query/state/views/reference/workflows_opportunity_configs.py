@@ -185,6 +185,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_MI,
+        opportunity_type="usMiClassificationReview",
+        experiment_id="US_MI_SUPERVISION_LEVEL_DOWNGRADE_WORKFLOWS",
+        opportunity_record_view_name="us_mi_complete_classification_review_form_record_materialized",
+        task_completion_event=TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
+        source_filename="us_mi_complete_classification_review_form_record.json",
+        export_collection_name="US_MI-classificationReviewReferrals",
+        opportunity_type_path_str="classificationReview",
+        person_record_type=PersonRecordType.CLIENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_MI,
         opportunity_type="usMiEarlyDischarge",
         experiment_id="US_MI_EARLY_DISCHARGE_WORKFLOWS",
         opportunity_record_view_name="us_mi_complete_discharge_early_from_supervision_request_record_materialized",
