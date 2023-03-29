@@ -16,6 +16,7 @@
 # =============================================================================
 """A custom GCSTransformOperator that uses Recidiviz utils, returns output to the DAG and uses
 the SFTP delegate to stream the output back to GCS."""
+import logging
 from typing import Any, Dict, List, Union
 
 from airflow.models.baseoperator import BaseOperator
@@ -80,17 +81,24 @@ class RecidivizGcsFileTransformOperator(BaseOperator):
         gcs_hook = GCSHook()
         gcs_file_system = GCSFileSystemImpl(client=gcs_hook.get_conn())
 
+        logging.info("Starting post-processing of [%s]", self.downloaded_file_path)
         post_processed_paths = self.delegate.post_process_downloads(
             downloaded_path=GcsfsFilePath.from_absolute_path(self.downloaded_file_path),
             gcsfs=gcs_file_system,
         )
-
-        return [
-            {
-                REMOTE_FILE_PATH: self.remote_file_path,
-                SFTP_TIMESTAMP: self.sftp_timestamp,
-                DOWNLOADED_FILE_PATH: self.downloaded_file_path,
-                POST_PROCESSED_FILE_PATH: post_processed_path,
-            }
-            for post_processed_path in post_processed_paths
-        ]
+        logging.info(
+            "Post-processed [%s] to [%s]",
+            self.downloaded_file_path,
+            post_processed_paths,
+        )
+        if post_processed_paths:
+            return [
+                {
+                    REMOTE_FILE_PATH: self.remote_file_path,
+                    SFTP_TIMESTAMP: self.sftp_timestamp,
+                    DOWNLOADED_FILE_PATH: self.downloaded_file_path,
+                    POST_PROCESSED_FILE_PATH: post_processed_path,
+                }
+                for post_processed_path in post_processed_paths
+            ]
+        raise ValueError(f"{self.downloaded_file_path} failed to post-process.")

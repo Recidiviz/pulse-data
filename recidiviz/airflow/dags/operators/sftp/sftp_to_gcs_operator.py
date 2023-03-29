@@ -16,6 +16,7 @@
 # =============================================================================
 """A customized SFTPToGCSOperator that uses Recidiviz utils and returns output to the DAG."""
 import datetime
+import logging
 import os
 from typing import Any, Dict, Union
 
@@ -110,6 +111,7 @@ class RecidivizSftpToGcsOperator(BaseOperator):
 
         gcsfs = GCSFileSystemImpl(gcs_hook.get_conn())
 
+        logging.info("Starting to download [%s]", self.remote_file_path)
         gcsfs.upload_from_contents_handle_stream(
             path=self.download_path,
             contents_handle=SftpFileContentsHandle(
@@ -117,6 +119,11 @@ class RecidivizSftpToGcsOperator(BaseOperator):
                 sftp_client=sftp_hook.get_conn(),
             ),
             content_type=BYTES_CONTENT_TYPE,
+        )
+        logging.info(
+            "Downloaded [%s] to [%s]",
+            self.remote_file_path,
+            self.download_path.abs_path(),
         )
 
         return {

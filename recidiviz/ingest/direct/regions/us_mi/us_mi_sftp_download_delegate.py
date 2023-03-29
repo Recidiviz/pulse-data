@@ -16,7 +16,6 @@
 # =============================================================================
 """Class containing logic for how US_MI SFTP downloads are handled."""
 import io
-import logging
 import re
 from datetime import datetime
 from typing import List
@@ -66,27 +65,16 @@ class UsMiSftpDownloadDelegate(BaseSftpDownloadDelegate):
         directory = GcsfsDirectoryPath.from_file_path(downloaded_path)
         if is_zipfile(zipbytes):
             with ZipFile(zipbytes, "r") as z:
-                try:
-                    content_filename = one(z.namelist())
-                except ValueError as e:
-                    logging.warning("Zip file misconfigured: %s", str(e))
-                    return []
+                content_filename = one(z.namelist())
                 matches_content_path = re.match(
                     r"ADH\_[A-Z_]+\_(104A\_)?(\d{8}).csv", content_filename
                 )
                 if not matches_content_path:
-                    logging.warning(
-                        "Unexpected content file name in zip file: %s", content_filename
+                    raise ValueError(
+                        f"Unexpected content file name in zip file: {content_filename}"
                     )
-                    return []
                 date_portion = matches_content_path.group(2)
-                try:
-                    _ = datetime.strptime(date_portion, "%m%d%Y")
-                except ValueError:
-                    logging.warning(
-                        "Unexpected content file name in zip file: %s", content_filename
-                    )
-                    return []
+                _ = datetime.strptime(date_portion, "%m%d%Y")
                 # For MI, the date is attached to the end of the zip file name, so
                 # we will strip out the date when uploading the file to GCS
                 new_file_name = re.sub(r"\_\d{8}", "", content_filename)
