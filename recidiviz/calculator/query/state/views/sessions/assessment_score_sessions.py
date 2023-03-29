@@ -30,6 +30,43 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION = (
 )
 
 ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
+WITH state_assessment AS (
+    SELECT 
+        person_id,
+        assessment_id,
+        state_code,
+        assessment_date,
+        assessment_type,
+        assessment_class,
+        assessment_score,
+        assessment_level,
+        assessment_level_raw_text,
+        assessment_score_bucket,
+        sequence_num
+    FROM `{project_id}.{normalized_state_dataset}.state_assessment`
+    WHERE state_code NOT IN ("US_MI")
+        AND assessment_date IS NOT NULL
+        AND (assessment_type IN ('LSIR','STRONG_R') OR assessment_type LIKE 'ORAS%')
+    
+    UNION ALL 
+    
+    #For Michigan, COMPAS data is preprocessed to combine VFO/NVFO scales to create the assessment_level_raw_text field
+    SELECT 
+        person_id,
+        assessment_id,
+        state_code,
+        assessment_date,
+        assessment_type,
+        assessment_class,
+        assessment_score,
+        assessment_level,
+        assessment_level_raw_text,
+        assessment_score_bucket,
+        sequence_num
+    FROM `{project_id}.{sessions_dataset}.us_mi_state_assessment_preprocessed_materialized`
+    WHERE assessment_date IS NOT NULL
+    )
+    
     SELECT
         person_id,
         assessment_id,
@@ -62,9 +99,7 @@ ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE = """
                 PARTITION BY person_id, assessment_date
                 ORDER BY sequence_num DESC
             ) AS rn
-        FROM `{project_id}.{normalized_state_dataset}.state_assessment`
-        WHERE assessment_date IS NOT NULL
-            AND (assessment_type IN ('LSIR','STRONG_R', 'COMPAS') OR assessment_type LIKE 'ORAS%')
+        FROM state_assessment
         )
     WHERE rn = 1
     """
@@ -75,6 +110,7 @@ ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=ASSESSMENT_SCORE_SESSIONS_QUERY_TEMPLATE,
     description=ASSESSMENT_SCORE_SESSIONS_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     clustering_fields=["state_code", "person_id"],
     should_materialize=True,
 )

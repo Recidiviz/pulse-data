@@ -17,30 +17,65 @@
 """This criteria view builder defines spans of time that clients are not on a supervision level that indicates
 electronic monitoring
 """
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_MI_NOT_ON_ELECTRONIC_MONITORING"
 
-_DESCRIPTION = """This criteria view builder defines spans of time that clients are not on a supervision level that indicates
-electronic monitoring
+_DESCRIPTION = """This criteria view builder defines spans of time that clients are not on a supervision level that
+ indicates electronic monitoring 
 """
 
-_REASON_QUERY = "TO_JSON(STRUCT(NULL AS supervision_level_raw_text))"
+_QUERY_TEMPLATE = f"""
+WITH em_spans AS (
+/* This CTE creates an is_electronic_monitoring variable that sets a boolean for whether the supervision level
+includes electronic monitoring */
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        COALESCE(map.is_em, FALSE) AS is_electronic_monitoring
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized` sls
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
+        ON sls.supervision_level_raw_text = map.supervision_level_raw_text
+    WHERE state_code = "US_MI"
+),
+/* This boolean is then used to aggregate electronic monitoring supervision levels and non electronic monitoring
+supervision levels */
+sessionized_cte AS (
+    {aggregate_adjacent_spans(table_name='em_spans',
+                       attribute=['is_electronic_monitoring'])}
+)
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        NOT is_electronic_monitoring AS meets_criteria,
+        TO_JSON(STRUCT(start_date AS eligible_date)) AS reason,
+    FROM sessionized_cte
+    WINDOW w AS (PARTITION BY person_id, state_code ORDER BY start_date)
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        sessions_dataset=SESSIONS_DATASET,
+        analyst_data_dataset=ANALYST_VIEWS_DATASET,
+        meets_criteria_default=True,
     )
 )
 

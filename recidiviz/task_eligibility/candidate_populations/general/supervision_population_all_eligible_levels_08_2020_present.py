@@ -44,7 +44,6 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
     additional_filters=supervision_population_eligible_levels_additional_filters(
         start_date="2020-08-01",
         excluded_correctional_levels="('UNASSIGNED','IN_CUSTODY','INTERSTATE_COMPACT','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN','INTERNAL_UNKNOWN','UNSUPERVISED')",
-        excluded_compartment_level_2="('ABSCONSION', 'BENCH_WARRANT', 'INTERNAL_UNKNOWN')",
     ),
     compartment_level_1="SUPERVISION",
 )

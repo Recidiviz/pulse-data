@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone has
- served at least one year on supervision.
+ served at least one year on supervision, regardless of the supervision type
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -31,7 +31,7 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "ON_SUPERVISION_AT_LEAST_ONE_YEAR"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
- served at least one year on supervision"""
+ served at least one year on supervision, regardless of the supervision type"""
 
 _QUERY_TEMPLATE = f"""
 WITH critical_date_spans AS (

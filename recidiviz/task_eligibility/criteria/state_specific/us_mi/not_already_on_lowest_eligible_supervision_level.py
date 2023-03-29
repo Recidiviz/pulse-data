@@ -17,12 +17,17 @@
 """Defines a criteria span view that shows spans of time during which someone is not
 eligible for classification review because they are already on the lowest eligible level for their case
 """
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,17 +37,63 @@ _CRITERIA_NAME = "US_MI_NOT_ALREADY_ON_LOWEST_ELIGIBLE_SUPERVISION_LEVEL"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is not
 eligible for classification review because they are already on the lowest eligible level for their case
 """
-
-_REASON_QUERY = (
-    "TO_JSON(STRUCT(False AS requires_so_registration, NULL AS supervision_level))"
-)
+_QUERY_TEMPLATE = f"""
+ WITH so_spans AS (
+    /* This CTE checks for offenses that require SO registration and sets an open span from the first date_imposed date */
+    SELECT
+        state_code,
+        person_id,
+    --find the earliest sex offense sentence date for each person 
+        MIN(date_imposed) AS start_date,
+        CAST("9999-12-31" AS DATE) AS end_date,
+        TRUE AS requires_so_registration,
+        NULL AS on_lowest_level,
+        NULL AS supervision_level,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+    WHERE state_code = "US_MI" 
+    AND sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
+            WHERE CAST(requires_so_registration AS BOOL))   
+    GROUP BY 1,2,4
+    UNION ALL 
+    SELECT 
+    /* This CTE creates spans where the supervision level is MEDIUM or lower */
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        NULL AS requires_so_registration,
+        TRUE AS on_lowest_level,
+        supervision_level,
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` 
+    WHERE state_code = "US_MI"
+    AND supervision_level IN ('MEDIUM', 'LOW')
+    ),
+    {create_sub_sessions_with_attributes('so_spans')}
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        --if requires_so_registration AND on_lowest_level, then meets_criteria is FALSE
+        NOT (LOGICAL_AND(on_lowest_level) AND LOGICAL_AND(requires_so_registration)) AS meets_criteria,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT supervision_level IGNORE NULLS) AS supervision_level, 
+                        LOGICAL_AND(requires_so_registration) AS requires_so_registration)) AS reason
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        meets_criteria_default=True,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 

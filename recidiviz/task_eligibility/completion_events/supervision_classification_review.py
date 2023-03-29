@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines a view that shows all classification review dates for clients in Michigan.
 """
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
     TaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
@@ -28,14 +28,10 @@ _DESCRIPTION = """Defines a view that shows all classification review dates for 
 reviews happen every 6 months after the initial classification review and should result in a supervision level 
 downgrade unless there are extenuating circumstances. 
 """
-
+# TODO(#19779) remove reference to analyst data once state specific support is enabled
 _QUERY_TEMPLATE = """
-SELECT
-    state_code,
-    person_id,
-    start_date AS completion_event_date,
-FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-WHERE FALSE
+SELECT *
+FROM `{project_id}.{analyst_data_dataset}.supervision_classification_review_dates_materialized`
 """
 
 VIEW_BUILDER: TaskCompletionEventBigQueryViewBuilder = (
@@ -43,7 +39,7 @@ VIEW_BUILDER: TaskCompletionEventBigQueryViewBuilder = (
         completion_event_type=TaskCompletionEventType.SUPERVISION_CLASSIFICATION_REVIEW,
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
-        sessions_dataset=dataset_config.SESSIONS_DATASET,
+        analyst_data_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 
