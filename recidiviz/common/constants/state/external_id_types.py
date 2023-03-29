@@ -30,11 +30,15 @@ source that actually creates the id in the real world.
 US_ID_DOC = "US_ID_DOC"
 # TODO(#10703): Remove US_IX once Atlas is merged into US_ID
 US_IX_DOC = "US_IX_DOC"
+# Identifier for the type of state staff id provided by the IX system
+US_IX_EMPLOYEE = "US_IX_EMPLOYEE"
 
 US_MO_DOC = "US_MO_DOC"
 US_MO_SID = "US_MO_SID"
 US_MO_FBI = "US_MO_FBI"
 US_MO_OLN = "US_MO_OLN"
+# Identifier for the type of state staff id provided by the MO system
+US_MO_STAFF_BADGE_NUMBER = "US_MO_STAFF_BADGE_NUMBER"
 
 # OffenderId
 US_CO_DOC = "US_CO_DOC"
@@ -81,6 +85,9 @@ US_MI_DOC = "US_MI_DOC"
 US_MI_DOC_ID = "US_MI_DOC_ID"
 # MI Offender Booking
 US_MI_DOC_BOOK = "US_MI_DOC_BOOK"
+# Identifier for the type of state staff id provided by the MI system
+US_MI_COMPAS_USER = "US_MI_COMPAS_USER"
+
 # Identifier for the type of state staff id provided by the MI system
 US_MI_COMPAS_USER = "US_MI_COMPAS_USER"
 
