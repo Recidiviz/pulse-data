@@ -1,0 +1,98 @@
+districts:
+  1a:
+    - Gogebic
+    - Ontonagon
+    - Houghton
+    - Iron
+    - Baraga
+    - Keweenaw
+  1b:
+    - Dickinson
+    - Marquette
+    - Menominee
+    - Alger
+    - Delta
+    - Schoolcraft
+  1c:
+    - Luce
+    - Mackinac
+    - Chippewa
+  "2":
+    - Emmet
+    - Charlevoix
+    - Antrim
+    - Kalkaska
+    - Missaukee
+    - Wexford
+    - Grand Traverse
+    - Benzie
+    - Manistee
+    - Leelanau
+  "3":
+    - Cheboygan
+    - Presque Isle
+    - Otsego
+    - Montmorency
+    - Alpena
+    - Crawford
+    - Oscoda
+    - Alcona
+    - Roscommon
+    - Ogemaw
+    - Iosco
+  4a:
+    - Mason
+    - Oceana
+    - Lake
+    - Osceola
+    - Newaygo
+    - Mecosta
+  4b:
+    - Muskegon
+    - Ottawa
+    - Kent
+    - Montcalm
+    - Allegan
+    - Ionia
+    - Barry
+  "5":
+    - Clare
+    - Isabella
+    - Gladwin
+    - Arenac
+    - Bay
+    - Midland
+    - Isabella
+    - Gratiot
+    - Saginaw
+  "6":
+    - Huron
+    - Tuscola
+    - Sanilac
+    - St. Clair
+    - Lapeer
+    - Genesee
+    - Shiawassee
+  "7":
+    - Clinton
+    - Eaton
+    - Ingham
+  "8":
+    - Berrien
+    - Van Buren
+    - Cass
+    - Kalamazoo
+    - Calhoun
+    - St. Joseph
+    - Branch
+  "9":
+    - Jackson
+    - Livingston
+    - Washtenaw
+    - Monroe
+    - Lenawee
+    - Hillsdale
+  "10":
+    - Oakland
+    - Wayne
+    - Macomb
