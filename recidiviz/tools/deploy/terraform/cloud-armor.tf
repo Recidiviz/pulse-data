@@ -9,7 +9,7 @@ locals {
 
   default_rules = {
     # There must always be a default rule (rule with priority 2147483647 and match "*")
-    # per Terraform docs: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_security_policy
+    # per Terraform documentation: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_security_policy
     description    = "Default ALLOW rules to allow HTTP traffic"
     action         = "allow"
     priority       = "2147483647"
@@ -69,7 +69,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1007"
-        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack']})"
+        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack', 'owasp-crs-v030301-id921150-protocolattack']})"
         description = "Protocol attack"
       },
       {
