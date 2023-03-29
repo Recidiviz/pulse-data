@@ -96,12 +96,17 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
     ingestInstance,
   }) => {
     const [form] = Form.useForm();
-    const confirmationRegEx = ingestInstance
-      ? regionCode
-          .toUpperCase()
-          .concat("_", action.toUpperCase(), "_", ingestInstance)
-      : regionCode.toUpperCase().concat("_", action.toUpperCase());
     const isProduction = window.RUNTIME_GCP_ENVIRONMENT === "production";
+    const environmentName = isProduction ? "PROD" : "STAGING";
+    const confirmationParts = [
+      regionCode.toUpperCase(),
+      action.toUpperCase(),
+      environmentName,
+    ];
+    if (ingestInstance) {
+      confirmationParts.push(ingestInstance);
+    }
+    const confirmationRegEx = confirmationParts.join("_");
     const projectId = isProduction ? "recidiviz-123" : "recidiviz-staging";
     const secondaryBucketURL = `${GCP_STORAGE_BASE_URL}${projectId}-direct-ingest-state-${regionCode
       .toLowerCase()
@@ -157,14 +162,13 @@ const ActionRegionConfirmationForm: React.FC<ActionRegionConfirmationFormProps> 
               });
           }}
         >
-          <p>
-            Are you sure you want to
-            <b> {actionName?.toLowerCase()} </b>
-            for
-            <b>{ingestInstance ? ` ${ingestInstance}` : ""}</b>
-            {ingestInstance ? " ingest instance in " : " "}
-            <b>{regionCode.toUpperCase()}</b>?
-          </p>
+          Are you sure you want to
+          <b> {actionName?.toLowerCase()} </b>
+          for
+          <b> {regionCode.toUpperCase()} </b>
+          in
+          <b> {environmentName}</b>
+          {ingestInstance && <b> {ingestInstance}</b>}?
           <p>
             Type <b>{confirmationRegEx}</b> below to confirm.
           </p>
