@@ -151,11 +151,11 @@ def trigger_update_all_managed_views_operator(
 
 
 def trigger_refresh_bq_dataset_operator(
-    schema_type: str, dry_run: bool, task_group: TaskGroup
+    schema_type: str, task_group: TaskGroup
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
-    endpoint = f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}{'?dry_run=True' if dry_run else ''}"
+    endpoint = f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}"
     if not project_id:
         raise ValueError("project_id must be configured.")
     task_path = CloudTasksClient.task_path(
@@ -291,7 +291,7 @@ def response_can_refresh_proceed_check(response: Response) -> bool:
     return data.lower() == "true"
 
 
-def create_bq_refresh_nodes(schema_type: str, dry_run: bool = False) -> BQResultSensor:
+def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
     """Creates nodes that will do a bq refresh for given schema type and returns the last node."""
     task_group = TaskGroup(f"{schema_type.lower()}_bq_refresh")
     acquire_lock = IAPHTTPRequestOperator(
@@ -310,7 +310,7 @@ def create_bq_refresh_nodes(schema_type: str, dry_run: bool = False) -> BQResult
     )
 
     trigger_refresh_bq_dataset = trigger_refresh_bq_dataset_operator(
-        schema_type, dry_run, task_group
+        schema_type, task_group
     )
 
     wait_for_refresh_bq_dataset = BQResultSensor(
