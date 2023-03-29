@@ -187,44 +187,6 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
-    @mock.patch("time.sleep")
-    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
-    @mock.patch(
-        f"{REFRESH_CONTROL_PACKAGE_NAME}.get_current_cloud_task_id",
-        return_value="test_cloud_task_id",
-    )
-    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
-    def test_refresh_bq_dataset_state_historical_dry_run(
-        self,
-        mock_federated_refresh: mock.MagicMock,
-        mock_get_current_cloud_task_id: mock.MagicMock,
-        mock_big_query_client_impl: mock.MagicMock,
-        mock_time_sleep: mock.MagicMock,
-    ) -> None:
-        # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
-
-        module = SchemaType.STATE.value
-        route = f"/refresh_bq_dataset/{module}?dry_run=True"
-        data = json.dumps({})
-
-        headers: Dict[str, Any] = {
-            **self.base_headers,
-            "X-AppEngine-Inbound-Appid": "recidiviz-456",
-        }
-
-        response = self.mock_flask_client.post(
-            route,
-            data=data,
-            content_type="application/json",
-            headers=headers,
-        )
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_get_current_cloud_task_id.assert_called()
-        mock_big_query_client_impl.assert_called()
-        mock_federated_refresh.assert_not_called()
-        mock_time_sleep.assert_called()
-
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
     @mock.patch(
         f"{REFRESH_CONTROL_PACKAGE_NAME}.get_current_cloud_task_id",

@@ -18,7 +18,6 @@
 import datetime
 import json
 import logging
-import time
 from http import HTTPStatus
 from typing import Optional, Tuple
 
@@ -183,14 +182,9 @@ def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
             HTTPStatus.EXPECTATION_FAILED,
         )
 
-    dry_run = request.args.get("dry_run", default=False, type=bool)
     start = datetime.datetime.now()
 
-    # TODO(#11437): `dry_run` will go away once development of the DAG integration is complete
-    if dry_run:
-        time.sleep(10)
-    else:
-        federated_bq_schema_refresh(schema_type=schema_type)
+    federated_bq_schema_refresh(schema_type=schema_type)
 
     logging.info(
         "Done running refresh for [%s], unlocking Postgres to BigQuery export",
