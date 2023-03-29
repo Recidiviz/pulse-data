@@ -18,7 +18,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import mock.mock
 from freezegun import freeze_time
@@ -259,3 +259,26 @@ class WorkflowsFirestoreEtlDelegateTest(TestCase):
                 delegate = TestETLDelegate(StateCode.US_XX)
                 delegate.run_etl("test_export.json")
                 self.assertTrue("Index already exists." in str(log.output))
+
+    def test_run_etl_sanitize_doc_id(
+        self,
+        mock_get_file_stream: mock.MagicMock,
+        _mock_delete_old_documents: mock.MagicMock,
+        _mock_batch_writer: mock.MagicMock,
+        mock_get_collection: mock.MagicMock,
+        _mock_firestore_client: mock.MagicMock,
+        _mock_firestore_admin_client: mock.MagicMock,
+    ) -> None:
+        """Tests that the ETL Delegate sanitizes document ids"""
+        mock_get_file_stream.return_value = [FakeFileStream(1)]
+        mock_collection = MagicMock()
+        mock_get_collection.return_value = mock_collection
+        raw_row_id = "FUNKY ID//Slash!!!"
+        document_id = "us_xx_funky_id--slash"
+        with local_project_id_override("test-project"), patch.object(
+            TestETLDelegate, "transform_row"
+        ) as mock_transform:
+            mock_transform.return_value = (raw_row_id, {})
+            delegate = TestETLDelegate(StateCode.US_XX)
+            delegate.run_etl("test_export.json")
+            mock_collection.document.assert_called_once_with(document_id)

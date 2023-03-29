@@ -19,6 +19,7 @@ workflows' frontend database(s)."""
 import abc
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from typing import Dict, Iterator, List, Optional, TextIO, Tuple
 
@@ -109,6 +110,22 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
     def filepath_url(self, filename: str) -> str:
         return f"gs://{self.get_filepath(filename).abs_path()}"
 
+    def doc_id_for_row_id(self, row_id: str) -> str:
+        doc_id = (
+            f"{self.state_code.value}_{row_id}"
+            # https://firebase.google.com/docs/firestore/quotas#collections_documents_and_fields
+            # Document IDs cannot contain a forward slash
+            .replace("/", "-")
+            # Document IDs can contain spaces, but replacing them with underscores will look nicer
+            # when browsing
+            .replace(" ", "_")
+            # Lowercase them for the same reason
+            .lower()
+        )
+        # also replace any other special characters to look nicer when browsing
+        doc_id = re.sub(r"[^a-z0-9_-]", "", doc_id)
+        return doc_id
+
     def run_etl(self, filename: str) -> None:
         collection_name = self.COLLECTION_BY_FILENAME[filename]
 
@@ -138,7 +155,7 @@ class WorkflowsFirestoreETLDelegate(WorkflowsETLDelegate):
 
                 if row_id is None or document_fields is None:
                     continue
-                document_id = f"{self.state_code.value.lower()}_{row_id}"
+                document_id = self.doc_id_for_row_id(row_id)
                 new_document = {
                     **document_fields,
                     self.timestamp_key: etl_timestamp,

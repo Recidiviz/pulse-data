@@ -16,7 +16,6 @@
 #  =============================================================================
 """Delegate class to ETL location records for Workflows into Firestore."""
 import json
-import re
 from typing import List, Tuple
 
 from recidiviz.common.common_utils import convert_nested_dictionary_keys
@@ -37,18 +36,4 @@ class WorkflowsLocationETLDelegate(WorkflowsFirestoreETLDelegate):
 
         new_document = convert_nested_dictionary_keys(data, snake_to_camel)
 
-        doc_id = (
-            data["id"]
-            # https://firebase.google.com/docs/firestore/quotas#collections_documents_and_fields
-            # Document IDs cannot contain a forward slash
-            .replace("/", "-")
-            # Document IDs can contain spaces, but replacing them with underscores will look nicer
-            # when browsing
-            .replace(" ", "_")
-            # Lowercase them for the same reason
-            .lower()
-        )
-        # also replace any other special characters to look nicer when browsing
-        doc_id = re.sub(r"[^a-z0-9_-]", "", doc_id)
-
-        return doc_id, new_document
+        return data["id"], new_document
