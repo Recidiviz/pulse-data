@@ -48,27 +48,7 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
             ON ids.state_code = districts.state_code 
             AND ids.id = districts.supervising_officer_external_id
     )
-    , leadership_staff AS (
-        SELECT
-            internal_id AS id,
-            state_code,
-            first_name || " " || last_name AS name,
-            district,
-            email_address AS email,
-            false AS has_caseload,
-            false AS has_facility_caseload,
-            first_name as given_names,
-            last_name as surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_id_leadership_users`
-        WHERE workflows = true
-    )
     SELECT 
         {columns}
     FROM caseload_staff
-    
-    UNION ALL
-    
-    SELECT 
-        {columns}
-    FROM leadership_staff
 """

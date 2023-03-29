@@ -44,7 +44,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             FirstName || " " || LastName AS name,
             facilities.district AS district,
             LOWER(roster.email_address) AS email,
-            logic_staff IS NOT NULL AS has_caseload,
+            TRUE AS has_caseload,
             FALSE AS  has_facility_caseload,
             FirstName as given_names,
             LastName as surname,
@@ -57,6 +57,7 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         ON staff.SiteID=facilities.site_code
         WHERE Status = 'A'
             AND StaffTitle IN ('PAOS', 'PARO', 'PRBO', 'PRBP', 'PRBM', 'SECR', 'ADSC')
+            AND logic_staff IS NOT NULL
     )
 
     SELECT * FROM staff_users WHERE id NOT IN (SELECT id FROM leadership_users)
@@ -69,11 +70,12 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         leadership.name,
         leadership.district,
         leadership.email,
-        logic_staff IS NOT NULL AS has_caseload,
+        TRUE AS has_caseload,
         false AS has_facility_caseload,
         leadership.given_names as given_names,
         leadership.surname as surname,
     FROM leadership_users leadership
     LEFT JOIN staff_from_report
     ON leadership.id = staff_from_report.logic_staff
+    WHERE logic_staff IS NOT NULL
 """

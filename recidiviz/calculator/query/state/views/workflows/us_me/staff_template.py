@@ -55,52 +55,8 @@ US_ME_STAFF_TEMPLATE = """
         LEFT JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` state_table
             ON state_table.Employee_Id = ids.id
     )
-    , leadership_staff AS (
-        SELECT DISTINCT
-            # There are two US_ME staff who have multiple ids, which are mapped here to a single id for user management
-            IFNULL(ids.external_id_mapped, state_table.Employee_Id) AS id,
-            lu.state_code,
-            UPPER(lu.first_name || " " || lu.last_name) AS name,
-            CAST(NULL AS STRING) AS district,
-            email_address AS email,
-            false AS has_caseload,
-            false AS has_facility_caseload,
-            UPPER(lu.first_name) as given_names,
-            UPPER(lu.last_name) as surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_me_leadership_users` lu
-        LEFT JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` state_table
-            ON LOWER(state_table.Email_Tx) = LOWER(lu.email_address)
-        LEFT JOIN {project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map ids
-            ON state_table.Employee_Id = ids.external_id_to_map AND lu.state_code = ids.state_code 
-    ), staff_without_caseloads AS (
-        SELECT DISTINCT 
-            CAST(roster.external_id AS string) as id,
-            "US_ME" as state_code,
-            UPPER(employee_name) as name,
-            district as district,
-            email_address as email,
-            false AS has_caseload,
-            false AS has_facility_caseload,
-            UPPER(state_table.first_name) as given_names,
-            UPPER(state_table.last_name) as surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_me_roster` roster
-        LEFT JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_900_EMPLOYEE_latest` state_table
-            ON LOWER(state_table.Email_Tx) = LOWER(roster.email_address)
-        WHERE CAST(roster.external_id AS STRING) NOT IN (SELECT id from caseload_staff_ids)
-    )
+
     SELECT 
         {columns}
     FROM caseload_staff
-    
-    UNION ALL
-    
-    SELECT 
-        {columns}
-    FROM leadership_staff
-    
-    UNION ALL
-    
-    SELECT 
-        {columns}
-    FROM staff_without_caseloads
 """
