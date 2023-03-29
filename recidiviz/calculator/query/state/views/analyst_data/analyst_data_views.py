@@ -129,6 +129,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_payments_pr
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_sentence_term import (
     US_ME_SENTENCE_TERM_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mi.supervision_classification_review_dates import (
+    SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_early_discharge_sessions_preprocessing import (
     US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
@@ -234,6 +237,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         PROJECTED_DISCHARGES_VIEW_BUILDER,
         PSA_RISK_SCORES_VIEW_BUILDER,
         SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
+        SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_BUILDER,
         SUPERVISION_OFFICER_PRIMARY_OFFICE_VIEW_BUILDER,
         SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
         SUPERVISION_POPULATION_ATTRIBUTES_BY_SUPERVISION_OFFICE_BY_MONTH_VIEW_BUILDER,

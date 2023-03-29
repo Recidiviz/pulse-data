@@ -201,6 +201,9 @@ from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_supervision_pro
 from recidiviz.calculator.query.state.views.sessions.us_me.us_me_consecutive_sentences_preprocessed import (
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_mi.us_mi_state_assessment_preprocessed import (
+    US_MI_STATE_ASSESSMENT_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_mo.us_mo_charges_preprocessed import (
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -307,6 +310,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_IX_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_IX_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+    US_MI_STATE_ASSESSMENT_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CHARGES_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONFINEMENT_TYPE_SESSIONS_VIEW_BUILDER,

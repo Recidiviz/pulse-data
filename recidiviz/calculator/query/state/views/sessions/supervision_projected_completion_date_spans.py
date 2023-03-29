@@ -33,7 +33,10 @@ Spans of time with the projected max completion date for clients under supervisi
 indicated by the sentences that were active during that span.
 """
 
-STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [StateCode.US_ND]
+STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [
+    StateCode.US_ND,
+    StateCode.US_MI,
+]
 
 _QUERY_TEMPLATE = f"""
     SELECT

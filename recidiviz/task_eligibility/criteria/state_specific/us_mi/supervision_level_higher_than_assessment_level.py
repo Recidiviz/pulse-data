@@ -36,14 +36,13 @@ is supervised at a stricter level than the risk assessment policy recommends.
 
 _QUERY_TEMPLATE = f"""
     WITH supervision_and_assessments AS (
-    #TODO(#18169) update assessment score sessions logic to accurately reflect COMPAS assessment 
       SELECT 
         state_code, 
         person_id, 
         assessment_date AS start_date, 
         DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date, 
         NULL AS supervision_level, 
-        assessment_level,
+        assessment_level_raw_text AS assessment_level,
         assessment_date,
       FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
       WHERE state_code = "US_MI"
@@ -90,16 +89,12 @@ _QUERY_TEMPLATE = f"""
     state_specific_mapping AS (
         SELECT *,
             CASE 
-                WHEN assessment_level = 'LOW' 
+                WHEN assessment_level = 'LOW/LOW' 
                     AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED')
                     AND supervision_level IS NOT NULL 
                     THEN TRUE
-                WHEN assessment_level = 'MEDIUM' 
+                WHEN assessment_level IN ('LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM', 'HIGH/MEDIUM', 'MEDIUM/HIGH', 'HIGH/LOW', 'LOW/HIGH')
                     AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
-                    AND supervision_level IS NOT NULL 
-                    THEN TRUE
-                WHEN assessment_level = 'HIGH'
-                    AND supervision_level NOT IN ('HIGH','MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
                     AND supervision_level IS NOT NULL 
                     THEN TRUE
                 ELSE FALSE 
