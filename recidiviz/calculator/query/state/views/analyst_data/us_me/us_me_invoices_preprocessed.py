@@ -85,7 +85,7 @@ US_ME_INVOICES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
     static_reference_tables=STATIC_REFERENCE_TABLES_DATASET,
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
