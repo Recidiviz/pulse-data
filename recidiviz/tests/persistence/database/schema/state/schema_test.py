@@ -72,6 +72,7 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaTableConsistency,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
+    generate_assessment,
     generate_charge,
     generate_early_discharge,
     generate_incarceration_period,
@@ -80,6 +81,7 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_program_assignment,
     generate_supervision_case_type_entry,
     generate_supervision_contact,
+    generate_supervision_period,
     generate_supervision_violation,
     generate_supervision_violation_response,
 )
@@ -803,3 +805,450 @@ class TestStateTaskDeadline(unittest.TestCase):
                 '"state_task_deadline_unique_per_person_update_date_type"',
             ):
                 session.commit()
+
+
+@pytest.mark.uses_db
+class TestStateSupervisionPeriod(unittest.TestCase):
+    """Tests for StateSupervisionPeriod schema entity."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_add_valid_supervision_period_simple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_supervision_period = generate_supervision_period(
+            person=db_person,
+            state_code=self.state_code,
+            supervising_officer_staff_external_id="1234",
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_supervision_period)
+            session.commit()
+
+    def test_add_valid_supervision_period_multiple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_supervision_period = generate_supervision_period(
+            person=db_person,
+            state_code=self.state_code,
+            supervising_officer_staff_external_id="1234",
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+        db_supervision_period_2 = generate_supervision_period(
+            person=db_person,
+            state_code=self.state_code,
+            supervising_officer_staff_external_id=None,
+            supervising_officer_staff_external_id_type=None,
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_supervision_period)
+            session.add(db_supervision_period_2)
+            session.commit()
+
+    def test_add_invalid_supervision_period_empty_type(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_supervision_period = generate_supervision_period(
+            person=db_person,
+            state_code=self.state_code,
+            supervising_officer_staff_external_id="1234",
+            supervising_officer_staff_external_id_type=None,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_supervision_period)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_supervision_period" violates check constraint '
+                '"supervising_officer_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+    def test_add_invalid_supervision_period_empty_id(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_supervision_period = generate_supervision_period(
+            person=db_person,
+            state_code=self.state_code,
+            supervising_officer_staff_external_id=None,
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_supervision_period)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_supervision_period" violates check constraint '
+                '"supervising_officer_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+
+@pytest.mark.uses_db
+class TestStateAssessment(unittest.TestCase):
+    """Tests for StateAssessment schema entity."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_add_valid_assessment_simple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_assessment = generate_assessment(
+            person=db_person,
+            state_code=self.state_code,
+            conducting_staff_external_id="1234",
+            conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_state_assessment)
+            session.commit()
+
+    def test_add_valid_assessment_multiple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_assessment = generate_assessment(
+            person=db_person,
+            state_code=self.state_code,
+            conducting_staff_external_id="1234",
+            conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+        db_state_assessment_2 = generate_assessment(
+            person=db_person,
+            state_code=self.state_code,
+            conducting_staff_external_id=None,
+            conducting_staff_external_id_type=None,
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_state_assessment)
+            session.add(db_state_assessment_2)
+            session.commit()
+
+    def test_add_invalid_assessment_empty_type(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_assessment = generate_assessment(
+            person=db_person,
+            state_code=self.state_code,
+            conducting_staff_external_id="1234",
+            conducting_staff_external_id_type=None,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_state_assessment)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_assessment" violates check constraint '
+                '"conducting_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+    def test_add_invalid_assessment_empty_id(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_assessment = generate_assessment(
+            person=db_person,
+            state_code=self.state_code,
+            conducting_staff_external_id=None,
+            conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_state_assessment)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_assessment" violates check constraint '
+                '"conducting_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+
+@pytest.mark.uses_db
+class TestStateSupervisionContact(unittest.TestCase):
+    """Tests for StateSupervisionContact schema entity."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_add_valid_supervision_contact_simple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_supervision_contact = generate_supervision_contact(
+            person=db_person,
+            state_code=self.state_code,
+            contacting_staff_external_id="1234",
+            contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_state_supervision_contact)
+            session.commit()
+
+    def test_add_valid_supervision_contact_multiple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_supervision_contact = generate_supervision_contact(
+            person=db_person,
+            state_code=self.state_code,
+            contacting_staff_external_id="1234",
+            contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+        db_state_supervision_contact_2 = generate_supervision_contact(
+            person=db_person,
+            state_code=self.state_code,
+            contacting_staff_external_id=None,
+            contacting_staff_external_id_type=None,
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_state_supervision_contact)
+            session.add(db_state_supervision_contact_2)
+            session.commit()
+
+    def test_add_invalid_supervision_contact_empty_type(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_supervision_contact = generate_supervision_contact(
+            person=db_person,
+            state_code=self.state_code,
+            contacting_staff_external_id="1234",
+            contacting_staff_external_id_type=None,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_state_supervision_contact)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_supervision_contact" violates check constraint '
+                '"contacting_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+    def test_add_invalid_supervision_contact_empty_id(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_supervision_contact = generate_supervision_contact(
+            person=db_person,
+            state_code=self.state_code,
+            contacting_staff_external_id=None,
+            contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_state_supervision_contact)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_supervision_contact" violates check constraint '
+                '"contacting_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+
+@pytest.mark.uses_db
+class TestStateProgramAssignment(unittest.TestCase):
+    """Tests for StateProgramAssignment schema entity."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_add_valid_program_assignment_simple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_program_assignment = generate_program_assignment(
+            person=db_person,
+            state_code=self.state_code,
+            referring_staff_external_id="1234",
+            referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_state_program_assignment)
+            session.commit()
+
+    def test_add_valid_program_assignment_multiple(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_program_assignment = generate_program_assignment(
+            person=db_person,
+            state_code=self.state_code,
+            referring_staff_external_id="1234",
+            referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+        db_state_program_assignment_2 = generate_program_assignment(
+            person=db_person,
+            state_code=self.state_code,
+            referring_staff_external_id=None,
+            referring_staff_external_id_type=None,
+        )
+        # Act
+        with SessionFactory.using_database(self.database_key) as session:
+            session.add(db_state_program_assignment)
+            session.add(db_state_program_assignment_2)
+            session.commit()
+
+    def test_add_invalid_program_assignment_empty_type(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_program_assignment = generate_program_assignment(
+            person=db_person,
+            state_code=self.state_code,
+            referring_staff_external_id="1234",
+            referring_staff_external_id_type=None,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_state_program_assignment)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_program_assignment" violates check constraint '
+                '"referring_staff_external_id_fields_consistent"',
+            ):
+                session.flush()
+
+    def test_add_invalid_program_assignment_empty_id(self) -> None:
+        # Arrange
+        db_person = generate_person(state_code=self.state_code)
+        db_state_program_assignment = generate_program_assignment(
+            person=db_person,
+            state_code=self.state_code,
+            referring_staff_external_id=None,
+            referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(db_state_program_assignment)
+
+            with self.assertRaisesRegex(
+                sqlalchemy.exc.IntegrityError,
+                'new row for relation "state_program_assignment" violates check constraint '
+                '"referring_staff_external_id_fields_consistent"',
+            ):
+                session.flush()

@@ -1241,13 +1241,21 @@ class StateAssessment(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateAssessment in the SQL schema"""
 
     __tablename__ = "state_assessment"
-    __table_args__ = {
-        "comment": "The StateAssessment object represents information about an "
-        "assessment conducted for some person. Assessments are used in various stages "
-        "of the justice system to assess a person's risk, or a person's needs, or to "
-        "determine what course of action to take, such as pretrial sentencing or "
-        "program reference."
-    }
+    __table_args__ = (
+        CheckConstraint(
+            "(conducting_staff_external_id IS NULL AND conducting_staff_external_id_type IS NULL) "
+            "OR (conducting_staff_external_id IS NOT NULL AND conducting_staff_external_id_type "
+            "IS NOT NULL)",
+            name="conducting_staff_external_id_fields_consistent",
+        ),
+        {
+            "comment": "The StateAssessment object represents information about an "
+            "assessment conducted for some person. Assessments are used in various stages "
+            "of the justice system to assess a person's risk, or a person's needs, or to "
+            "determine what course of action to take, such as pretrial sentencing or "
+            "program reference."
+        },
+    )
 
     assessment_id = Column(
         Integer,
@@ -1722,16 +1730,24 @@ class StateSupervisionPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     """Represents a StateSupervisionPeriod in the SQL schema"""
 
     __tablename__ = "state_supervision_period"
-    __table_args__ = {
-        "comment": "The StateSupervisionPeriod object represents information about a "
-        "single period of supervision, defined as a contiguous period of custody for a "
-        "particular person under a particular jurisdiction. As a person transfers "
-        "between supervising locations, these are modeled as multiple abutting "
-        "supervision periods. Multiple periods of supervision for a particular person "
-        "may be overlapping, due to extended periods of supervision that are "
-        "temporarily interrupted by, say, periods of incarceration, or periods of "
-        "supervision stemming from different charges."
-    }
+    __table_args__ = (
+        CheckConstraint(
+            "(supervising_officer_staff_external_id IS NULL AND supervising_officer_staff_external_id_type IS NULL) "
+            "OR (supervising_officer_staff_external_id IS NOT NULL AND supervising_officer_staff_external_id_type "
+            "IS NOT NULL)",
+            name="supervising_officer_staff_external_id_fields_consistent",
+        ),
+        {
+            "comment": "The StateSupervisionPeriod object represents information about a "
+            "single period of supervision, defined as a contiguous period of custody for a "
+            "particular person under a particular jurisdiction. As a person transfers "
+            "between supervising locations, these are modeled as multiple abutting "
+            "supervision periods. Multiple periods of supervision for a particular person "
+            "may be overlapping, due to extended periods of supervision that are "
+            "temporarily interrupted by, say, periods of incarceration, or periods of "
+            "supervision stemming from different charges."
+        },
+    )
 
     supervision_period_id = Column(
         Integer,
@@ -2456,6 +2472,12 @@ class StateProgramAssignment(StateBase, _ReferencesStatePersonSharedColumns):
             deferrable=True,
             initially="DEFERRED",
         ),
+        CheckConstraint(
+            "(referring_staff_external_id IS NULL AND referring_staff_external_id_type IS NULL) "
+            "OR (referring_staff_external_id IS NOT NULL AND referring_staff_external_id_type "
+            "IS NOT NULL)",
+            name="referring_staff_external_id_fields_consistent",
+        ),
         {
             "comment": "The StateProgramAssignment object represents information about "
             "the assignment of a person to some form of rehabilitative programming -- "
@@ -2680,6 +2702,12 @@ class StateSupervisionContact(StateBase, _ReferencesStatePersonSharedColumns):
             name="supervision_contact_external_ids_unique_within_state",
             deferrable=True,
             initially="DEFERRED",
+        ),
+        CheckConstraint(
+            "(contacting_staff_external_id IS NULL AND contacting_staff_external_id_type IS NULL) "
+            "OR (contacting_staff_external_id IS NOT NULL AND contacting_staff_external_id_type "
+            "IS NOT NULL)",
+            name="contacting_staff_external_id_fields_consistent",
         ),
         {
             "comment": "The StateSupervisionContact object represents information about a point of contact between a "
