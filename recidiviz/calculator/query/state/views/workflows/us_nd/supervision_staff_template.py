@@ -32,19 +32,20 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             ON officer_id = ids.external_id_to_map AND client.state_code = ids.state_code 
         WHERE client.state_code = "US_ND"
     )
-    , leadership_staff AS (
+    , leadership_staff_with_caseload AS (
         SELECT
             internal_id AS id,
             state_code,
             first_name || " " || last_name AS name,
             district,
             email_address AS email,
-            (internal_id IN (SELECT id FROM caseload_staff_ids)) AS has_caseload,
+            TRUE AS has_caseload,
             false AS has_facility_caseload,
             first_name as given_names,
             last_name as surname,
         FROM `{project_id}.{static_reference_tables_dataset}.us_nd_leadership_users`
         WHERE workflows = true
+        AND internal_id IN (SELECT id FROM caseload_staff_ids)
     )
     , caseload_staff AS (
         SELECT
@@ -65,7 +66,7 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
             ON ids.state_code = districts.state_code 
             AND ids.id = districts.supervising_officer_external_id
         WHERE is_active
-            AND ids.id NOT IN (SELECT id from leadership_staff)
+            AND ids.id NOT IN (SELECT id from leadership_staff_with_caseload)
     )
     SELECT 
         {columns}
@@ -75,5 +76,5 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
     
     SELECT 
         {columns}
-    FROM leadership_staff
+    FROM leadership_staff_with_caseload
 """

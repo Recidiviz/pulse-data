@@ -48,50 +48,8 @@ US_IX_SUPERVISION_STAFF_TEMPLATE = """
             ON ids.state_code = districts.state_code 
             AND ids.id = districts.supervising_officer_external_id
     )
-    , leadership_staff AS (
-        SELECT
-            internal_id AS id,
-            state_code,
-            first_name || " " || last_name AS name,
-            district,
-            email_address AS email,
-            false AS has_caseload,
-            false AS has_facility_caseload,
-            first_name as given_names,
-            last_name as surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_ix_leadership_users`
-        WHERE workflows = true
-    )
-    , staff_without_caseloads AS (
-        SELECT
-            roster.external_id AS id,
-            roster.state_code,
-            full_name AS name,
-            district,
-            email_address AS email,
-            false AS has_caseload,
-            false AS has_facility_caseload,
-            names.given_names,
-            names.surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_ix_roster` roster
-        LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
-            ON roster.external_id = names.external_id 
-            AND roster.state_code = names.state_code
-        WHERE roster.external_id NOT IN (SELECT id FROM caseload_staff_ids)
-    )
     
     SELECT 
         {columns}
     FROM caseload_staff
-    
-    UNION ALL
-    
-    SELECT 
-        {columns}
-    FROM leadership_staff
-    
-    UNION ALL
-    SELECT 
-        {columns}
-    FROM staff_without_caseloads
 """
