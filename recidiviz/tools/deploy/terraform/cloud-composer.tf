@@ -20,11 +20,6 @@ locals {
   # Transforms the dag_gcs_prefix output variable from composer into just the gcs bucket name. Output docs:
   # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.dag_gcs_prefix
   composer_dag_bucket = trimprefix(trimsuffix(google_composer_environment.default_v2.config.0.dag_gcs_prefix, "/dags"), "gs://")
-  airflow_files_to_copy_to_bucket = toset(flatten([
-    for path_sequence in yamldecode(file("${path.module}/config/cloud_composer_airflow_files_to_copy.yaml")) : [
-      for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) : "${path_sequence[0]}/${file}"
-    ]
-  ]))
   source_files_to_copy_to_bucket = toset(flatten([
     for path_sequence in yamldecode(file("${path.module}/config/cloud_composer_source_files_to_copy.yaml")) : [
       for file in fileset(replace(path_sequence[0], "recidiviz/", "${local.recidiviz_root}/"), path_sequence[1]) : "${path_sequence[0]}/${file}"
@@ -105,7 +100,7 @@ resource "google_composer_environment" "default_v2" {
 }
 
 resource "google_storage_bucket_object" "recidiviz_airflow_file" {
-  for_each = local.airflow_files_to_copy_to_bucket
+  for_each = fileset("recidiviz/airflow/dags", "*dag*.py")
   name     = "dags/${trimprefix(each.key, "recidiviz/airflow/dags/")}"
   bucket   = local.composer_dag_bucket
   source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"

@@ -23,20 +23,11 @@ from typing import Any, Dict, List, Union
 from airflow.models.baseoperator import BaseOperator
 from airflow.utils.context import Context
 
+from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
+from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
-
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
-# Cloud Composer environment at the top-level. However, for unit tests, we still need to
-# import the recidiviz-top-level.
-# pylint: disable=ungrouped-imports
-try:
-    from hooks.sftp_hook import RecidivizSFTPHook  # type: ignore
-    from sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP  # type: ignore
-except ImportError:
-    from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
-    from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 
 
 class FindSftpFilesOperator(BaseOperator):

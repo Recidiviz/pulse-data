@@ -21,24 +21,12 @@ from typing import Dict, List, Set, Tuple, Union
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.context import Context
 
+from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
+    CloudSqlQueryGenerator,
+    CloudSqlQueryOperator,
+)
+from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 from recidiviz.utils.types import assert_type
-
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported
-# into the Cloud Composer environment at the top-level. However, for unit tests, we
-# still need to import the recidiviz-top-level.
-# pylint: disable=ungrouped-imports
-try:
-    from operators.cloud_sql_query_operator import (  # type: ignore
-        CloudSqlQueryGenerator,
-        CloudSqlQueryOperator,
-    )
-    from sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP  # type: ignore
-except ImportError:
-    from recidiviz.airflow.dags.operators.cloud_sql_query_operator import (
-        CloudSqlQueryGenerator,
-        CloudSqlQueryOperator,
-    )
-    from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
 
 
 class FilterDownloadedFilesSqlQueryGenerator(

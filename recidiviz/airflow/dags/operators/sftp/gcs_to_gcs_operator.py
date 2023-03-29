@@ -22,6 +22,11 @@ from typing import Any, Dict, Union
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.context import Context
 
+from recidiviz.airflow.dags.sftp.metadata import (
+    POST_PROCESSED_NORMALIZED_FILE_PATH,
+    REMOTE_FILE_PATH,
+    UPLOADED_FILE_PATH,
+)
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     to_normalized_unprocessed_raw_file_path,
@@ -31,23 +36,6 @@ from recidiviz.ingest.direct.gcs.directory_path_utils import (
     gcsfs_sftp_download_bucket_path_for_state,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
-
-# Custom Airflow operators in the recidiviz.airflow.dags.operators package are imported into the
-# Cloud Composer environment at the top-level. However, for unit tests, we still need to
-# import the recidiviz-top-level.
-# pylint: disable=ungrouped-imports
-try:
-    from sftp.metadata import (  # type: ignore
-        POST_PROCESSED_NORMALIZED_FILE_PATH,
-        REMOTE_FILE_PATH,
-        UPLOADED_FILE_PATH,
-    )
-except ImportError:
-    from recidiviz.airflow.dags.sftp.metadata import (
-        POST_PROCESSED_NORMALIZED_FILE_PATH,
-        REMOTE_FILE_PATH,
-        UPLOADED_FILE_PATH,
-    )
 
 
 class SFTPGcsToGcsOperator(GCSToGCSOperator):

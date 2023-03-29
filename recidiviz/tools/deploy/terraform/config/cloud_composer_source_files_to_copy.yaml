@@ -1,5 +1,12 @@
 # Paths of files from recidiviz non-Airflow source codeto add to the Cloud Composer bucket
 # The paths should follow the Terraform fileset format of path, pattern
+# For any non-DAG Airflow package, if it's new, it needs to be added here.
+- [recidiviz/airflow/dags/operators, "*.py"]
+- [recidiviz/airflow/dags/operators/sftp, "*.py"]
+- [recidiviz/airflow/dags/utils, "*.py"]
+- [recidiviz/airflow/dags/calculation, "*.py"]
+- [recidiviz/airflow/dags/sftp, "*.py"]
+- [recidiviz/airflow/dags/hooks, "*.py"]
 - [recidiviz/calculator/pipeline, calculation_pipeline_templates.yaml]
 - [recidiviz/cloud_functions, cloud_function_utils.py]
 - [recidiviz/cloud_storage, "*.py"]
