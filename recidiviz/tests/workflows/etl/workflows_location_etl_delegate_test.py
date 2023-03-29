@@ -66,7 +66,9 @@ class WorkflowsLocationETLDelegateTest(TestCase):
             fixture = fp.readline()
 
             doc_id, row = delegate.transform_row(fixture)
-            self.assertEqual(doc_id, "womens_facility_1")
+            self.assertEqual(doc_id, "WOMEN'S FACILITY 1")
+            # WorkflowsFirestoreETLDelegate will sanitize special
+            # characters in the doc_id before uploading
             self.assertEqual(
                 row,
                 {
@@ -81,7 +83,7 @@ class WorkflowsLocationETLDelegateTest(TestCase):
             fixture = fp.readline()
 
             doc_id, row = delegate.transform_row(fixture)
-            self.assertEqual(doc_id, "u2")
+            self.assertEqual(doc_id, "U2")
             self.assertEqual(
                 row,
                 {
@@ -96,7 +98,9 @@ class WorkflowsLocationETLDelegateTest(TestCase):
             fixture = fp.readline()
 
             doc_id, row = delegate.transform_row(fixture)
-            self.assertEqual(doc_id, "district_1-2")
+            self.assertEqual(doc_id, "DISTRICT 1/2")
+            # WorkflowsFirestoreETLDelegate will sanitize the
+            # prohibited slash in this doc_id before uploading
             self.assertEqual(
                 row,
                 {
@@ -111,7 +115,7 @@ class WorkflowsLocationETLDelegateTest(TestCase):
             fixture = fp.readline()
 
             doc_id, row = delegate.transform_row(fixture)
-            self.assertEqual(doc_id, "d3")
+            self.assertEqual(doc_id, "D3")
             self.assertEqual(
                 row,
                 {
