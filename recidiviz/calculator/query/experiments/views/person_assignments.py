@@ -226,7 +226,7 @@ geo_cis_referral_matched AS (
 )
 
 -- Add state-level last day data observed
-SELECT *
+SELECT DISTINCT *
 FROM stacked
 INNER JOIN last_day_of_data USING(state_code)
 """

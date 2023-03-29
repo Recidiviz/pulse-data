@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,10 +52,10 @@ Such a formatted string can be generated directly by concatenating names and val
 Alternatively, one can use:
 
 ```
-TO_JSON_STRING(ARRAY_AGG(STRUCT(
+TO_JSON_STRING((STRUCT(
     `attribute_name_1`,
     `attribute_name_2`
-))[OFFSET(0)]) AS event_attributes,
+)) AS event_attributes,
 ```
 
 to generate the json-formatted string. Such an approach is more readable but requires
@@ -99,16 +99,15 @@ SELECT
     person_id,
     CONCAT(compartment_level_1, "_START") AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         inflow_from_level_1,
         inflow_from_level_2,
         IFNULL(start_reason, "INTERNAL_UNKNOWN") AS start_reason
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
 WHERE
     compartment_level_1 IN ("LIBERTY", "PENDING_CUSTODY", "SUPERVISION")
-GROUP BY 1, 2, 3, 4
 
 UNION ALL
 
@@ -120,13 +119,13 @@ SELECT
     person_id,
     "INCARCERATION_START" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         inflow_from_level_1,
         inflow_from_level_2,
         IFNULL(start_reason, "INTERNAL_UNKNOWN") AS start_reason,
         IFNULL(most_severe_violation_type, "INTERNAL_UNKNOWN") AS most_severe_violation_type,
         CAST(prior_treatment_referrals_1y AS STRING) AS prior_treatment_referrals_1y
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM (
     SELECT
         a.state_code,
@@ -160,7 +159,6 @@ FROM (
         ORDER BY b.start_date
     ) = 1
 )
-GROUP BY 1, 2, 3, 4
 
 UNION ALL
     
@@ -171,13 +169,13 @@ SELECT
     person_id,
     "INCARCERATION_START_TEMPORARY" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         compartment_level_2,
         inflow_from_level_1,
         inflow_from_level_2,
         IFNULL(start_reason, "INTERNAL_UNKNOWN") AS start_reason,
         IFNULL(start_sub_reason, "INTERNAL_UNKNOWN") AS most_severe_violation_type
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
 WHERE
@@ -186,7 +184,6 @@ WHERE
         "PAROLE_BOARD_HOLD", "PENDING_CUSTODY", "TEMPORARY_CUSTODY", "SUSPENSION", 
         "SHOCK_INCARCERATION"
     )
-GROUP BY 1, 2, 3, 4
     
 UNION ALL
 
@@ -197,19 +194,18 @@ SELECT
     person_id,
     CONCAT(compartment_level_1, "-", compartment_leveL_2, "_START") AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         compartment_level_1,
         compartment_level_2,
         inflow_from_level_1,
         inflow_from_level_2,
         IFNULL(start_reason, "INTERNAL_UNKNOWN") AS start_reason,
         IFNULL(start_sub_reason, "INTERNAL_UNKNOWN") AS start_sub_reason
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
 WHERE
     compartment_level_1 IN ("INCARCERATION", "LIBERTY", "SUPERVISION")
-GROUP BY 1, 2, 3, 4
 
 UNION ALL
 
@@ -282,9 +278,9 @@ SELECT
     person_id,
     "SUPERVISING_OFFICER_NEW_ASSIGNMENT" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         supervising_officer_external_id
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM (
     SELECT *
     FROM `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized`
@@ -295,7 +291,6 @@ FROM (
             person_id ORDER BY start_date, supervising_officer_external_id) IS NULL
         AND supervising_officer_external_id IS NOT NULL
 )
-GROUP BY 1, 2, 3, 4, supervising_officer_external_id
 
 UNION ALL
 
@@ -306,10 +301,10 @@ SELECT
     person_id,
     "SUPERVISING_OFFICER_CHANGE" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         supervising_officer_external_id_new,
         supervising_officer_external_id_previous
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM (
     SELECT
         * EXCEPT(supervising_officer_external_id),
@@ -329,8 +324,6 @@ FROM (
             FALSE
         )
 )
-GROUP BY 1, 2, 3, 4, supervising_officer_external_id_new,
-    supervising_officer_external_id_previous
 
 UNION ALL
 
@@ -352,20 +345,19 @@ UNION ALL
 
 -- (valid) early discharge request decisions
 -- keep one decision per person-day-decision_type
-SELECT
+SELECT DISTINCT
     state_code,
     person_id,
     "EARLY_DISCHARGE_REQUEST_DECISION" AS event,
     decision_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         decision
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{normalized_state_dataset}.state_early_discharge`
 WHERE
     decision_status != "INVALID"
     AND decision_date IS NOT NULL
-GROUP BY 1, 2, 3, 4, decision
 
 UNION ALL
 
@@ -375,26 +367,25 @@ SELECT
     person_id,
     "SUPERVISION_LEVEL_CHANGE" AS event,
     start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         IF(supervision_downgrade > 0, "DOWNGRADE", "UPGRADE") AS change_type,
         previous_supervision_level,
         supervision_level AS new_supervision_level
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
 WHERE
     supervision_downgrade > 0 OR supervision_upgrade > 0
-GROUP BY 1, 2, 3, 4
 
 UNION ALL
 
 -- violations, keep one per person-day-event_attributes
-SELECT
+SELECT DISTINCT
     state_code,
     person_id,
     "VIOLATION" AS event,
     event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         IFNULL(violation_type, "INTERNAL_UNKNOWN") AS violation_type,
         IFNULL(violation_type_subtype, "INTERNAL_UNKNOWN") AS violation_type_subtype,
         IFNULL(violation_type_subtype_raw_text, "EXTERNAL_UNKNOWN") AS violation_type_subtype_raw_text,
@@ -402,7 +393,7 @@ SELECT
         CAST(is_most_severe_violation_type_of_all_violations AS STRING) AS is_most_severe_violation_type,
         CAST(response_date AS STRING) AS response_date,
         CAST(is_inferred_violation_date AS STRING) AS is_inferred_violation_date
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM (
     SELECT
         state_code,
@@ -423,14 +414,6 @@ FROM (
 )
 WHERE
     event_date IS NOT NULL
-GROUP BY 1, 2, 3, 4, 
-    violation_type, 
-    violation_type_subtype,
-    violation_type_subtype_raw_text,
-    most_severe_response_decision, 
-    is_most_severe_violation_type_of_all_violations,
-    response_date, 
-    is_inferred_violation_date
 
 UNION ALL
 
@@ -440,16 +423,15 @@ SELECT
     person_id,
     "VIOLATION_RESPONSE" AS event,
     response_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         IFNULL(most_serious_violation_type, "INTERNAL_UNKNOWN") AS most_serious_violation_type,
         IFNULL(most_serious_violation_sub_type, "INTERNAL_UNKNOWN") AS most_serious_violation_sub_type,
         most_severe_response_decision
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{sessions_dataset}.violation_responses_materialized`
 WHERE
     most_severe_response_decision IS NOT NULL
-GROUP BY 1, 2, 3, 4
 
 UNION ALL
 
@@ -466,16 +448,16 @@ FROM
 UNION ALL
 
 -- drug screens, keep one per person-day-event_attributes
-SELECT 
+SELECT DISTINCT
     state_code,
     person_id,
     "DRUG_SCREEN" AS event,
     drug_screen_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         is_positive_result,
         IFNULL(substance_detected, "INTERNAL_UNKNOWN") AS substance_detected,
         is_initial_within_supervision_super_session
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM (
     SELECT
         d.state_code,
@@ -500,25 +482,22 @@ FROM (
     WHERE
         is_positive_result IS NOT NULL
 )
-GROUP BY 1, 2, 3, 4, is_positive_result, substance_detected,
-    is_initial_within_supervision_super_session
     
 UNION ALL
 
 -- contacts, keep one contact per person-day-event_attributes
-SELECT
+SELECT DISTINCT
     state_code,
     person_id,
     "SUPERVISION_CONTACT" AS event,
     contact_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         IFNULL(contact_type, "INTERNAL_UNKNOWN") AS contact_type,
         IFNULL(location, "INTERNAL_UNKNOWN") AS contact_location,
         IFNULL(status, "INTERNAL_UNKNOWN") AS contact_status
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{normalized_state_dataset}.state_supervision_contact`
-GROUP BY 1, 2, 3, 4, contact_type, location, status
 
 UNION ALL
 
@@ -528,9 +507,9 @@ SELECT
     person_id,
     "EMPLOYMENT_STATUS_CHANGE" AS event,
     employment_status_start_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         CAST(is_employed AS STRING) AS is_employed
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM (
     SELECT *
     FROM `{project_id}.{sessions_dataset}.supervision_employment_status_sessions_materialized`
@@ -542,43 +521,48 @@ FROM (
             PARTITION BY person_id ORDER BY employment_status_start_date
         ), FALSE)
 )
-GROUP BY 1, 2, 3, 4
 
 UNION ALL
 
--- (employment period starts)
+-- employment period starts, keep at most one employer per period start
 SELECT
     state_code,
     person_id,
     "EMPLOYMENT_PERIOD_START" AS event,
     start_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         employer_name
-    ) ORDER BY employer_name)[OFFSET(0)]) AS event_attributes
-FROM
-    `{project_id}.{normalized_state_dataset}.state_employment_period`
-WHERE
-    start_date IS NOT NULL
-    AND employment_status != "UNEMPLOYED"
-GROUP BY 1, 2, 3, 4
+    )) AS event_attributes
+FROM (
+    SELECT
+        *
+    FROM
+        `{project_id}.{normalized_state_dataset}.state_employment_period`
+    WHERE
+        start_date IS NOT NULL
+        AND employment_status != "UNEMPLOYED"
+    QUALIFY
+        -- max one employer per day
+        ROW_NUMBER() OVER (
+            PARTITION BY person_id, start_date ORDER BY employer_name ASC
+        ) = 1
+)
     
 UNION ALL
 
--- assessments, source table is deduped per person-assessment_date,
--- but I'm also grouping by assessment_type in case assessment_score_sessions
--- eventually allows overlaps (e.g. multiple ORAS types)
+-- assessments, source table is non-overlapping on person-assessment_type
 SELECT
     state_code,
     person_id,
     "RISK_SCORE_ASSESSMENT" AS event,
     assessment_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         assessment_type,
         assessment_score,
         CAST(assessment_score_change AS STRING) AS assessment_score_change,
         CAST(assessment_score_change > 0 AS STRING) AS assessment_score_increase,
         CAST(assessment_score_change < 0 AS STRING) AS assessment_score_decrease
-    ))[OFFSET(0)]) AS event_attributes, 
+    )) AS event_attributes, 
 FROM (
     SELECT
         a.state_code,
@@ -603,24 +587,22 @@ FROM (
         assessment_score IS NOT NULL
         AND assessment_type IS NOT NULL
 )
-GROUP BY 1, 2, 3, 4, assessment_type
 
 UNION ALL
 
 -- rewards and sanctions, currently US_ID only
 -- TODO(#14993): reference officer behavior responses state agnostic view once created
 -- keep one sanction/reward per person-day-response_type
-SELECT
+SELECT DISTINCT
     "US_ID" AS state_code,
     person_id,
     UPPER(response_reward_sanction) AS event,
     action_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         response_type
-    ))[OFFSET(0)]) AS event_attributes, 
+    )) AS event_attributes, 
 FROM 
     `{project_id}.{analyst_dataset}.us_id_behavior_responses_materialized`
-GROUP BY 1, 2, 3, 4, response_type
 
 UNION ALL
 
@@ -682,7 +664,7 @@ WHERE
 
 UNION ALL
 
--- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once PA downgrades are added to `all_tasks_materialized`
 -- keep one eligibility start per person-day-task_name
 SELECT DISTINCT
     state_code,
@@ -697,12 +679,13 @@ FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
 WHERE
     recommended_supervision_downgrade_level IS NOT NULL
+    AND state_code = "US_PA"
 
 UNION ALL 
 
 -- surfaced eligible opportunities granted
 -- supervision downgrade recommendations corrected after being surfaced to staff
--- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once PA downgrades are added to `all_tasks_materialized`
 -- keep one eligibility grant per person-day-task_name
 SELECT DISTINCT
     state_code,
@@ -717,6 +700,7 @@ FROM
     `{project_id}.{sessions_dataset}.supervision_downgrade_sessions_materialized`
 WHERE
     mismatch_corrected
+    AND state_code = "US_PA"
     
 UNION ALL
 
@@ -739,7 +723,7 @@ WHERE
 
 UNION ALL
 
--- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once PA downgrades are added to `all_tasks_materialized`
 SELECT DISTINCT
     state_code,
     person_id,
@@ -757,6 +741,7 @@ WHERE
             IFNULL(end_date, CURRENT_DATE("US/Eastern")),
             CURRENT_DATE("US/Eastern")
         ) > DATE_ADD(start_date, INTERVAL 7 DAY)
+    AND state_code = "US_PA"
     
 UNION ALL
 
@@ -778,7 +763,7 @@ WHERE
 
 UNION ALL
 
--- TODO(#14994): remove once ID and PA downgrades are added to `all_tasks_materialized`
+-- TODO(#14994): remove once PA downgrades are added to `all_tasks_materialized`
 SELECT DISTINCT
     state_code,
     person_id,
@@ -796,6 +781,7 @@ WHERE
             IFNULL(end_date, CURRENT_DATE("US/Eastern")),
             CURRENT_DATE("US/Eastern")
         ) > DATE_ADD(start_date, INTERVAL 30 DAY)
+    AND state_code = "US_PA"
     
 UNION ALL
 
@@ -833,36 +819,34 @@ UNION ALL
 
 -- assigned to tracked experiment
 -- keep one variant assignment per person-day-experiment-variant
-SELECT
+SELECT DISTINCT
     state_code,
     person_id,
     "VARIANT_ASSIGNMENT" AS event,
     variant_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         experiment_id,
         variant_id
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{experiments_dataset}.person_assignments_materialized`
-GROUP BY 1, 2, 3, 4, experiment_id, variant_id
 
 UNION ALL
 
--- treatment referrals
-SELECT
+-- treatment referrals, max one per person per program-agent-status per day
+SELECT DISTINCT
     state_code,
     person_id,
     "TREATMENT_REFERRAL" AS event,
     referral_date AS event_date,
-    TO_JSON_STRING(ARRAY_AGG(STRUCT(
+    TO_JSON_STRING(STRUCT(
         program_id,
         referring_agent_id,
         referral_metadata,
         participation_status
-    ))[OFFSET(0)]) AS event_attributes,
+    )) AS event_attributes,
 FROM
     `{project_id}.{normalized_state_dataset}.state_program_assignment`
-GROUP BY 1, 2, 3, 4, program_id, referring_agent_id, referral_metadata, participation_status
 """
 
 PERSON_EVENTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
