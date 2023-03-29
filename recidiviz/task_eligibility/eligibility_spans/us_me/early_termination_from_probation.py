@@ -29,6 +29,9 @@ from recidiviz.task_eligibility.criteria.general import (
     on_medium_supervision_level_or_lower,
     supervision_past_half_full_term_release_date,
 )
+from recidiviz.task_eligibility.criteria.state_specific.us_me import (
+    paid_all_owed_restitution,
+)
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
 )
@@ -48,6 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_past_half_full_term_release_date.VIEW_BUILDER,
         no_conviction_within_6_months.VIEW_BUILDER,
         on_medium_supervision_level_or_lower.VIEW_BUILDER,
+        paid_all_owed_restitution.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

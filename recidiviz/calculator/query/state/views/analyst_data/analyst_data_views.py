@@ -117,6 +117,15 @@ from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_day_0_super
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_early_discharge_sessions_preprocessing import (
     US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_fines_fees_sessions_preprocessed import (
+    US_ME_FINES_FEES_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_invoices_preprocessed import (
+    US_ME_INVOICES_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_payments_preprocessed import (
+    US_ME_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_me.us_me_sentence_term import (
     US_ME_SENTENCE_TERM_VIEW_BUILDER,
 )
@@ -245,6 +254,9 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_ME_DAY_0_SUPERVISION_DOWNGRADE_VIEW_BUILDER,
         US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
         US_ME_SENTENCE_TERM_VIEW_BUILDER,
+        US_ME_INVOICES_PREPROCESSED_VIEW_BUILDER,
+        US_ME_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+        US_ME_FINES_FEES_SESSIONS_PREPROCESSED_VIEW_BUILDER,
         US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
         US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
         US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER,
