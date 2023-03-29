@@ -58,9 +58,12 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         INNER JOIN (
             SELECT DISTINCT
                 state_code,
-                person_id
+                person_id,
+                -- TODO(#19840): Remove the end_date column for this subquery
+                COALESCE(end_date, "9999-09-09") AS end_date,
             FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
-            WHERE end_date IS NULL
+            -- TODO(#19840): Remove US_MI exclusion
+            WHERE (state_code = "US_MI" OR end_date IS NULL)
                 AND supervising_officer_external_id IS NOT NULL
         ) active_officer
             ON sessions.state_code = active_officer.state_code
@@ -71,7 +74,9 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
           AND sessions.supervising_officer_external_id_end IS NOT NULL
         QUALIFY ROW_NUMBER() OVER (
             PARTITION BY person_id
-            ORDER BY person_external_id
+            ORDER BY person_external_id,
+            -- TODO(#19840): Remove end_date ordering
+            active_officer.end_date DESC
         ) = 1
     ),
     """
