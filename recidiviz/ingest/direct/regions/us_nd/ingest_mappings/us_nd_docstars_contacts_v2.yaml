@@ -37,6 +37,12 @@ output:
       - StateSupervisionContact:
           external_id: RecID
           contact_date: CONTACT_DATE
+          contacting_staff_external_id: OFFICER
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: OFFICER
+                $then: $literal("US_ND_DOCSTARS_OFFICER")
           contacted_agent:
             StateAgent:
               external_id: OFFICER

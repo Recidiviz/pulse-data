@@ -88,9 +88,6 @@ US_MI_DOC_BOOK = "US_MI_DOC_BOOK"
 # Identifier for the type of state staff id provided by the MI system
 US_MI_COMPAS_USER = "US_MI_COMPAS_USER"
 
-# Identifier for the type of state staff id provided by the MI system
-US_MI_COMPAS_USER = "US_MI_COMPAS_USER"
-
 # CA Offender Number
 US_CA_DOC = "US_CA_DOC"
 
