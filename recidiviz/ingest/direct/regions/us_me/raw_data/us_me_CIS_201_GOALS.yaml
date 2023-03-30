@@ -43,3 +43,6 @@ columns:
     description: |-
       Date the goal was started. Unsure when or why this would be different from Created_On_Date.
   - name: Other
+    description: |-
+      Description if CIS_2010_GOAL_TYPE.E_Goal_Type_Desc = 'Other', this field 
+      provides the description we need
