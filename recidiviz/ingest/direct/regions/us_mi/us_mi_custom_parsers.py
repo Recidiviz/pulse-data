@@ -178,3 +178,12 @@ def parse_offense_type_ids(offense_type_ids: str, result_field: str) -> bool:
             return True
 
     return False
+
+
+def parse_interstate(order_type_id_list: str) -> str:
+    """Returns whether the order_type_id_list list contains an interstate compact order"""
+
+    if "1719" in order_type_id_list or "1720" in order_type_id_list:
+        return "1"
+
+    return "0"

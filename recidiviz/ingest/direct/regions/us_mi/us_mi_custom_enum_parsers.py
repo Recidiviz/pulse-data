@@ -26,6 +26,9 @@ import re
 from typing import Optional
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionLevel,
+)
 from recidiviz.common.constants.state.state_supervision_violated_condition import (
     StateSupervisionViolatedConditionType,
 )
@@ -105,5 +108,254 @@ def parse_condition(
     # if the raw_text is not null and didn't get categorized anywhere above, default to SPECIAL_CONDITIONS
     if raw_text:
         return StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS
+
+    return None
+
+
+minimum_levels = [
+    "14165",  # Probation Minimum Telephone Employed
+    "14164",  # Probation Minimum Telephone Unemployed
+    "14052",  # Parole Minimum Telephone Unemployed
+    "14051",  # Parole Minimum Telephone Employed
+    "2294",  # Parole Minimum
+    "13560",  # Parole Minimum Employed
+    "13561",  # Parole Minimum Unemployed
+    "14196",  # Parole Minimum In-Person Employed
+    "2293",  # Parole Minimum Mail-In
+    "14197",  # Parole Minimum In-Person Unemployed
+    "3626",  # Probation Minimum
+    "3625",  # Probation Minimum Mailin
+    "14050",  # VO Parole Minimum InPerson Unemployed
+    "14049",  # VO Parole Minimum InPerson Employed
+    "13571",  # VO Parole Minimum Unemployed
+    "13572",  # VO Parole Minimum Employed
+    "13562",  # Probation Minimum Employed
+    "13563",  # Probation Minimum Unemployed
+    "19612",  # Parole Minimum Low Unemployed
+    "13624",  # Parole Minimum Mailin Employed
+    "13623",  # Parole Minimum Mailin Unemployed
+    "13833",  # Parole Minimum Low Risk Employed
+    "14199",  # Probation Minimum InPerson Employed
+    "3795",  # Probation Minimum SSU Inpatient
+    "14198",  # Probation Minimum InPerson Unemployed
+    "13832",  # Parole Minimum Low Risk Unemployed
+    "13622",  # Probation Minimum Mailin Employed
+    "19616",  # VO Parole Minimum Low Unemployed
+    "13621",  # Probation Minimum Mailin Unemployed
+    "13819",  # Probation Minimum Low Risk Employed
+    "13820",  # Probation Minimum Low Risk Unemployed
+    "19613",  # Parole Minimum Low Employed
+    "19615",  # Probation Minimum Low Employed
+    "19617",  # VO Parole Minimum Low Employed
+    "19614",  # Probation Minimum Low Unemployed
+]
+
+medium_levels = [
+    "3627",  # Probation Medium Unemployed
+    "3628",  # Probation Medium Employed
+    "2282",  # Parole Medium Unemployed
+    "2283",  # Parole Medium Employed
+    "13575",  # VO Parole Medium Unemployed
+    "13576",  # VO Parole Medium Employed
+    "13577",  # SA Parole Medium Unemployed
+    "13578",  # SA Parole Medium Employed
+    "13573",  # VO/SA Parole Medium Unemployed
+    "13574",  # VO/SA Parole Medium Employed
+]
+
+# GPS/EMS levels should be categorized under maximum as well if they're not marked as intensive
+maximum_levels = [
+    "2281",  # Parole Maximum Unemployed
+    "3630",  # Probation Maximum Employed
+    "3629",  # Probation Maximum Unemployed
+    "7503",  # Probation Maximum SSU Unemployed
+    "13584",  # SA Parole Maximum Unemployed
+    "13583",  # SA Parole Maximum Employed
+    "13579",  # VO/SA Parole Maximum Unemployed
+    "13582",  # VO Parole Maximum Employed
+    "13581",  # VO Parole Maximum Unemployed
+    "2280",  # Parole Maximum Employed
+    "13580",  # VO/SA Parole Maximum Employed
+    "7502",  # Probation Maximum SSU Employed
+    "13589",  # VO/SA Probation Parole Maximum SSU Unemployed
+    "13586",  # SA Probation Parole Maximum SSU Unemployed
+    "13585",  # SA Probation Parole Maximum SSU Employed
+    "13587",  # VO Probation Parole Maximum SSU Unemployed
+    "13588",  # VO Probation Parole Maximum SSU Employed
+    "13590",  # VO/SA Probation Parole Maximum SSU Employed
+    "3796",  # Probation Maximum SS
+    "7318",  # CRP - EMS Combination Office Employed
+    "7316",  # CRP - EMS Unemployed
+    "7317",  # CRP - EMS Combination Office Unemployed
+    "7315",  # CRP - EMS Employed
+    "2288",  # CRP EMS
+    "7173",  # CRP EMS Combination Office
+    "7171",  # CRP - EMS Waiver- "13567", # VO/SA Parole EMS Employed
+    "13827",  # VO Parole GPS Unemployed
+    "13610",  # VO Parole SAI (Team) EMS Employed
+    "13824",  # Probation GPS Unemployed
+    "4057",  # Parole SAI EMS Unemployed Sub Abuse
+    "13821",  # Parole GPS Unemployed
+    "7507",  # Probation SAI (Team) EMS Unemployed
+    "4053",  # Probation SAI EMS Unemployed Sub Abuse
+    "4054",  # Probation SAI EMS Employed Sub Abuse
+    "13614",  # VO/SA Parole SAI (Team) EMS Employed
+    "13613",  # VO/SA Parole SAI (Team) EMS Unemployed
+    "13825",  # SA Parole GPS Unemployed
+    "2289",  # Probation EMS Employed
+    "4056",  # Parole SAI EMS Employed Sub Abuse
+    "13822",  # Parole GPS Employed
+    "13568",  # VO Parole EMS Employed
+    "13826",  # SA Parole GPS Employed
+    "13601",  # VO/SA Parole SAI EMS Unemployed
+    "13564",  # VO/SA Parole EMS Unemployed
+    "13829",  # VO/SA Parole GPS Unemployed
+    "13606",  # SA Parole SAI (Team) EMS Employed
+    "13599",  # VO Parole SAI EMS Unemployed
+    "5769",  # Probation EMS Unemployed
+    "13566",  # SA Parole EMS Unemployed
+    "13597",  # SA Parole SAI EMS Unemployed
+    "7501",  # Parole SAI (Team) EMS Unemployed
+    "7506",  # Probation SAI (Team) EMS Employed
+    "13598",  # SA Parole SAI EMS Employed
+    "13602",  # VO/SA Parole SAI EMS Employed
+    "13830",  # VO/SA Parole GPS Employed
+    "13569",  # SA Parole EMS Employed
+    "3810",  # Parole EMS Unemployed
+    "3803",  # Parole SAI Employed
+    "3635",  # Parole SAI EMS Employed
+    "13600",  # VO Parole SAI EMS Employed
+    "13828",  # VO Parole GPS Employed
+    "3636",  # Parole EMS Employed
+    "13605",  # SA Parole SAI (Team) EMS Unemployed
+    "13823",  # Probation GPS Employed
+    "13565",  # VO Parole EMS Unemployed
+    "4058",  # Parole SAI EMS Unemployed
+    "2395",  # Probation SAI EMS Employed
+    "7500",  # Parole SAI (Team) EMS Employed
+]
+
+# NOTE: categorizing all "Intensive" levels as high
+high_levels = [
+    "14193",  # VO/SA Parole Intensive Unemployed
+    "14192",  # VO/SA Parole Intensive Employed
+    "14168",  # VO/SA Parole Intensive EMS Employed
+    "14189",  # SA Parole Intensive Unemployed
+    "14218",  # SA Parole SAI Intensive EMS Unemployed
+    "14213",  # VO/SA Parole Intensive GPS Unemployed
+    "14187",  # Parole Intensive Unemployed
+    "14191",  # VO Parole Intensive Unemployed
+    "14169",  # VO/SA Parole Intensive EMS Unemployed
+    "14209",  # VO Parole Intensive GPS Unemployed
+    "14210",  # VO Parole Intensive EMS Unemployed
+    "14207",  # SA Parole Intensive EMS Unemployed
+    "14208",  # VO Parole Intensive GPS Employed
+    "14188",  # SA Parole Intensive Employed
+    "14212",  # VO/SA Parole Intensive GPS Employed
+    "14204",  # SA Parole Intensive GPS Unemployed
+    "14181",  # SA Parole SAI Intensive NonEMS Unemployed
+    "14238",  # SA Probation Parole Intensive SSU NonEMS Employed
+    "14237",  # Probation Intensive SSU NonEMS Unemployed
+    "14190",  # VO Parole Intensive Employed
+    "14221",  # VO/SA Parole SAI Intensive EMS Unemployed
+    "14211",  # VO Parole Intensive EMS Employed
+    "14241",  # VO Probation Parole Intensive SSU NonEMS Unemployed
+    "14186",  # Parole Intensive Employed
+    "14182",  # VO/SA Parole SAI Intensive NonEMS Unemployed
+    "14205",  # SA Parole Intensive GPS Employed
+    "14217",  # VO Parole SAI Intensive EMS Unemployed
+    "14195",  # Probation Intensive Unemployed
+    "14206",  # SA Parole Intensive EMS Employed
+    "14185",  # Probation SAI Intensive NonEMS Unemployed
+    "14219",  # SA Parole SAI Intensive EMS Employed
+    "14202",  # Parole Intensive EMS Employed
+    "14243",  # VO/SA Probation Parole Intensive SSU NonEMS Unemployed
+    "14239",  # SA Probation Parole Intensive SSU NonEMS Unemployed
+    "14203",  # Parole Intensive EMS Unemployed
+    "14201",  # Parole Intensive GPS Unemployed
+    "14249",  # VO Probation Parole Intensive SSU EMS Unemployed
+    "14194",  # Probation Intensive Employed
+    "14215",  # Parole SAI Intensive EMS Unemployed
+    "14220",  # VO/SA Parole SAI Intensive EMS Employed
+    "14223",  # Probation SAI Intensive EMS Unemployed
+    "14236",  # Probation Intensive SSU NonEMS Employed
+    "14216",  # VO Parole SAI Intensive EMS Employed
+    "14247",  # SA Probation Parole Intensive SSU EMS Unemployed
+    "14245",  # Probation Intensive SSU EMS Unemployed
+    "14180",  # SA Parole SAI Intensive NonEMS Employed
+    "14183",  # VO/SA Parole SAI Intensive NonEMS Employed
+    "14173",  # Probation Intensive EMS Unemployed
+    "14222",  # Probation SAI Intensive EMS Employed
+    "14177",  # Parole SAI Intensive NonEMS Unemployed
+    "14172",  # Probation Intensive EMS Employed
+    "14176",  # Parole SAI Intensive NonEMS Employed
+    "14178",  # VO Parole SAI Intensive NonEMS Employed
+    "14179",  # VO Parole SAI Intensive NonEMS Unemployed
+    "14184",  # Probation SAI Intensive NonEMS Employed
+    "14171",  # Probation Intensive GPS Unemployed
+    "14242",  # VO/SA Probation Parole Intensive SSU NonEMS Employed
+    "14244",  # Probation Intensive SSU EMS Employed
+    "14200",  # Parole Intensive GPS Employed
+    "14214",  # Parole SAI Intensive EMS Employed
+    "14250",  # VO/SA Probation Parole Intensive SSU EMS Employed
+    "14170",  # Probation Intensive GPS Employed
+]
+
+unsupervised_levels = [
+    "13457",  # Unavailable For Supervision
+    "2285",  # Unsupervised Probation
+]
+
+warrant_levels = [
+    "2286",  # Warrant Status
+    "2394",  # Absconder Warrant Status
+]
+
+absconcion_levels = [
+    "7483",  # Probation Absconder Warrant Status
+    "7482",  # Parole Absconder Warrant Status
+]
+
+in_custody_levels = [
+    "7405",  # Paroled in Custody
+    "2292",  # Parole Minimum Administrative
+    "3624",  # Probation Minimum Administrative
+    "20007",  # Parole MPVU/PRF Placement
+]
+
+
+def parse_supervision_level(
+    raw_text: str,
+) -> Optional[StateSupervisionLevel]:
+    """Parse supervision level based on assigned supervision level"""
+
+    supervision_level_id = raw_text.split("##")[0]
+
+    if supervision_level_id in minimum_levels:
+        return StateSupervisionLevel.MINIMUM
+
+    if supervision_level_id in medium_levels:
+        return StateSupervisionLevel.MEDIUM
+
+    if supervision_level_id in maximum_levels:
+        return StateSupervisionLevel.MAXIMUM
+
+    if supervision_level_id in high_levels:
+        return StateSupervisionLevel.HIGH
+
+    if supervision_level_id in unsupervised_levels:
+        return StateSupervisionLevel.UNSUPERVISED
+
+    if supervision_level_id in warrant_levels:
+        return StateSupervisionLevel.WARRANT
+
+    if supervision_level_id in absconcion_levels:
+        return StateSupervisionLevel.ABSCONSION
+
+    if supervision_level_id in in_custody_levels:
+        return StateSupervisionLevel.IN_CUSTODY
+
+    if supervision_level_id:
+        return StateSupervisionLevel.INTERNAL_UNKNOWN
 
     return None

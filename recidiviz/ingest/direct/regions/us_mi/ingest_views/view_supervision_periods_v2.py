@@ -61,7 +61,7 @@ ALL_MOVEMENTS_CTE = """
 
 all_movements as (
     SELECT 
-        offender_booking_id,
+        offender_id,
         movement_datetime,
         movement_reason_id,
         source_location_type_id,
@@ -70,7 +70,8 @@ all_movements as (
         offender_external_movement_id,
     FROM (
         SELECT 
-            offender_booking_id,
+            offender_id,
+            super.offender_booking_id,
             cast(movement_date as datetime) as movement_datetime,
             (date(cast(movement_date as datetime))) as movement_date,
             movement_reason_id, 
@@ -78,12 +79,13 @@ all_movements as (
             loc2.location_type_id as dest_location_type_id,
             loc2.name as dest_name,
             offender_external_movement_id,
-            LAG(movement_reason_id) OVER(PARTITION BY offender_booking_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_movement_reason_id,
-            LAG(loc1.location_type_id) OVER(PARTITION BY offender_booking_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_source_location_type_id ,
-            LAG(loc2.location_type_id) OVER(PARTITION BY offender_booking_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_dest_location_type_id ,
+            LAG(movement_reason_id) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_movement_reason_id,
+            LAG(loc1.location_type_id) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_source_location_type_id ,
+            LAG(loc2.location_type_id) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_dest_location_type_id ,
         FROM {ADH_OFFENDER_EXTERNAL_MOVEMENT} super
             LEFT JOIN {ADH_LOCATION} loc1 on super.source_location_id = loc1.location_id
             LEFT JOIN {ADH_LOCATION} loc2 on super.destination_location_id = loc2.location_id
+            INNER JOIN {ADH_OFFENDER_BOOKING} book on super.offender_booking_id = book.offender_booking_id
         ) sub
     WHERE 
         -- remove duplicate movements from the same source to the same location, keeping the earliest one
@@ -132,7 +134,7 @@ supervision_period_ends as (
 
 movement_periods as (
     select 
-        offender_booking_id,
+        offender_id,
         (date(movement_datetime)) as movement_start, 
         (date(next_movement_date)) as movement_end,
         movement_reason_id,
@@ -141,14 +143,15 @@ movement_periods as (
              else next_movement_reason_id
             end as next_movement_reason_id,
         dest_name,
+        dest_location_type_id,
         offender_external_movement_id
     from (
         select *,
             -- 9/20: revise order by to order by offender_external_movement_id (which hopefully is generated in the same order as the movement record is entered) before supervision_period_status
-            LEAD(supervision_period_status) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_supervision_period_status,
-            LEAD(movement_datetime) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_movement_date,
-            LEAD(movement_reason_id) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_movement_reason_id,
-            LEAD(movement_reason_id, 2) OVER(PARTITION BY offender_booking_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_next_movement_reason_id
+            LEAD(supervision_period_status) OVER(PARTITION BY offender_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_supervision_period_status,
+            LEAD(movement_datetime) OVER(PARTITION BY offender_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_movement_date,
+            LEAD(movement_reason_id) OVER(PARTITION BY offender_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_movement_reason_id,
+            LEAD(movement_reason_id, 2) OVER(PARTITION BY offender_id ORDER BY movement_datetime, offender_external_movement_id, supervision_period_status ASC) as next_next_movement_reason_id
         from
         (
             (select * from supervision_period_starts)
@@ -171,7 +174,7 @@ SUPERVISION_LEVELS_CTE = """
 --              solution: case when null, take next effective date if exists
 
 offender_supervision_periods as (
-    SELECT offender_booking_id,
+    SELECT offender_id,
            level_start_date,
            case when level_end_date is null and next_effective_date is not null then next_effective_date
                 else level_end_date
@@ -181,14 +184,15 @@ offender_supervision_periods as (
            offender_supervision_id
     FROM(
         SELECT  
-            offender_booking_id,
+            offender_id,
             (date(effective_date)) as level_start_date,
             (date(expiration_date)) as level_end_date,
-            LEAD(date(effective_date)) OVER(PARTITION BY offender_booking_id ORDER BY (date(effective_date)), offender_supervision_id) as next_effective_date,
+            LEAD(date(effective_date)) OVER(PARTITION BY offender_id ORDER BY (date(effective_date)), offender_supervision_id) as next_effective_date,
             supervision_level_id,
             offender_supervision_id,
             (date(last_update_date)) as last_update_date
         FROM {ADH_OFFENDER_SUPERVISION} super
+        INNER JOIN {ADH_OFFENDER_BOOKING} book on super.offender_booking_id = book.offender_booking_id
     ) sub
 )
 """
@@ -202,7 +206,7 @@ EMPLOYEE_ASSIGNMENTS_CTE = """
 
 offender_booking_assignment as (
     select 
-        offender_booking_id,
+        offender_id,
         employee_id,
         position,
         first_name,
@@ -218,7 +222,7 @@ offender_booking_assignment as (
             end as employee_end
     from(
         select 
-            offender_booking_id,
+            offender_id,
             ass.employee_id,
             position,
             first_name,
@@ -226,20 +230,22 @@ offender_booking_assignment as (
             last_name,
             name_suffix,
             ref.description as employee_county,
-            CAST(sequence_number as int) as sequence_number,
+            -- 3/23/23: We can't use the raw sequence number from the table to sort anymore cause that's partitioned by offender_booking_id, not offender_id
+            ROW_NUMBER() OVER (PARTITION BY offender_id ORDER BY (date(assignment_date)), (date(closure_date)) NULLS LAST, ass.offender_booking_id, ass.sequence_number) as sequence_number,
             (date(assignment_date)) as employee_assignment_date,
             (date(closure_date)) as employee_closure_date,
-            LEAD(date(assignment_date)) OVER(PARTITION BY offender_booking_id ORDER BY CAST(sequence_number as int)) as next_assignment_date
+            LEAD(date(assignment_date)) OVER(PARTITION BY offender_id ORDER BY (date(assignment_date)), (date(closure_date)) NULLS LAST, ass.offender_booking_id, ass.sequence_number) as next_assignment_date
         from {ADH_EMPLOYEE_BOOKING_ASSIGNMENT} ass
           left join {ADH_EMPLOYEE} emp on ass.employee_id = emp.employee_id
           left join {ADH_LOCATION} loc on emp.default_location_id = loc.location_id
           left join {ADH_REFERENCE_CODE} ref on loc.county_id = ref.reference_code_id
+          INNER JOIN {ADH_OFFENDER_BOOKING} book on ass.offender_booking_id = book.offender_booking_id
         where
             -- 9/20: remove filter on position type to account for issue where someone used to be a supervision officer but changed positions in later data
             -- ignore records where employee_id = 0 (which is not a real employee ID and MI uses to track internal transfers or something)
             ass.employee_id <> '0'
             -- ignore cases where someone is assigned and closed on the same day (cause I see that some in the data and I think those are errors)
-            and (date(assignment_date)) <> (date(closure_date))
+            and ((date(assignment_date)) <> (date(closure_date)) or (date(closure_date)) is null)
     ) sub
 )
 """
@@ -257,7 +263,8 @@ LEGAL_ORDERS_CTE = """
 --     solution: when this happens, map supervision type to DUAL
 
 legal_orders as (
-    select offender_booking_id,
+    select 
+        offender_id,
         order_type_id,
         (date(effective_date)) as legal_start,
         case when (date(closing_date)) < (date(expiration_date)) then (date(closing_date))
@@ -265,6 +272,7 @@ legal_orders as (
              end as legal_end,
         legal_order_id
     FROM {ADH_LEGAL_ORDER} legal
+    INNER JOIN {ADH_OFFENDER_BOOKING} book on legal.offender_booking_id = book.offender_booking_id
     -- filter down to just parole and probation related legal orders
     where order_type_id in ('1719','1726','1720','1727')
 )
@@ -273,15 +281,12 @@ legal_orders as (
 MISC_CTE = """
 
 -- Grab remaining tables that we need that don't need to be transformed in any way, 
--- which include supervision conditions and offender_booking_ids to include (aka those in ADH_OFFENDER_BOOKING_ID)
+-- which include supervision conditions
 
 supervision_conditions as (
-    select * from {ADH_SUPERVISION_CONDITION}
-),
-offender_bookings_to_include as (
-      select * from {ADH_OFFENDER_BOOKING}
+    select cond.*, offender_id from {ADH_SUPERVISION_CONDITION} cond
+    INNER JOIN {ADH_OFFENDER_BOOKING} book on cond.offender_booking_id = book.offender_booking_id
 )
-
 """
 
 PERIOD_COLUMNS = """
@@ -293,7 +298,8 @@ MOVEMENT_COLUMNS = """
     offender_external_movement_id,
     movement_reason_id,
     next_movement_reason_id,
-    dest_name
+    dest_name,
+    dest_location_type_id
     """
 
 SUPERVISION_LEVEL_COLUMNS = """
@@ -331,39 +337,39 @@ WITH {ALL_MOVEMENTS_CTE},
 
 tiny_spans as (
     select *,
-        LEAD(period_start) OVER(PARTITION BY offender_booking_id ORDER BY period_start) as period_end
+        LEAD(period_start) OVER(PARTITION BY offender_id ORDER BY period_start) as period_end
     from (
         (
         select 
             distinct
-            offender_booking_id,
+            offender_id,
             dte as period_start
         from 
         (
             (
             select 
-                distinct offender_booking_id,
+                distinct offender_id,
                 movement_start as dte
             from movement_periods
             )
             union all
             (
             select 
-                distinct offender_booking_id,
+                distinct offender_id,
                 movement_end as dte
             from movement_periods
             )
             union all
             (
             select 
-                distinct offender_booking_id, 
+                distinct offender_id,
                 legal_start as dte
             from legal_orders
             )
             union all 
             (
             select 
-                distinct offender_booking_id, 
+                distinct offender_id,
                 legal_end as dte
             from legal_orders
             )
@@ -372,35 +378,35 @@ tiny_spans as (
             -- only need to worry about closing dates from the supervision conditions table 
             -- because the starting dates will be the same as the legal order starting dates
             select 
-                distinct offender_booking_id, 
+                distinct offender_id,
                 (date(closing_date)) as dte
             from supervision_conditions
             )
             union all
             (
             select 
-                distinct offender_booking_id,
+                distinct offender_id,
                 level_start_date as dte
             from offender_supervision_periods
             )
             union all
             (
             select 
-                distinct offender_booking_id,
+                distinct offender_id,
                 level_end_date as dte
             from offender_supervision_periods
             )
             union all
             (
             select 
-                distinct offender_booking_id,
+                distinct offender_id,
                 employee_start as dte
             from offender_booking_assignment
             )
             union all
             (
             select 
-                distinct offender_booking_id,
+                distinct offender_id,
                 employee_end as dte
             from offender_booking_assignment
             )
@@ -411,7 +417,7 @@ tiny_spans as (
         -- 9/20 revision: realized that the original query was missing same day periods (where two movements happen on the same day) so adding that in here
         union all 
         (
-            select offender_booking_id,
+            select distinct offender_id,
                     movement_start as dte
             from movement_periods
             where movement_start = movement_end
@@ -422,11 +428,11 @@ tiny_spans as (
 -- Join movement periods data onto all tiny spans
 spans_with_movements as (
     (select 
-        sp.offender_booking_id,
+        sp.offender_id,
         {PERIOD_COLUMNS},
         {MOVEMENT_COLUMNS}
     from tiny_spans sp
-        left join movement_periods move on (sp.offender_booking_id = move.offender_booking_id 
+        left join movement_periods move on (sp.offender_id = move.offender_id 
                                             and (move.movement_start <= sp.period_start)
                                             and 
                                                 (
@@ -448,14 +454,14 @@ spans_movements_supervision as (
   select *
   from (
     select
-        sp.offender_booking_id,
+        sp.offender_id,
         {PERIOD_COLUMNS},
         {MOVEMENT_COLUMNS},
         {SUPERVISION_LEVEL_COLUMNS},
-        RANK() OVER(PARTITION BY sp.offender_booking_id, period_start, period_end ORDER BY last_update_date desc, offender_supervision_id) as supervision_rnk
+        RANK() OVER(PARTITION BY sp.offender_id, period_start, period_end ORDER BY last_update_date desc, offender_supervision_id) as supervision_rnk
     from spans_with_movements sp
         left join offender_supervision_periods level on (
-            sp.offender_booking_id = level.offender_booking_id 
+            sp.offender_id = level.offender_id 
             and (level.level_start_date <= sp.period_start)
             and 
                 (
@@ -478,7 +484,7 @@ spans_movements_supervision as (
 
 spans_supervision_legal as (
   select 
-    offender_booking_id,
+    offender_id,
     {PERIOD_COLUMNS},
     {MOVEMENT_COLUMNS},
     {SUPERVISION_LEVEL_COLUMNS},
@@ -488,7 +494,7 @@ spans_supervision_legal as (
     STRING_AGG(distinct special_condition_id, ',' ORDER BY special_condition_id) as special_condition_ids
   from (
     select distinct
-        sp.offender_booking_id,
+        sp.offender_id,
         {PERIOD_COLUMNS},
         {MOVEMENT_COLUMNS},
         {SUPERVISION_LEVEL_COLUMNS},
@@ -498,7 +504,7 @@ spans_supervision_legal as (
         cond.special_condition_id
     from spans_movements_supervision sp
         left join legal_orders legal on (
-            sp.offender_booking_id = legal.offender_booking_id 
+            sp.offender_id = legal.offender_id 
             and (legal.legal_start <= sp.period_start)
             and 
                 (
@@ -510,13 +516,13 @@ spans_supervision_legal as (
                 )
             )
         left join supervision_conditions cond on (
-            sp.offender_booking_id = cond.offender_booking_id
+            sp.offender_id = cond.offender_id
             and legal.legal_order_id = cond.legal_order_id
             and (date(cond.closing_date) >= sp.period_end or (date(cond.closing_date)) is null)
             )
   ) sub
-  group by     
-    offender_booking_id,
+  group by 
+    offender_id,    
     {PERIOD_COLUMNS},
     {MOVEMENT_COLUMNS},
     {SUPERVISION_LEVEL_COLUMNS}
@@ -529,15 +535,15 @@ spans_all_combos as (
   select *
   from (
     select 
-      sp.offender_booking_id,
+      sp.offender_id,
       {PERIOD_COLUMNS},
       {MOVEMENT_COLUMNS},
       {SUPERVISION_LEVEL_COLUMNS},
       {LEGAL_ORDER_COLUMNS},
       {EMPLOYEE_COLUMNS},
-      RANK() OVER(PARTITION BY sp.offender_booking_id, period_start, period_end ORDER BY sequence_number) as booking_rnk
+      RANK() OVER(PARTITION BY sp.offender_id, period_start, period_end ORDER BY sequence_number) as booking_rnk
     from spans_supervision_legal sp
-      left join offender_booking_assignment emp on (sp.offender_booking_id = emp.offender_booking_id 
+      left join offender_booking_assignment emp on (sp.offender_id = emp.offender_id 
                                                     and (emp.employee_start <= sp.period_start)
                                                             and 
                                                                 (
@@ -548,7 +554,6 @@ spans_all_combos as (
                                                                     (emp.employee_end is null)
                                                                 )
                                                               )
-      inner join offender_bookings_to_include book on sp.offender_booking_id = book.offender_booking_id
 
   ) sub
   where booking_rnk = 1
@@ -558,21 +563,21 @@ spans_all_combos as (
 -- and filtering down to only rows where we have information from the movements table about a supervision related movement
 
 select 
-    offender_booking_id,
+    offender_id,
     -- 9/20 revision: now that we've added same day periods, adding period_end to order by
-    ROW_NUMBER() OVER (PARTITION BY offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as period_id,
+    ROW_NUMBER() OVER (PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as period_id,
     {PERIOD_COLUMNS},
     {MOVEMENT_COLUMNS},
     -- 9/20 revision: adding in prev_movement_reason_id for intake/investigation movement mapping nuances (NOTE: prev_movement_reason_id is not analogous to next_movement_reason_id due to being constructed differently)
     -- 9/20 revision: now that we've added same day periods, adding period_end to order by
-    LAG(movement_reason_id) OVER(PARTITION BY offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_movement_reason_id,
-    LEAD(offender_external_movement_id) OVER(PARTITION BY offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as next_offender_external_movement_id,
-    LAG(offender_external_movement_id) OVER(PARTITION BY offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_offender_external_movement_id,
+    LAG(movement_reason_id) OVER(PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_movement_reason_id,
+    LEAD(offender_external_movement_id) OVER(PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as next_offender_external_movement_id,
+    LAG(offender_external_movement_id) OVER(PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_offender_external_movement_id,
     supervision_level_id,
     order_type_id_list,
     -- 9/20 add prev_order_type_id_list and next_order_type_id_list to use for intake/investigation movement mapping nuances
-    LAG(order_type_id_list) OVER(PARTITION BY offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_order_type_id_list,
-    LEAD(order_type_id_list) OVER(PARTITION BY offender_booking_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as next_order_type_id_list,
+    LAG(order_type_id_list) OVER(PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as prev_order_type_id_list,
+    LEAD(order_type_id_list) OVER(PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id) as next_order_type_id_list,
     special_condition_ids,
     employee_id,
     first_name,
@@ -581,7 +586,11 @@ select
     name_suffix,
     employee_county,
     -- 9/20 add position to use in new agent type mapping rule
-    position
+    position,
+    -- grab the most recent supervision level we saw for this person (which could be the supervision level currently active)
+    LAST_VALUE(supervision_level_id IGNORE NULLS)
+        OVER (PARTITION BY offender_id ORDER BY period_start, period_end NULLS LAST, offender_external_movement_id
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS most_recent_supervision_level_id
 from spans_all_combos
 where movement_reason_id is not null;
 """
@@ -590,7 +599,7 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
     ingest_view_name="supervision_periods_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="offender_booking_id, period_start, period_end",
+    order_by_cols="offender_id, period_start, period_end",
     materialize_raw_data_table_views=True,
 )
 
