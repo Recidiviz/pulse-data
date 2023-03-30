@@ -607,7 +607,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
             )
 
-            self.assertEqual(len(metric_key_to_errors), 3)
+            self.assertEqual(len(metric_key_to_errors), 2)
             arrest_errors = metric_key_to_errors[law_enforcement.arrests.key]
             self.assertEqual(len(arrest_errors), 1)
             arrest_error = arrest_errors[0]
@@ -618,19 +618,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 in arrest_error.description,
             )
 
-            use_of_force_errors = metric_key_to_errors[
-                law_enforcement.use_of_force_incidents.key
-            ]
-            self.assertEqual(len(use_of_force_errors), 1)
-            use_of_force_error = use_of_force_errors[0]
-            self.assertEqual(use_of_force_error.title, "Missing Metric")
-            self.assertEqual(
-                use_of_force_error.message_type, BulkUploadMessageType.WARNING
-            )
-            self.assertTrue(
-                "No data for the Use of Force Incidents metric was provided. "
-                in use_of_force_error.description,
-            )
             staff_errors = metric_key_to_errors[law_enforcement.staff.key]
             self.assertEqual(len(staff_errors), 2)
             for error in staff_errors:
