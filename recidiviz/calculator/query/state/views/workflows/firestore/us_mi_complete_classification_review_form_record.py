@@ -60,8 +60,7 @@ SELECT
     pei.external_id,
     tes.state_code,
     TO_JSON(STRUCT(NULL AS note_title, (CASE 
-    WHEN (sai.meets_criteria OR 
-            em.meets_criteria) THEN c.recommended_supervision_level
+    WHEN sai.meets_criteria THEN c.recommended_supervision_level
     WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
     WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
     WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
@@ -79,10 +78,6 @@ LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_level_is_sai_material
     ON tes.state_code = sai.state_code
     AND tes.person_id = sai.person_id 
     AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause('sai.end_date')}
-LEFT JOIN `{{project_id}}.{{criteria_dataset}}.completed_electronic_monitoring_materialized` em
-    ON tes.state_code = em.state_code
-    AND tes.person_id = em.person_id 
-    AND CURRENT_DATE('US/Pacific') BETWEEN em.start_date AND {nonnull_end_date_exclusive_clause('em.end_date')}
 INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`cses
     ON tes.state_code = cses.state_code
     AND tes.person_id = cses.person_id
