@@ -18,10 +18,13 @@
 their classification review date.
 """
 from recidiviz.calculator.query.bq_utils import (
+    MAGIC_END_DATE,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
+    revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -44,7 +47,6 @@ _CRITERIA_NAME = "US_MI_PAST_INITIAL_CLASSIFICATION_REVIEW_DATE"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
 someone is past their classification review date 
         - If completed the Special Alternative to Incarceration (SAI), on intensive supervision for 4 months
-        - If just completed electronic monitoring, eligible at completion date 
         - If serving a sex offense, and score is Moderate/High on supervision for at 12 months 
         - If serving a sex offense, and score is Moderate/Low and charges are CSC 1st (750.520b) or CSC 2nd (750. 520c), on supervision for 12 months 
         - Else, on supervision for 6 months 
@@ -58,6 +60,9 @@ WITH supervision_starts_with_assessments AS (
     sss.person_id,
     sss.start_date,
     sss.end_date_exclusive AS end_date,
+    sss.session_id_start,
+    sss.session_id_end,
+    sss.supervision_super_session_id,
     assessment_level_raw_text,
   FROM `{{project_id}}.{{sessions_dataset}}.supervision_super_sessions_materialized` sss
   LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized` sap
@@ -76,6 +81,9 @@ qualifying statutes and sex offenses for determining priority */
     span.person_id,
     span.start_date,
     span.end_date,
+    -- since both statutes ("750.520B" "750.520C") are considered sex offenses, there will never be a case where
+    -- qualifying_statute is TRUE and is_sex_offense is not true. However, is_sex_offense might be true and
+    -- qualifying statute my be false. 
     LOGICAL_OR(statute IN ("750.520B", "750.520C")) AS qualifying_statute,
     LOGICAL_OR(is_sex_offense) AS is_sex_offense,
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
@@ -85,69 +93,119 @@ qualifying statutes and sex offenses for determining priority */
   WHERE state_code = "US_MI"
   GROUP BY 1,2,3,4
 ),
-
 supervision_starts_with_priority AS (
-/* Here, supervision starts are either given a 'b_priority' priority_level or a 'z_default' priority_level based on
+/* Here, supervision starts are either given a 'a_priority' priority_level or a 'z_default' priority_level based on
 whether the offense type and risk level during that supervision session requires 12 months or 6 months on supervision.
-If multiple sentence spans from requires 12 months on supervision overlap with a supervision super session, 
-the first sentence span is chosen.  */ 
+Only sentence spans that overlap with the beginning of the supervision super session are considered. */ 
   SELECT
     ss.state_code,
     ss.person_id,
     ss.start_date,
     ss.end_date,
+    ss.session_id_start,
+    ss.session_id_end,
+    ss.supervision_super_session_id,
     CASE 
         WHEN (assessment_level_raw_text IN ('HIGH/MEDIUM', 'MEDIUM/HIGH', 'HIGH/LOW', 'LOW/HIGH', 'HIGH/HIGH')
-                AND is_sex_offense) THEN 'b_priority'
+                AND is_sex_offense) THEN 'a_priority'
         WHEN (COALESCE(qualifying_statute, FALSE) 
                 AND assessment_level_raw_text IN ('LOW/LOW', 'LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM')
-                AND is_sex_offense) THEN 'b_priority'
+                AND is_sex_offense) THEN 'a_priority'
         ELSE 'z_default' 
         END AS priority_level
   FROM supervision_starts_with_assessments ss
-  --sentence spans are joined such that they overlap with the start of a supervision super session
+  --sentence spans are joined such that they overlap with the start of a supervision super session and therefore
+  --an entire supervision super session either has a a_priority level OR a z_default priority level
   LEFT JOIN sentence_spans_with_info q
     ON ss.state_code = q.state_code
     AND ss.person_id = q.person_id
     AND q.start_date <= ss.start_date
     AND {nonnull_end_date_clause('q.end_date')} > ss.start_date
 ),
+active_supervision_population_cumulative_day_spans AS 
+/* This CTE analyses supervision_super_sessions to create a cumulative_inactive_days variable that counts days spent
+in inactive supervision, currently defined as compartment_level_2 = `BENCH_WARRANT`. This variable is used to NULL out
+critical dates during inactive sub sessions as well as push out the critical date by the number of cumulative_inactive_days
+once an active supervision sub session resumes. */ 
+(
+/*Join sub-sessions to super-sessions*/
+  SELECT 
+    sub.person_id,
+    sub.sub_session_id,
+    sub.session_id,
+    sub.state_code,
+    super.supervision_super_session_id AS super_session_id,
+    sub.start_date,
+    sub.end_date_exclusive AS end_date,
+    sub.compartment_level_1,
+    sub.compartment_level_2,
+    sub.session_length_days,
+    
+    sub.inactive_session_days,
+    SUM(sub.inactive_session_days) OVER(PARTITION BY sub.person_id, sub.state_code, super.supervision_super_session_id ORDER BY sub.start_date) AS cumulative_inactive_days,
+    super.start_date AS super_session_start_date,
+    super.end_date AS super_session_end_date,
+    super.priority_level,
+  FROM
+      (SELECT
+          *,
+          -- Here is where we define which sessions within a supervision super session should stop the clock
+          IF(compartment_level_2 IN ('BENCH_WARRANT') OR 
+             correctional_level IN ('ABSCONSION', 'IN_CUSTODY'), session_length_days, 0) AS inactive_session_days,
+      FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` 
+      ) sub
+  JOIN supervision_starts_with_priority super
+    ON sub.person_id = super.person_id
+    AND sub.state_code = super.state_code
+    AND sub.session_id BETWEEN super.session_id_start AND super.session_id_end
+),
+critical_date_sub_session_spans AS (
+/* This CTE sets a NULL critical date for inactive supervision sub sessions and sets the critical date as 6 or
+12 months from the supervision super session start depending on the priority level assigned in 
+supervision_starts_with_priority for active sub sessions. In addition, for active sub sessions preceded by inactive 
+sub sessions, it bumps out the critical date by the number of days spent on inactive supervision. */ 
+  SELECT 
+    person_id,
+    state_code,
+    start_date,
+    end_date,
+    CASE
+        WHEN inactive_session_days=0 AND priority_level = 'a_priority' 
+            THEN DATE_ADD(DATE_ADD(super_session_start_date, INTERVAL 1 YEAR), INTERVAL cumulative_inactive_days DAY)
+        WHEN inactive_session_days=0 AND priority_level = 'z_default' 
+            THEN DATE_ADD(DATE_ADD(super_session_start_date, INTERVAL 6 MONTH), INTERVAL cumulative_inactive_days DAY)
+        --TODO(#19845) revert to using NULL versions of critical date and super_session_end_date once NULL values are
+        --supported in aggregate adjacent spans 
+        ELSE "{MAGIC_END_DATE}"
+    END AS critical_date,
+    priority_level,
+    super_session_start_date,
+    {nonnull_end_date_clause('super_session_end_date')} AS super_session_end_date,
+  FROM active_supervision_population_cumulative_day_spans 
+),
 critical_date_spans_all AS (
-/* This CTE sets the critical dates for each supervision super session to 12 months or 6 months from the supervision
- start according to whether the client meets the requires_12_months_on_supervision criteria. The end date is the least of
- the end of the supervision session or the earliest classification review date during that supervision session. */
-  SELECT
+/* This CTE first aggregates adjacent spans from critical_date_sub_session_spans based on the critical date and 
+priority level. 
+
+Then, critical date spans for clients on supervision after completing the Special Alternative to Incarceration (SAI)
+are unioned with the associated priority level (b_priority).
+
+For all spans, the most recent classification review date for each supervision super session is joined so that all 
+critical date spans for the supervision super session end when the first classification review date takes place */ 
+  SELECT 
     sp.state_code,
     sp.person_id,
     sp.start_date,
-    LEAST(ce.completion_event_date, end_date) AS end_date,
-    IF(priority_level = 'b_priority', DATE_ADD(sp.start_date, INTERVAL 1 YEAR), 
-                        DATE_ADD(start_date, INTERVAL 6 MONTH)) AS critical_date,
-    priority_level,
-   FROM supervision_starts_with_priority sp
+    LEAST({nonnull_end_date_clause('ce.completion_event_date')}, sp.end_date) AS end_date, 
+    {revert_nonnull_end_date_clause('sp.critical_date')} AS critical_date,
+    sp.priority_level,
+   FROM ({aggregate_adjacent_spans(table_name='critical_date_sub_session_spans', 
+                                  attribute=['critical_date', 'priority_level', 'super_session_start_date', 'super_session_end_date'])}) sp
    LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
-        ON sp.person_id = ce.person_id 
+        ON sp.person_id = ce.person_id
         AND sp.state_code = ce.state_code
-        AND ce.completion_event_date BETWEEN sp.start_date AND {nonnull_end_date_exclusive_clause('sp.end_date')}
+        AND ce.completion_event_date BETWEEN sp.super_session_start_date AND sp.super_session_end_date
     QUALIFY ROW_NUMBER() OVER(PARTITION BY sp.state_code, sp.person_id, sp.start_date, sp.end_date ORDER BY completion_event_date)=1
-  UNION ALL 
-    /* This CTE identifies when an individual has recently finished electronic monitoring
-and sets the critical date to the start date of their new supervision level session. The end date is the least of 
- the end of their supervision level session or the earliest classification review date during that session.*/
-  SELECT
-    c.state_code,
-    c.person_id,
-    c.start_date, 
-    LEAST(ce.completion_event_date, end_date) AS end_date, 
-    c.start_date AS critical_date,
-    'a_priority' AS priority_level
-  FROM `{{project_id}}.{{criteria_dataset}}.completed_electronic_monitoring_materialized` c
-  LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
-        ON c.person_id = ce.person_id 
-        AND c.state_code = ce.state_code
-        AND ce.completion_event_date BETWEEN c.start_date AND {nonnull_end_date_exclusive_clause('c.end_date')}
-  WHERE meets_criteria
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY c.state_code, c.person_id, c.start_date, c.end_date ORDER BY completion_event_date)=1
   UNION ALL
       /* This CTE identifies when an individual is on supervision after completing the Special Alternative to  
     Incarceration (SAI) and sets the critical date to 4 months after they start SAI. The end date is the least of 
@@ -156,9 +214,9 @@ and sets the critical date to the start date of their new supervision level sess
      sai.state_code,
      sai.person_id,
      sai.start_date,
-     LEAST(ce.completion_event_date, end_date) AS end_date,
+     LEAST({nonnull_end_date_clause('ce.completion_event_date')}, end_date) AS end_date,
      DATE_ADD(sai.start_date, INTERVAL 4 MONTH) AS critical_date,
-     'c_priority' AS priority_level
+     'b_priority' AS priority_level
   FROM `{{project_id}}.{{criteria_dataset}}.supervision_level_is_sai_materialized` sai
   LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
         ON sai.person_id = ce.person_id 
@@ -169,10 +227,9 @@ and sets the critical date to the start date of their new supervision level sess
 ),
 /* For clients that have overlapping spans with different classification review dates, the review date is deduped
 according to the following priority: 
-    - a: immediately eligible after finishing electronic monitoring
-    - b: 12 months required for sex offense and corresponding risk/level 
-    - c: 4 months required if on SAI 
-    - d: otherwise, 6 months required  */
+    - a: 12 months required for sex offense and corresponding risk/level 
+    - b: 4 months required if on SAI 
+    - z: otherwise, 6 months required  */
 {create_sub_sessions_with_attributes('critical_date_spans_all')},
 critical_date_spans AS (
     SELECT
@@ -182,7 +239,7 @@ critical_date_spans AS (
         end_date AS end_datetime,
         critical_date,
     FROM sub_sessions_with_attributes
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY priority_level)=1
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY priority_level, critical_date DESC)=1
 ),
 {critical_date_has_passed_spans_cte()}
 SELECT
