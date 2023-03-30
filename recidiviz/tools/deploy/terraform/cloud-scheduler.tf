@@ -40,3 +40,118 @@ resource "google_cloud_scheduler_job" "schedule_sftp_dag_run_topic" {
     data       = base64encode("DATA") # Added to fulfill requirements that data has to be passed
   }
 }
+
+resource "google_cloud_scheduler_job" "prune_old_dataflow_data" {
+  name             = "prune-old-dataflow-data"
+  schedule         = "0 0 * * *" # Every day at 00:00
+  description      = "Move old Dataflow metric output to cold storage"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes
+
+  retry_config {
+    min_backoff_duration = "2.5s"
+    max_doublings        = 5
+  }
+
+  http_target {
+    uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/prune_old_dataflow_data"
+    http_method = "POST"
+
+    oidc_token {
+      service_account_email = data.google_app_engine_default_service_account.default.email
+      audience              = local.app_engine_iap_client
+    }
+  }
+}
+
+resource "google_cloud_scheduler_job" "delete_empty_bq_datasets" {
+  name             = "delete-empty-bq-datasets"
+  schedule         = "0 0 * * *" # Every day at 00:00
+  description      = "Delete empty datasets in BigQuery"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes
+
+  retry_config {
+    min_backoff_duration = "2.5s"
+    max_doublings        = 5
+  }
+
+  http_target {
+    uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/delete_empty_datasets"
+    http_method = "POST"
+
+    oidc_token {
+      service_account_email = data.google_app_engine_default_service_account.default.email
+      audience              = local.app_engine_iap_client
+    }
+  }
+}
+
+resource "google_cloud_scheduler_job" "update_long_term_backups" {
+  name             = "update-long-term-backups"
+  schedule         = "0 15 * * 1" # Every Monday 15:00
+  description      = "Create new long-term backup and delete oldest long-term backup"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes
+
+  retry_config {
+    min_backoff_duration = "2.5s"
+    max_doublings        = 5
+  }
+
+  http_target {
+    uri         = "https://${var.project_id}.appspot.com/backup_manager/update_long_term_backups"
+    http_method = "POST"
+
+    oidc_token {
+      service_account_email = data.google_app_engine_default_service_account.default.email
+      audience              = local.app_engine_iap_client
+    }
+  }
+}
+
+resource "google_cloud_scheduler_job" "ensure_all_raw_paths_normalized" {
+  name             = "ensure-all-raw-paths-normalized"
+  schedule         = "0 4 * * *" # Every day 4:00
+  description      = "[Direct ingest] Check for unnormalized files in all regions"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes
+
+  retry_config {
+    min_backoff_duration = "2.5s"
+    max_doublings        = 5
+  }
+
+  http_target {
+    uri         = "https://${var.project_id}.appspot.com/direct/ensure_all_raw_file_paths_normalized"
+    http_method = "POST"
+
+    oidc_token {
+      service_account_email = data.google_app_engine_default_service_account.default.email
+      audience              = local.app_engine_iap_client
+    }
+  }
+}
+
+resource "google_cloud_scheduler_job" "check_region_outstanding_work" {
+  name             = "check-region-outstanding-work"
+  schedule         = "0 * * * *" # Every hour at minute 0
+  description      = "[Direct ingest] Check all regions for outstanding work"
+  time_zone        = "America/Los_Angeles"
+  attempt_deadline = "600s" # 10 minutes
+
+  retry_config {
+    min_backoff_duration = "30s"
+    max_doublings        = 5
+  }
+
+  http_target {
+    uri         = "https://${var.project_id}.appspot.com/direct/heartbeat"
+    http_method = "POST"
+
+    oidc_token {
+      service_account_email = data.google_app_engine_default_service_account.default.email
+      audience              = local.app_engine_iap_client
+    }
+  }
+}

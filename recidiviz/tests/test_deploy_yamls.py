@@ -33,10 +33,6 @@ class TestDeployYamls(unittest.TestCase):
     def path_for_build_file(self, file_name: str) -> str:
         return os.path.join(os.path.dirname(__file__), "..", "..", file_name)
 
-    def test_cron_yaml_parses(self) -> None:
-        yaml_dict = YAMLDict.from_path(self.path_for_build_file("cron.yaml"))
-        self.assertTrue(yaml_dict.get())
-
     def test_prod_yaml_parses(self) -> None:
         yaml_dict = YAMLDict.from_path(self.path_for_build_file("prod.yaml"))
         self.assertTrue(yaml_dict.get())
