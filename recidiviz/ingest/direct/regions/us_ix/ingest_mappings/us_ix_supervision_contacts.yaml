@@ -25,6 +25,12 @@ output:
           id_type: $literal("US_IX_DOC")
     supervision_contacts:
       - StateSupervisionContact:
+          contacting_staff_external_id: StaffId
+          contacting_staff_external_id_type:
+            $conditional:
+              - $if:
+                  $not_null: StaffId
+                $then: $literal("US_IX_EMPLOYEE")
           contacted_agent:
             StateAgent:
               external_id: StaffId
