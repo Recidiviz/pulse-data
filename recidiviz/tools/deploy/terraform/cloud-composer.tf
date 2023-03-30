@@ -100,10 +100,10 @@ resource "google_composer_environment" "default_v2" {
 }
 
 resource "google_storage_bucket_object" "recidiviz_airflow_file" {
-  for_each = fileset("recidiviz/airflow/dags", "*dag*.py")
-  name     = "dags/${trimprefix(each.key, "recidiviz/airflow/dags/")}"
+  for_each = fileset("${local.recidiviz_root}/airflow/dags", "*dag*.py")
+  name     = "dags/${each.key}"
   bucket   = local.composer_dag_bucket
-  source   = "${local.recidiviz_root}/${trimprefix(each.key, "recidiviz/")}"
+  source   = "${local.recidiviz_root}/airflow/dags/${each.key}"
 }
 
 resource "google_storage_bucket_object" "recidiviz_source_file" {
