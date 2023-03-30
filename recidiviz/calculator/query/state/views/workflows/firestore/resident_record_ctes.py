@@ -151,6 +151,8 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
         LEFT JOIN {project_id}.{static_reference_dataset}.agent_multiple_ids_map ids
             ON Cis_900_Employee_Id = ids.external_id_to_map AND 'US_ME' = ids.state_code 
         WHERE Supervision_End_Date IS NULL
+            -- Ignore assignments from the future
+            AND SAFE_CAST(Assignment_Date AS DATETIME) <= CURRENT_DATE('US/Eastern')
         QUALIFY ROW_NUMBER() OVER (PARTITION BY Cis_100_Client_Id ORDER BY Assignment_Date DESC) = 1
 
         UNION ALL
