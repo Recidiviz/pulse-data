@@ -44,12 +44,16 @@ INGESTED_PRODUCT_USERS_QUERY_TEMPLATE = """
             -- dashboard_user_restrictions uses an empty string for no district instead of NULL, so
             -- keep that behavior here.
             IFNULL(STRING_AGG(DISTINCT district, ','), '') AS district,
-            CAST(NULL AS STRING) as external_id,
+            emp_info.BDGNO as external_id,
             ARRAY_AGG(first_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS first_name,
             ARRAY_AGG(last_name ORDER BY record_date DESC)[SAFE_OFFSET(0)] AS last_name,
         FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LANTERN_DA_RA_LIST_latest`
+        LEFT JOIN `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBCMDATA_APFX90_latest` emp_info
+            ON UPPER(lname) = UPPER(last_name)
+            AND UPPER(fname) = UPPER(first_name)
+            AND ENDDTE='0'
         WHERE email IS NOT NULL
-        GROUP BY LOWER(email)
+        GROUP BY LOWER(email), emp_info.BDGNO
     ),
     nd_users AS (
         SELECT
