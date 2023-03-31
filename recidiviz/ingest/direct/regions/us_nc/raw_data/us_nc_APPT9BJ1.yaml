@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: APPT9BJ1
+file_description: |-
+  Impact Scheduling Request
+data_classification: source
+primary_key_cols:
+  - CDDORNUM
+  - IMPREQDT
+columns:
+  - name: CDDORNUM
+    is_pii: True
+    description: |-
+      P&P offender NC DOC number ID
+  - name: IMPREQDT
+    is_datetime: True
+    description: |-
+      Request date for impact
+  - name: IMPREQRSN
+    description: |-
+      Reason for requesting impact
+  - name: IMPSTRDT
+    is_datetime: True
+    description: |-
+      Impact target start date
+  - name: IMPDAPOFC
+    description: |-
+      Requesting DCC office (impact)
+  - name: DTOFUPDT
+    is_datetime: True
+    description: |-
+      Date of last update
+  - name: TMOFUPDT
+    description: |-
+      Time of last update

@@ -382,9 +382,9 @@ class TestOperationsMigrations(MigrationsTestBase):
         ```
         def upgrade() -> None:
             op.execute("""
-                INSERT INTO direct_ingest_instance_status (region_code, timestamp, instance, status) VALUES
-                ('US_XX', '20XX-YY-ZZT00:00:00.000000', 'PRIMARY', 'STANDARD_RERUN_STARTED'),
-                ('US_XX', '20XX-YY-YYT00:00:00.000000', 'SECONDARY', 'NO_RERUN_IN_PROGRESS');
+                INSERT INTO direct_ingest_instance_status (region_code, instance, status, status_timestamp) VALUES
+                ('US_XX', 'PRIMARY', 'STANDARD_RERUN_STARTED', '20XX-YY-ZZT00:00:00.000000'),
+                ('US_XX', 'SECONDARY', 'NO_RERUN_IN_PROGRESS', '20XX-YY-YYT00:00:00.000000');
             """)
 
         def downgrade() -> None:

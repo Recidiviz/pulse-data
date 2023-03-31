@@ -66,7 +66,7 @@ class TestServerConfig(unittest.TestCase):
         self,
     ) -> None:
         self.assertEqual(
-            28, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
+            30, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
         )
 
     @patch("recidiviz.utils.environment.in_gcp_production")
@@ -77,5 +77,5 @@ class TestServerConfig(unittest.TestCase):
 
         # Should skip primary/secondary in US_IX and US_OZ
         self.assertEqual(
-            26, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
+            28, len(server_config.database_keys_for_schema_type(SchemaType.STATE))
         )

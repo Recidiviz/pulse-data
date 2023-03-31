@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: INMT4BB1
+file_description: |-
+  Sentence Computations
+data_classification: source
+primary_key_cols:
+  - CIDORNUM
+  - CIPREFIX
+columns:
+  - name: CIDORNUM
+    is_pii: True
+    description: |-
+      Inmate DOC number
+  - name: CIPREFIX
+    is_pii: True
+    description: |-
+      Inmate commitment prefix
+  - name: CISENCMP
+    description: |-
+      Inmate sentence component
+  - name: CISTAFLG
+    description: |-
+      Inmate computation status flag
+  - name: GIEFFDT
+    is_datetime: True
+    description: |-
+      Sentence begin date (for max)
+  - name: CIRELDAT
+    is_datetime: True
+    description: |-
+      Actual sentence end date
+  - name: GISPRD
+    is_datetime: True
+    description: |-
+      Projected release date (PRD)
+  - name: PARDISCHDT
+    is_datetime: True
+    description: |-
+      Parole discharge date
+  - name: PARBEGDT
+    is_datetime: True
+    description: |-
+      Parole supervision begin date
