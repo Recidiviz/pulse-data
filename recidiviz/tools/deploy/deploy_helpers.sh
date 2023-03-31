@@ -183,10 +183,6 @@ function pre_deploy_configure_infrastructure {
 
     deploy_migrations "${PROJECT}" "${COMMIT_HASH}"
 
-    echo "Deploying cron.yaml"
-    verify_hash "$COMMIT_HASH"
-    run_cmd gcloud -q app deploy cron.yaml --project="${PROJECT}"
-
     MIGRATION_CHANGES_SINCE_LAST_DEPLOY=$(migration_changes_since_last_deploy "$PROJECT")
 
     if [[ MIGRATION_CHANGES_SINCE_LAST_DEPLOY -eq 1 ]]; then
