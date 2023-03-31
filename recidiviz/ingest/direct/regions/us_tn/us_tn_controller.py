@@ -42,9 +42,11 @@ class UsTnController(BaseDirectIngestController):
         """Returns a list of string ingest view names in the order they should be
         processed for data we received on a particular date.
         """
+
         tags = [
             "OffenderName",
-            "OffenderMovementIncarcerationPeriod",
+            # "OffenderMovementIncarcerationPeriod",
+            # "OffenderMovementIncarcerationPeriod_v2",
             "AssignedStaffSupervisionPeriod_v2",
             "VantagePointAssessments",
             "SentencesChargesAndCourtCases_v2",
@@ -55,4 +57,10 @@ class UsTnController(BaseDirectIngestController):
         if not environment.in_gcp():
             tags.extend(["SupervisionContacts"])
 
-        return tags
+        return tags + (
+            ["OffenderMovementIncarcerationPeriod_v2"]
+            if not environment.in_gcp_production()
+            and ingest_instance == DirectIngestInstance.SECONDARY
+            else ["OffenderMovementIncarcerationPeriod"]
+        )
+        # return tags
