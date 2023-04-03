@@ -90,6 +90,15 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 3. This will launch an interactive script. Select `recidiviz-staging` and then `justice-counts`. Select `yes` when asked if you want write access.
 4. You should see a `postgres=>` prompt. Run `\dt` to see a list of tables.
 
+### Example SQL Queries
+
+The following query pulls all existing report datapoints for a given agency and copies the output to a csv file.
+
+```
+\copy (select * from datapoint join (select * from report where source_id=<SOURCE_ID>) as reports on datapoint.report_id=reports.id) to '/Users/<USERNAME>/Recidiviz/pulse-data/<SOURCE_NAME>_datapoints.csv' csv header;
+
+```
+
 ## Deploying
 
 Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_playtesting.sh` scripts in the `pulse-data/recidiviz/tools/deploy/justice_counts` directory. Example usages:
