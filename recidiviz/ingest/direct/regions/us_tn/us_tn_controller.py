@@ -60,7 +60,5 @@ class UsTnController(BaseDirectIngestController):
         return tags + (
             ["OffenderMovementIncarcerationPeriod_v2"]
             if not environment.in_gcp_production()
-            and ingest_instance == DirectIngestInstance.SECONDARY
             else ["OffenderMovementIncarcerationPeriod"]
         )
-        # return tags
