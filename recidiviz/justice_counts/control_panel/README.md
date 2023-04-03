@@ -80,15 +80,21 @@ docker exec <name of your Docker container> pipenv run python -m recidiviz.tools
 
 ### Connect to the local Postgres database
 
-1. Look for `pulse-data_justice_counts_db_1` in your Docker dashboard, hover over it, and choose the CLI icon
+1. Once you have the Justice Counts Docker image running locally, look for `justice_counts_db_1` in your Docker dashboard, click on 'Show Container Actions' (3 dots on the right side), and click 'Open in Terminal'.
 2. In the terminal that opens, run `psql --dbname postgres -U justice_counts_user`
+3. You should now be able to type psql commands and interact directly with your local database! For example, the `\dt` command will show all of the tables within the database.
 
-### Connect to the staging Postgres database
+### Connect to the staging or production Postgres database
 
-1. Run `brew install jq`.
+1. Run `brew install jq` (this only has to be done once).
 2. From within `pulse-data`, run `pipenv run cloudsql`.
-3. This will launch an interactive script. Select `recidiviz-staging` and then `justice-counts`. Select `yes` when asked if you want write access.
-4. You should see a `postgres=>` prompt. Run `\dt` to see a list of tables.
+3. This will launch an interactive script.\
+   a. To connect to the staging database select `recidiviz-staging`\
+   b. To connect to the production database select `recidiviz-123`
+4. Next, select `justice-counts`.
+5. Select `y` when asked if you want write access.
+6. You should see a `postgres=>` prompt. Run `\dt` to see a list of tables.
+7. To exit the database, type 'quit' and enter.
 
 ### Example SQL Queries
 
@@ -115,10 +121,36 @@ The versions we've deployed to prod are tracked [here](https://paper.dropbox.com
 
 ## Creating Users and Agencies
 
-- To create a new Agency, use the Justice Counts > Agency Provisioning page in the admin panel (go/admin or go/admin-prod).
-- To add or remove an _existing_ user from an agency, you can use the Justice Counts > User Provisioning page in the admin panel.
-- To create a _new_ user, you must create them in both Auth0 and in our database. After creating them in Auth0, you can use the pulse-data/recidiviz/tools/justice_counts/create_user.py script to create a corresponding user in our DB.
-- To update a user's role for a given agency, you can use the pulse-data/recidiviz/tools/justice_counts/update_user_role.py script (this can also be used to add a user to an agency)
+1. Visit the Admin Panel at [go/admin](https://recidiviz-staging.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning)(staging) or [go/admin-prod](https://recidiviz-123.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning)(production)
+2. Navigate the the Justice Counts tab
+3. To create a new Agency, navigate to the Agency Provisioning page and scroll to 'Add Agency'\
+   a. Enter the Agency Name, System(s), State, and (optional) County\
+   b. Click Submit\
+   c. The Agency should now appear in the Agency Provisioning table (this table is searchable)\
+   Note: You may be able to infer the agency's system / state / county from its name + a Google search; if not, ask CSG
+
+Note: Once you have completed this step, please also add the agency to the [Production Agencies Table](https://www.notion.so/recidiviz/7238b9d041b64e2cb356ba9aab9a0686?v=2d57b9c201de49f8a75303144aa3f55e) in Notion with all of the relevant information.
+
+- When adding the agency in Notion, assign either Michelle / Nichelle / Mahmoud to be the point of contact. Assign Nichelle if it's an agency on the west coast, otherwise assign whomever of Michelle or Mahmoud currently has fewer agencies.
+- Make sure you give whoever is point of contact to the agency access to it via the Admin Panel (see Step 5 and 7).
+
+4. To create a new User, navigate to the User Provisioning page and scroll to 'Add User'\
+   a. Enter the User's Name and Email\
+   b. Click Submit\
+   c. The User should now appear in the User Provisioning table (this table is searchable)\
+   Note: You may be able to infer the user's name from their email; if not, ask CSG
+5. To add a user to an agency, first find that user in the User Provisioning table.\
+   a. Within the user's row, click on the 'Agencies' cell\
+   b. A dropdown should appear with all available agencies\
+   c. Select the agency that you would like to add the user to
+6. To remove a user from an agency, first find that user in the User Provisioning table.\
+   a. Within the user's row, you can delete an agency from the 'Agencies' cell by clicking the 'x'
+7. To update a user's role for a given agency, navigate to the Agency Provisioning page\
+   a. Find the given agency in the Agency Provisioning table\
+   b. Select Team Members\
+   c. Find the given user in the Agency Team Members table\
+   d. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)\
+   Note: After adding a Recidiviz or CSG user to an agency, always set their role to JUSTICE_COUNTS_ADMIN. After adding anyone else to an agency, always set their role to AGENCY_ADMIN.
 
 ## SQLAlchemy Primer
 
