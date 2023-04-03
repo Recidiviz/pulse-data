@@ -59,14 +59,14 @@ QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id ORDER BY assessment
 SELECT
     pei.external_id,
     tes.state_code,
-    TO_JSON(STRUCT(NULL AS note_title, (CASE 
+    TO_JSON([STRUCT(NULL AS note_title, (CASE
     WHEN sai.meets_criteria THEN c.recommended_supervision_level
     WHEN cses.correctional_level = 'HIGH' THEN 'MAXIMUM' 
     WHEN cses.correctional_level = 'MAXIMUM' THEN 'MEDIUM' 
     WHEN cses.correctional_level = 'MEDIUM' THEN 'MINIMUM' 
     WHEN cses.correctional_level = 'MINIMUM' THEN 'TELEPHONE REPORTING' 
     ELSE NULL
-    END) AS note_body, NULL as event_date, "Recommended supervision level" AS criteria)) AS case_notes,
+    END) AS note_body, NULL as event_date, "Recommended supervision level" AS criteria)]) AS case_notes,
     reasons,
 FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
