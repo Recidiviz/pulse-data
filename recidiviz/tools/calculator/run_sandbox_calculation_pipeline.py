@@ -134,7 +134,8 @@ class NormalizeJobName(argparse.Action):
 
 
 class NormalizeMetricTypes(argparse.Action):
-    """Since this is a test run, make sure the job name has a -test suffix."""
+    """Join all the metric type arguments into a single string which can be used in a
+    Dataflow Flex template."""
 
     def __call__(
         self,
@@ -145,6 +146,21 @@ class NormalizeMetricTypes(argparse.Action):
     ) -> None:
         metric_types_str = " ".join(values)
         setattr(namespace, self.dest, metric_types_str)
+
+
+class NormalizePersonFilterIds(argparse.Action):
+    """Join all the person filter id arguments into a single string which can be used in
+    a Dataflow Flex template."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: Any = None,
+    ) -> None:
+        person_ids_str = " ".join([str(v) for v in values])
+        setattr(namespace, self.dest, person_ids_str)
 
 
 def parse_run_arguments() -> argparse.Namespace:
@@ -234,6 +250,7 @@ def parse_run_arguments() -> argparse.Namespace:
         nargs="+",
         help="An optional list of DB person_id values. When present, the pipeline "
         "will only calculate metrics for these people and will not output to BQ.",
+        action=NormalizePersonFilterIds,
     )
 
     # metric_types, calculation_month_count, static_reference_input can only be used for metric type pipelines

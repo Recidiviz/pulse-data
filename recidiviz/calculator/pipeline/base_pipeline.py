@@ -17,7 +17,6 @@
 """Abstract class for all pipelines that operate on state entities."""
 import abc
 import argparse
-import logging
 from typing import Any, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
 
 import apache_beam as beam
@@ -308,12 +307,6 @@ class BasePipeline:
             pipeline_output = self.pipeline_run_delegate.run_data_transforms(
                 p, pipeline_data
             )
-
-            if person_id_filter_set:
-                logging.warning(
-                    "Non-empty person filter set - returning before writing output."
-                )
-                return
 
             self.pipeline_run_delegate.write_output(pipeline_output)
 
