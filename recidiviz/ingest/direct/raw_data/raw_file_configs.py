@@ -307,6 +307,17 @@ class DirectIngestRawFileConfig:
                 return registered_col.name
         return None
 
+    def is_exempt_from_raw_data_pruning(self) -> bool:
+        # TODO(#19528): remove gating once raw data pruning can be done on ContactNoteComment.
+        if self.file_tag == "ContactNoteComment":
+            return True
+
+        if not self.always_historical_export:
+            # We currently only conduct raw data pruning on raw files that are always historical.
+            return True
+
+        return self.no_valid_primary_keys
+
     @classmethod
     def from_yaml_dict(
         cls,

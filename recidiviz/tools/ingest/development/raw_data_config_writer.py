@@ -104,6 +104,14 @@ class RawDataConfigWriter:
             "file_description: |-\n"
             f"  {file_description_string}\n"
             f"data_classification: {raw_file_config.data_classification.value}\n"
+        )
+        # If whether to treat raw files as having valid primary keys is not the default,
+        # we need to include it in the config
+        if raw_file_config.no_valid_primary_keys != default_no_valid_primary_keys:
+            config += (
+                f"no_valid_primary_keys: {raw_file_config.no_valid_primary_keys}\n"
+            )
+        config += (
             "primary_key_cols:"
             f"{self._get_primary_key_config_string(raw_file_config)}\n"
             f"{self._generate_columns_string(raw_file_config.columns)}\n"
@@ -127,12 +135,6 @@ class RawDataConfigWriter:
         # we need to include it in the config
         if raw_file_config.always_historical_export != default_always_historical_export:
             config += f"always_historical_export: {raw_file_config.always_historical_export}\n"
-        # If whether to treat raw files as having valid primary keys is not the default,
-        # we need to include it in the config
-        if raw_file_config.no_valid_primary_keys != default_no_valid_primary_keys:
-            config += (
-                f"no_valid_primary_keys: {raw_file_config.no_valid_primary_keys}\n"
-            )
         if raw_file_config.custom_line_terminator != default_line_terminator:
             # Convert newline, etc. to escape sequences
             custom_line_terminator_for_yaml = repr(
