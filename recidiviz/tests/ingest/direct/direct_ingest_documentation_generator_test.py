@@ -24,7 +24,7 @@ from recidiviz.common.constants.states import TEST_STATE_CODE_DOCS
 from recidiviz.ingest.direct.direct_ingest_documentation_generator import (
     DirectIngestDocumentationGenerator,
 )
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tests.ingest.direct import fake_regions

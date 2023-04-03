@@ -22,7 +22,7 @@ from unittest import mock
 
 import attr
 
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,

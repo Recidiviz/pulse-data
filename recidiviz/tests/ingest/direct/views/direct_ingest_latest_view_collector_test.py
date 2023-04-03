@@ -21,7 +21,7 @@ from unittest.mock import patch
 import attr
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawDataClassification,
     RawTableColumnInfo,
