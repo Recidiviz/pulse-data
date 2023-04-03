@@ -26,13 +26,14 @@ Run locally with the following command:
 python -m recidiviz.tools.calculator.create_or_update_dataflow_sandbox \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
+        [--state_code STATE_CODE] \
         [--allow_overwrite] \
         --datasets_to_create metrics normalization supplemental (must be last due to list)
 """
 import argparse
 import logging
 import sys
-from typing import List, Tuple
+from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_orchestration_utils import (
@@ -162,10 +163,11 @@ def create_or_update_normalized_state_sandbox(
     )
 
 
-def create_or_update_dataflow_sandbox(
+def _create_or_update_dataflow_sandbox(
     sandbox_dataset_prefix: str,
     datasets_to_create: List[str],
-    allow_overwrite: bool = False,
+    allow_overwrite: bool,
+    state_code_filter: Optional[StateCode],
 ) -> None:
     """Creates or updates a sandbox for all the pipeline types, prefixing the dataset
     name with the given prefix. Creates one dataset per state_code that has
@@ -174,10 +176,15 @@ def create_or_update_dataflow_sandbox(
 
     # First create the sandbox normalized datasets
     if "normalization" in datasets_to_create:
-        for state_code in get_metric_pipeline_enabled_states():
+        if state_code_filter:
+            state_codes = {state_code_filter}
+        else:
+            state_codes = get_metric_pipeline_enabled_states()
+
+        for state_code in state_codes:
             create_or_update_normalized_state_sandbox(
                 bq_client,
-                StateCode(state_code),
+                state_code,
                 sandbox_dataset_prefix,
                 allow_overwrite,
             )
@@ -195,7 +202,7 @@ def create_or_update_dataflow_sandbox(
         )
 
 
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+def parse_arguments() -> argparse.Namespace:
     """Parses the arguments needed to call the desired function."""
     parser = argparse.ArgumentParser()
 
@@ -205,6 +212,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         type=str,
         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
         required=True,
+    )
+    parser.add_argument(
+        "--state_code",
+        type=StateCode,
+        help="If set, sandbox datasets will only be created for this state. Relevant "
+        "when creating the normalization dataset.",
     )
     parser.add_argument(
         "--sandbox_dataset_prefix",
@@ -232,16 +245,17 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
         default=SANDBOX_TYPES,
     )
 
-    return parser.parse_known_args(argv)
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
+    args = parse_arguments()
 
-    with local_project_id_override(known_args.project_id):
-        create_or_update_dataflow_sandbox(
-            known_args.sandbox_dataset_prefix,
-            known_args.datasets_to_create,
-            known_args.allow_overwrite,
+    with local_project_id_override(args.project_id):
+        _create_or_update_dataflow_sandbox(
+            args.sandbox_dataset_prefix,
+            args.datasets_to_create,
+            args.allow_overwrite,
+            args.state_code,
         )
