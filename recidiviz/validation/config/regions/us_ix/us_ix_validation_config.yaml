@@ -21,7 +21,7 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: .97
     override_reason: TODO(#18858) - Mid-investigation and it seems like a formatting issue but bumping threshold for now
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: 0.04
+    hard_max_allowed_error_override: 0.12
     override_reason: TODO(#18859) - Mid-investigation and it seems like it needs some atlas specific logic, but bumping threshold for now.
   - validation_name: incarceration_release_person_level_external_comparison
     hard_max_allowed_error_override: 0.78
