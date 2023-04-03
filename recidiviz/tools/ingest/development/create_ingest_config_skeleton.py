@@ -40,9 +40,7 @@ from pandas import read_csv
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.common.constants import states
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    RawDataClassification,
-)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import RawDataClassification
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 
 

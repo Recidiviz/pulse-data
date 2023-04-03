@@ -53,8 +53,10 @@ from recidiviz.ingest.direct.metadata.direct_ingest_view_materialization_metadat
 )
 from recidiviz.ingest.direct.raw_data import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
-    DirectIngestRawFileConfig,
     DirectIngestRawFileImportManager,
+)
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
+    DirectIngestRawFileConfig,
     DirectIngestRegionRawFileConfig,
     RawDataClassification,
     RawTableColumnInfo,

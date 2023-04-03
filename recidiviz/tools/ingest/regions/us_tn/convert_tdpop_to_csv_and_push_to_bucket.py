@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 
 import recidiviz
-from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,
 )
 from recidiviz.tools.ingest.operations.upload_raw_state_files_to_ingest_bucket_with_date import (
