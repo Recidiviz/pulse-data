@@ -37,7 +37,7 @@ SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_DESCRIPTION = """Supervision classi
 to hydrate task completion events"""
 
 SUPERVISION_CLASSIFICATION_REVIEW_DATES_QUERY_TEMPLATE = """
-SELECT 
+SELECT DISTINCT
     pei.state_code,
     pei.person_id,
     CAST(SAFE_CAST(item_complete_date AS DATETIME) AS DATE) AS completion_event_date,

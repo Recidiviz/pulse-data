@@ -62,7 +62,7 @@ WITH lifetime_em_sentences AS (
         state_code,
         person_id,
         start_date,
-        CAST("9999-12-31" AS DATE) AS end_date,
+        CAST(NULL AS DATE) AS end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(
             start_date AS lifetime_em_date
