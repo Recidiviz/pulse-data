@@ -19,10 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import (
-    NORMALIZED_STATE_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -169,13 +166,12 @@ case_notes_cte AS (
         DATE(SAFE.PARSE_DATETIME("%m/%d/%Y %I:%M:%S %p", Open_Date)) AS event_date,
     FROM (SELECT 
                 *
-            -- TODO(#18437) Change references to imported tables once necessary tables are imported
-            FROM `{{project_id}}.{{static_reference_tables_dataset}}.CIS_201_GOALS` gl
-            INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2012_GOAL_STATUS` gs
+            FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_201_GOALS_latest` gl
+            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2012_GOAL_STATUS_TYPE_latest` gs
                 ON gl.Cis_2012_Goal_Status_Cd = gs.Goal_Status_Cd
-            INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2010_GOAL_TYPE` gt
+            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2010_GOAL_TYPE_latest` gt
                 ON gl.Cis_2010_Goal_Type_Cd = gt.Goal_Type_Cd
-            INNER JOIN `{{project_id}}.{{static_reference_tables_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE` dg
+            INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_2011_DOMAIN_GOAL_TYPE_latest` dg
                 ON gl.Cis_2011_Dmn_Goal_Cd = dg.Domain_Goal_Cd
             WHERE gs.Goal_Status_Cd IN ('1','2')) 
 ), 
@@ -242,7 +238,6 @@ US_ME_TRANSFER_TO_SCCP_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ME_TRANSFER_TO_SCCP_RECORD_QUERY_TEMPLATE,
     description=US_ME_TRANSFER_TO_SCCP_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    static_reference_tables_dataset=STATIC_REFERENCE_TABLES_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
     ),
