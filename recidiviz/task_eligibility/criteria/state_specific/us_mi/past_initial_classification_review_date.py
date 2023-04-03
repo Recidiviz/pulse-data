@@ -239,6 +239,9 @@ critical_date_spans AS (
         end_date AS end_datetime,
         critical_date,
     FROM sub_sessions_with_attributes
+    --start date can equal end date when classification reviews are done on the same day a supervision session starts
+    --these sessions should be excluded from critical date spans have passed
+    WHERE start_date != {nonnull_end_date_clause('end_date')}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date ORDER BY priority_level, critical_date DESC)=1
 ),
 {critical_date_has_passed_spans_cte()}
