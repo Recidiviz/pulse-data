@@ -56,7 +56,7 @@ ORAS_WEEKLY_SUMMARY_UPDATE = """
         SCORE,
         DATE_CREATED,
         '"' CONCAT REPLACE(USER_CREATED, '"', '""') CONCAT '"' AS USER_CREATED,
-        RACE,
+        '"' CONCAT REPLACE(RACE, '"', '""') CONCAT '"' AS RACE,
         BIRTH_DATE,
         CREATED_DATE
     FROM
@@ -462,6 +462,141 @@ LBAKRDTA_TAK028 = f"""
             COALESCE(BY$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK032 = """
+    SELECT 
+        CC$DOC,
+        CC$CYC,
+        CC$WSN,
+        CC$WCD,
+        CC$PIN,
+        CC$PLN,
+        CC$LOC,
+        CC$COM,
+        CC$LRM,
+        CC$WA,
+        CC$OR0,
+        CC$WE,
+        '"' CONCAT REPLACE(CC$FND, '"', '""') CONCAT '"' AS CC$FND,
+        '"' CONCAT REPLACE(CC$WCH, '"', '""') CONCAT '"' AS CC$WCH,
+        CC$W01,
+        CC$BH1,
+        CC$BM1,
+        CC$EH1,
+        CC$EM1,
+        CC$SH1,
+        CC$SM1,
+        CC$CH1,
+        CC$CM1,
+        CC$AH1,
+        CC$AM1,
+        CC$TH1,
+        CC$TM1,
+        CC$W02,
+        CC$BH2,
+        CC$BM2,
+        CC$EH2,
+        CC$EM2,
+        CC$SH2,
+        CC$SM2,
+        CC$CH2,
+        CC$CM2,
+        CC$AH2,
+        CC$AM2,
+        CC$TH2,
+        CC$TM2,
+        CC$W03,
+        CC$BH3,
+        CC$BM3,
+        CC$EH3,
+        CC$EM3,
+        CC$SH3,
+        CC$SM3,
+        CC$CH3,
+        CC$CM3,
+        CC$AH3,
+        CC$AM3,
+        CC$TH3,
+        CC$TM3,
+        CC$W04,
+        CC$BH4,
+        CC$BM4,
+        CC$EH4,
+        CC$EM4,
+        CC$SH4,
+        CC$SM4,
+        CC$CH4,
+        CC$CM4,
+        CC$AH4,
+        CC$AM4,
+        CC$TH4,
+        CC$TM4,
+        CC$W05,
+        CC$BH5,
+        CC$BM5,
+        CC$EH5,
+        CC$EM5,
+        CC$SH5,
+        CC$SM5,
+        CC$CH5,
+        CC$CM5,
+        CC$AH5,
+        CC$AM5,
+        CC$TH5,
+        CC$TM5,
+        CC$W06,
+        CC$BH6,
+        CC$BM6,
+        CC$EH6,
+        CC$EM6,
+        CC$SH6,
+        CC$SM6,
+        CC$CH6,
+        CC$CM6,
+        CC$AH6,
+        CC$AM6,
+        CC$TH6,
+        CC$TM6,
+        CC$W07,
+        CC$BH7,
+        CC$BM7,
+        CC$EH7,
+        CC$EM7,
+        CC$SH7,
+        CC$SM7,
+        CC$CH7,
+        CC$CM7,
+        CC$AH7,
+        CC$AM7,
+        CC$TH7,
+        CC$TM7,
+        CC$DCR,
+        CC$TCR,
+        CC$DLU,
+        CC$TLU
+    FROM
+        LBAKRDTA.TAK032;
+    """
+
+LBAKRDTA_TAK033 = """
+    SELECT 
+        CD$DOC,
+        CD$ENY,
+        '"' CONCAT REPLACE(CD$EWA, '"', '""') CONCAT '"' AS CD$EWA,
+        CD$EW,
+        CD$OR0,
+        '"' CONCAT REPLACE(CD$ECH, '"', '""') CONCAT '"' AS CD$ECH,
+        '"' CONCAT REPLACE(CD$CMT, '"', '""') CONCAT '"' AS CD$CMT,
+        CD$UID,
+        CD$UIU,
+        CD$DCR,
+        CD$TCR,
+        CD$DLU,
+        CD$TLU,
+        CD$PON
+    FROM
+        LBAKRDTA.TAK033;
+    """
+
 LBAKRDTA_TAK034 = f"""
     SELECT 
         CE$DOC,
@@ -785,6 +920,25 @@ LBAKRDTA_TAK090 = f"""
             COALESCE(DD$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK130 = """
+    SELECT 
+        D2$DOC,
+        D2$CYC,
+        D2$CH,
+        D2$CHT,
+        D2$CHS,
+        D2$CHL,
+        '"' CONCAT REPLACE(D2$CHE, '"', '""') CONCAT '"' AS D2$CHE,
+        D2$UID,
+        D2$PON,
+        D2$DCR,
+        D2$TCR,
+        D2$DLU,
+        D2$TLU
+    FROM
+        LBAKRDTA.TAK130;
+    """
+
 LBAKRDTA_TAK142 = f"""
     SELECT 
         E6$DOC,
@@ -805,6 +959,24 @@ LBAKRDTA_TAK142 = f"""
     WHERE
         MAX(COALESCE(E6$DLU, 0),
             COALESCE(E6$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK194 = """
+    SELECT 
+        GY$DOC,
+        GY$BH,
+        GY$AIS,
+        GY$PON,
+        GY$PLN,
+        GY$PIN,
+        GY$UID,
+        GY$DCR,
+        GY$TCR,
+        GY$UIU,
+        GY$DLU,
+        GY$TLU
+    FROM
+        LBAKRDTA.TAK194;
     """
 
 LBAKRDTA_TAK204 = f"""
@@ -834,6 +1006,62 @@ LBAKRDTA_TAK204 = f"""
     WHERE
         MAX(COALESCE(HL$DLU, 0),
             COALESCE(HL$DCR, 0)) >= {julian_format_lower_bound_update_date};
+    """
+
+LBAKRDTA_TAK216 = """
+    SELECT 
+        SI$DOC,
+        SICBSQ,
+        SI$AR,
+        SI$DO,
+        '"' CONCAT REPLACE(SI$COD, '"', '""') CONCAT '"' AS SI$COD,
+        SI$OCN,
+        SIOLOC,
+        SI$CNT,
+        SIOST,
+        SI$ASO,
+        SI$NCI,
+        SI$CLT,
+        SI$CRT,
+        SISRC,
+        SIVSRC,
+        SICYC,
+        SI$SEO,
+        SI$PON,
+        SIJUV,
+        SI$DCR,
+        SI$TCR,
+        SI$DLU,
+        SI$TLU,
+        SI$UID,
+        SI$UIU
+    FROM
+        LBAKRDTA.TAK216;
+    """
+
+LBAKRDTA_TAK217 = """
+    SELECT 
+        SK$DOC,
+        SKCBSQ,
+        SKDSEQ,
+        SKDD,
+        SKDTYP,
+        SKSTYP,
+        '"' CONCAT REPLACE(SKDESC, '"', '""') CONCAT '"' AS SKDESC,
+        SK$SBY,
+        SK$SBM,
+        SK$SBD,
+        SK$SLY,
+        SK$SLM,
+        SK$SLD,
+        SK$DCR,
+        SK$TCR,
+        SK$DLU,
+        SK$TLU,
+        SK$UID,
+        SK$UIU,
+    FROM
+        LBAKRDTA.TAK217;
     """
 
 LBAKRDTA_TAK222 = f"""
@@ -996,6 +1224,59 @@ LBAKRDTA_TAK235 = f"""
             COALESCE(IT$DCR, 0)) >= {julian_format_lower_bound_update_date};
     """
 
+LBAKRDTA_TAK236 = """
+    SELECT 
+        IU$DOC,
+        IU$CYC,
+        IUCSEQ,
+        IUSASQ,
+        IUSSAN,
+        IU$SU,
+        IU$SE,
+        IUSMTH,
+        IU$SAD,
+        IU$SHR,
+        IUSAMO,
+        IU$SPD,
+        IU$DCR,
+        IU$TCR,
+        IU$DLU,
+        IU$TLU,
+        IU$UID,
+        IU$UIU
+    FROM
+        LBAKRDTA.TAK236;
+    """
+
+LBAKRDTA_TAK237 = """
+    SELECT 
+        IV$DOC,
+        IV$CYC,
+        IVCSEQ,
+        IVESEQ,
+        IVETYP,
+        IVEDTE,
+        IVETIM,
+        IV$PON,
+        IV$FPC,
+        IV$FFD,
+        IVRAST,
+        IVFAST,
+        IVPLEA,
+        IV$WIT,
+        IVREFU,
+        IVRITE,
+        IVCSQ#,
+        IV$DCR,
+        IV$TCR,
+        IV$DLU,
+        IV$TLU,
+        IV$UID,
+        IV$UIU
+    FROM
+        LBAKRDTA.TAK237;
+    """
+
 LBAKRDTA_TAK238 = """
     SELECT 
         ISCSQ#,
@@ -1122,7 +1403,6 @@ LBAKRDTA_VAK003 = f"""
 LBCMDATA_APFX90 = """
     SELECT 
         BDGNO,
-        EMPSSN,
         '"' CONCAT REPLACE(LNAME, '"', '""') CONCAT '"' AS LNAME,
         '"' CONCAT REPLACE(FNAME, '"', '""') CONCAT '"' AS FNAME,
         '"' CONCAT REPLACE(MINTL, '"', '""') CONCAT '"' AS MINTL,
@@ -1146,7 +1426,6 @@ LBCMDATA_APFX90 = """
 LBCMDATA_APFX91 = """
     SELECT 
         BDGNO,
-        EMPSSN,
         '"' CONCAT REPLACE(LNAME, '"', '""') CONCAT '"' AS LNAME,
         '"' CONCAT REPLACE(FNAME, '"', '""') CONCAT '"' AS FNAME,
         '"' CONCAT REPLACE(MINTL, '"', '""') CONCAT '"' AS MINTL,
@@ -1310,6 +1589,14 @@ OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF = f"""
         UPDATE_TS < '7799-12-31' AND 
         MAX(COALESCE(UPDATE_TS, '1900-01-01'),
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
+    """
+
+# TODO(#19931) - ADD IN COLUMN NAMES EXPLICITLY ONCE WE PULL FILE
+OFNDR_PDB_RESIDENCES = """
+    SELECT 
+        *
+    FROM
+        OFNDR_PDB.RESIDENCES;
     """
 
 CODE_PDB_ASMNT_PRIMARY_TYPE_CODES = f"""
@@ -1727,6 +2014,8 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK025", LBAKRDTA_TAK025),
         ("LBAKRDTA_TAK026", LBAKRDTA_TAK026),
         ("LBAKRDTA_TAK028", LBAKRDTA_TAK028),
+        ("LBAKRDTA_TAK032", LBAKRDTA_TAK032),
+        ("LBAKRDTA_TAK033", LBAKRDTA_TAK033),
         ("LBAKRDTA_TAK034", LBAKRDTA_TAK034),
         ("LBAKRDTA_TAK039", LBAKRDTA_TAK039),
         ("LBAKRDTA_TAK040", LBAKRDTA_TAK040),
@@ -1739,14 +2028,20 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK071", LBAKRDTA_TAK071),
         ("LBAKRDTA_TAK076", LBAKRDTA_TAK076),
         ("LBAKRDTA_TAK090", LBAKRDTA_TAK090),
+        ("LBAKRDTA_TAK130", LBAKRDTA_TAK130),
         ("LBAKRDTA_TAK142", LBAKRDTA_TAK142),
         ("LBAKRDTA_TAK158", LBAKRDTA_TAK158),
+        ("LBAKRDTA_TAK194", LBAKRDTA_TAK194),
         ("LBAKRDTA_TAK204", LBAKRDTA_TAK204),
+        ("LBAKRDTA_TAK216", LBAKRDTA_TAK216),
+        ("LBAKRDTA_TAK217", LBAKRDTA_TAK217),
         ("LBAKRDTA_TAK222", LBAKRDTA_TAK222),
         ("LBAKRDTA_TAK223", LBAKRDTA_TAK223),
         ("LBAKRDTA_TAK233", LBAKRDTA_TAK233),
         ("LBAKRDTA_TAK234", LBAKRDTA_TAK234),
         ("LBAKRDTA_TAK235", LBAKRDTA_TAK235),
+        ("LBAKRDTA_TAK236", LBAKRDTA_TAK236),
+        ("LBAKRDTA_TAK237", LBAKRDTA_TAK237),
         (
             "LBAKRDTA_TAK238",
             LBAKRDTA_TAK238,
@@ -1755,6 +2050,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("LBAKRDTA_TAK292", LBAKRDTA_TAK292),
         ("LBAKRDTA_TAK293", LBAKRDTA_TAK293),
         ("LBAKRDTA_TAK294", LBAKRDTA_TAK294),
+        # ("LBAKRDTA_TAZ015", LBAKRDTA_TAZ015),
         ("LBAKRDTA_VAK003", LBAKRDTA_VAK003),
         ("LBCMDATA_APFX90", LBCMDATA_APFX90),
         ("LBCMDATA_APFX91", LBCMDATA_APFX91),
@@ -1765,6 +2061,7 @@ def get_query_name_to_query_list() -> List[Tuple[str, str]]:
         ("OFNDR_PDB_OFNDR_ASMNTS", OFNDR_PDB_OFNDR_ASMNTS),
         ("OFNDR_PDB_OFNDR_ASMNT_SCORES", OFNDR_PDB_OFNDR_ASMNT_SCORES),
         ("OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS", OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS),
+        ("OFNDR_PDB_RESIDENCES", OFNDR_PDB_RESIDENCES),
         ("CODE_PDB_ASMNT_PRIMARY_TYPE_CODES", CODE_PDB_ASMNT_PRIMARY_TYPE_CODES),
         ("CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES", CODE_PDB_ASMNT_EVAL_OVERRIDE_CODES),
         ("CODE_PDB_CLASS_EXIT_REASON_CODES", CODE_PDB_CLASS_EXIT_REASON_CODES),

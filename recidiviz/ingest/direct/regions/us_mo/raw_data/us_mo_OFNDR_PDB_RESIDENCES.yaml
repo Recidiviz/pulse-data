@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: OFNDR_PDB_RESIDENCES
+file_description: |-
+  TODO(#19931) Add in description
+data_classification: source
+primary_key_cols:
+  - ENROLLMENT_REF_ID
+columns:
+  - name: ENROLLMENT_REF_ID
+    is_pii: True
+    description: |-
+      Enrollement Reference ID
