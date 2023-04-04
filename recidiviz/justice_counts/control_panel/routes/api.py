@@ -19,7 +19,7 @@ import logging
 from collections import defaultdict
 from http import HTTPStatus
 from itertools import groupby
-from typing import Callable, DefaultDict, List, Optional
+from typing import Callable, DefaultDict, Dict, List, Optional
 
 import pandas as pd
 from flask import Blueprint, Response, jsonify, make_response, request, send_file
@@ -569,9 +569,11 @@ def get_api_blueprint(
     @api_blueprint.route("/reports", methods=["GET"])
     @auth_decorator
     def get_reports_by_id() -> Response:
-        """Get the details for multiple reports."""
+        """Provided a list of report IDs, this method returns a list of reports
+        (with datapoints instead of metrics) for each report ID.
+        """
         try:
-            # The request will include the following params in the path URL:
+            # The request will include the following query params in the request body:
             # 1. agency_id (String): the agency id
             # 2. report_ids (String): a comma separated string of report ids the FE is requesting
             # Example path URL for requesting reports 1877 and 1878 for agency 147:
@@ -599,36 +601,50 @@ def get_api_blueprint(
                     description="Empty list of report_ids passed to get reports endpoint.",
                 )
 
-            agency_datapoints = DatapointInterface.get_agency_datapoints(
-                session=current_session, agency_id=agency_id
-            )
             all_reports = ReportInterface.get_reports_by_id(
-                session=current_session, report_ids=report_ids
+                session=current_session, report_ids=report_ids, include_datapoints=True
             )
-            reports = []
+            report_jsons = []
+            datapoints = []
+            report_id_to_datapoints: Dict[str, list] = defaultdict(list)
+            report_id_to_frequency: Dict[str, schema.ReportingFrequency] = {}
+            report_id_to_published_status: Dict[str, bool] = {}
 
             for report in all_reports:
-                report_metrics = ReportInterface.get_metrics_by_report(
-                    session=current_session,
-                    report=report,
-                    agency_datapoints=agency_datapoints,
+                datapoints.extend(report.datapoints)
+                report_id_to_frequency[
+                    report.id
+                ] = ReportInterface.get_reporting_frequency(report)
+                report_id_to_published_status[report.id] = (
+                    report.status == schema.ReportStatus.PUBLISHED
                 )
+
+            for datapoint in datapoints:
+                report_id = datapoint.report_id
+                report_frequency = report_id_to_frequency[report_id]
+                is_report_published = report_id_to_published_status[report_id]
+
+                report_id_to_datapoints[report_id].append(
+                    DatapointInterface.to_json_response(
+                        datapoint=datapoint,
+                        is_published=is_report_published,
+                        frequency=report_frequency,
+                    )
+                )
+
+            for report in all_reports:
                 report_definition_json = ReportInterface.to_json_response(
                     report=report,
                     # Right now, this method is only used for bulk publishing
                     # which does not require the editor details.
                     editor_id_to_json={},
                 )
-                metrics_json = [
-                    report_metric.to_json(
-                        entry_point=DatapointGetRequestEntryPoint.REPORT_PAGE,
-                    )
-                    for report_metric in report_metrics
+                report_definition_json["datapoints"] = report_id_to_datapoints[
+                    report.id
                 ]
-                report_definition_json["metrics"] = metrics_json
-                reports.append(report_definition_json)
+                report_jsons.append(report_definition_json)
 
-            return jsonify(reports)
+            return jsonify(report_jsons)
         except Exception as e:
             raise _get_error(error=e) from e
 
