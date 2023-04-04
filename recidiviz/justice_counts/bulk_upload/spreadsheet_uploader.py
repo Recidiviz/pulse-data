@@ -273,8 +273,9 @@ class SpreadsheetUploader:
             if unexpected_col == "month":
                 warning_title = "Unexpected Month Column"
                 warning_description = (
-                    f"The {metricfile.canonical_filename} sheet contained the following unexpected column: month. "
-                    f"The {metric_definition.display_name} metric is configured to be reported annually and does not require a month column."
+                    f"Your uploaded data has been saved. "
+                    f"The {metric_definition.display_name} metric is configured to be reported annually, however the {metricfile.canonical_filename} sheet contains a month column. "
+                    f"To update the reporting frequency of this metric, please visit the Metric Configuration page."
                 )
             elif unexpected_col == "system":
                 warning_title = "Unexpected System Column"
@@ -299,6 +300,19 @@ class SpreadsheetUploader:
             metric_key_to_errors[metric_definition.key].append(
                 unexpected_column_warning
             )
+        if reporting_frequency.value == "MONTHLY" and "month" not in actual_columns:
+            warning_title = "Missing Month Column"
+            warning_description = (
+                f"Your uploaded data has been saved. "
+                f"The {metric_definition.display_name} metric is configured to be reported monthly, however the {metricfile.canonical_filename} sheet does not contain a month column. "
+                f"To update the reporting frequency of this metric, please visit the Metric Configuration page."
+            )
+            missing_column_warning = JusticeCountsBulkUploadException(
+                title=warning_title,
+                message_type=BulkUploadMessageType.WARNING,
+                description=warning_description,
+            )
+            metric_key_to_errors[metric_definition.key].append(missing_column_warning)
         return metric_key_to_errors
 
     def _get_rows_by_time_range(
@@ -323,7 +337,16 @@ class SpreadsheetUploader:
                 column_type=int,
                 analyzer=self.text_analyzer,
             )
-            if reporting_frequency == ReportingFrequency.MONTHLY:
+            if (
+                reporting_frequency == ReportingFrequency.MONTHLY
+                and row.get("month") is None
+            ):
+                # We will be in this case if annual data is provided for monthly metrics
+                # warning will be added in _check_expected_columns()
+                month = (
+                    custom_starting_month or 1
+                )  # if no custom starting month specified, assume calendar year
+            elif reporting_frequency == ReportingFrequency.MONTHLY:
                 month = get_column_value(
                     row=row,
                     column_name="month",
