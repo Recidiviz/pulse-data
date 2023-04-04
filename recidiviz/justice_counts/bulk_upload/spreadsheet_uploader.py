@@ -290,7 +290,7 @@ class SpreadsheetUploader:
                 warning_description = f"Breakdown data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but this sheet should only contain aggregate data."
             else:
                 warning_title = "Unexpected Column"
-                warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}."
+                warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}. The {unexpected_col} column is not aligned with the Technical Implementation Guides."
             unexpected_column_warning = JusticeCountsBulkUploadException(
                 title=warning_title,
                 message_type=BulkUploadMessageType.WARNING,
