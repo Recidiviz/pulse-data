@@ -313,6 +313,15 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 ),
             ]
         )
+
+        # Update existing report by updating metric
+        report_metric = self.test_schema_objects.reported_residents_metric
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=monthly_report_1,
+            report_metric=report_metric,
+            user_account=user_A,
+        )
         self.session.commit()
 
         with self.app.test_request_context():
@@ -321,14 +330,38 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 f"/api/reports?agency_id={agency_A.id}&report_ids={monthly_report_1.id},{monthly_report_2.id}",
             )
 
+        agency_datapoints = self.session.query(Datapoint).all()
+
         self.assertEqual(response.status_code, 200)
         response_list = assert_type(response.json, list)
+
+        # Check multiple reports received that correspond with the request list of report IDs
         self.assertEqual(len(response_list), 2)
         self.assertEqual(
             {report["id"] for report in response_list},
             {monthly_report_1.id, monthly_report_2.id},
         )
         self.assertEqual({report["month"] for report in response_list}, {6, 7})
+
+        # No metric property should exist in response for both reports
+        self.assertEqual(response_list[0].get("metrics"), None)
+        self.assertEqual(response_list[1].get("metrics"), None)
+
+        # Check the presence of datapoints
+        # 25 datapoints should be created for `monthly_report_1` (and the entire agency)
+        self.assertEqual(len(agency_datapoints), len(response_list[0]["datapoints"]))
+        self.assertEqual(
+            response_list[0]["datapoints"][0]["end_date"],
+            "Fri, 01 Jul 2022 00:00:00 GMT",
+        )
+        self.assertEqual(
+            response_list[0]["datapoints"][0]["frequency"],
+            ReportingFrequency.MONTHLY.value,
+        )
+        self.assertEqual(
+            response_list[0]["datapoints"][0]["value"],
+            5000.0,
+        )
 
     def test_get_report_metrics(self) -> None:
         user_A = self.test_schema_objects.test_user_A
