@@ -7,6 +7,7 @@ input_columns:
   - OffenderNoteInfoId #external_id
   - NoteDate
   - contact_type
+  - contact_method
   - contact_title #reason_raw_text
   - contact_location #location_raw_text and concat for method
   - contact_result
@@ -46,188 +47,55 @@ output:
                 - OffenderId
                 - OffenderNoteInfoId
           verified_employment:
-            $in:
-              $value: verified_employment
-              $options:
-                - $literal("1") # Legacy Contacts
-                - $literal("17") # Atlas Contacts
+            $equal:
+              - verified_employment
+              - $literal("true")
           contact_date: NoteDate
           contact_method:
             $enum_mapping:
-              $raw_text:
-                $concat:
-                  $values:
-                    - contact_location
-                    - contact_type
-                  $separator: "##"
-                  $include_nulls: true
-              $custom_parser: us_ix_custom_enum_parsers.contact_method_from_contact_fields
+              $raw_text: contact_method
+              $custom_parser: us_ix_custom_enum_parsers.contact_method_from_contact_methods_list
           location:
             $enum_mapping:
               $raw_text: contact_location
-              $mappings:
-                StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT:
-                  - "ALTERNATE WORK SITE"
-                StateSupervisionContactLocation.COURT:
-                  - "14" # Court Action
-                  - "COURT"
-                  - "DRUG COURT"
-                StateSupervisionContactLocation.FIELD:
-                  - "18" # Field Visit
-                  - "964" # Field Contact
-                  - "FIELD"
-                StateSupervisionContactLocation.INTERNAL_UNKNOWN:
-                  - "524" # WBOR System
-                  - "553" # Community Service
-                  - "568" # LSU Review (Semi-Annual)
-                  - "908" # Conversion
-                  - "ASSOCIATE"
-                  - "COMMUNITY SERVICE SITE"
-                  - "COMPACT STATE"
-                  - "CONVERSION"
-                  - "CRIME SCENE"
-                  - "FAMILY"
-                  - "OTHER"
-                  - "WBOR"
-                StateSupervisionContactLocation.JAIL:
-                  - "JAIL"
-                StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY:
-                  - "474" # Law Enforcement
-                  - "LAW ENFORCEMENT AGENCY"
-                StateSupervisionContactLocation.PAROLE_COMMISSION:
-                  - "486" # Parole Commission
-                  - "PAROLE COMMISSION"
-                StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT:
-                  - "16" # Employment Site Check
-                  - "962" # Change in Employment
-                  - "EMPLOYER"
-                StateSupervisionContactLocation.RESIDENCE:
-                  - "21" # Home Contact
-                  - "33" # Personal Home Contact
-                  - "966" # Residence Verification
-                  - "RESIDENCE"
-                  - "OTHER RESIDENCE"
-                StateSupervisionContactLocation.SUPERVISION_OFFICE:
-                  - "28" # Office Contact
-                  - "107" # Interstate Compact
-                  - "471" # Interstate
-                  - "592" # Office
-                  - "OFFICE"
-                  - "INTERSTATE OFFICE"
-                StateSupervisionContactLocation.TREATMENT_PROVIDER:
-                  - "TREATMENT PROVIDER"
+              $custom_parser: us_ix_custom_enum_parsers.contact_location_from_contact_locations_list
               $ignore:
                 - "EMAIL"
                 - "FAX"
                 - "MAIL"
                 - "TELEPHONE"
                 - "VIRTUAL"
+                - "$IGNORE"
           contact_type:
             $enum_mapping:
               $raw_text: contact_type
               $mappings:
                 StateSupervisionContactType.COLLATERAL:
-                  - "429" # Collateral
-                  - "475" # Mental Health Collateral
-                  - "581" # Support System Collateral
-                  - "Collateral"
-                  - "Mental Health Collateral"
-                  - "Attorney (LSU)"
-                  - "Care Coordination"
-                  - "Court Official (LSU)"
-                  - "Mentor"
-                  - "Prosecutor (LSU)"
-                  - "Victim"
+                  - "COLLATERAL"
                 StateSupervisionContactType.DIRECT:
-                  - "35" # Personal Telephone Contact
-                  - "42" # Telephone
-                  - "447" # Face To Face
-                  - "474" # Law Enforcement
-                  - "484" # Negative Contact
-                  - "486" # Parole Commission
-                  - "526" # Written Correspondence
-                  - "591" # Mail
-                  - "905" # Virtual
-                  - "907" # APP Smart Phone
-                  - "72 Hour Initial Contact"
-                  - "APP Smart Phone"
-                  - "Face To Face"
-                  - "Home Visit"
-                  - "Home Contact"
-                  - "Law Enforcement"
-                  - "Mail"
-                  - "Negative Contact"
-                  - "Parole Commission"
-                  - "Telephone"
-                  - "Virtual"
-                  - "Written Correspondence"
-                  - "WBOR System"
-                StateSupervisionContactType.INTERNAL_UNKNOWN:
-                  - "Agreement Of Supervision"
-                  - "Conversion"
-                  - "Employment"
-                  - "Employment Site Check"
-                  - "Financial Obligations"
-                  - "Follow Up (LSU)"
-                  - "Gangs & STG"
-                  - "IC Addendum"
-                  - "IC Addendum Response"
-                  - "IC Case Closure"
-                  - "IC Compact Action RQ"
-                  - "IC Fee"
-                  - "IC Notice Of Arrival"
-                  - "IC Notice Of Departure"
-                  - "IC Progress Report"
-                  - "IC Reply To Transfer"
-                  - "IC Reporting Instructions"
-                  - "IC Response To ROV"
-                  - "IC RPT Of Violation"
-                  - "IC Transfer Request"
-                  - "IC Written Correspnd"
-                  - "Interstate"
-                  - "IRM-New Felony,Firearm,Abscond"
-                  - "Mental Health Eval"
-                  - "Monthly Report"
-                  - "Office"
-                  - "Programming"
-                  - "Records Check"
-                  - "Reentry Grant"
-                  - "Reentry Services"
-                  - "Returned Mail (LSU)"
-                  - "SUD Funding Approved"
-                  - "SUD Funding Denied Clinical"
-                  - "SUD Funding Denied Fiscal"
-                  - "Suspect"
-                  - "Transition Fund"
-                  - "Transition Fund Approved"
-                  - "Transition Fund Deny"
-                  - "Transition Fund Deny FY"
-                  - "Treatment Fund"
-                  - "Treatment Fund Approved"
-                  - "Treatment Fund Deny"
-                  - "Treatment Fund Deny FY"
-                  - "Written Court"
+                  - "DIRECT"
+                StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT:
+                  - "COLLATERAL,DIRECT"
           contact_reason:
             $enum_mapping:
               $raw_text: contact_title
               $mappings:
                 StateSupervisionContactReason.INITIAL_CONTACT:
                   - "72 HOUR INITIAL"
-                  - "585" # 72 Hour Initial Contact
+                  - "INITIAL"
                 StateSupervisionContactReason.EMERGENCY_CONTACT:
                   - "CRITICAL"
-                  - "873" # Monthly Report: Critical
-                  - "915" # Critical Incident Case Review
+                  - "EMERGENCY"
                 StateSupervisionContactReason.GENERAL_CONTACT:
                   - "GENERAL"
-                  - "874" # Monthly Report: General
                 StateSupervisionContactReason.INTERNAL_UNKNOWN:
-                  - "221" # EPICS Reinforcement
-                  - "222" # EPICS Disapproval
-                  - "908" # Conversion
                   - "CONVERSION"
                   - "GENERAL REINFORCEMENT"
                   - "GENERAL DISAPPROVAL"
+                  - "EMERGENCY,INITIAL"
+                  - "GENERAL,INITIAL"
+                  - "EMERGENCY,GENERAL"
+                  - "EMERGENCY,GENERAL,INITIAL"
           status:
             $enum_mapping:
               $raw_text: contact_result
@@ -237,24 +105,13 @@ output:
                   - "PROGRESS REVIEW"
                   - "FACE TO FACE"
                   - "ARREST"
-                  - "447" # Face to Face
-                  - "534" # GPS/EM Successful Completion
-                  - "539" # 60/60 Completion - Successful
-                  - "543" # End GPS Pilot Successful (D1 D4 D6)
+                  - "COMPLETED"
                 StateSupervisionContactStatus.ATTEMPTED:
                   - "ATTEMPTED"
                   - "INQUIRY"
                   - "FAILED TO REPORT"
-                  - "1" # Attempted Employment Verification
-                  - "2" # Attempted Home Contact
-                  - "4" # Attempted Telephone Contact
-                  - "5" # Attempted Urine Screen
-                  - "535" # GPS/EM Unsuccessful Completion
-                  - "540" # 60/60 Completion - Unsuccessful
-                  - "544" # End GPS Pilot Unsuccessful (D1 D4 D6)
-                StateSupervisionContactStatus.INTERNAL_UNKNOWN:
-                  - "910" # ISI Dosage Progress Review
+                  - "ATTEMPTED,COMPLETED"
           resulted_in_arrest:
             $equal:
               - resulted_in_arrest
-              - $literal("Contact Result':' ARREST")
+              - $literal("true")

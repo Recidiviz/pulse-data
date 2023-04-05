@@ -22,7 +22,9 @@ my_enum_field:
     $raw_text: MY_CSV_COL
     $custom_parser: us_ix_custom_enum_parsers.<function name>
 """
+
 from recidiviz.common.constants.state.state_supervision_contact import (
+    StateSupervisionContactLocation,
     StateSupervisionContactMethod,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
@@ -30,24 +32,110 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
 
+# Mappings list for contact location
 
-def contact_method_from_contact_fields(raw_text: str) -> StateSupervisionContactMethod:
-    location_text, type_text = raw_text.split("##")
-    if location_text == "TELEPHONE":
+ALTERNATIVE_EMPLOYMENT_LOCATION = ["ALTERNATE WORK SITE"]
+
+JAIL_LOCATION = [
+    "JAIL",
+]
+
+COURT_LOCATION = [
+    "COURT",
+    "DRUG COURT",
+]
+
+FIELD_LOCATION = [
+    "FIELD",
+    "COMMUNITY SERVICE SITE",
+]
+
+LAW_ENFORCEMENT_LOCATION = [
+    "LAW ENFORCEMENT AGENCY",
+]
+
+OFFICE_LOCATION = [
+    "OFFICE",
+    "INTERSTATE OFFICE",
+]
+
+PAROLE_COMMISSION_LOCATION = [
+    "PAROLE COMMISSION",
+]
+
+RESIDENCE_LOCATION = [
+    "RESIDENCE",
+    "OTHER RESIDENCE",
+]
+
+EMPLOYMENT_LOCATION = [
+    "EMPLOYER",
+]
+
+TREATMENT_PROVIDER_LOCATION = [
+    "TREATMENT PROVIDER",
+]
+
+
+def contact_location_from_contact_locations_list(
+    raw_text: str,
+) -> StateSupervisionContactLocation:
+    """Determines which supervision contact location to map to based on a list of concatenated supervision contact locations"""
+
+    locations = raw_text.split(",")
+
+    if any(location in RESIDENCE_LOCATION for location in locations):
+        return StateSupervisionContactLocation.RESIDENCE
+
+    if any(location in TREATMENT_PROVIDER_LOCATION for location in locations):
+        return StateSupervisionContactLocation.TREATMENT_PROVIDER
+
+    if any(location in OFFICE_LOCATION for location in locations):
+        return StateSupervisionContactLocation.SUPERVISION_OFFICE
+
+    if any(location in FIELD_LOCATION for location in locations):
+        return StateSupervisionContactLocation.FIELD
+
+    if any(location in PAROLE_COMMISSION_LOCATION for location in locations):
+        return StateSupervisionContactLocation.PAROLE_COMMISSION
+
+    if any(location in EMPLOYMENT_LOCATION for location in locations):
+        return StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT
+
+    if any(location in COURT_LOCATION for location in locations):
+        return StateSupervisionContactLocation.COURT
+
+    if any(location in LAW_ENFORCEMENT_LOCATION for location in locations):
+        return StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY
+
+    if any(location in ALTERNATIVE_EMPLOYMENT_LOCATION for location in locations):
+        return StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT
+
+    if any(location in JAIL_LOCATION for location in locations):
+        return StateSupervisionContactLocation.JAIL
+
+    return StateSupervisionContactLocation.INTERNAL_UNKNOWN
+
+
+def contact_method_from_contact_methods_list(
+    raw_text: str,
+) -> StateSupervisionContactMethod:
+    """Determines which supervision contact method to map to based on a list of concatenated supervision contact methods"""
+
+    methods = raw_text.split(",")
+
+    if "TELEPHONE" in methods:
         return StateSupervisionContactMethod.TELEPHONE
-    if location_text in ("MAIL", "EMAIL", "FAX", "WBOR"):
+
+    if "WRITTEN_MESSAGE" in methods:
         return StateSupervisionContactMethod.WRITTEN_MESSAGE
-    if type_text == "VIRTUAL":
+
+    if "VIRTUAL" in methods:
         return StateSupervisionContactMethod.VIRTUAL
-    if type_text == "WRITTEN CORRESPONDENCE":
-        return StateSupervisionContactMethod.WRITTEN_MESSAGE
-    if (
-        type_text not in ("COLLATERAL", "MENTAL HEALTH COLLATERAL")
-        and location_text != "NONE"
-    ):
+
+    if "IN_PERSON" in methods:
         return StateSupervisionContactMethod.IN_PERSON
-    if type_text in ("NEGATIVE CONTACT", "447", "OFFICE"):
-        return StateSupervisionContactMethod.IN_PERSON
+
     return StateSupervisionContactMethod.INTERNAL_UNKNOWN
 
 
