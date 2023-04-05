@@ -1869,6 +1869,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             response_dict = assert_type(response.json, dict)
             self.assertEqual(len(response_dict["metrics"]), 8)
             self.assertEqual(len(response_dict["non_metric_errors"]), 0)
+            self.assertEqual(len(response_dict["updated_report_ids"]), 0)
+            self.assertEqual(len(response_dict["new_reports"]), 9)
             spreadsheet = self.session.query(Spreadsheet).one()
             self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
             self.assertEqual(
@@ -1918,6 +1920,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "02 2023 Metrics",
                 },
             )
+            self.assertIsNotNone(response_dict.get("updated_report_ids"))
+            self.assertIsNotNone(response_dict.get("new_reports"))
 
     def test_get_spreadsheets(self) -> None:
         user_agency = self.test_schema_objects.test_agency_E

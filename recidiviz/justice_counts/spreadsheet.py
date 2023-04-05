@@ -19,7 +19,7 @@ import datetime
 import itertools
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -213,6 +213,8 @@ class SpreadsheetInterface:
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
+        Set[int],
+        List[int],
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
         user_account = (
@@ -226,7 +228,10 @@ class SpreadsheetInterface:
             user_account=user_account,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
-        metric_key_to_datapoint_jsons, metric_key_to_errors = uploader.upload_workbook(
+        (
+            metric_key_to_datapoint_jsons,
+            metric_key_to_errors,
+        ) = uploader.upload_workbook(
             session=session,
             xls=xls,
             metric_definitions=metric_definitions,
@@ -256,7 +261,12 @@ class SpreadsheetInterface:
             spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
 
-        return metric_key_to_datapoint_jsons, metric_key_to_errors
+        return (
+            metric_key_to_datapoint_jsons,
+            metric_key_to_errors,
+            uploader.updated_report_ids,
+            uploader.existing_report_ids,
+        )
 
     @staticmethod
     def get_spreadsheet_path(spreadsheet: schema.Spreadsheet) -> GcsfsFilePath:
@@ -274,6 +284,8 @@ class SpreadsheetInterface:
         ],
         metric_definitions: List[MetricDefinition],
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        updated_report_ids: Set[int],
+        new_report_jsons: List[Dict[str, Any]],
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
@@ -359,4 +371,13 @@ class SpreadsheetInterface:
         # This is an ingest-blocking error because in this scenario we are not able
         # to convert the rows into datapoints.
         non_metric_errors = [e.to_json() for e in metric_key_to_errors.get(None, [])]
-        return {"metrics": metrics, "non_metric_errors": non_metric_errors}
+        updated_report_ids_list = (
+            list(updated_report_ids) if updated_report_ids is not None else []
+        )
+
+        return {
+            "metrics": metrics,
+            "non_metric_errors": non_metric_errors,
+            "updated_report_ids": updated_report_ids_list,
+            "new_reports": new_report_jsons,
+        }

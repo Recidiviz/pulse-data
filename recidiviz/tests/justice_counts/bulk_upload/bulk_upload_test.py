@@ -992,3 +992,78 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(reports[0].status.value, "DRAFT")
             self.assertEqual(reports[3].status.value, "DRAFT")
             self.assertEqual(reports[6].status.value, "DRAFT")
+
+    def test_update_existing_report_and_creating_new_report(self) -> None:
+        """
+        When uploading a spreadsheet that modifies an existing report and
+        creates a new report, the response should include:
+            * `updated_report_ids`: a list of existing modified reports' IDs
+            * `new_reports`: a list of newly created reports (overview dict)
+        """
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheet_names_to_skip={"funding"},
+                sheetnames_with_null_data={"use_of_force"},
+            )
+            workbook_uploader = WorkbookUploader(
+                system=schema.System.PRISONS,
+                agency_id=self.prison_agency_id,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
+
+            # Create 9 reports
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+
+            # There should be no existing report ids and all 9 newly created
+            # reports should appear in `new_report_ids`
+            all_report_ids = ReportInterface.get_report_ids_by_agency_id(
+                session=session, agency_id=self.prison_agency_id
+            )
+            new_report_ids = [
+                id
+                for id in all_report_ids
+                if id not in workbook_uploader.existing_report_ids
+            ]
+            self.assertEqual(len(workbook_uploader.existing_report_ids), 0)
+            self.assertEqual(len(new_report_ids), 9)
+
+            # Upload workbook with no changes to the datapoints
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            self.assertEqual(len(workbook_uploader.updated_report_ids), 0)
+
+            # Upload workbook with changes to the datapoints that affect Report IDs 7 & 8
+            create_excel_file(
+                system=schema.System.PRISONS,
+                sheet_names_to_vary_values={"funding"},
+                sheetnames_with_null_data={"use_of_force"},
+            )
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+            reports = ReportInterface.get_reports_by_agency_id(
+                session, agency_id=self.prison_agency_id, include_datapoints=True
+            )
+            self.assertEqual(len(reports), 9)
+            self.assertEqual(len(workbook_uploader.updated_report_ids), 2)
+            self.assertEqual(
+                workbook_uploader.updated_report_ids, {reports[3].id, reports[6].id}
+            )

@@ -1085,6 +1085,8 @@ def get_api_blueprint(
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
+                updated_report_ids,
+                existing_report_ids,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
                 spreadsheet=spreadsheet,
@@ -1097,19 +1099,34 @@ def get_api_blueprint(
 
             current_session.commit()
 
+            all_reports = ReportInterface.get_reports_by_agency_id(
+                session=current_session,
+                agency_id=agency_id,
+                include_datapoints=False,
+            )
+            new_report_jsons = [
+                ReportInterface.to_json_response(report=report, editor_id_to_json={})
+                for report in all_reports
+                if report.id not in existing_report_ids
+            ]
+
             return jsonify(
                 SpreadsheetInterface.get_ingest_spreadsheet_json(
                     metric_key_to_errors=metric_key_to_errors,
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_definitions=metric_definitions,
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+                    updated_report_ids=updated_report_ids,
+                    new_report_jsons=new_report_jsons,
                 )
             )
 
         current_session.commit()
         return jsonify(
             SpreadsheetInterface.get_spreadsheets_json(
-                spreadsheets=[spreadsheet], session=current_session, user=user
+                spreadsheets=[spreadsheet],
+                session=current_session,
+                user=user,
             ).pop()
         )
 

@@ -21,7 +21,7 @@ import itertools
 import logging
 from collections import defaultdict
 from itertools import groupby
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
 from sqlalchemy.orm import Session
@@ -88,6 +88,10 @@ class WorkbookUploader:
             str,
             Dict[Tuple[datetime.date, datetime.date], Optional[int]],
         ] = defaultdict(dict)
+        # A list of existing report IDs
+        self.existing_report_ids: List[int]
+        # A set of existing report IDs that have been changed/updated after bulk upload
+        self.updated_report_ids: Set[int] = set()
 
     def upload_workbook(
         self,
@@ -107,6 +111,7 @@ class WorkbookUploader:
         reports = ReportInterface.get_reports_by_agency_id(
             session, agency_id=self.agency_id, include_datapoints=True
         )
+        self.existing_report_ids = [report.id for report in reports]
         reports_sorted_by_time_range = sorted(
             reports, key=lambda x: (x.date_range_start, x.date_range_end)
         )
@@ -117,6 +122,7 @@ class WorkbookUploader:
                 key=lambda x: (x.date_range_start, x.date_range_end),
             )
         }
+
         existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
             reports=reports
         )
@@ -191,7 +197,10 @@ class WorkbookUploader:
             metric_key_to_successfully_ingested_sheet_names=metric_key_to_successfully_ingested_sheet_names,
         )
 
-        return self.metric_key_to_datapoint_jsons, self.metric_key_to_errors
+        return (
+            self.metric_key_to_datapoint_jsons,
+            self.metric_key_to_errors,
+        )
 
     def _update_report_status(
         self,
@@ -216,10 +225,16 @@ class WorkbookUploader:
             existing_datapoints_dict_unchanged.keys()
         )
         for different_key in unique_key_difference:
-            # datapoint that previoiusly did not exist has been added to report
+            # datapoint that previously did not exist has been added to report
             updated_report = reports_by_time_range[
                 (different_key[0], different_key[1])
             ][0]
+            # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
+            if updated_report.id is not None and updated_report.id in set(
+                self.existing_report_ids
+            ):
+                self.updated_report_ids.add(updated_report.id)
+
             if updated_report.status.value != "DRAFT":
                 ReportInterface.update_report_metadata(
                     report=updated_report,
@@ -242,6 +257,9 @@ class WorkbookUploader:
                 updated_report = reports_by_time_range[(unique_key[0], unique_key[1])][
                     0
                 ]
+                # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
+                self.updated_report_ids.add(updated_report.id)
+
                 if updated_report.status.value != "DRAFT":
                     ReportInterface.update_report_metadata(
                         report=updated_report,
