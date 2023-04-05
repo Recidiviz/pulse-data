@@ -105,6 +105,19 @@ class ReportInterface:
             .all()
         )
 
+    @staticmethod
+    def get_report_ids_by_agency_id(
+        session: Session,
+        agency_id: int,
+    ) -> List[int]:
+        """Get a list of report IDs by agency ID"""
+        report_id_tuples = (
+            session.query(schema.Report.id)
+            .filter(schema.Report.source_id == agency_id)
+            .all()
+        )
+        return [tuple[0] for tuple in report_id_tuples]
+
     ### Update DB ###
 
     @staticmethod
