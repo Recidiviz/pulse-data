@@ -69,7 +69,7 @@ locals {
       {
         action      = "deny(403)"
         priority    = "1007"
-        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack', 'owasp-crs-v030301-id921150-protocolattack']})"
+        expression  = "evaluatePreconfiguredWaf('protocolattack-v33-stable', {'sensitivity': 1, 'opt_out_rule_ids': ['owasp-crs-v030301-id921170-protocolattack', 'owasp-crs-v030301-id921150-protocolattack', 'owasp-crs-v030301-id921120-protocolattack']})"
         description = "Protocol attack"
       },
       {
