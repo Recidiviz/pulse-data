@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_view import (
 )
 from recidiviz.calculator.query.justice_counts import dataset_config
 from recidiviz.justice_counts.dimensions import location
-from recidiviz.justice_counts.dimensions.base import Dimension
+from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 FETCH_AND_FILTER_METRIC_VIEW_TEMPLATE = """
@@ -295,7 +295,7 @@ class SpatialAggregationViewBuilder(SimpleBigQueryViewBuilder):
         metric_name: str,
         input_view: BigQueryViewBuilder,
         partition_columns: Set[str],
-        partition_dimensions: Set[Type[Dimension]],
+        partition_dimensions: Set[Type[DimensionBase]],
         context_columns: Dict[str, ContextAggregation],
         value_columns: Set[str],
         collapse_dimensions_filter: str = "FALSE",
@@ -989,7 +989,7 @@ class DimensionsToColumnsViewBuilder(SimpleBigQueryViewBuilder):
 
 @attr.s(frozen=True)
 class Aggregation:
-    dimension: Type[location.Dimension] = attr.ib()
+    dimension: Type[location.DimensionBase] = attr.ib()
 
     # Whether the data for this dimension must be comprehensive to be included in the output. Here comprehensive means
     # that adding up all the values for this dimension would give us the correct total.
@@ -1020,7 +1020,7 @@ class CalculatedMetric:
     metric: schema.MetricType = attr.ib()
 
     # Only include data that matches these filters.
-    filtered_dimensions: List[Dimension] = attr.ib()
+    filtered_dimensions: List[DimensionBase] = attr.ib()
 
     # Aggregate the data, keeping these dimensions. The key is used as the name of the column in the output.
     aggregated_dimensions: Dict[str, Aggregation] = attr.ib()
@@ -1032,7 +1032,7 @@ class CalculatedMetric:
         return view_prefix_for_metric_name(self.output_name)
 
     @property
-    def _comprehensive_aggregations(self) -> List[Type[Dimension]]:
+    def _comprehensive_aggregations(self) -> List[Type[DimensionBase]]:
         return [
             aggregation.dimension
             for aggregation in self.aggregated_dimensions.values()
@@ -1040,7 +1040,7 @@ class CalculatedMetric:
         ]
 
     @property
-    def _noncomprehensive_aggregations(self) -> List[Type[Dimension]]:
+    def _noncomprehensive_aggregations(self) -> List[Type[DimensionBase]]:
         return [
             aggregation.dimension
             for aggregation in self.aggregated_dimensions.values()
@@ -1048,7 +1048,7 @@ class CalculatedMetric:
         ]
 
     @property
-    def input_allowed_filters(self) -> List[Type[Dimension]]:
+    def input_allowed_filters(self) -> List[Type[DimensionBase]]:
         """Filters that a table definition can have and still be used as input for this calculation."""
         return [
             type(filtered_dimension) for filtered_dimension in self.filtered_dimensions

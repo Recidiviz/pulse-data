@@ -19,13 +19,8 @@
 import enum
 import re
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Optional, Type, TypeVar
 
 import attr
-
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-
-DimensionT = TypeVar("DimensionT", bound="Dimension")
 
 
 class DimensionBase:
@@ -97,58 +92,8 @@ class DimensionBase:
         return self.to_enum().name
 
 
-class Dimension(DimensionBase):
-    """Each dimension is represented as a class that is used to hold the values for that dimension and perform any
-    necessary validation. All dimensions are categorical. Those with a pre-defined set of values are implemented as
-    enums. Others are classes with a single text field to hold any value, and are potentially normalized to a
-    pre-defined set of values as a separate dimension.
-    """
-
-    @classmethod
-    @abstractmethod
-    def get(
-        cls: Type[DimensionT],
-        dimension_cell_value: str,
-        enum_overrides: Optional[EnumOverrides] = None,
-    ) -> DimensionT:
-        """Create an instance of the dimension based on the given value.
-
-        Raises an error if it is unable to create an instance of a dimension. Only returns None if the value is
-        explicitly ignored in `enum_overrides`.
-        """
-
-    @classmethod
-    @abstractmethod
-    def build_overrides(
-        cls: Type[DimensionT], mapping_overrides: Dict[str, str]
-    ) -> EnumOverrides:
-        """
-        Builds EnumOverrides for this Dimension, based on the provided mapping_overrides.
-        Should raise an error if this Dimension is not normalized or if overrides are not supported.
-        """
-
-    @classmethod
-    @abstractmethod
-    def is_normalized(cls) -> bool:
-        """
-        Returns whether the dimensions cls is normalized
-        """
-
-    @classmethod
-    @abstractmethod
-    def get_generated_dimension_classes(cls) -> List[Type["Dimension"]]:
-        """Returns a list of Dimensions that the current dimension will generate"""
-
-    @classmethod
-    @abstractmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List["Dimension"]:
-        """Generates Dimensions based on the dimension cell value provided"""
-
-
 @attr.s(frozen=True)
-class RawDimension(Dimension, metaclass=ABCMeta):
+class RawDimension(DimensionBase, metaclass=ABCMeta):
     """Base class to use to create a raw version of a normalized dimension.
 
     Child classes are typically created by passing a normalized dimension class to `raw_type_for_dimension`, which will
@@ -156,34 +101,6 @@ class RawDimension(Dimension, metaclass=ABCMeta):
     """
 
     value: str = attr.ib(converter=str)
-
-    @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "RawDimension":
-        if enum_overrides is not None:
-            raise ValueError(
-                f"Unexpected enum_overrides when building raw dimension value: {enum_overrides}"
-            )
-        return cls(dimension_cell_value)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        raise ValueError("Can't raise override for RawDimension class")
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return False
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return []
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return []
 
     @property
     def dimension_value(self) -> str:
