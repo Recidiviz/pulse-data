@@ -2895,6 +2895,13 @@ class StateEmploymentPeriod(StateBase, _ReferencesStatePersonSharedColumns):
     )
 
     employer_name = Column(String(255), comment="The name of the person's employer.")
+    employer_address = Column(
+        String(255),
+        comment=(
+            "Physical address where the person goes to work. May also use the employer "
+            "mailing address as a fallback if we don’t have the physical address."
+        ),
+    )
     job_title = Column(String(255), comment="The name of the person's job position.")
 
     end_reason = Column(

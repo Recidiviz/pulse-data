@@ -856,6 +856,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             end_reason=StateEmploymentPeriodEndReason.QUIT,
             end_reason_raw_text="Personal",
             employer_name="Acme, Inc.",
+            employer_address="123 Fake St, Anytown, XX, 00000",
             job_title=None,
         )
 
@@ -871,6 +872,7 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             end_reason=StateEmploymentPeriodEndReason.QUIT,
             end_reason_raw_text="PERSONAL",
             employer_name="ACME, INC.",
+            employer_address="123 FAKE ST, ANYTOWN, XX, 00000",
             job_title=None,
         )
 

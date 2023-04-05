@@ -1603,6 +1603,9 @@ class StateEmploymentPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr)
     employer_name: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
+    employer_address: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
     job_title: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )

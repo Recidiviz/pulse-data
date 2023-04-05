@@ -536,6 +536,7 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             end_reason=StateEmploymentPeriodEndReason.QUIT.value,
             end_reason_raw_text="PERSONAL",
             employer_name="ACME, INC.",
+            employer_address="123 FAKE ST, ANYTOWN, XX, 00000",
             job_title=None,
         )
     ],
