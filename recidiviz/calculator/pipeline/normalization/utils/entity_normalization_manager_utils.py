@@ -34,6 +34,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.pr
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.sentence_normalization_manager import (
     SentenceNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
+    SupervisionContactNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
@@ -76,6 +79,7 @@ NORMALIZATION_MANAGERS: List[Type[EntityNormalizationManager]] = [
     ViolationResponseNormalizationManager,
     AssessmentNormalizationManager,
     SentenceNormalizationManager,
+    SupervisionContactNormalizationManager,
 ]
 
 

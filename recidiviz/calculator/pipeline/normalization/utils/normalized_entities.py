@@ -35,6 +35,7 @@ from recidiviz.persistence.entity.state.entities import (
     StatePerson,
     StateProgramAssignment,
     StateSupervisionCaseTypeEntry,
+    StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolatedConditionEntry,
@@ -200,6 +201,17 @@ class NormalizedStateProgramAssignment(
     StateProgramAssignment, NormalizedStateEntity, SequencedEntityMixin
 ):
     """Stores instances of StateProgramAssignment entities that have been
+    normalized and are prepared to be used in calculations."""
+
+
+# StateSupervisionContact subtree
+@attr.s(
+    eq=False,
+    kw_only=True,
+    field_transformer=add_normalized_entity_validator_to_ref_fields,
+)
+class NormalizedStateSupervisionContact(StateSupervisionContact, NormalizedStateEntity):
+    """Stores instances of StateSupervisionContact entities that have been
     normalized and are prepared to be used in calculations."""
 
 
