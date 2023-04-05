@@ -42,7 +42,6 @@ from googleapiclient.http import MediaIoBaseDownload
 
 from recidiviz.common.constants import states
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.tools.justice_counts.manual_upload import csv_filename
 from recidiviz.utils.google_drive import get_credentials
 
 # If modifying these scopes, delete the file token.pickle from your credentials directory.
@@ -50,6 +49,14 @@ JUSTICE_COUNTS_SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/spreadsheets",
 ]
+
+
+def _normalize(name: str) -> str:
+    return name.replace("/", "_")
+
+
+def csv_filename(sheet_name: str, worksheet_name: str) -> str:
+    return f"{_normalize(sheet_name)} - {_normalize(worksheet_name)}.csv"
 
 
 def get_drive_service(creds: Credentials) -> Resource:
