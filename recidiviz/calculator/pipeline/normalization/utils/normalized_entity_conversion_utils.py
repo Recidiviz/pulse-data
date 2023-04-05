@@ -297,10 +297,10 @@ def convert_entities_to_normalized_dicts(
 
     # First check if the entity has a many-to-many relationship with its children
     # instead of a 1-to-many relationship or 1-to-1 relationship
+    many_to_many_relationships: Set[str] = set()
     for entity in entities:
         entity_cls = type(entity)
         entity_cls_name = entity_cls.__name__
-        many_to_many_relationships: Set[str] = set()
 
         forward_fields = field_index.get_all_core_entity_fields(
             entity, EntityFieldType.FORWARD_EDGE
@@ -316,7 +316,7 @@ def convert_entities_to_normalized_dicts(
                 continue
 
             field_value = entity.get_field(field)
-            if field_value and related_entity_cls_name:
+            if field_value is not None and related_entity_cls_name:
                 field_is_list = isinstance(field_value, list)
                 referenced_normalized_class = (
                     normalized_entity_class_with_base_class_name(
