@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""View logic to prepare US_ND supervision staff data for Workflows"""
+"""View logic to prepare US_ID supervision staff data for Workflows"""
 
 US_ID_SUPERVISION_STAFF_TEMPLATE = """
     WITH 
@@ -33,14 +33,15 @@ US_ID_SUPERVISION_STAFF_TEMPLATE = """
             ids.state_code,
             full_name AS name,
             districts.district_name AS district,
-            roster.email_address AS email,
+            email_address AS email,
             true AS has_caseload,
             false AS has_facility_caseload,
             names.given_names as given_names,
             names.surname as surname,
         FROM caseload_staff_ids ids
-        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_id_roster` roster
-            ON roster.external_id = ids.id
+        LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
+            ON ids.id = r.external_id
+            AND r.state_code = 'US_ID'
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
             ON ids.id = names.external_id 
             AND ids.state_code = names.state_code

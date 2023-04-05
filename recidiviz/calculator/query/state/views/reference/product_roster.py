@@ -43,7 +43,7 @@ PRODUCT_ROSTER_QUERY_TEMPLATE = """
             AND COALESCE(user_override.role, roster.role) = state_role.role
         FULL OUTER JOIN
             `{project_id}.{case_triage_federated_dataset_id}.permissions_override` permissions_override
-        USING (email_address)
+        USING(email_address)
     )
     SELECT
         {joined_columns},

@@ -29,20 +29,22 @@ US_IX_SUPERVISION_STAFF_TEMPLATE = """
     )
     , caseload_staff AS (
         SELECT
-            ids.id,
+            UPPER(ids.id) AS id,
             ids.state_code,
-            full_name AS name,
+            COALESCE(full_name, first_name || " " || last_name) AS name,
             districts.district_name AS district,
-            roster.email_address AS email,
+            email_address AS email,
             true AS has_caseload,
             false AS has_facility_caseload,
-            names.given_names as given_names,
-            names.surname as surname,
+            COALESCE(names.given_names, first_name) as given_names,
+            COALESCE(names.surname, last_name) as surname,
         FROM caseload_staff_ids ids
-        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_ix_roster` roster
-            ON roster.external_id = ids.id
+        LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
+            ON UPPER(ids.id) = UPPER(r.external_id)
+            # The users in the roster all have US_ID state code
+            AND r.state_code = 'US_ID'
         LEFT JOIN `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` names
-            ON ids.id = names.external_id 
+            ON UPPER(ids.id) = UPPER(names.external_id) 
             AND ids.state_code = names.state_code
         LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
             ON ids.state_code = districts.state_code 
