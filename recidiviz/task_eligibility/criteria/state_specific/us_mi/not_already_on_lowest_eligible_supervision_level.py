@@ -76,7 +76,7 @@ _QUERY_TEMPLATE = f"""
         end_date,
         --if requires_so_registration AND on_lowest_level, then meets_criteria is FALSE
         NOT (LOGICAL_AND(on_lowest_level) AND LOGICAL_AND(requires_so_registration)) AS meets_criteria,
-        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT supervision_level IGNORE NULLS) AS supervision_level, 
+        TO_JSON(STRUCT(MAX(supervision_level) AS supervision_level, 
                         LOGICAL_AND(requires_so_registration) AS requires_so_registration)) AS reason
     FROM sub_sessions_with_attributes
     GROUP BY 1,2,3,4
