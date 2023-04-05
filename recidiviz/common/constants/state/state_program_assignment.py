@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     DENIED = state_enum_strings.state_program_assignment_participation_status_denied
@@ -39,10 +37,6 @@ class StateProgramAssignmentParticipationStatus(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateProgramAssignmentParticipationStatus"]:
-        return _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -66,15 +60,4 @@ _STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_VALUE_DESCRIPTIONS: Dict[
     "the person to participate in the program is pending approval.",
     StateProgramAssignmentParticipationStatus.REFUSED: "Used when the person has "
     "refused to participate in the program.",
-}
-
-_STATE_PROGRAM_ASSIGNMENT_PARTICIPATION_STATUS_MAP = {
-    "DENIED": StateProgramAssignmentParticipationStatus.DENIED,
-    "DISCHARGED": StateProgramAssignmentParticipationStatus.DISCHARGED,
-    "EXTERNAL UNKNOWN": StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
-    "IN PROGRESS": StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-    "PENDING": StateProgramAssignmentParticipationStatus.PENDING,
-    "PRESENT WITHOUT INFO": StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO,
-    "REFUSED": StateProgramAssignmentParticipationStatus.REFUSED,
-    "INTERNAL UNKNOWN": StateProgramAssignmentParticipationStatus.INTERNAL_UNKNOWN,
 }

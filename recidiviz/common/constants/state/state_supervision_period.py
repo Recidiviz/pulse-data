@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     """Enum that denotes what type of supervision someone is serving at a moment in
@@ -50,10 +48,6 @@ class StateSupervisionPeriodSupervisionType(StateEntityEnum):
     PROBATION = state_enum_strings.state_supervision_period_supervision_type_probation
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionPeriodSupervisionType"]:
-        return _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -117,8 +111,6 @@ _STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_VALUE_DESCRIPTIONS: Dict[
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     """Admission reasons for StateSupervisionPeriod"""
@@ -149,10 +141,6 @@ class StateSupervisionPeriodAdmissionReason(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionPeriodAdmissionReason"]:
-        return _STATE_SUPERVISION_ADMISSION_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -198,8 +186,7 @@ _STATE_SUPERVISION_ADMISSION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "`StateSupervisionLevel`).",
 }
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
+
 @unique
 class StateSupervisionLevel(StateEntityEnum):
     """Possible supervision levels that a person can be supervised at."""
@@ -278,10 +265,6 @@ class StateSupervisionLevel(StateEntityEnum):
             StateSupervisionLevel.HIGH: 3,
             StateSupervisionLevel.MAXIMUM: 4,
         }
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionLevel"]:
-        return _STATE_SUPERVISION_LEVEL_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -365,8 +348,6 @@ _STATE_SUPERVISION_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     """Termination reasons for StateSupervisionPeriod"""
@@ -408,10 +389,6 @@ class StateSupervisionPeriodTerminationReason(StateEntityEnum):
     VACATED = state_enum_strings.state_supervision_period_termination_reason_vacated
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionPeriodTerminationReason"]:
-        return _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -482,92 +459,6 @@ _STATE_SUPERVISION_TERMINATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "incarceration or supervision related to the vacated conviction. This is distinct "
     "from `PARDONED`, because the sentence was cleared as a result of it being deemed "
     "legally void.",
-}
-
-
-_STATE_SUPERVISION_PERIOD_SUPERVISION_TYPE_MAP = {
-    "ABSCONSION": StateSupervisionPeriodSupervisionType.ABSCONSION,
-    "BENCH WARRANT": StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
-    "COMMUNITY CONFINEMENT": StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
-    "DUAL": StateSupervisionPeriodSupervisionType.DUAL,
-    "EXTERNAL UNKNOWN": StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN,
-    "INFORMAL PROBATION": StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
-    "INTERNAL UNKNOWN": StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN,
-    "INVESTIGATION": StateSupervisionPeriodSupervisionType.INVESTIGATION,
-    "PAROLE": StateSupervisionPeriodSupervisionType.PAROLE,
-    "PROBATION": StateSupervisionPeriodSupervisionType.PROBATION,
-}
-
-
-_STATE_SUPERVISION_ADMISSION_TYPE_MAP = {
-    "ABSCONDED": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-    "ABSCONSION": StateSupervisionPeriodAdmissionReason.ABSCONSION,
-    "RELEASE FROM INCARCERATION": StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
-    "COURT SENTENCE": StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-    "SENTENCE": StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-    "EXTERNAL UNKNOWN": StateSupervisionPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
-    "INVESTIGATION": StateSupervisionPeriodAdmissionReason.INVESTIGATION,
-    "TRANSFER WITHIN STATE": StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-    "TRANSFER FROM OTHER JURISDICTION": StateSupervisionPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
-    "RETURN FROM ABSCOND": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-    "RETURN FROM ABSCONSION": StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-    "RETURN FROM SUSPENSION": StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
-    "SUSPENDED": StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION,
-}
-
-_STATE_SUPERVISION_LEVEL_MAP: Dict[str, StateSupervisionLevel] = {
-    "EXTERNAL UNKNOWN": StateSupervisionLevel.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionLevel.INTERNAL_UNKNOWN,
-    "PRESENT WITHOUT INFO": StateSupervisionLevel.PRESENT_WITHOUT_INFO,
-    "INCARCERATED": StateSupervisionLevel.IN_CUSTODY,
-    "IN CUSTODY": StateSupervisionLevel.IN_CUSTODY,
-    "MINIMUM": StateSupervisionLevel.MINIMUM,
-    "MIN": StateSupervisionLevel.MINIMUM,
-    "MEDIUM": StateSupervisionLevel.MEDIUM,
-    "MED": StateSupervisionLevel.MEDIUM,
-    "HIGH": StateSupervisionLevel.HIGH,
-    "MAXIMUM": StateSupervisionLevel.MAXIMUM,
-    "MAX": StateSupervisionLevel.MAXIMUM,
-    "DIVERSION": StateSupervisionLevel.DIVERSION,
-    "INTERSTATE COMPACT": StateSupervisionLevel.INTERSTATE_COMPACT,
-    "INTERSTATE": StateSupervisionLevel.INTERSTATE_COMPACT,
-    "UNSUPERVISED": StateSupervisionLevel.UNSUPERVISED,
-    "LIMITED": StateSupervisionLevel.LIMITED,
-    "ELECTRONIC MONITORING ONLY": StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY,
-    "UNASSIGNED": StateSupervisionLevel.UNASSIGNED,
-    "WARRANT": StateSupervisionLevel.WARRANT,
-    "ABSCONSION": StateSupervisionLevel.ABSCONSION,
-    "INTAKE": StateSupervisionLevel.INTAKE,
-    "RESIDENTIAL PROGRAM": StateSupervisionLevel.RESIDENTIAL_PROGRAM,
-    "FURLOUGH": StateSupervisionLevel.FURLOUGH,
-}
-
-_STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
-    "ABSCOND": StateSupervisionPeriodTerminationReason.ABSCONSION,
-    "ABSCONDED": StateSupervisionPeriodTerminationReason.ABSCONSION,
-    "ABSCONSION": StateSupervisionPeriodTerminationReason.ABSCONSION,
-    "ADMITTED TO INCARCERATION": StateSupervisionPeriodTerminationReason.ADMITTED_TO_INCARCERATION,
-    "COMMUTED": StateSupervisionPeriodTerminationReason.COMMUTED,
-    "DEATH": StateSupervisionPeriodTerminationReason.DEATH,
-    "DECEASED": StateSupervisionPeriodTerminationReason.DEATH,
-    "DISCHARGE": StateSupervisionPeriodTerminationReason.DISCHARGE,
-    "DISCHARGED": StateSupervisionPeriodTerminationReason.DISCHARGE,
-    "DISMISSED": StateSupervisionPeriodTerminationReason.VACATED,
-    "EXPIRATION": StateSupervisionPeriodTerminationReason.EXPIRATION,
-    "EXTERNAL UNKNOWN": StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
-    "EXPIRED": StateSupervisionPeriodTerminationReason.EXPIRATION,
-    "INTERNAL UNKNOWN": StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
-    "INVESTIGATION": StateSupervisionPeriodTerminationReason.INVESTIGATION,
-    "PARDONED": StateSupervisionPeriodTerminationReason.PARDONED,
-    "TRANSFER WITHIN STATE": StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-    "TRANSFER TO OTHER JURISDICTION": StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION,
-    "RETURN FROM ABSCONSION": StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
-    "REVOCATION": StateSupervisionPeriodTerminationReason.REVOCATION,
-    "REVOKED": StateSupervisionPeriodTerminationReason.REVOCATION,
-    "SUSPENDED": StateSupervisionPeriodTerminationReason.SUSPENSION,
-    "SUSPENSION": StateSupervisionPeriodTerminationReason.SUSPENSION,
-    "VACATED": StateSupervisionPeriodTerminationReason.VACATED,
 }
 
 

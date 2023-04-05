@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSentenceStatus(StateEntityEnum):
     AMENDED = state_enum_strings.state_sentence_status_amended
@@ -40,10 +38,6 @@ class StateSentenceStatus(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSentenceStatus"]:
-        return _STATE_SENTENCE_STATUS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -92,23 +86,4 @@ _STATE_SENTENCE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "vacated, there is immediate release from any active form of incarceration or "
     "supervision related to the vacated conviction. This is distinct from `PARDONED`, "
     "because the sentence was cleared as a result of it being deemed legally void.",
-}
-
-# MappableEnum.parse will strip punctuation and separate tokens with a single
-# space. Add mappings here using a single space between words and numbers.
-# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_STATE_SENTENCE_STATUS_MAP = {
-    "AMENDED": StateSentenceStatus.AMENDED,
-    "COMMUTED": StateSentenceStatus.COMMUTED,
-    "COMPLETED": StateSentenceStatus.COMPLETED,
-    "EXTERNAL UNKNOWN": StateSentenceStatus.EXTERNAL_UNKNOWN,
-    "PARDONED": StateSentenceStatus.PARDONED,
-    "PENDING": StateSentenceStatus.PENDING,
-    "PRESENT WITHOUT INFO": StateSentenceStatus.PRESENT_WITHOUT_INFO,
-    "REVOKED": StateSentenceStatus.REVOKED,
-    "SANCTIONED": StateSentenceStatus.SANCTIONED,
-    "SERVING": StateSentenceStatus.SERVING,
-    "SUSPENDED": StateSentenceStatus.SUSPENDED,
-    "VACATED": StateSentenceStatus.VACATED,
-    "INTERNAL UNKNOWN": StateSentenceStatus.INTERNAL_UNKNOWN,
 }

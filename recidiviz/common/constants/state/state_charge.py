@@ -17,14 +17,12 @@
 
 """Constants related to a StateCharge entity in the state schema."""
 from enum import unique
-from typing import Dict, Optional
+from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateChargeClassificationType(StateEntityEnum):
     CIVIL = state_enum_strings.state_charge_classification_type_civil
@@ -32,10 +30,6 @@ class StateChargeClassificationType(StateEntityEnum):
     MISDEMEANOR = state_enum_strings.state_charge_classification_type_misdemeanor
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, Optional["StateChargeClassificationType"]]:
-        return _STATE_CHARGE_CLASSIFICATION_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -62,8 +56,6 @@ _STATE_CHARGE_CLASSIFICATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 class StateChargeStatus(StateEntityEnum):
     ACQUITTED = state_enum_strings.state_charge_status_acquitted
     ADJUDICATED = state_enum_strings.state_charge_status_adjudicated
@@ -74,10 +66,6 @@ class StateChargeStatus(StateEntityEnum):
     PRESENT_WITHOUT_INFO = state_enum_strings.present_without_info
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, Optional["StateChargeStatus"]]:
-        return _STATE_CHARGE_STATUS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -103,199 +91,4 @@ _STATE_CHARGE_STATUS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "but there has not yet been a result of the case.",
     StateChargeStatus.TRANSFERRED_AWAY: "Used when the case associated with the charge "
     "has been transferred to another jurisdiction outside of the state.",
-}
-
-
-# MappableEnum.parse will strip punctuation and separate tokens with a single
-# space. Add mappings here using a single space between words and numbers.
-# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_STATE_CHARGE_CLASSIFICATION_TYPE_MAP = {
-    "*": None,
-    "-": None,
-    ".": None,
-    "0": None,
-    "ADMINISTRATIVE": StateChargeClassificationType.CIVIL,
-    "C": StateChargeClassificationType.CIVIL,
-    "CITED CITATION": StateChargeClassificationType.CIVIL,
-    "CIVIL": StateChargeClassificationType.CIVIL,
-    "COMM": StateChargeClassificationType.CIVIL,
-    "CRIMINAL TRAFFIC VIOLATION": StateChargeClassificationType.CIVIL,
-    "ENHANCEMENT": None,
-    "EXTERNAL UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
-    "F": StateChargeClassificationType.FELONY,
-    "FEL": StateChargeClassificationType.FELONY,
-    "FELONY": StateChargeClassificationType.FELONY,
-    "I": StateChargeClassificationType.CIVIL,
-    "INFRACTION": StateChargeClassificationType.CIVIL,
-    "M": StateChargeClassificationType.MISDEMEANOR,
-    "MIS": StateChargeClassificationType.MISDEMEANOR,
-    "MISD": StateChargeClassificationType.MISDEMEANOR,
-    "MISDEMEANOR": StateChargeClassificationType.MISDEMEANOR,
-    "MUNICIPAL ORDINANCE VIOLATION": StateChargeClassificationType.CIVIL,
-    "N A": None,
-    "NA": None,
-    "NON ARREST TRAFFIC VIOLATION": StateChargeClassificationType.CIVIL,
-    "NON MOVING TRAFFIC VIOLATION": StateChargeClassificationType.CIVIL,
-    "SUMMONS": StateChargeClassificationType.CIVIL,
-    "U": StateChargeClassificationType.EXTERNAL_UNKNOWN,
-    "UNKNOWN": StateChargeClassificationType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateChargeClassificationType.INTERNAL_UNKNOWN,
-}
-
-
-# MappableEnum.parse will strip punctuation and separate tokens with a single
-# space. Add mappings here using a single space between words and numbers.
-# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-
-# MappableEnum.parse will strip punctuation and separate tokens with a single
-# space. Add mappings here using a single space between words and numbers.
-# For example, `N/A` can be written as `N A` and `(10%)` can be written as `10`.
-_STATE_CHARGE_STATUS_MAP = {
-    "24HR HOLD": StateChargeStatus.PENDING,
-    "ACQUITTED": StateChargeStatus.ACQUITTED,
-    "ADJUDICATED": StateChargeStatus.ADJUDICATED,
-    "ALT SENT": StateChargeStatus.CONVICTED,
-    "AMENDED": None,
-    "APPEALED": StateChargeStatus.CONVICTED,
-    "BONDED": StateChargeStatus.PENDING,
-    "CASE DISMISSED": StateChargeStatus.DROPPED,
-    "CASE DISPOSED": StateChargeStatus.DROPPED,
-    "CASE RESOLVED": StateChargeStatus.DROPPED,
-    "CONFINEMENT IN RESPO VIOL": StateChargeStatus.CONVICTED,
-    "CHARGE NOLLE PROSEQUI": StateChargeStatus.DROPPED,
-    "CHARGE NOT FILED BY PROSECUTOR": StateChargeStatus.DROPPED,
-    "CHARGES DISMISSED": StateChargeStatus.DROPPED,
-    "CHARGES DROPPED": StateChargeStatus.DROPPED,
-    "CHARGES NOT FILED": StateChargeStatus.DROPPED,
-    "CHG DISMISSED": StateChargeStatus.DROPPED,
-    "COSTS FINES": StateChargeStatus.CONVICTED,
-    "COURT ORDER OF RELEASE": StateChargeStatus.DROPPED,
-    "COURT ORDER RELEASED": StateChargeStatus.DROPPED,
-    "COURT ORDERED RELEASED": StateChargeStatus.DROPPED,
-    "COURT RELEASE": StateChargeStatus.DROPPED,
-    "COURT RELEASED": StateChargeStatus.DROPPED,
-    "CONVICTED": StateChargeStatus.CONVICTED,
-    "COUNTY JAIL TIME": StateChargeStatus.CONVICTED,
-    "DECLINED TO PROSECUTE": StateChargeStatus.DROPPED,
-    "DISMISS": StateChargeStatus.DROPPED,
-    "DISMISSAL": StateChargeStatus.DROPPED,
-    "DISMISSED": StateChargeStatus.DROPPED,
-    "DISMISSED AT COURT": StateChargeStatus.DROPPED,
-    "DISMISSED BY DISTRICT ATTORNEY": StateChargeStatus.DROPPED,
-    "DISMISSED BY THE COURT": StateChargeStatus.DROPPED,
-    "DROPPED": StateChargeStatus.DROPPED,
-    "DROPPED ABANDONED": StateChargeStatus.DROPPED,
-    "DROPPED CHARGES": StateChargeStatus.DROPPED,
-    "DRUG COURT SANCTION": StateChargeStatus.CONVICTED,
-    "ENTERED IN ERROR": None,
-    "ENHANCEMENT": None,
-    # End of Sentence
-    "EXTERNAL UNKNOWN": StateChargeStatus.EXTERNAL_UNKNOWN,
-    "FINAL SENTENCED": StateChargeStatus.CONVICTED,
-    "FINED": StateChargeStatus.CONVICTED,
-    "FOUND NOT GUILTY AT TRIAL": StateChargeStatus.ACQUITTED,
-    "GENERAL": None,
-    "GUILTY": StateChargeStatus.CONVICTED,
-    "GUILTY PEND SENTENCING": StateChargeStatus.CONVICTED,
-    "HELD TO GRAND JURY": StateChargeStatus.PENDING,
-    "INTAKE": StateChargeStatus.PENDING,
-    "LIFTED": StateChargeStatus.DROPPED,
-    "NO GRAND JURY ACTION TAKEN": StateChargeStatus.DROPPED,
-    "M R S": None,
-    "MOOT": StateChargeStatus.DROPPED,
-    # Defendant Not In Court
-    "NIC": StateChargeStatus.PENDING,
-    "NOELLEPR": StateChargeStatus.DROPPED,
-    "NOTFILED": StateChargeStatus.DROPPED,
-    "NOLLE PROS": StateChargeStatus.DROPPED,
-    "NOLLE PROSE": StateChargeStatus.DROPPED,
-    "NOLLE PROSEQUI": StateChargeStatus.DROPPED,
-    "NOLLED PROSSED": StateChargeStatus.DROPPED,
-    "NOLPROSSED": StateChargeStatus.DROPPED,
-    "NG NOT GUILTY": StateChargeStatus.ACQUITTED,
-    "NO INFO": None,
-    "NO PROBABLE CAUSE": StateChargeStatus.DROPPED,
-    "NOT FILED": StateChargeStatus.DROPPED,
-    "NOT GUILTY": StateChargeStatus.ACQUITTED,
-    "NOTICE OF APPEAL": StateChargeStatus.CONVICTED,
-    "NOTICE OF DISCHARGE": StateChargeStatus.CONVICTED,
-    "NOTICE OF DISCHARGE DOC": StateChargeStatus.CONVICTED,
-    "ORDER TO FOLLOW": StateChargeStatus.CONVICTED,
-    "ORDER OF RELEASE": StateChargeStatus.DROPPED,
-    "OTHER": None,
-    "OTHER SEE NOTES": None,
-    "OTHER W EXPLANATION": None,
-    "PAROLE": StateChargeStatus.CONVICTED,
-    "PAROLED": StateChargeStatus.CONVICTED,
-    "PAROLED BY COURT OF RECORD": StateChargeStatus.CONVICTED,
-    "PAROLE PROBATION REINSTATED": StateChargeStatus.CONVICTED,
-    "PAROLE PROBATION REVOKED": StateChargeStatus.CONVICTED,
-    "PELIMARY HEARING": StateChargeStatus.PENDING,
-    "PEND SANCTION": StateChargeStatus.CONVICTED,
-    "PENDIGN ARRIGNMENT": StateChargeStatus.PENDING,
-    "PENDING": StateChargeStatus.PENDING,
-    "PENDING ARRIGNMENT": StateChargeStatus.PENDING,
-    "PENDING CASE": StateChargeStatus.PENDING,
-    "PENDING SANCTION": StateChargeStatus.CONVICTED,
-    "PENDING SEE COMMENTS BELOW": StateChargeStatus.PENDING,
-    "PENDING TRANSPORT": StateChargeStatus.PENDING,
-    "PRESENT WITHOUT INFO": StateChargeStatus.PRESENT_WITHOUT_INFO,
-    "PROB REVOKED": StateChargeStatus.CONVICTED,
-    "PROBATED": StateChargeStatus.CONVICTED,
-    "PROBATION": StateChargeStatus.CONVICTED,
-    "PROBATION AND PAROLE": StateChargeStatus.CONVICTED,
-    "PROBATION HOLD": StateChargeStatus.CONVICTED,
-    "PROBATION REVOCATION": StateChargeStatus.CONVICTED,
-    "PROBATION REVOKED": StateChargeStatus.CONVICTED,
-    "PLEAD": StateChargeStatus.CONVICTED,
-    "RELEASE": StateChargeStatus.DROPPED,
-    "RELEASE PER JUDGE": StateChargeStatus.DROPPED,
-    "RELEASED": StateChargeStatus.DROPPED,
-    "RELEASED BY COURT": StateChargeStatus.DROPPED,
-    "RELEASED BY JUDGE": StateChargeStatus.DROPPED,
-    "RELEASED PER JUDGE": StateChargeStatus.DROPPED,
-    "RELEASED FROM CUSTODY": StateChargeStatus.DROPPED,
-    "RELEASED THIS CASE ONLY": StateChargeStatus.DROPPED,
-    "RELEASE TO WORK RELEASE": StateChargeStatus.CONVICTED,
-    "REPORT IN": StateChargeStatus.CONVICTED,
-    "RESCINDED": StateChargeStatus.DROPPED,
-    "REVOKED": StateChargeStatus.CONVICTED,
-    # Release on your Own Recognizance
-    "ROR": StateChargeStatus.PENDING,
-    # Probably: Sentenced / Community Control
-    "S COMM": StateChargeStatus.CONVICTED,
-    # Probably: Sentenced / Department of Corrections
-    "S DOC": StateChargeStatus.CONVICTED,
-    "S JAIL": StateChargeStatus.CONVICTED,
-    "S PROB": StateChargeStatus.CONVICTED,
-    # Probably: Sentenced / Probation
-    "S PROG": StateChargeStatus.CONVICTED,
-    "SAFE KEEPING": StateChargeStatus.PENDING,
-    "SANCTION": StateChargeStatus.CONVICTED,
-    "SENTENCED": StateChargeStatus.CONVICTED,
-    "SENTENCED ON CHARGES": StateChargeStatus.CONVICTED,
-    "SENTENCED STATE YEARS": StateChargeStatus.CONVICTED,
-    "SENTENCED TO PROBATION": StateChargeStatus.CONVICTED,
-    "SERVE OUT": StateChargeStatus.CONVICTED,
-    "SERVING MISD TIME": StateChargeStatus.CONVICTED,
-    "SERVING SENTENCE": StateChargeStatus.CONVICTED,
-    "SERVING TIME": StateChargeStatus.CONVICTED,
-    "SERVIING TIME": StateChargeStatus.CONVICTED,
-    "SHOCK PROBATED": StateChargeStatus.CONVICTED,
-    "SPECIFY AT NOTES": None,
-    "SUPERVISED PROBATION": StateChargeStatus.CONVICTED,
-    "TEMPORARY CUSTODY ORDER": StateChargeStatus.PENDING,
-    # Turned In By Bondsman
-    "TIBB": StateChargeStatus.PENDING,
-    "TIME SUSPENDED": StateChargeStatus.CONVICTED,
-    "TRANSFERRED AWAY": StateChargeStatus.TRANSFERRED_AWAY,
-    "TRANSFERRED_AWAY": StateChargeStatus.TRANSFERRED_AWAY,
-    "UNDER SENTENCE": StateChargeStatus.CONVICTED,
-    "UNKNOWN": StateChargeStatus.EXTERNAL_UNKNOWN,
-    "WAVIER SIGNED": StateChargeStatus.DROPPED,
-    "WEEKENDER": StateChargeStatus.CONVICTED,
-    "WRIT OF HABEAS CORPUS": None,
-    "WRONG PERSON BOOKED": StateChargeStatus.DROPPED,
-    "UNSPECIFIED": StateChargeStatus.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateChargeStatus.INTERNAL_UNKNOWN,
 }

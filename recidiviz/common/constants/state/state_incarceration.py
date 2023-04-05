@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateIncarcerationType(StateEntityEnum):
     COUNTY_JAIL = state_enum_strings.state_incarceration_type_county_jail
@@ -33,10 +31,6 @@ class StateIncarcerationType(StateEntityEnum):
     STATE_PRISON = state_enum_strings.state_incarceration_type_state_prison
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationType"]:
-        return _STATE_INCARCERATION_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -61,16 +55,4 @@ _STATE_INCARCERATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "of facility in a state other than the one in which the data is coming from.",
     StateIncarcerationType.STATE_PRISON: "Describes being incarcerated in a state "
     "prison.",
-}
-
-
-_STATE_INCARCERATION_TYPE_MAP: Dict[str, StateIncarcerationType] = {
-    "JAIL": StateIncarcerationType.COUNTY_JAIL,
-    "COUNTY JAIL": StateIncarcerationType.COUNTY_JAIL,
-    "EXTERNAL UNKNOWN": StateIncarcerationType.EXTERNAL_UNKNOWN,
-    "FEDERAL PRISON": StateIncarcerationType.FEDERAL_PRISON,
-    "OUT OF STATE": StateIncarcerationType.OUT_OF_STATE,
-    "PRISON": StateIncarcerationType.STATE_PRISON,
-    "STATE PRISON": StateIncarcerationType.STATE_PRISON,
-    "INTERNAL UNKNOWN": StateIncarcerationType.INTERNAL_UNKNOWN,
 }

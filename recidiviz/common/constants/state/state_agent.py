@@ -20,9 +20,6 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
@@ -33,10 +30,6 @@ class StateAgentType(StateEntityEnum):
     SUPERVISION_OFFICER = state_enum_strings.state_agent_supervision_officer
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateAgentType"]:
-        return _STATE_AGENT_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -54,14 +47,6 @@ _STATE_AGENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 }
 
 
-_STATE_AGENT_TYPE_MAP = {
-    "PRESENT WITHOUT INFO": StateAgentType.PRESENT_WITHOUT_INFO,
-    "SUPERVISION OFFICER": StateAgentType.SUPERVISION_OFFICER,
-    "INTERNAL UNKNOWN": StateAgentType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateAgentType.EXTERNAL_UNKNOWN,
-}
-
-
 @unique
 class StateAgentSubtype(StateEntityEnum):
     SUPERVISION_OFFICER = state_enum_strings.state_agent_subtype_supervision_officer
@@ -73,10 +58,6 @@ class StateAgentSubtype(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateAgentSubtype"]:
-        return _STATE_AGENT_SUBTYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -95,12 +76,4 @@ _STATE_AGENT_SUBTYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateAgentSubtype.SUPERVISION_REGIONAL_MANAGER: "A district or regional manager, "
     "usually a supervisor of supervisors, but may sometimes supervise parole "
     "officers/agents directly and also sometimes carry a caseload when the agency is short-staffed.",
-}
-
-_STATE_AGENT_SUBTYPE_MAP = {
-    "SUPERVISION OFFICER": StateAgentSubtype.SUPERVISION_OFFICER,
-    "SUPERVISION OFFICER SUPERVISOR": StateAgentSubtype.SUPERVISION_OFFICER_SUPERVISOR,
-    "SUPERVISION REGIONAL MANAGER": StateAgentSubtype.SUPERVISION_REGIONAL_MANAGER,
-    "INTERNAL UNKNOWN": StateAgentSubtype.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateAgentSubtype.EXTERNAL_UNKNOWN,
 }

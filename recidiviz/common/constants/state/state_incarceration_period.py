@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     """Reasons for admission to a period of incarceration."""
@@ -72,10 +70,6 @@ class StateIncarcerationPeriodAdmissionReason(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodAdmissionReason"]:
-        return _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -150,8 +144,7 @@ _STATE_INCARCERATION_PERIOD_ADMISSION_REASON_VALUE_DESCRIPTIONS: Dict[
     "is transferred from another state, or from federal custody.",
 }
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
+
 @unique
 class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
     """Reasons for release from a period of incarceration."""
@@ -210,10 +203,6 @@ class StateIncarcerationPeriodReleaseReason(StateEntityEnum):
     VACATED = state_enum_strings.state_incarceration_period_release_reason_vacated
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodReleaseReason"]:
-        return _STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -306,8 +295,6 @@ _STATE_INCARCERATION_PERIOD_RELEASE_REASON_VALUE_DESCRIPTIONS: Dict[
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 # TODO(#3275): Update enum name to `StatePurposeForIncarceration` now that there is a 'GENERAL' option
 @unique
 class StateSpecializedPurposeForIncarceration(StateEntityEnum):
@@ -333,10 +320,6 @@ class StateSpecializedPurposeForIncarceration(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSpecializedPurposeForIncarceration"]:
-        return _STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -396,10 +379,6 @@ class StateIncarcerationPeriodCustodyLevel(StateEntityEnum):
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodCustodyLevel"]:
-        return _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_MAP
-
     @classmethod
     def get_enum_description(cls) -> str:
         return "The level of supervision and security employed for a person held in custody."
@@ -408,18 +387,6 @@ class StateIncarcerationPeriodCustodyLevel(StateEntityEnum):
     def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
         return _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_VALUE_DESCRIPTIONS
 
-
-_STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_MAP = {
-    "INTAKE": StateIncarcerationPeriodCustodyLevel.INTAKE,
-    "MINIMUM": StateIncarcerationPeriodCustodyLevel.MINIMUM,
-    "RESTRICTIVE MINIMUM": StateIncarcerationPeriodCustodyLevel.RESTRICTIVE_MINIMUM,
-    "MEDIUM": StateIncarcerationPeriodCustodyLevel.MEDIUM,
-    "CLOSE": StateIncarcerationPeriodCustodyLevel.CLOSE,
-    "MAXIMUM": StateIncarcerationPeriodCustodyLevel.MAXIMUM,
-    "SOLITARY CONFINEMENT": StateIncarcerationPeriodCustodyLevel.SOLITARY_CONFINEMENT,
-    "INTERNAL UNKNOWN": StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateIncarcerationPeriodCustodyLevel.EXTERNAL_UNKNOWN,
-}
 
 _STATE_INCARCERATION_PERIOD_CUSTODY_LEVEL_VALUE_DESCRIPTIONS: Dict[
     StateEntityEnum, str
@@ -468,10 +435,6 @@ class StateIncarcerationPeriodHousingUnitType(StateEntityEnum):
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationPeriodHousingUnitType"]:
-        return _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_MAP
-
     @classmethod
     def get_enum_description(cls) -> str:
         return "The level of supervision and security employed for a person held in custody."
@@ -480,14 +443,6 @@ class StateIncarcerationPeriodHousingUnitType(StateEntityEnum):
     def get_value_descriptions(cls) -> Dict["StateEntityEnum", str]:
         return _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_VALUE_DESCRIPTIONS
 
-
-_STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_MAP = {
-    "TEMPORARY SOLITARY CONFINEMENT": StateIncarcerationPeriodHousingUnitType.TEMPORARY_SOLITARY_CONFINEMENT,
-    "PERMANENT SOLITARY CONFINEMENT": StateIncarcerationPeriodHousingUnitType.PERMANENT_SOLITARY_CONFINEMENT,
-    "GENERAL": StateIncarcerationPeriodHousingUnitType.GENERAL,
-    "INTERNAL UNKNOWN": StateIncarcerationPeriodHousingUnitType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateIncarcerationPeriodHousingUnitType.EXTERNAL_UNKNOWN,
-}
 
 _STATE_INCARCERATION_PERIOD_HOUSING_UNIT_TYPE_VALUE_DESCRIPTIONS: Dict[
     StateEntityEnum, str
@@ -732,82 +687,3 @@ SANCTION_ADMISSION_PURPOSE_FOR_INCARCERATION_VALUES = [
     StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
     StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
 ]
-
-
-_STATE_INCARCERATION_PERIOD_ADMISSION_REASON_MAP = {
-    "ADMITTED IN ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-    "ADMITTED FROM SUPERVISION": StateIncarcerationPeriodAdmissionReason.ADMITTED_FROM_SUPERVISION,
-    "ESCAPE": StateIncarcerationPeriodAdmissionReason.ESCAPE,
-    "ERROR": StateIncarcerationPeriodAdmissionReason.ADMITTED_IN_ERROR,
-    "EXTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
-    "NEW ADMISSION": StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
-    "REVOCATION": StateIncarcerationPeriodAdmissionReason.REVOCATION,
-    "RETURN FROM ESCAPE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE,
-    "RETURN FROM ERRONEOUS RELEASE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
-    "RETURN FROM TEMPORARY RELEASE": StateIncarcerationPeriodAdmissionReason.RETURN_FROM_TEMPORARY_RELEASE,
-    "COURT": StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    "HOSPITAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    "MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    "RETURN FROM MEDICAL": StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    "TEMPORARY CUSTODY": StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
-    "TEMPORARY RELEASE": StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE,
-    "TRANSFER": StateIncarcerationPeriodAdmissionReason.TRANSFER,
-    "TRANSFER FROM OTHER JURISDICTION": StateIncarcerationPeriodAdmissionReason.TRANSFER_FROM_OTHER_JURISDICTION,
-    "SANCTION ADMISSION": StateIncarcerationPeriodAdmissionReason.SANCTION_ADMISSION,
-    "STATUS CHANGE": StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
-}
-
-_STATE_INCARCERATION_PERIOD_RELEASE_REASON_MAP = {
-    "COMMUTED": StateIncarcerationPeriodReleaseReason.COMMUTED,
-    "COMMUTATION": StateIncarcerationPeriodReleaseReason.COMMUTED,
-    "COMPASSIONATE": StateIncarcerationPeriodReleaseReason.COMPASSIONATE,
-    "CONDITIONAL": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    "CONDITIONAL RELEASE": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    "COURT ORDER": StateIncarcerationPeriodReleaseReason.COURT_ORDER,
-    "DEATH": StateIncarcerationPeriodReleaseReason.DEATH,
-    "DECEASED": StateIncarcerationPeriodReleaseReason.DEATH,
-    "EARNED TIME": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "ESCAPED": StateIncarcerationPeriodReleaseReason.ESCAPE,
-    "ESCAPE": StateIncarcerationPeriodReleaseReason.ESCAPE,
-    "EXECUTION": StateIncarcerationPeriodReleaseReason.EXECUTION,
-    "EXPIRED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "EXTERNAL UNKNOWN": StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN,
-    "GOOD TIME": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "INTERNAL UNKNOWN": StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN,
-    "PARDONED": StateIncarcerationPeriodReleaseReason.PARDONED,
-    "PAROLE": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    "PROBATION": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    "RELEASE TO PAROLE": StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
-    "RELEASED FROM ERRONEOUS ADMISSION": StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
-    "RELEASED FROM TEMPORARY CUSTODY": StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
-    "ERROR": StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
-    "RELEASED IN ERROR": StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR,
-    "RELEASED TO SUPERVISION": StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION,
-    "RELEASED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "RETURN FROM ESCAPE": StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE,
-    "RETURN FROM TEMPORARY RELEASE": StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE,
-    "TEMPORARY RELEASE": StateIncarcerationPeriodReleaseReason.TEMPORARY_RELEASE,
-    "TIME EARNED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "TIME SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "SENTENCE SERVED": StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED,
-    "COURT": StateIncarcerationPeriodReleaseReason.TRANSFER,
-    "HOSPITAL": StateIncarcerationPeriodReleaseReason.TRANSFER,
-    "MEDICAL": StateIncarcerationPeriodReleaseReason.TRANSFER,
-    "TRANSFER": StateIncarcerationPeriodReleaseReason.TRANSFER,
-    "TRANSFER TO OTHER JURISDICTION": StateIncarcerationPeriodReleaseReason.TRANSFER_TO_OTHER_JURISDICTION,
-    "VACATED": StateIncarcerationPeriodReleaseReason.VACATED,
-    "STATUS CHANGE": StateIncarcerationPeriodReleaseReason.STATUS_CHANGE,
-}
-
-_STATE_SPECIALIZED_PURPOSE_FOR_INCARCERATION_MAP = {
-    "EXTERNAL UNKNOWN": StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
-    "GENERAL": StateSpecializedPurposeForIncarceration.GENERAL,
-    "PAROLE BOARD HOLD": StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
-    "SHOCK INCARCERATION": StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
-    "TREATMENT IN PRISON": StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-    "TEMPORARY CUSTODY": StateSpecializedPurposeForIncarceration.TEMPORARY_CUSTODY,
-    "WEEKEND CONFINEMENT": StateSpecializedPurposeForIncarceration.WEEKEND_CONFINEMENT,
-}

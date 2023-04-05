@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionContactType(StateEntityEnum):
     COLLATERAL = state_enum_strings.state_supervision_contact_type_collateral
@@ -34,10 +32,6 @@ class StateSupervisionContactType(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionContactType"]:
-        return _STATE_SUPERVISION_CONTACT_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -60,8 +54,6 @@ _STATE_SUPERVISION_CONTACT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] =
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionContactMethod(StateEntityEnum):
     TELEPHONE = state_enum_strings.state_supervision_contact_method_telephone
@@ -72,10 +64,6 @@ class StateSupervisionContactMethod(StateEntityEnum):
     IN_PERSON = state_enum_strings.state_supervision_contact_method_in_person
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionContactMethod"]:
-        return _STATE_SUPERVISION_CONTACT_METHOD_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -102,8 +90,6 @@ _STATE_SUPERVISION_CONTACT_METHOD_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionContactReason(StateEntityEnum):
     EMERGENCY_CONTACT = (
@@ -117,10 +103,6 @@ class StateSupervisionContactReason(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionContactReason"]:
-        return _STATE_SUPERVISION_CONTACT_REASON_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -143,18 +125,12 @@ _STATE_SUPERVISION_CONTACT_REASON_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionContactStatus(StateEntityEnum):
     ATTEMPTED = state_enum_strings.state_supervision_contact_status_attempted
     COMPLETED = state_enum_strings.state_supervision_contact_status_completed
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionContactStatus"]:
-        return _STATE_SUPERVISION_CONTACT_STATUS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -207,10 +183,6 @@ class StateSupervisionContactLocation(StateEntityEnum):
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionContactLocation"]:
-        return _STATE_SUPERVISION_CONTACT_LOCATION_MAP
-
     @classmethod
     def get_enum_description(cls) -> str:
         return (
@@ -244,52 +216,4 @@ _STATE_SUPERVISION_CONTACT_LOCATION_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     "supervising officer works.",
     StateSupervisionContactLocation.TREATMENT_PROVIDER: "A location at which the "
     "person on supervision is receiving treatment.",
-}
-
-_STATE_SUPERVISION_CONTACT_LOCATION_MAP = {
-    "EXTERNAL UNKNOWN": StateSupervisionContactLocation.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionContactLocation.INTERNAL_UNKNOWN,
-    "COURT": StateSupervisionContactLocation.COURT,
-    "FIELD": StateSupervisionContactLocation.FIELD,
-    "JAIL": StateSupervisionContactLocation.JAIL,
-    "PLACE OF EMPLOYMENT": StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
-    "RESIDENCE": StateSupervisionContactLocation.RESIDENCE,
-    "SUPERVISION OFFICE": StateSupervisionContactLocation.SUPERVISION_OFFICE,
-    "TREATMENT PROVIDER": StateSupervisionContactLocation.TREATMENT_PROVIDER,
-    "LAW ENFORCEMENT AGENCY": StateSupervisionContactLocation.LAW_ENFORCEMENT_AGENCY,
-    "PAROLE COMMISSION": StateSupervisionContactLocation.PAROLE_COMMISSION,
-    "ALTERNATIVE WORK SITE": StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT,
-    "ALTERNATIVE PLACE OF EMPLOYMENT": StateSupervisionContactLocation.ALTERNATIVE_PLACE_OF_EMPLOYMENT,
-}
-
-_STATE_SUPERVISION_CONTACT_STATUS_MAP = {
-    "EXTERNAL UNKNOWN": StateSupervisionContactStatus.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionContactStatus.INTERNAL_UNKNOWN,
-    "ATTEMPTED": StateSupervisionContactStatus.ATTEMPTED,
-    "COMPLETED": StateSupervisionContactStatus.COMPLETED,
-}
-
-_STATE_SUPERVISION_CONTACT_REASON_MAP = {
-    "EXTERNAL UNKNOWN": StateSupervisionContactReason.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionContactReason.INTERNAL_UNKNOWN,
-    "EMERGENCY CONTACT": StateSupervisionContactReason.EMERGENCY_CONTACT,
-    "GENERAL CONTACT": StateSupervisionContactReason.GENERAL_CONTACT,
-    "INITIAL CONTACT": StateSupervisionContactReason.INITIAL_CONTACT,
-}
-
-_STATE_SUPERVISION_CONTACT_TYPE_MAP = {
-    "EXTERNAL UNKNOWN": StateSupervisionContactType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionContactType.INTERNAL_UNKNOWN,
-    "COLLATERAL": StateSupervisionContactType.COLLATERAL,
-    "DIRECT": StateSupervisionContactType.DIRECT,
-    "BOTH COLLATERAL AND DIRECT": StateSupervisionContactType.BOTH_COLLATERAL_AND_DIRECT,
-}
-
-_STATE_SUPERVISION_CONTACT_METHOD_MAP = {
-    "EXTERNAL UNKNOWN": StateSupervisionContactMethod.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionContactMethod.INTERNAL_UNKNOWN,
-    "TELEPHONE": StateSupervisionContactMethod.TELEPHONE,
-    "WRITTEN MESSAGE": StateSupervisionContactMethod.WRITTEN_MESSAGE,
-    "VIRTUAL": StateSupervisionContactMethod.VIRTUAL,
-    "IN PERSON": StateSupervisionContactMethod.IN_PERSON,
 }

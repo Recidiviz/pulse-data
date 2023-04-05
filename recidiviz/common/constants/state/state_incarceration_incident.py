@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateIncarcerationIncidentType(StateEntityEnum):
     """Possible State Incarceration Incident types."""
@@ -41,10 +39,6 @@ class StateIncarcerationIncidentType(StateEntityEnum):
     VIOLENCE = state_enum_strings.state_incarceration_incident_type_violence
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationIncidentType"]:
-        return _STATE_INCARCERATION_INCIDENT_OFFENSE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -74,8 +68,6 @@ _STATE_INCARCERATION_INCIDENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
     """Possible State Incarceration Incident outcome types."""
@@ -111,10 +103,6 @@ class StateIncarcerationIncidentOutcomeType(StateEntityEnum):
     WARNING = state_enum_strings.state_incarceration_incident_outcome_warning
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateIncarcerationIncidentOutcomeType"]:
-        return _STATE_INCARCERATION_INCIDENT_OUTCOME_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -153,43 +141,4 @@ _STATE_INCARCERATION_INCIDENT_OUTCOME_TYPE_VALUE_DESCRIPTIONS: Dict[
     "in which a person is placed in treatment.",
     StateIncarcerationIncidentOutcomeType.WARNING: "Describes an incident outcome in "
     "which a person is given a warning.",
-}
-
-
-_STATE_INCARCERATION_INCIDENT_OFFENSE_MAP = {
-    "CONTRABAND": StateIncarcerationIncidentType.CONTRABAND,
-    "DRUGS": StateIncarcerationIncidentType.CONTRABAND,
-    "ALCOHOL": StateIncarcerationIncidentType.CONTRABAND,
-    "TATTOO": StateIncarcerationIncidentType.CONTRABAND,
-    "DISORDERLY CONDUCT": StateIncarcerationIncidentType.DISORDERLY_CONDUCT,
-    "ESCAPE": StateIncarcerationIncidentType.ESCAPE,
-    "MINOR": StateIncarcerationIncidentType.MINOR_OFFENSE,
-    "MINOR OFFENSE": StateIncarcerationIncidentType.MINOR_OFFENSE,
-    "PRESENT WITHOUT INFO": StateIncarcerationIncidentType.PRESENT_WITHOUT_INFO,
-    "POSITIVE": StateIncarcerationIncidentType.POSITIVE,
-    "REPORT": StateIncarcerationIncidentType.REPORT,
-    "VIOLENT": StateIncarcerationIncidentType.VIOLENCE,
-    "VIOLENCE": StateIncarcerationIncidentType.VIOLENCE,
-    "INTERNAL UNKNOWN": StateIncarcerationIncidentType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateIncarcerationIncidentType.EXTERNAL_UNKNOWN,
-}
-
-
-_STATE_INCARCERATION_INCIDENT_OUTCOME_MAP = {
-    "CELL CONFINEMENT": StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT,
-    "DISCIPLINARY LABOR": StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR,
-    "DISMISSED": StateIncarcerationIncidentOutcomeType.DISMISSED,
-    "EXTERNAL PROSECUTION": StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION,
-    "FINANCIAL PENALTY": StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY,
-    "GOOD TIME LOSS": StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS,
-    "PRIVILEGE LOSS": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
-    "LOSS OF PRIVILEGE": StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS,
-    "NOT GUILTY": StateIncarcerationIncidentOutcomeType.NOT_GUILTY,
-    "RESTRICTED CONFINEMENT": StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT,
-    "SOLITARY": StateIncarcerationIncidentOutcomeType.SOLITARY,
-    "SOLITARY CONFINEMENT": StateIncarcerationIncidentOutcomeType.SOLITARY,
-    "TREATMENT": StateIncarcerationIncidentOutcomeType.TREATMENT,
-    "WARNING": StateIncarcerationIncidentOutcomeType.WARNING,
-    "INTERNAL UNKNOWN": StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateIncarcerationIncidentOutcomeType.EXTERNAL_UNKNOWN,
 }

@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateAssessmentClass(StateEntityEnum):
     """An enumeration of assessment classifications tracked in our schema."""
@@ -35,10 +33,6 @@ class StateAssessmentClass(StateEntityEnum):
     SUBSTANCE_ABUSE = state_enum_strings.state_assessment_class_substance_abuse
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateAssessmentClass"]:
-        return _STATE_ASSESSMENT_CLASS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -61,8 +55,7 @@ _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "degree of substance use by an individual.",
 }
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
+
 @unique
 class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
@@ -106,10 +99,6 @@ class StateAssessmentType(StateEntityEnum):
     TCU_DRUG_SCREEN = state_enum_strings.state_assessment_type_tcu_drug_screen
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateAssessmentType"]:
-        return _STATE_ASSESSMENT_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -162,8 +151,6 @@ _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateAssessmentLevel(StateEntityEnum):
     MINIMUM = state_enum_strings.state_assessment_level_minimum
@@ -177,10 +164,6 @@ class StateAssessmentLevel(StateEntityEnum):
     MAXIMUM = state_enum_strings.state_assessment_level_maximum
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateAssessmentLevel"]:
-        return _STATE_ASSESSMENT_LEVEL_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -210,61 +193,4 @@ _STATE_ASSESSMENT_LEVEL_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "assessment.",
     StateAssessmentLevel.VERY_HIGH: "Category of “Very High”, as defined by the "
     "assessment.",
-}
-
-
-_STATE_ASSESSMENT_CLASS_MAP = {
-    "RISK": StateAssessmentClass.RISK,
-    "SEX OFFENSE": StateAssessmentClass.SEX_OFFENSE,
-    "SOCIAL": StateAssessmentClass.SOCIAL,
-    "SUBSTANCE ABUSE": StateAssessmentClass.SUBSTANCE_ABUSE,
-    "SUBSTANCE": StateAssessmentClass.SUBSTANCE_ABUSE,
-    "INTERNAL UNKNOWN": StateAssessmentClass.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateAssessmentClass.EXTERNAL_UNKNOWN,
-}
-
-
-_STATE_ASSESSMENT_TYPE_MAP = {
-    "CSSM": StateAssessmentType.CSSM,
-    "COMPAS": StateAssessmentType.COMPAS,
-    "HIQ": StateAssessmentType.HIQ,
-    "J SOAP": StateAssessmentType.J_SOAP,
-    "LSIR": StateAssessmentType.LSIR,
-    "ODARA": StateAssessmentType.ODARA,
-    "ORAS COMMUNITY SUPERVISION": StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-    "ORAS COMMUNITY SUPERVISION SCREENING": StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
-    "ORAS MISDEMEANOR ASSESSMENT": StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT,
-    "ORAS MISDEMEANOR SCREENING": StateAssessmentType.ORAS_MISDEMEANOR_SCREENING,
-    "ORAS PRE TRIAL": StateAssessmentType.ORAS_PRE_TRIAL,
-    "ORAS PRISON SCREENING": StateAssessmentType.ORAS_PRISON_SCREENING,
-    "ORAS PRISON INTAKE": StateAssessmentType.ORAS_PRISON_INTAKE,
-    "ORAS REENTRY": StateAssessmentType.ORAS_REENTRY,
-    "ORAS SUPPLEMENTAL REENTRY": StateAssessmentType.ORAS_SUPPLEMENTAL_REENTRY,
-    "OYAS": StateAssessmentType.OYAS,
-    "PA RST": StateAssessmentType.PA_RST,
-    "PSA": StateAssessmentType.PSA,
-    "SORAC": StateAssessmentType.SORAC,
-    "SOTIPS": StateAssessmentType.SOTIPS,
-    "SPIN W": StateAssessmentType.SPIN_W,
-    "STABLE": StateAssessmentType.STABLE,
-    "STATIC 99": StateAssessmentType.STATIC_99,
-    "STRONG R": StateAssessmentType.STRONG_R,
-    "TCU": StateAssessmentType.TCU_DRUG_SCREEN,
-    "TCU DRUG SCREEN": StateAssessmentType.TCU_DRUG_SCREEN,
-    "INTERNAL UNKNOWN": StateAssessmentType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateAssessmentType.EXTERNAL_UNKNOWN,
-}
-
-_STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
-    "MINIMUM": StateAssessmentLevel.MINIMUM,
-    "LOW": StateAssessmentLevel.LOW,
-    "LOW MEDIUM": StateAssessmentLevel.LOW_MEDIUM,
-    "MEDIUM": StateAssessmentLevel.MEDIUM,
-    "MEDIUM HIGH": StateAssessmentLevel.MEDIUM_HIGH,
-    "MODERATE": StateAssessmentLevel.MODERATE,
-    "HIGH": StateAssessmentLevel.HIGH,
-    "VERY HIGH": StateAssessmentLevel.VERY_HIGH,
-    "MAXIMUM": StateAssessmentLevel.MAXIMUM,
-    "INTERNAL UNKNOWN": StateAssessmentLevel.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateAssessmentLevel.EXTERNAL_UNKNOWN,
 }

@@ -22,8 +22,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateDrugScreenResult(StateEntityEnum):
     """Enum indicating whether the test result was positive, negative or other."""
@@ -35,10 +33,6 @@ class StateDrugScreenResult(StateEntityEnum):
     NO_RESULT = state_enum_strings.state_drug_screen_result_no_result
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateDrugScreenResult"]:
-        return _STATE_DRUG_SCREEN_RESULT_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -68,18 +62,6 @@ _STATE_DRUG_SCREEN_RESULTS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 }
 
 
-_STATE_DRUG_SCREEN_RESULT_MAP = {
-    "POSITIVE": StateDrugScreenResult.POSITIVE,
-    "NEGATIVE": StateDrugScreenResult.NEGATIVE,
-    "ADMITTED POSITIVE": StateDrugScreenResult.ADMITTED_POSITIVE,
-    "MEDICAL EXEMPTION": StateDrugScreenResult.MEDICAL_EXEMPTION,
-    "NO RESULT": StateDrugScreenResult.NO_RESULT,
-    "EXTERNAL UNKNOWN": StateDrugScreenResult.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateDrugScreenResult.INTERNAL_UNKNOWN,
-}
-
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateDrugScreenSampleType(StateEntityEnum):
     """Type of sample collected for drug screen."""
@@ -93,10 +75,6 @@ class StateDrugScreenSampleType(StateEntityEnum):
     NO_SAMPLE = state_enum_strings.state_drug_screen_sample_type_no_sample
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateDrugScreenSampleType"]:
-        return _STATE_DRUG_SCREEN_SAMPLE_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -115,17 +93,4 @@ _STATE_DRUG_SCREEN_SAMPLE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = 
     StateDrugScreenSampleType.HAIR: ("Hair."),
     StateDrugScreenSampleType.BREATH: ("Breath."),
     StateDrugScreenSampleType.NO_SAMPLE: ("No sample was collected for a drug screen."),
-}
-
-
-_STATE_DRUG_SCREEN_SAMPLE_TYPE_MAP = {
-    "URINE": StateDrugScreenSampleType.URINE,
-    "SWEAT": StateDrugScreenSampleType.SWEAT,
-    "SALIVA": StateDrugScreenSampleType.SALIVA,
-    "BLOOD": StateDrugScreenSampleType.BLOOD,
-    "HAIR": StateDrugScreenSampleType.HAIR,
-    "BREATH": StateDrugScreenSampleType.BREATH,
-    "NO SAMPLE": StateDrugScreenSampleType.NO_SAMPLE,
-    "EXTERNAL UNKNOWN": StateDrugScreenSampleType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateDrugScreenSampleType.INTERNAL_UNKNOWN,
 }

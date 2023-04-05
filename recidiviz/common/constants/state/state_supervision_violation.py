@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionViolationType(StateEntityEnum):
     """The type of violation of a condition of supervision."""
@@ -56,10 +54,6 @@ class StateSupervisionViolationType(StateEntityEnum):
 
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionViolationType"]:
-        return _STATE_SUPERVISION_VIOLATION_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -100,19 +94,4 @@ _STATE_SUPERVISION_VIOLATION_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str]
     "that violates a condition of their supervision, where that behavior is not by "
     "itself a criminal offense. Used when there is failure to comply with a "
     "condition of supervision.",
-}
-
-
-_STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
-    "ABSCOND": StateSupervisionViolationType.ABSCONDED,
-    "ABSCONDED": StateSupervisionViolationType.ABSCONDED,
-    "ABSCONDER": StateSupervisionViolationType.ABSCONDED,
-    "ESCAPED": StateSupervisionViolationType.ESCAPED,
-    "FELONY": StateSupervisionViolationType.FELONY,
-    "LAW": StateSupervisionViolationType.LAW,
-    "MISDEMEANOR": StateSupervisionViolationType.MISDEMEANOR,
-    "MUNICIPAL": StateSupervisionViolationType.MUNICIPAL,
-    "TECHNICAL": StateSupervisionViolationType.TECHNICAL,
-    "EXTERNAL UNKNOWN": StateSupervisionViolationType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionViolationType.INTERNAL_UNKNOWN,
 }

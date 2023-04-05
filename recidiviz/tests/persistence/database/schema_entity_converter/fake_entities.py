@@ -28,10 +28,6 @@ class RootType(Enum):
     SIMPSONS = "SIMPSONS"
     FRIENDS = "FRIENDS"
 
-    @staticmethod
-    def _get_default_map():
-        raise RuntimeError("ResidencyStatus is not mapped directly")
-
 
 @attr.s
 class Root(Entity, BuildableAttr, DefaultableAttr):

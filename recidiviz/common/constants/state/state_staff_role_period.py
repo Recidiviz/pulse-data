@@ -20,9 +20,6 @@ from enum import unique
 from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
-
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
@@ -31,10 +28,6 @@ class StateStaffRoleType(StateEntityEnum):
     SUPERVISION_OFFICER = state_enum_strings.state_staff_role_type_supervision_officer
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateStaffRoleType"]:
-        return _STATE_STAFF_ROLE_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -54,13 +47,6 @@ _STATE_STAFF_ROLE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 }
 
 
-_STATE_STAFF_ROLE_TYPE_MAP = {
-    "SUPERVISION OFFICER": StateStaffRoleType.SUPERVISION_OFFICER,
-    "INTERNAL UNKNOWN": StateStaffRoleType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateStaffRoleType.EXTERNAL_UNKNOWN,
-}
-
-
 @unique
 class StateStaffRoleSubtype(StateEntityEnum):
     SUPERVISION_OFFICER = (
@@ -74,10 +60,6 @@ class StateStaffRoleSubtype(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateStaffRoleSubtype"]:
-        return _STATE_STAFF_ROLE_TYPE_SUBTYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -99,12 +81,4 @@ _STATE_STAFF_ROLE_TYPE_SUBTYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = 
     StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER: "A district or regional manager, "
     "usually a supervisor of supervisors, but may sometimes supervise parole "
     "officers/agents directly and also sometimes carry a caseload when the agency is short-staffed.",
-}
-
-_STATE_STAFF_ROLE_TYPE_SUBTYPE_MAP = {
-    "SUPERVISION OFFICER": StateStaffRoleSubtype.SUPERVISION_OFFICER,
-    "SUPERVISION OFFICER SUPERVISOR": StateStaffRoleSubtype.SUPERVISION_OFFICER_SUPERVISOR,
-    "SUPERVISION REGIONAL MANAGER": StateStaffRoleSubtype.SUPERVISION_REGIONAL_MANAGER,
-    "INTERNAL UNKNOWN": StateStaffRoleSubtype.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateStaffRoleSubtype.EXTERNAL_UNKNOWN,
 }

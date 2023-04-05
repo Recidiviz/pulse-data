@@ -25,8 +25,6 @@ from recidiviz.common.constants.state import (
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateActingBodyType(StateEntityEnum):
     """A type of actor or authoritative body within the criminal justice system."""
@@ -37,10 +35,6 @@ class StateActingBodyType(StateEntityEnum):
     SENTENCED_PERSON = state_enum_strings.state_acting_body_type_sentenced_person
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateActingBodyType"]:
-        return _STATE_ACTING_BODY_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -68,18 +62,7 @@ _STATE_ACTING_BODY_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "they are on supervision. Also referred to as a probation/parole officer.",
 }
 
-_STATE_ACTING_BODY_TYPE_MAP = {
-    "COURT": StateActingBodyType.COURT,
-    "PAROLE BOARD": StateActingBodyType.PAROLE_BOARD,
-    "SUPERVISION OFFICER": StateActingBodyType.SUPERVISION_OFFICER,
-    "SENTENCED PERSON": StateActingBodyType.SENTENCED_PERSON,
-    "INTERNAL UNKNOWN": StateActingBodyType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateActingBodyType.EXTERNAL_UNKNOWN,
-}
 
-
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateCustodialAuthority(StateEntityEnum):
     """The type of government entity directly responsible for the person on a period
@@ -97,10 +80,6 @@ class StateCustodialAuthority(StateEntityEnum):
     STATE_PRISON = state_enum_strings.state_custodial_authority_state_prison
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateCustodialAuthority"]:
-        return _STATE_CUSTODIAL_AUTHORITY_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -160,17 +139,4 @@ _STATE_CUSTODIAL_AUTHORITY_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "`SUPERVISION_AUTHORITY`. For example, this is used in US_PA when an "
     "individual is in a parole violator center, because the person responsible for "
     "the daily paperwork and oversight of the person is a supervision officer.",
-}
-
-
-_STATE_CUSTODIAL_AUTHORITY_MAP = {
-    "COURT": StateCustodialAuthority.COUNTY,
-    "COUNTY": StateCustodialAuthority.COUNTY,
-    "EXTERNAL UNKNOWN": StateCustodialAuthority.EXTERNAL_UNKNOWN,
-    "FEDERAL": StateCustodialAuthority.FEDERAL,
-    "INTERNAL UNKNOWN": StateCustodialAuthority.INTERNAL_UNKNOWN,
-    "OTHER COUNTRY": StateCustodialAuthority.OTHER_COUNTRY,
-    "OTHER STATE": StateCustodialAuthority.OTHER_STATE,
-    "SUPERVISION AUTHORITY": StateCustodialAuthority.SUPERVISION_AUTHORITY,
-    "STATE PRISON": StateCustodialAuthority.STATE_PRISON,
 }

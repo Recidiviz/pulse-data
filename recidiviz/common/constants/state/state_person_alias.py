@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StatePersonAliasType(StateEntityEnum):
     AFFILIATION_NAME = state_enum_strings.state_person_alias_alias_type_affiliation_name
@@ -34,10 +32,6 @@ class StatePersonAliasType(StateEntityEnum):
     NICKNAME = state_enum_strings.state_person_alias_alias_type_nickname
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StatePersonAliasType"]:
-        return _ALIAS_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -59,18 +53,4 @@ _STATE_PERSON_ALIAS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     "maiden name.",
     StatePersonAliasType.NICKNAME: "Used when the alias is a nickname for the "
     "person.",
-}
-
-
-_ALIAS_TYPE_MAP = {
-    "AFFILIATION NAME": StatePersonAliasType.AFFILIATION_NAME,
-    "GANG NAME": StatePersonAliasType.AFFILIATION_NAME,
-    "ALIAS": StatePersonAliasType.ALIAS,
-    "GIVEN": StatePersonAliasType.GIVEN_NAME,
-    "GIVEN NAME": StatePersonAliasType.GIVEN_NAME,
-    "MAIDEN": StatePersonAliasType.MAIDEN_NAME,
-    "MAIDEN NAME": StatePersonAliasType.MAIDEN_NAME,
-    "NICKNAME": StatePersonAliasType.NICKNAME,
-    "INTERNAL UNKNOWN": StatePersonAliasType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StatePersonAliasType.EXTERNAL_UNKNOWN,
 }
