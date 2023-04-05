@@ -50,13 +50,13 @@ class TimeRangeUploader:
         agency_id: int,
         time_range: Tuple[datetime.date, datetime.date],
         rows_for_this_time_range: List[Dict[str, Any]],
-        user_account: schema.UserAccount,
         text_analyzer: TextAnalyzer,
         metricfile: MetricFile,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         metric_key_to_timerange_to_total_value: Dict[
             str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
         ],
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.time_range = time_range
         self.user_account = user_account
@@ -90,10 +90,12 @@ class TimeRangeUploader:
             report = ReportInterface.create_report(
                 session=session,
                 agency_id=self.agency_id,
-                user_account_id=self.user_account.id,
                 year=year,
                 month=month,
                 frequency=reporting_frequency.value,
+                user_account_id=self.user_account.id
+                if self.user_account is not None
+                else None,
             )
 
         report_metric = self._get_report_metric_for_time_range()

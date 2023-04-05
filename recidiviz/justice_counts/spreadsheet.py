@@ -35,6 +35,7 @@ from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
 from recidiviz.justice_counts.bulk_upload.workbook_uploader import WorkbookUploader
+from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
@@ -44,6 +45,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
+from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
@@ -71,6 +73,30 @@ class SpreadsheetInterface:
         return spreadsheet
 
     @staticmethod
+    def save_spreadsheet_metadata(
+        session: Session,
+        system: schema.System,
+        agency_id: int,
+        filename: str,
+        auth0_user_id: Optional[str] = None,
+    ) -> schema.Spreadsheet:
+        uploaded_at = datetime.datetime.now(tz=datetime.timezone.utc)
+        standardized_name = (
+            f"{str(agency_id)}:{system.value}:{uploaded_at.timestamp()}.xlsx"
+        )
+        spreadsheet = schema.Spreadsheet(
+            original_name=os.path.basename(filename) if filename is not None else "",
+            standardized_name=standardized_name,
+            agency_id=agency_id,
+            system=system,
+            status=schema.SpreadsheetStatus.UPLOADED,
+            uploaded_at=uploaded_at,
+            uploaded_by=auth0_user_id,
+        )
+        session.add(spreadsheet)
+        return spreadsheet
+
+    @staticmethod
     def upload_spreadsheet(
         session: Session,
         system: str,
@@ -80,18 +106,12 @@ class SpreadsheetInterface:
     ) -> schema.Spreadsheet:
         """Uploads spreadsheets representing agency data to google cloud storage."""
         fs = GcsfsFactory.build()
-        uploaded_at = datetime.datetime.now(tz=datetime.timezone.utc)
-        standardized_name = f"{str(agency_id)}:{system}:{uploaded_at.timestamp()}.xlsx"
-        spreadsheet = schema.Spreadsheet(
-            original_name=os.path.basename(file_storage.filename)
-            if file_storage.filename is not None
-            else "",
-            standardized_name=standardized_name,
-            agency_id=agency_id,
+        spreadsheet = SpreadsheetInterface.save_spreadsheet_metadata(
+            session=session,
             system=schema.System[system],
-            status=schema.SpreadsheetStatus.UPLOADED,
-            uploaded_at=uploaded_at,
-            uploaded_by=auth0_user_id,
+            agency_id=agency_id,
+            auth0_user_id=auth0_user_id,
+            filename=file_storage.filename or "",
         )
         fs.upload_from_contents_handle_stream(
             path=SpreadsheetInterface.get_spreadsheet_path(spreadsheet=spreadsheet),
@@ -117,7 +137,9 @@ class SpreadsheetInterface:
                 "id": spreadsheet.id,
                 "name": spreadsheet.original_name,
                 "uploaded_at": spreadsheet.uploaded_at.timestamp() * 1000,
-                "uploaded_by_v2": uploader_id_to_json.get(spreadsheet.uploaded_by),
+                "uploaded_by_v2": uploader_id_to_json.get(
+                    spreadsheet.uploaded_by, {"name": "Automatic Upload", "role": None}
+                ),
                 "ingested_at": spreadsheet.ingested_at.timestamp() * 1000
                 if spreadsheet.ingested_at is not None
                 else None,
@@ -206,10 +228,10 @@ class SpreadsheetInterface:
         session: Session,
         xls: pd.ExcelFile,
         spreadsheet: schema.Spreadsheet,
-        auth0_user_id: str,
-        agency_id: int,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         metric_definitions: List[MetricDefinition],
+        agency_id: int,
+        auth0_user_id: Optional[str] = None,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -217,11 +239,13 @@ class SpreadsheetInterface:
         List[int],
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
-        user_account = (
-            session.query(schema.UserAccount)
-            .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
-            .one()
-        )
+        user_account = None
+        if auth0_user_id is not None:
+            user_account = (
+                session.query(schema.UserAccount)
+                .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
+                .one()
+            )
         uploader = WorkbookUploader(
             agency_id=spreadsheet.agency_id,
             system=spreadsheet.system,
@@ -381,3 +405,72 @@ class SpreadsheetInterface:
             "updated_report_ids": updated_report_ids_list,
             "new_reports": new_report_jsons,
         }
+
+    @staticmethod
+    def ingest_workbook_from_gcs(
+        session: Session,
+        bucket_name: str,
+        system: schema.System,
+        agency: schema.Agency,
+        filename: str,
+    ) -> Tuple[
+        Dict[str, List[DatapointJson]],
+        Dict[Optional[str], List[JusticeCountsBulkUploadException]],
+        Set[int],
+        List[int],
+    ]:
+        """Given a filename, an agency, and a system, this method copies the
+        file from the agency's bulk upload bucket to GCS bucket where we store
+        all workbooks uploaded in publisher, saves the workbook metadata in
+        the Justice Counts DB, and ingests the workbook and saves the data in
+        the Justice Counts DB.
+        """
+        spreadsheet = SpreadsheetInterface.save_spreadsheet_metadata(
+            session=session,
+            system=system,
+            agency_id=agency.id,
+            filename=filename,
+        )
+
+        source_path = GcsfsFilePath.from_absolute_path(f"{bucket_name}/{filename}")
+        destination_path = SpreadsheetInterface.get_spreadsheet_path(
+            spreadsheet=spreadsheet
+        )
+
+        gcs_file_system = GcsfsFactory.build()
+        # We need to copy the file into the bucket where we store workbooks
+        # uploaded in Publisher because we reference that bucket when
+        # fetching data for the Uploaded Files page in the Settings tab.
+        gcs_file_system.copy(source_path, destination_path)
+
+        metric_key_to_agency_datapoints = (
+            DatapointInterface.get_metric_key_to_agency_datapoints(
+                session=session, agency_id=agency.id
+            )
+        )
+        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
+            systems={
+                schema.System[system]
+                for system in agency.systems or []
+                if schema.System[system] in schema.System.supervision_subsystems()
+                or schema.System[system] == schema.System.SUPERVISION
+            }
+            if system == "SUPERVISION"
+            # Only send over metric definitions for the current system unless
+            # the agency is uploading for supervision, which sheets contain
+            # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
+            # and PROBATION
+            # TODO(#19744): Refactor this logic so that it lives in
+            # MetricInterface.get_metric_definitions_for_systems.
+            else {system},
+        )
+        file_bytes = gcs_file_system.download_as_bytes(path=source_path)
+        return SpreadsheetInterface.ingest_spreadsheet(
+            session=session,
+            spreadsheet=spreadsheet,
+            auth0_user_id=None,
+            xls=pd.ExcelFile(file_bytes),
+            agency_id=agency.id,
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_definitions=metric_definitions,
+        )

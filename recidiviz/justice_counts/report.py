@@ -127,7 +127,7 @@ class ReportInterface:
     @staticmethod
     def update_report_metadata(
         report: schema.Report,
-        editor_id: int,
+        editor_id: Optional[int] = None,
         status: Optional[str] = None,
     ) -> schema.Report:
         if status and report.status.value != status:
@@ -430,11 +430,11 @@ class ReportInterface:
         session: Session,
         report: schema.Report,
         report_metric: MetricInterface,
-        user_account: schema.UserAccount,
         use_existing_aggregate_value: bool = False,
         existing_datapoints_dict: Optional[
             Dict[DatapointUniqueKey, schema.Datapoint]
         ] = None,
+        user_account: Optional[schema.UserAccount] = None,
     ) -> List[DatapointJson]:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,

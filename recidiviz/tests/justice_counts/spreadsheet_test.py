@@ -218,6 +218,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     if schema.System[system] in schema.System.supervision_subsystems()
                     or schema.System[system] == schema.System.SUPERVISION
                 }
+                # TODO(#19744): Refactor this logic so that it lives in
+                # MetricInterface.get_metric_definitions_for_systems.
             )
 
             json = SpreadsheetInterface.get_ingest_spreadsheet_json(

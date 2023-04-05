@@ -53,7 +53,6 @@ class SpreadsheetUploader:
         text_analyzer: TextAnalyzer,
         system: schema.System,
         agency_id: int,
-        user_account: schema.UserAccount,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         sheet_name: str,
         column_names: List[str],
@@ -62,6 +61,7 @@ class SpreadsheetUploader:
         metric_key_to_timerange_to_total_value: Dict[
             str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
         ],
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.text_analyzer = text_analyzer
         self.system = system

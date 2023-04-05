@@ -97,6 +97,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
     config = config or Config()
     app.config.from_object(config)
     app.secret_key = get_secret("justice_counts_secret_key")
+    csrf = CSRFProtect(app)
+    service_account_email = os.getenv("SERVICE_ACCOUNT_EMAIL", "")
     setup_scoped_sessions(
         app=app, schema_type=config.SCHEMA_TYPE, database_url_override=config.DB_URL
     )
@@ -105,6 +107,8 @@ def create_app(config: Optional[Config] = None) -> Flask:
             auth_decorator=config.AUTH_DECORATOR,
             auth0_client=config.AUTH0_CLIENT,
             secret_key=app.secret_key,
+            csrf=csrf,
+            service_account_email=service_account_email,
         ),
         url_prefix="/api",
     )
@@ -117,7 +121,6 @@ def create_app(config: Optional[Config] = None) -> Flask:
 
     # Need to silence mypy error `Cannot assign to a method`
     app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
-    CSRFProtect(app)
     register_error_handlers(app)
 
     Limiter(

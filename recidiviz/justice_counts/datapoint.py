@@ -17,6 +17,7 @@
 """Interface for working with the Datapoint model."""
 import datetime
 import enum
+import itertools
 import json
 import logging
 from collections import defaultdict
@@ -289,13 +290,13 @@ class DatapointInterface:
         report: schema.Report,
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         value: Any,
-        user_account: schema.UserAccount,
         metric_definition_key: str,
         current_time: datetime.datetime,
         context_key: Optional[ContextKey] = None,
         value_type: Optional[ValueType] = None,
         dimension: Optional[DimensionBase] = None,
         use_existing_aggregate_value: bool = False,
+        user_account: Optional[schema.UserAccount] = None,
     ) -> Optional[DatapointJson]:
         """Given a Report and a MetricInterface, add a row to the datapoint table.
         All datapoints associated with a metric are saved, even if the value is None.
@@ -397,7 +398,9 @@ class DatapointInterface:
                 session.add(
                     schema.DatapointHistory(
                         datapoint_id=existing_datapoint.id,
-                        user_account_id=user_account.id,
+                        user_account_id=user_account.id
+                        if user_account is not None
+                        else None,
                         timestamp=current_time,
                         old_value=existing_datapoint_value,
                         new_value=str(value) if value is not None else value,
@@ -789,3 +792,23 @@ class DatapointInterface:
                 return True
 
         return False
+
+    @staticmethod
+    def get_metric_key_to_agency_datapoints(
+        session: Session,
+        agency_id: int,
+    ) -> Dict[str, List[schema.Datapoint]]:
+        agency_datapoints = DatapointInterface.get_agency_datapoints(
+            session=session, agency_id=agency_id
+        )
+        agency_datapoints_sorted_by_metric_key = sorted(
+            agency_datapoints, key=lambda d: d.metric_definition_key
+        )
+        metric_key_to_agency_datapoints = {
+            k: list(v)
+            for k, v in itertools.groupby(
+                agency_datapoints_sorted_by_metric_key,
+                key=lambda d: d.metric_definition_key,
+            )
+        }
+        return metric_key_to_agency_datapoints
