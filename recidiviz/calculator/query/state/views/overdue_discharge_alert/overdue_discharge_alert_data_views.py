@@ -41,7 +41,12 @@ DISCHARGE_STRUCT_FRAGMENT = """STRUCT (
 OVERDUE_DISCHARGE_ALERT_DATA_QUERY_TEMPLATE = """
 # TODO(#9988) Replace roster query with a recipients reference table
 WITH base_recipients AS (
-    SELECT 'US_ID' AS state_code, external_id, email_address  FROM `{project_id}.{static_reference_dataset}.us_id_roster`
+    SELECT
+        'US_ID' AS state_code,
+        external_id,
+        email_address,
+    FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` r
+    WHERE r.role = 'supervision_staff'
     UNION ALL
     SELECT state_code, officer_external_id AS external_id, email_address FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     WHERE state_code = 'US_PA'

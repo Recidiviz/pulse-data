@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,10 +23,7 @@ Print view with:
 from recidiviz.big_query.selected_columns_big_query_view import (
     SelectedColumnsBigQueryViewBuilder,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
-)
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -51,11 +48,13 @@ GROUP BY state_code, external_id
 id_roster AS (
     SELECT
         external_id,
-        SPLIT(employee_name, ",") AS name,
+        first_name || " " || last_name AS name,
         LOWER(email_address) AS email_address,
         TO_BASE64(SHA256(LOWER(email_address))) AS hashed_email_address,
         'US_ID' AS state_code
-    FROM `{project_id}.{static_reference_dataset}.us_id_roster`
+    FROM `{project_id}.{reference_views_dataset}.product_roster_materialized`
+    WHERE state_code = 'US_ID'
+    AND role = 'supervision_staff'
 ),
 export_time AS (
     SELECT CURRENT_TIMESTAMP AS exported_at
@@ -102,7 +101,6 @@ OFFICER_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "exported_at",
     ],
     reference_views_dataset=REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
 )
 

@@ -30,20 +30,22 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
             LOWER(email_address) AS email,
             first_name as given_names,
             last_name as surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_tn_leadership_users` leadership
+        FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` r
         LEFT JOIN `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
-        ON UPPER(leadership.first_name) = staff.FirstName
-            AND UPPER(leadership.last_name) = staff.LastName
+        ON UPPER(r.first_name) = staff.FirstName
+            AND UPPER(r.last_name) = staff.LastName
             AND staff.Status = 'A'
         LEFT JOIN `{project_id}.{static_reference_tables_dataset}.agent_multiple_ids_map` ids
             ON staff.StaffID = ids.external_id_to_map AND "US_TN" = ids.state_code 
+        WHERE r.role = 'leadership_role'
+            AND r.state_code = 'US_TN'
     ), staff_users AS (
         SELECT
             StaffID as id,
             "US_TN" AS state_code,
             FirstName || " " || LastName AS name,
             facilities.district AS district,
-            LOWER(roster.email_address) AS email,
+            LOWER(r.email_address) AS email,
             TRUE AS has_caseload,
             FALSE AS  has_facility_caseload,
             FirstName as given_names,
@@ -51,8 +53,9 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Staff_latest` staff
         LEFT JOIN staff_from_report
         ON logic_staff = StaffID
-        LEFT JOIN `{project_id}.{static_reference_tables_dataset}.us_tn_roster` roster
-        ON roster.external_id = staff.UserID
+        LEFT JOIN `{project_id}.{reference_views_dataset}.product_roster_materialized` r
+            ON r.external_id = staff.StaffId
+            AND r.state_code = 'US_TN'
         LEFT JOIN `{project_id}.{external_reference_dataset}.us_tn_supervision_locations` facilities
         ON staff.SiteID=facilities.site_code
         WHERE Status = 'A'
@@ -77,5 +80,4 @@ US_TN_SUPERVISION_STAFF_TEMPLATE = """
     FROM leadership_users leadership
     LEFT JOIN staff_from_report
     ON leadership.id = staff_from_report.logic_staff
-    WHERE logic_staff IS NOT NULL
 """

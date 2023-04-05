@@ -34,18 +34,22 @@ US_ND_SUPERVISION_STAFF_TEMPLATE = """
     )
     , leadership_staff_with_caseload AS (
         SELECT
-            internal_id AS id,
-            state_code,
-            first_name || " " || last_name AS name,
-            district,
+            external_id AS id,
+            r.state_code,
+            UPPER(first_name || " " || last_name) AS name,
+            districts.district_name AS district,
             email_address AS email,
             TRUE AS has_caseload,
-            false AS has_facility_caseload,
-            first_name as given_names,
-            last_name as surname,
-        FROM `{project_id}.{static_reference_tables_dataset}.us_nd_leadership_users`
-        WHERE workflows = true
-        AND internal_id IN (SELECT id FROM caseload_staff_ids)
+            FALSE AS has_facility_caseload,
+            UPPER(first_name) as given_names,
+            UPPER(last_name) as surname,
+        FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` r
+        LEFT JOIN `{project_id}.{vitals_report_dataset}.supervision_officers_and_districts_materialized` districts
+            ON r.state_code = districts.state_code 
+            AND r.external_id = districts.supervising_officer_external_id
+        WHERE r.state_code = 'US_ND'
+        AND r.role = 'leadership_role'
+        AND external_id IN (SELECT id FROM caseload_staff_ids)
     )
     , caseload_staff AS (
         SELECT
