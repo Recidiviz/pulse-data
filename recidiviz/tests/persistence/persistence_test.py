@@ -400,14 +400,14 @@ class MultipleStateTestMixin:
         assert len(people_result) == 3
         assert people_result[0].full_name is None
         assert (
-            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        )
-        assert len(people_result[1].assessments) == 1
-        assert (
-            people_result[2].full_name
-            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+            people_result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         )
         assert len(people_result[2].assessments) == 1
+        assert (
+            people_result[1].full_name
+            == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        )
+        assert len(people_result[1].assessments) == 1
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
@@ -497,14 +497,14 @@ class MultipleStateTestMixin:
         assert len(people_result) == 3
         assert people_result[0].full_name is None
         assert (
-            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+            people_result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         )
-        assert len(people_result[1].assessments) == 1
+        assert len(people_result[2].assessments) == 1
         assert (
-            people_result[2].full_name
+            people_result[1].full_name
             == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         )
-        assert len(people_result[2].program_assignments) == 1
+        assert len(people_result[1].program_assignments) == 1
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
@@ -567,13 +567,13 @@ class MultipleStateTestMixin:
         result = sorted(result, key=lambda p: p.person_id)
         assert len(result) == 3
         assert result[0].full_name is None
-        assert result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
-        assert len(result[1].incarceration_sentences) == 1
-        assert result[1].incarceration_sentences[0].status == "COMPLETED"
-        assert result[2].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         assert len(result[2].incarceration_sentences) == 1
-
         assert result[2].incarceration_sentences[0].status == "COMPLETED"
+        assert result[1].full_name == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
+        assert len(result[1].incarceration_sentences) == 1
+
+        assert result[1].incarceration_sentences[0].status == "COMPLETED"
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2
@@ -640,16 +640,16 @@ class MultipleStateTestMixin:
         assert len(people_result) == 3
         assert people_result[0].full_name is None
         assert (
-            people_result[1].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
+            people_result[2].full_name == '{"given_names": "JON", "surname": "HOPKINS"}'
         )
-        assert len(people_result[1].races) == 1
-        assert people_result[1].races[0].race == "WHITE"
+        assert len(people_result[2].races) == 1
+        assert people_result[2].races[0].race == "WHITE"
         assert (
-            people_result[2].full_name
+            people_result[1].full_name
             == '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
         )
-        assert len(people_result[2].incarceration_sentences) == 1
-        assert people_result[2].incarceration_sentences[0].status == "COMPLETED"
+        assert len(people_result[1].incarceration_sentences) == 1
+        assert people_result[1].incarceration_sentences[0].status == "COMPLETED"
 
         staff_result = sorted(staff_result, key=lambda s: s.staff_id)
         assert len(staff_result) == 2

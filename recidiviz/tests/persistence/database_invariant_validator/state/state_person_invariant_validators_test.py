@@ -131,6 +131,31 @@ class TestStatePersonDatabaseInvariantValidators(unittest.TestCase):
             # Assert
             self.assertEqual(0, errors)
 
+    def test_add_person_no_ids(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Arrange
+            db_person = generate_person(
+                state_code=self.state_code,
+                external_ids=[],
+            )
+
+            session.add(db_person)
+            session.flush()
+
+            output_people = [db_person]
+
+            # Act
+            errors = validate_invariants(
+                session, self.state_code, schema.StatePerson, output_people
+            )
+
+            # Assert
+            # Should produce an error because we enforce that all state_person have a
+            # state_person_external_id
+            self.assertEqual(1, errors)
+
     def test_add_person_two_ids_same_type(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
