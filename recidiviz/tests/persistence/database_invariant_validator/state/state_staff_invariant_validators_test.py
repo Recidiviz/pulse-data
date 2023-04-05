@@ -132,6 +132,31 @@ class TestStateStaffDatabaseInvariantValidators(unittest.TestCase):
             # Assert
             self.assertEqual(0, errors)
 
+    def test_add_staff_no_ids(self) -> None:
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            # Arrange
+            db_staff = generate_staff(
+                state_code=self.state_code,
+                external_ids=[],
+            )
+
+            session.add(db_staff)
+            session.flush()
+
+            output_staff = [db_staff]
+
+            # Act
+            errors = validate_invariants(
+                session, self.state_code, schema.StateStaff, output_staff
+            )
+
+            # Assert
+            # Should produce an error because we enforce that all state_staff have a
+            # state_staff_external_id
+            self.assertEqual(1, errors)
+
     def test_add_staff_two_ids_same_type(self) -> None:
         with SessionFactory.using_database(
             self.database_key, autocommit=False
