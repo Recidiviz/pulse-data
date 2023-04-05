@@ -30,7 +30,7 @@ columns:
   - name: NCICEscapeID
     description: |-
       An alphanumeric identified assigned by NCIC which uniquely identifies an offender who is escaped
-  - name: InCustodyJursidictionFlag
+  - name: InCustodyJurisdictionFlag
     description: |-
       Indicator for when an escaped offender has been recapture in another jurisdiction
   - name: ReturnToJailDate
