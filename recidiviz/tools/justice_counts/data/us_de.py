@@ -26,9 +26,9 @@ import uuid
 
 import pandas as pd
 
-from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.common.constants import states
-from recidiviz.tools.justice_counts import google_drive, manual_upload
+from recidiviz.persistence.database.schema.justice_counts import schema
+from recidiviz.tools.justice_counts import google_drive
 
 DATA_URL = "https://data.delaware.gov/api/views/vnau-c4rn/rows.csv?accessType=DOWNLOAD"
 
@@ -87,7 +87,7 @@ def pull_old_data(
 
     expected_path = os.path.join(
         local_destination_dir,
-        manual_upload.csv_filename(SPREADSHEET_NAME, WORKSHEET_NAME),
+        google_drive.csv_filename(SPREADSHEET_NAME, WORKSHEET_NAME),
     )
     if not os.path.exists(expected_path):
         raise FileNotFoundError(
@@ -121,14 +121,16 @@ def main(drive_folder_id: str, credentials_directory: str) -> None:
     new_filepath = pull_new_data(temp_dir)
     old_filepath = pull_old_data(drive, temp_dir, drive_folder_id)
 
-    sys.stdout.writelines(
-        difflib.unified_diff(
-            open(old_filepath).readlines(),
-            open(new_filepath).readlines(),
-            "old",
-            "new",
-        )
-    )
+    with open(old_filepath, encoding="utf-8") as old_file:
+        with open(new_filepath, encoding="utf-8") as new_file:
+            sys.stdout.writelines(
+                difflib.unified_diff(
+                    old_file.readlines(),
+                    new_file.readlines(),
+                    "old",
+                    "new",
+                )
+            )
 
     response = input("Proceed (y/N)? ")
     if response not in ("y", "Y"):

@@ -28,7 +28,6 @@ from recidiviz.calculator.calculation_data_storage_manager import (
 )
 from recidiviz.case_triage.ops_routes import case_triage_ops_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
-from recidiviz.ingest.justice_counts.control import justice_counts_control
 from recidiviz.metrics.export.view_export_manager import export_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_control import (
     cloud_sql_to_bq_blueprint,
@@ -45,7 +44,6 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (cloud_sql_to_bq_blueprint, "/cloud_sql_to_bq"),
     (direct_ingest_control, "/direct"),
     (export_blueprint, "/export"),
-    (justice_counts_control, "/justice_counts"),
     (get_workflows_etl_blueprint(), "/practices-etl"),
     (validation_manager_blueprint, "/validation_manager"),
     (view_update_manager_blueprint, "/view_update"),

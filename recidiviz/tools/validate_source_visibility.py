@@ -333,7 +333,6 @@ def main() -> int:
                 "recidiviz.big_query",
                 "recidiviz.calculator",
                 "recidiviz.case_triage",
-                "recidiviz.cloud_functions",
                 "recidiviz.cloud_tasks",
                 "recidiviz.cloud_sql",
                 "recidiviz.cloud_storage",
@@ -349,8 +348,6 @@ def main() -> int:
                 "recidiviz.server_blueprint_registry",
                 "recidiviz.server_config",
                 "recidiviz.task_eligibility",
-                # TODO(#4472): Refactor justice counts code out of the tools directory
-                "recidiviz.tools.justice_counts.manual_upload",
                 "recidiviz.utils",
                 "recidiviz.validation",
                 "recidiviz.view_registry",
