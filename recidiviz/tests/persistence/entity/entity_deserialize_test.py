@@ -21,9 +21,6 @@ from unittest import TestCase
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
-    DefaultingAndNormalizingEnumParser,
-)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.state.state_person import StateRace
@@ -114,28 +111,13 @@ class TestEntityDeserialize(TestCase):
 
         with self.assertRaises(TypeError):
             _ = MyEntity(
-                enum_with_default=DefaultingAndNormalizingEnumParser(  # type: ignore[arg-type]
-                    raw_text="BLACK",
-                    enum_cls=StateRace,
-                    enum_overrides=EnumOverrides.empty(),
-                )
-            )
-        with self.assertRaises(TypeError):
-            _ = MyEntity(
                 enum_with_default=StrictEnumParser(  # type: ignore[arg-type]
                     raw_text="BLACK",
                     enum_cls=StateRace,
                     enum_overrides=EnumOverrides.empty(),
                 )
             )
-        with self.assertRaises(TypeError):
-            _ = MyEntity(
-                opt_enum=DefaultingAndNormalizingEnumParser(  # type: ignore[arg-type]
-                    raw_text="BLACK",
-                    enum_cls=StateRace,
-                    enum_overrides=EnumOverrides.empty(),
-                )
-            )
+
         with self.assertRaises(TypeError):
             _ = MyEntity(
                 opt_enum=StrictEnumParser(  # type: ignore[arg-type]
@@ -198,18 +180,6 @@ class TestEntityDeserialize(TestCase):
         self.assertEqual(
             attr.evolve(expected_default_entity, opt_bool=False),
             MyEntityFactory.deserialize(opt_bool="False"),
-        )
-
-        enum_parser = DefaultingAndNormalizingEnumParser(
-            raw_text="BLACK", enum_cls=StateRace, enum_overrides=EnumOverrides.empty()
-        )
-        self.assertEqual(
-            attr.evolve(expected_default_entity, enum_with_default=StateRace.BLACK),
-            MyEntityFactory.deserialize(enum_with_default=enum_parser),
-        )
-        self.assertEqual(
-            attr.evolve(expected_default_entity, opt_enum=StateRace.BLACK),
-            MyEntityFactory.deserialize(opt_enum=enum_parser),
         )
 
         enum_mappings = (
@@ -283,20 +253,26 @@ class TestEntityDeserialize(TestCase):
                     **kwargs,
                 )
 
+        enum_mappings = (
+            EnumOverrides.Builder()
+            .add("BLACK", StateRace.BLACK, normalize_label=False)
+            .build()
+        )
+
         entity = MyEntityWithFieldOverridesFactory.deserialize(
             str_with_override="AbCd",
             int_with_override="3",
-            enum_with_override=DefaultingAndNormalizingEnumParser(
+            enum_with_override=StrictEnumParser(
                 raw_text="BLACK",
                 enum_cls=StateRace,
-                enum_overrides=EnumOverrides.empty(),
+                enum_overrides=enum_mappings,
             ),
             str_no_override="AbCd",
             int_no_override="3",
-            enum_no_override=DefaultingAndNormalizingEnumParser(
+            enum_no_override=StrictEnumParser(
                 raw_text="BLACK",
                 enum_cls=StateRace,
-                enum_overrides=EnumOverrides.empty(),
+                enum_overrides=enum_mappings,
             ),
         )
 

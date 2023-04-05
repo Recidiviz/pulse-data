@@ -27,7 +27,7 @@ from typing import Callable, Dict, List, Optional, Set
 
 from more_itertools import one
 
-from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration_period import (

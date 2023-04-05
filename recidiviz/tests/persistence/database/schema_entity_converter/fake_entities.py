@@ -15,17 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Fake schema definitions for use in tests"""
-
+from enum import Enum
 from typing import List, Optional
 
 import attr
 
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.persistence.entity.base_entity import Entity
 
 
-class RootType(EntityEnum, metaclass=EntityEnumMeta):
+class RootType(Enum):
     SIMPSONS = "SIMPSONS"
     FRIENDS = "FRIENDS"
 

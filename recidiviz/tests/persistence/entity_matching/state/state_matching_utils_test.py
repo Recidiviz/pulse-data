@@ -648,19 +648,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
             get_all_root_entity_external_ids([person])
 
     def test_completeEnumSet_admittedForCommitmentFromSupervision(self) -> None:
-        period = schema.StateIncarcerationPeriod()
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
-            period.admission_reason = admission_reason.value
             is_commitment_from_supervision(
-                StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(
-                    period.admission_reason,
-                ),
-                allow_ingest_only_enum_values=True,
+                admission_reason, allow_ingest_only_enum_values=True
             )
 
-        is_commitment_from_supervision(
-            StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None)
-        )
+        is_commitment_from_supervision(None)
 
     def test_nonnullFieldsEntityMatch_placeholder(self) -> None:
         charge = schema.StateCharge(
