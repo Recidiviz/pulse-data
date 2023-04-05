@@ -54,7 +54,15 @@ WITH external_data AS (
   LEFT JOIN 
   `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_included_in_state_population_materialized` metrics
   ON internal.state_code = metrics.state_code AND internal.person_id = metrics.person_id AND internal.release_date = metrics.admission_date
-  WHERE internal.state_code != 'US_PA' OR  (release_reason != 'TRANSFER' AND admission_date IS NULL)
+  WHERE 
+    CASE 
+      WHEN internal,state_code = 'US_PA' THEN 
+        (release_reason != 'TRANSFER' AND admission_date IS NULL)
+      WHEN internal,state_code = 'US_IX' THEN
+        -- Exclude TRANSFER_TO_OTHER_JURISDICTION because it doesn't seem to be included in Idaho's external validation data
+        release_reason != 'TRANSFER_TO_OTHER_JURISDICTION'
+      ELSE TRUE
+    END
 ), internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
   -- Only compare regions and dates for which we have external validation data

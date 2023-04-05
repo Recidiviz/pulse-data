@@ -57,6 +57,9 @@ WITH external_data AS (
       WHEN state_code = 'US_PA' THEN 
         -- Exclude other admission reasons not included in PA external validation data
         admission_reason != 'SANCTION_ADMISSION'
+      WHEN state_code = 'US_IX' THEN
+        -- Exclude TRANSFER_FROM_OTHER_JURISDICTION because it doesn't seem to be included in Idaho's external validation data
+        admission_reason != 'TRANSFER_FROM_OTHER_JURISDICTION'
       ELSE TRUE
     END
 ), internal_metrics_for_valid_regions_and_dates AS (

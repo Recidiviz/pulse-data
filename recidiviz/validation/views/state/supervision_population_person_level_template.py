@@ -74,7 +74,10 @@ sanitized_internal_metrics AS (
             AND date_of_supervision < '2020-07-01' THEN 'LSU'
         ELSE supervising_officer_external_id
       END AS supervising_officer_external_id,
-      supervision_level_raw_text,
+      CASE
+        WHEN state_code = 'US_IX' and (supervision_level_raw_text like 'LOW SUPERVISION UNIT%' or supervision_level_raw_text like 'LOW SUPERVSN UNIT%') THEN 'LIMITED SUPERVISION'
+        ELSE supervision_level_raw_text
+      END AS supervision_level_raw_text,
       CASE
         WHEN state_code IN ('US_MO','US_TN')
           THEN level_1_supervision_location_external_id
