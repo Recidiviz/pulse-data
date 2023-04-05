@@ -521,6 +521,12 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
+        supervision_sentence3 = StateSupervisionSentence.new_with_defaults(
+            state_code="US_XX",
+            supervision_sentence_id=333,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
         charge1 = StateCharge.new_with_defaults(
             charge_id=1,
             state_code="US_XX",
@@ -545,7 +551,11 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
         supervision_sentence2.charges = [charge1, charge2]
         supervision_sentence1.early_discharges = [early_discharge]
 
-        entities_to_convert = [supervision_sentence1, supervision_sentence2]
+        entities_to_convert = [
+            supervision_sentence1,
+            supervision_sentence2,
+            supervision_sentence3,
+        ]
 
         additional_attributes_map: AdditionalAttributesMap = (
             get_shared_additional_attributes_map_for_entities(entities_to_convert)
@@ -722,6 +732,29 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
                     "requesting_body_type_raw_text": None,
                     "state_code": "US_XX",
                     "supervision_sentence_id": 111,
+                },
+            ),
+            (
+                StateSupervisionSentence.__name__,
+                {
+                    "supervision_sentence_id": 333,
+                    "external_id": None,
+                    "status": "PRESENT_WITHOUT_INFO",
+                    "status_raw_text": None,
+                    "supervision_type": None,
+                    "supervision_type_raw_text": None,
+                    "date_imposed": None,
+                    "effective_date": None,
+                    "projected_completion_date": None,
+                    "completion_date": None,
+                    "is_life": None,
+                    "state_code": "US_XX",
+                    "county_code": None,
+                    "min_length_days": None,
+                    "max_length_days": None,
+                    "sentence_metadata": None,
+                    "conditions": None,
+                    "person_id": 123,
                 },
             ),
         ]
