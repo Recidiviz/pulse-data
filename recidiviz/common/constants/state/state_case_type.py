@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionCaseType(StateEntityEnum):
     """The classification of a period of supervision based on the offense type, the
@@ -45,10 +43,6 @@ class StateSupervisionCaseType(StateEntityEnum):
     VETERANS_COURT = state_enum_strings.state_supervision_case_type_veterans_court
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionCaseType"]:
-        return _STATE_SUPERVISION_CASE_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -84,17 +78,4 @@ _STATE_SUPERVISION_CASE_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
     StateSupervisionCaseType.VETERANS_COURT: "Describes a period of supervision that "
     "someone is on as a participation requirement of a Veterans Court diversionary "
     "program.",
-}
-
-_STATE_SUPERVISION_CASE_TYPE_MAP = {
-    "DOMESTIC VIOLENCE": StateSupervisionCaseType.DOMESTIC_VIOLENCE,
-    "DRUG COURT": StateSupervisionCaseType.DRUG_COURT,
-    "FAMILY COURT": StateSupervisionCaseType.FAMILY_COURT,
-    "GENERAL": StateSupervisionCaseType.GENERAL,
-    "MENTAL HEALTH COURT": StateSupervisionCaseType.MENTAL_HEALTH_COURT,
-    "SERIOUS MENTAL ILLNESS": StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
-    "SEX OFFENSE": StateSupervisionCaseType.SEX_OFFENSE,
-    "VETERANS COURT": StateSupervisionCaseType.VETERANS_COURT,
-    "INTERNAL UNKNOWN": StateSupervisionCaseType.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateSupervisionCaseType.EXTERNAL_UNKNOWN,
 }

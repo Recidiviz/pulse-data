@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionViolatedConditionType(StateEntityEnum):
     """The type of violation of a condition of supervision."""
@@ -68,10 +66,6 @@ class StateSupervisionViolatedConditionType(StateEntityEnum):
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
 
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionViolatedConditionType"]:
-        return _STATE_SUPERVISION_VIOLATED_CONDITION_TYPE_MAP
-
     @classmethod
     def get_enum_description(cls) -> str:
         return (
@@ -103,17 +97,4 @@ _STATE_SUPERVISION_VIOLATED_CONDITION_TYPE_VALUE_DESCRIPTIONS: Dict[
     StateSupervisionViolatedConditionType.SUBSTANCE: "Possession or use of controlled substances and/or alcohol",
     StateSupervisionViolatedConditionType.TREATMENT_COMPLIANCE: "Failure to complete treatment or comply with "
     "conditions of treatment",
-}
-
-_STATE_SUPERVISION_VIOLATED_CONDITION_TYPE_MAP = {
-    "EMPLOYMENT": StateSupervisionViolatedConditionType.EMPLOYMENT,
-    "FAILURE TO NOTIFY": StateSupervisionViolatedConditionType.FAILURE_TO_NOTIFY,
-    "FAILURE TO REPORT": StateSupervisionViolatedConditionType.FAILURE_TO_REPORT,
-    "FINANCIAL": StateSupervisionViolatedConditionType.FINANCIAL,
-    "LAW": StateSupervisionViolatedConditionType.LAW,
-    "SPECIAL CONDITIONS": StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
-    "SUBSTANCE": StateSupervisionViolatedConditionType.SUBSTANCE,
-    "TREATMENT COMPLIANCE": StateSupervisionViolatedConditionType.TREATMENT_COMPLIANCE,
-    "EXTERNAL UNKNOWN": StateSupervisionViolatedConditionType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
 }

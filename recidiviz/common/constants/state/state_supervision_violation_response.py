@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionViolationResponseType(StateEntityEnum):
     CITATION = state_enum_strings.state_supervision_violation_response_type_citation
@@ -36,10 +34,6 @@ class StateSupervisionViolationResponseType(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseType"]:
-        return _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -75,8 +69,6 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_VALUE_DESCRIPTIONS: Dict[
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionViolationResponseDecision(StateEntityEnum):
     """Possible types of supervision violation responses."""
@@ -131,10 +123,6 @@ class StateSupervisionViolationResponseDecision(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionViolationResponseDecision"]:
-        return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -200,8 +188,6 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_VALUE_DESCRIPTIONS: Dict[
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionViolationResponseDecidingBodyType(StateEntityEnum):
     COURT = (
@@ -216,12 +202,6 @@ class StateSupervisionViolationResponseDecidingBodyType(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[
-        str, "StateSupervisionViolationResponseDecidingBodyType"
-    ]:
-        return _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -256,43 +236,4 @@ _STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_VALUE_DESCRIPTIONS: Dic
     "assigned to supervise the person on supervision. Typically used in conjunction "
     "with `StateSupervisionViolationResponseType.CITATION` or "
     "`StateSupervisionViolationResponseType.VIOLATION_REPORT`.",
-}
-
-
-_STATE_SUPERVISION_VIOLATION_RESPONSE_TYPE_MAP = {
-    "CITATION": StateSupervisionViolationResponseType.CITATION,
-    "VIOLATION REPORT": StateSupervisionViolationResponseType.VIOLATION_REPORT,
-    "PERMANENT DECISION": StateSupervisionViolationResponseType.PERMANENT_DECISION,
-    "EXTERNAL UNKNOWN": StateSupervisionViolationResponseType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionViolationResponseType.INTERNAL_UNKNOWN,
-}
-
-_STATE_SUPERVISION_VIOLATION_RESPONSE_DECISION_MAP = {
-    "COMMUNITY SERVICE": StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
-    "CONTINUANCE": StateSupervisionViolationResponseDecision.CONTINUANCE,
-    "DELAYED ACTION": StateSupervisionViolationResponseDecision.DELAYED_ACTION,
-    "EXTENSION": StateSupervisionViolationResponseDecision.EXTENSION,
-    "INTERNAL UNKNOWN": StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
-    "NEW CONDITIONS": StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
-    "OTHER": StateSupervisionViolationResponseDecision.OTHER,
-    "PRIVILEGES REVOKED": StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
-    "REVOCATION": StateSupervisionViolationResponseDecision.REVOCATION,
-    "SERVICE TERMINATION": StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
-    "SPECIALIZED COURT": StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
-    "SHOCK INCARCERATION": StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-    "SUSPENSION": StateSupervisionViolationResponseDecision.SUSPENSION,
-    "TREATMENT IN PRISON": StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
-    "TREATMENT IN FIELD": StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
-    "VIOLATION UNFOUNDED": StateSupervisionViolationResponseDecision.VIOLATION_UNFOUNDED,
-    "WARNING": StateSupervisionViolationResponseDecision.WARNING,
-    "WARRANT ISSUED": StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
-    "EXTERNAL UNKNOWN": StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
-}
-
-_STATE_SUPERVISION_VIOLATION_RESPONSE_DECIDING_BODY_TYPE_MAP = {
-    "COURT": StateSupervisionViolationResponseDecidingBodyType.COURT,
-    "PAROLE BOARD": StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
-    "SUPERVISION OFFICER": StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER,
-    "EXTERNAL UNKNOWN": StateSupervisionViolationResponseDecidingBodyType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionViolationResponseDecidingBodyType.INTERNAL_UNKNOWN,
 }

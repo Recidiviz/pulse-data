@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateSupervisionSentenceSupervisionType(StateEntityEnum):
     COMMUNITY_CORRECTIONS = (
@@ -34,10 +32,6 @@ class StateSupervisionSentenceSupervisionType(StateEntityEnum):
     PROBATION = state_enum_strings.state_supervision_sentence_supervision_type_probation
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateSupervisionSentenceSupervisionType"]:
-        return _SUPERVISION_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -67,14 +61,4 @@ _STATE_SUPERVISION_SENTENCE_SUPERVISION_TYPE_VALUE_DESCRIPTIONS: Dict[
     "sentenced to incarceration. Individuals on probation report to a supervision "
     "officer, and must follow the conditions of their supervision as determined by "
     "the judge and person’s supervision officer.",
-}
-
-# The type of supervision associated with a sentence.
-
-_SUPERVISION_TYPE_MAP = {
-    "COMMUNITY CORRECTIONS": StateSupervisionSentenceSupervisionType.COMMUNITY_CORRECTIONS,
-    "EXTERNAL UNKNOWN": StateSupervisionSentenceSupervisionType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateSupervisionSentenceSupervisionType.INTERNAL_UNKNOWN,
-    "PAROLE": StateSupervisionSentenceSupervisionType.PAROLE,
-    "PROBATION": StateSupervisionSentenceSupervisionType.PROBATION,
 }

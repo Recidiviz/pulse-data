@@ -22,8 +22,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateEmploymentPeriodEmploymentStatus(StateEntityEnum):
     ALTERNATE_INCOME_SOURCE = (
@@ -43,10 +41,6 @@ class StateEmploymentPeriodEmploymentStatus(StateEntityEnum):
         state_enum_strings.state_employment_period_employment_status_unable_to_work
     )
     UNEMPLOYED = state_enum_strings.state_employment_period_employment_status_unemployed
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateEmploymentPeriodEmploymentStatus"]:
-        return _STATE_EMPLOYMENT_PERIOD_EMPLOYMENT_STATUS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -91,21 +85,7 @@ _STATE_EMPLOYMENT_PERIOD_EMPLOYMENT_STATUS_VALUE_DESCRIPTIONS: Dict[
     ),
 }
 
-_STATE_EMPLOYMENT_PERIOD_EMPLOYMENT_STATUS_MAP = {
-    "ALTERNATE INCOME SOURCE": StateEmploymentPeriodEmploymentStatus.ALTERNATE_INCOME_SOURCE,
-    "EMPLOYED FULL TIME": StateEmploymentPeriodEmploymentStatus.EMPLOYED_FULL_TIME,
-    "EMPLOYED PART TIME": StateEmploymentPeriodEmploymentStatus.EMPLOYED_PART_TIME,
-    "EMPLOYED": StateEmploymentPeriodEmploymentStatus.EMPLOYED,
-    "EXTERNAL UNKNOWN": StateEmploymentPeriodEmploymentStatus.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateEmploymentPeriodEmploymentStatus.INTERNAL_UNKNOWN,
-    "STUDENT": StateEmploymentPeriodEmploymentStatus.STUDENT,
-    "UNABLE TO WORK": StateEmploymentPeriodEmploymentStatus.UNABLE_TO_WORK,
-    "UNEMPLOYED": StateEmploymentPeriodEmploymentStatus.UNEMPLOYED,
-}
 
-
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateEmploymentPeriodEndReason(StateEntityEnum):
     EMPLOYMENT_STATUS_CHANGE = (
@@ -121,10 +101,6 @@ class StateEmploymentPeriodEndReason(StateEntityEnum):
     NEW_JOB = state_enum_strings.state_employment_period_end_reason_new_job
     QUIT = state_enum_strings.state_employment_period_end_reason_quit
     RETIRED = state_enum_strings.state_employment_period_end_reason_retired
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateEmploymentPeriodEndReason"]:
-        return _STATE_EMPLOYMENT_PERIOD_END_REASON_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -168,18 +144,4 @@ _STATE_EMPLOYMENT_PERIOD_END_REASON_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, st
     StateEmploymentPeriodEndReason.RETIRED: (
         "This person left their job due to retirement."
     ),
-}
-
-_STATE_EMPLOYMENT_PERIOD_END_REASON_MAP = {
-    "EMPLOYMENT STATUS CHANGE": StateEmploymentPeriodEndReason.EMPLOYMENT_STATUS_CHANGE,
-    "EXTERNAL UNKNOWN": StateEmploymentPeriodEndReason.EXTERNAL_UNKNOWN,
-    "FIRED": StateEmploymentPeriodEndReason.FIRED,
-    "INCARCERATED": StateEmploymentPeriodEndReason.INCARCERATED,
-    "INTERNAL UNKNOWN": StateEmploymentPeriodEndReason.INTERNAL_UNKNOWN,
-    "LAID OFF": StateEmploymentPeriodEndReason.LAID_OFF,
-    "MEDICAL": StateEmploymentPeriodEndReason.MEDICAL,
-    "MOVED": StateEmploymentPeriodEndReason.MOVED,
-    "NEW JOB": StateEmploymentPeriodEndReason.NEW_JOB,
-    "QUIT": StateEmploymentPeriodEndReason.QUIT,
-    "RETIRED": StateEmploymentPeriodEndReason.RETIRED,
 }

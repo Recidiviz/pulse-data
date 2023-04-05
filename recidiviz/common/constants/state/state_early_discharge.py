@@ -23,8 +23,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateEarlyDischargeDecision(StateEntityEnum):
     REQUEST_DENIED = state_enum_strings.state_early_discharge_decision_request_denied
@@ -36,10 +34,6 @@ class StateEarlyDischargeDecision(StateEntityEnum):
     )
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateEarlyDischargeDecision"]:
-        return _STATE_EARLY_DISCHARGE_DECISION_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -61,8 +55,6 @@ _STATE_EARLY_DISCHARGE_DECISION_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] =
 }
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateEarlyDischargeDecisionStatus(StateEntityEnum):
     PENDING = state_enum_strings.state_early_discharge_decision_status_pending
@@ -70,10 +62,6 @@ class StateEarlyDischargeDecisionStatus(StateEntityEnum):
     INVALID = state_enum_strings.state_early_discharge_decision_status_invalid
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateEarlyDischargeDecisionStatus"]:
-        return _STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -93,22 +81,4 @@ _STATE_EARLY_DISCHARGE_DECISION_STATUS_VALUE_DESCRIPTIONS: Dict[
     "has been deemed invalid.",
     StateEarlyDischargeDecisionStatus.PENDING: "Used when the decision on an early "
     "discharge request is pending.",
-}
-
-
-_STATE_EARLY_DISCHARGE_DECISION_MAP = {
-    "REQUEST DENIED": StateEarlyDischargeDecision.REQUEST_DENIED,
-    "SENTENCE TERMINATION GRANTED": StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
-    "UNSUPERVISED PROBATION GRANTED": StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
-    "INTERNAL UNKNOWN": StateEarlyDischargeDecision.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateEarlyDischargeDecision.EXTERNAL_UNKNOWN,
-}
-
-
-_STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP = {
-    "PENDING": StateEarlyDischargeDecisionStatus.PENDING,
-    "DECIDED": StateEarlyDischargeDecisionStatus.DECIDED,
-    "INVALID": StateEarlyDischargeDecisionStatus.INVALID,
-    "INTERNAL UNKNOWN": StateEarlyDischargeDecisionStatus.INTERNAL_UNKNOWN,
-    "EXTERNAL UNKNOWN": StateEarlyDischargeDecisionStatus.EXTERNAL_UNKNOWN,
 }

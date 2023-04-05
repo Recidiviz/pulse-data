@@ -22,8 +22,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 
 
-# TODO(#8905): Delete _get_default_map() once all state ingest views have been
-#  migrated to v2 mappings.
 @unique
 class StateTaskType(StateEntityEnum):
     """Enum listing all actionable tasks relating to a person's incarceration /
@@ -64,10 +62,6 @@ class StateTaskType(StateEntityEnum):
     TREATMENT_VERIFICATION = state_enum_strings.state_task_type_treatment_verification
     EXTERNAL_UNKNOWN = state_enum_strings.external_unknown
     INTERNAL_UNKNOWN = state_enum_strings.internal_unknown
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "StateTaskType"]:
-        return _STATE_TASK_TYPE_MAP
 
     @classmethod
     def get_enum_description(cls) -> str:
@@ -150,27 +144,4 @@ _STATE_TASK_TYPES_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
         "contacting the program itself, not the person participating in the program. "
         "May often be described as a “treatment collateral contact”."
     ),
-}
-
-
-_STATE_TASK_TYPE_MAP = {
-    "APPEAL FOR TRANSFER TO SUPERVISION FROM INCARCERATION": StateTaskType.APPEAL_FOR_TRANSFER_TO_SUPERVISION_FROM_INCARCERATION,
-    "ARREST CHECK": StateTaskType.ARREST_CHECK,
-    "SUPERVISION CASE PLAN UPDATE": StateTaskType.SUPERVISION_CASE_PLAN_UPDATE,
-    "DISCHARGE EARLY FROM SUPERVISION": StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION,
-    "DISCHARGE FROM INCARCERATION": StateTaskType.DISCHARGE_FROM_INCARCERATION,
-    "DISCHARGE FROM SUPERVISION": StateTaskType.DISCHARGE_FROM_SUPERVISION,
-    "DRUG SCREEN": StateTaskType.DRUG_SCREEN,
-    "EMPLOYMENT VERIFICATION": StateTaskType.EMPLOYMENT_VERIFICATION,
-    "FACE TO FACE CONTACT": StateTaskType.FACE_TO_FACE_CONTACT,
-    "HOME VISIT": StateTaskType.HOME_VISIT,
-    "NEW ASSESSMENT": StateTaskType.NEW_ASSESSMENT,
-    "PAYMENT VERIFICATION": StateTaskType.PAYMENT_VERIFICATION,
-    "SPECIAL CONDITION VERIFICATION": StateTaskType.SPECIAL_CONDITION_VERIFICATION,
-    "TRANSFER TO ADMINISTRATIVE SUPERVISION": StateTaskType.TRANSFER_TO_ADMINISTRATIVE_SUPERVISION,
-    "TRANSFER TO SUPERVISION FROM INCARCERATION": StateTaskType.TRANSFER_TO_SUPERVISION_FROM_INCARCERATION,
-    "TREATMENT REFERRAL": StateTaskType.TREATMENT_REFERRAL,
-    "TREATMENT VERIFICATION": StateTaskType.TREATMENT_VERIFICATION,
-    "EXTERNAL UNKNOWN": StateTaskType.EXTERNAL_UNKNOWN,
-    "INTERNAL UNKNOWN": StateTaskType.INTERNAL_UNKNOWN,
 }
