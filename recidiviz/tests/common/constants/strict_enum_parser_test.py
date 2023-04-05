@@ -16,14 +16,11 @@
 # =============================================================================
 """Tests for strict_enum_parser.py."""
 import unittest
-from typing import Dict, Optional
+from enum import Enum
+from typing import Optional
 
-from recidiviz.common.constants.entity_enum import (
-    EntityEnum,
-    EntityEnumMeta,
-    EnumParsingError,
-)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
     StateGender,
@@ -32,13 +29,9 @@ from recidiviz.common.constants.state.state_person import (
 from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 
 
-class _MyEntityEnum(EntityEnum, metaclass=EntityEnumMeta):
+class _MyEnum(Enum):
     ITEM1 = "xx"
     ITEM2 = "yy"
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "_MyEntityEnum"]:
-        return {"ITEM1": _MyEntityEnum.ITEM1, "ITEM2": _MyEntityEnum.ITEM2}
 
 
 def ethnicity_mapper(label: str) -> Optional[StateEthnicity]:
@@ -70,8 +63,8 @@ class TestStrictEnumParser(unittest.TestCase):
             .add("fem", StateGender.FEMALE, normalize_label=False)
             .ignore("X", StateGender)
             .add_mapper_fn(ethnicity_mapper, StateEthnicity)
-            .add("ITEMA", _MyEntityEnum.ITEM1)
-            .ignore_with_predicate(ignore_my_enum, _MyEntityEnum)
+            .add("ITEMA", _MyEnum.ITEM1)
+            .ignore_with_predicate(ignore_my_enum, _MyEnum)
             .build()
         )
 
@@ -172,13 +165,13 @@ class TestStrictEnumParser(unittest.TestCase):
 
     def test_ignore_with_predicate(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("x", _MyEntityEnum, self.overrides).parse()
-        self.assertIsNone(StrictEnumParser("X", _MyEntityEnum, self.overrides).parse())
+            _ = StrictEnumParser("x", _MyEnum, self.overrides).parse()
+        self.assertIsNone(StrictEnumParser("X", _MyEnum, self.overrides).parse())
 
         self.assertEqual(
-            _MyEntityEnum.ITEM1,
-            StrictEnumParser("ITEMA", _MyEntityEnum, self.overrides).parse(),
+            _MyEnum.ITEM1,
+            StrictEnumParser("ITEMA", _MyEnum, self.overrides).parse(),
         )
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("YYY", _MyEntityEnum, self.overrides).parse()
+            _ = StrictEnumParser("YYY", _MyEnum, self.overrides).parse()

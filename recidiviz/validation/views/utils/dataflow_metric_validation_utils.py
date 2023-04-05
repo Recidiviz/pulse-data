@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for writing validations of Dataflow metrics."""
+from enum import Enum
 from typing import List, Set, Type
 
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
@@ -26,7 +27,6 @@ from recidiviz.common.attr_mixins import (
     attr_field_enum_cls_for_field_name,
     attribute_field_type_reference_for_class,
 )
-from recidiviz.common.constants.entity_enum import EntityEnum
 from recidiviz.utils.string import StrictStringFormatter
 
 SELECT_FROM_METRICS_TEMPLATE = (
@@ -62,7 +62,7 @@ def _metric_views_for_metric_classes(
 
 
 def _metrics_with_enum_field_of_type(
-    enum_field_name: str, enum_field_type: Type[EntityEnum]
+    enum_field_name: str, enum_field_type: Type[Enum]
 ) -> List[Type[RecidivizMetric]]:
     """Returns all metric classes that contain the given |enum_field_name| storing the
     given |enum_field_type|."""
@@ -173,7 +173,7 @@ def validation_query_for_metric_views_with_all_invalid_fields(
 
 def validation_query_for_metric_views_with_invalid_enums(
     enum_field_name: str,
-    enum_field_type: Type[EntityEnum],
+    enum_field_type: Type[Enum],
     additional_columns_to_select: List[str],
     invalid_rows_filter_clause: str,
     validation_description: str,

@@ -15,20 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains logic related to StateEntityEnums for the state schema."""
+from enum import Enum
 from typing import Dict
 
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
-
-# TODO(#8905): Change superclass to Enum, remove EntityEnumMeta metaclass,
-#  remove pylint ignore, and delete comment about _get_default_map
-#  once all state ingest views have been migrated to v2 mappings.
-# pylint: disable=abstract-method
-class StateEntityEnum(EntityEnum, metaclass=EntityEnumMeta):
-    """Enum class that enforces documentation and is used in the state schema.
-
-    When extending this class, you must override: _get_default_map
-    """
+class StateEntityEnum(Enum):
+    """Enum class that enforces documentation and is used in the state schema."""
 
     @classmethod
     def get_enum_description(cls) -> str:

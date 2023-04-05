@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dedup priority for supervision levels"""
-from typing import Dict
+from enum import Enum
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
 )
@@ -35,20 +34,12 @@ supervision periods so that there is only one level per person per day
 
 
 # TODO(#12046): [Pathways] Remove TN-specific raw supervision-level mappings
-class TemporaryStateSupervisionLevel(EntityEnum, metaclass=EntityEnumMeta):
+class TemporaryStateSupervisionLevel(Enum):
     """Temporary supervision levels used for the TN pathways launch."""
 
     ABSCONDED = "ABSCONDED"
     DETAINER = "DETAINER"
     WARRANT = "WARRANT"
-
-    @staticmethod
-    def _get_default_map() -> Dict[str, "TemporaryStateSupervisionLevel"]:
-        return {
-            "ABSCONDED": TemporaryStateSupervisionLevel.ABSCONDED,
-            "DETAINER": TemporaryStateSupervisionLevel.DETAINER,
-            "WARRANT": TemporaryStateSupervisionLevel.WARRANT,
-        }
 
 
 # TODO(#7912): Add temporary supervision level enums to the state schema

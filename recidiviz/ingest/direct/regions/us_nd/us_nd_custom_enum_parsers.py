@@ -25,7 +25,7 @@ my_enum_field:
 import datetime
 from typing import Dict, List, Type
 
-from recidiviz.common.constants.entity_enum import EnumParsingError
+from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_entity_enum import StateEntityEnum
 from recidiviz.common.constants.state.state_incarceration_period import (

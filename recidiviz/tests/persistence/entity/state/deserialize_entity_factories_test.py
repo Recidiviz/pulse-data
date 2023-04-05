@@ -18,13 +18,8 @@
 import datetime
 import unittest
 from datetime import date
-from typing import Set, Type, Union
+from typing import Set
 
-from parameterized import parameterized
-
-from recidiviz.common.constants.defaulting_and_normalizing_enum_parser import (
-    DefaultingAndNormalizingEnumParser,
-)
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -158,34 +153,14 @@ class TestDeserializeEntityFactories(unittest.TestCase):
         if missing_tests:
             self.fail(f"Found missing expected tests: {missing_tests}")
 
-    @parameterized.expand(
-        [
-            (
-                "defaults",
-                EnumOverrides.empty(),
-                "male",
-                DefaultingAndNormalizingEnumParser,
-            ),
-            (
-                "strict",
-                EnumOverrides.Builder()
-                .add("Male", StateGender.MALE, normalize_label=False)
-                .build(),
-                "Male",
-                StrictEnumParser,
-            ),
-        ]
-    )
-    def test_deserialize_StatePerson(
-        self,
-        _name: str,
-        enum_overrides: EnumOverrides,
-        gender_raw_text: str,
-        enum_parser_cls: Union[
-            Type[StrictEnumParser], Type[DefaultingAndNormalizingEnumParser]
-        ],
-    ) -> None:
-        enum_parser: EnumParser = enum_parser_cls(
+    def test_deserialize_StatePerson(self) -> None:
+        enum_overrides = (
+            EnumOverrides.Builder()
+            .add("Male", StateGender.MALE, normalize_label=False)
+            .build()
+        )
+        gender_raw_text = "Male"
+        enum_parser: EnumParser = StrictEnumParser(
             gender_raw_text, StateGender, enum_overrides
         )
         enum_parser.parse()
