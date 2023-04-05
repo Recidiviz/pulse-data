@@ -119,7 +119,47 @@ def check_people_do_not_have_multiple_ids_same_type(
     return True
 
 
+def check_all_people_have_an_external_id(
+    session: Session, region_code: str, _output_people: List[schema.StatePerson]
+) -> bool:
+    """Validates that all state_person have at least one external id."""
+
+    check_not_dirty(session)
+
+    logging.info(
+        "[Invariant validation] Checking that all people have at least one "
+        "external id."
+    )
+
+    query = f"""
+SELECT p.person_id
+FROM 
+  state_person p
+LEFT OUTER JOIN 
+  state_person_external_id eid
+USING (person_id)
+WHERE p.state_code = '{region_code.upper()}' AND eid.person_id IS NULL
+LIMIT 1;"""
+
+    results = session.execute(query).all()
+
+    if results:
+        person_id = first(results)
+        logging.error(
+            "[Invariant validation] Found people with no external ids. "
+            "First example: person_id=[%s].",
+            person_id,
+        )
+        return False
+
+    logging.info("[Invariant validation] Found no people without external ids.")
+    return True
+
+
 def get_state_person_database_invariant_validators() -> List[
     Callable[[Session, str, List[schema.StatePerson]], bool]
 ]:
-    return [check_people_do_not_have_multiple_ids_same_type]
+    return [
+        check_people_do_not_have_multiple_ids_same_type,
+        check_all_people_have_an_external_id,
+    ]
