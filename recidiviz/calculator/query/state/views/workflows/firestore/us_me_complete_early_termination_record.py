@@ -71,7 +71,7 @@ case_notes_cte AS (
     SELECT
         crt.Cis_400_Cis_100_Client_Id AS external_id,
         "Supervision Conditions" AS criteria,
-        CONCAT(ct.E_Condition_Type_Desc, ' - ', IF(c.Completed_Ind = 'Y', 'Completed', 'Not completed')) AS note_title,
+        CONCAT(ct.E_Condition_Type_Desc, IF(c.Completed_Ind = 'Y', ' - Completed', '')) AS note_title,
         c.General_Comments_Tx AS note_body,
         SAFE_CAST(LEFT(c.Due_Date, 10) AS DATE) AS event_date,
     FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_403_CONDITION_latest` c
