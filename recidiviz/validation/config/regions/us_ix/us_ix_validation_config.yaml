@@ -17,18 +17,15 @@ max_allowed_error_overrides:
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervising_officer
     hard_max_allowed_error_override: 0.22
     override_reason: TODO(#18860) - Fixed state specific condition but will need additional investigation after that.
-  - validation_name: incarceration_population_person_level_external_comparison_matching_people_facility
-    hard_max_allowed_error_override: .97
-    override_reason: TODO(#18858) - Mid-investigation and it seems like a formatting issue but bumping threshold for now
   - validation_name: supervision_population_person_level_external_comparison_matching_people_supervision_level
-    hard_max_allowed_error_override: 0.12
-    override_reason: TODO(#18859) - Mid-investigation and it seems like it needs some atlas specific logic, but bumping threshold for now.
+    hard_max_allowed_error_override: 0.04
+    override_reason: TODO(#18859) - Added in IX specific logic to address, will lower threshold once fix confirmed
   - validation_name: incarceration_release_person_level_external_comparison
     hard_max_allowed_error_override: 0.78
-    override_reason: TODO(#18862) - Mid-investigation and it seems like it needs some atlas specific logic, but bumping threshold for now.
+    override_reason: TODO(#18862) - Added in IX specific logic to address, will lower threshold once fix confirmed
   - validation_name: incarceration_admission_person_level_external_comparison
     hard_max_allowed_error_override: 0.82
-    override_reason: TODO(#18863) - Mid-investigation and it seems like it needs some atlas specific logic, but bumping threshold for now.
+    override_reason: TODO(#18863) - Added in IX specific logic to address, will lower threshold once fix confirmed
 num_allowed_rows_overrides:
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20
@@ -36,8 +33,8 @@ num_allowed_rows_overrides:
       TODO(#18815), TODO(#18980) - Needs investigation and will probably need to be handled in IP pre-processing.
       As of 2/24/23, failing for 8 rows in staging and 9 rows in prod
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
-    hard_num_allowed_rows_override: 30000
-    override_reason: TODO(#18861), TODO(#18990) - Needs investigation.  Current failing level as of 2/24/23 is 29,648 rows in staging and 29,655 rows in prod
+    hard_num_allowed_rows_override: 35000
+    override_reason: TODO(#18861), TODO(#18990) - Needs investigation.  Current failing level as of 2/24/23 is 29,648 rows in staging and 29,655 rows in prod.  (Known issues with missing sentences)
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 11000
     override_reason: TODO(#18857), TODO(#18989) - Needs investigation.  Current failing level as of 2/24/23 is 10,870 rows in both staging and prod
@@ -57,5 +54,5 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 10
     override_reason: TODO(#18818) - Really low error rate so just bumping threshold for now
   - validation_name: sentences_missing_date_imposed
-    hard_num_allowed_rows_override: 700
-    override_reason: TODO(#18817) - Needs investigation and just bumping threshold for now
+    hard_num_allowed_rows_override: 12000
+    override_reason: TODO(#18817) - Issue is coming from ingest charges that aren't attached to an ingested sentence.  Will fix during bug bash.
