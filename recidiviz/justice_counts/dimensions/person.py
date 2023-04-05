@@ -18,23 +18,14 @@
 
 
 import enum
-from typing import Dict, List, Optional, Type
 
 import attr
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.state import state_person
-from recidiviz.justice_counts.dimensions.base import Dimension, DimensionBase
-from recidiviz.justice_counts.dimensions.helpers import (
-    assert_no_overrides,
-    build_entity_overrides,
-    parse_entity_enum,
-    raw_for_dimension_cls,
-)
+from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
 @attr.s(frozen=True)
-class Race(Dimension):
+class Race(DimensionBase):
     """
     Dimension that represents the type race
     """
@@ -42,35 +33,8 @@ class Race(Dimension):
     value: str = attr.ib()
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "Race":
-        parsed_enum = parse_entity_enum(
-            state_person.StateRace, dimension_cell_value, enum_overrides
-        )
-        return cls(parsed_enum.value)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(state_person.StateRace, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "global/race"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -78,7 +42,7 @@ class Race(Dimension):
 
 
 @attr.s(frozen=True)
-class Ethnicity(Dimension):
+class Ethnicity(DimensionBase):
     """
     Dimension that represents the type of ethnicity
     """
@@ -86,35 +50,8 @@ class Ethnicity(Dimension):
     value: str = attr.ib()
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "Ethnicity":
-        parsed_enum = parse_entity_enum(
-            state_person.StateEthnicity, dimension_cell_value, enum_overrides
-        )
-        return cls(parsed_enum.value)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(state_person.StateEthnicity, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "global/ethnicity"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -243,7 +180,7 @@ class GenderRestricted(DimensionBase, enum.Enum):
 
 
 @attr.s(frozen=True)
-class Gender(Dimension):
+class Gender(DimensionBase):
     """
     Dimension that represents the type of gender
     """
@@ -251,35 +188,8 @@ class Gender(Dimension):
     value: str = attr.ib()
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "Gender":
-        parsed_enum = parse_entity_enum(
-            state_person.StateGender, dimension_cell_value, enum_overrides
-        )
-        return cls(parsed_enum.value)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(state_person.StateGender, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "global/gender"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -287,7 +197,7 @@ class Gender(Dimension):
 
 
 @attr.s(frozen=True)
-class Age(Dimension):
+class Age(DimensionBase):
     """
     Dimension that represents the age
     """
@@ -295,33 +205,8 @@ class Age(Dimension):
     value: str = attr.ib()
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "Age":
-        assert_no_overrides(cls, enum_overrides)
-        return cls(dimension_cell_value)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        raise ValueError("Can't create overrides for this class")
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return False
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "global/age/raw"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return []
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return []
 
     @property
     def dimension_value(self) -> str:

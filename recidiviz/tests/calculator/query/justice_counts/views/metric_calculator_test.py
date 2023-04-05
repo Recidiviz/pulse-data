@@ -31,7 +31,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.justice_counts.views import metric_calculator
 from recidiviz.common import date
 from recidiviz.justice_counts.dimensions import corrections, location, person
-from recidiviz.justice_counts.dimensions.base import Dimension
+from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.tests.big_query.big_query_view_test_case import BigQueryViewTestCase
 from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchema
@@ -53,7 +53,7 @@ def row(
     source_and_report_id: int,
     publish_date_str: str,
     start_date_str: str,
-    dimensions: Tuple[Dimension, ...],
+    dimensions: Tuple[DimensionBase, ...],
     raw_source_categories: List[str],
     value: int,
     end_date_str: Optional[str] = None,

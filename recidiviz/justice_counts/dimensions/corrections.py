@@ -15,20 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Dimension subclasses used for Corrections system metrics."""
+from enum import Enum
 
-from typing import Dict, List, Optional, Type
-
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.justice_counts.dimensions.base import Dimension
-from recidiviz.justice_counts.dimensions.helpers import (
-    build_entity_overrides,
-    parse_entity_enum,
-    raw_for_dimension_cls,
-)
+from recidiviz.justice_counts.dimensions.base import DimensionBase
 
 
-class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class PopulationType(DimensionBase, Enum):
     """
     Dimension that represents the type of populations
     """
@@ -40,43 +32,15 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     OTHER = "OTHER"
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "PopulationType":
-        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(cls, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/population/type"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
-    @classmethod
-    def _get_default_map(cls) -> Dict[str, "PopulationType"]:
-        return {"PRISON": cls.PRISON, "SUPERVISION": cls.SUPERVISION, "JAIL": cls.JAIL}
 
-
-class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class ReleaseType(DimensionBase, Enum):
     """
     Dimension that represents the type of incarceration release
     """
@@ -91,47 +55,15 @@ class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     OTHER = "OTHER"
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "ReleaseType":
-        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(cls, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/release/type"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
-    @classmethod
-    def _get_default_map(cls) -> Dict[str, "ReleaseType"]:
-        return {
-            "TO SUPERVISION": cls.TO_SUPERVISION,
-            "COMPLETED": cls.COMPLETED,
-            "OTHER": cls.OTHER,
-        }
 
-
-class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class AdmissionType(DimensionBase, Enum):
     """Dimension that represents the type of incarceration admission"""
 
     # Admissions due to a new sentence from the community.
@@ -144,46 +76,15 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     OTHER = "OTHER"
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "AdmissionType":
-        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(cls, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/admission/type"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
-    @classmethod
-    def _get_default_map(cls) -> Dict[str, "AdmissionType"]:
-        return {
-            "NEW COMMITMENT": cls.NEW_COMMITMENT,
-            "FROM SUPERVISION": cls.FROM_SUPERVISION,
-        }
 
-
-class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class SupervisionViolationType(DimensionBase, Enum):
     """
     Dimension that represents the type of supervision violation
     """
@@ -193,46 +94,15 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     OTHER = "OTHER"
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "SupervisionViolationType":
-        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(cls, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/supervision_violation/type"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
-    @classmethod
-    def _get_default_map(cls) -> Dict[str, "SupervisionViolationType"]:
-        return {
-            "NEW CRIME": cls.NEW_CRIME,
-            "TECHNICAL": cls.TECHNICAL,
-        }
 
-
-class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+class SupervisionType(DimensionBase, Enum):
     """Dimension that represents the type of supervision."""
 
     PAROLE = "PAROLE"
@@ -242,40 +112,9 @@ class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     OTHER = "OTHER"
 
     @classmethod
-    def get(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> "SupervisionType":
-        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
-
-    @classmethod
-    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(cls, mapping_overrides)
-
-    @classmethod
-    def is_normalized(cls) -> bool:
-        return True
-
-    @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/supervision/type"
-
-    @classmethod
-    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
-        return [raw_for_dimension_cls(cls)]
-
-    @classmethod
-    def generate_dimension_classes(
-        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
-    ) -> List[Dimension]:
-        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
         return self.value
-
-    @classmethod
-    def _get_default_map(cls) -> Dict[str, "SupervisionType"]:
-        return {
-            "PAROLE": cls.PAROLE,
-            "PROBATION": cls.PROBATION,
-        }
