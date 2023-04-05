@@ -241,7 +241,11 @@ class AgencyUserAccountAssociationInterface:
             return editor_json
 
         source_id = spreadsheets[0].agency_id
-        uploader_ids = [spreadsheet.uploaded_by or [] for spreadsheet in spreadsheets]
+        uploader_ids = [
+            spreadsheet.uploaded_by
+            for spreadsheet in spreadsheets
+            if spreadsheet.uploaded_by is not None
+        ]
 
         uploaded_by_users = (
             session.query(schema.UserAccount)

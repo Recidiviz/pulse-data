@@ -16,6 +16,7 @@
 # =============================================================================
 """ Contains Justice Counts constants """
 import enum
+from typing import Dict
 
 REPORTING_FREQUENCY_CONTEXT_KEY = "REPORTING_FREQUENCY"
 
@@ -25,3 +26,13 @@ DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS = "DISAGGREGATED_BY_SUPERVISION_SUBSYSTE
 class DatapointGetRequestEntryPoint(enum.Enum):
     REPORT_PAGE = "REPORT_PAGE"
     METRICS_TAB = "METRICS_TAB"
+
+
+# BUCKET_ID_TO_AGENCY_ID will map GCS bucket id to an agency id.
+# Each agency will have one bucket with various folders for each system.
+# It is secure to save this dictionary in source code because each
+# bucket will authenticate the user and only be accessible by the
+# agency through a service account and recidiviz admin.
+BUCKET_ID_TO_AGENCY_ID: Dict[str, int] = {
+    "justice-counts-sftp-test": 164,  # Agency ID is NCDPS on staging
+}

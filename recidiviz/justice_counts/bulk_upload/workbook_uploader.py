@@ -53,8 +53,8 @@ class WorkbookUploader:
         self,
         system: schema.System,
         agency_id: int,
-        user_account: schema.UserAccount,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.system = system
         self.agency_id = agency_id
@@ -127,7 +127,7 @@ class WorkbookUploader:
             reports=reports
         )
         existing_datapoints_dict_unchanged = {
-            unique_key: float(datapoint.value) if datapoint.value is not None else None
+            unique_key: datapoint.get_value()
             for unique_key, datapoint in existing_datapoints_dict.items()
         }
         # Sheets that have been successfully ingested in upload_rows will be added to
@@ -238,7 +238,9 @@ class WorkbookUploader:
             if updated_report.status.value != "DRAFT":
                 ReportInterface.update_report_metadata(
                     report=updated_report,
-                    editor_id=self.user_account.id,
+                    editor_id=self.user_account.id
+                    if self.user_account is not None
+                    else None,
                     status=ReportStatus.DRAFT.value,
                 )
 
@@ -249,9 +251,7 @@ class WorkbookUploader:
             if (
                 unique_key in existing_datapoints_dict_unchanged
                 and existing_datapoints_dict_unchanged[unique_key]
-                != float(datapoint.value)
-                if datapoint.value is not None
-                else None
+                != datapoint.get_value()
             ):
                 # datapoint that previously existed has been updated/changed
                 updated_report = reports_by_time_range[(unique_key[0], unique_key[1])][
@@ -263,7 +263,9 @@ class WorkbookUploader:
                 if updated_report.status.value != "DRAFT":
                     ReportInterface.update_report_metadata(
                         report=updated_report,
-                        editor_id=self.user_account.id,
+                        editor_id=self.user_account.id
+                        if self.user_account is not None
+                        else None,
                         status=ReportStatus.DRAFT.value,
                     )
 

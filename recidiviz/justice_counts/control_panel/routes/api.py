@@ -16,15 +16,17 @@
 # =============================================================================
 """Implements API routes for the Justice Counts Control Panel backend API."""
 import logging
+import os
 from collections import defaultdict
 from http import HTTPStatus
-from itertools import groupby
 from typing import Callable, DefaultDict, Dict, List, Optional
 
 import pandas as pd
 from flask import Blueprint, Response, jsonify, make_response, request, send_file
 from flask_sqlalchemy_session import current_session
-from flask_wtf.csrf import generate_csrf
+from flask_wtf.csrf import CSRFProtect, generate_csrf
+from google.auth.transport import requests
+from google.oauth2 import id_token
 from psycopg2.errors import UniqueViolation  # pylint: disable=no-name-in-module
 from sqlalchemy.exc import IntegrityError
 from werkzeug.wrappers import response
@@ -51,9 +53,15 @@ from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import BUCKET_ID_TO_AGENCY_ID
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.environment import in_development
 from recidiviz.utils.flask_exception import FlaskException
+from recidiviz.utils.pubsub_helper import (
+    BUCKET_ID,
+    OBJECT_ID,
+    extract_pubsub_message_from_json,
+)
 from recidiviz.utils.types import assert_type
 
 ALLOWED_EXTENSIONS = ["xlsx", "xls"]
@@ -61,6 +69,8 @@ ALLOWED_EXTENSIONS = ["xlsx", "xls"]
 
 def get_api_blueprint(
     auth_decorator: Callable,
+    csrf: CSRFProtect,
+    service_account_email: str,
     secret_key: Optional[str] = None,
     auth0_client: Optional[Auth0Client] = None,
 ) -> Blueprint:
@@ -969,6 +979,91 @@ def get_api_blueprint(
 
     ### Bulk Upload ###
 
+    # This endpoint is triggered by a pub/sub subscription on an agency's GCS bucket.
+    # To trigger it manually, run (substituting PROJECT_ID and FILENAME):
+    # `gcloud pubsub topics publish justice-counts-sftp-topic
+    #  --attribute=objectId=$FILENAME`
+    @csrf.exempt  # type: ignore[arg-type]
+    @api_blueprint.route("/ingest-spreadsheet", methods=["POST"])
+    def ingest_workbook_from_gcs() -> response.Response:
+        bearer_token = request.headers.get("Authorization")
+        if bearer_token is None:
+            raise JusticeCountsServerError(
+                code="justice_counts_no_bearer_token",
+                description="No Bearer Token was sent in Authorization header of the request.",
+            )
+
+        token = bearer_token.split(" ")[1]
+        # Verify and decode the JWT. `verify_oauth2_token` verifies
+        # the JWT signature, the `aud` claim, and the `exp` claim.
+        claim = id_token.verify_oauth2_token(token, requests.Request())
+        if (
+            claim["email"] != service_account_email
+            or claim["email_verified"] is not True
+        ):
+            raise JusticeCountsServerError(
+                code="request_not_authenticated",
+                description="This request could not be authenticated",
+            )
+
+        try:
+            message = extract_pubsub_message_from_json(request.get_json())
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+        if (
+            not message.attributes
+            or OBJECT_ID not in message.attributes
+            or BUCKET_ID not in message.attributes
+        ):
+            raise JusticeCountsServerError(
+                code="justice_counts_bad_pub_sub",
+                description="Invalid Pub/Sub message.",
+            )
+
+        attributes = message.attributes
+
+        filename = attributes[OBJECT_ID]
+        bucket_id = attributes[BUCKET_ID]
+        agency_id = BUCKET_ID_TO_AGENCY_ID.get(bucket_id, None)
+        if agency_id is None:
+            raise JusticeCountsServerError(
+                code="no_bucket_for_agency",
+                description=f"No agency or system associated with GCS bucket with id {bucket_id}",
+            )
+
+        agency = AgencyInterface.get_agency_by_id(
+            session=current_session, agency_id=agency_id
+        )
+        if filename is None:
+            raise JusticeCountsServerError(
+                code="justice_counts_missing_file_name_sub",
+                description="Missing Filename",
+            )
+
+        if not allowed_file(filename):
+            raise JusticeCountsServerError(
+                code="file_type_error",
+                description="Invalid file type: All files must be of type .xlsx.",
+            )
+
+        system = schema.System[agency.systems[0]]
+        if len(agency.systems) > 1:
+            system_str, _ = os.path.split(attributes[OBJECT_ID])
+            system = schema.System[system_str]
+
+        SpreadsheetInterface.ingest_workbook_from_gcs(
+            session=current_session,
+            bucket_name=bucket_id,
+            system=system,
+            agency=agency,
+            filename=filename,
+        )
+
+        current_session.commit()
+
+        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
+
     @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
     def get_spreadsheets(agency_id: int) -> Response:
@@ -1054,19 +1149,11 @@ def get_api_blueprint(
             agency = AgencyInterface.get_agency_by_id(
                 session=current_session, agency_id=agency_id
             )
-            agency_datapoints = DatapointInterface.get_agency_datapoints(
-                session=current_session, agency_id=agency_id
-            )
-            agency_datapoints_sorted_by_metric_key = sorted(
-                agency_datapoints, key=lambda d: d.metric_definition_key
-            )
-            metric_key_to_agency_datapoints = {
-                k: list(v)
-                for k, v in groupby(
-                    agency_datapoints_sorted_by_metric_key,
-                    key=lambda d: d.metric_definition_key,
+            metric_key_to_agency_datapoints = (
+                DatapointInterface.get_metric_key_to_agency_datapoints(
+                    session=current_session, agency_id=agency.id
                 )
-            }
+            )
             metric_definitions = MetricInterface.get_metric_definitions_for_systems(
                 systems={
                     schema.System[system]
@@ -1079,6 +1166,8 @@ def get_api_blueprint(
                 # the agency is uploading for supervision, which sheets contain
                 # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
                 # and PROBATION
+                # TODO(#19744): Refactor this logic so that it lives in
+                # MetricInterface.get_metric_definitions_for_systems.
                 else {schema.System[system]},
             )
 
