@@ -20,10 +20,10 @@ max_allowed_error_overrides:
       TODO(#15057) - Known issue where additional deduping is required. It affects
       literally one person so even this threshold is pretty generous
   - validation_name: client_record_duplicate_person_external_ids
-    hard_max_allowed_error_override: 0.001
+    hard_max_allowed_error_override: 0.005
     override_reason:
-      TODO(#15057) - Known issue where additional deduping is required. It affects
-      literally one person so even this threshold is pretty generous
+      TODO(#19985) - current_email_address was hydrated and now there are duplicate entries per external_id in state_person.
+      Planned rerun will resolve.
   - validation_name: most_recent_face_to_face_contact_date_by_person_by_state_comparison
     hard_max_allowed_error_override: 0.20
     override_reason: |
