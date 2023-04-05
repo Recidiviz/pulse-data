@@ -32,6 +32,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateIncarcerationSentence,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
     NormalizedStateSupervisionSentence,
     NormalizedStateSupervisionViolatedConditionEntry,
@@ -64,6 +65,7 @@ NORMALIZED_ENTITY_CLASSES: List[Type[NormalizedStateEntity]] = [
     NormalizedStateSupervisionSentence,
     NormalizedStateCharge,
     NormalizedStateEarlyDischarge,
+    NormalizedStateSupervisionContact,
 ]
 
 NormalizedStateEntityT = TypeVar("NormalizedStateEntityT", bound=NormalizedStateEntity)

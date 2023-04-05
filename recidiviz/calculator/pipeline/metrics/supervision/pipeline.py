@@ -64,7 +64,7 @@ class SupervisionMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
                 entities.StatePersonRace,
                 entities.StatePersonEthnicity,
                 entities.StatePersonExternalId,
-                entities.StateSupervisionContact,
+                normalized_entities.NormalizedStateSupervisionContact,
                 normalized_entities.NormalizedStateSupervisionSentence,
                 normalized_entities.NormalizedStateIncarcerationSentence,
                 normalized_entities.NormalizedStateAssessment,

@@ -42,6 +42,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.se
     SentenceNormalizationManager,
     StateSpecificSentenceNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
+    SupervisionContactNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
 )
@@ -68,6 +71,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationPeriod,
     StateIncarcerationSentence,
     StateProgramAssignment,
+    StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
@@ -128,6 +132,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             ],
             program_assignments=normalizer_args[StateProgramAssignment.__name__],
             assessments=normalizer_args[StateAssessment.__name__],
+            supervision_contacts=normalizer_args[StateSupervisionContact.__name__],
             charge_offense_descriptions_to_labels=normalizer_args[
                 STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
             ],
@@ -149,6 +154,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         violation_responses: List[StateSupervisionViolationResponse],
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
+        supervision_contacts: List[StateSupervisionContact],
         charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
@@ -167,6 +173,7 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             assessments=assessments,
+            supervision_contacts=supervision_contacts,
             charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
             field_index=self.field_index,
         )
@@ -189,6 +196,7 @@ def all_normalized_entities(
     incarceration_sentences: List[StateIncarcerationSentence],
     supervision_sentences: List[StateSupervisionSentence],
     assessments: List[StateAssessment],
+    supervision_contacts: List[StateSupervisionContact],
     charge_offense_descriptions_to_labels: List[Dict[str, Any]],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
@@ -262,6 +270,17 @@ def all_normalized_entities(
         program_assignment_manager.normalized_program_assignments_and_additional_attributes()
     )
 
+    supervision_contact_manager = SupervisionContactNormalizationManager(
+        supervision_contacts
+    )
+
+    (
+        processed_supervision_contacts,
+        additional_sc_attributes,
+    ) = (
+        supervision_contact_manager.normalized_supervision_contacts_and_additional_attributes()
+    )
+
     (
         (processed_incarceration_periods, additional_ip_attributes),
         (processed_supervision_periods, additional_sp_attributes),
@@ -297,6 +316,7 @@ def all_normalized_entities(
             additional_pa_attributes,
             additional_vr_attributes,
             additional_assessments_attributes,
+            additional_sc_attributes,
             additional_incarceration_sentence_attributes,
             additional_supervision_sentence_attributes,
         ]
@@ -324,6 +344,7 @@ def all_normalized_entities(
             StateSupervisionViolation.__name__: distinct_processed_violations,
             StateProgramAssignment.__name__: processed_program_assignments,
             StateAssessment.__name__: processed_assessments,
+            StateSupervisionContact.__name__: processed_supervision_contacts,
             StateIncarcerationSentence.__name__: processed_incarceration_sentences,
             StateSupervisionSentence.__name__: processed_supervision_sentences,
         },

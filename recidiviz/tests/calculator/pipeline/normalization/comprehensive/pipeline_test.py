@@ -267,6 +267,12 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
 
         program_assignment_data = [normalized_database_base_dict(program_assignment)]
 
+        supervision_contact = database_test_utils.generate_test_supervision_contact(
+            fake_person_id
+        )
+
+        supervision_contact_data = [normalized_database_base_dict(supervision_contact)]
+
         assessment = database_test_utils.generate_test_assessment(fake_person_id)
 
         assessment_data = [normalized_database_base_dict(assessment)]
@@ -307,6 +313,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             schema.StateSupervisionViolationTypeEntry.__tablename__: supervision_violation_type_data,
             schema.StateSupervisionViolatedConditionEntry.__tablename__: supervision_violated_condition_data,
             schema.StateProgramAssignment.__tablename__: program_assignment_data,
+            schema.StateSupervisionContact.__tablename__: supervision_contact_data,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateCharge.__tablename__: charge_data,
             schema.StateEarlyDischarge.__tablename__: early_discharge_data,

@@ -47,6 +47,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.se
     SentenceNormalizationManager,
     StateSpecificSentenceNormalizationDelegate,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
+    SupervisionContactNormalizationManager,
+)
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     StateSpecificSupervisionNormalizationDelegate,
     SupervisionPeriodNormalizationManager,
@@ -96,6 +99,7 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
                 entities.StatePerson,
                 entities.StateCharge,
                 entities.StateEarlyDischarge,
+                entities.StateSupervisionContact,
             ],
             required_reference_tables=[
                 STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
@@ -132,4 +136,5 @@ class ComprehensiveNormalizationPipelineRunDelegate(NormalizationPipelineRunDele
             ViolationResponseNormalizationManager,
             AssessmentNormalizationManager,
             SentenceNormalizationManager,
+            SupervisionContactNormalizationManager,
         ]

@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateIncarcerationPeriod,
     NormalizedStateProgramAssignment,
     NormalizedStateSupervisionCaseTypeEntry,
+    NormalizedStateSupervisionContact,
     NormalizedStateSupervisionPeriod,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
@@ -64,6 +65,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateIncarcerationSentence,
     StatePerson,
     StateProgramAssignment,
+    StateSupervisionContact,
     StateSupervisionPeriod,
     StateSupervisionSentence,
     StateSupervisionViolation,
@@ -110,6 +112,7 @@ class TestNormalizeEntities(unittest.TestCase):
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
         persons: Optional[List[StatePerson]] = None,
+        supervision_contacts: Optional[List[StateSupervisionContact]] = None,
         charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
     ) -> EntityNormalizerResult:
@@ -124,6 +127,7 @@ class TestNormalizeEntities(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
+            StateSupervisionContact.__name__: supervision_contacts or [],
             STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
             or [],
         }
@@ -320,6 +324,9 @@ class TestNormalizeEntities(unittest.TestCase):
                 attr.evolve(supervision_sentence)
                 for supervision_sentence in self.full_graph_person.supervision_sentences
             ],
+            StateSupervisionContact.__name__: [
+                attr.evolve(sc) for sc in self.full_graph_person.supervision_contacts
+            ],
         }
 
         normalized_entities, additional_attributes_map = self._run_normalize_entities(
@@ -328,6 +335,7 @@ class TestNormalizeEntities(unittest.TestCase):
             violation_responses=violation_responses,
             program_assignments=self.full_graph_person.program_assignments,
             assessments=self.full_graph_person.assessments,
+            supervision_contacts=self.full_graph_person.supervision_contacts,
             incarceration_sentences=self.full_graph_person.incarceration_sentences,
             supervision_sentences=self.full_graph_person.supervision_sentences,
             charge_offense_descriptions_to_labels=[
@@ -437,6 +445,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         supervision_periods: Optional[List[StateSupervisionPeriod]] = None,
         violation_responses: Optional[List[StateSupervisionViolationResponse]] = None,
         program_assignments: Optional[List[StateProgramAssignment]] = None,
+        supervision_contacts: Optional[List[StateSupervisionContact]] = None,
         incarceration_sentences: Optional[List[StateIncarcerationSentence]] = None,
         supervision_sentences: Optional[List[StateSupervisionSentence]] = None,
         assessments: Optional[List[StateAssessment]] = None,
@@ -454,6 +463,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionSentence.__name__: supervision_sentences or [],
             StateAssessment.__name__: assessments or [],
             StatePerson.__name__: persons or [],
+            StateSupervisionContact.__name__: supervision_contacts or [],
             STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
             or [],
         }
@@ -535,6 +545,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     **{
                         field: value
                         for field, value in sp_copy.__dict__.items()
+                        # TODO(#20010): remove supervising_officer filtering after legacy field is deleted
                         if field not in ("supervising_officer", "case_type_entries")
                     },
                     **{
@@ -557,6 +568,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     **{
                         field: value
                         for field, value in pa.__dict__.items()
+                        # TODO(#20010): remove this filtering after legacy field is deleted
                         if field != "referring_agent"
                     },
                     **{
@@ -567,11 +579,28 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
 
             normalized_pas.append(normalized_pa)
 
+        normalized_scs: List[NormalizedStateSupervisionContact] = []
+
+        for index, sc in enumerate(self.full_graph_person.supervision_contacts):
+            normalized_sc = NormalizedStateSupervisionContact.new_with_defaults(
+                **{
+                    **{
+                        field: value
+                        for field, value in sc.__dict__.items()
+                        # TODO(#20010): remove this filtering after legacy field is deleted
+                        if field != "contacted_agent"
+                    },
+                }
+            )
+
+            normalized_scs.append(normalized_sc)
+
         normalized_entities = self._normalize_entities_and_convert(
             incarceration_periods=self.full_graph_person.incarceration_periods,
             supervision_periods=self.full_graph_person.supervision_periods,
             violation_responses=get_violation_tree().supervision_violation_responses,
             program_assignments=self.full_graph_person.program_assignments,
+            supervision_contacts=self.full_graph_person.supervision_contacts,
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
@@ -582,6 +611,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateAssessment.__name__: [],
             StateIncarcerationSentence.__name__: [],
             StateSupervisionSentence.__name__: [],
+            StateSupervisionContact.__name__: normalized_scs,
         }
 
         for entity_name, items in normalized_entities.items():
@@ -610,6 +640,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             supervision_periods=None,
             violation_responses=get_violation_tree().supervision_violation_responses,
             program_assignments=None,
+            supervision_contacts=None,
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {
@@ -620,6 +651,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateAssessment.__name__: [],
             StateIncarcerationSentence.__name__: [],
             StateSupervisionSentence.__name__: [],
+            StateSupervisionContact.__name__: [],
         }
 
         for entity_name, entity_list in normalized_entities.items():
