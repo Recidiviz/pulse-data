@@ -102,7 +102,47 @@ def check_staff_do_not_have_multiple_ids_same_type(
     return True
 
 
+def check_all_staff_have_an_external_id(
+    session: Session, region_code: str, _output_staff: List[schema.StateStaff]
+) -> bool:
+    """Validates that all state_staff have at least one external id."""
+
+    check_not_dirty(session)
+
+    logging.info(
+        "[Invariant validation] Checking that all staff members have at least one "
+        "external id."
+    )
+
+    query = f"""
+SELECT staff_id
+FROM 
+  state_staff s
+LEFT OUTER JOIN 
+  state_staff_external_id eid
+USING (staff_id)
+WHERE s.state_code = '{region_code.upper()}' AND eid.staff_id IS NULL
+LIMIT 1;"""
+
+    results = session.execute(query).all()
+
+    if results:
+        staff_id = first(results)
+        logging.error(
+            "[Invariant validation] Found staff members with no external ids. "
+            "First example: staff_id=[%s].",
+            staff_id,
+        )
+        return False
+
+    logging.info("[Invariant validation] Found no staff members without external ids.")
+    return True
+
+
 def get_state_staff_database_invariant_validators() -> List[
     Callable[[Session, str, List[schema.StateStaff]], bool]
 ]:
-    return [check_staff_do_not_have_multiple_ids_same_type]
+    return [
+        check_staff_do_not_have_multiple_ids_same_type,
+        check_all_staff_have_an_external_id,
+    ]
