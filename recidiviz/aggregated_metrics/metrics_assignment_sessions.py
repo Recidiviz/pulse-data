@@ -80,8 +80,6 @@ sample AS (
             {nonnull_end_date_clause("assign.end_date_exclusive")},
             {nonnull_end_date_clause("sample.end_date_exclusive")}
         ) AS end_date,
-        #TODO(#16821): Remove dummy once create_sub_sessions_with_attributes supports state-level aggregation
-        1 AS dummy,
     FROM 
         `{client_period_table}` assign
     INNER JOIN
@@ -96,7 +94,7 @@ sample AS (
     WHERE
         CONCAT({aggregation_level.get_original_columns_query_string(prefix="assign")}) IS NOT NULL)
 ,
-{create_sub_sessions_with_attributes("potentially_adjacent_spans")}
+{create_sub_sessions_with_attributes(table_name="potentially_adjacent_spans", index_columns=["person_id"])}
 , sub_sessions_with_attributes_distinct AS (
     SELECT DISTINCT *
     FROM sub_sessions_with_attributes
