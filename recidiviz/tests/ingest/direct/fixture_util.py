@@ -18,7 +18,9 @@
 import datetime
 import os
 from enum import Enum
-from typing import Optional
+from typing import Iterable, Iterator, List, Optional, Tuple
+
+import pandas as pd
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsBucketPath, GcsfsFilePath
@@ -35,6 +37,7 @@ from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewRawFileDependency,
 )
 from recidiviz.tests.ingest.direct import direct_ingest_fixtures
+from recidiviz.utils import csv
 
 
 def _direct_ingest_raw_file_path(
@@ -165,6 +168,23 @@ class DirectIngestFixtureDataFileType(Enum):
             raise ValueError(f"Unexpected fixture file type [{self}]")
 
         return os.path.join(region_fixtures_directory_path, subdir)
+
+
+def replace_empty_with_null(
+    values: Iterable[Tuple[str, ...]]
+) -> Iterator[Tuple[Optional[str], ...]]:
+    """Replaces empty string values in tuple with null."""
+    for row in values:
+        yield tuple(value or None for value in row)
+
+
+def load_dataframe_from_path(
+    raw_fixture_path: str, fixture_columns: List[str]
+) -> pd.DataFrame:
+    """Given a raw fixture path and a list of fixture columns, load the raw data into a dataframe."""
+    mock_data = csv.get_rows_as_tuples(raw_fixture_path)
+    values = replace_empty_with_null(mock_data)
+    return pd.DataFrame(values, columns=fixture_columns)
 
 
 def direct_ingest_fixture_path(

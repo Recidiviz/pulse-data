@@ -20,14 +20,12 @@ ingest view queries.
 import abc
 import datetime
 import os.path
-from typing import Iterable, Iterator, List, Optional, Tuple, Type, Union
+from typing import List, Tuple
 
 import pandas as pd
 import pytest
 import pytz
 from google.cloud import bigquery
-from more_itertools import one
-from pandas.testing import assert_frame_equal
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
@@ -68,18 +66,13 @@ from recidiviz.tests.big_query.fakes.fake_table_schema import PostgresTableSchem
 from recidiviz.tests.ingest.direct.fixture_util import (
     ingest_view_raw_table_dependency_fixture_path,
     ingest_view_results_fixture_path,
+    load_dataframe_from_path,
+    replace_empty_with_null,
 )
 from recidiviz.utils import csv, environment
 
 DEFAULT_FILE_UPDATE_DATETIME = datetime.datetime(2021, 4, 14, 0, 0, 0, tzinfo=pytz.UTC)
 DEFAULT_QUERY_RUN_DATETIME = datetime.datetime(2021, 4, 15, 0, 0, 0)
-
-
-def _replace_empty_with_null(
-    values: Iterable[Tuple[str, ...]]
-) -> Iterator[Tuple[Optional[str], ...]]:
-    for row in values:
-        yield tuple(value or None for value in row)
 
 
 class IngestViewTestBigQueryDatabaseDelegate(BigQueryTestHelper):
@@ -244,9 +237,7 @@ class IngestViewQueryTester:
             raw_file_dependency_config, raw_fixture_path
         )
 
-        mock_data = csv.get_rows_as_tuples(raw_fixture_path)
-        values = _replace_empty_with_null(mock_data)
-        raw_data_df = pd.DataFrame(values, columns=fixture_columns)
+        raw_data_df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
 
         if not raw_file_dependency_config.filter_to_latest:
             # We don't add metadata columns since this fixture file should already
@@ -282,65 +273,6 @@ class IngestViewQueryTester:
 
         return query_view(self.helper, ingest_view.ingest_view_name, view_query)
 
-    @staticmethod
-    def fixture_comparison_data_type_for_column(
-        df: pd.DataFrame, column: str
-    ) -> Union[Type, pd.StringDtype]:
-        """Inspects data in the provided |column| in |df| to determine the column data
-        type (dtype) that should be used to compare this column in |df| to a column in
-        a DataFrame read from a fixture file.
-        """
-        column_value_types = {
-            # Collect types, filtering out None, pd.NaT, np.nan values.
-            type(val)
-            for val in df[column].tolist()
-            if isinstance(val, list) or not pd.isnull(val)
-        }
-
-        if len(column_value_types) == 0:
-            # There are no values in this column so we can't conclude what the type
-            # is.
-            return object
-
-        if len(column_value_types) > 1:
-            raise ValueError(
-                f"Found multiple conflicting types [{column_value_types}] in column "
-                f"[{column}] with values: {df[column].tolist()}"
-            )
-
-        python_type = one(column_value_types)
-
-        if python_type == int:
-            return int
-
-        if python_type == float:
-            return float
-
-        if python_type in (
-            str,
-            # Boolean values are represented in fixtures as 'True' and 'False' -
-            # we convert these back to strings in the result for comparison
-            # to fixture data.
-            bool,
-            # Pandas doesn't support dates like 9999-12-31 which are often
-            # present in query results (and valid in BQ). We convert these types
-            # back to strings for comparison.
-            datetime.datetime,
-            datetime.date,
-            pd.Timestamp,
-            # Collection types are not hashable so there are issues with setting
-            # collection type columns as index columns.
-            list,
-            set,
-            dict,
-        ):
-            return pd.StringDtype()
-
-        raise ValueError(
-            f"Found unhandled data type [{python_type}] for column [{column}] "
-            f"with values [{df[column].tolist()}]"
-        )
-
     def compare_results_to_fixture(
         self, results: pd.DataFrame, expected_output_fixture_path: str
     ) -> None:
@@ -356,36 +288,10 @@ class IngestViewQueryTester:
 
         columns = self.helper.normalize_expected_columns(expected_output.pop(0))
         expected = pd.DataFrame(
-            _replace_empty_with_null(expected_output), columns=columns
+            replace_empty_with_null(expected_output), columns=columns
         )
 
-        if sorted(results.columns) != sorted(expected.columns):
-            raise ValueError(
-                f"Columns in expected and actual results do not match (order agnostic). "
-                f"Expected: {expected.columns}. Actual: {results.columns}."
-            )
-
-        data_types = {
-            column: self.fixture_comparison_data_type_for_column(results, column)
-            for column in results.columns.tolist()
-        }
-        dimensions = results.columns.tolist()
-
-        # Reorder the columns in the expected results to match the actual result column
-        # order.
-        expected = expected[results.columns]
-
-        expected = self.helper.apply_types_and_sort(expected, data_types, dimensions)
-
-        results = self.helper.apply_types_and_sort(results, data_types, dimensions)
-
-        print("**** EXPECTED ****")
-        print(expected.info())
-        print(expected)
-        print("**** ACTUAL ****")
-        print(results.info())
-        print(results)
-        assert_frame_equal(expected, results)
+        self.helper.compare_expected_and_result_dfs(expected=expected, results=results)
 
 
 # TODO(#15020): Delete this once all view tests are migrated
