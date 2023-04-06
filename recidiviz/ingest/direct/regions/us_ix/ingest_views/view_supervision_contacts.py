@@ -98,6 +98,8 @@ atlas_contacts AS (
         ON oni.StaffId = e.EmployeeId
     WHERE NoteTypeId in ('3', '78')  -- Filter to Id = 3 to get "Supervision Notes" and Id = 78 to get "Laserfische Notes"
     AND (DATE(NoteDate)) >= '2022-11-10' -- We want Atlas data from when it started getting used, which seems to be 11-10-2022
+    -- Since there's one day of overlap in the date range for legacy and new contacts, make sure we aren't grabbing legacy contacts
+    AND OffenderNoteInfoId not in (select OffenderNoteInfoId from legacy_contacts)
 )
 SELECT
     OffenderId,
