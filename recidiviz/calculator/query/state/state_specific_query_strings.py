@@ -786,6 +786,23 @@ def pathways_state_specific_supervision_level(
     """
 
 
+def pathways_state_specific_officer_filter(
+    state_code_query: str = "state_code",
+) -> str:
+    """State-specific logic to filter supervising_officer for Pathways."""
+    return f"""
+        CASE 
+            WHEN {state_code_query} in ('US_ID', 'US_IX') THEN
+                (
+                    -- supervising_officer is external_id 
+                    NOT REGEXP_CONTAINS(UPPER(supervising_officer), r'^D\\d')
+                    AND UPPER(supervising_officer) != 'UNKNOWN'
+                )
+            ELSE TRUE
+        END
+    """
+
+
 def get_all_primary_supervision_external_id_types() -> Tuple[str, ...]:
     """Returns a tuple of strings that indicate all of the state external id types for queries."""
     supervision_id_types = []
