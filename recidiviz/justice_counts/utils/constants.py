@@ -34,5 +34,8 @@ class DatapointGetRequestEntryPoint(enum.Enum):
 # bucket will authenticate the user and only be accessible by the
 # agency through a service account and recidiviz admin.
 BUCKET_ID_TO_AGENCY_ID: Dict[str, int] = {
-    "justice-counts-sftp-test": 164,  # Agency ID is NCDPS on staging
+    "justice-counts-sftp-test": 164,  # NCDPS on staging
+    "clackamas-county-jail-staging": 161,  # Clackamas County Jail on staging
+    "douglas-county-district-attorney-staging": 163,  # Douglas County District Attorney's Office on staging
+    "justice-counts-supervision-three": 168,  # Supervision 3 on Staging
 }
