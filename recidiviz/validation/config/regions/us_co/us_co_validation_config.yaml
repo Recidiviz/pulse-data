@@ -16,3 +16,9 @@ num_allowed_rows_overrides:
   - validation_name: session_liberty_releases_with_no_sentence_completion_date
     hard_num_allowed_rows_override: 3000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 2,144 rows #TODO(#16240)
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 200
+    override_reason: Current failing level as of 4/5/23 is 82 rows (0.02%)
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 100
+    override_reason: Current failing level as of 4/5/23 is 29 rows (0.008%)

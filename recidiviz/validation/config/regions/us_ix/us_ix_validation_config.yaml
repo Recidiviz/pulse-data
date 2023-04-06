@@ -56,3 +56,9 @@ num_allowed_rows_overrides:
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 12000
     override_reason: TODO(#18817) - Issue is coming from ingest charges that aren't attached to an ingested sentence.  Will fix during bug bash.
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 0 rows
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 13 rows (0.004%)

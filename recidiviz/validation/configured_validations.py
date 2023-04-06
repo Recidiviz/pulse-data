@@ -214,19 +214,25 @@ from recidiviz.validation.views.state.revocation_matrix_distribution_by_race_com
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import (
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.sentence_end_dates_before_start_dates import (
+from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_descriptions import (
+    NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.sentences.normalized_state_charge_missing_uniform_offense_labels import (
+    NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER,
+)
+from recidiviz.validation.views.state.sentences.sentence_end_dates_before_start_dates import (
     SENTENCE_END_DATES_BEFORE_START_DATES_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.sentences_missing_date_imposed import (
+from recidiviz.validation.views.state.sentences.sentences_missing_date_imposed import (
     SENTENCES_MISSING_DATE_IMPOSED_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.sentences_undefined_relationship import (
+from recidiviz.validation.views.state.sentences.sentences_undefined_relationship import (
     SENTENCES_UNDEFINED_RELATIONSHIP_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.session_liberty_releases_with_no_sentence_completion_date import (
+from recidiviz.validation.views.state.sentences.session_liberty_releases_with_no_sentence_completion_date import (
     SESSION_LIBERTY_RELEASES_WITH_NO_SENTENCE_COMPLETION_DATE_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.session_new_admissions_with_no_sentence_date_imposed import (
+from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_sentence_date_imposed import (
     SESSION_NEW_ADMISSIONS_WITH_NO_SENTENCE_DATE_IMPOSED_VIEW_BUILDER,
 )
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
@@ -511,6 +517,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=OPPORTUNITIES_WITHOUT_PERSON_RECORDS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=NORMALIZED_STATE_CHARGE_MISSING_DESCRIPTIONS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(
