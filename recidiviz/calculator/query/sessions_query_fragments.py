@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -132,6 +132,7 @@ sub_sessions_with_attributes AS (
 
 def aggregate_adjacent_spans(
     table_name: str,
+    index_columns: Optional[List[str]] = None,
     attribute: Optional[Union[str, List[str]]] = None,
     session_id_output_name: Optional[str] = "session_id",
     is_struct: Optional[bool] = False,
@@ -148,6 +149,10 @@ def aggregate_adjacent_spans(
     ------
     table_name : str
         Name of the CTE of spans to be sessionized
+
+    index_columns : Optional[List[str]]
+        List of column names to use as index columns for the input spans. If no index columns
+        are provided, default to [`person_id`, `state_code`].
 
     attribute : Optional[Union[str, List[str]]], default None
         The name of the column(s) for which a change in value triggers a new session. This parameter can be
@@ -170,6 +175,10 @@ def aggregate_adjacent_spans(
         struct in the view. If this flag is True, there can only be one value specified in the `attribute`
         parameter.
     """
+    # Default index columns are `person_id` and `state_code`.
+    if index_columns is None:
+        index_columns = ["person_id", "state_code"]
+    index_col_str = ", ".join(index_columns)
 
     if attribute:
 
@@ -211,8 +220,7 @@ def aggregate_adjacent_spans(
 
     return f"""
     SELECT
-        person_id,
-        state_code,
+        {index_col_str},
         {session_id_output_name},
         MIN(start_date) AS start_date,
         {revert_nonnull_end_date_clause(f'MAX({end_date_field_name})')} AS {end_date_field_name},
@@ -221,23 +229,22 @@ def aggregate_adjacent_spans(
         (
         SELECT 
             *,
-            SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY person_id, state_code
+            SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY {index_col_str}
                 ORDER BY start_date, {end_date_field_name}) AS {session_id_output_name}
         FROM
             (
             SELECT
-                person_id,
-                state_code,
+                {index_col_str},
                 start_date,
                 {nonnull_end_date_clause(f'{end_date_field_name}')} AS {end_date_field_name},
                 COALESCE(LAG({end_date_field_name}) OVER w != start_date, TRUE) AS date_gap,
                 {attribute_change_str}
                 {attribute_col_str}
             FROM {table_name}
-            WINDOW w AS (PARTITION BY person_id ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})
+            WINDOW w AS (PARTITION BY {index_col_str} ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})
             )
         )
-        GROUP BY 1,2,3
+        GROUP BY {index_col_str}, {session_id_output_name}
 """
 
 
