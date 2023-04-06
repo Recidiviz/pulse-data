@@ -56,9 +56,9 @@ WITH external_data AS (
   ON internal.state_code = metrics.state_code AND internal.person_id = metrics.person_id AND internal.release_date = metrics.admission_date
   WHERE 
     CASE 
-      WHEN internal,state_code = 'US_PA' THEN 
+      WHEN internal.state_code = 'US_PA' THEN 
         (release_reason != 'TRANSFER' AND admission_date IS NULL)
-      WHEN internal,state_code = 'US_IX' THEN
+      WHEN internal.state_code = 'US_IX' THEN
         -- Exclude TRANSFER_TO_OTHER_JURISDICTION because it doesn't seem to be included in Idaho's external validation data
         release_reason != 'TRANSFER_TO_OTHER_JURISDICTION'
       ELSE TRUE
