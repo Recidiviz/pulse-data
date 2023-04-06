@@ -58,6 +58,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_QUERY_TEMPLATE = """
     filtered_rows AS (
         SELECT * FROM transitions
         WHERE {state_specific_district_filter}
+        AND {state_specific_officer_filter}
     )
     ,
     event_counts AS (
@@ -136,6 +137,7 @@ SUPERVISION_TO_PRISON_POPULATION_SNAPSHOT_BY_OFFICER_VIEW_BUILDER = PathwaysMetr
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     shared_metric_views_dataset=dataset_config.SHARED_METRIC_VIEWS_DATASET,
     state_specific_district_filter=state_specific_query_strings.pathways_state_specific_supervision_district_filter(),
+    state_specific_officer_filter=state_specific_query_strings.pathways_state_specific_officer_filter(),
 )
 
 if __name__ == "__main__":
