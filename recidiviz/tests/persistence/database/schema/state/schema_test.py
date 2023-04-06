@@ -22,6 +22,7 @@ from typing import Optional
 import pytest
 import sqlalchemy
 from parameterized import parameterized
+from psycopg2 import IntegrityError
 
 from recidiviz.common.constants.state import (
     enum_canonical_strings,
@@ -58,6 +59,9 @@ from recidiviz.common.constants.state.state_employment_period import (
     StateEmploymentPeriodEmploymentStatus,
     StateEmploymentPeriodEndReason,
 )
+from recidiviz.common.constants.state.state_program_assignment import (
+    StateProgramAssignmentParticipationStatus,
+)
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -72,6 +76,7 @@ from recidiviz.tests.persistence.database.schema.schema_test import (
     TestSchemaTableConsistency,
 )
 from recidiviz.tests.persistence.database.schema.state.schema_test_utils import (
+    generate_agent,
     generate_assessment,
     generate_charge,
     generate_early_discharge,
@@ -840,11 +845,16 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_valid_supervision_period_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_supervision_period = generate_supervision_period(
             person=db_person,
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            supervising_officer=db_agent,
         )
 
         # Act
@@ -855,11 +865,16 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_valid_supervision_period_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_supervision_period = generate_supervision_period(
             person=db_person,
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            supervising_officer=db_agent,
         )
         db_supervision_period_2 = generate_supervision_period(
             person=db_person,
@@ -877,11 +892,16 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_invalid_supervision_period_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_supervision_period = generate_supervision_period(
             person=db_person,
             state_code=self.state_code,
             supervising_officer_staff_external_id="1234",
             supervising_officer_staff_external_id_type=None,
+            supervising_officer=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -899,11 +919,16 @@ class TestStateSupervisionPeriod(unittest.TestCase):
     def test_add_invalid_supervision_period_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_supervision_period = generate_supervision_period(
             person=db_person,
             state_code=self.state_code,
             supervising_officer_staff_external_id=None,
             supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            supervising_officer=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -952,11 +977,16 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_valid_assessment_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_assessment = generate_assessment(
             person=db_person,
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            conducting_agent=db_agent,
         )
 
         # Act
@@ -967,11 +997,16 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_valid_assessment_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_assessment = generate_assessment(
             person=db_person,
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            conducting_agent=db_agent,
         )
         db_state_assessment_2 = generate_assessment(
             person=db_person,
@@ -989,11 +1024,16 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_invalid_assessment_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_assessment = generate_assessment(
             person=db_person,
             state_code=self.state_code,
             conducting_staff_external_id="1234",
             conducting_staff_external_id_type=None,
+            conducting_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1011,11 +1051,16 @@ class TestStateAssessment(unittest.TestCase):
     def test_add_invalid_assessment_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_assessment = generate_assessment(
             person=db_person,
             state_code=self.state_code,
             conducting_staff_external_id=None,
             conducting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            conducting_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1064,11 +1109,16 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_valid_supervision_contact_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            contacted_agent=db_agent,
         )
 
         # Act
@@ -1079,11 +1129,16 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_valid_supervision_contact_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            contacted_agent=db_agent,
         )
         db_state_supervision_contact_2 = generate_supervision_contact(
             person=db_person,
@@ -1101,11 +1156,16 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_invalid_supervision_contact_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             state_code=self.state_code,
             contacting_staff_external_id="1234",
             contacting_staff_external_id_type=None,
+            contacted_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1123,11 +1183,16 @@ class TestStateSupervisionContact(unittest.TestCase):
     def test_add_invalid_supervision_contact_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_supervision_contact = generate_supervision_contact(
             person=db_person,
             state_code=self.state_code,
             contacting_staff_external_id=None,
             contacting_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            contacted_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1176,11 +1241,16 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_valid_program_assignment_simple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            referring_agent=db_agent,
         )
 
         # Act
@@ -1191,11 +1261,16 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_valid_program_assignment_multiple(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            referring_agent=db_agent,
         )
         db_state_program_assignment_2 = generate_program_assignment(
             person=db_person,
@@ -1212,11 +1287,16 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_invalid_program_assignment_empty_type(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             state_code=self.state_code,
             referring_staff_external_id="1234",
             referring_staff_external_id_type=None,
+            referring_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1234,11 +1314,16 @@ class TestStateProgramAssignment(unittest.TestCase):
     def test_add_invalid_program_assignment_empty_id(self) -> None:
         # Arrange
         db_person = generate_person(state_code=self.state_code)
+        db_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
         db_state_program_assignment = generate_program_assignment(
             person=db_person,
             state_code=self.state_code,
             referring_staff_external_id=None,
             referring_staff_external_id_type="EXTERNAL_ID_TYPE1",
+            referring_agent=db_agent,
         )
 
         with SessionFactory.using_database(
@@ -1252,3 +1337,456 @@ class TestStateProgramAssignment(unittest.TestCase):
                 '"referring_staff_external_id_fields_consistent"',
             ):
                 session.flush()
+
+
+# TODO(#19786): delete once StateAgent is deleted
+@pytest.mark.uses_db
+class TestStateAgentExternalIdMatch(unittest.TestCase):
+    """Tests for the state schema session listener."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    def setUp(self) -> None:
+        self.database_key = SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+        self.state_code = "US_XX"
+
+    def tearDown(self) -> None:
+        local_postgres_helpers.teardown_on_disk_postgresql_database(
+            SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE)
+        )
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def test_assessment_external_ids_mismatch(self) -> None:
+        test_agent = generate_agent(
+            external_id="AGENT1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_assessment = generate_assessment(
+            assessment_id=456,
+            person=test_person,
+            state_code=self.state_code,
+            conducting_staff_external_id="1234",
+            conducting_staff_external_id_type="EXTERNAL_ID_TYPE",
+            conducting_agent=test_agent,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_assessment)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateAssessment row for",
+            ):
+                session.commit()
+
+    def test_assessment_external_ids_match(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_assessment = generate_assessment(
+            assessment_id=456,
+            person=test_person,
+            state_code=self.state_code,
+            conducting_staff_external_id=test_agent.external_id,
+            conducting_staff_external_id_type="EXTERNAL_ID_TYPE",
+            conducting_agent=test_agent,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_assessment)
+            session.commit()
+
+    def test_assessment_external_ids_no_agent(self) -> None:
+        test_person = generate_person(person_id=12345)
+
+        test_assessment = schema.StateAssessment(
+            assessment_id=456,
+            person=test_person,
+            state_code=self.state_code,
+            conducting_staff_external_id="1234",
+            conducting_staff_external_id_type="EXTERNAL_ID_TYPE",
+            conducting_agent=None,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_assessment)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateAssessment row for",
+            ):
+                session.commit()
+
+    def test_assessment_external_ids_no_flat_field(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_assessment = generate_assessment(
+            assessment_id=456,
+            person=test_person,
+            state_code=self.state_code,
+            conducting_staff_external_id=None,
+            conducting_staff_external_id_type=None,
+            conducting_agent=test_agent,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_assessment)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateAssessment row for",
+            ):
+                session.commit()
+
+    def test_supervision_period_external_ids_mismatch(self) -> None:
+        test_agent = generate_agent(
+            external_id="AGENT1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_period = generate_supervision_period(
+            supervision_period_id=4444,
+            supervising_officer_staff_external_id="1234",
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            supervising_officer=test_agent,
+            case_type_entries=[],
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_period)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateSupervisionPeriod row for",
+            ):
+                session.commit()
+
+    def test_supervision_period_external_ids_match(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_period = generate_supervision_period(
+            supervision_period_id=4444,
+            supervising_officer_staff_external_id=test_agent.external_id,
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            supervising_officer=test_agent,
+            case_type_entries=[],
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_period)
+            session.commit()
+
+    def test_supervision_period_external_ids_no_agent(self) -> None:
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_period = generate_supervision_period(
+            supervision_period_id=4444,
+            supervising_officer_staff_external_id="1234",
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            supervising_officer=None,
+            case_type_entries=[],
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_period)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateSupervisionPeriod row for",
+            ):
+                session.commit()
+
+    def test_supervision_period_external_ids_no_flat_field(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_period = generate_supervision_period(
+            supervision_period_id=4444,
+            supervising_officer_staff_external_id=None,
+            supervising_officer_staff_external_id_type=None,
+            state_code=self.state_code,
+            person=test_person,
+            supervising_officer=test_agent,
+            case_type_entries=[],
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_period)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateSupervisionPeriod row for",
+            ):
+                session.commit()
+
+    def test_supervision_contact_external_ids_mismatch(self) -> None:
+        test_agent = generate_agent(
+            external_id="AGENT1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_contact = generate_supervision_contact(
+            supervision_contact_id=4444,
+            contacting_staff_external_id="1234",
+            contacting_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            contacted_agent=test_agent,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_contact)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateSupervisionContact row for",
+            ):
+                session.commit()
+
+    def test_supervision_contact_external_ids_match(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_contact = generate_supervision_contact(
+            supervision_contact_id=4444,
+            contacting_staff_external_id=test_agent.external_id,
+            contacting_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            contacted_agent=test_agent,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_contact)
+            session.commit()
+
+    def test_supervision_contact_external_ids_no_agent(self) -> None:
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_contact = generate_supervision_contact(
+            supervision_contact_id=4444,
+            contacting_staff_external_id="1234",
+            contacting_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            contacted_agent=None,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_contact)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateSupervisionContact row for",
+            ):
+                session.commit()
+
+    def test_supervision_contact_external_ids_no_flat_field(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_supervision_contact = generate_supervision_contact(
+            supervision_contact_id=4444,
+            contacting_staff_external_id=None,
+            contacting_staff_external_id_type=None,
+            state_code=self.state_code,
+            person=test_person,
+            contacted_agent=test_agent,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_supervision_contact)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateSupervisionContact row for",
+            ):
+                session.commit()
+
+    def test_program_assignment_external_ids_mismatch(self) -> None:
+        test_agent = generate_agent(
+            external_id="AGENT1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_program_assignment = generate_program_assignment(
+            program_assignment_id=4444,
+            referring_staff_external_id="1234",
+            referring_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            referring_agent=test_agent,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS.value,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_program_assignment)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateProgramAssignment row for",
+            ):
+                session.commit()
+
+    def test_program_assignment_external_ids_match(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_program_assignment = generate_program_assignment(
+            program_assignment_id=4444,
+            referring_staff_external_id=test_agent.external_id,
+            referring_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            referring_agent=test_agent,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS.value,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_program_assignment)
+
+            session.commit()
+
+    def test_program_assignment_external_ids_no_agent(self) -> None:
+        test_person = generate_person(person_id=12345)
+
+        test_program_assignment = generate_program_assignment(
+            program_assignment_id=4444,
+            referring_staff_external_id="1234",
+            referring_staff_external_id_type="EXTERNAL_ID_TYPE",
+            state_code=self.state_code,
+            person=test_person,
+            referring_agent=None,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS.value,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_program_assignment)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateProgramAssignment row for",
+            ):
+                session.commit()
+
+    def test_program_assignment_external_ids_no_flat_field(self) -> None:
+        test_agent = generate_agent(
+            external_id="1234",
+            state_code=self.state_code,
+        )
+        test_person = generate_person(person_id=12345)
+
+        test_program_assignment = generate_program_assignment(
+            program_assignment_id=4444,
+            referring_staff_external_id=None,
+            referring_staff_external_id_type=None,
+            state_code=self.state_code,
+            person=test_person,
+            referring_agent=test_agent,
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS.value,
+        )
+
+        with SessionFactory.using_database(
+            self.database_key, autocommit=False
+        ) as session:
+            session.add(test_person)
+            session.add(test_program_assignment)
+
+            with self.assertRaisesRegex(
+                IntegrityError,
+                "Attempting to commit StateProgramAssignment row for",
+            ):
+                session.commit()
