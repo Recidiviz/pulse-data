@@ -196,7 +196,7 @@ critical date spans for the supervision super session end when the first classif
     sp.state_code,
     sp.person_id,
     sp.start_date,
-    LEAST({nonnull_end_date_clause('ce.completion_event_date')}, sp.end_date) AS end_date, 
+    LEAST({nonnull_end_date_clause('ce.completion_event_date')}, {nonnull_end_date_clause('sp.end_date')}) AS end_date, 
     {revert_nonnull_end_date_clause('sp.critical_date')} AS critical_date,
     sp.priority_level,
    FROM ({aggregate_adjacent_spans(table_name='critical_date_sub_session_spans', 
@@ -214,7 +214,7 @@ critical date spans for the supervision super session end when the first classif
      sai.state_code,
      sai.person_id,
      sai.start_date,
-     LEAST({nonnull_end_date_clause('ce.completion_event_date')}, end_date) AS end_date,
+     LEAST({nonnull_end_date_clause('ce.completion_event_date')}, {nonnull_end_date_clause('end_date')}) AS end_date,
      DATE_ADD(sai.start_date, INTERVAL 4 MONTH) AS critical_date,
      'b_priority' AS priority_level
   FROM `{{project_id}}.{{criteria_dataset}}.supervision_level_is_sai_materialized` sai
