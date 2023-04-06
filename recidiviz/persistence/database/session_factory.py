@@ -26,6 +26,10 @@ from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations.session_listener import (
     session_listener as operations_session_listener,
 )
+from recidiviz.persistence.database.schema.state.schema import StateBase
+from recidiviz.persistence.database.schema.state.session_listener import (
+    session_listener as state_session_listener,
+)
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
@@ -118,6 +122,8 @@ class SessionFactory:
     ) -> None:
         if schema_base == OperationsBase:
             operations_session_listener(session)
+        if schema_base == StateBase:
+            state_session_listener(session)
 
     @classmethod
     def _alter_session_variables(cls, session: Session) -> None:

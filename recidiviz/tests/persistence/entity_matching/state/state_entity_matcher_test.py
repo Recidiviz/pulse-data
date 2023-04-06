@@ -1558,6 +1558,8 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             county_code="county_code",
             case_type_entries=[db_case_type_dv],
             supervising_officer=db_agent_po,
+            supervising_officer_staff_external_id=db_agent_po.external_id,
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
         )
         entity_supervision_period = self.to_entity(db_supervision_period)
         db_supervision_sentence = generate_supervision_sentence(
@@ -1665,6 +1667,8 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             county_code="county_code-updated",
             case_type_entries=[case_type_dv, case_type_so],
             supervising_officer=agent_po,
+            supervising_officer_staff_external_id=agent_po.get_external_id(),
+            supervising_officer_staff_external_id_type="EXTERNAL_ID_TYPE",
         )
         supervision_sentence = attr.evolve(
             entity_supervision_sentence,
