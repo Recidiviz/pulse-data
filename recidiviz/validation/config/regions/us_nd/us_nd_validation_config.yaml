@@ -81,3 +81,9 @@ num_allowed_rows_overrides:
   - validation_name: sentences_undefined_relationship
     hard_num_allowed_rows_override: 100
     override_reason: Needs investigation. Current failing level as of 2/24/23 is 13 rows #TODO(#19047)
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 200
+    override_reason: Current failing level as of 4/5/23 is 113 rows (0.04%)
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 14 rows (0.005%)

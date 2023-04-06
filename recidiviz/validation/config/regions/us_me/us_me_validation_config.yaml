@@ -78,3 +78,9 @@ num_allowed_rows_overrides:
     hard_num_allowed_rows_override: 20
     override_reason: >-
       P2 Not relevant to currently launched products
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 0 rows
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 3 rows

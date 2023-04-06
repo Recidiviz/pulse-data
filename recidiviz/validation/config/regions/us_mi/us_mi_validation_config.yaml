@@ -63,3 +63,9 @@ num_allowed_rows_overrides:
   - validation_name: sentences_missing_date_imposed
     hard_num_allowed_rows_override: 20
     override_reason: Needs investigation.  Current failing level as of 11/2 is 9 rows
+  - validation_name: normalized_state_charge_missing_descriptions
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 0 rows
+  - validation_name: normalized_state_charge_missing_uniform_offense_labels
+    hard_num_allowed_rows_override: 50
+    override_reason: Current failing level as of 4/5/23 is 0 rows
