@@ -149,7 +149,6 @@ def generate_metric_export_configs(
         person_external_id,
         supervision_level,
         supervision_level_raw_text,
-        judicial_district_code,
         date_of_supervision
       FROM
         `{project_id}.dataflow_metrics_materialized.most_recent_supervision_population_metrics_materialized`
