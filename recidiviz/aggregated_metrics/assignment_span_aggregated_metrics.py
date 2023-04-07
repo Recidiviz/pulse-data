@@ -133,5 +133,5 @@ assignments AS (
         aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
         analyst_dataset=ANALYST_VIEWS_DATASET,
         should_materialize=False,
-        clustering_fields=aggregation_level.index_columns,
+        clustering_fields=aggregation_level.primary_key_columns,
     )

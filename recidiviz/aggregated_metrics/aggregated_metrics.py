@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,10 +45,8 @@ def generate_aggregated_metrics_view_builder(
     level_name = aggregation_level.level_name_short
     population_name = population.population_name_short
     view_id = f"{population_name}_{level_name}_aggregated_metrics"
-
-    view_description_metrics = [
-        f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
-        f"`{metric.get_metric_conditions_string_no_newline() if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
+    included_metrics = [
+        metric
         for metric in metrics
         # Only display MiscAggregatedMetrics that are relevant to the population and aggregation level
         if not isinstance(metric, MiscAggregatedMetric)
@@ -56,6 +54,12 @@ def generate_aggregated_metrics_view_builder(
             population.population_type in metric.populations
             and aggregation_level.level_type in metric.aggregation_levels
         )
+    ]
+    metrics_query_str = ", ".join([metric.name for metric in included_metrics])
+    view_description_metrics = [
+        f"|{metric.display_name} (`{metric.name}`)|{metric.description}|{metric.pretty_name()}|"
+        f"`{metric.get_metric_conditions_string_no_newline() if isinstance(metric, MetricConditionsMixin) else 'N/A'}`|"
+        for metric in included_metrics
     ]
     view_description_metrics_str = "\n".join(view_description_metrics)
     view_description_header = f"All metrics for the {population_name} population disaggregated by {level_name}."
@@ -70,9 +74,14 @@ def generate_aggregated_metrics_view_builder(
 
 #### Aggregation Level Definition: {level_name.title()}
 
-Source table: `{aggregation_level.client_assignment_sessions_view_name}`
+Source table: 
+```
+{aggregation_level.client_assignment_query}
+```
 
-Index columns: `{aggregation_level.get_index_columns_query_string()}`
+Primary key columns: `{aggregation_level.get_primary_key_columns_query_string()}`
+
+Additional attribute columns: `{aggregation_level.get_attribute_columns_query_string()}`
 
 ### Metrics:
 |	Metric	|	Description	|   Metric Type    |   Conditions   |
@@ -81,26 +90,31 @@ Index columns: `{aggregation_level.get_index_columns_query_string()}`
     """
 
     query_template = f"""
-    SELECT * EXCEPT (assignments),
+    SELECT 
+        {aggregation_level.get_index_columns_query_string(prefix="period_span")},
+        start_date,
+        end_date,
+        period,
         COALESCE(assignments, 0) AS assignments,
+        {metrics_query_str},
     FROM
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_span_aggregated_metrics` period_span
     LEFT JOIN
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_period_event_aggregated_metrics` period_event
     USING (
-        {aggregation_level.get_index_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string()},
         start_date, end_date, period
     )
     LEFT JOIN
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_span_aggregated_metrics` assignment_span
     USING (
-        {aggregation_level.get_index_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string()},
         start_date, end_date, period
     )
     LEFT JOIN
         `{{project_id}}.{{aggregated_metrics_dataset}}.{population_name}_{level_name}_assignment_event_aggregated_metrics` assignment_event
     USING (
-        {aggregation_level.get_index_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string()},
         start_date, end_date, period
     )
 """
@@ -108,13 +122,7 @@ Index columns: `{aggregation_level.get_index_columns_query_string()}`
     misc_metrics_view_builder = generate_misc_aggregated_metrics_view_builder(
         aggregation_level=aggregation_level,
         population=population,
-        metrics=[
-            m
-            for m in metrics
-            if isinstance(m, MiscAggregatedMetric)
-            and population in m.populations
-            and aggregation_level in m.aggregation_levels
-        ],
+        metrics=[m for m in included_metrics if isinstance(m, MiscAggregatedMetric)],
     )
     if misc_metrics_view_builder:
         # Join to miscellaneous metrics view if view exists for population and aggregation level
@@ -122,7 +130,7 @@ Index columns: `{aggregation_level.get_index_columns_query_string()}`
         LEFT JOIN
             `{{project_id}}.{{aggregated_metrics_dataset}}.{misc_metrics_view_builder.view_id}` misc
         USING (
-            {aggregation_level.get_index_columns_query_string()},
+            {aggregation_level.get_primary_key_columns_query_string()},
             start_date, end_date, period
         )
     """
@@ -135,5 +143,5 @@ Index columns: `{aggregation_level.get_index_columns_query_string()}`
         bq_description=view_description_header,
         aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
         should_materialize=True,
-        clustering_fields=aggregation_level.index_columns,
+        clustering_fields=aggregation_level.primary_key_columns,
     )
