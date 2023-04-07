@@ -153,7 +153,14 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
         WHERE Supervision_End_Date IS NULL
             -- Ignore assignments from the future
             AND SAFE_CAST(Assignment_Date AS DATETIME) <= CURRENT_DATE('US/Eastern')
-        QUALIFY ROW_NUMBER() OVER (PARTITION BY Cis_100_Client_Id ORDER BY Assignment_Date DESC) = 1
+        QUALIFY ROW_NUMBER() OVER (PARTITION BY Cis_100_Client_Id 
+                        /* Prioritize cases in the following order 
+                                1) Case Workers (1) and Correctional Care and Treatment Worker (4)
+                                2) Latest assignment date
+                                3) Status of officer: primary, secondary, temporary */
+                                    ORDER BY IF(Cis_1240_Supervision_Type_Cd IN ('1', '4'), 0, 1) , 
+                                            Assignment_Date DESC,
+                                            Cis_1241_Super_Status_Cd) = 1
 
         UNION ALL
 
