@@ -528,6 +528,8 @@ def _upsert_roster_rows(
             raise ValueError(
                 "Roster contains a row that is missing an email address (required)"
             )
+        validate_email_address(row["email_address"])
+
         role = row["role"].lower()
         email = row["email_address"].lower()
         associated_state_role = (
