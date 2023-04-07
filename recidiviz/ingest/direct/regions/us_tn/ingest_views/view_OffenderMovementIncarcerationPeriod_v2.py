@@ -27,7 +27,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH all_incarceration_periods AS ( 
-    WITH remove_extraneous_chars AS (
+WITH 
+    remove_extraneous_chars as (
         SELECT
             OffenderID,
             MovementDateTime,
@@ -37,20 +38,22 @@ WITH all_incarceration_periods AS (
             REGEXP_REPLACE(FromLocationID, r'[^A-Z0-9]', '') as FromLocationID,
             REGEXP_REPLACE(ToLocationID, r'[^A-Z0-9]', '') as ToLocationID,
          FROM {OffenderMovement}
-    ), classification_filter AS (
-        SELECT DISTINCT 
-            OffenderId, ClassificationDecisionDate, RecommendedCustody, ClassificationDecision, ClassificationSequenceNumber,
-            ROW_NUMBER() OVER (PARTITION BY OffenderId, ClassificationDecisionDate ORDER BY ClassificationSequenceNumber DESC, 
-            (CASE WHEN RecommendedCustody = 'CLS' THEN 1 
-            WHEN RecommendedCustody = 'MAX' THEN 2 
-            WHEN RecommendedCustody = 'MED' THEN 3  
-            WHEN RecommendedCustody = 'MIR' THEN 4 
-            WHEN RecommendedCustody = 'MID' THEN 5  
-            WHEN RecommendedCustody = 'MIT' THEN 6  END)) AS CustLevel --Should all have unique Seq Number for date, but adding this to handle when they dont
-        FROM {Classification}
-        WHERE ClassificationDecision = 'A'  # denotes final custody level
-        AND EXTRACT(YEAR FROM CAST(ClassificationDecisionDate AS DATETIME)) > 1993  # Data is not reliable before 
-    ), filter_to_only_incarceration AS (
+    ),
+    classification_filter AS (	
+        SELECT DISTINCT 	
+            OffenderId, ClassificationDecisionDate, RecommendedCustody, ClassificationDecision, ClassificationSequenceNumber,	
+            ROW_NUMBER() OVER (PARTITION BY OffenderId, ClassificationDecisionDate ORDER BY ClassificationSequenceNumber DESC, 	
+            (CASE WHEN RecommendedCustody = 'MAX' THEN 1 	
+            WHEN RecommendedCustody = 'CLS' THEN 2 	
+            WHEN RecommendedCustody = 'MED' THEN 3  	
+            WHEN RecommendedCustody = 'MIR' THEN 4 	
+            WHEN RecommendedCustody = 'MID' THEN 5  	
+            WHEN RecommendedCustody = 'MIT' THEN 6  END)) AS CustLevel --Should all have unique Seq Number for date, but adding this to handle when they dont	
+        FROM {Classification}	
+        WHERE ClassificationDecision = 'A'  # denotes final custody level	
+        AND EXTRACT(YEAR FROM CAST(ClassificationDecisionDate AS DATETIME)) > 1993  # Data is not reliable before 	
+    ), 
+    filter_to_only_incarceration as (
         SELECT
             OffenderID,
             MovementDateTime,
@@ -62,18 +65,18 @@ WITH all_incarceration_periods AS (
         FROM remove_extraneous_chars
         -- Filter to only rows that are to/from with incarceration facilities.
         WHERE RIGHT(MovementType, 2) IN ('FA', 'FH', 'CT') OR LEFT(MovementType, 2) IN ('FA', 'FH', 'CT')
-        
-        UNION ALL # to pull in custody level changes as periods
 
-        SELECT  
-            OffenderId, 
-            ClassificationDecisionDate || '.000000' AS MovementDateTime, ## add this so date format the same
-            'CUSTCHANGEFH' as MovementType, # Generated so last two are FH and query handles correctly
-            'CUST CHANGE' AS MovementReason, 
-            null AS FromLocationID, 
-            null AS ToLocationID,
-            RecommendedCustody,
-        FROM Classification_filter
+        UNION ALL # to pull in custody level changes as periods	
+
+        SELECT  	
+            OffenderId, 	
+            ClassificationDecisionDate || '.000000' AS MovementDateTime, ## add this so date format the same	
+            'CUSTCHANGEFH' as MovementType, # Generated so last two are FH and query handles correctly	
+            'CUST CHANGE' AS MovementReason, 	
+            null AS FromLocationID, 	
+            null AS ToLocationID,	
+            RecommendedCustody,	
+        FROM Classification_filter	
         WHERE CustLevel = 1
     ),
     initial_setup as (
@@ -106,20 +109,74 @@ WITH all_incarceration_periods AS (
             CASE 
                 WHEN REGEXP_CONTAINS(attributes.DeathDate, r'[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]') THEN DeathDate
             END AS DeathDate,
-            ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementDateTime ASC) AS MovementSequenceNumber,
+            'GENERAL' as HousingUnit
         FROM filter_to_only_incarceration
         LEFT JOIN {OffenderAttributes} as attributes
             USING (OffenderID)
         -- Filter out rows that are not associated physical movements from facilities.
         WHERE MovementReason not in ('CLASP', 'CLAST', 'APPDI')
     ),
-    filter_out_movements_after_death_date AS (
-        SELECT *
+    configure_segregation_data AS (
+        SELECT DISTINCT
+          OffenderID,
+          StartDateTime as MovementDateTime,
+          CONCAT(SegregationStatus,'-',SegregationType,'-',SegragationReason) as MovementType,
+          'SEG_START' as MovementReason,
+          SiteID AS FromLocationID,
+          SiteID as ToLocationID,
+          CAST(null AS STRING) AS RecommendedCustody,
+          'SEG_START' as PeriodEvent,
+          CAST(null AS STRING) as DeathDate,
+          AssignedUnitID as HousingUnit,
+        FROM {Segregation}
+        UNION DISTINCT
+        SELECT DISTINCT
+          OffenderID,
+          ActualEndDateTime as MovementDateTime,
+          CONCAT(SegregationStatus,'-',SegregationType,'-',SegragationReason) as MovementType,
+          'SEG_END' as MovementReason,
+          SiteID AS FromLocationID,
+          SiteID as ToLocationID,
+          CAST(null AS STRING) AS RecommendedCustody,
+          'SEG_END' as PeriodEvent,
+          CAST(null AS STRING) as DeathDate,
+          AssignedUnitID as HousingUnit,
+        FROM {Segregation}
+    ),
+    add_seg_info_to_movement_info AS (
+        SELECT 
+          *
         FROM initial_setup
+        UNION ALL  
+        SELECT
+            *
+        FROM configure_segregation_data
+    ),
+    filter_out_movements_after_death_date AS (
+        SELECT *,
+          CASE WHEN FromLocationID != ToLocationID THEN ToLocationID ELSE Null END as current_facility_location #To determine erroneous seg periods after someone has left a facility, we need to capture when their official facility location has changed 
+        FROM add_seg_info_to_movement_info
         WHERE 
-            DeathDate IS NULL
+            (DeathDate IS NULL
             -- Filter out all rows whose start date is after the death date, if present.
-            OR SUBSTRING(MovementDateTime, 0, 10) <= DeathDate
+            OR SUBSTRING(MovementDateTime, 0, 10) <= DeathDate)
+    ),
+    # Then we add the official facility info to all periods so we can filter out any seg periods that were erroneously continued in a facility for a person despite them having been transferred
+    all_official_facility_info_to_all_periods AS (
+    SELECT 
+        *,
+        LAST_VALUE(current_facility_location IGNORE NULLS) OVER (PARTITION BY OffenderID ORDER BY MovementDateTime ASC, MovementReason ASC) as confirmed_facility_location,
+        ROW_NUMBER() OVER 
+        (PARTITION BY OffenderID 
+            ORDER BY 
+            MovementDateTime ASC, 
+            CASE WHEN MovementReason='SEG_END' THEN 1
+                WHEN MovementReason='SEG_START' THEN 2
+                WHEN MovementReason='INCARCERATION' THEN 3
+                ELSE 4
+            END ASC) AS MovementSequenceNumber # We rank the ordering to end a seg period before an official movement to a new facility when they occur on the same day 
+    FROM filter_out_movements_after_death_date
+    WHERE MovementDateTime is not null
     ),
     append_next_movement_information_and_death_dates AS (
         SELECT 
@@ -137,14 +194,17 @@ WITH all_incarceration_periods AS (
             LEAD(FromLocationID) OVER person_sequence AS NextFromLocationID,
             LAG(ToLocationID) OVER person_sequence AS PreviousToLocationID,
             LEAD(PeriodEvent) OVER person_sequence AS NextPeriodEvent,
-            RecommendedCustody AS CustodyLevel,
             DeathDate,
-        FROM filter_out_movements_after_death_date
+            RecommendedCustody AS CustodyLevel,
+            HousingUnit,
+            CASE WHEN HousingUnit != 'GENERAL' THEN HousingUnit ELSE null END as SegUnit
+        FROM all_official_facility_info_to_all_periods
+        WHERE PeriodEvent NOT IN ('SEG_START','SEG_END') OR (PeriodEvent IN ('SEG_START','SEG_END') AND confirmed_facility_location = ToLocationID) #filters out periods of Seg that were erroneously not closed from previous facilities 
         WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
     ),
     clean_up_movements AS (
         SELECT 
-            append_next_movement_information_and_death_dates.OffenderID,
+            OffenderID,
             StartPeriodEvent,
             MovementSequenceNumber,
             StartMovementDateTime,
@@ -163,7 +223,13 @@ WITH all_incarceration_periods AS (
             NextPeriodEvent,
             DeathDate,
             CustodyLevel,
+            CASE 
+                WHEN StartMovementReason = 'SEG_END' AND NextMovementReason != 'SEG_START' THEN 'GENERAL' 
+                WHEN NextMovementReason = 'SEG_END' AND StartMovementReason != 'SEG_START' THEN LAST_VALUE(SegUnit IGNORE NULLS) OVER person_sequence
+                ELSE HousingUnit 
+                END as HousingUnit
         FROM append_next_movement_information_and_death_dates
+        WINDOW person_sequence AS (PARTITION BY OffenderID ORDER BY MovementSequenceNumber)
     ),
     filter_out_erroneous_rows AS (
         SELECT 
@@ -175,7 +241,8 @@ WITH all_incarceration_periods AS (
             -- system. To facilitate things, filter out this row.
             (NextMovementType IS NULL OR RIGHT(StartMovementType, 2) != LEFT(NextMovementType, 2) OR StartToLocationID = NextFromLocationID)
             -- Filter out all periods that start with a TERMINATION. 
-            AND StartPeriodEvent != 'TERMINATION'    
+            AND 
+            StartPeriodEvent != 'TERMINATION'  
     )
     SELECT 
         OffenderID,
@@ -190,19 +257,21 @@ WITH all_incarceration_periods AS (
             -- If there is an end date, use that, otherwise use the death date.
             COALESCE(NextMovementDateTime, DeathDate)
         ) AS EndDateTime,
-        LAST_VALUE(StartToLocationID ignore nulls) OVER (periods_for_person range between UNBOUNDED preceding and current row) AS Site,
-        LAST_VALUE(SiteType ignore nulls) OVER (periods_for_person range between UNBOUNDED preceding and current row) AS SiteType,
+        LAST_VALUE(StartToLocationID ignore nulls) OVER (person_sequence range between UNBOUNDED preceding and current row) AS Site,	
+        LAST_VALUE(SiteType ignore nulls) OVER (person_sequence range between UNBOUNDED preceding and current row) AS SiteType,
         StartMovementType,
         StartMovementReason,
         NextMovementType as EndMovementType,
         NextMovementReason as EndMovementReason,
-        LAST_VALUE(CustodyLevel ignore nulls) OVER (periods_for_person range between UNBOUNDED preceding and current row) as CustodyLevel,
+        LAST_VALUE(CustodyLevel ignore nulls) OVER (person_sequence range between UNBOUNDED preceding and current row) as CustodyLevel,
+        CASE WHEN StartMovementReason = 'SEG_END' AND NextMovementReason IS NULL THEN 'GENERAL' ELSE HousingUnit END as HousingUnit,
     FROM filter_out_erroneous_rows
     LEFT JOIN 
         {Site} site_info
-    ON StartToLocationID = SiteID
-    WINDOW periods_for_person AS (PARTITION BY OFFENDERID ORDER BY MovementSequenceNumber)
+    ON StartToLocationID = SiteID 
+        WINDOW person_sequence AS (PARTITION BY OFFENDERID ORDER BY MovementSequenceNumber)
 )
+
 SELECT 
     OffenderID,
     StartDateTime,
@@ -214,6 +283,7 @@ SELECT
     EndMovementType,
     EndMovementReason,
     CustodyLevel,
+    HousingUnit,
     ROW_NUMBER() OVER (PARTITION BY OffenderID ORDER BY MovementSequenceNumber ASC) AS IncarcerationPeriodSequenceNumber
 FROM all_incarceration_periods
 """
