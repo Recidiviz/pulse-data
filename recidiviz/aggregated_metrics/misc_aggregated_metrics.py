@@ -24,11 +24,12 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     AVG_CRITICAL_CASELOAD_SIZE,
     AVG_CRITICAL_CASELOAD_SIZE_OFFICER,
     AVG_DAILY_CASELOAD_OFFICER,
-    CURRENT_DISTRICT,
-    CURRENT_OFFICE,
-    PRIMARY_DISTRICT,
-    PRIMARY_OFFICE,
     PROP_PERIOD_WITH_CRITICAL_CASELOAD,
+    SUPERVISION_DISTRICT,
+    SUPERVISION_DISTRICT_INFERRED,
+    SUPERVISION_OFFICE,
+    SUPERVISION_OFFICE_INFERRED,
+    SUPERVISION_UNIT,
 )
 from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
     MetricAggregationLevel,
@@ -42,8 +43,12 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     nonnull_current_date_clause,
     nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
 )
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    ANALYST_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 
 # List of [MetricPopulationType, MetricAggregationLevelType] tuples that are supported by
 # `generate_misc_aggregated_metrics_view_builder` function.
@@ -51,6 +56,7 @@ _MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS: List[
     Tuple[MetricPopulationType, MetricAggregationLevelType]
 ] = [
     (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_OFFICER),
+    (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_UNIT),
     (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_OFFICE),
     (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_DISTRICT),
     (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.STATE_CODE),
@@ -71,7 +77,7 @@ def _query_template_and_format_args(
             aggregation_level.level_type
             == MetricAggregationLevelType.SUPERVISION_OFFICER
         ):
-            group_by_range = range(1, len(aggregation_level.primary_key_columns) + 8)
+            group_by_range = range(1, len(aggregation_level.primary_key_columns) + 9)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
     SELECT
@@ -79,10 +85,11 @@ def _query_template_and_format_args(
         period,
         population_start_date AS start_date,
         population_end_date AS end_date,
-        district AS {PRIMARY_DISTRICT.name},
-        office AS {PRIMARY_OFFICE.name},
-        level_2_supervision_location_external_id AS {CURRENT_DISTRICT.name},
-        level_1_supervision_location_external_id AS {CURRENT_OFFICE.name},
+        c.district AS {SUPERVISION_DISTRICT_INFERRED.name},
+        c.office AS {SUPERVISION_OFFICE_INFERRED.name},
+        r.supervision_district AS {SUPERVISION_DISTRICT.name},
+        r.supervision_office AS {SUPERVISION_OFFICE.name},
+        r.supervision_unit AS {SUPERVISION_UNIT.name},
         -- Proportion of the analysis period where officer has a valid caseload size
         SUM(
             IF(
@@ -133,21 +140,26 @@ def _query_template_and_format_args(
         SELECT 
             *, date AS population_start_date
         FROM
-            `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized` c
-        )
+            `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized`
+        ) c
     USING 
         ({aggregation_level.get_primary_key_columns_query_string()}, population_start_date)
     LEFT JOIN 
-        `{{project_id}}.{{analyst_views_dataset}}.current_staff_supervision_locations_materialized` r
+        `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` r
     USING
-        (officer_id, state_code)
+        ({aggregation_level.get_primary_key_columns_query_string()})
+    -- Get supervision staff attributes on the last day of the period
+    WHERE
+        population_end_date BETWEEN r.start_date AND {nonnull_end_date_exclusive_clause("r.end_date")}
     GROUP BY {group_by_range_str}
 """
             return cte, {
                 "aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID,
                 "analyst_views_dataset": ANALYST_VIEWS_DATASET,
+                "sessions_dataset": SESSIONS_DATASET,
             }
         if aggregation_level.level_type in [
+            MetricAggregationLevelType.SUPERVISION_UNIT,
             MetricAggregationLevelType.SUPERVISION_OFFICE,
             MetricAggregationLevelType.SUPERVISION_DISTRICT,
             MetricAggregationLevelType.STATE_CODE,
@@ -164,8 +176,9 @@ def _query_template_and_format_args(
     FROM (
         SELECT 
             *, 
-            {PRIMARY_DISTRICT.name} AS district, 
-            {PRIMARY_OFFICE.name} AS office
+            {SUPERVISION_DISTRICT_INFERRED.name} AS district, 
+            {SUPERVISION_OFFICE_INFERRED.name} AS office,
+            {SUPERVISION_UNIT.name} AS unit,
         FROM
             `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
     )

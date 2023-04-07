@@ -35,6 +35,8 @@ COLUMN_SOURCE_DICT = {
     "office": "supervision_office",
     "office_name": "supervision_office_name",
     "officer_id": "supervising_officer_external_id",
+    "unit_name": "supervision_unit_name",
+    "unit": "supervision_unit",
 }
 
 
@@ -46,6 +48,7 @@ class MetricAggregationLevelType(Enum):
     SUPERVISION_DISTRICT = "DISTRICT"
     SUPERVISION_OFFICE = "OFFICE"
     SUPERVISION_OFFICER = "OFFICER"
+    SUPERVISION_UNIT = "UNIT"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -147,6 +150,14 @@ METRIC_AGGREGATION_LEVELS_BY_TYPE = {
         "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "district", "office"],
         attribute_columns=["district_name", "office_name"],
+        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
+    ),
+    MetricAggregationLevelType.SUPERVISION_UNIT: MetricAggregationLevel(
+        level_type=MetricAggregationLevelType.SUPERVISION_UNIT,
+        client_assignment_query="SELECT * "
+        "FROM `{project_id}.{sessions_dataset}.supervision_unit_sessions_materialized`",
+        primary_key_columns=["state_code", "district", "unit"],
+        attribute_columns=["unit_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricAggregationLevelType.SUPERVISION_OFFICER: MetricAggregationLevel(

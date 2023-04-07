@@ -72,6 +72,7 @@ AVG_ASSIGNMENTS_OFFICER = MiscAggregatedMetric(
     description="Average of the number of assignments to an officer's caseload",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[
+        MetricAggregationLevelType.SUPERVISION_UNIT,
         MetricAggregationLevelType.SUPERVISION_OFFICE,
         MetricAggregationLevelType.SUPERVISION_DISTRICT,
         MetricAggregationLevelType.STATE_CODE,
@@ -103,6 +104,7 @@ AVG_CRITICAL_CASELOAD_SIZE_OFFICER = MiscAggregatedMetric(
     "officer has critical caseload size",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[
+        MetricAggregationLevelType.SUPERVISION_UNIT,
         MetricAggregationLevelType.SUPERVISION_OFFICE,
         MetricAggregationLevelType.SUPERVISION_DISTRICT,
         MetricAggregationLevelType.STATE_CODE,
@@ -115,6 +117,7 @@ AVG_DAILY_CASELOAD_OFFICER = MiscAggregatedMetric(
     description="Average of the daily population size on each officer caseload",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[
+        MetricAggregationLevelType.SUPERVISION_UNIT,
         MetricAggregationLevelType.SUPERVISION_OFFICE,
         MetricAggregationLevelType.SUPERVISION_DISTRICT,
         MetricAggregationLevelType.STATE_CODE,
@@ -416,22 +419,6 @@ CONTACTS_HOME_VISIT = EventCountMetric(
         "location": ["RESIDENCE"],
         "contact_type": ["DIRECT", "BOTH_COLLATERAL_AND_DIRECT"],
     },
-)
-
-CURRENT_DISTRICT = MiscAggregatedMetric(
-    name="current_district",
-    display_name="Current District",
-    description="Current district assignment for the officer, based on state's current roster",
-    populations=[MetricPopulationType.SUPERVISION],
-    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
-)
-
-CURRENT_OFFICE = MiscAggregatedMetric(
-    name="current_office",
-    display_name="Current Office",
-    description="Current office assignment for the officer, based on state's current roster",
-    populations=[MetricPopulationType.SUPERVISION],
-    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
 )
 
 DAYS_ABSCONDED_365 = AssignmentSpanDaysMetric(
@@ -945,22 +932,45 @@ PERSON_DAYS_TASK_ELIGIBLE_METRICS = [
     for b in TaskCompletionEventBigQueryViewCollector().collect_view_builders()
 ]
 
-PRIMARY_DISTRICT = MiscAggregatedMetric(
-    name="primary_district",
-    display_name="Primary District",
+SUPERVISION_DISTRICT = MiscAggregatedMetric(
+    name="supervision_district",
+    display_name="Primary Supervision District (State Roster)",
+    description="District assignment for the officer, based on state-provided roster",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
+
+SUPERVISION_DISTRICT_INFERRED = MiscAggregatedMetric(
+    name="supervision_district_inferred",
+    display_name="Primary Supervision District (Inferred)",
     description="District containing the majority of an officer's clients on the first day of the analysis period",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
 )
 
-PRIMARY_OFFICE = MiscAggregatedMetric(
-    name="primary_office",
-    display_name="Primary Office",
+SUPERVISION_OFFICE = MiscAggregatedMetric(
+    name="supervision_office",
+    display_name="Primary Supervision Office (Roster)",
+    description="Office assignment for the officer, based on state-provided roster",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
+
+SUPERVISION_OFFICE_INFERRED = MiscAggregatedMetric(
+    name="supervision_office_inferred",
+    display_name="Primary Supervision Office (Inferred)",
     description="Office containing the majority of an officer's clients on the first day of the analysis period",
     populations=[MetricPopulationType.SUPERVISION],
     aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
 )
 
+SUPERVISION_UNIT = MiscAggregatedMetric(
+    name="supervision_unit",
+    display_name="Primary Supervision Unit ID (Roster)",
+    description="Supervision unit ID of the officer, based on state-provided roster",
+    populations=[MetricPopulationType.SUPERVISION],
+    aggregation_levels=[MetricAggregationLevelType.SUPERVISION_OFFICER],
+)
 
 PROP_PERIOD_WITH_CRITICAL_CASELOAD = MiscAggregatedMetric(
     name="prop_period_with_critical_caseload",
