@@ -74,7 +74,8 @@ class UsNdController(BaseDirectIngestController):
             "docstars_offenders_early_term",
             "docstars_staff",
             "docstars_staff_location_periods",
-            "docstars_staff_role_periods"
+            "docstars_staff_role_periods",
+            "docstars_staff_supervisor_periods"
             # TODO(#1918): Integrate bed assignment / location history
         ]
 
