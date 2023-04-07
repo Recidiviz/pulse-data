@@ -16,6 +16,7 @@
 # ============================================================================
 """This criteria view builder defines spans of time that clients are not on telephone reporting
 """
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
 from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
@@ -32,19 +33,29 @@ _CRITERIA_NAME = "US_MI_NOT_ON_TELEPHONE_REPORTING"
 _DESCRIPTION = """This criteria view builder defines spans of time that clients are not on telephone reporting
 """
 
-_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = f"""
+WITH tr_spans AS (
     SELECT
         state_code,
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-        FALSE AS meets_criteria,
-        TO_JSON(STRUCT(map.description AS supervision_level_raw_text)) AS reason,
-    FROM `{project_id}.{sessions_dataset}.supervision_level_raw_text_sessions_materialized` sls
-    LEFT JOIN `{project_id}.{analyst_data_dataset}.us_mi_supervision_level_raw_text_mappings` map
-        ON sls.supervision_level_raw_text = map.supervision_level_raw_text
+    #TODO(#20035) replace with supervision level raw text sessions once views agree
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
+    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
+        ON sls.correctional_level_raw_text = map.supervision_level_raw_text
     WHERE state_code = "US_MI"
+    AND compartment_level_1 = 'SUPERVISION' 
     AND map.is_telephone
+)
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(TRUE AS supervision_level_includes_tr)) AS reason,
+    FROM ({aggregate_adjacent_spans(table_name='tr_spans')})
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

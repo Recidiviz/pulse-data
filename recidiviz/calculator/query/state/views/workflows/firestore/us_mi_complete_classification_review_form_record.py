@@ -78,6 +78,7 @@ LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_level_is_sai_material
     ON tes.state_code = sai.state_code
     AND tes.person_id = sai.person_id 
     AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause('sai.end_date')}
+#TODO(#20035) replace with supervision level raw text sessions once views agree
 INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized`cses
     ON tes.state_code = cses.state_code
     AND tes.person_id = cses.person_id

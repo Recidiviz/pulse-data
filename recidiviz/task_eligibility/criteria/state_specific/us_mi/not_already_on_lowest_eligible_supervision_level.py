@@ -63,10 +63,11 @@ _QUERY_TEMPLATE = f"""
         end_date_exclusive AS end_date,
         NULL AS requires_so_registration,
         TRUE AS on_lowest_level,
-        supervision_level,
-    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_sessions_materialized` 
+        correctional_level AS supervision_level,
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` 
     WHERE state_code = "US_MI"
-    AND supervision_level IN ('MEDIUM', 'LOW')
+    AND compartment_level_1 = 'SUPERVISION' 
+    AND correctional_level IN ('MEDIUM', 'LOW')
     ),
     {create_sub_sessions_with_attributes('so_spans')}
     SELECT 

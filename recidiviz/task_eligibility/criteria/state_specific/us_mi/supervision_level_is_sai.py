@@ -42,14 +42,20 @@ WITH sai_spans AS (
         person_id,
         start_date,
         end_date_exclusive AS end_date,
-    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized` sls
+    #TODO(#20035) replace with supervision level raw text sessions once views agree
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-        ON sls.supervision_level_raw_text = map.supervision_level_raw_text
+        ON sls.correctional_level_raw_text = map.supervision_level_raw_text
     WHERE state_code = "US_MI"
+    AND compartment_level_1 = 'SUPERVISION' 
     AND map.is_sai
 )
-SELECT * EXCEPT (session_id),
-    TRUE AS meets_criteria,
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        TRUE AS meets_criteria,
     TO_JSON(STRUCT(TRUE AS supervision_level_is_sai)) AS reason,
     FROM ({aggregate_adjacent_spans(table_name='sai_spans')})
 """

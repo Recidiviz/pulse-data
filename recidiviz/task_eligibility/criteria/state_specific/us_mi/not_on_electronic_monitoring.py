@@ -45,10 +45,12 @@ includes electronic monitoring */
         start_date,
         end_date_exclusive AS end_date,
         COALESCE(map.is_em, FALSE) AS is_electronic_monitoring
-    FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized` sls
+    #TODO(#20035) replace with supervision level raw text sessions once views agree
+    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-        ON sls.supervision_level_raw_text = map.supervision_level_raw_text
+        ON sls.correctional_level_raw_text = map.supervision_level_raw_text
     WHERE state_code = "US_MI"
+    AND compartment_level_1 = 'SUPERVISION' 
 ),
 /* This boolean is then used to aggregate electronic monitoring supervision levels and non electronic monitoring
 supervision levels */
