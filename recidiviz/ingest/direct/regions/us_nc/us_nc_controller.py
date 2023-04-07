@@ -43,4 +43,4 @@ class UsNcController(BaseDirectIngestController):
         """
 
         # Add ingest view names to this list as you add mappings for them.
-        return []
+        return ["incarceration_state_person"]
