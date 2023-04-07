@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a candidate population view containing all people who are on parole or dual
-supervision and are actively supervised as defined by excluding certain compartments and supervision levels
-such as in custody, bench warrant, absconsion, or unknown.
+supervision, including those supervised out of state, and are actively supervised as
+defined by excluding certain compartments and supervision levels such as in custody,
+bench warrant, absconsion, or unknown.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -30,11 +31,13 @@ from recidiviz.task_eligibility.utils.candidate_population_query_fragments impor
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "PAROLE_DUAL_ACTIVE_SUPERVISION_POPULATION"
+_POPULATION_NAME = (
+    "PAROLE_DUAL_ACTIVE_SUPERVISION_AND_SUPERVISION_OUT_OF_STATE_POPULATION"
+)
 
 _DESCRIPTION = """Selects all spans of time in which a person is on parole or dual
-supervision and actively supervised as defined by excluding certain compartments and supervision levels 
-such as in custody, bench warrant, absconsion, or unknown.
+supervision, including supervision out of state, and actively supervised as defined by 
+excluding certain compartments and supervision levels such as in custody, bench warrant, absconsion, or unknown.
 """
 # TODO(#19412) Refactor current opps to use standardized candidate population queries (of which this is one)
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
@@ -44,7 +47,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
         additional_filters=active_supervision_population_additional_filters(
             included_compartment_level_2="('PAROLE', 'DUAL')"
         ),
-        compartment_level_1=["SUPERVISION"],
+        compartment_level_1=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"],
     )
 )
 

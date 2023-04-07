@@ -40,7 +40,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
             'compartment_level_2 IN ("PAROLE", "DUAL")',
             'correctional_level NOT IN ("UNSUPERVISED")',
         ],
-        compartment_level_1="SUPERVISION",
+        compartment_level_1=["SUPERVISION"],
     )
 )
 

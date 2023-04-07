@@ -39,7 +39,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
         additional_filters=['compartment_level_2 = "GENERAL" '],
-        compartment_level_1="INCARCERATION",
+        compartment_level_1=["INCARCERATION"],
     )
 )
 

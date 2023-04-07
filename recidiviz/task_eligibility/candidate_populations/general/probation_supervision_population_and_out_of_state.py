@@ -32,15 +32,13 @@ _DESCRIPTION = """Selects all spans of time in which a person is on probation
 supervision or supervision_out_of_state, as tracked by data in our `sessions` dataset.
 """
 
-VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_agnostic_candidate_population_view_builder(
-    population_name=_POPULATION_NAME,
-    description=_DESCRIPTION,
-    additional_filters=[
-        """compartment_level_2 = "PROBATION" 
-    OR (compartment_level_1 = "SUPERVISION_OUT_OF_STATE" 
-        AND compartment_level_2 = "PROBATION")"""
-    ],
-    compartment_level_1="SUPERVISION",
+VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
+    state_agnostic_candidate_population_view_builder(
+        population_name=_POPULATION_NAME,
+        description=_DESCRIPTION,
+        additional_filters=['compartment_level_2 = "PROBATION"'],
+        compartment_level_1=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"],
+    )
 )
 
 if __name__ == "__main__":
