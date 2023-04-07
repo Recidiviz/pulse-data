@@ -44,7 +44,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
         additional_filters=active_supervision_population_additional_filters(
             included_compartment_level_2="('PROBATION', 'PAROLE', 'DUAL')"
         ),
-        compartment_level_1="SUPERVISION",
+        compartment_level_1=["SUPERVISION"],
     )
 )
 

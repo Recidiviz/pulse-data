@@ -38,7 +38,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
     additional_filters=[
         'compartment_level_2 NOT IN ("INTERNAL_UNKNOWN", "ABSCONSION", "BENCH_WARRANT")',
     ],
-    compartment_level_1="SUPERVISION",
+    compartment_level_1=["SUPERVISION"],
 )
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
         start_date="2020-08-01",
         excluded_correctional_levels="('UNASSIGNED','IN_CUSTODY','INTERSTATE_COMPACT','WARRANT','ABSCONDED','ABSCONSION','EXTERNAL_UNKNOWN','INTERNAL_UNKNOWN','UNSUPERVISED')",
     ),
-    compartment_level_1="SUPERVISION",
+    compartment_level_1=["SUPERVISION"],
 )
 
 if __name__ == "__main__":

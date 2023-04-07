@@ -43,7 +43,7 @@ VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = state_ag
         # since that is a lower level of supervision
         'correctional_level NOT IN ("LIMITED", "UNSUPERVISED")',
     ],
-    compartment_level_1="SUPERVISION",
+    compartment_level_1=["SUPERVISION"],
 )
 
 if __name__ == "__main__":
