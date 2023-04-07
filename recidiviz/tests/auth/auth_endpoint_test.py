@@ -1222,6 +1222,57 @@ class AuthEndpointTests(TestCase):
                 )
                 self.assertEqual(expected, json.loads(response.data))
 
+    def test_upload_roster_with_malformed_email_address(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",
+            district="",
+        )
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_malformed_email.csv"), "rb"
+        ) as fixture:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            with self.app.test_request_context():
+                response = self.client.put(
+                    self.upload_roster("us_xx"),
+                    headers=self.headers,
+                    data=data,
+                    follow_redirects=True,
+                    content_type="multipart/form-data",
+                )
+                self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+                error_message = "Invalid email address format: [email.gov]"
+                self.assertEqual(error_message, response.data.decode("UTF-8"))
+
+                # Existing rows should not have been deleted
+                expected = [
+                    {
+                        "allowedSupervisionLocationIds": "",
+                        "allowedSupervisionLocationLevel": "",
+                        "blocked": False,
+                        "district": "",
+                        "emailAddress": "leadership@domain.org",
+                        "externalId": "0000",
+                        "firstName": None,
+                        "lastName": None,
+                        "role": "leadership_role",
+                        "stateCode": "US_XX",
+                        "routes": None,
+                        "featureVariants": None,
+                        "userHash": _LEADERSHIP_USER_HASH,
+                    },
+                ]
+                response = self.client.get(
+                    self.users,
+                    headers=self.headers,
+                )
+                self.assertEqual(expected, json.loads(response.data))
+
     def test_upload_roster_with_missing_associated_role(self) -> None:
         roster_leadership_user = generate_fake_rosters(
             email="leadership@domain.org",
