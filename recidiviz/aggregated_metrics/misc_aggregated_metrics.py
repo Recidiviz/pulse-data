@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -71,11 +71,11 @@ def _query_template_and_format_args(
             aggregation_level.level_type
             == MetricAggregationLevelType.SUPERVISION_OFFICER
         ):
-            group_by_range = range(1, len(aggregation_level.index_columns) + 8)
+            group_by_range = range(1, len(aggregation_level.primary_key_columns) + 8)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
     SELECT
-        {aggregation_level.get_index_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string()},
         period,
         population_start_date AS start_date,
         population_end_date AS end_date,
@@ -136,7 +136,7 @@ def _query_template_and_format_args(
             `{{project_id}}.{{analyst_views_dataset}}.supervision_officer_primary_office_materialized` c
         )
     USING 
-        ({aggregation_level.get_index_columns_query_string()}, population_start_date)
+        ({aggregation_level.get_primary_key_columns_query_string()}, population_start_date)
     LEFT JOIN 
         `{{project_id}}.{{analyst_views_dataset}}.current_staff_supervision_locations_materialized` r
     USING
@@ -154,7 +154,7 @@ def _query_template_and_format_args(
         ]:
             cte = f"""
     SELECT
-        {aggregation_level.get_index_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string()},
         period,
         start_date,
         end_date,
@@ -170,7 +170,7 @@ def _query_template_and_format_args(
             `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_officer_aggregated_metrics_materialized`
     )
     GROUP BY
-        {aggregation_level.get_index_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string()},
         period, start_date, end_date       
 """
             return cte, {"aggregated_metrics_dataset": AGGREGATED_METRICS_DATASET_ID}
@@ -204,7 +204,7 @@ WITH misc_metrics_cte AS (
     {cte}
 )
 SELECT
-    {aggregation_level.get_index_columns_query_string()},
+    {aggregation_level.get_primary_key_columns_query_string()},
     start_date,
     end_date,
     period,
@@ -227,7 +227,7 @@ FROM
         view_query_template=query_template,
         description=view_description,
         should_materialize=False,
-        clustering_fields=aggregation_level.index_columns,
+        clustering_fields=aggregation_level.primary_key_columns,
         # We set these values so that mypy knows they are not in the dataset_kwargs
         materialized_address_override=None,
         should_deploy_predicate=None,

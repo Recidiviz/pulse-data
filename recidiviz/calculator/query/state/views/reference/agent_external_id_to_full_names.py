@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,24 +25,18 @@ AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_NAME = "agent_external_id_to_full_name"
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_DESCRIPTION = """Agent information table that adds links distinct external ids for state agents back to their full names"""
 
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_QUERY_TEMPLATE = """
-    WITH unique_agents AS (
-        SELECT
-            state_code,
-            external_id,
-            full_name,
-            given_names,
-            surname,
-            ROW_NUMBER() OVER (PARTITION BY state_code, external_id ORDER BY surname NULLS LAST) as rn
-        FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
-    )
-    
     SELECT
-        * EXCEPT(rn),
+        state_code,
+        external_id,
+        full_name,
+        given_names,
+        surname,
         -- TODO(#8674): Remove the agent_external_id_with_full_name once the Lantern FE 
         -- is no longer relying on this value
-        CONCAT(external_id, IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name
-    FROM unique_agents
-    WHERE rn=1
+        CONCAT(external_id, IFNULL(CONCAT(': ', NULLIF(TRIM(full_name), '')), '')) as agent_external_id_with_full_name,
+        CONCAT(INITCAP(SPLIT(given_names, " ")[OFFSET(0)]), " ", INITCAP(surname)) AS full_name_clean,
+    FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY state_code, external_id ORDER BY surname NULLS LAST) = 1
 """
 
 AGENT_EXTERNAL_ID_TO_FULL_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(

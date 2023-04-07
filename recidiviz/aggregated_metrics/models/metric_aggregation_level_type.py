@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,10 +16,14 @@
 # =============================================================================
 """Constants related to a MetricAggregationLevelType."""
 from enum import Enum
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import attr
 
+from recidiviz.calculator.query.state.dataset_config import (
+    REFERENCE_VIEWS_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common import attr_validators
 
 # This object contains a mapping from original column names in Recidiviz's
@@ -27,7 +31,9 @@ from recidiviz.common import attr_validators
 # or facility, so those columns are omitted from this object.
 COLUMN_SOURCE_DICT = {
     "district": "supervision_district",
+    "district_name": "supervision_district_name",
     "office": "supervision_office",
+    "office_name": "supervision_office_name",
     "officer_id": "supervising_officer_external_id",
 }
 
@@ -49,13 +55,17 @@ class MetricAggregationLevel:
     # The level type object enum
     level_type: MetricAggregationLevelType
 
-    # The name of the BigQuery table in the `sessions` dataset from which to derive assignments
-    client_assignment_sessions_view_name: str = attr.field(
-        validator=attr_validators.is_str
-    )
+    # The source query containing client assignments to the aggregation level
+    client_assignment_query: str = attr.field(validator=attr_validators.is_str)
 
-    # List of attribute columns present in the assignment table by which to disaggregate
-    index_columns: List[str]
+    # List of columns present in the assignment table that serve as the primary keys of the table
+    primary_key_columns: List[str]
+
+    # List of attribute columns in the assignment table that provide additional information about the aggregation level
+    attribute_columns: List[str]
+
+    # Dictionary of additional bigquery dataset args for assembly of a bigquery view builder
+    dataset_kwargs: Dict[str, str]
 
     @property
     def level_name_short(self) -> str:
@@ -65,6 +75,21 @@ class MetricAggregationLevel:
     @property
     def pretty_name(self) -> str:
         return self.level_name_short.replace("_", " ").title()
+
+    @property
+    def index_columns(self) -> List[str]:
+        """Returns concatenated list of primary key and attribute columns"""
+        return self.primary_key_columns + self.attribute_columns
+
+    def get_primary_key_columns_query_string(self, prefix: Optional[str] = None) -> str:
+        """Returns string containing comma separated primary key column names with optional prefix"""
+        prefix_str = f"{prefix}." if prefix else ""
+        return ", ".join(f"{prefix_str}{column}" for column in self.primary_key_columns)
+
+    def get_attribute_columns_query_string(self, prefix: Optional[str] = None) -> str:
+        """Returns string containing comma separated attribute column names with optional prefix"""
+        prefix_str = f"{prefix}." if prefix else ""
+        return ", ".join(f"{prefix_str}{column}" for column in self.attribute_columns)
 
     def get_index_columns_query_string(self, prefix: Optional[str] = None) -> str:
         """Returns string containing comma separated index column names with optional prefix"""
@@ -95,27 +120,52 @@ class MetricAggregationLevel:
 METRIC_AGGREGATION_LEVELS_BY_TYPE = {
     MetricAggregationLevelType.FACILITY: MetricAggregationLevel(
         level_type=MetricAggregationLevelType.FACILITY,
-        client_assignment_sessions_view_name="location_sessions_materialized",
-        index_columns=["state_code", "facility"],
+        client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
+        primary_key_columns=["state_code", "facility"],
+        attribute_columns=["facility_name"],
+        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricAggregationLevelType.STATE_CODE: MetricAggregationLevel(
         level_type=MetricAggregationLevelType.STATE_CODE,
-        client_assignment_sessions_view_name="compartment_sessions_materialized",
-        index_columns=["state_code"],
+        client_assignment_query="SELECT * "
+        "FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`",
+        primary_key_columns=["state_code"],
+        attribute_columns=[],
+        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricAggregationLevelType.SUPERVISION_DISTRICT: MetricAggregationLevel(
         level_type=MetricAggregationLevelType.SUPERVISION_DISTRICT,
-        client_assignment_sessions_view_name="location_sessions_materialized",
-        index_columns=["state_code", "district"],
+        client_assignment_query="SELECT * "
+        "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
+        primary_key_columns=["state_code", "district"],
+        attribute_columns=["district_name"],
+        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricAggregationLevelType.SUPERVISION_OFFICE: MetricAggregationLevel(
         level_type=MetricAggregationLevelType.SUPERVISION_OFFICE,
-        client_assignment_sessions_view_name="location_sessions_materialized",
-        index_columns=["state_code", "district", "office"],
+        client_assignment_query="SELECT * "
+        "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
+        primary_key_columns=["state_code", "district", "office"],
+        attribute_columns=["district_name", "office_name"],
+        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
     MetricAggregationLevelType.SUPERVISION_OFFICER: MetricAggregationLevel(
         level_type=MetricAggregationLevelType.SUPERVISION_OFFICER,
-        client_assignment_sessions_view_name="supervision_officer_sessions_materialized",
-        index_columns=["state_code", "officer_id"],
+        client_assignment_query="""
+SELECT a.*, b.full_name_clean AS officer_name
+FROM 
+    `{project_id}.{sessions_dataset}.supervision_officer_sessions_materialized` a
+LEFT JOIN 
+    `{project_id}.{reference_views_dataset}.agent_external_id_to_full_name` b
+ON 
+    a.state_code = b.state_code
+    AND a.supervising_officer_external_id = b.external_id
+""",
+        primary_key_columns=["state_code", "officer_id"],
+        attribute_columns=["officer_name"],
+        dataset_kwargs={
+            "reference_views_dataset": REFERENCE_VIEWS_DATASET,
+            "sessions_dataset": SESSIONS_DATASET,
+        },
     ),
 }

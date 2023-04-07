@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,7 +48,9 @@ def generate_metric_assignment_sessions_view_builder(
     view_description = f"""Subquery that extracts appropriate rows from compartment_sessions
 for use in the {level_name}_metrics table.
 """
-    client_period_table = f"{{project_id}}.{{sessions_dataset}}.{aggregation_level.client_assignment_sessions_view_name}"
+    dataset_kwargs = aggregation_level.dataset_kwargs
+    # In case sessions dataset is not already included in kwargs, add (required for population type query)
+    dataset_kwargs["sessions_dataset"] = SESSIONS_DATASET
 
     query_template = f"""
 WITH
@@ -65,6 +67,9 @@ sample AS (
         {population.get_conditions_query_string()}
 )
 -- client assignments to {level_name}
+, assign AS (
+{aggregation_level.client_assignment_query}
+)
 -- if client not always in sample population, take intersection of exclusive periods
 -- to determine the start and end dates of assignment
 , potentially_adjacent_spans AS (
@@ -81,7 +86,7 @@ sample AS (
             {nonnull_end_date_clause("sample.end_date_exclusive")}
         ) AS end_date,
     FROM 
-        `{client_period_table}` assign
+        assign
     INNER JOIN
         sample
     ON
@@ -139,7 +144,11 @@ FROM {level_name}_assignments
         view_id=view_id,
         view_query_template=query_template,
         description=view_description,
-        sessions_dataset=SESSIONS_DATASET,
-        clustering_fields=aggregation_level.index_columns,
+        clustering_fields=aggregation_level.primary_key_columns,
         should_materialize=True,
+        # We set these values so that mypy knows they are not in the dataset_kwargs
+        materialized_address_override=None,
+        should_deploy_predicate=None,
+        projects_to_deploy=None,
+        **dataset_kwargs,
     )

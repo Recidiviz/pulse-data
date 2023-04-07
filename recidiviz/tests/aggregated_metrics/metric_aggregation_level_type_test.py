@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,7 +32,8 @@ class MetricAggregationLevelsByTypeTest(unittest.TestCase):
         for _, value in METRIC_AGGREGATION_LEVELS_BY_TYPE.items():
             if len(value.index_columns) != len(set(value.index_columns)):
                 raise ValueError(
-                    "MetricAggregationLevelType `index_columns` can not have repeated values."
+                    "MetricAggregationLevelType `primary_key_columns` and `attribute_columns`"
+                    " cannot have repeated/shared values."
                 )
 
     # check that level_type = key value
@@ -57,11 +58,13 @@ class MetricAggregationLevelTest(unittest.TestCase):
     def test_get_index_columns_query_string(self) -> None:
         my_metric_aggregation_level = MetricAggregationLevel(
             level_type=MetricAggregationLevelType.SUPERVISION_OFFICER,
-            client_assignment_sessions_view_name="my_officer_session",
-            index_columns=["region_code", "my_officer_id"],
+            client_assignment_query="SELECT * FROM `{project_id}.{my_dataset}.my_table`",
+            primary_key_columns=["region_code", "my_officer_id"],
+            attribute_columns=["my_officer_attribute"],
+            dataset_kwargs={"my_dataset": "custom_dataset"},
         )
         query_string = my_metric_aggregation_level.get_index_columns_query_string(
             prefix="my_prefix"
         )
-        expected_query_string = "my_prefix.region_code, my_prefix.my_officer_id"
+        expected_query_string = "my_prefix.region_code, my_prefix.my_officer_id, my_prefix.my_officer_attribute"
         self.assertEqual(query_string, expected_query_string)

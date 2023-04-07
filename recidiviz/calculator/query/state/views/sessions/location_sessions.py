@@ -54,6 +54,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
         person_id,
         location,
         facility,
+        facility_name,
         supervision_office,
         supervision_office_name,
         supervision_district,
@@ -94,6 +95,7 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                     session.person_id, 
                     session.location,
                     session.facility,
+                    session.facility_name,
                     session.supervision_office,
                     session.supervision_office_name,
                     session.supervision_district,
@@ -109,10 +111,10 @@ LOCATION_SESSIONS_QUERY_TEMPLATE = """
                     ON session.state_code = session_lag.state_code
                     AND session.person_id = session_lag.person_id
                     AND session.start_date = session_lag.end_date_exclusive
-                GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+                GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12,13
                 )
             )           
-    GROUP BY 1,2,3,4,5,6,7,8,9,10
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11
     )
     /*
     The grouping ID that is created isn't in the order that we want. This last step creates an ID for each session within each 
