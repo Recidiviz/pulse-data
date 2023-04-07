@@ -128,7 +128,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
-                    pool_recycle=600,
+                    pool_recycle=-1,
                 ),
                 call(
                     URL.create(
@@ -302,7 +302,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
                     isolation_level=None,
                     poolclass=None,
                     echo_pool=True,
-                    pool_recycle=600,
+                    pool_recycle=-1,
                 ),
                 call(
                     URL.create(
