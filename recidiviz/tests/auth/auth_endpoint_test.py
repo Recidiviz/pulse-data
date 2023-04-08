@@ -29,6 +29,7 @@ from flask import Flask
 from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.auth.helpers import replace_char_0_slash
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
@@ -855,6 +856,11 @@ class AuthEndpointTests(TestCase):
             headers=self.headers,
         )
         self.assertEqual(expected, json.loads(response.data))
+
+    def test_replace_char_0_slash(self) -> None:
+        bad_hash = "/aaabbbccc/ddd"
+        expected = "_aaabbbccc/ddd"
+        self.assertEqual(expected, replace_char_0_slash(bad_hash))
 
     def test_users_add_user(self) -> None:
         user_1 = generate_fake_rosters(
