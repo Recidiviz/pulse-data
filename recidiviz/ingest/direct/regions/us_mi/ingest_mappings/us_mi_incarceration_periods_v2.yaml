@@ -351,7 +351,6 @@ output:
                         - "7842" # 7842: PC - Protective Custody (Protective Segregation)
                         - "7827" # 7856: DS - Detention (Punitive Segregation)
                       StateIncarcerationPeriodHousingUnitType.GENERAL:
-                        - "7830" # G2 - General Population - Level 2
                         - "11319" # Regular
                         - "12550" # G1S - General Population - Level 1 Secure
                         - "12820" # QU - Quarantine

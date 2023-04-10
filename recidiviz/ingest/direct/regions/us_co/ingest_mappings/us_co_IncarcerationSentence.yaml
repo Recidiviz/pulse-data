@@ -60,7 +60,6 @@ output:
                   - P # Serving Parole Sentence
                   - N # Released by Court
                   - G # Released on Probation
-                  - P # Serving Parole Sentence
                 StateSentenceStatus.SERVING:
                   - "1" # Active (Imposed)
                 StateSentenceStatus.VACATED:
