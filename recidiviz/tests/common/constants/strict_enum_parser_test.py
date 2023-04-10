@@ -77,7 +77,11 @@ class TestStrictEnumParser(unittest.TestCase):
 
     def test_parse_bad_str(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser(StateRace).parse("FOO")
+            _ = (
+                StrictEnumParser(StateRace)
+                .add_raw_text_mapping(StateRace.BLACK, "BAR")
+                .parse("FOO")
+            )
 
     def test_mapper_that_throws(self) -> None:
         parser = StrictEnumParser(StateEthnicity).add_mapper_fn(mapper_that_throws)
@@ -95,7 +99,7 @@ class TestStrictEnumParser(unittest.TestCase):
         self.assertEqual(StateRace.BLACK, self.race_parser.parse("BLACK"))
         self.assertEqual(StateRace.WHITE, self.race_parser.parse("WHITE"))
 
-    def test_parse_default_mapping(self) -> None:
+    def test_parse_missing_mapping(self) -> None:
         with self.assertRaises(EnumParsingError):
             _ = self.gender_parser.parse("M")
 
@@ -108,7 +112,7 @@ class TestStrictEnumParser(unittest.TestCase):
         with self.assertRaises(EnumParsingError):
             _ = self.race_parser.parse("W")
 
-    def test_parse_explicit_mapping_unnormalized(self) -> None:
+    def test_parse_mapping_does_not_match_case(self) -> None:
         with self.assertRaises(EnumParsingError):
             _ = self.gender_parser.parse("ma")
 
@@ -153,6 +157,68 @@ class TestStrictEnumParser(unittest.TestCase):
             _ = self.gender_parser.parse("FEM")
 
     def test_parse_ignored(self) -> None:
+        # X is a value we should ignore
         self.assertIsNone(self.gender_parser.parse("X"))
         with self.assertRaises(EnumParsingError):
+            # Case does not match ignored value
             _ = self.gender_parser.parse("x")
+
+    def test_double_add_fails(self) -> None:
+        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
+        with self.assertRaisesRegex(
+            ValueError, r"Raw text value \[A\] already mapped."
+        ):
+            parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
+
+        with self.assertRaisesRegex(
+            ValueError, r"Raw text value \[A\] already mapped."
+        ):
+            # Adding for a different enum value also fails
+            parser.add_raw_text_mapping(_MyEnum.ITEM2, "A")
+
+    def test_add_and_ignore_same_value(self) -> None:
+        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
+        with self.assertRaisesRegex(
+            ValueError, r"Raw text value \[A\] already mapped."
+        ):
+            # Adding for a different enum value also fails
+            parser.ignore_raw_text_value("A")
+
+    def test_ignore_and_add_same_value(self) -> None:
+        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser.ignore_raw_text_value("A")
+        with self.assertRaisesRegex(
+            ValueError, r"Raw text value \[A\] already mapped."
+        ):
+            # Adding for a different enum value also fails
+            parser.add_raw_text_mapping(_MyEnum.ITEM2, "A")
+
+    def test_double_add_different_case(self) -> None:
+        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
+        parser.add_raw_text_mapping(_MyEnum.ITEM1, "a")
+
+        self.assertEqual(_MyEnum.ITEM1, parser.parse("A"))
+        self.assertEqual(_MyEnum.ITEM1, parser.parse("a"))
+
+    def test_add_mapper_fn_after_direct_mappings(self) -> None:
+        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Must define either a mapper function or raw text mappings for "
+            r"\[_MyEnum\] but not both.",
+        ):
+            parser.add_mapper_fn(lambda x: _MyEnum.ITEM1)
+
+    def test_add_direct_mappings_after_mapper_fn(self) -> None:
+        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser.add_mapper_fn(lambda x: _MyEnum.ITEM1)
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Must define either a mapper function or raw text mappings for "
+            r"\[_MyEnum\] but not both.",
+        ):
+            parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")

@@ -380,7 +380,6 @@ output:
                         - FAPA-PBPAD # Probationary parole/detainer
                         - FAPA-PBNPA # Probationary parole
                         - FAPA-MANDE # Mandatory detainer
-                        - CTCC-NEWAD # Court to community corrections - new admission
 
                       StateIncarcerationPeriodReleaseReason.COMMUTED:
                         - FAPA-COMMT # Facility to parole - Commutation
@@ -522,7 +521,6 @@ output:
                         - CCFA-NEWCV
                         - CCFA-WKEND
                         - PRFA-VIOLT
-                        - PAFA-VIOLT
                         - PAFA-NEWCH
                         - PAFA-DETAN
                         - CCFA-NEWCH
@@ -539,7 +537,6 @@ output:
                         - DIFA-RTABS
                         - OJFA-RTFED
                         - OJFA-RTIAD
-                        - OJFA-RTOUT
                         - ESFA-RTESC
                         - EIFA-RTESC
                         - CTFA-MISPR
@@ -548,6 +545,7 @@ output:
                         - PAFA-PTVOS # Parole to facility
                         - PRFA-PTVOS # Probation to facility
                     $ignore:
+                      # TODO(#20102): Remap these values to RELEASED_FROM_SUPERVISION
                       - "CTPR-NEWAD"
                       - "CTCC-NEWAD"
                       - "CTDV-COURT"

@@ -17,74 +17,100 @@
 """Defines a class that parses an enum value from raw text, given a provided set of enum
 mappings.
 """
+from enum import Enum
+from typing import Callable, Dict, Generic, Optional, Set, Type, TypeVar
 
-from typing import Callable, Generic, Optional, Type
-
-import attr
-
-from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
 from recidiviz.common.constants.enum_parser import EnumParsingError
+
+EnumT = TypeVar("EnumT", bound=Enum)
 
 
 # TODO(#8905): Rename to EnumParser and move back into `enum_parser.py`
-@attr.s(frozen=True)
 class StrictEnumParser(Generic[EnumT]):
     """Class that parses an enum value from raw text, given a provided set of enum
     mappings. It does no normalization of the input text before attempting to find a
     mapping.
     """
 
-    enum_cls: Type[EnumT] = attr.ib()
-
-    # TODO(#8905): Delete the EnumOverrides class entirely and move relevant
-    #  functionality to this class.
-    enum_overrides_builder: EnumOverrides.Builder = attr.ib(
-        factory=EnumOverrides.Builder
-    )
+    def __init__(self, enum_cls: Type[EnumT]) -> None:
+        self.enum_cls = enum_cls
+        self.ignored_raw_text_values: Set[str] = set()
+        self.raw_text_mappings: Optional[Dict[str, EnumT]] = None
+        self.mapper_fn: Optional[Callable[[str], Optional[EnumT]]] = None
 
     def add_raw_text_mapping(
         self, enum_value: EnumT, raw_text_value: str
     ) -> "StrictEnumParser":
-        self.enum_overrides_builder.add(
-            raw_text_value, enum_value, normalize_label=False
-        )
+        if not self.raw_text_mappings:
+            if self.mapper_fn:
+                raise ValueError(
+                    f"Must define either a mapper function or raw text mappings for "
+                    f"[{self.enum_cls.__name__}] but not both."
+                )
+            self.raw_text_mappings = {}
+        self._check_not_already_mapped(raw_text_value)
+        self.raw_text_mappings[raw_text_value] = enum_value
         return self
 
     def add_mapper_fn(
         self, mapper_fn: Callable[[str], Optional[EnumT]]
     ) -> "StrictEnumParser":
-        self.enum_overrides_builder.add_mapper_fn(mapper_fn, self.enum_cls)
+        if self.raw_text_mappings:
+            raise ValueError(
+                f"Must define either a mapper function or raw text mappings for "
+                f"[{self.enum_cls.__name__}] but not both."
+            )
+        if self.mapper_fn:
+            raise ValueError(
+                f"Mapper function already defined for [{self.enum_cls.__name__}]"
+            )
+        self.mapper_fn = mapper_fn
         return self
 
     def ignore_raw_text_value(self, raw_text_value: str) -> "StrictEnumParser":
-        self.enum_overrides_builder.ignore(
-            raw_text_value, from_field=self.enum_cls, normalize_label=False
-        )
+        self._check_not_already_mapped(raw_text_value)
+        self.ignored_raw_text_values.add(raw_text_value)
         return self
 
+    def _check_not_already_mapped(self, raw_text_value: str) -> None:
+        if raw_text_value in self.ignored_raw_text_values or (
+            self.raw_text_mappings and raw_text_value in self.raw_text_mappings
+        ):
+            raise ValueError(f"Raw text value [{raw_text_value}] already mapped.")
+
     def parse(self, raw_text: Optional[str]) -> Optional[EnumT]:
-        """Parses an enum value from raw text, given a provided set of enum mappings.
+        """Parses an enum value from raw text, given the mapping information provided to
+        this class.
+
         It does no normalization of the input text before attempting to find a mapping.
-        Throws an EnumParsingError if no mapping is found and the mappings object does
-        not indicate it should be ignored. Returns null if the raw text value should
+        Throws an EnumParsingError if no mapping is found and the mappings do not
+        indicate it should be ignored. Returns null if the raw text value should
         just be ignored.
         """
         if not raw_text:
             return None
 
-        enum_overrides = self.enum_overrides_builder.build()
-        if enum_overrides.should_ignore(raw_text, self.enum_cls):
+        if raw_text in self.ignored_raw_text_values:
             return None
 
-        try:
-            parsed_enum = enum_overrides.parse(raw_text, self.enum_cls)
-        except Exception as e:
-            if isinstance(e, EnumParsingError):
-                raise e
+        if self.mapper_fn:
+            try:
+                parsed_enum = self.mapper_fn(raw_text)
+            except Exception as e:
+                if isinstance(e, EnumParsingError):
+                    raise e
 
-            # If a mapper function throws another type of error, convert it to an enum
-            # parsing error.
-            raise EnumParsingError(self.enum_cls, raw_text) from e
+                # If a mapper function throws another type of error, convert it to an
+                # enum parsing error.
+                raise EnumParsingError(self.enum_cls, raw_text) from e
+
+        elif self.raw_text_mappings:
+            parsed_enum = self.raw_text_mappings.get(raw_text)
+        else:
+            raise ValueError(
+                f"Cannot parse [{self.enum_cls.__name__}] without defining either a "
+                f"mapper function or explicit raw text mappings."
+            )
 
         if parsed_enum is None:
             raise EnumParsingError(self.enum_cls, raw_text)
