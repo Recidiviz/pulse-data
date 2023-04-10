@@ -51,6 +51,8 @@ output:
                 StateIncarcerationPeriodCustodyLevel.CLOSE: Close
                 StateIncarcerationPeriodCustodyLevel.MEDIUM: Medium
                 StateIncarcerationPeriodCustodyLevel.MINIMUM: Minimum
+                # TODO(#20079) Remap rider as necessary after investigation
+                StateIncarcerationPeriodCustodyLevel.INTERNAL_UNKNOWN: Rider
           facility: DOCLocationToName
           #housing_unit: TODO(#16082) still need to find how to pull this in
           specialized_purpose_for_incarceration:
