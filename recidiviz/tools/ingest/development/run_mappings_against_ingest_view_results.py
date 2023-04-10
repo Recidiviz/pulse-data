@@ -50,9 +50,6 @@ from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser import (
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegateImpl,
 )
-from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
-    to_string_value_converter,
-)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -105,9 +102,8 @@ def query_ingest_view(
     )
     query_job = big_query_client.run_query_async(query_str=query, use_query_cache=True)
 
-    contents_handle = BigQueryResultsContentsHandle(
+    contents_handle: BigQueryResultsContentsHandle[str] = BigQueryResultsContentsHandle(
         query_job,
-        value_converter=to_string_value_converter,
         max_expected_rows=None,
     )
 

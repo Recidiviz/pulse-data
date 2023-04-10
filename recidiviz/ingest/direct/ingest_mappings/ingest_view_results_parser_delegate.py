@@ -250,9 +250,6 @@ class IngestViewResultsParserDelegateImpl(
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
 
-    # TODO(#8905): Consider using more general logic to build a filter predicate, like
-    #  building a @required field annotation for fields that must be hydrated, otherwise
-    #  the whole entity is filtered out.
     def get_filter_predicate(
         self, entity_cls: Type[EntityT]
     ) -> Optional[Callable[[EntityT], bool]]:

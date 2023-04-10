@@ -159,9 +159,7 @@ class StateIngestViewParserTestBase:
 
         self.test.assertEqual(expected_output, parsed_output)
 
-    # TODO(#8905): Rename this function once all manifests have been migrated to v2
-    #  mappings and have test_all_ingest_view_manifests_parse do the parsing.
-    def _v2_manifest_paths(self) -> List[str]:
+    def _ingest_view_manifest_paths(self) -> List[str]:
         region = self._region()
         manifest_dir = ingest_view_manifest_dir(region)
 
@@ -170,11 +168,6 @@ class StateIngestViewParserTestBase:
             if file == "__init__.py":
                 continue
             manifest_path = os.path.join(manifest_dir, file)
-            manifest_dict = YAMLDict.from_path(manifest_path)
-            if "manifest_language" not in manifest_dict.keys():
-                # TODO(#8905): Remove this check once all files have been migrated
-                #  to v2 structure.
-                continue
             result.append(manifest_path)
         return result
 
@@ -188,7 +181,7 @@ class StateIngestViewParserTestBase:
         if self.region_code() == StateCode.US_XX.value:
             # Skip template region
             return
-        for manifest_path in self._v2_manifest_paths():
+        for manifest_path in self._ingest_view_manifest_paths():
             manifest_dict = YAMLDict.from_path(manifest_path)
             version = manifest_dict.peek(MANIFEST_LANGUAGE_VERSION_KEY, str)
             manifest_dict.validate(
@@ -204,7 +197,7 @@ class StateIngestViewParserTestBase:
 
         # Make sure building all manifests doesn't crash
         parser = self._build_parser()
-        for manifest_path in self._v2_manifest_paths():
+        for manifest_path in self._ingest_view_manifest_paths():
             manifest_ast, _ = parser.parse_manifest(manifest_path)
             self.test.assertIsInstance(manifest_ast, EntityTreeManifest)
 
@@ -213,7 +206,7 @@ class StateIngestViewParserTestBase:
             # Skip template region
             return
 
-        for manifest_path in self._v2_manifest_paths():
+        for manifest_path in self._ingest_view_manifest_paths():
             self._check_manifest_has_parser_test(manifest_path)
 
     def test_all_ingest_view_manifests_define_schema_pragma(self) -> None:
@@ -221,7 +214,7 @@ class StateIngestViewParserTestBase:
             # Skip template region
             return
 
-        for manifest_path in self._v2_manifest_paths():
+        for manifest_path in self._ingest_view_manifest_paths():
             with open(manifest_path, encoding="utf-8") as f:
                 line = f.readline()
                 match = re.match(YAML_LANGUAGE_SERVER_PRAGMA, line.strip())

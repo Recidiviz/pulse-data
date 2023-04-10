@@ -39,7 +39,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.common.str_field_utils import sorted_list_from_str
-from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
+from recidiviz.ingest.direct.regions.custom_enum_parser_utils import (
     invert_enum_to_str_mappings,
 )
 
