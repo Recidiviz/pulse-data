@@ -30,7 +30,7 @@ POPULATION_SPAN_METRIC_TO_DAY_BY_DAY_METRIC: Dict[str, str] = {
 }
 
 MOST_RECENT_POPULATION_SPAN_TO_SINGLE_DAY_METRICS_TEMPLATE: str = """
-    SELECT * EXCEPT (start_date_inclusive, end_date_exclusive, year, month),
+    SELECT * EXCEPT (start_date_inclusive, end_date_exclusive),
     EXTRACT(YEAR FROM {metric_date_column}) AS year,
     EXTRACT(MONTH FROM {metric_date_column}) AS month
     FROM
