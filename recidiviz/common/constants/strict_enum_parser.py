@@ -18,20 +18,16 @@
 mappings.
 """
 
-from typing import Optional, Type
+from typing import Generic, Optional, Type
 
 import attr
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
-from recidiviz.common.constants.enum_parser import (
-    EnumParser,
-    EnumParsingError,
-    parse_to_enum,
-)
+from recidiviz.common.constants.enum_parser import EnumParsingError
 
 
 @attr.s(frozen=True)
-class StrictEnumParser(EnumParser[EnumT]):
+class StrictEnumParser(Generic[EnumT]):
     """Class that parses an enum value from raw text, given a provided set of enum
     mappings. It does no normalization of the input text before attempting to find a
     mapping.
@@ -54,7 +50,16 @@ class StrictEnumParser(EnumParser[EnumT]):
         if self.enum_overrides.should_ignore(self.raw_text, self.enum_cls):
             return None
 
-        parsed_enum = parse_to_enum(self.enum_cls, self.raw_text, self.enum_overrides)
+        try:
+            parsed_enum = self.enum_overrides.parse(self.raw_text, self.enum_cls)
+        except Exception as e:
+            if isinstance(e, EnumParsingError):
+                raise e
+
+            # If a mapper function throws another type of error, convert it to an enum
+            # parsing error.
+            raise EnumParsingError(self.enum_cls, self.raw_text) from e
+
         if parsed_enum is None:
             raise EnumParsingError(self.enum_cls, self.raw_text)
 

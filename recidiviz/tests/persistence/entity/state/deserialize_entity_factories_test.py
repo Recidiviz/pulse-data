@@ -20,8 +20,6 @@ import unittest
 from datetime import date
 from typing import Set
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
@@ -100,7 +98,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseType,
 )
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
-from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.common.str_field_utils import NormalizedJSON
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
@@ -154,21 +151,9 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             self.fail(f"Found missing expected tests: {missing_tests}")
 
     def test_deserialize_StatePerson(self) -> None:
-        enum_overrides = (
-            EnumOverrides.Builder()
-            .add("Male", StateGender.MALE, normalize_label=False)
-            .build()
-        )
-        gender_raw_text = "Male"
-        enum_parser: EnumParser = StrictEnumParser(
-            gender_raw_text, StateGender, enum_overrides
-        )
-        enum_parser.parse()
         result = deserialize_entity_factories.StatePersonFactory.deserialize(
             state_code="us_xx",
-            # TODO(#8905): Change to enum_parser.build() from this validator when
-            #  ingest mappings v2 migration is complete.
-            gender=enum_parser,
+            gender=StateGender.MALE,
             gender_raw_text="MALE",
             full_name=NormalizedJSON(full_name="full NAME"),
             birthdate="12-31-1999",
