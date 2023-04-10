@@ -16,13 +16,9 @@
 # =============================================================================
 """Tests for utils/execution_utils.py."""
 # pylint: disable=protected-access
-import argparse
 import unittest
 from typing import Any, Dict, Iterable
 
-from freezegun import freeze_time
-
-from recidiviz.calculator.pipeline.utils import execution_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     extract_county_of_residence_from_rows,
     person_and_kwargs_for_identifier,
@@ -30,54 +26,6 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
     select_query,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
-
-
-class TestCalculationEndMonthArg(unittest.TestCase):
-    """Tests the calculation_end_month function."""
-
-    def test_calculation_end_month_arg(self) -> None:
-        value = "2009-01"
-
-        return_value = execution_utils.calculation_end_month_arg(value)
-
-        self.assertEqual(return_value, value)
-
-    def test_calculation_end_month_arg_bad_month(self) -> None:
-        value = "2009-31"
-
-        with self.assertRaisesRegex(
-            argparse.ArgumentTypeError,
-            "calculation_end_month parameter must be in the format YYYY-MM.",
-        ):
-            _ = execution_utils.calculation_end_month_arg(value)
-
-    def test_calculation_end_month_arg_bad_year(self) -> None:
-        value = "001-03"
-
-        with self.assertRaisesRegex(
-            argparse.ArgumentTypeError,
-            "calculation_end_month parameter must be in the format YYYY-MM.",
-        ):
-            _ = execution_utils.calculation_end_month_arg(value)
-
-    @freeze_time("2019-11-01")
-    def test_calculation_end_month_arg_after_this_month(self) -> None:
-        value = "2030-01"
-
-        with self.assertRaisesRegex(
-            argparse.ArgumentTypeError,
-            "calculation_end_month parameter cannot be a month in the future.",
-        ):
-            _ = execution_utils.calculation_end_month_arg(value)
-
-    def test_calculation_end_month_arg_only_year(self) -> None:
-        value = "2009"
-
-        with self.assertRaisesRegex(
-            argparse.ArgumentTypeError,
-            "calculation_end_month parameter must be in the format YYYY-MM.",
-        ):
-            _ = execution_utils.calculation_end_month_arg(value)
 
 
 class TestPersonAndKwargsForIdentifier(unittest.TestCase):

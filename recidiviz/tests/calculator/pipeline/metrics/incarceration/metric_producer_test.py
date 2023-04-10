@@ -93,6 +93,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             pipeline.IncarcerationMetricsPipelineRunDelegate.pipeline_config()
         )
 
+    @freeze_time("2000-03-01")
     def test_produce_incarceration_metrics(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -128,7 +129,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2000-03",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -197,7 +197,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -251,7 +250,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -301,7 +299,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -369,7 +366,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -416,7 +412,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2000-03",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -468,7 +463,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -525,7 +519,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -577,7 +570,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=37,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -636,7 +628,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             person=person,
             identifier_results=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,

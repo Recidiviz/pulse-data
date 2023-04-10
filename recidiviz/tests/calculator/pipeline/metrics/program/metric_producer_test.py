@@ -99,7 +99,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -109,6 +108,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
+    @freeze_time("2009-10-01")
     def test_produce_program_metrics_full_info(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_ND",
@@ -156,7 +156,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
-            calculation_end_month="2009-10",
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -213,7 +212,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
-            calculation_end_month="2009-10",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -287,7 +285,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
-            calculation_end_month="2009-10",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -336,7 +333,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
-            calculation_end_month=None,
             calculation_month_count=1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,
@@ -382,7 +378,6 @@ class TestProduceProgramMetrics(unittest.TestCase):
             program_events,
             ALL_METRICS_INCLUSIONS_DICT,
             metrics_producer_delegates={},
-            calculation_end_month=None,
             calculation_month_count=36,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=PIPELINE_JOB_ID,

@@ -25,7 +25,6 @@ from typing import (
     Generic,
     Iterable,
     List,
-    Optional,
     Sequence,
     Set,
     Tuple,
@@ -72,7 +71,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     TableRow,
-    calculation_end_month_arg,
     calculation_month_count_arg,
     get_job_id,
     person_and_kwargs_for_identifier,
@@ -133,10 +131,6 @@ class MetricPipelineJobArgs(Generic[RecidivizMetricTypeT], PipelineJobArgs):
 
     # How many months of output metrics should be written to BigQuery
     calculation_month_count: int = attr.ib()
-
-    # An optional string in the format YYYY-MM specifying the last month for which
-    # metrics should be calculated. If unset, defaults to the current month.
-    calculation_end_month: Optional[str] = attr.ib()
 
 
 class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
@@ -207,15 +201,6 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
                 default=-1,
             )
 
-            parser.add_argument(
-                "--calculation_end_month",
-                dest="calculation_end_month",
-                type=calculation_end_month_arg,
-                help="The year and month, formatted in YYYY-MM, specifying the last month "
-                "for which metrics should be calculated. If unset, defaults to the "
-                "current month. Cannot be a month in the future.",
-            )
-
     @classmethod
     def _build_pipeline_job_args(
         cls, parser: argparse.ArgumentParser, argv: List[str]
@@ -245,15 +230,6 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             else:
                 metric_inclusions[metric_option] = False
 
-        calculation_end_month_value = (
-            known_args.calculation_end_month
-            if cls.include_calculation_limit_args()
-            else None
-        )
-        calculation_end_month = (
-            str(calculation_end_month_value) if calculation_end_month_value else None
-        )
-
         calculation_month_count = int(
             known_args.calculation_month_count
             if cls.include_calculation_limit_args()
@@ -263,13 +239,9 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         month_count_string = (
             str(calculation_month_count) if calculation_month_count != -1 else "all"
         )
-        end_month_string = (
-            calculation_end_month if calculation_end_month else "the current month"
-        )
         logging.info(
-            "Producing metric output for %s month(s) up to %s",
+            "Producing metric output for %s month(s) up to the current month",
             month_count_string,
-            end_month_string,
         )
 
         return MetricPipelineJobArgs(
@@ -285,7 +257,6 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             metric_inclusions=metric_inclusions,
             region=str(all_beam_options["region"]),
             job_name=str(all_beam_options["job_name"]),
-            calculation_end_month=calculation_end_month,
             calculation_month_count=calculation_month_count,
         )
 
@@ -463,7 +434,6 @@ class ProduceMetrics(beam.DoFn):
             metric_inclusions=pipeline_job_args.metric_inclusions,
             person_metadata=person_metadata,
             pipeline_job_id=pipeline_job_id,
-            calculation_end_month=pipeline_job_args.calculation_end_month,
             calculation_month_count=pipeline_job_args.calculation_month_count,
             metrics_producer_delegates=metrics_producer_delegates,
         )

@@ -17,7 +17,7 @@
 """Base class for a metric producer for a metric calculation pipeline."""
 
 import abc
-from typing import Dict, Generic, List, Optional, Type, TypeVar
+from typing import Dict, Generic, List, Type, TypeVar
 
 import attr
 
@@ -62,7 +62,6 @@ class BaseMetricProducer(
         person_metadata: PersonMetadata,
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
-        calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
     ) -> List[RecidivizMetricT]:
         """Transforms the events and a StatePerson into RecidivizMetrics.
@@ -71,8 +70,6 @@ class BaseMetricProducer(
             identifier_results: A list of IdentifierResults for the given StatePerson.
             metric_inclusions: A dictionary where the keys are each Metric type and the values are boolean
                 flags for whether or not to include that metric type in the calculations.
-            calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
-                calculated. If unset, ends with the current month.
             calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
                 limit the monthly calculation output to. If set to -1, does not limit the calculations.
             person_metadata: Contains information about the StatePerson that is necessary for the metrics.
@@ -94,7 +91,6 @@ class BaseMetricProducer(
             person=person,
             identifier_results=identifier_results,  # type: ignore
             metric_inclusions=metric_inclusions,
-            calculation_end_month=calculation_end_month,
             calculation_month_count=calculation_month_count,
             person_metadata=person_metadata,
             event_to_metric_classes=self.event_to_metric_classes,  # type: ignore

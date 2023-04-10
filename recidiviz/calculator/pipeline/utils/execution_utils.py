@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for executing calculation pipelines."""
 import argparse
-import datetime
 import logging
 from collections import defaultdict
 from functools import lru_cache
@@ -37,7 +36,6 @@ from googleapiclient.discovery import build
 from more_itertools import one
 from oauth2client.client import GoogleCredentials
 
-from recidiviz.common.date import year_and_month_for_today
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.base_entity import Entity
@@ -158,27 +156,6 @@ def calculation_month_count_arg(value: str) -> int:
     if int_value == 0:
         raise argparse.ArgumentTypeError("calculation_month_count cannot be 0")
     return int_value
-
-
-def calculation_end_month_arg(value: str) -> str:
-    """Enforces the acceptable values for the calculation_end_month parameter in the pipelines."""
-    try:
-        end_month_date = datetime.datetime.strptime(value, "%Y-%m").date()
-
-        today_year, today_month = year_and_month_for_today()
-
-        if end_month_date.year > today_year or (
-            end_month_date.year == today_year and end_month_date.month > today_month
-        ):
-            raise argparse.ArgumentTypeError(
-                "calculation_end_month parameter cannot be a month in the future."
-            )
-
-        return value
-    except ValueError as e:
-        raise argparse.ArgumentTypeError(
-            "calculation_end_month parameter must be in the format YYYY-MM."
-        ) from e
 
 
 def kwargs_for_entity_lists(

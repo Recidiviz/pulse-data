@@ -148,7 +148,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -213,7 +212,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -279,7 +277,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -347,7 +344,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -423,7 +419,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -499,7 +494,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -585,7 +579,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -674,7 +667,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -756,7 +748,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-07",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -822,7 +813,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -896,7 +886,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-05",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -988,7 +977,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1039,7 +1027,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2000-01",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1094,7 +1081,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2000-01",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1152,7 +1138,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2000-01",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1225,7 +1210,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2000-01",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1243,6 +1227,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             if isinstance(metric, SupervisionTerminationMetric)
         )
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_terminations(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1317,7 +1302,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1340,6 +1324,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_success(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1411,7 +1396,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1432,6 +1416,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_only_population(self) -> None:
         person = StatePerson.new_with_defaults(
             state_code="US_XX",
@@ -1495,7 +1480,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1575,7 +1559,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1588,6 +1571,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state(
         self,
     ) -> None:
@@ -1638,7 +1622,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1660,6 +1643,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_is_out_of_state_by_authority(
         self,
     ) -> None:
@@ -1708,7 +1692,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1730,6 +1713,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             for metric in metrics
         )
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state(
         self,
     ) -> None:
@@ -1775,7 +1759,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1788,6 +1771,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.assertEqual(expected_count, len(metrics))
 
+    @freeze_time("2010-12-01")
     def test_produce_supervision_metrics_US_ID_supervision_out_of_state_population_metrics_not_out_of_state_by_authority(
         self,
     ) -> None:
@@ -1833,7 +1817,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             inclusions_dict,
-            calculation_end_month="2010-12",
             calculation_month_count=12,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
@@ -1899,7 +1882,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             person,
             supervision_events,
             ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month="2018-04",
             calculation_month_count=-1,
             person_metadata=_DEFAULT_PERSON_METADATA,
             pipeline_job_id=_PIPELINE_JOB_ID,
