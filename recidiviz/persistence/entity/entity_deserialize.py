@@ -33,7 +33,6 @@ from recidiviz.common.attr_utils import (
     is_list,
     is_str,
 )
-from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.str_field_utils import (
     NormalizedJSON,
     normalize,
@@ -47,8 +46,6 @@ from recidiviz.utils.types import T
 
 EntityT = TypeVar("EntityT", bound=Entity)
 DeserializableEntityFieldValue = Optional[
-    # TODO(#8905): Remove EnumParser from this type when ingest mappings v2 migration
-    #  is complete.
     Union[
         str,
         Enum,
@@ -57,17 +54,14 @@ DeserializableEntityFieldValue = Optional[
         datetime.date,
         datetime.datetime,
         NormalizedJSON,
-        EnumParser,
     ]
 ]
 
 
 @attr.s
 class EntityFieldConverter(Generic[T]):
-    # TODO(#8905): Remove EnumParser from this validator when ingest mappings v2
-    #  migration is complete.
     field_type: Type[T] = attr.ib(
-        validator=attr.validators.in_({str, Enum, EnumParser, NormalizedJSON})
+        validator=attr.validators.in_({str, Enum, NormalizedJSON})
     )
     conversion_function: Callable[[T], Any] = attr.ib()
 
@@ -122,14 +116,6 @@ def entity_deserialize(
                     f"[{type(field_value)}]"
                 )
             return converter.convert(field_value)
-
-        # TODO(#8905): Remove this block when ingest mappings v2 migration is complete
-        if isinstance(field_value, EnumParser):
-            if is_enum(field):
-                return field_value.parse()
-            raise ValueError(
-                f"Found field value [{field_value}] for field that is not an enum [{field}]."
-            )
 
         if isinstance(field_value, NormalizedJSON):
             if is_str(field):

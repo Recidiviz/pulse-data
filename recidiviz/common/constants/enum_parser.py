@@ -14,14 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class that parses an enum value from raw text, given a provided set of enum mappings."""
-import abc
-from enum import Enum
-from typing import Generic, Optional, Type
-
-import attr
-
-from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
+"""Exceptions related to enum parsing."""
 
 
 class EnumParsingError(Exception):
@@ -31,36 +24,3 @@ class EnumParsingError(Exception):
         msg = f"Could not parse {string_to_parse} when building {cls}"
         self.entity_type = cls
         super().__init__(msg)
-
-
-@attr.s(frozen=True)
-class EnumParser(Generic[EnumT]):
-    """Interface for a class that parses an enum value from raw text, given a provided
-    set of enum mappings.
-    """
-
-    @abc.abstractmethod
-    def parse(self) -> Optional[EnumT]:
-        """Should be overridden by implementing classes to return an enum value parsed
-        from raw text. Should throw an EnumParsingError on failure, or null if the
-        raw text is marked as "should ignore".
-        """
-
-
-def parse_to_enum(
-    enum_cls: Type[EnumT], label: str, enum_overrides: EnumOverrides
-) -> Optional[Enum]:
-    if enum_overrides.should_ignore(label, enum_cls):
-        return None
-
-    try:
-        overridden_value = enum_overrides.parse(label, enum_cls)
-    except Exception as e:
-        if isinstance(e, EnumParsingError):
-            raise e
-
-        # If a mapper function throws another type of error, convert it to an enum
-        # parsing error.
-        raise EnumParsingError(enum_cls, label) from e
-
-    return overridden_value

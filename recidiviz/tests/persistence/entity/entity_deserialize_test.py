@@ -15,18 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for entity_deserialize.py."""
-from typing import Optional, Union
+from enum import Enum
+from typing import Optional
 from unittest import TestCase
 
 import attr
 
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.state.state_person import StateRace
-from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_deserialize import (
+    DeserializableEntityFieldValue,
     EntityFieldConverter,
     entity_deserialize,
 )
@@ -54,7 +53,7 @@ class MyEntity(Entity):
 
 class MyEntityFactory:
     @staticmethod
-    def deserialize(**kwargs: Optional[Union[str, EnumParser]]) -> MyEntity:
+    def deserialize(**kwargs: DeserializableEntityFieldValue) -> MyEntity:
         return entity_deserialize(
             MyEntity, converter_overrides={}, defaults={}, **kwargs
         )
@@ -108,24 +107,6 @@ class TestEntityDeserialize(TestCase):
             _ = MyEntity(bool_with_default="True")  # type: ignore[arg-type]
         with self.assertRaises(TypeError):
             _ = MyEntity(opt_bool="True")  # type: ignore[arg-type]
-
-        with self.assertRaises(TypeError):
-            _ = MyEntity(
-                enum_with_default=StrictEnumParser(  # type: ignore[arg-type]
-                    raw_text="BLACK",
-                    enum_cls=StateRace,
-                    enum_overrides=EnumOverrides.empty(),
-                )
-            )
-
-        with self.assertRaises(TypeError):
-            _ = MyEntity(
-                opt_enum=StrictEnumParser(  # type: ignore[arg-type]
-                    raw_text="BLACK",
-                    enum_cls=StateRace,
-                    enum_overrides=EnumOverrides.empty(),
-                )
-            )
 
         default_entity = MyEntity()
         expected_default_entity = MyEntity(
@@ -182,42 +163,20 @@ class TestEntityDeserialize(TestCase):
             MyEntityFactory.deserialize(opt_bool="False"),
         )
 
-        enum_mappings = (
-            EnumOverrides.Builder()
-            .add("BLACK", StateRace.BLACK, normalize_label=False)
-            .add("Black", StateRace.BLACK, normalize_label=False)
-            .build()
-        )
-        strict_enum_parser = StrictEnumParser(
-            raw_text="BLACK",
-            enum_cls=StateRace,
-            enum_overrides=enum_mappings,
-        )
         self.assertEqual(
             attr.evolve(expected_default_entity, enum_with_default=StateRace.BLACK),
-            MyEntityFactory.deserialize(enum_with_default=strict_enum_parser),
+            MyEntityFactory.deserialize(enum_with_default=StateRace.BLACK),
         )
         self.assertEqual(
             attr.evolve(expected_default_entity, opt_enum=StateRace.BLACK),
-            MyEntityFactory.deserialize(opt_enum=strict_enum_parser),
+            MyEntityFactory.deserialize(opt_enum=StateRace.BLACK),
         )
-
-        # Empty mappings throws
-        strict_enum_parser = StrictEnumParser(
-            raw_text="BLACK",
-            enum_cls=StateRace,
-            enum_overrides=EnumOverrides.empty(),
-        )
-        with self.assertRaises(EnumParsingError):
-            _ = MyEntityFactory.deserialize(enum_with_default=strict_enum_parser)
-        with self.assertRaises(EnumParsingError):
-            _ = MyEntityFactory.deserialize(opt_enum=strict_enum_parser)
 
     def test_entity_deserialize_with_converter_overrides(self) -> None:
         def parse_int_and_double(int_str: str) -> int:
             return int(int_str) * 2
 
-        def set_race_to_white(_race_enum_parser: EnumParser) -> StateRace:
+        def set_race_to_white(_race_enum: Enum) -> StateRace:
             return StateRace.WHITE
 
         @attr.s(eq=False)
@@ -236,7 +195,7 @@ class TestEntityDeserialize(TestCase):
         class MyEntityWithFieldOverridesFactory:
             @staticmethod
             def deserialize(
-                **kwargs: Union[str, EnumParser]
+                **kwargs: DeserializableEntityFieldValue,
             ) -> MyEntityWithFieldOverrides:
                 return entity_deserialize(
                     MyEntityWithFieldOverrides,
@@ -246,34 +205,20 @@ class TestEntityDeserialize(TestCase):
                             str, parse_int_and_double
                         ),
                         "enum_with_override": EntityFieldConverter(
-                            EnumParser, set_race_to_white
+                            Enum, set_race_to_white
                         ),
                     },
                     defaults={},
                     **kwargs,
                 )
 
-        enum_mappings = (
-            EnumOverrides.Builder()
-            .add("BLACK", StateRace.BLACK, normalize_label=False)
-            .build()
-        )
-
         entity = MyEntityWithFieldOverridesFactory.deserialize(
             str_with_override="AbCd",
             int_with_override="3",
-            enum_with_override=StrictEnumParser(
-                raw_text="BLACK",
-                enum_cls=StateRace,
-                enum_overrides=enum_mappings,
-            ),
+            enum_with_override=StateRace.BLACK,
             str_no_override="AbCd",
             int_no_override="3",
-            enum_no_override=StrictEnumParser(
-                raw_text="BLACK",
-                enum_cls=StateRace,
-                enum_overrides=enum_mappings,
-            ),
+            enum_no_override=StateRace.BLACK,
         )
 
         self.assertEqual(
@@ -304,7 +249,7 @@ class TestEntityDeserialize(TestCase):
         class MyEntityWithFieldDefaultsFactory:
             @staticmethod
             def deserialize(
-                **kwargs: Optional[Union[str, EnumParser]]
+                **kwargs: DeserializableEntityFieldValue,
             ) -> MyEntityWithFieldDefaults:
                 return entity_deserialize(
                     MyEntityWithFieldDefaults,
@@ -340,7 +285,7 @@ class TestEntityDeserialize(TestCase):
         class MyEntitySubclassFactory:
             @staticmethod
             def deserialize(
-                **kwargs: Optional[Union[str, EnumParser]]
+                **kwargs: DeserializableEntityFieldValue,
             ) -> MyEntitySubclass:
                 return entity_deserialize(
                     MyEntitySubclass, converter_overrides={}, defaults={}, **kwargs
