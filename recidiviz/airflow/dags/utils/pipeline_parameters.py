@@ -131,9 +131,6 @@ class MetricsPipelineParameters(PipelineParameters):
     calculation_month_count: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
-    calculation_end_month: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
 
     @property
     def flex_template_name(self) -> str:
@@ -146,7 +143,6 @@ class MetricsPipelineParameters(PipelineParameters):
             "state_code",
             "metric_types",
             "calculation_month_count",
-            "calculation_end_month",
             "output",
             "static_reference_input",
             "data_input",

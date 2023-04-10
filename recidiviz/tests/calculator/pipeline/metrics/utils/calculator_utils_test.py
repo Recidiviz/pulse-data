@@ -19,6 +19,8 @@ import unittest
 from datetime import date, datetime
 from typing import Optional
 
+from freezegun import freeze_time
+
 from recidiviz.calculator.pipeline.metrics.utils import calculator_utils
 from recidiviz.calculator.pipeline.metrics.utils.calculator_utils import (
     age_at_date,
@@ -494,30 +496,11 @@ class TestIncludeInMonthlyMetrics(unittest.TestCase):
         self.assertFalse(include)
 
 
+@freeze_time("2009-01-03")
 class TestGetCalculationMonthUpperBoundDate(unittest.TestCase):
     """Tests the get_calculation_month_upper_bound_date function."""
 
     def test_get_calculation_month_upper_bound_date(self) -> None:
-        value = "2009-01"
-
-        calculation_month_upper_bound = (
-            calculator_utils.get_calculation_month_upper_bound_date(value)
+        self.assertEqual(
+            date(2009, 1, 31), calculator_utils.get_calculation_month_upper_bound_date()
         )
-
-        self.assertEqual(date(2009, 1, 31), calculation_month_upper_bound)
-
-    def test_get_calculation_month_upper_bound_date_bad_month(self) -> None:
-        value = "2009-31"
-
-        with self.assertRaisesRegex(
-            ValueError, "Invalid value for calculation_end_month"
-        ):
-            _ = calculator_utils.get_calculation_month_upper_bound_date(value)
-
-    def test_get_calculation_month_upper_bound_date_bad_year(self) -> None:
-        value = "0001-31"
-
-        with self.assertRaisesRegex(
-            ValueError, "Invalid value for calculation_end_month"
-        ):
-            _ = calculator_utils.get_calculation_month_upper_bound_date(value)

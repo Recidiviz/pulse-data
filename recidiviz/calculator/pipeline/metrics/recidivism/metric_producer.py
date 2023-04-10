@@ -86,7 +86,6 @@ class RecidivismMetricProducer(
         person_metadata: PersonMetadata,
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
-        calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
     ) -> List[ReincarcerationRecidivismMetric]:
         """Transforms ReleaseEvents and a StatePerson into

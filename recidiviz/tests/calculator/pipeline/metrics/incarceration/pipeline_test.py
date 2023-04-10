@@ -774,7 +774,6 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             region="region",
             job_name="job",
             person_id_filter_set=None,
-            calculation_end_month=None,
             calculation_month_count=-1,
             apache_beam_pipeline_options=beam_pipeline_options,
         )

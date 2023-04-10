@@ -20,7 +20,7 @@ This contains the core logic for calculating supervision metrics on a person-by-
 basis. It transforms SupervisionEvents into SupervisionMetrics.
 """
 from operator import attrgetter
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Type
 
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
@@ -107,7 +107,6 @@ class SupervisionMetricProducer(
         person_metadata: PersonMetadata,
         pipeline_job_id: str,
         metrics_producer_delegates: Dict[str, StateSpecificMetricsProducerDelegate],
-        calculation_end_month: Optional[str] = None,
         calculation_month_count: int = -1,
     ) -> List[SupervisionMetric]:
         """Transforms SupervisionEvents and a StatePerson into SuperviisonMetrics.
@@ -120,10 +119,8 @@ class SupervisionMetricProducer(
             identifier_events: A list of SupervisionEvents for the given StatePerson.
             metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
                     flags for whether or not to include that metric type in the calculations
-            calculation_end_month: The year and month in YYYY-MM format of the last month for which metrics should be
-                calculated. If unset, ends with the current month.
-            calculation_month_count: The number of months (including the month of the calculation_end_month) to
-                limit the monthly calculation output to. If set to -1, does not limit the calculations.
+            calculation_month_count: The number of months to limit the monthly calculation output to.
+                    If set to -1, does not limit the calculations.
             person_metadata: Contains information about the StatePerson that is necessary for the metrics.
             pipeline_job_id: The job_id of the pipeline that is currently running.
 
@@ -134,9 +131,7 @@ class SupervisionMetricProducer(
 
         identifier_results.sort(key=attrgetter("year", "month"))
 
-        calculation_month_upper_bound = get_calculation_month_upper_bound_date(
-            calculation_end_month
-        )
+        calculation_month_upper_bound = get_calculation_month_upper_bound_date()
         calculation_month_lower_bound = get_calculation_month_lower_bound_date(
             calculation_month_upper_bound, calculation_month_count
         )

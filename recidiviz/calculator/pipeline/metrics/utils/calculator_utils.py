@@ -188,25 +188,11 @@ def include_in_output(
     )
 
 
-def get_calculation_month_upper_bound_date(
-    calculation_end_month: Optional[str],
-) -> datetime.date:
-    """Returns the date at the end of the month represented in the calculation_end_month string. String must
-    be in the format YYYY-MM. If calculation_end_month is unset, returns the last day of the current month."""
-    if not calculation_end_month:
-        year, month = year_and_month_for_today()
-        return last_day_of_month(datetime.date(year, month, 1))
-
-    try:
-        end_month_date = datetime.datetime.strptime(
-            calculation_end_month, "%Y-%m"
-        ).date()
-    except ValueError as e:
-        raise ValueError(
-            f"Invalid value for calculation_end_month: {calculation_end_month}"
-        ) from e
-
-    return last_day_of_month(end_month_date)
+def get_calculation_month_upper_bound_date() -> datetime.date:
+    """Returns returns the last day of the current month. String must be in the format
+    YYYY-MM."""
+    year, month = year_and_month_for_today()
+    return last_day_of_month(datetime.date(year, month, 1))
 
 
 def get_calculation_month_lower_bound_date(
@@ -238,7 +224,6 @@ def produce_standard_event_metrics(
     person: StatePerson,
     identifier_results: List[Event],
     metric_inclusions: Dict[RecidivizMetricTypeT, bool],
-    calculation_end_month: Optional[str],
     calculation_month_count: int,
     person_metadata: PersonMetadata,
     event_to_metric_classes: Dict[
@@ -253,9 +238,7 @@ def produce_standard_event_metrics(
     type."""
     metrics: List[RecidivizMetric] = []
 
-    calculation_month_upper_bound = get_calculation_month_upper_bound_date(
-        calculation_end_month
-    )
+    calculation_month_upper_bound = get_calculation_month_upper_bound_date()
 
     calculation_month_lower_bound = get_calculation_month_lower_bound_date(
         calculation_month_upper_bound, calculation_month_count
