@@ -14,21 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Metadata used to construct entity objects from ingest_info objects."""
+"""Metadata used for the extract and merge step of ingest."""
 
 from datetime import datetime
 
 import attr
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
 
 @attr.s(frozen=True, kw_only=True)
 class IngestMetadata:
-    """Metadata used to construct entity objects from ingest_info objects."""
+    """Metadata used for the extract and merge step of ingest."""
 
-    # The region code for the region that this ingest_info was ingested from.
+    # The region code for the region that this data was ingested from.
     # e.g. us_nd or us_ca
     region: str = attr.ib()
 
@@ -38,11 +37,3 @@ class IngestMetadata:
 
     # The key for the database that ingest data should be written to.
     database_key: SQLAlchemyDatabaseKey = attr.ib()
-
-
-# TODO(#8905): Delete this class once we have migrated all direct ingest states to
-#  ingest mappings v2.
-@attr.s(frozen=True, kw_only=True)
-class LegacyStateIngestMetadata(IngestMetadata):
-    # Region specific mapping which takes precedence over the global mapping.
-    enum_overrides: EnumOverrides = attr.ib(factory=EnumOverrides.empty)

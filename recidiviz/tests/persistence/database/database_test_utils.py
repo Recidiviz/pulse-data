@@ -3,9 +3,6 @@
 import datetime
 from typing import List, Optional
 
-import attr
-
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -30,25 +27,7 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.common.ingest_metadata import LegacyStateIngestMetadata
 from recidiviz.persistence.database.schema.state import schema as state_schema
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
-
-
-@attr.s
-class FakeLegacyStateIngestMetadata:
-    @staticmethod
-    def for_state(
-        region: str,
-        enum_overrides: Optional[EnumOverrides] = None,
-    ) -> LegacyStateIngestMetadata:
-        return LegacyStateIngestMetadata(
-            region=region,
-            ingest_time=datetime.datetime(2020, 4, 14, 12, 31, 00),
-            enum_overrides=enum_overrides or EnumOverrides.empty(),
-            database_key=SQLAlchemyDatabaseKey.canonical_for_schema(SchemaType.STATE),
-        )
 
 
 def generate_test_supervision_violation_response_decision_entry(

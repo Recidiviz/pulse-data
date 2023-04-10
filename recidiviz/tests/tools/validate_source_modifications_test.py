@@ -30,7 +30,7 @@ from recidiviz.tools.validate_source_modifications import (
 class CheckAssertionsTest(unittest.TestCase):
     """Tests for the check_assertions function."""
 
-    def test_ingest_info_happy(self) -> None:
+    def test_copy_bara_happy(self) -> None:
         modified_files = [
             "mirror/copy.bara.sky",
             "Dockerfile.case-triage-pathways.dockerignore",
@@ -38,7 +38,7 @@ class CheckAssertionsTest(unittest.TestCase):
         ]
         self._run_test(modified_files, [], [])
 
-    def test_ingest_info_unhappy(self) -> None:
+    def test_copy_bara_unhappy(self) -> None:
         modified_files = [
             "mirror/copy.bara.sky",
         ]
@@ -57,7 +57,7 @@ class CheckAssertionsTest(unittest.TestCase):
 
         self._run_test(modified_files, expected_failures, [])
 
-    def test_ingest_info_skipped(self) -> None:
+    def test_copy_bara_skipped(self) -> None:
         modified_files = ["mirror/copy.bara.sky"]
 
         self._run_test(modified_files, [], [BUILD_INFRA_KEY])
