@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Generator to grab all dataflow_metrics views and keep only the rows corresponding to
-a most recent [job id, state, metric_type, year, month] combo."""
-from typing import Dict, List
+a most recent [job id, state, metric_type] combo."""
+from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
@@ -26,23 +26,6 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-DEFAULT_JOIN_INDICES: str = "job_id, state_code, year, month, metric_type"
-
-METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
-    "recidivism_rate_metrics": "job_id, state_code, metric_type",
-    "incarceration_population_span_metrics": "job_id, state_code, metric_type",
-    "supervision_population_span_metrics": "job_id, state_code, metric_type",
-}
-
-DEFAULT_JOB_RECENCY_PRIMARY_KEYS: str = "job_id, year, month, state_code, metric_type"
-
-
-JOB_RECENCY_PRIMARY_KEY_OVERRIDES: Dict[str, str] = {
-    "recidivism_rate_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
-    "incarceration_population_span_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
-    "supervision_population_span_metrics": "job_id, NULL AS year, NULL AS month, state_code, metric_type",
-}
 
 METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
 
@@ -56,20 +39,20 @@ MOST_RECENT_JOBS_TEMPLATE: str = """
     WITH job_recency as (
         SELECT
             *,
-            ROW_NUMBER() OVER (PARTITION BY state_code, year, month, metric_type ORDER BY job_id DESC) AS recency_rank,
+            ROW_NUMBER() OVER (PARTITION BY state_code, metric_type ORDER BY job_id DESC) AS recency_rank,
         FROM (
-             SELECT DISTINCT {job_recency_primary_keys}
+             SELECT DISTINCT state_code, metric_type, job_id
             FROM `{project_id}.{metrics_dataset}.{metric_table}`
         )
     )    
     SELECT *
     FROM `{project_id}.{metrics_dataset}.{metric_table}`
     JOIN (
-        SELECT metric_type, state_code, year, month, job_id
+        SELECT state_code, metric_type, job_id
         FROM job_recency
         WHERE recency_rank = 1
     )
-    USING ({join_indices})
+    USING (state_code, metric_type, job_id)
     {metrics_filter}
     """
 
@@ -93,10 +76,6 @@ def make_most_recent_metric_view_builders(
     """
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
-    join_indices = METRIC_TABLES_JOIN_OVERRIDES.get(metric_name, DEFAULT_JOIN_INDICES)
-    job_recency_primary_keys = JOB_RECENCY_PRIMARY_KEY_OVERRIDES.get(
-        metric_name, DEFAULT_JOB_RECENCY_PRIMARY_KEYS
-    )
 
     if (
         metric_name in VIEWS_TO_SPLIT_ON_INCLUDED_IN_STATE_POPULATION
@@ -109,8 +88,6 @@ def make_most_recent_metric_view_builders(
                 view_query_template=MOST_RECENT_JOBS_TEMPLATE,
                 description=description
                 + ", for output that is included in the state's population.",
-                join_indices=join_indices,
-                job_recency_primary_keys=job_recency_primary_keys,
                 metrics_dataset=DATAFLOW_METRICS_DATASET,
                 metric_table=metric_name,
                 should_materialize=True,
@@ -122,8 +99,6 @@ def make_most_recent_metric_view_builders(
                 view_query_template=MOST_RECENT_JOBS_TEMPLATE,
                 description=description
                 + ", for output that is not included in the state's population.",
-                join_indices=join_indices,
-                job_recency_primary_keys=job_recency_primary_keys,
                 metrics_dataset=DATAFLOW_METRICS_DATASET,
                 metric_table=metric_name,
                 should_materialize=True,
@@ -136,8 +111,6 @@ def make_most_recent_metric_view_builders(
             view_id=view_id,
             view_query_template=MOST_RECENT_JOBS_TEMPLATE,
             description=description,
-            join_indices=join_indices,
-            job_recency_primary_keys=job_recency_primary_keys,
             metrics_dataset=DATAFLOW_METRICS_DATASET,
             metric_table=metric_name,
             should_materialize=True,
