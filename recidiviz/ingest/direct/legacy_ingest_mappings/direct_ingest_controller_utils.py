@@ -19,7 +19,7 @@ ingest controllers."""
 # TODO(#8905): Move this file outside of the legacy_ingest_mappings package
 from typing import Dict, List
 
-from recidiviz.common.constants.enum_overrides import EnumT
+from recidiviz.common.constants.strict_enum_parser import EnumT
 
 
 def invert_enum_to_str_mappings(overrides: Dict[EnumT, List[str]]) -> Dict[str, EnumT]:
