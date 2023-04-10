@@ -32,7 +32,6 @@ from typing import (
     List,
     Optional,
     Set,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -48,8 +47,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
-from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumT
-from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
+from recidiviz.common.constants.strict_enum_parser import EnumT, StrictEnumParser
 from recidiviz.common.str_field_utils import NormalizedJSON
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegate,
@@ -817,23 +815,20 @@ class EnumMappingManifest(ManifestNode[EnumT]):
     # these values will never be passed to the custom parser function.
     IGNORES_KEY = "$ignore"
 
-    enum_cls: Type[EnumT] = attr.ib()
-    enum_overrides: EnumOverrides = attr.ib()
+    enum_parser: StrictEnumParser = attr.ib()
     raw_text_field_manifest: ManifestNode[str] = attr.ib()
 
     @property
     def result_type(self) -> Type[EnumT]:
-        return self.enum_cls
+        return self.enum_parser.enum_cls
 
     def additional_field_manifests(self, field_name: str) -> Dict[str, "ManifestNode"]:
         return {_raw_text_field_name(field_name): self.raw_text_field_manifest}
 
     def build_from_row(self, row: Dict[str, str]) -> Optional[EnumT]:
-        return StrictEnumParser(
-            raw_text=self.raw_text_field_manifest.build_from_row(row),
-            enum_cls=self.enum_cls,
-            enum_overrides=self.enum_overrides,
-        ).parse()
+        return self.enum_parser.parse(
+            raw_text=self.raw_text_field_manifest.build_from_row(row)
+        )
 
     def child_manifest_nodes(self) -> List["ManifestNode"]:
         return [self.raw_text_field_manifest]
@@ -856,7 +851,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
             variable_manifests=variable_manifests,
         )
 
-        enum_cls, enum_overrides = cls._build_field_enum_overrides(
+        enum_parser = cls._build_field_enum_parser(
             delegate,
             ignores_list=field_enum_mappings_manifest.pop_list_optional(
                 EnumMappingManifest.IGNORES_KEY, str
@@ -875,22 +870,19 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                 f"{field_enum_mappings_manifest.keys()}"
             )
         return EnumMappingManifest(
-            enum_cls=enum_cls,
-            enum_overrides=enum_overrides,
+            enum_parser=enum_parser,
             raw_text_field_manifest=raw_text_field_manifest,
         )
 
     @classmethod
-    def _build_field_enum_overrides(
+    def _build_field_enum_parser(
         cls,
         delegate: IngestViewResultsParserDelegate,
         ignores_list: Optional[List[str]],
         direct_mappings_manifest: Optional[YAMLDict],
         custom_parser_function_reference: Optional[str],
-    ) -> Tuple[Type[Enum], EnumOverrides]:
+    ) -> StrictEnumParser:
         """Builds the enum mappings object that should be used to parse the enum value."""
-
-        enum_overrides_builder = EnumOverrides.Builder()
 
         if (
             direct_mappings_manifest is None
@@ -909,6 +901,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                 f"[{cls.CUSTOM_PARSER_FUNCTION_KEY}], but not both."
             )
 
+        enum_parser: StrictEnumParser
         if direct_mappings_manifest is not None:
             if not direct_mappings_manifest:
                 raise ValueError(
@@ -916,7 +909,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                     f"mappings, the key should be omitted entirely."
                 )
 
-            enum_cls: Type[Enum]
+            enum_cls: Optional[Type[Enum]] = None
             seen_enum_classes: Set[Type[Enum]] = set()
             for enum_value_str in direct_mappings_manifest.keys():
                 enum_cls_name, enum_name = enum_value_str.split(".")
@@ -929,7 +922,13 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                         f"Enum $mappings should only contain mappings for one enum "
                         f"type but found multiple: {enum_cls_names}"
                     )
-
+            if enum_cls is None:
+                raise ValueError(
+                    "Found no enum mappings defined for mapped enum field."
+                )
+            enum_parser = StrictEnumParser(enum_cls=enum_cls)
+            for enum_value_str in direct_mappings_manifest.keys():
+                _, enum_name = enum_value_str.split(".")
                 value_manifest_type = direct_mappings_manifest.peek_type(enum_value_str)
                 mappings_raw_text_list: List[str]
                 if value_manifest_type is str:
@@ -954,11 +953,13 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                         f"mappings or remove this item."
                     )
                 for raw_text in mappings_raw_text_list:
-                    enum_overrides_builder.add(
-                        raw_text, enum_cls[enum_name], normalize_label=False
+                    enum_parser.add_raw_text_mapping(
+                        enum_value=enum_cls[enum_name], raw_text_value=raw_text
                     )
 
-        if custom_parser_function_reference:
+        else:
+            if not custom_parser_function_reference:
+                raise ValueError("Expected nonnull custom_parser_function_reference.")
             (
                 fn,
                 enum_cls,
@@ -967,10 +968,8 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                 {cls.CUSTOM_PARSER_RAW_TEXT_ARG_NAME: str},
                 Enum,
             )
-            enum_overrides_builder.add_mapper_fn(
-                fn,
-                enum_cls,
-            )
+            enum_parser = StrictEnumParser(enum_cls=enum_cls)
+            enum_parser.add_mapper_fn(fn)
 
         if ignores_list is not None:
             if not ignores_list:
@@ -979,11 +978,9 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                     f"key should be omitted entirely."
                 )
             for raw_text_value in ignores_list:
-                enum_overrides_builder.ignore(
-                    raw_text_value, enum_cls, normalize_label=False
-                )
+                enum_parser.ignore_raw_text_value(raw_text_value)
 
-        return enum_cls, enum_overrides_builder.build()
+        return enum_parser
 
 
 @attr.s(kw_only=True)

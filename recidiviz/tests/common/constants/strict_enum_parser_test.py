@@ -19,7 +19,6 @@ import unittest
 from enum import Enum
 from typing import Optional
 
-from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
@@ -54,124 +53,106 @@ class TestStrictEnumParser(unittest.TestCase):
     """Tests for StrictEnumParser."""
 
     def setUp(self) -> None:
-        self.overrides = (
-            EnumOverrides.Builder()
-            .add("BLACK", StateRace.BLACK)
-            .add("WHITE", StateRace.WHITE)
-            .add("MA", StateGender.MALE)
-            .add("FE", StateGender.FEMALE)
-            .add("fem", StateGender.FEMALE, normalize_label=False)
-            .ignore("X", StateGender)
-            .add_mapper_fn(ethnicity_mapper, StateEthnicity)
-            .add("ITEMA", _MyEnum.ITEM1)
-            .ignore_with_predicate(ignore_my_enum, _MyEnum)
-            .build()
+        self.race_parser = (
+            StrictEnumParser(StateRace)
+            .add_raw_text_mapping(StateRace.BLACK, "BLACK")
+            .add_raw_text_mapping(StateRace.WHITE, "WHITE")
+        )
+
+        self.gender_parser = (
+            StrictEnumParser(StateGender)
+            .add_raw_text_mapping(StateGender.MALE, "MA")
+            .add_raw_text_mapping(StateGender.FEMALE, "FE")
+            .add_raw_text_mapping(StateGender.FEMALE, "fem")
+            .ignore_raw_text_value("X")
+        )
+
+        self.ethnicity_parser = StrictEnumParser(StateEthnicity).add_mapper_fn(
+            ethnicity_mapper
+        )
+
+        self.my_enum_parser = StrictEnumParser(_MyEnum).add_raw_text_mapping(
+            _MyEnum.ITEM1, "ITEMA"
         )
 
     def test_parse_bad_str(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("FOO", StateRace, EnumOverrides.empty()).parse()
+            _ = StrictEnumParser(StateRace).parse("FOO")
 
     def test_mapper_that_throws(self) -> None:
-        overrides = (
-            EnumOverrides.Builder()
-            .add_mapper_fn(mapper_that_throws, StateEthnicity)
-            .build()
-        )
+        parser = StrictEnumParser(StateEthnicity).add_mapper_fn(mapper_that_throws)
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("X", StateEthnicity, overrides).parse()
+            _ = parser.parse("X")
 
     def test_parse_explicit_mapping(self) -> None:
         self.assertEqual(
             StateGender.MALE,
-            StrictEnumParser("MA", StateGender, self.overrides).parse(),
+            self.gender_parser.parse("MA"),
         )
-        self.assertEqual(
-            StateGender.FEMALE,
-            StrictEnumParser("FE", StateGender, self.overrides).parse(),
-        )
+        self.assertEqual(StateGender.FEMALE, self.gender_parser.parse("FE"))
 
-        self.assertEqual(
-            StateRace.BLACK,
-            StrictEnumParser("BLACK", StateRace, self.overrides).parse(),
-        )
-        self.assertEqual(
-            StateRace.WHITE,
-            StrictEnumParser("WHITE", StateRace, self.overrides).parse(),
-        )
+        self.assertEqual(StateRace.BLACK, self.race_parser.parse("BLACK"))
+        self.assertEqual(StateRace.WHITE, self.race_parser.parse("WHITE"))
 
     def test_parse_default_mapping(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("M", StateGender, self.overrides).parse()
+            _ = self.gender_parser.parse("M")
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("F", StateGender, self.overrides).parse()
+            _ = self.gender_parser.parse("F")
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("B", StateRace, self.overrides).parse()
+            _ = self.race_parser.parse("B")
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("W", StateRace, self.overrides).parse()
+            _ = self.race_parser.parse("W")
 
     def test_parse_explicit_mapping_unnormalized(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("ma", StateGender, self.overrides).parse()
+            _ = self.gender_parser.parse("ma")
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("White", StateRace, self.overrides).parse()
+            _ = self.race_parser.parse("White")
 
     def test_parse_default_mapping_unnormalized(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("m", StateGender, self.overrides).parse()
+            _ = self.gender_parser.parse("m")
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("b", StateRace, self.overrides).parse()
+            _ = self.race_parser.parse("b")
 
     def test_parse_with_mapper(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("IS_HISPANIC", StateEthnicity, self.overrides).parse()
+            _ = self.ethnicity_parser.parse("IS_HISPANIC")
 
         self.assertEqual(
             StateEthnicity.HISPANIC,
-            StrictEnumParser("IS HISPANIC", StateEthnicity, self.overrides).parse(),
+            self.ethnicity_parser.parse("IS HISPANIC"),
         )
 
         with self.assertRaises(EnumParsingError):
-            StrictEnumParser("NOT_HISPANIC", StateEthnicity, self.overrides).parse()
+            self.ethnicity_parser.parse("NOT_HISPANIC")
 
         self.assertEqual(
             StateEthnicity.NOT_HISPANIC,
-            StrictEnumParser("NOT HISPANIC", StateEthnicity, self.overrides).parse(),
+            self.ethnicity_parser.parse("NOT HISPANIC"),
         )
 
     def test_parse_with_mapper_returns_None(self) -> None:
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("XXX", StateEthnicity, self.overrides).parse()
+            _ = self.ethnicity_parser.parse("XXX")
 
     def test_parse_value_not_normalized_in_overrides(self) -> None:
         self.assertEqual(
             StateGender.FEMALE,
-            StrictEnumParser("fem", StateGender, self.overrides).parse(),
+            self.gender_parser.parse("fem"),
         )
 
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("FEM", StateGender, self.overrides).parse()
+            _ = self.gender_parser.parse("FEM")
 
     def test_parse_ignored(self) -> None:
-        self.assertIsNone(StrictEnumParser("X", StateGender, self.overrides).parse())
+        self.assertIsNone(self.gender_parser.parse("X"))
         with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("x", StateGender, self.overrides).parse()
-
-    def test_ignore_with_predicate(self) -> None:
-        with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("x", _MyEnum, self.overrides).parse()
-        self.assertIsNone(StrictEnumParser("X", _MyEnum, self.overrides).parse())
-
-        self.assertEqual(
-            _MyEnum.ITEM1,
-            StrictEnumParser("ITEMA", _MyEnum, self.overrides).parse(),
-        )
-
-        with self.assertRaises(EnumParsingError):
-            _ = StrictEnumParser("YYY", _MyEnum, self.overrides).parse()
+            _ = self.gender_parser.parse("x")
