@@ -19,13 +19,12 @@ import unittest
 from enum import Enum
 from typing import Optional
 
-from recidiviz.common.constants.enum_parser import EnumParsingError
+from recidiviz.common.constants.enum_parser import EnumParser, EnumParsingError
 from recidiviz.common.constants.state.state_person import (
     StateEthnicity,
     StateGender,
     StateRace,
 )
-from recidiviz.common.constants.strict_enum_parser import StrictEnumParser
 
 
 class _MyEnum(Enum):
@@ -49,42 +48,42 @@ def ignore_my_enum(label: str) -> bool:
     return "X" in label
 
 
-class TestStrictEnumParser(unittest.TestCase):
-    """Tests for StrictEnumParser."""
+class TestEnumParser(unittest.TestCase):
+    """Tests for EnumParser."""
 
     def setUp(self) -> None:
         self.race_parser = (
-            StrictEnumParser(StateRace)
+            EnumParser(StateRace)
             .add_raw_text_mapping(StateRace.BLACK, "BLACK")
             .add_raw_text_mapping(StateRace.WHITE, "WHITE")
         )
 
         self.gender_parser = (
-            StrictEnumParser(StateGender)
+            EnumParser(StateGender)
             .add_raw_text_mapping(StateGender.MALE, "MA")
             .add_raw_text_mapping(StateGender.FEMALE, "FE")
             .add_raw_text_mapping(StateGender.FEMALE, "fem")
             .ignore_raw_text_value("X")
         )
 
-        self.ethnicity_parser = StrictEnumParser(StateEthnicity).add_mapper_fn(
+        self.ethnicity_parser = EnumParser(StateEthnicity).add_mapper_fn(
             ethnicity_mapper
         )
 
-        self.my_enum_parser = StrictEnumParser(_MyEnum).add_raw_text_mapping(
+        self.my_enum_parser = EnumParser(_MyEnum).add_raw_text_mapping(
             _MyEnum.ITEM1, "ITEMA"
         )
 
     def test_parse_bad_str(self) -> None:
         with self.assertRaises(EnumParsingError):
             _ = (
-                StrictEnumParser(StateRace)
+                EnumParser(StateRace)
                 .add_raw_text_mapping(StateRace.BLACK, "BAR")
                 .parse("FOO")
             )
 
     def test_mapper_that_throws(self) -> None:
-        parser = StrictEnumParser(StateEthnicity).add_mapper_fn(mapper_that_throws)
+        parser = EnumParser(StateEthnicity).add_mapper_fn(mapper_that_throws)
 
         with self.assertRaises(EnumParsingError):
             _ = parser.parse("X")
@@ -164,7 +163,7 @@ class TestStrictEnumParser(unittest.TestCase):
             _ = self.gender_parser.parse("x")
 
     def test_double_add_fails(self) -> None:
-        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser = EnumParser(enum_cls=_MyEnum)
         parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
         with self.assertRaisesRegex(
             ValueError, r"Raw text value \[A\] already mapped."
@@ -178,7 +177,7 @@ class TestStrictEnumParser(unittest.TestCase):
             parser.add_raw_text_mapping(_MyEnum.ITEM2, "A")
 
     def test_add_and_ignore_same_value(self) -> None:
-        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser = EnumParser(enum_cls=_MyEnum)
         parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
         with self.assertRaisesRegex(
             ValueError, r"Raw text value \[A\] already mapped."
@@ -187,7 +186,7 @@ class TestStrictEnumParser(unittest.TestCase):
             parser.ignore_raw_text_value("A")
 
     def test_ignore_and_add_same_value(self) -> None:
-        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser = EnumParser(enum_cls=_MyEnum)
         parser.ignore_raw_text_value("A")
         with self.assertRaisesRegex(
             ValueError, r"Raw text value \[A\] already mapped."
@@ -196,7 +195,7 @@ class TestStrictEnumParser(unittest.TestCase):
             parser.add_raw_text_mapping(_MyEnum.ITEM2, "A")
 
     def test_double_add_different_case(self) -> None:
-        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser = EnumParser(enum_cls=_MyEnum)
         parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
         parser.add_raw_text_mapping(_MyEnum.ITEM1, "a")
 
@@ -204,7 +203,7 @@ class TestStrictEnumParser(unittest.TestCase):
         self.assertEqual(_MyEnum.ITEM1, parser.parse("a"))
 
     def test_add_mapper_fn_after_direct_mappings(self) -> None:
-        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser = EnumParser(enum_cls=_MyEnum)
         parser.add_raw_text_mapping(_MyEnum.ITEM1, "A")
         with self.assertRaisesRegex(
             ValueError,
@@ -214,7 +213,7 @@ class TestStrictEnumParser(unittest.TestCase):
             parser.add_mapper_fn(lambda x: _MyEnum.ITEM1)
 
     def test_add_direct_mappings_after_mapper_fn(self) -> None:
-        parser = StrictEnumParser(enum_cls=_MyEnum)
+        parser = EnumParser(enum_cls=_MyEnum)
         parser.add_mapper_fn(lambda x: _MyEnum.ITEM1)
         with self.assertRaisesRegex(
             ValueError,

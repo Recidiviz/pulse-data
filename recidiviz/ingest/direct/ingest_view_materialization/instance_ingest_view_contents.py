@@ -149,28 +149,6 @@ WHERE {_PROCESSED_TIME_COL_NAME} IS NULL
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
-# TODO(#8905): This function makes the contents we read from ingest view results tables
-#  backwards compatible with the content we used to read from ingest view files. It is
-#  possible that this will not be necessary once all views have been migrated to v2
-#  mappings and it's worth revisiting at that time.
-def to_string_value_converter(
-    field_name: str,
-    value: Any,
-) -> str:
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    if isinstance(value, (bool, int)):
-        return str(value)
-    if isinstance(value, (datetime.datetime, datetime.date)):
-        return value.isoformat()
-
-    raise ValueError(
-        f"Unexpected value type [{type(value)}] for field [{field_name}]: {value}"
-    )
-
-
 @attr.define(frozen=True, kw_only=True)
 class ResultsBatchInfo:
     ingest_view_name: str
@@ -500,7 +478,6 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
         return BigQueryResultsContentsHandle(
             query_job,
-            value_converter=to_string_value_converter,
             max_expected_rows=_EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
         )
 

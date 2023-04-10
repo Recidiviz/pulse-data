@@ -47,7 +47,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_type_for_field_name,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
-from recidiviz.common.constants.strict_enum_parser import EnumT, StrictEnumParser
+from recidiviz.common.constants.enum_parser import EnumParser, EnumT
 from recidiviz.common.str_field_utils import NormalizedJSON
 from recidiviz.ingest.direct.ingest_mappings.ingest_view_results_parser_delegate import (
     IngestViewResultsParserDelegate,
@@ -437,9 +437,6 @@ class EntityTreeManifestFactory:
                 f"[{additional_manifest.result_type}]. Expected: [{expected_result_type}]"
             )
 
-    # TODO(#8905): Consider using more general logic to build a filter predicate, like
-    #  building a @required field annotation for fields that must be hydrated, otherwise
-    #  the whole entity is filtered out.
     @staticmethod
     def _get_filter_predicate(
         entity_cls: Type[EntityT], field_manifests: Dict[str, ManifestNode]
@@ -815,7 +812,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
     # these values will never be passed to the custom parser function.
     IGNORES_KEY = "$ignore"
 
-    enum_parser: StrictEnumParser = attr.ib()
+    enum_parser: EnumParser = attr.ib()
     raw_text_field_manifest: ManifestNode[str] = attr.ib()
 
     @property
@@ -881,7 +878,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
         ignores_list: Optional[List[str]],
         direct_mappings_manifest: Optional[YAMLDict],
         custom_parser_function_reference: Optional[str],
-    ) -> StrictEnumParser:
+    ) -> EnumParser:
         """Builds the enum mappings object that should be used to parse the enum value."""
 
         if (
@@ -901,7 +898,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                 f"[{cls.CUSTOM_PARSER_FUNCTION_KEY}], but not both."
             )
 
-        enum_parser: StrictEnumParser
+        enum_parser: EnumParser
         if direct_mappings_manifest is not None:
             if not direct_mappings_manifest:
                 raise ValueError(
@@ -926,7 +923,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                 raise ValueError(
                     "Found no enum mappings defined for mapped enum field."
                 )
-            enum_parser = StrictEnumParser(enum_cls=enum_cls)
+            enum_parser = EnumParser(enum_cls=enum_cls)
             for enum_value_str in direct_mappings_manifest.keys():
                 _, enum_name = enum_value_str.split(".")
                 value_manifest_type = direct_mappings_manifest.peek_type(enum_value_str)
@@ -968,7 +965,7 @@ class EnumMappingManifest(ManifestNode[EnumT]):
                 {cls.CUSTOM_PARSER_RAW_TEXT_ARG_NAME: str},
                 Enum,
             )
-            enum_parser = StrictEnumParser(enum_cls=enum_cls)
+            enum_parser = EnumParser(enum_cls=enum_cls)
             enum_parser.add_mapper_fn(fn)
 
         if ignores_list is not None:

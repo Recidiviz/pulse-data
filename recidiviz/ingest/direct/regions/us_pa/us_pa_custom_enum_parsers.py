@@ -43,7 +43,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     get_most_relevant_supervision_type,
 )
 from recidiviz.common.str_field_utils import parse_int
-from recidiviz.ingest.direct.legacy_ingest_mappings.direct_ingest_controller_utils import (
+from recidiviz.ingest.direct.regions.custom_enum_parser_utils import (
     invert_enum_to_str_mappings,
 )
 
