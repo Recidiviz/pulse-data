@@ -1154,23 +1154,12 @@ def get_api_blueprint(
                     session=current_session, agency_id=agency.id
                 )
             )
-            metric_definitions = MetricInterface.get_metric_definitions_for_systems(
-                systems={
-                    schema.System[system]
-                    for system in agency.systems or []
-                    if schema.System[system] in schema.System.supervision_subsystems()
-                    or schema.System[system] == schema.System.SUPERVISION
-                }
-                if system == "SUPERVISION"
-                # Only send over metric definitions for the current system unless
-                # the agency is uploading for supervision, which sheets contain
-                # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
-                # and PROBATION
-                # TODO(#19744): Refactor this logic so that it lives in
-                # MetricInterface.get_metric_definitions_for_systems.
-                else {schema.System[system]},
+            # get metric definitions for spreadsheet
+            metric_definitions = (
+                SpreadsheetInterface.get_metric_definitions_for_workbook(
+                    agency=agency, system=schema.System[system]
+                )
             )
-
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
@@ -1319,7 +1308,7 @@ def get_api_blueprint(
             session=current_session, agency_id=agency_id
         )
 
-        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
+        metric_definitions = MetricInterface.get_metric_definitions_by_systems(
             systems={schema.System[system] for system in agency.systems or []},
         )
         dimension_names_by_metric_and_disaggregation = {}

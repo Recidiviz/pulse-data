@@ -23,7 +23,6 @@ import pandas as pd
 from freezegun import freeze_time
 
 from recidiviz.justice_counts.metrics import supervision
-from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
 from recidiviz.justice_counts.metrics.metric_registry import METRICS_BY_SYSTEM
 from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.utils.constants import (
@@ -211,15 +210,10 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 + METRICS_BY_SYSTEM[schema.System.PAROLE.value],
             )
 
-            metric_definitions = MetricInterface.get_metric_definitions_for_systems(
-                systems={
-                    schema.System[system]
-                    for system in agency.systems or []
-                    if schema.System[system] in schema.System.supervision_subsystems()
-                    or schema.System[system] == schema.System.SUPERVISION
-                }
-                # TODO(#19744): Refactor this logic so that it lives in
-                # MetricInterface.get_metric_definitions_for_systems.
+            metric_definitions = (
+                SpreadsheetInterface.get_metric_definitions_for_workbook(
+                    system=schema.System.SUPERVISION, agency=agency
+                )
             )
 
             json = SpreadsheetInterface.get_ingest_spreadsheet_json(

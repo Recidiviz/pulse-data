@@ -346,7 +346,7 @@ class DatapointsForMetric:
     ) -> List[MetricDefinition]:
         """Returns the metric definitions on a report based upon the reports
         custom reporting frequencies."""
-        metrics = MetricInterface.get_metric_definitions_for_systems(
+        metrics = MetricInterface.get_metric_definitions_by_systems(
             systems=systems,
         )
         metric_definitions = []

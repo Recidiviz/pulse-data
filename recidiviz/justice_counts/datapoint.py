@@ -436,7 +436,7 @@ class DatapointInterface:
             datapoints=agency_datapoints
         )
 
-        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
+        metric_definitions = MetricInterface.get_metric_definitions_by_systems(
             systems={schema.System[system] for system in agency.systems or []},
         )
 
