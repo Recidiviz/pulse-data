@@ -80,7 +80,7 @@ class PathwaysMetricCache:
 
             self.fetch(
                 mapper=mapper,
-                params=attr.evolve(params, group=dimension),
+                params=attr.evolve(params),
             )
 
             if Dimension.TIME_PERIOD in operable_dimensions[DimensionOperation.FILTER]:
