@@ -402,14 +402,14 @@ class NormalizedStateCharge(StateCharge, NormalizedStateEntity):
 
     # National Incident-Based Reporting System code, used by FBI for nationwide crime
     # statistics
-    nbirs_code_uniform: Optional[str] = attr.ib(default=None)
+    nibrs_code_uniform: Optional[str] = attr.ib(default=None)
 
     # National Incident-Based Reporting System code description associated with a
-    # nbirs_code
-    nbirs_description_uniform: Optional[str] = attr.ib(default=None)
+    # nibrs_code
+    nibrs_description_uniform: Optional[str] = attr.ib(default=None)
 
     # National Incident-Based Reporting System broad category
-    nbirs_category_uniform: Optional[str] = attr.ib(default=None)
+    nibrs_category_uniform: Optional[str] = attr.ib(default=None)
 
     # Describes the type of victim of this crime. One of “Person”, “Property”, “Society”.
     crime_against_uniform: Optional[str] = attr.ib(default=None)
