@@ -301,7 +301,7 @@ class MetricInterface:
     ### Helpers ###
 
     @staticmethod
-    def get_metric_definitions_for_systems(
+    def get_metric_definitions_by_systems(
         systems: Set[schema.System],
     ) -> List[MetricDefinition]:
         """Given a list of systems and report frequency, return all

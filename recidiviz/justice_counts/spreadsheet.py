@@ -448,7 +448,26 @@ class SpreadsheetInterface:
                 session=session, agency_id=agency.id
             )
         )
-        metric_definitions = MetricInterface.get_metric_definitions_for_systems(
+        # get metric definition for spreadsheet
+        metric_definitions = SpreadsheetInterface.get_metric_definitions_for_workbook(
+            system=system, agency=agency
+        )
+        file_bytes = gcs_file_system.download_as_bytes(path=source_path)
+        return SpreadsheetInterface.ingest_spreadsheet(
+            session=session,
+            spreadsheet=spreadsheet,
+            auth0_user_id=None,
+            xls=pd.ExcelFile(file_bytes),
+            agency_id=agency.id,
+            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
+            metric_definitions=metric_definitions,
+        )
+
+    @staticmethod
+    def get_metric_definitions_for_workbook(
+        system: schema.System, agency: schema.Agency
+    ) -> List[MetricDefinition]:
+        return MetricInterface.get_metric_definitions_by_systems(
             systems={
                 schema.System[system]
                 for system in agency.systems or []
@@ -460,17 +479,5 @@ class SpreadsheetInterface:
             # the agency is uploading for supervision, which sheets contain
             # data for many supervision systems such as OTHER_SUPERVISION, PAROLE,
             # and PROBATION
-            # TODO(#19744): Refactor this logic so that it lives in
-            # MetricInterface.get_metric_definitions_for_systems.
             else {system},
-        )
-        file_bytes = gcs_file_system.download_as_bytes(path=source_path)
-        return SpreadsheetInterface.ingest_spreadsheet(
-            session=session,
-            spreadsheet=spreadsheet,
-            auth0_user_id=None,
-            xls=pd.ExcelFile(file_bytes),
-            agency_id=agency.id,
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-            metric_definitions=metric_definitions,
         )

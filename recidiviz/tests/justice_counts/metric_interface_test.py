@@ -3925,7 +3925,9 @@ class TestMetricInterface(TestCase):
         # We should always grab all copies of supervision metrics
         # for each system. Which ones are actually enabled will be
         # determined later.
-        supervision_metrics = MetricInterface.get_metric_definitions_for_systems(
+
+        # get metric definitions for report
+        supervision_metrics = MetricInterface.get_metric_definitions_by_systems(
             {schema.System.SUPERVISION, schema.System.PAROLE},
         )
 
