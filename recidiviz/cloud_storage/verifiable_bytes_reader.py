@@ -19,7 +19,7 @@
 
 import base64
 import io
-from typing import BinaryIO, Optional
+from typing import Any, BinaryIO, Iterable, Optional
 
 import google_crc32c
 
@@ -93,7 +93,13 @@ class VerifiableBytesReader(io.BufferedIOBase, BinaryIO):
     def name(self) -> str:
         return self._name
 
-    # This is overridden purely to appease mypy which otherwise will complain about
+    # The following methods are overridden purely to appease mypy which otherwise will complain about
     # incompatible definitions in super classes.
     def __enter__(self) -> "VerifiableBytesReader":
         return self
+
+    def write(self, s: Any) -> int:  # pylint: disable=unused-argument
+        return 0
+
+    def writelines(self, s: Iterable[Any]) -> None:  # pylint: disable=unused-argument
+        return None

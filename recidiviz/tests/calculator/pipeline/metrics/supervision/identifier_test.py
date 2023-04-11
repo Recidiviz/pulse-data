@@ -7123,13 +7123,12 @@ def _generate_case_compliances(
             current_date
         )
 
-        if next_recommended_assessment_date:
-            case_compliance = attr.evolve(
-                case_compliance,
-                next_recommended_assessment_date=next_recommended_assessment_date,
-            )
-
         if case_compliance:
+            if next_recommended_assessment_date:
+                case_compliance = attr.evolve(
+                    case_compliance,
+                    next_recommended_assessment_date=next_recommended_assessment_date,
+                )
             case_compliances[current_date] = case_compliance
         current_date += relativedelta(days=1)
 
