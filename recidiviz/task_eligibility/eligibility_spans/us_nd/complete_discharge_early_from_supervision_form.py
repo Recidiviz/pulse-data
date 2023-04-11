@@ -20,7 +20,7 @@ preparation for an early discharge.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    supervision_population_no_absconsion_bench_warrant,
+    active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -48,7 +48,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ND,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_FORM",
     description=_DESCRIPTION,
-    candidate_population_view_builder=supervision_population_no_absconsion_bench_warrant.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         implied_valid_early_termination_sentence_type.VIEW_BUILDER,
         implied_valid_early_termination_supervision_level.VIEW_BUILDER,

@@ -19,7 +19,7 @@ someone in ID is eligible for full term discharge from supervision.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    supervision_population_no_absconsion_bench_warrant,
+    active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -40,7 +40,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ID,
     task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
     description=_DESCRIPTION,
-    candidate_population_view_builder=supervision_population_no_absconsion_bench_warrant.VIEW_BUILDER,
+    candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,
         not_at_liberty.VIEW_BUILDER,
