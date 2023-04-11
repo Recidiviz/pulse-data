@@ -647,6 +647,7 @@ class IncarcerationPeriodNormalizationManager(EntityNormalizationManager):
                 # calculations, clear the release_date and the release_reason.
                 ip.release_date = None
                 ip.release_reason = None
+                ip.release_reason_raw_text = None
 
             if ip.admission_date is None:
                 if previous_ip:
