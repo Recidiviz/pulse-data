@@ -22,7 +22,6 @@ from typing import Any, Callable
 
 import requests
 from airflow.sensors.python import PythonSensor
-from airflow.utils.decorators import apply_defaults
 
 from recidiviz.cloud_functions.cloud_function_utils import (
     IAP_CLIENT_ID,
@@ -41,7 +40,6 @@ def request_and_check_condition(
 
 
 class IAPHTTPRequestSensor(PythonSensor):
-    @apply_defaults
     def __init__(
         self,
         task_id: str,
