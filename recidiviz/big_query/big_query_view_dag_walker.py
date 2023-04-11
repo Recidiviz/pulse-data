@@ -209,8 +209,7 @@ class BigQueryViewDagNode:
         return self._descendants_sub_dag
 
     def set_ancestors_tree_num_edges(self, num_edges: int) -> None:
-        # pylint: disable=anomalous-backslash-in-string
-        """Returns the number of edges in the tree with this node at the root and all
+        r"""Returns the number of edges in the tree with this node at the root and all
           source tables in the ancestors_sub_dag as leaves. Consider the following
           ancestors DAG for node F:
                A
@@ -244,8 +243,7 @@ class BigQueryViewDagNode:
         return self._ancestors_tree_num_edges
 
     def set_descendants_tree_num_edges(self, num_edges: int) -> None:
-        # pylint: disable=anomalous-backslash-in-string
-        """Returns the number of edges in the tree with this node at the root and all
+        r"""Returns the number of edges in the tree with this node at the root and all
           *leaf* descendant nodes in the ancestors_sub_dag as leaves. Consider the
           following descendants DAG for node A:
                A
@@ -940,8 +938,7 @@ class BigQueryViewDagWalker:
         ] = lambda a: f"{a.dataset_id}.{a.table_id}",
         datasets_to_skip: Optional[Set[str]] = None,
     ) -> str:
-        # pylint: disable=anomalous-backslash-in-string
-        """
+        r"""
         Generate a string representing the dependency graph for ancestors.
         The graph begins at the given view, and ascends through ancestors
         in reverse sorted order with additional indentation at each level.
@@ -994,8 +991,7 @@ class BigQueryViewDagWalker:
         ] = lambda a: f"{a.dataset_id}.{a.table_id}",
         datasets_to_skip: Optional[Set[str]] = None,
     ) -> str:
-        # pylint: disable=anomalous-backslash-in-string
-        """
+        r"""
         Generate a string representing the dependency graph for descendants.
         The graph begins at the given view, and descends through descendants
         in sorted order with additional indentation at each level.

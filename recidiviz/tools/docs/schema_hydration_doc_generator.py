@@ -23,7 +23,7 @@ have only null values for rows with a given state code.
 This is useful for identifying and documenting which parts of our schema are "filled in" for a given state.
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.schema_hydration_doc_generator --project-id recidiviz-staging --state-code us_nd
+python -m recidiviz.tools.docs.schema_hydration_doc_generator --project-id recidiviz-staging --state-code us_nd
 """
 
 import argparse
@@ -44,8 +44,7 @@ SELECT COUNT(*) as count FROM `{project_id}.state.{table_name}` WHERE state_code
 """
 
 
-# pylint:disable=anomalous-backslash-in-string
-_SEARCH_QUERY = """
+_SEARCH_QUERY = r"""
 SELECT null_column
 FROM `{project_id}.state.{table_name}` AS t,
   UNNEST(REGEXP_EXTRACT_ALL(
