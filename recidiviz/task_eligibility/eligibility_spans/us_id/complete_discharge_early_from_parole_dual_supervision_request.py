@@ -20,7 +20,7 @@ through the parole board.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    parole_dual_supervision_population,
+    parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -49,7 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ID,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=parole_dual_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         parole_dual_supervision_past_early_discharge_date.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
