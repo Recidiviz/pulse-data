@@ -132,3 +132,8 @@ columns:
   - name: Comment
     description: |-
       Unused comment field.
+  - name: BirthDate
+    description: |-
+      Employee birthdate
+    is_pii: True
+    is_datetime: True
