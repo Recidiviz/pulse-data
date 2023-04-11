@@ -8,6 +8,8 @@ function write_to_file {
   echo "$1" > "$2"
 }
 
+run_cmd mkdir -p recidiviz/local/gsm/
+
 # Database secrets
 write_to_file 'operations' recidiviz/local/gsm/operations_v2_cloudsql_instance_id
 write_to_file 'localhost' recidiviz/local/gsm/operations_v2_db_host
