@@ -16,9 +16,9 @@
 # =============================================================================
 """Helpers to identify the size of objects"""
 
-import collections
 import sys
 from collections import deque
+from collections.abc import Collection
 from itertools import chain
 from typing import Any, Callable, Dict, Iterable, Optional, Type
 
@@ -66,9 +66,7 @@ def total_size(
                 s += sum(map(sizeof, handler(o)))
                 break
         else:
-            if isinstance(o, collections.Collection) and not isinstance(
-                o, (str, bytes, bytearray)
-            ):
+            if isinstance(o, Collection) and not isinstance(o, (str, bytes, bytearray)):
                 raise NotImplementedError(f"No handler for collection: {type(o)}")
         return s
 
