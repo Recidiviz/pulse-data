@@ -27,6 +27,7 @@ columns:
   - name: SUBMITTED_DATE
   - name: REVIEW_SUPERVISOR_TITLE
   - name: REVIEW_DATE
+    is_datetime: True
   - name: PARENT_MISCONDUCT_ID
   - name: CREATE_DATE
   - name: CREATEDBY
