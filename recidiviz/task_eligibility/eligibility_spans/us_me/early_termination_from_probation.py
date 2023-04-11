@@ -21,7 +21,7 @@ for an Early Termination from Probation
 
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_supervision_population_and_out_of_state,
+    probation_active_supervision_and_supervision_out_of_state_population,
 )
 from recidiviz.task_eligibility.completion_events import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -46,7 +46,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_ME,
     task_name="EARLY_TERMINATION_FROM_PROBATION",
     description=_DESCRIPTION,
-    candidate_population_view_builder=probation_supervision_population_and_out_of_state.VIEW_BUILDER,
+    candidate_population_view_builder=probation_active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_half_full_term_release_date_from_supervision_start.VIEW_BUILDER,
         no_conviction_within_6_months.VIEW_BUILDER,
