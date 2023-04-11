@@ -144,6 +144,7 @@ output:
                   - "AT" # Unauthorized Release
                   - "AW" # Regress from Comm. Center
                   - "AX" # Resume Supervision in CO Facility
+                  - "BA" # Mandatory Parole
                   - "D4" # Interstate Compact
                   - "D6" # Regular or Medical
                   - "D7" # YOS Failure
@@ -213,13 +214,14 @@ output:
               $raw_text: start_code
               $mappings:
                 StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN:
-                  - "79" # Returned to ISP-I - TODO(#13602) Update after schema change
-                  - "81" # Out to Court - TODO(#13602) Update after schema change
-                  - "82" # Out on Escorted Leave - TODO(#13602) Update after schema change
-                  - "83" # Out to Hospital - TODO(#13602) Update after schema change
-                  - "84" # Out on Bond - TODO(#13602) Update after schema change
-                  - "86" # Out on Furlough - TODO(#13602) Update after schema change
-                  - "8B" # Out on Work Crew - TODO(#13602) Update after schema change
+                  - "79" # Returned to ISP-I
+                StateIncarcerationPeriodAdmissionReason.TEMPORARY_RELEASE:
+                  - "81" # Out to Court
+                  - "82" # Out on Escorted Leave
+                  - "83" # Out to Hospital
+                  - "84" # Out on Bond
+                  - "86" # Out on Furlough
+                  - "8B" # Out on Work Crew
                 StateIncarcerationPeriodAdmissionReason.ESCAPE:
                   - "33" # Escapee in Custody - Other Jurisdiction (seen as Escapee in CO)
                   - "8C" # Absent without Leave (AWOL)
@@ -297,20 +299,22 @@ output:
                   - "8D" # Out to Other Jurisdiction
                 StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED:
                   - "40" # Discharged
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_TEMPORARY_RELEASE:
+                  - "21" # Returned from Court
+                  - "22" # Returned from Escorted Leave
+                  - "23" # Returned from Hospital
+                  - "24" # Return from Bond
+                  - "26" # Returned from Furlough
+                  - "2B" # Returned from Work Crew
+                StateIncarcerationPeriodReleaseReason.RETURN_FROM_ESCAPE:
+                  - "20" # Return from Escape
+                  - "2C" # Returned from AWOL
                 StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
                   - "01" # New CO Commitment - TODO(#13602) Update after schema change
                   - "06" # Recommitment - TODO(#13602) Update after schema change
                   - "10" # Returned from Parole - TODO(#13602) Update after schema change
-                  - "20" # Return from Escape - TODO(#13602) Update after schema change
-                  - "21" # Returned from Court - TODO(#13602) Update after schema change
-                  - "22" # Returned from Escorted Leave - TODO(#13602) Update after schema change
-                  - "23" # Returned from Hospital - TODO(#13602) Update after schema change
-                  - "24" # Return from Bond - TODO(#13602) Update after schema change
-                  - "26" # Returned from Furlough - TODO(#13602) Update after schema change
-                  - "2B" # Returned from Work Crew - TODO(#13602) Update after schema change
-                  - "2C" # Returned from AWOL - TODO(#13602) Update after schema change
                   - "2D" # Returned from Other Jurisdiction - TODO(#13602) Update after schema change
-                  - "37" # Halfway-In (at CCC) - TODO(#13602) Update after schema change
+                  - "37" # Halfway-In (at CCC)
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - "60" # Paroled
                   - "63-P" # To Intensive Supervision (ISP) - Parole
