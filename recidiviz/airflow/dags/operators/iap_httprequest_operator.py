@@ -21,7 +21,6 @@ import os
 from typing import Any, Dict, Optional
 
 from airflow.operators.python import PythonOperator
-from airflow.utils.decorators import apply_defaults
 
 from recidiviz.cloud_functions.cloud_function_utils import (
     IAP_CLIENT_ID,
@@ -50,7 +49,6 @@ def _make_iap_request(
 class IAPHTTPRequestOperator(PythonOperator):
     """Operator that runs an HTTP request. If the request fails, this node fails."""
 
-    @apply_defaults
     def __init__(
         self,
         task_id: str,
