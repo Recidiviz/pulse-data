@@ -55,7 +55,7 @@ from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import BUCKET_ID_TO_AGENCY_ID
 from recidiviz.persistence.database.schema.justice_counts import schema
-from recidiviz.utils.environment import in_development
+from recidiviz.utils.environment import in_development, in_gcp, in_gcp_staging
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.pubsub_helper import (
     BUCKET_ID,
@@ -83,7 +83,13 @@ def get_api_blueprint(
         if not secret_key:
             return make_response("Unable to find secret key", 500)
 
-        return jsonify({"csrf": generate_csrf(secret_key)})
+        environment = "unknown"
+        if in_gcp() is False:
+            environment = "local"
+        elif in_gcp_staging() is True:
+            environment = "staging"
+
+        return jsonify({"csrf": generate_csrf(secret_key), "env": environment})
 
     ### Agencies ###
 
