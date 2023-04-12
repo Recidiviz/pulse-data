@@ -49,7 +49,7 @@ output:
           verified_employment:
             $equal:
               - verified_employment
-              - $literal("true")
+              - $literal("True")
           contact_date: NoteDate
           contact_method:
             $enum_mapping:
@@ -114,4 +114,4 @@ output:
           resulted_in_arrest:
             $equal:
               - resulted_in_arrest
-              - $literal("true")
+              - $literal("True")
