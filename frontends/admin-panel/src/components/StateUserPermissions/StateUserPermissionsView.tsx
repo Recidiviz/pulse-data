@@ -105,7 +105,7 @@ const StateUserPermissionsView = (): JSX.Element => {
           setSelectedRowKeys([]); // clear selected rows once all changes are successful
         })
         .catch((error) => {
-          message.error(`${error}`);
+          message.error(`${error.description}`);
         })
         .finally(() => {
           updateTable();

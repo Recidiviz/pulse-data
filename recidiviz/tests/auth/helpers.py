@@ -90,7 +90,7 @@ def generate_fake_rosters(
 def generate_fake_default_permissions(
     state: str,
     role: str,
-    routes: Optional[dict] = None,
+    routes: Optional[dict[str, bool]] = None,
     feature_variants: Optional[dict] = None,
 ) -> StateRolePermissions:
     return StateRolePermissions(
@@ -126,7 +126,7 @@ def generate_fake_user_overrides(
 
 def generate_fake_permissions_overrides(
     email: str,
-    routes: dict = sql.null(),
+    routes: dict[str, bool] = sql.null(),
     feature_variants: dict = sql.null(),
 ) -> PermissionsOverride:
     return PermissionsOverride(
