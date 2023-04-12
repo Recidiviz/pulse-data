@@ -149,6 +149,25 @@ WHERE {_PROCESSED_TIME_COL_NAME} IS NULL
 _EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE = 2500
 
 
+def to_string_value_converter(
+    field_name: str,
+    value: Any,
+) -> str:
+    """Converts all values to strings."""
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (bool, int)):
+        return str(value)
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.isoformat()
+
+    raise ValueError(
+        f"Unexpected value type [{type(value)}] for field [{field_name}]: {value}"
+    )
+
+
 @attr.define(frozen=True, kw_only=True)
 class ResultsBatchInfo:
     ingest_view_name: str
@@ -478,6 +497,9 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
         return BigQueryResultsContentsHandle(
             query_job,
+            # Convert all values to strings for backwards compatiblity with the data we
+            # read from test fixture files.
+            value_converter=to_string_value_converter,
             max_expected_rows=_EXTRACT_AND_MERGE_DEFAULT_BATCH_SIZE,
         )
 
