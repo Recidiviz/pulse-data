@@ -317,3 +317,31 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 jsonify({"status": "ok"}),
                 HTTPStatus.OK,
             )
+
+    @bp.route("/api/justice_counts_tools/agency/<agency_id>", methods=["PUT"])
+    @requires_gae_auth
+    def update_agency(agency_id: int) -> Tuple[Response, HTTPStatus]:
+        """
+        Updates an name and systems in our DB.
+        """
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            name = request_json.get("name")
+            systems = request_json.get("systems")
+
+            if systems is not None:
+                AgencyInterface.update_agency_systems(
+                    session=session, systems=systems, agency_id=agency_id
+                )
+
+            if name is not None:
+                AgencyInterface.update_agency_name(
+                    session=session, agency_id=agency_id, name=name
+                )
+
+            return (
+                jsonify({"status": "ok"}),
+                HTTPStatus.OK,
+            )

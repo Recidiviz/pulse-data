@@ -86,3 +86,14 @@ export const updateUser = async (
     agency_ids: agencyIds,
   });
 };
+
+export const updateAgency = async (
+  name: string | null,
+  systems: string[] | null,
+  agencyId: number
+): Promise<Response> => {
+  return putWithURLAndBody(`/api/justice_counts_tools/agency/${agencyId}`, {
+    name,
+    systems,
+  });
+};

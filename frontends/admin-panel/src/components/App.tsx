@@ -17,6 +17,8 @@
 import { Avatar, Layout, Menu, MenuProps, Segmented, Typography } from "antd";
 import { SegmentedLabeledOption, SegmentedValue } from "antd/lib/segmented";
 import classNames from "classnames";
+import qs from "querystringify";
+import { useEffect } from "react";
 import {
   Redirect,
   Route,
@@ -24,8 +26,6 @@ import {
   useHistory,
   useLocation,
 } from "react-router-dom";
-import { useEffect } from "react";
-import qs from "querystringify";
 import Nelly from "../favicon-nelly.png";
 import MetadataDataset from "../models/MetadataDatasets";
 import * as DatasetMetadata from "../navigation/DatasetMetadata";
@@ -40,6 +40,7 @@ import DatasetView from "./Datasets/DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
 import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
+import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
@@ -48,7 +49,6 @@ import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePer
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import UploadRawFilesView from "./UploadRawFilesView";
 import ValidationStatusOverview from "./Validation/ValidationStatusOverview";
-import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 
 type MenuItem = Required<MenuProps>["items"][number];
 type QueryString = {
@@ -148,7 +148,6 @@ const items: MenuProps["items"] = [
       JusticeCountsTools.AGENCY_PROVISIONING_ROUTE
     ),
     getItem("User Provisioning", JusticeCountsTools.USER_PROVISIONING_ROUTE),
-    getItem("Bulk Upload", JusticeCountsTools.BULK_UPLOAD_ROUTE),
   ]),
 ];
 

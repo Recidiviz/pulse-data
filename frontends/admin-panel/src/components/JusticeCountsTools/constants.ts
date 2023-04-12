@@ -71,6 +71,20 @@ export type UsersResponse = {
   users: User[];
 };
 
+export enum System {
+  LAW_ENFORCEMENT = "LAW_ENFORCEMENT",
+  PROSECUTION = "PROSECUTION",
+  DEFENSE = "DEFENSE",
+  COURTS_AND_PRETRIAL = "COURTS_AND_PRETRIAL",
+  JAILS = "JAILS",
+  PRISONS = "PRISONS",
+  SUPERVISION = "SUPERVISION",
+  PAROLE = "PAROLE",
+  PROBATION = "PROBATION",
+  PRETRIAL_SUPERVISION = "PRETRIAL_SUPERVISION",
+  OTHER_SUPERVISION = "OTHER_SUPERVISION",
+}
+
 /* eslint-disable camelcase */
 export enum StateCode {
   us_ak = "Alaska",

@@ -31,10 +31,12 @@ import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
+import { updateAgency } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
+  Agency,
   CreateAgencyRequest,
   CreateAgencyResponse,
   ErrorResponse,
@@ -42,6 +44,7 @@ import {
   FipsCountyCodeKey,
   StateCode,
   StateCodeKey,
+  System,
 } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
@@ -93,7 +96,7 @@ const AgencyProvisioningView = (): JSX.Element => {
   type AgencyRecord = {
     id: number;
     name: string;
-    systems: string;
+    systems: string[];
     state: string;
     county?: string;
   };
@@ -145,6 +148,34 @@ const AgencyProvisioningView = (): JSX.Element => {
     },
   });
 
+  const onNameChange = async (agency: Agency, name: string) => {
+    try {
+      const response = await updateAgency(name, null, agency.id);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
+      }
+      message.success(`${agency.name}'s name changed to ${name}!`);
+    } catch (err) {
+      message.error(`An error occured: ${err}`);
+    }
+  };
+
+  const onSystemsChange = async (systems: string[], agency: Agency) => {
+    try {
+      const response = await updateAgency(null, systems, agency.id);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
+      }
+      message.success(`${agency.name}'s systems were successfully updated.`);
+    } catch (err) {
+      message.error(`An error occured: ${err}`);
+    }
+  };
+
   const columns = [
     {
       title: "ID",
@@ -157,12 +188,49 @@ const AgencyProvisioningView = (): JSX.Element => {
       dataIndex: "name",
       key: "name",
       ...getColumnSearchProps("name"),
+      width: "15%",
+      render: (_: string, agency: Agency) => {
+        return (
+          <Input
+            defaultValue={agency.name}
+            onBlur={(e) => onNameChange(agency, e.target.value)}
+          />
+        );
+      },
     },
     {
       title: "Systems",
       dataIndex: "systems",
-      key: "systems",
-      ...getColumnSearchProps("systems"),
+      key: "system",
+      render: (systems: string[], agency: Agency) => {
+        const currentSystems = systems;
+        return (
+          <Select
+            mode="multiple"
+            allowClear
+            defaultValue={currentSystems}
+            showSearch
+            optionFilterProp="children"
+            disabled={showSpinner}
+            filterOption={(input, option) =>
+              (option?.children as unknown as string)
+                .toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
+            }
+            onChange={(updatedSystems: string[]) =>
+              onSystemsChange(updatedSystems, agency)
+            }
+            style={{ minWidth: 250 }}
+          >
+            {/* #TODO(#12091): Replace with debounced search bar */}
+            {Object.keys(System).map((system) => (
+              <Select.Option key={system} value={system}>
+                {system}
+              </Select.Option>
+            ))}
+          </Select>
+        );
+      },
     },
     {
       title: "State",
@@ -195,7 +263,6 @@ const AgencyProvisioningView = (): JSX.Element => {
         columns={columns}
         dataSource={data?.agencies.map((agency) => ({
           ...agency,
-          systems: agency.systems.join(", "),
           state:
             StateCode[agency.state_code?.toLocaleLowerCase() as StateCodeKey],
           county: FipsCountyCode[agency.fips_county_code as FipsCountyCodeKey],
@@ -224,7 +291,7 @@ const AgencyProvisioningView = (): JSX.Element => {
         </Form.Item>
         <Form.Item label="Systems" name="systems" rules={[{ required: true }]}>
           <Select mode="multiple" disabled={showSpinner || !data?.systems}>
-            {data?.systems?.map((system) => (
+            {Object.keys(System).map((system) => (
               <Select.Option key={system} value={system}>
                 {system}
               </Select.Option>
