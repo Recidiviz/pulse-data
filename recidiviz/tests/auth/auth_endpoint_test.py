@@ -26,9 +26,11 @@ from unittest.mock import MagicMock, patch
 import flask
 import pytest
 from flask import Flask
+from flask_smorest import Api
 from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import users_blueprint
 from recidiviz.auth.helpers import replace_char_0_slash
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -42,6 +44,7 @@ from recidiviz.persistence.database.schema.case_triage.schema import (
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,
     generate_fake_default_permissions,
@@ -59,7 +62,6 @@ _FIXTURE_PATH = os.path.abspath(
     )
 )
 _PARAMETER_USER_HASH = "flf+tuxZFuMOTgZf8aIZiDj/a4Cw4tIwRl7WcpVdCA0="
-_ADD_USER_HASH = "0D1WiekUDUBhjVnqyNbbwGJP2xll0CS9vfsnPrxnmSE="
 _LEADERSHIP_USER_HASH = "qKTCaVmWmjqbJX0SckE082QJKv6sE4W/bKzfHQZJNYk="
 _SUPERVISION_STAFF_HASH = "EghmFPYcNI/RKWs9Cdt3P5nvGFhwM/uSkKKY1xVibvI="
 _USER_HASH = "j8+pC9rc353XWt4x1fg+3Km9TQtr5XMZMT8Frl37H/o="
@@ -92,6 +94,15 @@ class AuthEndpointTests(TestCase):
         self.app = Flask(__name__)
         self.app.register_blueprint(auth_endpoint_blueprint)
         self.app.config["TESTING"] = True
+        api = Api(
+            self.app,
+            spec_kwargs={
+                "title": "default",
+                "version": "1.0.0",
+                "openapi_version": "3.1.0",
+            },
+        )
+        api.register_blueprint(users_blueprint, url_prefix="/auth/users")
         self.client = self.app.test_client()
 
         self.headers: Dict[str, Dict[Any, Any]] = {"x-goog-iap-jwt-assertion": {}}
@@ -114,7 +125,12 @@ class AuthEndpointTests(TestCase):
 
         # Setup database
         self.database_key = SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+        self.overridden_env_vars = (
+            local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        )
+        db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+        engine = setup_scoped_sessions(self.app, SchemaType.CASE_TRIAGE, db_url)
+        self.database_key.declarative_meta.metadata.create_all(engine)
 
         with self.app.test_request_context():
             self.handle_import_user_restrictions_csv_to_sql = flask.url_for(
@@ -129,13 +145,10 @@ class AuthEndpointTests(TestCase):
             self.dashboard_user_restrictions = flask.url_for(
                 "auth_endpoint_blueprint.dashboard_user_restrictions"
             )
-            self.users = flask.url_for("auth_endpoint_blueprint.users")
+            self.users = flask.url_for("users.UsersAPI")
             self.user = flask.url_for(
-                "auth_endpoint_blueprint.users",
+                "users.UsersByHashAPI",
                 user_hash=_PARAMETER_USER_HASH,
-            )
-            self.add_user = flask.url_for(
-                "auth_endpoint_blueprint.add_user",
             )
             self.upload_roster = lambda state_code, role=None: flask.url_for(
                 "auth_endpoint_blueprint.upload_roster",
@@ -182,6 +195,7 @@ class AuthEndpointTests(TestCase):
 
     def tearDown(self) -> None:
         self.fs_patcher.stop()
+        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
 
     def assertReasonLog(self, log_messages: List[str], expected: str) -> None:
@@ -628,482 +642,10 @@ class AuthEndpointTests(TestCase):
         )
         self.assertEqual(expected_restrictions, json.loads(response.data))
 
-    def test_users_some_overrides(self) -> None:
-        user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
-            region_code="US_ND",
-            role="leadership_role",
-            district="D1",
-            first_name="Fake",
-            last_name="User",
-        )
-        user_2 = generate_fake_rosters(
-            email="supervision_staff@domain.org",
-            region_code="US_ID",
-            external_id="abc",
-            role="supervision_staff",
-            district="D3",
-            first_name="John",
-            last_name="Doe",
-        )
-        user_1_override = generate_fake_user_overrides(
-            email="leadership@domain.org",
-            region_code="US_ND",
-            external_id="user_1_override.external_id",
-            role="user_1_override.role",
-            blocked=True,
-        )
-        default_1 = generate_fake_default_permissions(
-            state="US_ND",
-            role="leadership_role",
-            routes={"A": False, "B": True},
-            feature_variants={"C": False},
-        )
-        default_2 = generate_fake_default_permissions(
-            state="US_ND",
-            role="user_1_override.role",
-            feature_variants={"C": False},
-        )
-        default_3 = generate_fake_default_permissions(
-            state="US_ID",
-            role="supervision_staff",
-        )
-        new_permissions = generate_fake_permissions_overrides(
-            email="leadership@domain.org",
-            routes={"overridden route": True},
-            feature_variants={"overridden variant": True},
-        )
-        add_entity_to_database_session(
-            self.database_key,
-            [
-                user_1,
-                user_2,
-                user_1_override,
-                default_1,
-                default_2,
-                default_3,
-                new_permissions,
-            ],
-        )
-        with self.app.test_request_context():
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": True,
-                    "district": "D1",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "user_1_override.external_id",
-                    "firstName": "Fake",
-                    "lastName": "User",
-                    "role": "user_1_override.role",
-                    "stateCode": "US_ND",
-                    "routes": {"overridden route": True},
-                    "featureVariants": {"overridden variant": True},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                },
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "D3",
-                    "emailAddress": "supervision_staff@domain.org",
-                    "externalId": "abc",
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "role": "supervision_staff",
-                    "stateCode": "US_ID",
-                    "routes": None,
-                    "featureVariants": None,
-                    "userHash": _SUPERVISION_STAFF_HASH,
-                },
-            ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
-        self.assertEqual(expected, json.loads(response.data))
-
-    def test_users_with_empty_overrides(self) -> None:
-        user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
-            region_code="US_MO",
-            external_id="12345",
-            role="leadership_role",
-            district="4, 10A",
-            first_name="Test A.",
-            last_name="User",
-        )
-        default = generate_fake_default_permissions(
-            state="US_MO",
-            role="leadership_role",
-            routes={"A": True},
-        )
-        add_entity_to_database_session(self.database_key, [user_1, default])
-        with self.app.test_request_context():
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "4, 10A",
-                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                    "blocked": False,
-                    "district": "4, 10A",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "12345",
-                    "firstName": "Test A.",
-                    "lastName": "User",
-                    "role": "leadership_role",
-                    "stateCode": "US_MO",
-                    "routes": {"A": True},
-                    "featureVariants": None,
-                    "userHash": _LEADERSHIP_USER_HASH,
-                },
-            ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
-        self.assertEqual(expected, json.loads(response.data))
-
-    def test_users_with_null_values(self) -> None:
-        user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
-            region_code="US_ME",
-            role="leadership_role",
-        )
-        applicable_override = generate_fake_user_overrides(
-            email="leadership@domain.org",
-            region_code="US_ME",
-            external_id="A1B2",
-            blocked=True,
-        )
-        default_1 = generate_fake_default_permissions(
-            state="US_ME",
-            role="leadership_role",
-            routes={"A": "B"},
-        )
-        new_permissions = generate_fake_permissions_overrides(
-            email="leadership@domain.org",
-            routes={"A": True, "C": False},
-            feature_variants={"C": True},
-        )
-        add_entity_to_database_session(
-            self.database_key, [user_1, applicable_override, default_1, new_permissions]
-        )
-        with self.app.test_request_context():
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": True,
-                    "district": None,
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "A1B2",
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_ME",
-                    "routes": {"A": True, "C": False},
-                    "featureVariants": {"C": True},
-                    "userHash": _LEADERSHIP_USER_HASH,
-                },
-            ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
-        self.assertEqual(expected, json.loads(response.data))
-
-    def test_users_no_users(self) -> None:
-        with self.app.test_request_context():
-            expected_restrictions: list[str] = []
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
-        self.assertEqual(expected_restrictions, json.loads(response.data))
-
-    def test_users_no_permissions(self) -> None:
-        user_1 = generate_fake_rosters(
-            email="leadership@domain.org",
-            region_code="US_CO",
-            external_id="12345",
-            role="leadership_role",
-            district="District 4",
-            first_name="Test A.",
-            last_name="User",
-        )
-        add_entity_to_database_session(self.database_key, [user_1])
-        with self.app.test_request_context():
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "District 4",
-                    "emailAddress": "leadership@domain.org",
-                    "externalId": "12345",
-                    "firstName": "Test A.",
-                    "lastName": "User",
-                    "role": "leadership_role",
-                    "stateCode": "US_CO",
-                    "routes": None,
-                    "featureVariants": None,
-                    "userHash": _LEADERSHIP_USER_HASH,
-                },
-            ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
-        self.assertEqual(expected, json.loads(response.data))
-
     def test_replace_char_0_slash(self) -> None:
         bad_hash = "/aaabbbccc/ddd"
         expected = "_aaabbbccc/ddd"
         self.assertEqual(expected, replace_char_0_slash(bad_hash))
-
-    def test_users_add_user(self) -> None:
-        user_1 = generate_fake_rosters(
-            email="add_user@domain.org",
-            region_code="US_CO",
-            external_id="ABC",
-            role="leadership_role",
-            district="District",
-        )
-        default = generate_fake_default_permissions(
-            state="US_MO",
-            role="leadership_role",
-            routes={"A": "B", "B": "C"},
-            feature_variants={"D": "E"},
-        )
-        add_entity_to_database_session(self.database_key, [user_1, default])
-        with self.assertLogs(level="INFO") as log:
-            self.client.post(
-                self.add_user,
-                headers=self.headers,
-                json={
-                    "stateCode": "US_MO",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": None,
-                    "role": "leadership_role",
-                    "district": "1, 2",
-                    "firstName": None,
-                    "lastName": None,
-                    "reason": "test",
-                },
-            )
-            self.assertReasonLog(
-                log.output, "adding user parameter@domain.org with reason: test"
-            )
-
-        with self.app.test_request_context():
-            expected = [
-                {
-                    "allowedSupervisionLocationIds": "",
-                    "allowedSupervisionLocationLevel": "",
-                    "blocked": False,
-                    "district": "District",
-                    "emailAddress": "add_user@domain.org",
-                    "externalId": "ABC",
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_CO",
-                    "routes": None,
-                    "featureVariants": None,
-                    "userHash": _ADD_USER_HASH,
-                },
-                {  # handles MO's specific logic
-                    "allowedSupervisionLocationIds": "1, 2",
-                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                    "blocked": False,
-                    "district": "1, 2",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": None,
-                    "firstName": None,
-                    "lastName": None,
-                    "role": "leadership_role",
-                    "stateCode": "US_MO",
-                    "routes": {"A": "B", "B": "C"},
-                    "featureVariants": {"D": "E"},
-                    "userHash": _PARAMETER_USER_HASH,
-                },
-            ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
-        self.assertEqual(expected, json.loads(response.data))
-
-    def test_get_user(self) -> None:
-        user_1 = generate_fake_rosters(
-            email="parameter@domain.org",
-            region_code="US_CO",
-            external_id="ABC",
-            role="leadership_role",
-            district="District",
-        )
-        user_2 = generate_fake_rosters(
-            email="user@domain.org",
-            region_code="US_CO",
-            external_id="XXXX",
-            role="supervision_staff",
-            district="District",
-        )
-        default = generate_fake_default_permissions(
-            state="US_CO",
-            role="leadership_role",
-            routes={"A": "B", "B": "C"},
-            feature_variants={"D": "E"},
-        )
-        add_entity_to_database_session(self.database_key, [user_1, user_2, default])
-
-        expected = {
-            "allowedSupervisionLocationIds": "",
-            "allowedSupervisionLocationLevel": "",
-            "blocked": False,
-            "district": "District",
-            "emailAddress": "parameter@domain.org",
-            "externalId": "ABC",
-            "firstName": None,
-            "lastName": None,
-            "role": "leadership_role",
-            "stateCode": "US_CO",
-            "routes": {"A": "B", "B": "C"},
-            "featureVariants": {"D": "E"},
-            "userHash": _PARAMETER_USER_HASH,
-        }
-        response = self.client.get(
-            self.user,
-            headers=self.headers,
-        )
-        self.assertEqual(expected, json.loads(response.data))
-
-    def test_get_user_not_found(self) -> None:
-        user = generate_fake_rosters(
-            email="user@domain.org",
-            region_code="US_CO",
-            external_id="XXXX",
-            role="supervision_staff",
-            district="District",
-        )
-
-        add_entity_to_database_session(self.database_key, [user])
-
-        response = self.client.get(
-            self.user,
-            headers=self.headers,
-        )
-        self.assertEqual(HTTPStatus.NOT_FOUND, response.status_code)
-        error_message = f"User not found for email address hash {_PARAMETER_USER_HASH}, please file a bug"
-        self.assertEqual(error_message, response.data.decode("UTF-8"))
-
-    def test_add_user_bad_request(self) -> None:
-        no_state = self.client.post(
-            self.add_user,
-            headers=self.headers,
-            json={
-                "stateCode": None,
-                "emailAddress": "parameter@domain.org",
-                "externalId": "XYZ",
-                "role": "leadership_role",
-                "district": "D1",
-                "firstName": "Test",
-                "lastName": "User",
-                "reason": "test",
-            },
-        )
-        self.assertEqual(HTTPStatus.BAD_REQUEST, no_state.status_code)
-        wrong_type = self.client.post(
-            self.add_user,
-            headers=self.headers,
-            json={
-                "stateCode": "US_ID",
-                "emailAddress": "parameter@domain.org",
-                "externalId": "XYZ",
-                "role": {"A": "B"},
-                "district": "D1",
-                "firstName": "Test",
-                "lastName": "User",
-                "reason": "test",
-            },
-        )
-        self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
-
-    def test_add_user_repeat_email(self) -> None:
-        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
-            user_override_user = self.client.post(
-                self.add_user,
-                headers=self.headers,
-                json={
-                    "stateCode": "US_ID",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": "XYZ",
-                    "role": "leadership_role",
-                    "district": "D1",
-                    "firstName": "Test",
-                    "lastName": "User",
-                    "reason": "Test",
-                },
-            )
-            expected = {  # no default permissions
-                "district": "D1",
-                "emailAddress": "parameter@domain.org",
-                "externalId": "XYZ",
-                "firstName": "Test",
-                "lastName": "User",
-                "role": "leadership_role",
-                "stateCode": "US_ID",
-                "userHash": _PARAMETER_USER_HASH,
-            }
-            self.assertEqual(HTTPStatus.OK, user_override_user.status_code)
-            self.assertEqual(expected, json.loads(user_override_user.data))
-            self.assertReasonLog(
-                log.output, "adding user parameter@domain.org with reason: Test"
-            )
-            repeat_user_override_user = self.client.post(
-                self.add_user,
-                headers=self.headers,
-                json={
-                    "stateCode": "US_ND",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": None,
-                    "role": "leadership_role",
-                    "district": None,
-                    "firstName": None,
-                    "lastName": None,
-                    "reason": "Test",
-                },
-            )
-            self.assertEqual(
-                HTTPStatus.UNPROCESSABLE_ENTITY, repeat_user_override_user.status_code
-            )
-
-    def test_add_user_repeat_roster_email(self) -> None:
-        roster_user = generate_fake_rosters(
-            email="parameter@domain.org",
-            region_code="US_TN",
-            role="leadership_role",
-            district="40",
-        )
-        add_entity_to_database_session(self.database_key, [roster_user])
-        with self.app.test_request_context():
-            repeat_roster_user = self.client.post(
-                self.add_user,
-                headers=self.headers,
-                json={
-                    "stateCode": "US_TN",
-                    "emailAddress": "parameter@domain.org",
-                    "externalId": None,
-                    "role": "leadership_role",
-                    "district": "40",
-                    "firstName": None,
-                    "lastName": None,
-                },
-            )
-            self.assertEqual(
-                HTTPStatus.UNPROCESSABLE_ENTITY, repeat_roster_user.status_code
-            )
 
     def test_upload_roster(self) -> None:
         with open(os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb") as fixture:
@@ -1643,8 +1185,8 @@ class AuthEndpointTests(TestCase):
                 headers=self.headers,
                 json={
                     "routes": {
-                        "system_prisonToSupervision": "A",
-                        "community_practices": "4",
+                        "system_prisonToSupervision": True,
+                        "community_practices": False,
                     },
                     "featureVariants": {
                         "variant1": "true",
@@ -1679,8 +1221,8 @@ class AuthEndpointTests(TestCase):
                     "role": "supervision_staff",
                     "stateCode": "US_CO",
                     "routes": {
-                        "system_prisonToSupervision": "A",
-                        "community_practices": "4",
+                        "system_prisonToSupervision": True,
+                        "community_practices": False,
                     },
                     "featureVariants": {
                         "variant1": "true",
@@ -1703,7 +1245,7 @@ class AuthEndpointTests(TestCase):
         default_tn = generate_fake_default_permissions(
             state="US_TN",
             role="leadership_role",
-            routes={"A": "B"},
+            routes={"A": True},
             feature_variants={"C": "D"},
         )
         add_entity_to_database_session(self.database_key, [added_user, default_tn])
@@ -1712,7 +1254,7 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "routes": {"C": "D"},
+                    "routes": {"C": False},
                     "reason": "test",
                 },
             )
@@ -1745,7 +1287,7 @@ class AuthEndpointTests(TestCase):
                     "firstName": None,
                     "lastName": None,
                     "role": "leadership_role",
-                    "routes": {"C": "D"},
+                    "routes": {"C": False},
                     "featureVariants": {"C": "D"},
                     "stateCode": "US_TN",
                     "userHash": _USER_HASH,
@@ -1765,7 +1307,7 @@ class AuthEndpointTests(TestCase):
         )
         override_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
-            routes={"A": "B"},
+            routes={"A": True},
             feature_variants={"C": "D"},
         )
         add_entity_to_database_session(
@@ -1776,7 +1318,7 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "routes": {"E": "F"},
+                    "routes": {"E": False},
                     "reason": "test",
                 },
             )
@@ -1787,7 +1329,7 @@ class AuthEndpointTests(TestCase):
             )
             expected = {
                 "emailAddress": "user@domain.org",
-                "routes": {"E": "F"},
+                "routes": {"E": False},
                 "featureVariants": {"C": "D"},
             }
             self.assertEqual(expected, json.loads(response.data))
@@ -1802,12 +1344,12 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            routes={"A": "B", "C": "D"},
+            routes={"A": True, "C": False},
             feature_variants={"E": "F"},
         )
         roster_user_override_permissions = generate_fake_permissions_overrides(
             email="user@domain.org",
-            routes={"A": "B"},
+            routes={"A": False},
             feature_variants={"C": "D"},
         )
         add_entity_to_database_session(
@@ -1837,7 +1379,7 @@ class AuthEndpointTests(TestCase):
                     "firstName": None,
                     "lastName": None,
                     "role": "leadership_role",
-                    "routes": {"A": "B", "C": "D"},
+                    "routes": {"A": True, "C": False},
                     "featureVariants": {"E": "F"},
                     "stateCode": "US_MO",
                     "userHash": _USER_HASH,
@@ -1858,7 +1400,7 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_CO",
             role="leadership_role",
-            routes={"A": "B", "C": "D"},
+            routes={"A": True, "C": False},
             feature_variants={"E": "F", "G": "H"},
         )
         add_entity_to_database_session(self.database_key, [user, default])
@@ -1867,7 +1409,7 @@ class AuthEndpointTests(TestCase):
                 self.update_user_permissions,
                 headers=self.headers,
                 json={
-                    "routes": {"A": "B"},
+                    "routes": {"A": True},
                     "featureVariants": {"E": "F"},
                     "reason": "test",
                 },
@@ -1895,7 +1437,7 @@ class AuthEndpointTests(TestCase):
                     "firstName": None,
                     "lastName": None,
                     "role": "leadership_role",
-                    "routes": {"A": "B", "C": "D"},
+                    "routes": {"A": True, "C": False},
                     "featureVariants": {"E": "F", "G": "H"},
                     "stateCode": "US_CO",
                     "userHash": _USER_HASH,
@@ -1966,7 +1508,7 @@ class AuthEndpointTests(TestCase):
     def test_delete_user_user_override(self) -> None:
         with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
-                self.add_user,
+                self.users,
                 headers=self.headers,
                 json={
                     "stateCode": "US_TN",
@@ -2021,7 +1563,7 @@ class AuthEndpointTests(TestCase):
         default = generate_fake_default_permissions(
             state="US_MO",
             role="leadership_role",
-            routes={"A": "B", "B": "C"},
+            routes={"A": True, "B": False},
             feature_variants={"D": "E"},
         )
         add_entity_to_database_session(self.database_key, [default])
@@ -2031,7 +1573,7 @@ class AuthEndpointTests(TestCase):
                 {
                     "stateCode": "US_MO",
                     "role": "leadership_role",
-                    "routes": {"A": "B", "B": "C"},
+                    "routes": {"A": True, "B": False},
                     "featureVariants": {"D": "E"},
                 },
             ]

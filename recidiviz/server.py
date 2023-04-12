@@ -24,6 +24,7 @@ from typing import Tuple
 
 import zope.event.classhandler
 from flask import Flask, request
+from flask_smorest import Api
 from gevent import events
 from opencensus.common.transports.async_ import AsyncTransport
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
@@ -37,7 +38,11 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.server_blueprint_registry import default_blueprints_with_url_prefixes
+from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.server_blueprint_registry import (
+    default_blueprints_with_url_prefixes,
+    flask_smorest_api_blueprints_with_url_prefixes,
+)
 from recidiviz.server_config import database_keys_for_schema_type
 from recidiviz.utils import environment, metadata, monitoring, structured_logging, trace
 
@@ -46,12 +51,28 @@ structured_logging.setup()
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
+api = Api(
+    app,
+    # These are needed for flask-smorests OpenAPI generation. We don't use this right now, so these
+    # values can be set to ~anything
+    spec_kwargs={
+        "title": "default",
+        "version": "1.0.0",
+        "openapi_version": "3.1.0",
+    },
+)
+# Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
+# schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
+# accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
+setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
 
 service_type = environment.get_service_type()
 
 if service_type is environment.ServiceType.DEFAULT:
     for blueprint, url_prefix in default_blueprints_with_url_prefixes:
         app.register_blueprint(blueprint, url_prefix=url_prefix)
+    for blueprint, url_prefix in flask_smorest_api_blueprints_with_url_prefixes:
+        api.register_blueprint(blueprint, url_prefix=url_prefix)
 else:
     raise ValueError(f"Unsupported service type: {service_type}")
 
@@ -97,7 +118,6 @@ if environment.in_development():
 
     # If we fail to connect a message will be logged but we won't raise an error.
     enabled_development_schema_types = [
-        SchemaType.CASE_TRIAGE,
         SchemaType.JUSTICE_COUNTS,
         SchemaType.OPERATIONS,
     ]

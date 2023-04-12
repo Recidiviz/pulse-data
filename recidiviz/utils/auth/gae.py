@@ -18,7 +18,7 @@
 import logging
 from functools import wraps
 from http import HTTPStatus
-from typing import Any, Callable
+from typing import Any, Callable, Optional, Tuple
 
 from flask import request
 
@@ -52,52 +52,65 @@ def requires_gae_auth(func: Callable) -> Callable:
             The output of the function, if successfully authenticated.
             An error or redirect response, otherwise.
         """
-        if in_development():
-            # Bypass GAE auth check in development.
-            return func(*args, **kwargs)
-
-        is_cron = request.headers.get("X-Appengine-Cron")
-        is_task = request.headers.get("X-AppEngine-QueueName")
-        incoming_app_id = request.headers.get("X-Appengine-Inbound-Appid")
-        jwt = request.headers.get("x-goog-iap-jwt-assertion")
-
-        project_id = metadata.project_id()
-        project_number = metadata.project_number()
-
-        if is_cron:
-            logging.info("Requester is one of our cron jobs, proceeding.")
-
-        elif is_task:
-            logging.info("Requester is the taskqueue, proceeding.")
-
-        elif incoming_app_id:
-            # Check whether this is an intra-app call from our GAE service
-            logging.info("Requester authenticated as app-id: [%s].", incoming_app_id)
-
-            if incoming_app_id == project_id:
-                logging.info("Authenticated intra-app call, proceeding.")
-            else:
-                logging.info("App ID is [%s], not allowed - exiting.", incoming_app_id)
-                return (
-                    "Failed: Unauthorized external request.",
-                    HTTPStatus.UNAUTHORIZED,
-                )
-        elif jwt:
-            (
-                user_id,
-                user_email,
-                error_str,
-            ) = validate_jwt.validate_iap_jwt_from_app_engine(
-                jwt, project_number, project_id
-            )
-            logging.info("Requester authenticated as [%s] ([%s]).", user_id, user_email)
-            if error_str:
-                logging.info("Error validating user credentials: [%s].", error_str)
-                return (f"Error: {error_str}", HTTPStatus.UNAUTHORIZED)
-        else:
-            return ("Failed: Unauthorized external request.", HTTPStatus.UNAUTHORIZED)
+        if auth_result := authenticate_gae():
+            return auth_result
 
         # If we made it this far, client is authorized - run the decorated func
         return func(*args, **kwargs)
 
     return auth_and_call
+
+
+def authenticate_gae() -> Optional[Tuple[str, HTTPStatus]]:
+    """Authenticates the inbound request.
+
+    Returns:
+        None, if successfully authenticated.
+        An error or redirect response, otherwise.
+    """
+    if in_development():
+        # Bypass GAE auth check in development.
+        return None
+
+    is_cron = request.headers.get("X-Appengine-Cron")
+    is_task = request.headers.get("X-AppEngine-QueueName")
+    incoming_app_id = request.headers.get("X-Appengine-Inbound-Appid")
+    jwt = request.headers.get("x-goog-iap-jwt-assertion")
+
+    project_id = metadata.project_id()
+    project_number = metadata.project_number()
+
+    if is_cron:
+        logging.info("Requester is one of our cron jobs, proceeding.")
+
+    elif is_task:
+        logging.info("Requester is the taskqueue, proceeding.")
+
+    elif incoming_app_id:
+        # Check whether this is an intra-app call from our GAE service
+        logging.info("Requester authenticated as app-id: [%s].", incoming_app_id)
+
+        if incoming_app_id == project_id:
+            logging.info("Authenticated intra-app call, proceeding.")
+        else:
+            logging.info("App ID is [%s], not allowed - exiting.", incoming_app_id)
+            return (
+                "Failed: Unauthorized external request.",
+                HTTPStatus.UNAUTHORIZED,
+            )
+    elif jwt:
+        (
+            user_id,
+            user_email,
+            error_str,
+        ) = validate_jwt.validate_iap_jwt_from_app_engine(
+            jwt, project_number, project_id
+        )
+        logging.info("Requester authenticated as [%s] ([%s]).", user_id, user_email)
+        if error_str:
+            logging.info("Error validating user credentials: [%s].", error_str)
+            return (f"Error: {error_str}", HTTPStatus.UNAUTHORIZED)
+    else:
+        return ("Failed: Unauthorized external request.", HTTPStatus.UNAUTHORIZED)
+
+    return None

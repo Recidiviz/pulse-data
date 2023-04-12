@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Global registration of all endpoints for the main Recidiviz server backend."""
-from typing import List, Tuple
+from typing import List, Tuple, cast
 
 from flask import Blueprint
+from flask_smorest import Blueprint as FlaskSmorestBlueprint
 
 from recidiviz.admin_panel.all_routes import admin_panel_blueprint
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
+from recidiviz.auth.auth_users_endpoint import users_blueprint
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.big_query.view_update_manager import view_update_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import (
@@ -49,6 +51,13 @@ default_blueprints_with_url_prefixes: List[Tuple[Blueprint, str]] = [
     (view_update_manager_blueprint, "/view_update"),
 ]
 
+flask_smorest_api_blueprints_with_url_prefixes: List[
+    Tuple[FlaskSmorestBlueprint, str]
+] = [(users_blueprint, "/auth/users")]
+
 
 def get_blueprints_for_documentation() -> List[Tuple[Blueprint, str]]:
-    return default_blueprints_with_url_prefixes
+    return default_blueprints_with_url_prefixes + [
+        (cast(Blueprint, blueprint), url_prefix)
+        for blueprint, url_prefix in flask_smorest_api_blueprints_with_url_prefixes
+    ]
