@@ -123,7 +123,7 @@ def get_api_blueprint(
                 AgencyInterface.update_agency_systems(
                     session=current_session,
                     agency_id=agency_id,
-                    systems={schema.System[s] for s in systems},
+                    systems=systems,
                 )
 
             settings = request_json.get("settings")
