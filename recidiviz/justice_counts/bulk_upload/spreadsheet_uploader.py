@@ -26,7 +26,7 @@ from sqlalchemy.orm import Session
 from recidiviz.common.text_analysis import TextAnalyzer
 from recidiviz.justice_counts.bulk_upload.bulk_upload_helpers import get_column_value
 from recidiviz.justice_counts.bulk_upload.time_range_uploader import TimeRangeUploader
-from recidiviz.justice_counts.datapoint import DatapointInterface, DatapointUniqueKey
+from recidiviz.justice_counts.datapoint import DatapointUniqueKey
 from recidiviz.justice_counts.exceptions import (
     BulkUploadMessageType,
     JusticeCountsBulkUploadException,
@@ -255,9 +255,76 @@ class SpreadsheetUploader:
         metric_definition: MetricDefinition,
         reporting_frequency: ReportingFrequency,
     ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        """This function adds an Unexpected Columns warning to the metric_key_to_errors
+        """This function throws Missing Column errors if a given sheet is missing required columns.
+        Additionally, this function adds Unexpected Columns warnings to the metric_key_to_errors
         dictionary if there are unexpected column names for a given metric in a given sheet.
         """
+        # First, handle missing columns
+        if "value" not in actual_columns:
+            description = (
+                f'We expected to see a column named "value". '
+                f"Only the following columns were found in the sheet: "
+                f"{', '.join(actual_columns)}."
+            )
+            raise JusticeCountsBulkUploadException(
+                title="Missing Value Column",
+                description=description,
+                message_type=BulkUploadMessageType.ERROR,
+            )
+        if "year" not in actual_columns:
+            description = (
+                f'We expected to see a column named "year". '
+                f"Only the following columns were found in the sheet: "
+                f"{', '.join(actual_columns)}."
+            )
+            raise JusticeCountsBulkUploadException(
+                title="Missing Year Column",
+                description=description,
+                message_type=BulkUploadMessageType.ERROR,
+            )
+        if (
+            metric_definition.system.value == "SUPERVISION"
+            and "system" not in actual_columns
+        ):
+            description = (
+                f'We expected to see a column named "system". '
+                f"Only the following columns were found in the sheet: "
+                f"{', '.join(actual_columns)}."
+            )
+            raise JusticeCountsBulkUploadException(
+                title="Missing System Column",
+                description=description,
+                message_type=BulkUploadMessageType.ERROR,
+            )
+        if (
+            metricfile.disaggregation_column_name is not None
+            and metricfile.disaggregation_column_name not in actual_columns
+        ):
+            description = (
+                f'We expected to see a column named "{metricfile.disaggregation_column_name}". '
+                f"Only the following columns were found in the sheet: "
+                f"{', '.join(actual_columns)}."
+            )
+            raise JusticeCountsBulkUploadException(
+                title="Missing Breakdown Column",
+                description=description,
+                message_type=BulkUploadMessageType.ERROR,
+            )
+        if reporting_frequency.value == "MONTHLY" and "month" not in actual_columns:
+            warning_title = "Missing Month Column"
+            warning_description = (
+                f"Your uploaded data has been saved. "
+                f"The {metric_definition.display_name} metric is configured to be reported monthly, however the {metricfile.canonical_filename} sheet does not contain a month column. "
+                f"To update the reporting frequency of this metric, please visit the Metric Configuration page."
+            )
+            missing_column_warning = JusticeCountsBulkUploadException(
+                title=warning_title,
+                message_type=BulkUploadMessageType.WARNING,
+                description=warning_description,
+            )
+            metric_key_to_errors[metric_definition.key].append(missing_column_warning)
+
+        # Next, handle unexpected (extra) columns
         expected_columns = {"value", "year"}
         if reporting_frequency.value == "MONTHLY":
             expected_columns.add("month")
@@ -267,7 +334,6 @@ class SpreadsheetUploader:
             )
         if metric_definition.system.value == "SUPERVISION":
             expected_columns.add("system")
-
         unexpected_columns = actual_columns.difference(expected_columns)
         for unexpected_col in unexpected_columns:
             if unexpected_col == "month":
@@ -300,19 +366,6 @@ class SpreadsheetUploader:
             metric_key_to_errors[metric_definition.key].append(
                 unexpected_column_warning
             )
-        if reporting_frequency.value == "MONTHLY" and "month" not in actual_columns:
-            warning_title = "Missing Month Column"
-            warning_description = (
-                f"Your uploaded data has been saved. "
-                f"The {metric_definition.display_name} metric is configured to be reported monthly, however the {metricfile.canonical_filename} sheet does not contain a month column. "
-                f"To update the reporting frequency of this metric, please visit the Metric Configuration page."
-            )
-            missing_column_warning = JusticeCountsBulkUploadException(
-                title=warning_title,
-                message_type=BulkUploadMessageType.WARNING,
-                description=warning_description,
-            )
-            metric_key_to_errors[metric_definition.key].append(missing_column_warning)
         return metric_key_to_errors
 
     def _get_rows_by_time_range(
@@ -376,56 +429,6 @@ class SpreadsheetUploader:
             time_range_to_year_month[(date_range_start, date_range_end)] = (year, month)
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
-
-    def _add_missing_total_warning(
-        self,
-        metric_definition: MetricDefinition,
-        sheet_name: str,
-        metric_key_to_errors: Dict[
-            Optional[str], List[JusticeCountsBulkUploadException]
-        ],
-        metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-    ) -> Dict[Optional[str], List[JusticeCountsBulkUploadException]]:
-        # Add a warning for missing total value only if datapoints
-        # were successfully ingested from the breakdown sheet.
-        if DatapointInterface.is_metric_disabled(
-            metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-            metric_key=metric_definition.key,
-        ):
-            return metric_key_to_errors
-
-        missing_total_error = JusticeCountsBulkUploadException(
-            title="Missing Total Value",
-            message_type=BulkUploadMessageType.WARNING,
-            sheet_name=sheet_name,
-            description=(
-                f"No total values were provided for this metric. The total values will be assumed "
-                f"to be equal to the sum of the breakdown values provided in {sheet_name}."
-            ),
-        )
-        metric_key_to_errors[metric_definition.key].append(missing_total_error)
-        return metric_key_to_errors
-
-    def _maybe_raise_invalid_breakdown_error(
-        self, rows: List[Dict[str, Any]], metricfile: MetricFile
-    ) -> None:
-        if not metricfile.disaggregation:
-            # If _type is a substring of the column name, then the row column contains
-            # a breakdown name. For example, a column named "offense_type" would contain
-            # values such as "Drug", "Person", or "Public Order". These columns should only
-            # be in breakdown sheets.
-            is_type_column_list = ["_type" in col for row in rows for col in row.keys()]
-            if any(is_type_column_list):
-                description = (
-                    f"Breakdown data was provided in the {metricfile.canonical_filename} sheet, but this sheet "
-                    f"should only contain aggregate data."
-                )
-
-                raise JusticeCountsBulkUploadException(
-                    title="Invalid Breakdown Data in Aggregate Sheet",
-                    description=description,
-                    message_type=BulkUploadMessageType.ERROR,
-                )
 
     def _get_system_to_rows(
         self,

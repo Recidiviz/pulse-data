@@ -141,14 +141,12 @@ class TimeRangeUploader:
                     title="Too Many Rows",
                     description=description,
                     message_type=BulkUploadMessageType.ERROR,
-                    time_range=self.time_range,
                 )
             row = self.rows_for_this_time_range[0]
             aggregate_value = get_column_value(
                 row=row,
                 column_name="value",
                 column_type=float,
-                time_range=self.time_range,
                 analyzer=self.text_analyzer,
             )
             self.metric_key_to_timerange_to_total_value[self.metricfile.definition.key][
@@ -197,7 +195,6 @@ class TimeRangeUploader:
                         category_name=self.metricfile.disaggregation_column_name.replace(
                             "_", " "
                         ).title(),
-                        time_range=self.time_range,
                     )
                     matching_disaggregation_member = self.metricfile.disaggregation(
                         disaggregation_value
