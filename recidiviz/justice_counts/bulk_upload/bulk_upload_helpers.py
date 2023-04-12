@@ -17,7 +17,6 @@
 """Helpers for bulk upload functionality."""
 
 import calendar
-import datetime
 from datetime import date
 from typing import Any, Dict, List, Optional, Tuple, Type
 
@@ -93,22 +92,13 @@ def get_column_value(
     column_name: str,
     column_type: Type,
     analyzer: TextAnalyzer,
-    time_range: Optional[Tuple[datetime.date, datetime.date]] = None,
 ) -> Any:
     """Given a row, a column name, and a column type, attempts to
     extract a value of the given type from the row."""
     if column_name not in row:
-        description = (
-            f'We expected to see a column named "{column_name}". '
-            f"Only the following columns were found in the sheet: "
-            f"{', '.join(row.keys())}."
-        )
-        raise JusticeCountsBulkUploadException(
-            title="Missing Column",
-            description=description,
-            message_type=BulkUploadMessageType.ERROR,
-            time_range=time_range,
-        )
+        # This will occur if the expected column is missing from the sheet
+        # In this case, a Missing Column error will be thrown in spreadsheet_uploader._check_expected_columns()
+        return None
 
     column_value = row[column_name]
     # Allow numeric values with columns in them (e.g. 1,000)
