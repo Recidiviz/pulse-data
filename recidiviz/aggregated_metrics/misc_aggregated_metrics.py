@@ -41,6 +41,7 @@ from recidiviz.aggregated_metrics.models.metric_population_type import (
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
+    join_on_columns_fragment,
     nonnull_current_date_clause,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
@@ -81,7 +82,7 @@ def _query_template_and_format_args(
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
     SELECT
-        {aggregation_level.get_primary_key_columns_query_string()},
+        {aggregation_level.get_primary_key_columns_query_string(prefix="b")},
         period,
         population_start_date AS start_date,
         population_end_date AS end_date,
@@ -146,11 +147,9 @@ def _query_template_and_format_args(
         ({aggregation_level.get_primary_key_columns_query_string()}, population_start_date)
     LEFT JOIN 
         `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` r
-    USING
-        ({aggregation_level.get_primary_key_columns_query_string()})
-    -- Get supervision staff attributes on the last day of the period
-    WHERE
-        population_end_date BETWEEN r.start_date AND {nonnull_end_date_exclusive_clause("r.end_date")}
+    ON
+        {join_on_columns_fragment(columns=aggregation_level.primary_key_columns, table1="b", table2="r")}
+        AND population_end_date BETWEEN r.start_date AND {nonnull_end_date_exclusive_clause("r.end_date")}
     GROUP BY {group_by_range_str}
 """
             return cte, {
