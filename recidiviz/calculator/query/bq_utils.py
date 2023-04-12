@@ -344,3 +344,9 @@ def columns_to_array(columns: Iterable[str]) -> str:
         (SELECT ARRAY_AGG(x IGNORE NULLS)
             FROM UNNEST([{", ".join(columns)}]) x)
     """
+
+
+def join_on_columns_fragment(columns: Iterable[str], table1: str, table2: str) -> str:
+    """Returns a string fragment that can be used in an "ON" join statement for columns shared between table1 and table2"""
+    join_fragments = [f"{table1}.{col} = {table2}.{col}" for col in columns]
+    return "\nAND ".join(join_fragments)
