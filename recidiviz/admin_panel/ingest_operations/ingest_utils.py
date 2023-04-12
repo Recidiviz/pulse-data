@@ -268,4 +268,25 @@ def import_raw_files_to_bq_sandbox(
         logging.error("Failed to import [%s] files: %s", total_files, all_failed_paths)
         return SandboxRawFileImportResult(fileStatuses=file_status_list)
 
+    num_succeeded = len(
+        [
+            file_status
+            for file_status in file_status_list
+            if file_status.status == Status.SUCCEEDED
+        ]
+    )
+    num_skipped = len(
+        [
+            file_status
+            for file_status in file_status_list
+            if file_status.status == Status.SKIPPED
+        ]
+    )
+    logging.info("***********************************************************")
+    logging.info(
+        "Succeeded in importing [%s] file(s). Skipped [%s] file(s).",
+        num_succeeded,
+        num_skipped,
+    )
+
     return SandboxRawFileImportResult(fileStatuses=file_status_list)
