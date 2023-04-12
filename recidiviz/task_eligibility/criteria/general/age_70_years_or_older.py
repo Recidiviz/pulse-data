@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,30 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has
- served at least one year on supervision, regardless of the supervision type
+"""Defines a criteria span view that shows spans of time during which someone is
+age 70 or older. Spans start on each client's 70th birthday and have no end date.
 """
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    get_minimum_time_served_criteria_query,
+    get_minimum_age_criteria,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ON_SUPERVISION_AT_LEAST_ONE_YEAR"
-
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
- served at least one year on supervision, regardless of the supervision type"""
-
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    get_minimum_time_served_criteria_query(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        minimum_time_served_years=1,
-        compartment_level_1_types=["SUPERVISION"],
-    )
+VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = get_minimum_age_criteria(
+    minimum_age=70
 )
 
 if __name__ == "__main__":
