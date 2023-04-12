@@ -131,15 +131,6 @@ from recidiviz.validation.views.state.prod_staging_comparison.supervision_start_
 from recidiviz.validation.views.state.prod_staging_comparison.supervision_termination_external_prod_staging_comparison import (
     SUPERVISION_TERMINATION_EXTERNAL_PROD_STAGING_COMPARISON_VIEW_BUILDER,
 )
-from recidiviz.validation.views.state.sessions_validation.reincarcerations_from_dataflow_to_dataflow_disaggregated import (
-    REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.sessions_validation.reincarcerations_from_sessions_to_dataflow_disaggregated import (
-    REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-)
-from recidiviz.validation.views.state.sessions_validation.revocation_sessions_to_dataflow_disaggregated import (
-    REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-)
 from recidiviz.validation.views.state.sessions_validation.session_incarceration_admissions_to_dataflow_disaggregated import (
     SESSION_INCARCERATION_ADMISSIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
 )
@@ -196,9 +187,6 @@ def get_view_builders_for_views_to_update() -> Sequence[BigQueryViewBuilder]:
             SESSION_SUPERVISION_STARTS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
             SESSION_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
             SESSION_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
-            REINCARCERATIONS_FROM_DATAFLOW_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-            REINCARCERATIONS_FROM_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
-            REVOCATION_SESSIONS_TO_DATAFLOW_DISAGGREGATED_VIEW_BUILDER,
             SESSIONS_JUSTICE_COUNTS_COMPARISON_VIEW_BUILDER,
         ]
         + _CROSS_PROJECT_VALIDATION_VIEW_BUILDERS

@@ -31,7 +31,7 @@ This view has a record for each person and each supervision super-session. A sup
 The view has a couple of important uses:
 
 1. Supervision LOS is probably more accurately calculated using this view because otherwise LOS will be artificially skewed down by transitions such as PAROLE --> PBH --> PAROLE or PROBATION --> BENCH_WARRANT --> PROBATION if we were to calculate LOS on those individual supervision sessions.
-2. This view is used as the denominator for revocation rate calculations as well as the starting point to determine when a revocation occurs relative to the supervision start. The views `revocation_sessions` and `revocation_cohort_sessions` are based on a `supervision_super_session` as the unit of analysis from which a person can be revoked.
+2. This view is used as the denominator for revocation rate calculations as well as the starting point to determine when a revocation occurs relative to the supervision start.
 
 ## Field Definitions
 
@@ -72,6 +72,7 @@ A supervision super session aggregates together sessions of the following types:
     3. `TEMPORARY_CUSTODY`
     4. `SUSPENSION`
     5. `SHOCK_INCARCERATION`
+    6. `WEEKEND_CONFINEMENT`
 """
 
 SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
@@ -100,9 +101,9 @@ SUPERVISION_SUPER_SESSIONS_QUERY_TEMPLATE = """
                 -- where their supervision status doesnt not change, so that we don't count transitions to those compartments
                 -- as revocations
                 compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE') 
-                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION','SHOCK_INCARCERATION') AS supervision_super_compartment,
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD', 'PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION','SHOCK_INCARCERATION', 'WEEKEND_CONFINEMENT') AS supervision_super_compartment,
                 LAG(compartment_level_1 IN ('SUPERVISION', 'SUPERVISION_OUT_OF_STATE')
-                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD','PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION','SHOCK_INCARCERATION'))
+                    OR compartment_level_2 IN ('PAROLE_BOARD_HOLD','PENDING_CUSTODY', 'TEMPORARY_CUSTODY', 'SUSPENSION','SHOCK_INCARCERATION', 'WEEKEND_CONFINEMENT'))
                     OVER(PARTITION BY person_id ORDER BY start_date) AS lag_supervision_super_compartment
             FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
             )
