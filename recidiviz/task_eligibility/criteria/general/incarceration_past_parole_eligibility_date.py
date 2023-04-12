@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,30 +13,28 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-# =============================================================================
-"""Defines a criteria span view that shows spans of time during which someone has
- served at least one year on supervision, regardless of the supervision type
-"""
+# ============================================================================
+"""Describes the spans of time when a client has past their parole eligibility date."""
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.general_criteria_builders import (
-    get_minimum_time_served_criteria_query,
+from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
+    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "ON_SUPERVISION_AT_LEAST_ONE_YEAR"
+_CRITERIA_NAME = "INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
- served at least one year on supervision, regardless of the supervision type"""
+_DESCRIPTION = """Describes the spans of time when a client has past their parole eligibility date."""
+
+_REASON_QUERY = """TO_JSON(STRUCT(DATE('9999-12-31') AS parole_eligibility_date))"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    get_minimum_time_served_criteria_query(
+    state_agnostic_placeholder_criteria_view_builder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        minimum_time_served_years=1,
-        compartment_level_1_types=["SUPERVISION"],
+        reason_query=_REASON_QUERY,
     )
 )
 
