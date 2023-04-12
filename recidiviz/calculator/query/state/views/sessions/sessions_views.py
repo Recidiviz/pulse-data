@@ -105,20 +105,11 @@ from recidiviz.calculator.query.state.views.sessions.person_age_sessions import 
 from recidiviz.calculator.query.state.views.sessions.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.reincarceration_cohort_sessions import (
-    REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.reincarceration_sessions_from_dataflow import (
-    REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.reincarceration_sessions_from_sessions import (
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.release_termination_reason_dedup_priority import (
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.revocation_cohort_sessions import (
-    REVOCATION_COHORT_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
@@ -292,11 +283,8 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     LOCATION_SESSIONS_VIEW_BUILDER,
     PERSON_AGE_SESSIONS_VIEW_BUILDER,
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
-    REINCARCERATION_COHORT_SESSIONS_VIEW_BUILDER,
-    REINCARCERATION_SESSIONS_FROM_DATAFLOW_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
-    REVOCATION_COHORT_SESSIONS_VIEW_BUILDER,
     REVOCATION_SESSIONS_VIEW_BUILDER,
     SESSION_LOCATION_NAMES_VIEW_BUILDER,
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,

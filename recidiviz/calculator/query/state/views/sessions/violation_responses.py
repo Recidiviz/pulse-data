@@ -52,16 +52,6 @@ group together continuous stays on supervision, in cases where an individual may
 `PAROLE_BOARD_HOLD`, `SHOCK_INCARCERATION`, or other temporary stays and back to 
 supervision before being revoked. 
 
-Finally, `revocation_sessions` are associated with violations by associating a 
-revocation_session with the most severe violation type in a look-back window of 12 
-months. 
-
-**Note: several revocation_sessions are not mapped onto violation_sessions and therefore
- `violation_sessions_materialized` should NOT be used to calculate total revocations**. 
- Rather, revocation_session_id in the `violation_sessions_materialized` table can be 
- useful for answering questions such as “What percentage of felony violations resulted 
- in a revocation?”
-
 ## Field Definitions
 
 |	Field	|	Description	|
