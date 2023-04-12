@@ -397,6 +397,8 @@ output:
                 incarceration_type: $literal_enum(StateIncarcerationType.STATE_PRISON)
                 date_imposed: sentenced_date
                 effective_date: effective_date
+                # TODO(#20115) In normalization, we're going to calculate projected_max_release_date as effective_date + max_length_days if expiration_date is null
+                #              We should move that logic from normalization to here the next time we do a full rerun
                 projected_max_release_date: expiration_date
                 completion_date: closing_date
                 parole_eligibility_date:
