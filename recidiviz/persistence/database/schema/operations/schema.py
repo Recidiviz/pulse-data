@@ -56,8 +56,12 @@ direct_ingest_status = Enum(
     enum_canonical_strings.direct_ingest_status_flash_in_progress,
     enum_canonical_strings.direct_ingest_status_flash_completed,
     enum_canonical_strings.direct_ingest_status_no_rerun_in_progress,
+    # TODO(#16688): Delete `FLASH_CANCELED` and `FLASH_CANCELLATION_IN_PROGRESS` after migration is run to add and
+    # update values to be `RERUN_CANCELED` and `RERUN_CANCELLATION_IN_PROGRESS` instead.
     enum_canonical_strings.direct_ingest_status_flash_canceled,
     enum_canonical_strings.direct_ingest_status_flash_cancellation_in_progress,
+    enum_canonical_strings.direct_ingest_status_rerun_canceled,
+    enum_canonical_strings.direct_ingest_status_rerun_cancellation_in_progress,
     name="direct_ingest_status",
 )
 

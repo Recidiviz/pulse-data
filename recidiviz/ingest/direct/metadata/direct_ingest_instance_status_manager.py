@@ -32,8 +32,8 @@ from recidiviz.utils import environment
 INVALID_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]] = {
     DirectIngestInstance.PRIMARY: [
         DirectIngestStatus.READY_TO_FLASH,
-        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
-        DirectIngestStatus.FLASH_CANCELED,
+        DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
+        DirectIngestStatus.RERUN_CANCELED,
         DirectIngestStatus.STALE_RAW_DATA,
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
         DirectIngestStatus.NO_RERUN_IN_PROGRESS,
@@ -49,8 +49,8 @@ HUMAN_INTERVENTION_STATUSES: Dict[DirectIngestInstance, List[DirectIngestStatus]
         DirectIngestStatus.FLASH_IN_PROGRESS,
     ],
     DirectIngestInstance.SECONDARY: [
-        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
-        DirectIngestStatus.FLASH_CANCELED,
+        DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
+        DirectIngestStatus.RERUN_CANCELED,
         DirectIngestStatus.FLASH_IN_PROGRESS,
         DirectIngestStatus.RERUN_WITH_RAW_DATA_IMPORT_STARTED,
         DirectIngestStatus.STANDARD_RERUN_STARTED,
@@ -167,10 +167,10 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
             DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
             DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
         ],
-        DirectIngestStatus.FLASH_CANCELED: [
-            DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
+        DirectIngestStatus.RERUN_CANCELED: [
+            DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
         ],
-        DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS:
+        DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS:
         # ANY valid secondary status is allowed before proceeding with a flash cancellation
         list(
             (set(DirectIngestStatus))
@@ -192,7 +192,7 @@ VALID_CURRENT_STATUS_TRANSITIONS: Dict[
             DirectIngestStatus.FLASH_COMPLETED
         ],
         DirectIngestStatus.NO_RERUN_IN_PROGRESS: [
-            DirectIngestStatus.FLASH_CANCELED,
+            DirectIngestStatus.RERUN_CANCELED,
             DirectIngestStatus.FLASH_COMPLETED,
         ],
         DirectIngestStatus.BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT: [
