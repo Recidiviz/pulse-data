@@ -231,10 +231,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   const isFlashInProgress =
     currentPrimaryIngestInstanceStatus === "FLASH_IN_PROGRESS" &&
     currentSecondaryIngestInstanceStatus === "FLASH_IN_PROGRESS";
-  const isFlashCancellationInProgress =
-    currentSecondaryIngestInstanceStatus === "FLASH_CANCELLATION_IN_PROGRESS";
-  const isFlashCanceled =
-    currentSecondaryIngestInstanceStatus === "FLASH_CANCELED";
+  const isRerunCancellationInProgress =
+    currentSecondaryIngestInstanceStatus === "RERUN_CANCELLATION_IN_PROGRESS";
+  const isRerunCanceled =
+    currentSecondaryIngestInstanceStatus === "RERUN_CANCELED";
   const isReadyToFlash =
     currentSecondaryIngestInstanceStatus === "READY_TO_FLASH";
   const isFlashCompleted =
@@ -535,10 +535,10 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           headerContents={<p>Start Flash Cancellation</p>}
         >
           <StyledStep
-            title="Set status to FLASH_CANCELLATION_IN_PROGRESS"
+            title="Set status to RERUN_CANCELLATION_IN_PROGRESS"
             description={
               <p>
-                Set ingest status to FLASH_CANCELLATION_IN_PROGRESS in SECONDARY
+                Set ingest status to RERUN_CANCELLATION_IN_PROGRESS in SECONDARY
                 in &nbsp;
                 {stateCode}.
               </p>
@@ -549,7 +549,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               changeIngestInstanceStatus(
                 stateCode,
                 DirectIngestInstance.SECONDARY,
-                "FLASH_CANCELLATION_IN_PROGRESS"
+                "RERUN_CANCELLATION_IN_PROGRESS"
               )
             }
             nextSection={
@@ -582,7 +582,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   (without deleting the tables themselves)
                 </p>
               }
-              actionButtonEnabled={isFlashCancellationInProgress}
+              actionButtonEnabled={isRerunCancellationInProgress}
               actionButtonTitle="Clean up SECONDARY raw data"
               onActionButtonClick={async () =>
                 deleteContentsOfRawDataTables(
@@ -650,7 +650,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   database table as invalidated.
                 </p>
               }
-              actionButtonEnabled={isFlashCancellationInProgress}
+              actionButtonEnabled={isRerunCancellationInProgress}
               actionButtonTitle="Invalidate secondary rows"
               onActionButtonClick={async () =>
                 markInstanceRawDataInvalidated(
@@ -679,7 +679,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         >
           <StyledStep
             title="Clear secondary database"
-            actionButtonEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isRerunCancellationInProgress}
             description={
               <>
                 <p>
@@ -713,7 +713,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 operations database table as invalidated.
               </p>
             }
-            actionButtonEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isRerunCancellationInProgress}
             actionButtonTitle="Invalidate secondary rows"
             onActionButtonClick={async () =>
               markInstanceIngestViewDataInvalidated(
@@ -730,7 +730,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 <code>{secondaryIngestViewResultsDataset}</code> dataset.
               </p>
             }
-            actionButtonEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isRerunCancellationInProgress}
             actionButtonTitle="Clean up SECONDARY ingest view results"
             onActionButtonClick={async () =>
               deleteContentsInSecondaryIngestViewDataset(stateCode)
@@ -745,20 +745,20 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           headerContents={<p>Finalize Flash Cancellation</p>}
         >
           <StyledStep
-            title="Set SECONDARY status to FLASH_CANCELED"
+            title="Set SECONDARY status to RERUN_CANCELED"
             description={
               <p>
-                Set ingest status to FLASH_CANCELED in SECONDARY in &nbsp;
+                Set ingest status to RERUN_CANCELED in SECONDARY in &nbsp;
                 {stateCode}.
               </p>
             }
-            actionButtonEnabled={isFlashCancellationInProgress}
+            actionButtonEnabled={isRerunCancellationInProgress}
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
                 stateCode,
                 DirectIngestInstance.SECONDARY,
-                "FLASH_CANCELED"
+                "RERUN_CANCELED"
               )
             }
           />
@@ -770,7 +770,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 {stateCode}.
               </p>
             }
-            actionButtonEnabled={isFlashCanceled}
+            actionButtonEnabled={isRerunCanceled}
             actionButtonTitle="Update Ingest Instance Status"
             onActionButtonClick={async () =>
               changeIngestInstanceStatus(
@@ -1600,7 +1600,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
   } else if (
     !isReadyToFlash &&
     !isFlashInProgress &&
-    !isFlashCancellationInProgress &&
+    !isRerunCancellationInProgress &&
     proceedWithFlash === null &&
     // This check makes it so we don't show the "can't flash" component
     // when you set the status to FLASH_COMPLETE in the middle of the checklist.
@@ -1676,7 +1676,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
       proceed with a flash from SECONDARY to PRIMARY */
       <StateProceedWithFlashChecklist stateCode={stateInfo.code} />
     );
-  } else if (!proceedWithFlash || isFlashCancellationInProgress) {
+  } else if (!proceedWithFlash || isRerunCancellationInProgress) {
     activeComponent = (
       /* If decision has been made to cancel a flash from SECONDARY to PRIMARY */
       <StateCancelFlashChecklist stateCode={stateInfo.code} />

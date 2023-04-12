@@ -36,6 +36,10 @@ direct_ingest_status_extract_and_merge_in_progress = "EXTRACT_AND_MERGE_IN_PROGR
 direct_ingest_status_ready_to_flash = "READY_TO_FLASH"
 direct_ingest_status_flash_in_progress = "FLASH_IN_PROGRESS"
 direct_ingest_status_flash_completed = "FLASH_COMPLETED"
+direct_ingest_status_rerun_canceled = "RERUN_CANCELED"
+direct_ingest_status_rerun_cancellation_in_progress = "RERUN_CANCELLATION_IN_PROGRESS"
+# TODO(#16688): Delete `FLASH_CANCELED` and `FLASH_CANCELLATION_IN_PROGRESS` after migration is run to add and update
+#  values to be `RERUN_CANCELED` and `RERUN_CANCELLATION_IN_PROGRESS` instead.
 direct_ingest_status_flash_canceled = "FLASH_CANCELED"
 direct_ingest_status_flash_cancellation_in_progress = "FLASH_CANCELLATION_IN_PROGRESS"
 direct_ingest_status_up_to_date = "UP_TO_DATE"

@@ -330,7 +330,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             expected_raw_data_source=DirectIngestInstance.SECONDARY,
         )
 
-    def test_happy_path_secondary_rerun_flow_flash_canceled(self) -> None:
+    def test_happy_path_secondary_rerun_flow_RERUN_CANCELED(self) -> None:
         self._run_test_for_status_transitions(
             self.us_xx_secondary_manager,
             [
@@ -339,8 +339,8 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
                 DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
                 DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
                 DirectIngestStatus.READY_TO_FLASH,
-                DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
-                DirectIngestStatus.FLASH_CANCELED,
+                DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
+                DirectIngestStatus.RERUN_CANCELED,
                 DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             ],
             expected_raw_data_source=DirectIngestInstance.SECONDARY,
@@ -630,7 +630,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
                 expected_raw_data_source=DirectIngestInstance.PRIMARY,
             )
 
-    def test_any_secondary_status_valid_to_flash_cancellation_in_progress(self) -> None:
+    def test_any_secondary_status_valid_to_rerun_cancellation_in_progress(self) -> None:
         valid_secondary_statuses = list(
             (set(DirectIngestStatus))
             - set(INVALID_STATUSES[DirectIngestInstance.SECONDARY])
@@ -643,7 +643,7 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             us_yy_secondary_manager.validate_transition(
                 DirectIngestInstance.SECONDARY,
                 status,
-                DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
+                DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
             )
 
     def test_ingest_view_materialization_to_done(self) -> None:
@@ -737,8 +737,8 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
             DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             DirectIngestStatus.STANDARD_RERUN_STARTED,
             DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
-            DirectIngestStatus.FLASH_CANCELLATION_IN_PROGRESS,
-            DirectIngestStatus.FLASH_CANCELED,
+            DirectIngestStatus.RERUN_CANCELLATION_IN_PROGRESS,
+            DirectIngestStatus.RERUN_CANCELED,
             DirectIngestStatus.NO_RERUN_IN_PROGRESS,
             # Start a second rerun after cancelling a flash -- this is 6 statuses after start timestamp
             DirectIngestStatus.STANDARD_RERUN_STARTED,

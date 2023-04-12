@@ -53,8 +53,8 @@ const statusFormattingInfo: {
     sortRank: 2,
     message: "Flash of data from SECONDARY to PRIMARY is in progress",
   },
-  FLASH_CANCELLATION_IN_PROGRESS: {
-    status: "FLASH_CANCELLATION_IN_PROGRESS",
+  RERUN_CANCELLATION_IN_PROGRESS: {
+    status: "RERUN_CANCELLATION_IN_PROGRESS",
     color: "ingest-status-cell-grey",
     sortRank: 3,
     message:
@@ -99,8 +99,8 @@ const statusFormattingInfo: {
     message:
       "Standard rerun with only ingest view materialization has been kicked off",
   },
-  FLASH_CANCELED: {
-    status: "FLASH_CANCELED",
+  RERUN_CANCELED: {
+    status: "RERUN_CANCELED",
     color: "ingest-status-cell-grey",
     sortRank: 10,
     message: "Flash from SECONDARY to PRIMARY has been canceled",
