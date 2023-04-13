@@ -28,7 +28,6 @@ import setuptools
 # which version of each package is installed, visit
 # https://cloud.google.com/dataflow/docs/concepts/sdk-worker-dependencies
 REQUIRED_PACKAGES = [
-    "aenum",
     # Do not include `apache-beam` in dataflow_flex_setup.py
     "cattrs",
     "dateparser",
