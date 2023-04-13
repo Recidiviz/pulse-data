@@ -5,7 +5,7 @@ file_description: |-
   date. To be used for validation against our incarceration periods.
 data_classification: validation
 primary_key_cols:
-  - OFFENDERID #TODO(#19100): Update to indicate insufficient PK from CO, only one provided from them and others added to resolve insufficient PK
+  - OFFENDERID
   - ADCNUMBER
   - DOCNO
   - INCRNO
