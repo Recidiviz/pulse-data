@@ -35,8 +35,8 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_get_storage_subdirs_containing_raw_files,
     gsutil_mv,
 )
-from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.log_helpers import make_log_output_path
 
 
 class IngestFilesOperationType(Enum):

@@ -42,8 +42,8 @@ from recidiviz.ingest.direct.sftp.base_upload_state_files_to_ingest_bucket_contr
     UploadStateFilesToIngestBucketDelegate,
 )
 from recidiviz.tools.gsutil_shell_helpers import gsutil_cp
-from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
+from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.params import str_to_bool
 
 
