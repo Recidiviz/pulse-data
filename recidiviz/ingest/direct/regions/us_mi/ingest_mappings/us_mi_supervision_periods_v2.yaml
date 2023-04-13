@@ -752,6 +752,22 @@ output:
                     - dest_location_type_id
                     - $literal("2155")
                 $then: $literal_enum(StateCustodialAuthority.OTHER_STATE)
+              - $else_if:
+                  $in:
+                    $value: dest_name
+                    $options:
+                      - $literal("UNITED STATES MARSHALLS")
+                      - $literal("US Marshal Service")
+                      - $literal("Outside MDOC Jurisdiction")
+                $then:
+                  $enum_mapping:
+                    $raw_text: dest_name
+                    $mappings:
+                      StateCustodialAuthority.FEDERAL:
+                        - "UNITED STATES MARSHALLS"
+                        - "US Marshal Service"
+                      StateCustodialAuthority.INTERNAL_UNKNOWN:
+                        - "Outside MDOC Jurisdiction"
               - $else: $literal_enum(StateCustodialAuthority.SUPERVISION_AUTHORITY)
           supervising_officer:
             $conditional:
