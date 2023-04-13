@@ -61,11 +61,6 @@ api = Api(
         "openapi_version": "3.1.0",
     },
 )
-# Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
-# schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
-# accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
-setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
-
 service_type = environment.get_service_type()
 
 if service_type is environment.ServiceType.DEFAULT:
@@ -116,6 +111,17 @@ if environment.in_development():
     # you are missing these secrets, run this script:
     # ./recidiviz/tools/admin_panel/initialize_development_environment.sh
 
+    try:
+        # Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
+        # schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
+        # accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
+        setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
+    except BaseException as e:
+        logging.warning(
+            "Could not initialize engine for %s - have you run `initialize_development_environment.sh`?",
+            SchemaType.CASE_TRIAGE,
+        )
+
     # If we fail to connect a message will be logged but we won't raise an error.
     enabled_development_schema_types = [
         SchemaType.JUSTICE_COUNTS,
@@ -136,6 +142,15 @@ if environment.in_development():
     # We also set the project to recidiviz-staging
     metadata.set_development_project_id_override(environment.GCP_PROJECT_STAGING)
 elif environment.in_gcp():
+    try:
+        # Note: this only sets up scoped sessions for the Case Triage schema. If endpoints using other
+        # schemas end up deciding to use scoped sessions, setup_scoped_sessions can be modified to
+        # accept+bind more schemas: https://github.com/dtheodor/flask-sqlalchemy-session/issues/4
+        setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
+    except BaseException:
+        # See comment below about a single database outage not taking down the entire application.
+        pass
+
     # This attempts to connect to all of our databases. Any connections that fail will
     # be logged and not raise an error, so that a single database outage doesn't take
     # down the entire application. Any attempt to use those databases later will
