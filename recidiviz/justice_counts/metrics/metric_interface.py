@@ -123,8 +123,6 @@ class MetricInterface:
         }
 
         frequency = self.metric_definition.reporting_frequency.value
-        # TODO(#19144) remove deprecated settings key
-        settings_json = []
         includes_excludes_json_lst = []
         if (
             entry_point is DatapointGetRequestEntryPoint.METRICS_TAB
@@ -140,17 +138,6 @@ class MetricInterface:
                     default_setting,
                 ) in includes_excludes.member_to_default_inclusion_setting.items():
                     included = self.includes_excludes_member_to_setting.get(member)
-                    # TODO(#19144) remove deprecated settings key
-                    settings_json.append(
-                        {
-                            "key": member.name,
-                            "label": member.value,
-                            "included": included.value
-                            if included is not None
-                            else None,
-                            "default": default_setting.value,
-                        }
-                    )
                     includes_excludes_json["settings"].append(
                         {
                             "key": member.name,
@@ -179,8 +166,6 @@ class MetricInterface:
             "description": self.metric_definition.description,
             "reporting_note": self.metric_definition.reporting_note,
             "value": self.value,
-            # TODO(#19144) remove deprecated settings key
-            "settings": settings_json,
             "includes_excludes": includes_excludes_json_lst,
             "unit": self.metric_definition.metric_type.unit,
             "category": self.metric_definition.category.human_readable_string,

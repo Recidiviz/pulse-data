@@ -410,9 +410,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # Total Staff metric has two includes/excludes settings that
         # are different from the default.
         self.assertEqual(metrics[2]["key"], prisons.staff.key)
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[2]["settings"],
+            metrics[2]["includes_excludes"][0]["settings"],
             [
                 {
                     "key": "FILLED",
@@ -488,9 +487,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][0]["key"],
             OffenseType.PERSON.value,
         )
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[3]["disaggregations"][0]["dimensions"][0]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][0]["includes_excludes"][0][
+                "settings"
+            ],
             [
                 {
                     "key": member.name,
@@ -516,9 +516,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][1]["key"],
             OffenseType.PROPERTY.value,
         )
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[3]["disaggregations"][0]["dimensions"][1]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][1]["includes_excludes"][0][
+                "settings"
+            ],
             [
                 {
                     "key": member.name,
@@ -544,9 +545,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][2]["key"],
             OffenseType.DRUG.value,
         )
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[3]["disaggregations"][0]["dimensions"][2]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][2]["includes_excludes"][0][
+                "settings"
+            ],
             [
                 {
                     "key": member.name,
@@ -572,9 +574,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][3]["key"],
             OffenseType.PUBLIC_ORDER.value,
         )
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[3]["disaggregations"][0]["dimensions"][3]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][3]["includes_excludes"][0][
+                "settings"
+            ],
             [
                 {
                     "key": member.name,
@@ -600,10 +603,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][4]["key"],
             OffenseType.OTHER.value,
         )
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[3]["disaggregations"][0]["dimensions"][4]["settings"],
-            [],
+            metrics[3]["disaggregations"][0]["dimensions"][4]["includes_excludes"], []
         )
 
         self.assertEqual(
@@ -617,9 +618,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             metrics[3]["disaggregations"][0]["dimensions"][5]["key"],
             OffenseType.UNKNOWN.value,
         )
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[3]["disaggregations"][0]["dimensions"][5]["settings"],
+            metrics[3]["disaggregations"][0]["dimensions"][5]["includes_excludes"],
             [],
         )
 
@@ -627,9 +627,10 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # For the release metric, two settings are excluded from the parole to supervision
         # disaggregation.
         self.assertEqual(metrics[5]["key"], prisons.releases.key)
-        # TODO(#19144) remove deprecated settings key
         self.assertEqual(
-            metrics[5]["disaggregations"][0]["dimensions"][1]["settings"],
+            metrics[5]["disaggregations"][0]["dimensions"][1]["includes_excludes"][0][
+                "settings"
+            ],
             [
                 {
                     "key": "AFTER_SANCTION",
@@ -1481,8 +1482,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             dimension_enum = dimension_class(
                                 dimension["key"]
                             )  # type: ignore[abstract]
-                            # TODO(#19144) remove deprecated settings key
-                            includes_excludes = dimension.get("settings", [])
+                            includes_excludes = dimension.get("includes_excludes", [])
                             if (
                                 dimension_enum.name.strip() == "OTHER"  # type: ignore[attr-defined]
                                 and includes_excludes != []
