@@ -1591,10 +1591,27 @@ OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF = f"""
             COALESCE(CREATE_TS, '1900-01-01')) >= '{iso_format_lower_bound_update_date}';
     """
 
-# TODO(#19931) - ADD IN COLUMN NAMES EXPLICITLY ONCE WE PULL FILE
 OFNDR_PDB_RESIDENCES = """
     SELECT 
-        *
+        RESIDENCE_REF_ID,
+        ADDR_REF_ID,
+        OFNDR_CYCLE_REF_ID,
+        LOC_REF_ID,
+        LIVES_ALONE_IND,
+        CONTACT_REF_ID,
+        CUSTODY_TYPE_ID,
+        ADDR_VALIDATED_IND,
+        ADDR_OVERRIDE_CD,
+        PP_STATUS_CD,
+        REJECT_IND,
+        PP_REJECT_REASON_CD,
+        RESIDENCE_START_DT,
+        RESIDENCE_STOP_DT,
+        CREATE_USER_REF_ID,
+        CREATE_TS,
+        UPDATE_USER_REF_ID,
+        UPDATE_TS,
+        DELETE_IND
     FROM
         OFNDR_PDB.RESIDENCES;
     """

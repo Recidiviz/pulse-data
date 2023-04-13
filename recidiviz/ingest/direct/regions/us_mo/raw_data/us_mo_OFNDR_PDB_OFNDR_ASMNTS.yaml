@@ -7,76 +7,61 @@ data_classification: source
 primary_key_cols:
   - OFNDR_ASMNT_REF_ID
 columns:
-  # TODO(#17289): fill in once we have documentation
   - name: OFNDR_ASMNT_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Offender Assessment Reference ID
   - name: OFNDR_CYCLE_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Offender Cycle Reference ID
   - name: ASSESSMENT_TOOL_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Assessment Tool Reference ID
   - name: LOC_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Location Reference ID
   - name: SCORE_BY_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Score By User Reference ID
   - name: OVERRIDE_EVALUATION_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Evaluation Override Reference ID
   - name: EVAL_OVERRIDE_CD
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Evaluation Override Code
   - name: OVERRIDE_APPROVAL_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      User Id for Override Approval
   - name: OVERRIDE_COMMENT
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Override Comment
   - name: ASSESSMENT_DATE
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Assessment Date
   - name: NEXT_REVIEW_DT
     description: |-
-      XXX
+      Next Review Date
   - name: CREATE_TS
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Created Timestamp
   - name: CREATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Created by User Reference ID
   - name: UPDATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Updated by User Reference ID
   - name: UPDATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update Timestamp
   - name: DELETE_IND
     description: |-
-      XXX
+      Deleted Row Indicator
