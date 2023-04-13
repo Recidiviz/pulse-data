@@ -25,6 +25,7 @@ COPY ./recidiviz/case_triage/ case_triage/
 COPY ./recidiviz/cloud_memorystore/ cloud_memorystore/
 COPY ./recidiviz/cloud_storage/ cloud_storage/
 COPY ./recidiviz/common/ common/
+COPY ./recidiviz/firestore/ firestore/
 COPY ./recidiviz/persistence/ persistence/
 COPY ./recidiviz/tools/deploy/terraform/config/ tools/deploy/terraform/config/
 COPY ./recidiviz/tools/pathways/ tools/pathways/
