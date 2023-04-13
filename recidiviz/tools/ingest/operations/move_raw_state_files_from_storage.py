@@ -69,10 +69,10 @@ from recidiviz.tools.gsutil_shell_helpers import (
     gsutil_ls,
     gsutil_mv,
 )
-from recidiviz.tools.ingest.operations.log_helpers import make_log_output_path
 from recidiviz.tools.postgres.cloudsql_proxy_control import cloudsql_proxy_control
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation
 from recidiviz.utils.environment import GCP_PROJECTS
+from recidiviz.utils.log_helpers import make_log_output_path
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 from recidiviz.utils.string import StrictStringFormatter

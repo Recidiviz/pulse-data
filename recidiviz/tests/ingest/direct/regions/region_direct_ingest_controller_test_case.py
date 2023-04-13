@@ -22,6 +22,7 @@ import abc
 import datetime
 import os
 import unittest
+import webbrowser
 from typing import List, Optional, Type, Union, cast
 
 import pytest
@@ -57,7 +58,7 @@ from recidiviz.persistence.entity.base_entity import (
 )
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
-    print_entity_trees,
+    write_entity_tree_to_file,
 )
 from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.persistence import (
@@ -80,14 +81,18 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     assert_no_unexpected_entities_in_db,
     clear_db_ids,
 )
-from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.environment import in_ci
+from recidiviz.utils.log_helpers import write_html_diff_to_file
 from recidiviz.utils.types import assert_type
 
 FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 
+# TODO(#20196) @freeze_time breaks the timestamps we put on log files. I tried telling
+# freezegun to avoid freezing timestamps on our logfiles by adding
+# 'ignore=["recidiviz.tools.ingest.operations"]' to the annotation, but for some reason
+# this isn't working.
 @pytest.mark.uses_db
 @freeze_time("2019-09-27")
 class RegionDirectIngestControllerTestCase(unittest.TestCase):
@@ -405,21 +410,26 @@ class RegionDirectIngestControllerTestCase(unittest.TestCase):
                     and matches_external_id(e, single_root_entity_to_debug)
                 ]
 
-            # TODO(#19439) We almost always diff these two anyway -- should we just
-            # output the diff?
-            print_visible_header_label("FINAL")
-            print_entity_trees(
-                found_root_entities,
+            actual_output_filepath = write_entity_tree_to_file(
+                operation_for_filename="actual_output_from_controller_test",
+                region_code=self.region_code(),
                 print_tree_structure_only=print_tree_structure_only,
                 field_index=field_index,
+                root_entities=found_root_entities,
+            )
+            expected_output_filepath = write_entity_tree_to_file(
+                operation_for_filename="expected_output_from_controller_test",
+                region_code=self.region_code(),
+                print_tree_structure_only=print_tree_structure_only,
+                field_index=field_index,
+                root_entities=expected_db_root_entities,
             )
 
-            print_visible_header_label("EXPECTED")
-            print_entity_trees(
-                expected_root_entities,
-                print_tree_structure_only=print_tree_structure_only,
-                field_index=field_index,
+            html_filepath = write_html_diff_to_file(
+                expected_output_filepath, actual_output_filepath, self.region_code()
             )
+            print(f"HTML diff located at {html_filepath}")
+            webbrowser.get("chrome").open(f"file://{html_filepath}")
 
         self.assertCountEqual(found_root_entities, expected_root_entities)
 

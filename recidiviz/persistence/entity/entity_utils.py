@@ -55,6 +55,7 @@ from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_deserialize import EntityFactory, EntityT
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.errors import PersistenceError
+from recidiviz.utils.log_helpers import make_log_output_path
 
 _STATE_CLASS_HIERARCHY = [
     # StatePerson hierarchy
@@ -603,12 +604,35 @@ def _obj_id_str(entity: CoreEntity, id_mapping: Dict[int, int]):
     return f"{entity.get_entity_name()} ({fake_id})"
 
 
+def write_entity_tree_to_file(
+    region_code: str,
+    operation_for_filename: str,
+    print_tree_structure_only: bool,
+    field_index: CoreEntityFieldIndex,
+    root_entities: Sequence[Any],
+) -> str:
+    filepath = make_log_output_path(
+        operation_for_filename,
+        region_code=region_code,
+    )
+    with open(filepath, "w", encoding="utf-8") as actual_output_file:
+        print_entity_trees(
+            root_entities,
+            print_tree_structure_only=print_tree_structure_only,
+            field_index=field_index,
+            file=actual_output_file,
+        )
+
+    return filepath
+
+
 def print_entity_trees(
     entities_list: Sequence[CoreEntity],
     print_tree_structure_only: bool = False,
     python_id_to_fake_id: Optional[Dict[int, int]] = None,
     # Default arg caches across calls to this function
     field_index: CoreEntityFieldIndex = CoreEntityFieldIndex(),
+    file: Optional[TextIOWrapper] = None,
 ):
     """Recursively prints out all objects in the trees below the given list of
     entities. Each time we encounter a new object, we assign a new fake id (an
@@ -617,6 +641,9 @@ def print_entity_trees(
     This means that two lists with the exact same shape/flat fields will print
     out the exact same string, making it much easier to debug edge-related
     issues in Diffchecker, etc.
+
+    If |file| is provided, the trees will be output to that file rather than printed
+    to the terminal.
 
     Note: this function sorts any list fields in the provided entity IN PLACE
     (should not matter for any equality checks we generally do).
@@ -632,6 +659,7 @@ def print_entity_trees(
             python_id_to_fake_id=python_id_to_fake_id,
             print_tree_structure_only=print_tree_structure_only,
             field_index=field_index,
+            file=file,
         )
 
 
