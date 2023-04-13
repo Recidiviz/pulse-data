@@ -311,14 +311,6 @@ class MetricAggregatedDimensionData:
                             dimension
                         ),
                     )
-                    json["settings"] = []
-                    # TODO(#19144) remove deprecated settings key
-                    # the 'settings' key is for backwards compataibilty
-                    # this key will be deprecated and replaced by the 'includes_excludes'
-                    # key once the frontend is updated
-                    for includes_excludes in includes_excluded_json:
-                        for setting in includes_excludes["settings"]:
-                            json["settings"].append(setting)
                     json["includes_excludes"] = includes_excluded_json
                 if (
                     self.dimension_to_value is not None

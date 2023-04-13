@@ -164,8 +164,6 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["funding", "funding_by_type"],
-                # TODO(#19144) remove deprecated settings key
-                "settings": [],
                 "includes_excludes": [],
                 "contexts": [
                     {
@@ -212,8 +210,6 @@ class TestMetricInterface(TestCase):
                 "custom_frequency": None,
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
-                # TODO(#19144) remove deprecated settings key
-                "settings": [],
                 "includes_excludes": [],
                 "contexts": [
                     {
@@ -323,8 +319,6 @@ class TestMetricInterface(TestCase):
                 ],
                 "disaggregated_by_supervision_subsystems": None,
                 "category": metric_definition.category.human_readable_string,
-                # TODO(#19144) remove deprecated settings key
-                "settings": [],
                 "includes_excludes": [],
                 "value": reported_metric.value,
                 "unit": metric_definition.metric_type.unit,
@@ -367,8 +361,6 @@ class TestMetricInterface(TestCase):
                     "arrests_by_race",
                     "arrests_by_biological_sex",
                 ],
-                # TODO(#19144) remove deprecated settings key
-                "settings": [],
                 "includes_excludes": [],
                 "contexts": [
                     {
@@ -724,63 +716,6 @@ class TestMetricInterface(TestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "reporting_note": None,
                 "value": None,
-                # TODO(#19144) remove deprecated settings key
-                "settings": [
-                    {
-                        "key": "SERVICE_911",
-                        "label": "Calls for service received by the agency’s dispatch service via 911",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "SERVICE_311",
-                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "MUTUAL_AID",
-                        "label": "Mutual aid calls for support received by the agency",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OFFICER_INITIATED",
-                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OTHER_JURISDICTION",
-                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "AUTOMATED",
-                        "label": "Automated calls for service (e.g., security system)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "FIRE_SERVICE",
-                        "label": "Calls for fire service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "EMS",
-                        "label": "Calls for EMS service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "NON_POLICE_SERVICE",
-                        "label": "Calls for other non-police service",
-                        "included": None,
-                        "default": "No",
-                    },
-                ],
                 "includes_excludes": [
                     {
                         "description": None,
@@ -871,57 +806,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "PRIORITY",
-                                        "label": "Calls that require urgent or priority response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_2_RESPONSE",
-                                        "label": "Calls that require code 2 or higher response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IMMINENT_THREATS",
-                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ONGOING_OFFENSES",
-                                        "label": "Calls that relate to ongoing offenses that involve violence",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "SERIOUS_OFFENSE",
-                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "OFFICER_IN_TROUBLE",
-                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "TRAFFIC",
-                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IN_PROGRESS_INCIDENT",
-                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -991,51 +875,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "ROUTINE_RESPONSE",
-                                        "label": "Calls that require routine response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_1_RESPONSE",
-                                        "label": "Calls that require code 1 response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "PATROL_REQUEST",
-                                        "label": "Calls for patrol requests",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ROUTINE_TRANSPORTATION",
-                                        "label": "Calls for routine transportation",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "NON_EMERGENCY_SERVICE",
-                                        "label": "Calls for non-emergency service",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
-                                        "label": "Calls routed to civilian community service officers for response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "STOLEN_PROPERTY",
-                                        "label": "Calls to take a report of stolen property",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -1093,8 +932,6 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "datapoints": None,
                                 "contexts": [],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -1122,63 +959,6 @@ class TestMetricInterface(TestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "reporting_note": None,
                 "value": None,
-                # TODO(#19144) remove deprecated settings key
-                "settings": [
-                    {
-                        "key": "SERVICE_911",
-                        "label": "Calls for service received by the agency’s dispatch service via 911",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "SERVICE_311",
-                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "MUTUAL_AID",
-                        "label": "Mutual aid calls for support received by the agency",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OFFICER_INITIATED",
-                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OTHER_JURISDICTION",
-                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "AUTOMATED",
-                        "label": "Automated calls for service (e.g., security system)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "FIRE_SERVICE",
-                        "label": "Calls for fire service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "EMS",
-                        "label": "Calls for EMS service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "NON_POLICE_SERVICE",
-                        "label": "Calls for other non-police service",
-                        "included": None,
-                        "default": "No",
-                    },
-                ],
                 "includes_excludes": [
                     {
                         "description": None,
@@ -1269,57 +1049,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "PRIORITY",
-                                        "label": "Calls that require urgent or priority response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_2_RESPONSE",
-                                        "label": "Calls that require code 2 or higher response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IMMINENT_THREATS",
-                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ONGOING_OFFENSES",
-                                        "label": "Calls that relate to ongoing offenses that involve violence",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "SERIOUS_OFFENSE",
-                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "OFFICER_IN_TROUBLE",
-                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "TRAFFIC",
-                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IN_PROGRESS_INCIDENT",
-                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -1389,51 +1118,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "ROUTINE_RESPONSE",
-                                        "label": "Calls that require routine response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_1_RESPONSE",
-                                        "label": "Calls that require code 1 response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "PATROL_REQUEST",
-                                        "label": "Calls for patrol requests",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ROUTINE_TRANSPORTATION",
-                                        "label": "Calls for routine transportation",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "NON_EMERGENCY_SERVICE",
-                                        "label": "Calls for non-emergency service",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
-                                        "label": "Calls routed to civilian community service officers for response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "STOLEN_PROPERTY",
-                                        "label": "Calls to take a report of stolen property",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -1491,8 +1175,6 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "datapoints": None,
                                 "contexts": [],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -1520,63 +1202,6 @@ class TestMetricInterface(TestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "reporting_note": None,
                 "value": None,
-                # TODO(#19144) remove deprecated settings key
-                "settings": [
-                    {
-                        "key": "SERVICE_911",
-                        "label": "Calls for service received by the agency’s dispatch service via 911",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "SERVICE_311",
-                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "MUTUAL_AID",
-                        "label": "Mutual aid calls for support received by the agency",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OFFICER_INITIATED",
-                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OTHER_JURISDICTION",
-                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "AUTOMATED",
-                        "label": "Automated calls for service (e.g., security system)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "FIRE_SERVICE",
-                        "label": "Calls for fire service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "EMS",
-                        "label": "Calls for EMS service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "NON_POLICE_SERVICE",
-                        "label": "Calls for other non-police service",
-                        "included": None,
-                        "default": "No",
-                    },
-                ],
                 "includes_excludes": [
                     {
                         "description": None,
@@ -1667,57 +1292,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "PRIORITY",
-                                        "label": "Calls that require urgent or priority response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_2_RESPONSE",
-                                        "label": "Calls that require code 2 or higher response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IMMINENT_THREATS",
-                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ONGOING_OFFENSES",
-                                        "label": "Calls that relate to ongoing offenses that involve violence",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "SERIOUS_OFFENSE",
-                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "OFFICER_IN_TROUBLE",
-                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "TRAFFIC",
-                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IN_PROGRESS_INCIDENT",
-                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -1787,51 +1361,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "ROUTINE_RESPONSE",
-                                        "label": "Calls that require routine response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_1_RESPONSE",
-                                        "label": "Calls that require code 1 response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "PATROL_REQUEST",
-                                        "label": "Calls for patrol requests",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ROUTINE_TRANSPORTATION",
-                                        "label": "Calls for routine transportation",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "NON_EMERGENCY_SERVICE",
-                                        "label": "Calls for non-emergency service",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
-                                        "label": "Calls routed to civilian community service officers for response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "STOLEN_PROPERTY",
-                                        "label": "Calls to take a report of stolen property",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -1889,8 +1418,6 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "datapoints": None,
                                 "contexts": [],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -1921,67 +1448,6 @@ class TestMetricInterface(TestCase):
                 "starting_month": None,
                 "filenames": ["calls_for_service", "calls_for_service_by_type"],
                 "contexts": [],
-                # TODO(#19144) remove deprecated settings key
-                "settings": [
-                    {
-                        "default": "Yes",
-                        "included": None,
-                        "key": "SERVICE_911",
-                        "label": "Calls for service received by the agency’s dispatch "
-                        "service via 911",
-                    },
-                    {
-                        "default": "Yes",
-                        "included": None,
-                        "key": "SERVICE_311",
-                        "label": "Calls for service received by the agency’s dispatch "
-                        "service via 311 or equivalent non-emergency number",
-                    },
-                    {
-                        "default": "Yes",
-                        "included": None,
-                        "key": "MUTUAL_AID",
-                        "label": "Mutual aid calls for support received by the agency",
-                    },
-                    {
-                        "default": "Yes",
-                        "included": None,
-                        "key": "OFFICER_INITIATED",
-                        "label": "Officer-initiated calls for service (e.g., traffic "
-                        "stops, foot patrol)",
-                    },
-                    {
-                        "default": "Yes",
-                        "included": None,
-                        "key": "OTHER_JURISDICTION",
-                        "label": "Calls for service received by another jurisdiction "
-                        "and routed to the agency for response",
-                    },
-                    {
-                        "default": "Yes",
-                        "included": None,
-                        "key": "AUTOMATED",
-                        "label": "Automated calls for service (e.g., security system)",
-                    },
-                    {
-                        "default": "No",
-                        "included": None,
-                        "key": "FIRE_SERVICE",
-                        "label": "Calls for fire service",
-                    },
-                    {
-                        "default": "No",
-                        "included": None,
-                        "key": "EMS",
-                        "label": "Calls for EMS service",
-                    },
-                    {
-                        "default": "No",
-                        "included": None,
-                        "key": "NON_POLICE_SERVICE",
-                        "label": "Calls for other non-police service",
-                    },
-                ],
                 "includes_excludes": [
                     {
                         "description": None,
@@ -2081,57 +1547,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "PRIORITY",
-                                        "label": "Calls that require urgent or priority response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_2_RESPONSE",
-                                        "label": "Calls that require code 2 or higher response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IMMINENT_THREATS",
-                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ONGOING_OFFENSES",
-                                        "label": "Calls that relate to ongoing offenses that involve violence",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "SERIOUS_OFFENSE",
-                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "OFFICER_IN_TROUBLE",
-                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "TRAFFIC",
-                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IN_PROGRESS_INCIDENT",
-                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -2200,51 +1615,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "ROUTINE_RESPONSE",
-                                        "label": "Calls that require routine response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_1_RESPONSE",
-                                        "label": "Calls that require code 1 response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "PATROL_REQUEST",
-                                        "label": "Calls for patrol requests",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ROUTINE_TRANSPORTATION",
-                                        "label": "Calls for routine transportation",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "NON_EMERGENCY_SERVICE",
-                                        "label": "Calls for non-emergency service",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
-                                        "label": "Calls routed to civilian community service officers for response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "STOLEN_PROPERTY",
-                                        "label": "Calls to take a report of stolen property",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -2302,8 +1672,6 @@ class TestMetricInterface(TestCase):
                                 "label": CallType.UNKNOWN.value,
                                 "key": CallType.UNKNOWN.value,
                                 "contexts": [],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -2451,63 +1819,6 @@ class TestMetricInterface(TestCase):
                 "disaggregated_by_supervision_subsystems": None,
                 "reporting_note": None,
                 "value": None,
-                # TODO(#19144) remove deprecated settings key
-                "settings": [
-                    {
-                        "key": "SERVICE_911",
-                        "label": "Calls for service received by the agency’s dispatch service via 911",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "SERVICE_311",
-                        "label": "Calls for service received by the agency’s dispatch service via 311 or equivalent non-emergency number",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "MUTUAL_AID",
-                        "label": "Mutual aid calls for support received by the agency",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OFFICER_INITIATED",
-                        "label": "Officer-initiated calls for service (e.g., traffic stops, foot patrol)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "OTHER_JURISDICTION",
-                        "label": "Calls for service received by another jurisdiction and routed to the agency for response",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "AUTOMATED",
-                        "label": "Automated calls for service (e.g., security system)",
-                        "included": None,
-                        "default": "Yes",
-                    },
-                    {
-                        "key": "FIRE_SERVICE",
-                        "label": "Calls for fire service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "EMS",
-                        "label": "Calls for EMS service",
-                        "included": None,
-                        "default": "No",
-                    },
-                    {
-                        "key": "NON_POLICE_SERVICE",
-                        "label": "Calls for other non-police service",
-                        "included": None,
-                        "default": "No",
-                    },
-                ],
                 "includes_excludes": [
                     {
                         "description": None,
@@ -2621,57 +1932,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "PRIORITY",
-                                        "label": "Calls that require urgent or priority response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_2_RESPONSE",
-                                        "label": "Calls that require code 2 or higher response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IMMINENT_THREATS",
-                                        "label": "Calls that relate to incidents with imminent threats to life or danger of serious injury",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ONGOING_OFFENSES",
-                                        "label": "Calls that relate to ongoing offenses that involve violence",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "SERIOUS_OFFENSE",
-                                        "label": "Calls that relate to a serious offense that has just occurred and reason exists to believe the person suspected of committing the offense is in the area",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "OFFICER_IN_TROUBLE",
-                                        "label": "Calls for “officer in trouble” or request for emergency assistance from an officer",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "TRAFFIC",
-                                        "label": "Calls that relate to incidents that represent significant hazards to the flow of traffic",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "IN_PROGRESS_INCIDENT",
-                                        "label": "Calls that relate to in-progress incidents that could be classified as crimes",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -2756,51 +2016,6 @@ class TestMetricInterface(TestCase):
                                         "label": "If the listed categories do not adequately describe your breakdown, please describe additional data elements included in your agency’s definition.",
                                     },
                                 ],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [
-                                    {
-                                        "key": "ROUTINE_RESPONSE",
-                                        "label": "Calls that require routine response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CODE_1_RESPONSE",
-                                        "label": "Calls that require code 1 response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "PATROL_REQUEST",
-                                        "label": "Calls for patrol requests",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "ROUTINE_TRANSPORTATION",
-                                        "label": "Calls for routine transportation",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "NON_EMERGENCY_SERVICE",
-                                        "label": "Calls for non-emergency service",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "CIVILIAN_COMMUNITY_SERVICE",
-                                        "label": "Calls routed to civilian community service officers for response",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                    {
-                                        "key": "STOLEN_PROPERTY",
-                                        "label": "Calls to take a report of stolen property",
-                                        "included": None,
-                                        "default": "Yes",
-                                    },
-                                ],
                                 "includes_excludes": [
                                     {
                                         "description": None,
@@ -2873,8 +2088,6 @@ class TestMetricInterface(TestCase):
                                     }
                                 ],
                                 "contexts": [],
-                                # TODO(#19144) remove deprecated settings key
-                                "settings": [],
                                 "includes_excludes": [],
                                 "description": "The number of calls for police assistance received by the agency of a type that is not known.",
                             },
@@ -3088,33 +2301,6 @@ class TestMetricInterface(TestCase):
                     "label": ReleaseType.TO_PAROLE_SUPERVISION.value,
                     "key": ReleaseType.TO_PAROLE_SUPERVISION.value,
                     "description": "The number of release events from the agency’s prison jurisdiction to parole supervision.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.name,
-                            "label": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                    ],
                     "includes_excludes": [
                         {
                             "description": None,
@@ -3153,39 +2339,6 @@ class TestMetricInterface(TestCase):
                     "label": ReleaseType.TO_PROBATION_SUPERVISION.value,
                     "key": ReleaseType.TO_PROBATION_SUPERVISION.value,
                     "description": "The number of release events from the agency’s prison jurisdiction to probation supervision.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [
-                        {
-                            "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.name,
-                            "label": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                    ],
                     "includes_excludes": [
                         {
                             "description": None,
@@ -3230,21 +2383,6 @@ class TestMetricInterface(TestCase):
                     "label": ReleaseType.TO_COMMUNITY_SUPERVISION.value,
                     "key": ReleaseType.TO_COMMUNITY_SUPERVISION.value,
                     "description": "The number of release events from the agency’s prison jurisdiction to another form of community supervision that is not probation or parole or in the agency’s jurisdiction.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [
-                        {
-                            "key": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.name,
-                            "label": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesCommunitySupervisionIncludesExcludes.DUAL_SUPERVISION.name,
-                            "label": PrisonReleasesCommunitySupervisionIncludesExcludes.DUAL_SUPERVISION.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                    ],
                     "includes_excludes": [
                         {
                             "description": None,
@@ -3271,21 +2409,6 @@ class TestMetricInterface(TestCase):
                     "label": ReleaseType.NO_CONTROL.value,
                     "key": ReleaseType.NO_CONTROL.value,
                     "description": "The number of release events from the agency’s prison jurisdiction with no additional correctional control.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [
-                        {
-                            "key": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.name,
-                            "label": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesNoControlIncludesExcludes.EXONERATION.name,
-                            "label": PrisonReleasesNoControlIncludesExcludes.EXONERATION.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                    ],
                     "includes_excludes": [
                         {
                             "description": None,
@@ -3312,21 +2435,6 @@ class TestMetricInterface(TestCase):
                     "key": ReleaseType.DEATH.value,
                     "label": ReleaseType.DEATH.value,
                     "description": "The number of release events from the agency’s prison jurisdiction due to death of people in custody.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [
-                        {
-                            "key": PrisonReleasesDeathIncludesExcludes.DEATH.name,
-                            "label": PrisonReleasesDeathIncludesExcludes.DEATH.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                        {
-                            "key": PrisonReleasesDeathIncludesExcludes.DEATH_WHILE_ABSENT.name,
-                            "label": PrisonReleasesDeathIncludesExcludes.DEATH_WHILE_ABSENT.value,
-                            "included": "Yes",
-                            "default": "Yes",
-                        },
-                    ],
                     "includes_excludes": [
                         {
                             "description": None,
@@ -3353,8 +2461,6 @@ class TestMetricInterface(TestCase):
                     "label": ReleaseType.UNKNOWN.value,
                     "key": ReleaseType.UNKNOWN.value,
                     "description": "The number of release events from the agency’s prison jurisdiction where the release type is not known.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [],
                     "includes_excludes": [],
                 },
                 {
@@ -3363,8 +2469,6 @@ class TestMetricInterface(TestCase):
                     "label": ReleaseType.OTHER.value,
                     "key": ReleaseType.OTHER.value,
                     "description": "The number of release events from the agency’s prison jurisdiction that are not releases to probation supervision, to parole supervision, to other community supervision, to no additional correctional control, or due to death.",
-                    # TODO(#19144) remove deprecated settings key
-                    "settings": [],
                     "includes_excludes": [],
                     "contexts": [
                         {
@@ -3377,6 +2481,7 @@ class TestMetricInterface(TestCase):
         }
 
         # TODO(https://github.com/Recidiviz/pulse-data/issues/17055): this should pass once we update metric_disaggregation_data.to_json() with the new dimension_to_contexts field
+        # MetricAggregatedDimensionData.to_json() expects includes_excludes field and not settings field
         # self.assertEqual(
         #     disaggregation_metric_interface.to_json(
         #         dimension_definition=assert_type(
@@ -3387,6 +2492,116 @@ class TestMetricInterface(TestCase):
         #     disaggregation_json,
         # )
 
+        disaggregation_json = {
+            key: value
+            for key, value in disaggregation_json.items()
+            if key != "includes_excludes"
+        }
+        disaggregation_json["settings"] = []
+        disaggregation_json["dimensions"][0]["settings"] = [  # type: ignore[index]
+            {
+                "key": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.name,
+                "label": PrisonReleasesToParoleIncludesExcludes.AFTER_SANCTION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.name,
+                "label": PrisonReleasesToParoleIncludesExcludes.ELIGIBLE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.name,
+                "label": PrisonReleasesToParoleIncludesExcludes.COMMUTED_SENTENCE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.name,
+                "label": PrisonReleasesToParoleIncludesExcludes.RELEASE_TO_PAROLE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+        ]
+        disaggregation_json["dimensions"][1]["settings"] = [  # type: ignore[index]
+            {
+                "key": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.name,
+                "label": PrisonReleasesToProbationIncludesExcludes.COMPLETED_SENTENCE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.name,
+                "label": PrisonReleasesToProbationIncludesExcludes.AFTER_SANCTION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.name,
+                "label": PrisonReleasesToProbationIncludesExcludes.SPLIT_SENTENCE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.name,
+                "label": PrisonReleasesToProbationIncludesExcludes.SHOCK_PROBATION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.name,
+                "label": PrisonReleasesToProbationIncludesExcludes.TRANSFERRED_OUT.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+        ]
+        disaggregation_json["dimensions"][2]["settings"] = [  # type: ignore[index]
+            {
+                "key": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.name,
+                "label": PrisonReleasesCommunitySupervisionIncludesExcludes.RELEASED_TO_OTHER_AGENCY.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesCommunitySupervisionIncludesExcludes.DUAL_SUPERVISION.name,
+                "label": PrisonReleasesCommunitySupervisionIncludesExcludes.DUAL_SUPERVISION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+        ]
+        disaggregation_json["dimensions"][3]["settings"] = [  # type: ignore[index]
+            {
+                "key": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.name,
+                "label": PrisonReleasesNoControlIncludesExcludes.NO_POST_RELEASE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesNoControlIncludesExcludes.EXONERATION.name,
+                "label": PrisonReleasesNoControlIncludesExcludes.EXONERATION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+        ]
+        disaggregation_json["dimensions"][4]["settings"] = [  # type: ignore[index]
+            {
+                "key": PrisonReleasesDeathIncludesExcludes.DEATH.name,
+                "label": PrisonReleasesDeathIncludesExcludes.DEATH.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonReleasesDeathIncludesExcludes.DEATH_WHILE_ABSENT.name,
+                "label": PrisonReleasesDeathIncludesExcludes.DEATH_WHILE_ABSENT.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+        ]
+        disaggregation_json["dimensions"][5]["settings"] = []  # type: ignore[index]
+        disaggregation_json["dimensions"][6]["settings"] = []  # type: ignore[index]
+
+        # MetricAggregatedDimensionData.from_json() expects settings field and not includes_excludes field
         self.assertEqual(
             MetricAggregatedDimensionData.from_json(
                 json=disaggregation_json,
@@ -3446,99 +2661,6 @@ class TestMetricInterface(TestCase):
             "datapoints": None,
             "contexts": [],
             "reporting_note": None,
-            # TODO(#19144) remove deprecated settings key
-            "settings": [
-                {
-                    "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.SINGLE_YEAR.name,
-                    "label": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.SINGLE_YEAR.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.BIENNNIUM_EXPENSES.name,
-                    "label": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.BIENNNIUM_EXPENSES.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.MULTI_YEAR.name,
-                    "label": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.MULTI_YEAR.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.PRISON_FACILITY.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.PRISON_FACILITY.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.OPERATIONS_AND_MAINTENANCE.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.OPERATIONS_AND_MAINTENANCE.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.CONSTRUCTION.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.CONSTRUCTION.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.TREATMENT.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.TREATMENT.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.HEALTH_CARE.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.HEALTH_CARE.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.FACILITY_STAFF.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.FACILITY_STAFF.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.ADMINISTRATION_STAFF.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.ADMINISTRATION_STAFF.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.OPERATION.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.OPERATION.value,
-                    "included": "Yes",
-                    "default": "Yes",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.JAIL_FACILITY.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.JAIL_FACILITY.value,
-                    "included": "No",
-                    "default": "No",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.JUVENILE_JAIL.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.JUVENILE_JAIL.value,
-                    "included": "No",
-                    "default": "No",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.NON_PRISON_ACTIVITIES.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.NON_PRISON_ACTIVITIES.value,
-                    "included": "No",
-                    "default": "No",
-                },
-                {
-                    "key": PrisonExpensesTypeIncludesExcludes.LAW_ENFORCEMENT.name,
-                    "label": PrisonExpensesTypeIncludesExcludes.LAW_ENFORCEMENT.value,
-                    "included": "No",
-                    "default": "No",
-                },
-            ],
             "includes_excludes": [
                 {
                     "description": "Expenses timeframe and spend-down",
@@ -3643,6 +2765,7 @@ class TestMetricInterface(TestCase):
             ],
         }
 
+        # MetricInterface.to_json() expects includes_excludes field and not settings field
         self.assertEqual(
             metric_interface.to_json(
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
@@ -3654,6 +2777,100 @@ class TestMetricInterface(TestCase):
             for key, value in metric_interface_json.items()
             if key != "includes_excludes"
         }
+        metric_interface_json["settings"] = [
+            {
+                "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.SINGLE_YEAR.name,
+                "label": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.SINGLE_YEAR.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.BIENNNIUM_EXPENSES.name,
+                "label": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.BIENNNIUM_EXPENSES.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.MULTI_YEAR.name,
+                "label": PrisonExpensesTimeframeAndSpendDownIncludesExcludes.MULTI_YEAR.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.PRISON_FACILITY.name,
+                "label": PrisonExpensesTypeIncludesExcludes.PRISON_FACILITY.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.OPERATIONS_AND_MAINTENANCE.name,
+                "label": PrisonExpensesTypeIncludesExcludes.OPERATIONS_AND_MAINTENANCE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.CONSTRUCTION.name,
+                "label": PrisonExpensesTypeIncludesExcludes.CONSTRUCTION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.TREATMENT.name,
+                "label": PrisonExpensesTypeIncludesExcludes.TREATMENT.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.HEALTH_CARE.name,
+                "label": PrisonExpensesTypeIncludesExcludes.HEALTH_CARE.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.FACILITY_STAFF.name,
+                "label": PrisonExpensesTypeIncludesExcludes.FACILITY_STAFF.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.ADMINISTRATION_STAFF.name,
+                "label": PrisonExpensesTypeIncludesExcludes.ADMINISTRATION_STAFF.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.OPERATION.name,
+                "label": PrisonExpensesTypeIncludesExcludes.OPERATION.value,
+                "included": "Yes",
+                "default": "Yes",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.JAIL_FACILITY.name,
+                "label": PrisonExpensesTypeIncludesExcludes.JAIL_FACILITY.value,
+                "included": "No",
+                "default": "No",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.JUVENILE_JAIL.name,
+                "label": PrisonExpensesTypeIncludesExcludes.JUVENILE_JAIL.value,
+                "included": "No",
+                "default": "No",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.NON_PRISON_ACTIVITIES.name,
+                "label": PrisonExpensesTypeIncludesExcludes.NON_PRISON_ACTIVITIES.value,
+                "included": "No",
+                "default": "No",
+            },
+            {
+                "key": PrisonExpensesTypeIncludesExcludes.LAW_ENFORCEMENT.name,
+                "label": PrisonExpensesTypeIncludesExcludes.LAW_ENFORCEMENT.value,
+                "included": "No",
+                "default": "No",
+            },
+        ]
+
+        # MetricInterface.from_json() expects settings field and not includes_excludes field
         self.assertEqual(
             MetricInterface.from_json(
                 json=metric_interface_json,
@@ -3703,80 +2920,6 @@ class TestMetricInterface(TestCase):
             "value": None,
             "disaggregations": [],
             "contexts": [],
-            # TODO(#19144) remove deprecated settings key
-            "settings": [
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "FISCAL_YEAR",
-                    "label": "Funding for single fiscal year",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "BIENNIUM_FUNDING",
-                    "label": "Biennium funding appropriated during the time period",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "MULTI_YEAR_APPROPRIATIONS",
-                    "label": "Multi-year appropriations that are appropriated in during the time period",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "STAFF_FUNDING",
-                    "label": "Funding for agency staff",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "EQUIPMENT",
-                    "label": "Funding for the purchase of law enforcement " "equipment",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "FACILITIES",
-                    "label": "Funding for construction of law enforcement "
-                    "facilities (e.g., offices, temporary detention "
-                    "facilities, garages, etc.)",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "MAINTENANCE",
-                    "label": "Funding for the maintenance of law enforcement "
-                    "equipment and facilities",
-                },
-                {
-                    "default": "Yes",
-                    "included": "Yes",
-                    "key": "OTHER",
-                    "label": "Funding for other purposes not captured by the listed "
-                    "categories",
-                },
-                {
-                    "default": "No",
-                    "included": "Yes",
-                    "key": "JAIL_OPERATIONS",
-                    "label": "Expenses for the operation of jails",
-                },
-                {
-                    "default": "No",
-                    "included": "Yes",
-                    "key": "SUPERVISION_SERVICES",
-                    "label": "Expenses for the operation of community supervision "
-                    "services",
-                },
-                {
-                    "default": "No",
-                    "included": "Yes",
-                    "key": "JUVENILE_JAIL_OPERATIONS",
-                    "label": "Expenses for the operation of juvenile jails",
-                },
-            ],
             "includes_excludes": [
                 {
                     "description": "Funding timeframe and spend-down",
@@ -3864,12 +3007,89 @@ class TestMetricInterface(TestCase):
             "datapoints": None,
         }
 
+        # MetricInterface.to_json() expects includes_excludes field and not settings field
         self.assertEqual(
             metric_interface.to_json(
                 entry_point=DatapointGetRequestEntryPoint.METRICS_TAB,
             ),
             metric_interface_json,
         )
+
+        # MetricInterface.from_json() expects settings field and not includes_excludes field
+        metric_interface_json["settings"] = [
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "FISCAL_YEAR",
+                "label": "Funding for single fiscal year",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "BIENNIUM_FUNDING",
+                "label": "Biennium funding appropriated during the time period",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "MULTI_YEAR_APPROPRIATIONS",
+                "label": "Multi-year appropriations that are appropriated in during the time period",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "STAFF_FUNDING",
+                "label": "Funding for agency staff",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "EQUIPMENT",
+                "label": "Funding for the purchase of law enforcement " "equipment",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "FACILITIES",
+                "label": "Funding for construction of law enforcement "
+                "facilities (e.g., offices, temporary detention "
+                "facilities, garages, etc.)",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "MAINTENANCE",
+                "label": "Funding for the maintenance of law enforcement "
+                "equipment and facilities",
+            },
+            {
+                "default": "Yes",
+                "included": "Yes",
+                "key": "OTHER",
+                "label": "Funding for other purposes not captured by the listed "
+                "categories",
+            },
+            {
+                "default": "No",
+                "included": "Yes",
+                "key": "JAIL_OPERATIONS",
+                "label": "Expenses for the operation of jails",
+            },
+            {
+                "default": "No",
+                "included": "Yes",
+                "key": "SUPERVISION_SERVICES",
+                "label": "Expenses for the operation of community supervision "
+                "services",
+            },
+            {
+                "default": "No",
+                "included": "Yes",
+                "key": "JUVENILE_JAIL_OPERATIONS",
+                "label": "Expenses for the operation of juvenile jails",
+            },
+        ]
+
         metric_interface_json = {
             key: value
             for key, value in metric_interface_json.items()
