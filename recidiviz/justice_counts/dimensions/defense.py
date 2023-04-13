@@ -39,7 +39,7 @@ class StaffType(DimensionBase, enum.Enum):
     ADMINISTRATIVE = "Administrative Staff"
     INVESTIGATIVE = "Investigative Staff"
     OTHER = "Other Staff"
-    UNKNOWN = "Unknown Unknown"
+    UNKNOWN = "Unknown Staff"
     VACANT = "Vacant Positions (Any Staff Type)"
 
     @classmethod
