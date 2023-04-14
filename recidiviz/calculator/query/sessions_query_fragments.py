@@ -189,8 +189,14 @@ def aggregate_adjacent_spans(
         if len(attribute_list) > 1 and is_struct:
             raise ValueError("Sessionization on struct only allows one attribute value")
 
-            # Create a string from the column names in the list to be used in the query
+        # Cast each field as a string for comparisons, to allow comparison of null values for all data types
+        attribute_list_as_str = [
+            f'COALESCE(CAST({attribute} AS STRING), "")' for attribute in attribute_list
+        ]
+
+        # Create a string from the column names in the list to be used in the query
         attribute_col_str = ", ".join(attribute_list)
+        attribute_col_str_as_str = ", ".join(attribute_list_as_str)
 
         # Create a string specifying how attributes will be aggregated together in the final sessionized view.
         # Because the session_id field is incremented every time one of these attribute values changes,
@@ -206,7 +212,7 @@ def aggregate_adjacent_spans(
         if not is_struct:
             # Look for a change in the value of the concatenation of the attribute column(s). That value is
             # COALESCED so that adjacent sessions with NULL values will be aggregated together.
-            attribute_change_str = f"COALESCE(CONCAT({attribute_col_str}),'') != LAG(COALESCE(CONCAT({attribute_col_str}),'')) OVER w AS attribute_change,"
+            attribute_change_str = f"CONCAT({attribute_col_str_as_str}) != LAG(CONCAT({attribute_col_str_as_str})) OVER w AS attribute_change,"
         else:
             # If a struct is specified, look for a change in the string representation of that struct
             attribute_change_str = f"TO_JSON_STRING({attribute}) != LAG(TO_JSON_STRING({attribute})) OVER w AS attribute_change,"
