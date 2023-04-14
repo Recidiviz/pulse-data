@@ -135,6 +135,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_early_disch
 from recidiviz.calculator.query.state.views.analyst_data.us_mi.us_mi_supervision_level_raw_text_mappings import (
     US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_mosop_prio_eligibility import (
+    PRIORITIZED_ELIGIBILITY,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_mo.us_mo_program_tracks import (
     US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
 )
@@ -290,6 +293,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_MO_SCREENERS_PREPROCESSED_VIEW_BUILDER,
         US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
         US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
+        PRIORITIZED_ELIGIBILITY,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS

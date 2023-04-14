@@ -38,7 +38,80 @@ US_MO_PROGRAM_TRACKS_VIEW_DESCRIPTION = """Pulls together information on screene
 other information on currently incarcerated individuals in MO to assign them to Program Tracks"""
 
 US_MO_PROGRAM_TRACKS_QUERY_TEMPLATE = f"""
-WITH latest_assessment AS (
+WITH mosop_details AS (
+  SELECT 
+    se.OFNDR_CYCLE_REF_ID,
+    se.EXIT_TYPE_CD,
+    DOC_ID,
+    CYCLE_NO,
+    ACTUAL_START_DT,
+    ACTUAL_EXIT_DT,
+    classes.CLASS_TITLE,
+    exit.CLASS_EXIT_REASON_DESC
+  FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.OFNDR_PDB_CLASS_SCHEDULE_ENROLLMENTS_latest` se
+  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.OFNDR_PDB_OFNDR_CYCLE_REF_ID_XREF_latest` xref
+  USING (OFNDR_CYCLE_REF_ID)
+  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.MASTER_PDB_CLASSES_latest` classes
+  USING (CLASS_REF_ID)
+  LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CODE_PDB_CLASS_EXIT_REASON_CODES_latest` exit
+  USING (CLASS_EXIT_REASON_CD)
+  WHERE 
+    se.DELETE_IND = "N" AND xref.DELETE_IND = "N" AND classes.DELETE_IND = "N"
+    -- TODO(#19596): Verify that string matching is a sufficient way to distinguish MOSOP clases
+    AND CLASS_TITLE LIKE "%MOSOP%"
+),
+mosop_completed AS (
+  /* MOSOP completion is identified based on the individual's most recent cycle involving
+  MOSOP classes. "Completion" is only met when every MOSOP class in that cycle has a 
+  EXIT_TYPE_CD of "SFL", which encompasses the three exit types that count as completion:
+    - Partial Completion (Required Phase Completed)
+    - Completion
+    - Full Completion (Required and Re-Entry Phase Completed)
+  This approach was confirmed to be correcct during MDOC Office Hours (3/24/23).
+  */
+  SELECT 
+    DOC_ID,
+    LOGICAL_AND(completed_flag) AS all_complete 
+  FROM (
+    SELECT 
+      mosop_most_recent_cyc.DOC_ID,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' THEN TRUE ELSE FALSE END AS completed_flag 
+    FROM (
+      SELECT 
+        DOC_ID,
+        MAX(CAST(CYCLE_NO AS DATE FORMAT 'YYYYMMDD')) AS most_recent_cyc 
+      FROM mosop_details 
+      GROUP BY DOC_ID
+    ) mosop_most_recent_cyc
+    LEFT JOIN mosop_details mosop_general 
+    ON 
+      mosop_most_recent_cyc.DOC_ID = mosop_general.DOC_ID AND 
+      CAST(CYCLE_NO AS DATE FORMAT 'YYYYMMDD') = most_recent_cyc
+  )
+  GROUP BY DOC_ID
+),
+mosop_completed_or_ongoing AS (
+  SELECT * 
+  FROM (
+    SELECT 
+      DOC_ID,
+      LOGICAL_OR(all_complete) AS completed_flag,
+      LOGICAL_OR(CASE WHEN ACTUAL_EXIT_DT='7799-12-31' AND ACTUAL_START_DT != '7799-12-31' THEN TRUE ELSE FALSE END) AS ongoing_flag 
+    FROM (
+      SELECT * 
+      FROM mosop_details 
+      LEFT JOIN mosop_completed 
+      USING (DOC_ID)
+    ) 
+  GROUP BY DOC_ID
+  )
+  INNER JOIN 
+  `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+  ON 
+    DOC_ID = pei.external_id
+    AND pei.state_code = 'US_MO'
+),
+latest_assessment AS (
   /*
   This CTE does the re-scoring of various assessment scores into the "algorithm" provided by MO,
   and then selects the latest assessment per assessment type
@@ -246,26 +319,44 @@ ON
 -- population don't show up in this table
 -- TODO(#19223): Use ingested data when available
 LEFT JOIN (
-  SELECT pei.person_id,
-         /* R is dept required, not required by state and F is sentences before MOSOP completion was required
-            O is override such that it is no longer required
-            This table in general has a ton of null values for DQ_SOP (70%) which is *likely* because of records
-            that pre-dated the MOSOP statute. This is suggested by the fact that for the current incarcerated population,
-            the mosop_indicator is only null for approximately 3% of the people. Since it's not clear what the default
-            assumption should be, we're leaving it as null
-         */
-         CASE WHEN DQ_SOP IN ('Y','R','F') THEN TRUE
-              WHEN DQ_SOP IN ('N','O') THEN FALSE
-              END AS mosop_indicator,
-  FROM 
-    `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK040_latest` t
-  INNER JOIN
-    `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-    ON
-        t.DQ_DOC = pei.external_id
-    AND
-        pei.state_code = 'US_MO'
-  QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY DQ_CYC DESC) = 1
+  SELECT 
+    person_id,
+    LOGICAL_OR(COALESCE(mosop_indicator,FALSE) AND status = 'SERVING') AS mosop_indicator
+  FROM (
+    SELECT pei.person_id,
+      /* R is dept required, not required by state and F is sentences before MOSOP completion was required
+          O is override such that it is no longer required
+          This table in general has a ton of null values for DQ_SOP (70%) which is *likely* because of records
+          that pre-dated the MOSOP statute. This is suggested by the fact that for the current incarcerated population,
+          the mosop_indicator is only null for approximately 3% of the people. Since it's not clear what the default
+          assumption should be, we're leaving it as null
+      */
+      CASE WHEN DQ_SOP IN ('Y','R','F') THEN TRUE
+            WHEN DQ_SOP IN ('N','O') THEN FALSE
+            END AS mosop_indicator,
+      DQ_DOC,DQ_CYC,
+      sp.external_id,
+      sp.status
+    FROM 
+      `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.LBAKRDTA_TAK040_latest` t
+    INNER JOIN
+      `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+      ON
+          t.DQ_DOC = pei.external_id
+      AND
+          pei.state_code = 'US_MO'
+    LEFT JOIN (
+      SELECT 
+        external_id,
+        REGEXP_EXTRACT(external_id,r'^[[:digit:]]+') AS DOC_ID,
+        REGEXP_EXTRACT(external_id,r'-([[:digit:]]+)-') AS CYCLE_NO,
+        status
+      FROM 
+        `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` 
+      WHERE state_code = 'US_MO'
+    ) sp
+    ON DQ_DOC = sp.DOC_ID AND DQ_CYC = sp.CYCLE_NO
+  ) GROUP BY person_id
 ) mosop
   ON p.person_id = mosop.person_id
 LEFT JOIN current_bed_stay housing
@@ -285,14 +376,18 @@ Both Missouri and the confining agency have jurisdiction over the offender." bas
 WHERE facility NOT IN ('AIFED', 'EXTERNAL_UNKNOWN')
 )
 SELECT 
-  *,
+  pt.*,
   COALESCE(
-    board_determined_release_date,
-    GREATEST(IFNULL(minimum_eligibility_date,minimum_mandatory_release_date), IFNULL(minimum_mandatory_release_date,minimum_eligibility_date)),
-    conditional_release,
-    max_discharge
-  ) as prioritized_date
-FROM unprioritized_program_tracks
+    pt.board_determined_release_date,
+    GREATEST(IFNULL(pt.minimum_eligibility_date,pt.minimum_mandatory_release_date), IFNULL(pt.minimum_mandatory_release_date,pt.minimum_eligibility_date)),
+    pt.conditional_release,
+    pt.max_discharge
+  ) AS prioritized_date,
+  COALESCE(mosop.ongoing_flag, FALSE) AS ongoing_flag,
+  COALESCE(mosop.completed_flag, FALSE) AS completed_flag
+FROM unprioritized_program_tracks pt
+LEFT JOIN mosop_completed_or_ongoing mosop
+USING (person_id)
 """
 
 US_MO_PROGRAM_TRACKS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
