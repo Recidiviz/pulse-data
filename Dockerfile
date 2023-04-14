@@ -47,7 +47,7 @@ RUN apt update -y &&    \
     vim                 \
     wget
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg]"              \
-         "http://packages.cloud.google.com/apt cloud-sdk main" |             \
+    "http://packages.cloud.google.com/apt cloud-sdk main" |             \
     tee -a /etc/apt/sources.list.d/google-cloud-sdk.list &&                  \
     curl https://packages.cloud.google.com/apt/doc/apt-key.gpg |             \
     apt-key --keyring /usr/share/keyrings/cloud.google.gpg add /dev/stdin && \
@@ -56,7 +56,7 @@ RUN wget -O /dev/stdout https://apt.releases.hashicorp.com/gpg             | \
     gpg --dearmor                                                          | \
     tee /usr/share/keyrings/hashicorp-archive-keyring.gpg &&                 \
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg]" \
-         "https://apt.releases.hashicorp.com $(lsb_release -cs) main"      | \
+    "https://apt.releases.hashicorp.com $(lsb_release -cs) main"      | \
     tee /etc/apt/sources.list.d/hashicorp.list &&                            \
     apt-get update -y && apt-get install terraform=1.2.9 -y &&               \
     apt-mark hold terraform
@@ -85,16 +85,6 @@ COPY ./frontends/admin-panel/src /usr/admin-panel/src
 COPY ./frontends/admin-panel/public /usr/admin-panel/public
 RUN yarn build
 
-FROM node:14-alpine AS case-triage-build
-WORKDIR /usr/case-triage
-COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr/case-triage/
-COPY ./frontends/case-triage/tsconfig.json ./frontends/case-triage/.eslintrc.json /usr/case-triage/
-RUN yarn config set network-timeout 300000
-RUN yarn
-COPY ./frontends/case-triage/src /usr/case-triage/src
-COPY ./frontends/case-triage/public /usr/case-triage/public
-RUN yarn build
-
 FROM recidiviz-init AS recidiviz-app
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
 COPY Pipfile /app/
@@ -102,9 +92,8 @@ COPY Pipfile.lock /app/
 RUN pipenv sync
 # Add the rest of the application code once all dependencies are installed
 COPY . /app
-# Add the built Admin Panel, Case Triage, and Justice Counts frontends to the image
+# Add the built Admin Panel frontend to the image
 COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
-COPY --from=case-triage-build /usr/case-triage/build /app/frontends/case-triage/build
 # Add the current commit SHA as an env variable
 ARG CURRENT_GIT_SHA=""
 ENV CURRENT_GIT_SHA=${CURRENT_GIT_SHA}
