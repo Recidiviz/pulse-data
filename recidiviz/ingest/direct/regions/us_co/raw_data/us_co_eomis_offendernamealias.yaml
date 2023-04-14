@@ -3,8 +3,20 @@ file_tag: eomis_offendernamealias
 file_description: |-
   This file contains known aliases of a person.
 data_classification: source
-no_valid_primary_keys: True
-primary_key_cols: []
+primary_key_cols:
+  - OFFENDERID
+  - OFFNNAMETYPE
+  - OFFNLASTNAME
+  - OFFNFIRSTNAME
+  - OFFNMIDDLENAME
+  - OFFNNAMESUFFIX
+  - COMMITMENTPREFIX #TODO(#19100): Mark insufficient PK for this table, first 7 provided from CO but all columns don't resolve issue
+  - OFFNSOUNDEXCODE
+  - CURRENTCOMMNAME
+  - DATELASTUPDATE
+  - TIMELASTUPDATE
+  - STAFFLASTUPDATE
+  - CURRENTCOMMDOCNAME
 columns:
   - name: OFFENDERID
     description: |-
