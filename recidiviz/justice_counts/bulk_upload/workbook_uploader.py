@@ -42,6 +42,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
+from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import ReportStatus
 
@@ -240,7 +241,7 @@ class WorkbookUploader:
                     report=updated_report,
                     editor_id=self.user_account.id
                     if self.user_account is not None
-                    else None,
+                    else AUTOMATIC_UPLOAD_ID,
                     status=ReportStatus.DRAFT.value,
                 )
 
@@ -265,7 +266,7 @@ class WorkbookUploader:
                         report=updated_report,
                         editor_id=self.user_account.id
                         if self.user_account is not None
-                        else None,
+                        else AUTOMATIC_UPLOAD_ID,
                         status=ReportStatus.DRAFT.value,
                     )
 

@@ -831,7 +831,7 @@ class DatapointHistory(JusticeCountsBase):
     id = Column(Integer, autoincrement=True)
 
     datapoint_id = Column(Integer, nullable=False)
-    user_account_id = Column(Integer, nullable=False)
+    user_account_id = Column(Integer, nullable=True)
     timestamp = Column(DateTime, nullable=False)
     old_value = Column(String, nullable=True)
     new_value = Column(String, nullable=True)
