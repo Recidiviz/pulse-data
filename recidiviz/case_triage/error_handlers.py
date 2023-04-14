@@ -26,7 +26,6 @@ from recidiviz.case_triage.pathways.exceptions import (
     MetricMappingError,
     MetricNotEnabledError,
 )
-from recidiviz.case_triage.querier.querier import NoCaseloadException
 from recidiviz.utils.flask_exception import FlaskException
 
 
@@ -53,15 +52,6 @@ def handle_csrf_error(_: CSRFError) -> Response:
             code="invalid_csrf_token",
             description="The provided X-CSRF-Token header could not be validated",
             status_code=HTTPStatus.BAD_REQUEST,
-        )
-    )
-
-
-def handle_no_caseload_error(_: NoCaseloadException) -> Response:
-    return handle_auth_error(
-        CaseTriageBadRequestException(
-            code="no_caseload",
-            description="You do not currently have a caseload within Case Triage",
         )
     )
 
@@ -98,7 +88,6 @@ def register_error_handlers(app: Flask) -> None:
     """Registers error handlers"""
     app.errorhandler(CSRFError)(handle_csrf_error)
     app.errorhandler(ValidationError)(handle_validation_error)
-    app.errorhandler(NoCaseloadException)(handle_no_caseload_error)
     app.errorhandler(MissingRequiredClaimError)(handle_missing_required_claim_error)
     app.errorhandler(FlaskException)(handle_auth_error)
     app.errorhandler(MetricMappingError)(handle_metric_mapping_error)

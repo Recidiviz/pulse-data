@@ -1,7 +1,0 @@
-[
-  { "email": "admin@not-recidiviz.org", "is_admin": true },
-
-  { "email": "demoer@not-recidiviz.org", "is_demo_user": true },
-
-  { "email": "user@not-recidiviz.org" }
-]
