@@ -26,6 +26,7 @@ from recidiviz.auth.auth0_client import Auth0Client
 from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.user_account import UserAccountInterface
+from recidiviz.justice_counts.utils.constants import AUTOMATIC_UPLOAD_ID
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 
@@ -170,10 +171,10 @@ class AgencyUserAccountAssociationInterface:
     @staticmethod
     def get_editor_id_to_json(
         session: Session, reports: List[schema.Report], user: schema.UserAccount
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> Dict[int, Dict[str, str]]:
         """Returns a dictionary mapping an editor's user_account_id to a
         object with their name and role. All reports will be from the same agency."""
-        editor_json: Dict[str, Dict[str, str]] = {}
+        editor_json: Dict[int, Dict[str, str]] = {}
         if len(reports) == 0:
             return editor_json
 
@@ -224,6 +225,12 @@ class AgencyUserAccountAssociationInterface:
                 "role": assoc.role.value if assoc.role is not None else None,
             }
 
+        if AUTOMATIC_UPLOAD_ID in editor_ids:
+            editor_json[AUTOMATIC_UPLOAD_ID] = {
+                "name": "Automatic Upload",
+                "role": schema.UserAccountRole.CONTRIBUTOR.value,
+            }
+
         return editor_json
 
     @staticmethod
@@ -231,12 +238,12 @@ class AgencyUserAccountAssociationInterface:
         session: Session,
         spreadsheets: List[schema.Spreadsheet],
         user: schema.UserAccount,
-    ) -> Dict[str, Dict[str, str]]:
+    ) -> Dict[int, Dict[str, str]]:
         """
         Returns a dictionary mapping an editor's user_account_id to a
         object with their name and role. All reports will be from the same agency.
         """
-        editor_json: Dict[str, Dict[str, str]] = {}
+        editor_json: Dict[int, Dict[str, str]] = {}
         if len(spreadsheets) == 0:
             return editor_json
 
@@ -244,7 +251,7 @@ class AgencyUserAccountAssociationInterface:
         uploader_ids = [
             spreadsheet.uploaded_by
             for spreadsheet in spreadsheets
-            if spreadsheet.uploaded_by is not None
+            if spreadsheet.uploaded_by != AUTOMATIC_UPLOAD_ID
         ]
 
         uploaded_by_users = (
@@ -292,6 +299,12 @@ class AgencyUserAccountAssociationInterface:
                 and user_assoc.role != schema.UserAccountRole.JUSTICE_COUNTS_ADMIN
                 else assoc.user_account.name,
                 "role": assoc.role.value if assoc.role is not None else None,
+            }
+
+        if AUTOMATIC_UPLOAD_ID in uploader_ids:
+            editor_json[AUTOMATIC_UPLOAD_ID] = {
+                "name": "Automatic Upload",
+                "role": schema.UserAccountRole.CONTRIBUTOR.value,
             }
 
         return editor_json

@@ -719,7 +719,9 @@ class DatapointInterface:
                 session.add(
                     schema.DatapointHistory(
                         datapoint_id=existing_datapoint.id,
-                        user_account_id=user_account.id,
+                        user_account_id=user_account.id
+                        if user_account is not None
+                        else None,
                         timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
                         old_value=existing_datapoint.value,
                         new_value=setting.value,
