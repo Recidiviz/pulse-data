@@ -71,7 +71,8 @@ new_revocation_periods AS (
     movement_date,
     facility,
     custody_level,
-    parole_begin_date
+    parole_begin_date,
+    sentence_prefix
   FROM sentences
 
   UNION ALL 
@@ -84,7 +85,8 @@ new_revocation_periods AS (
     movement_date,
     facility,
     custody_level,
-    parole_begin_date
+    parole_begin_date,
+    sentence_prefix
   FROM sentences
   -- if this person was revoked after being released to parole
   WHERE sentences.movement_date > end_date 
@@ -98,19 +100,20 @@ sentences_with_reasons_split AS (
     sentence_begin_date as start_date,
     end_date,
     CASE 
-      WHEN ABS(DATE_DIFF(CAST(movement_date AS DATETIME), CAST(sentence_begin_date AS DATETIME), DAY)) < 7 
+      WHEN ABS(DATE_DIFF(CAST(movement_date AS DATETIME), CAST(sentence_begin_date AS DATETIME), DAY)) < 5
       THEN movement_type 
       ELSE NULL 
     END AS start_reason,
     CASE
-      WHEN ABS(DATE_DIFF(CAST(movement_date AS DATETIME), CAST(end_date AS DATETIME), DAY)) < 7 
+      WHEN ABS(DATE_DIFF(CAST(movement_date AS DATETIME), CAST(end_date AS DATETIME), DAY)) < 5
       THEN movement_type
       ELSE NULL
     END AS end_reason,
     facility,
-    custody_level
+    custody_level,
+    ROW_NUMBER() OVER (PARTITION BY doc_id, sentence_prefix ORDER BY sentence_begin_date) as period_seq_num
 FROM new_revocation_periods
-WHERE sentence_begin_date != end_date
+WHERE ABS(DATE_DIFF(CAST(sentence_begin_date AS DATETIME), CAST(end_date AS DATETIME), DAY)) > 5
 AND sentence_begin_date < end_date)
 
 SELECT * 
