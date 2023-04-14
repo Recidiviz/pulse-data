@@ -28,6 +28,12 @@ datasets when considering which views have changed, run:
        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
        --changed_datasets_to_ignore [DATASET_ID_1,DATASET_ID_2,...]
 
+To load all views that have changed since the last view deploy, but only look in some
+datasets when considering which views have changed, run:
+    python -m recidiviz.tools.load_views_to_sandbox \
+       --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] auto \
+       --changed_datasets_to_include [DATASET_ID_1,DATASET_ID_2,...]
+
 To manually choose which views to load, run:
     python -m recidiviz.tools.load_views_to_sandbox \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] manual \
@@ -176,7 +182,7 @@ def _load_manually_filtered_views_to_sandbox(
     ------
     sandbox_dataset_prefix : str
         Loads datasets that all take the form of
-        "<sandbox_dataset_prefix>_<original dataset_id>
+        "<sandbox_dataset_prefix>_<original dataset_id>"
 
     dataflow_dataset_override : Optional[str]
         If True, updates views in the DATAFLOW_METRICS_MATERIALIZED_DATASET
@@ -282,12 +288,20 @@ def _get_all_views_changed_on_branch(
 
 
 def _get_changed_views_to_load_to_sandbox(
+    *,
     address_to_change_type: Dict[BigQueryAddress, ViewChangeType],
+    changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
 ) -> Set[BigQueryAddress]:
     """Returns addresses for all views that have been added / updated since the last
     deploy and whose dataset is not in |changed_datasets_to_ignore|.
     """
+    if changed_datasets_to_include and changed_datasets_to_ignore:
+        raise ValueError(
+            "Can only set changed_datasets_to_include or "
+            "changed_datasets_to_ignore, but not both."
+        )
+
     added_view_addresses = set()
     updated_view_addresses = set()
     ignored_changed_addresses = set()
@@ -295,6 +309,9 @@ def _get_changed_views_to_load_to_sandbox(
         if (
             changed_datasets_to_ignore
             and address.dataset_id in changed_datasets_to_ignore
+        ) or (
+            changed_datasets_to_include
+            and address.dataset_id not in changed_datasets_to_include
         ):
             ignored_changed_addresses.add(address)
 
@@ -404,6 +421,7 @@ def _load_views_changed_on_branch_to_sandbox(
     prompt: bool,
     dataflow_dataset_override: Optional[str],
     filter_union_all: bool,
+    changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
 ) -> None:
     """Loads all views that have changed on this branch as compared to what is deployed
@@ -425,7 +443,9 @@ def _load_views_changed_on_branch_to_sandbox(
     address_to_change_type = _get_all_views_changed_on_branch(full_dag_walker)
 
     changed_views_to_load = _get_changed_views_to_load_to_sandbox(
-        address_to_change_type, changed_datasets_to_ignore
+        address_to_change_type=address_to_change_type,
+        changed_datasets_to_ignore=changed_datasets_to_ignore,
+        changed_datasets_to_include=changed_datasets_to_include,
     )
 
     if not changed_views_to_load:
@@ -614,7 +634,19 @@ def parse_arguments() -> argparse.Namespace:
         help="A list of dataset ids (comma-separated) for datasets we should skip when "
         "detecting which views have changed. Views in these datasets will still "
         "be loaded to the sandbox if they are downstream of other views not in these "
-        "datasets which have been changed.",
+        "datasets which have been changed. This argument cannot be used if --changed_datasets_to_include "
+        "is set.",
+        type=str_to_list,
+        required=False,
+    )
+
+    parser_auto.add_argument(
+        "--changed_datasets_to_include",
+        dest="changed_datasets_to_include",
+        help="A list of dataset ids (comma-separated) for datasets we should consider when "
+        "detecting which views have changed. Views outside of these datasets will still "
+        "be loaded to the sandbox if they are downstream of other changed views in these datasets. This "
+        "argument cannot be used if --changed_datasets_to_ignore is set.",
         type=str_to_list,
         required=False,
     )
@@ -653,6 +685,7 @@ if __name__ == "__main__":
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
                 filter_union_all=args.filter_union_all,
+                changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
             )
         else:
