@@ -134,13 +134,6 @@ jobs:
       - name: Yarn lint (admin panel)
         working-directory: ./frontends/admin-panel/
         run: yarn lint --max-warnings=0
-      - name: Yarn install (case triage)
-        if: steps.yarn-caching.outputs.cache-hit != 'true'
-        working-directory: ./frontends/case-triage/
-        run: yarn install --frozen-lockfile
-      - name: Yarn lint (case triage)
-        working-directory: ./frontends/case-triage/
-        run: yarn lint --max-warnings=0
 
   unit-tests:
     name: Base unit tests

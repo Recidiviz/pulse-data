@@ -20,7 +20,7 @@ import os
 
 import google.cloud.logging
 import sentry_sdk
-from flask import Flask, Response, send_from_directory
+from flask import Flask, Response, redirect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
@@ -70,14 +70,7 @@ if in_gcp():
     )
 
 # Flask setup
-static_folder = os.path.abspath(
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "../../frontends/case-triage/build/",
-    )
-)
-
-app = Flask(__name__, static_folder=static_folder)
+app = Flask(__name__)
 
 # Need to silence mypy error `Cannot assign to a method`
 app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
@@ -167,10 +160,6 @@ app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 if not in_offline_mode():
     app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
 
-    @app.route("/", defaults={"path": ""})
-    @app.route("/<path:path>")
-    def index(path: str = "") -> Response:
-        if path != "" and os.path.exists(os.path.join(static_folder, path)):
-            return send_from_directory(static_folder, path)
-
-        return send_from_directory(static_folder, "index.html")
+    @app.route("/")
+    def index() -> Response:
+        return redirect("https://dashboard.recidiviz.org")  # type: ignore[return-value]
