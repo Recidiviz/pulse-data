@@ -160,7 +160,9 @@ const formatPageName = (page: string) => {
     .replace(/Sql/g, "SQL") // Correctly case acronyms
     .replace(/Gcs/g, "GCS")
     .replace(/Po/g, "PO")
-    .replace(/Csv/g, "CSV");
+    .replace(/POpulation/g, "Population")
+    .replace(/Csv/g, "CSV")
+    .replace(/Pfi/g, "PFI");
 };
 
 const App = (): JSX.Element => {
