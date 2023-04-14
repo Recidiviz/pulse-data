@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a candidate population view containing all people who are actively
-supervised at any point in time.
+"""Defines a candidate population view containing all people who are on
+supervision and are actively supervised as defined by excluding certain compartments and supervision levels
+such as in custody, bench warrant, absconsion, or unknown.
 """
 from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder import (
     StateAgnosticTaskCandidatePopulationBigQueryViewBuilder,
@@ -23,21 +24,26 @@ from recidiviz.task_eligibility.task_candidate_population_big_query_view_builder
 from recidiviz.task_eligibility.utils.candidate_population_builders import (
     state_agnostic_candidate_population_view_builder,
 )
+from recidiviz.task_eligibility.utils.candidate_population_query_fragments import (
+    active_supervision_population_additional_filters,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_POPULATION_NAME = "SUPERVISION_POPULATION"
+_POPULATION_NAME = "ACTIVE_SUPERVISION_POPULATION_08_2020_PRESENT"
 
-_DESCRIPTION = """Selects all spans of time in which a person is supervised as tracked
-by data in our `sessions` dataset. All types of supervision (including INTERNAL_UNKNOWN)
-are included.
+_DESCRIPTION = """Selects all spans of time in which a person is on
+supervision and actively supervised as defined by excluding certain compartments and supervision levels 
+such as in custody, bench warrant, absconsion, or unknown.
 """
 
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
         description=_DESCRIPTION,
-        additional_filters=[],
+        additional_filters=active_supervision_population_additional_filters(
+            start_date="2020-08-01"
+        ),
         compartment_level_1=["SUPERVISION"],
     )
 )

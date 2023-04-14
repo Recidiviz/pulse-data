@@ -18,9 +18,14 @@
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    supervision_population_all_eligible_levels,
+    probation_parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events import transfer_to_limited_supervision
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_not_internal_unknown,
+    supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_unassigned,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     fines_fees_eligible,
     missing_active_sentences_or_zero_tolerance_code_spans_or_ineligible_offenses_expired,
@@ -52,7 +57,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="TRANSFER_TO_COMPLIANT_REPORTING_WITH_DISCRETION",
     description=_DESCRIPTION,
-    candidate_population_view_builder=supervision_population_all_eligible_levels.VIEW_BUILDER,
+    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         on_eligible_level_for_sufficient_time.VIEW_BUILDER,
         no_arrests_in_past_year.VIEW_BUILDER,
@@ -66,6 +71,9 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
         no_murder_convictions.VIEW_BUILDER,
         missing_active_sentences_or_zero_tolerance_code_spans_or_ineligible_offenses_expired.VIEW_BUILDER,
+        supervision_level_is_not_internal_unknown.VIEW_BUILDER,
+        supervision_level_is_not_interstate_compact.VIEW_BUILDER,
+        supervision_level_is_not_unassigned.VIEW_BUILDER,
     ],
     completion_event_builder=transfer_to_limited_supervision.VIEW_BUILDER,
 )

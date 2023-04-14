@@ -19,11 +19,14 @@ someone in TN is eligible for full term discharge from supervision or is 60 days
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    supervision_population_all_eligible_levels,
+    probation_parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
     has_active_sentence,
+    supervision_level_is_not_internal_unknown,
+    supervision_level_is_not_interstate_compact,
+    supervision_level_is_not_unassigned,
     supervision_past_full_term_completion_date_or_upcoming_1_day,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
@@ -44,12 +47,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_TN,
     task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
     description=_DESCRIPTION,
-    candidate_population_view_builder=supervision_population_all_eligible_levels.VIEW_BUILDER,
+    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date_or_upcoming_1_day.VIEW_BUILDER,
         not_on_life_sentence_or_lifetime_supervision.VIEW_BUILDER,
         no_zero_tolerance_codes_spans.VIEW_BUILDER,
         has_active_sentence.VIEW_BUILDER,
+        supervision_level_is_not_internal_unknown.VIEW_BUILDER,
+        supervision_level_is_not_interstate_compact.VIEW_BUILDER,
+        supervision_level_is_not_unassigned.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
 )
