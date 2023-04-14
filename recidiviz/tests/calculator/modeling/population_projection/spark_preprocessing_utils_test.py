@@ -180,6 +180,12 @@ class TestSparkPreprocessingUtils(unittest.TestCase):
         Check that warning thrown if probability density function is increasing. The PDF
         must be weakly decreasing, otherwise interpolation can produce sawtooth/jagged
         interpolated PDFs.
+
+        Important note: By default, we fail any pytest test where aw warning is emitted.
+        This test passes because spark_processing_utils.py is explicitly exempted
+        from that rule in setup.cfg. This test will start failing if spark_processing_utils.py
+        is moved / renamed and you will need to update setup.cfg accordingly to get it to pass
+        again.
         """
         with catch_warnings(record=True) as w:
             pdf_list = [0.1, 0.2, 0.3]
