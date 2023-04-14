@@ -19,7 +19,7 @@ from recidiviz.case_triage.pathways.dimensions.dimension import Dimension
 from recidiviz.case_triage.pathways.pathways_api_schemas import (
     FETCH_METRIC_SCHEMAS_BY_NAME,
 )
-from recidiviz.tests.case_triage.api_schemas_test import (
+from recidiviz.tests.case_triage.api_schemas_test_utils import (
     SchemaTestCase,
     invalid_schema_test,
     valid_schema_test,

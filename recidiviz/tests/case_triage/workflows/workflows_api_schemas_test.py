@@ -18,7 +18,7 @@
 from recidiviz.case_triage.workflows.api_schemas import (
     WorkflowsUsTnInsertTEPEContactNoteSchema,
 )
-from recidiviz.tests.case_triage.api_schemas_test import (
+from recidiviz.tests.case_triage.api_schemas_test_utils import (
     SchemaTestCase,
     invalid_schema_test,
     valid_schema_test,

@@ -363,8 +363,6 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 # TODO(#6859): Get rid of this dependency
-                "recidiviz.big_query.big_query_utils",
-                # TODO(#6859): Get rid of this dependency
                 "recidiviz.calculator.pipeline",
                 "recidiviz.calculator.query.state.views.dashboard.pathways",
                 "recidiviz.case_triage",

@@ -15,13 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Backend entry point for Case Triage API server."""
-import json
 import logging
 import os
 
 import google.cloud.logging
 import sentry_sdk
-from flask import Flask, Response, g, send_from_directory, session
+from flask import Flask, Response, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
@@ -33,24 +32,11 @@ import recidiviz
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     PATHWAYS_OFFLINE_DEMO_STATE,
 )
-from recidiviz.case_triage.admin_flask_views import RefreshAuthStore
-from recidiviz.case_triage.analytics import CaseTriageSegmentClient
-from recidiviz.case_triage.api_routes import (
-    IMPERSONATED_EMAIL_KEY,
-    create_api_blueprint,
-)
-from recidiviz.case_triage.auth_routes import create_auth_blueprint
-from recidiviz.case_triage.authorization import AuthorizationStore
-from recidiviz.case_triage.e2e_routes import e2e_blueprint
 from recidiviz.case_triage.error_handlers import register_error_handlers
-from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.pathways.pathways_routes import create_pathways_api_blueprint
-from recidiviz.case_triage.redis_sessions import RedisSessionInterface
-from recidiviz.case_triage.user_context import UserContext
 from recidiviz.case_triage.util import (
     get_rate_limit_storage_uri,
     get_redis_connection_options,
-    get_sessions_redis,
 )
 from recidiviz.case_triage.workflows.workflows_routes import (
     create_workflows_api_blueprint,
@@ -62,24 +48,14 @@ from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDat
 from recidiviz.persistence.database.sqlalchemy_engine_manager import (
     SQLAlchemyEngineManager,
 )
-from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
 from recidiviz.tools.utils.fixture_helpers import create_dbs, reset_fixtures
-from recidiviz.utils.auth.auth0 import (
-    Auth0Config,
-    TokenClaims,
-    build_auth0_authorization_decorator,
-    update_session_with_user_info,
-)
 from recidiviz.utils.environment import (
     get_gcp_environment,
     in_development,
     in_gcp,
     in_offline_mode,
-    in_test,
 )
-from recidiviz.utils.secrets import get_secret
 from recidiviz.utils.structured_logging import StructuredCloudLoggingHandler
-from recidiviz.utils.timer import RepeatedTimer
 
 # Sentry setup
 if in_gcp():
@@ -102,17 +78,8 @@ static_folder = os.path.abspath(
 )
 
 app = Flask(__name__, static_folder=static_folder)
-app.secret_key = get_secret("case_triage_secret_key")
 
-sessions_redis = get_sessions_redis()
-
-if sessions_redis:
-    # We have to ignore mypy here because the Flask source code here (as of version 2.0.2)
-    # types `session_interface` as `SecureCookieSessionInterface` instead of
-    # `SessionInterface`.
-    app.session_interface = RedisSessionInterface(sessions_redis)  # type: ignore[assignment]
-
-# Again, need to silence mypy error `Cannot assign to a method`
+# Need to silence mypy error `Cannot assign to a method`
 app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[assignment]
 csrf = CSRFProtect(app)
 workflows_blueprint = create_workflows_api_blueprint()
@@ -121,7 +88,6 @@ workflows_blueprint = create_workflows_api_blueprint()
 # Since we use a JWT (the Bearer token in the Auth header), we should be protected from CSRF.
 # https://security.stackexchange.com/questions/170388/do-i-need-csrf-token-if-im-using-bearer-jwt
 csrf.exempt(workflows_blueprint)
-csrf.exempt(e2e_blueprint)
 register_error_handlers(app)
 
 
@@ -139,38 +105,6 @@ if not in_development():
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SECURE"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Strict"
-
-setup_scoped_sessions(app, SchemaType.CASE_TRIAGE)
-
-
-def on_successful_authorization(jwt_claims: TokenClaims) -> None:
-
-    auth_error = CaseTriageAuthorizationError(
-        code="no_case_triage_access",
-        description="You are not authorized to access this application",
-    )
-    update_session_with_user_info(
-        session, jwt_claims, auth_error, IMPERSONATED_EMAIL_KEY
-    )
-
-    email = session["user_info"]["email"].lower()
-    g.user_context = UserContext(email, authorization_store, jwt_claims=jwt_claims)
-    if (
-        not g.user_context.access_permissions.can_access_case_triage
-        and not g.user_context.access_permissions.can_access_leadership_dashboard
-    ):
-        raise auth_error
-
-
-authorization_store = AuthorizationStore()
-store_refresh = RepeatedTimer(
-    15 * 60,
-    authorization_store.refresh,
-    run_immediately_synchronously=True,
-)
-
-if not in_test():
-    store_refresh.start()
 
 # Logging setup
 if in_gcp():
@@ -226,46 +160,12 @@ def set_headers(response: Response) -> Response:
     return response
 
 
-# Segment setup
-write_key = os.getenv("SEGMENT_WRITE_KEY", "")
-segment_client = CaseTriageSegmentClient(write_key)
-
 # Routes & Blueprints
 pathways_api_blueprint = create_pathways_api_blueprint()
 app.register_blueprint(pathways_api_blueprint, url_prefix="/pathways")
 # Only the pathways endpoints are accessible in offline mode
 if not in_offline_mode():
-    auth0_configuration = get_secret("case_triage_auth0")
-
-    if not auth0_configuration:
-        raise ValueError("Missing Case Triage Auth0 configuration secret")
-
-    authorization_config = Auth0Config.from_config_json(json.loads(auth0_configuration))
-    requires_authorization = build_auth0_authorization_decorator(
-        authorization_config, on_successful_authorization
-    )
-    api_blueprint = create_api_blueprint(segment_client, requires_authorization)
-    auth_blueprint = create_auth_blueprint(authorization_config)
-
-    app.register_blueprint(api_blueprint, url_prefix="/api")
-    app.register_blueprint(auth_blueprint, url_prefix="/auth")
-    app.register_blueprint(e2e_blueprint, url_prefix="/e2e")
     app.register_blueprint(workflows_blueprint, url_prefix="/workflows")
-
-    app.add_url_rule(
-        "/refresh_auth_store",
-        view_func=RefreshAuthStore.as_view(
-            "refresh_auth_store",
-            redirect_url="/",
-            authorization_store=authorization_store,
-            authorization_decorator=requires_authorization,
-        ),
-    )
-
-    @app.route("/auth0_public_config.js")
-    def auth0_public_config() -> str:
-        # Expose ONLY the necessary variables to configure our Auth0 frontend
-        return f"window.AUTH0_CONFIG = {authorization_config.as_public_config()};"
 
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
