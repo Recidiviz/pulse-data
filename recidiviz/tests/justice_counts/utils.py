@@ -265,8 +265,8 @@ class JusticeCountsSchemaTestObjects:
         self.reported_calls_for_service_metric = (
             JusticeCountsSchemaTestObjects.get_reported_calls_for_service_metric()
         )
-        self.reported_residents_metric = MetricInterface(
-            key=law_enforcement.residents.key,
+        self.arrests_metric = MetricInterface(
+            key=law_enforcement.arrests.key,
             value=5000,
             aggregated_dimensions=[
                 MetricAggregatedDimensionData(

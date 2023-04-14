@@ -725,7 +725,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
     def test_add_population_metric(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
             report = self.test_schema_objects.test_report_monthly
-            report_metric = self.test_schema_objects.reported_residents_metric
+            report_metric = self.test_schema_objects.arrests_metric
             ReportInterface.add_or_update_metric(
                 session=session,
                 report=report,

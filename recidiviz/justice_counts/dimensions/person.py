@@ -16,7 +16,6 @@
 # =============================================================================
 """Dimension subclasses used for global person characteristic filters."""
 
-
 import enum
 
 import attr
@@ -35,23 +34,6 @@ class Race(DimensionBase):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "global/race"
-
-    @property
-    def dimension_value(self) -> str:
-        return self.value
-
-
-@attr.s(frozen=True)
-class Ethnicity(DimensionBase):
-    """
-    Dimension that represents the type of ethnicity
-    """
-
-    value: str = attr.ib()
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "global/ethnicity"
 
     @property
     def dimension_value(self) -> str:
@@ -190,23 +172,6 @@ class Gender(DimensionBase):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "global/gender"
-
-    @property
-    def dimension_value(self) -> str:
-        return self.value
-
-
-@attr.s(frozen=True)
-class Age(DimensionBase):
-    """
-    Dimension that represents the age
-    """
-
-    value: str = attr.ib()
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "global/age/raw"
 
     @property
     def dimension_value(self) -> str:

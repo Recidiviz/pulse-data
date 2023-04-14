@@ -106,10 +106,6 @@ class TestMetricDefinition(TestCase):
             law_enforcement.funding.key,
             "LAW_ENFORCEMENT_FUNDING",
         )
-        self.assertEqual(
-            law_enforcement.residents.key,
-            "LAW_ENFORCEMENT_RESIDENTS",
-        )
 
     def test_additional_context(self) -> None:
         # Does not have metric level includes_excludes
