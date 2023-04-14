@@ -36,7 +36,7 @@ _DESCRIPTION = """Selects all spans of time in which a person is on probation
 supervision and actively supervised as defined by excluding certain compartments and supervision levels 
 such as in custody, bench warrant, absconsion, or unknown.
 """
-# TODO(#19412) Refactor current opps to use standardized candidate population queries (of which this is one)
+
 VIEW_BUILDER: StateAgnosticTaskCandidatePopulationBigQueryViewBuilder = (
     state_agnostic_candidate_population_view_builder(
         population_name=_POPULATION_NAME,
