@@ -70,6 +70,9 @@ from recidiviz.validation.views.task_eligibility.zero_day_tes_candidate_populati
 from recidiviz.validation.views.task_eligibility.zero_day_tes_criteria_spans import (
     ZERO_DAY_TES_CRITERIA_SPANS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.task_eligibility.zero_eligible_current_task_eligibility_spans import (
+    ZERO_ELIGIBLE_CURRENT_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+)
 
 
 def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
@@ -137,6 +140,10 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=MAGIC_END_DATE_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=ZERO_ELIGIBLE_CURRENT_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
     ]
