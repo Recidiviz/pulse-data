@@ -18,10 +18,8 @@
 their classification review date.
 """
 from recidiviz.calculator.query.bq_utils import (
-    MAGIC_END_DATE,
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
-    revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
@@ -174,13 +172,11 @@ sub sessions, it bumps out the critical date by the number of days spent on inac
             THEN DATE_ADD(DATE_ADD(super_session_start_date, INTERVAL 1 YEAR), INTERVAL cumulative_inactive_days DAY)
         WHEN inactive_session_days=0 AND priority_level = 'z_default' 
             THEN DATE_ADD(DATE_ADD(super_session_start_date, INTERVAL 6 MONTH), INTERVAL cumulative_inactive_days DAY)
-        --TODO(#19845) revert to using NULL versions of critical date and super_session_end_date once NULL values are
-        --supported in aggregate adjacent spans 
-        ELSE "{MAGIC_END_DATE}"
+        ELSE NULL
     END AS critical_date,
     priority_level,
     super_session_start_date,
-    {nonnull_end_date_clause('super_session_end_date')} AS super_session_end_date,
+    super_session_end_date,
   FROM active_supervision_population_cumulative_day_spans 
 ),
 critical_date_spans_all AS (
@@ -197,14 +193,14 @@ critical date spans for the supervision super session end when the first classif
     sp.person_id,
     sp.start_date,
     LEAST({nonnull_end_date_clause('ce.completion_event_date')}, {nonnull_end_date_clause('sp.end_date')}) AS end_date, 
-    {revert_nonnull_end_date_clause('sp.critical_date')} AS critical_date,
+    sp.critical_date,
     sp.priority_level,
    FROM ({aggregate_adjacent_spans(table_name='critical_date_sub_session_spans', 
                                   attribute=['critical_date', 'priority_level', 'super_session_start_date', 'super_session_end_date'])}) sp
    LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
         ON sp.person_id = ce.person_id
         AND sp.state_code = ce.state_code
-        AND ce.completion_event_date BETWEEN sp.super_session_start_date AND sp.super_session_end_date
+        AND ce.completion_event_date BETWEEN sp.super_session_start_date AND {nonnull_end_date_clause('sp.super_session_end_date')}
     QUALIFY ROW_NUMBER() OVER(PARTITION BY sp.state_code, sp.person_id, sp.start_date, sp.end_date ORDER BY completion_event_date)=1
   UNION ALL
       /* This CTE identifies when an individual is on supervision after completing the Special Alternative to  
