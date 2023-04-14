@@ -276,6 +276,9 @@ from recidiviz.validation.views.state.supervision_termination_prior_to_start imp
 from recidiviz.validation.views.state.supervision_termination_reason_no_date import (
     SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.workflows.client_and_resident_record_percent_change_in_eligibility_exceeded import (
+    CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.workflows.client_record_archive_duplicate_person_ids import (
     CLIENT_RECORD_ARCHIVE_DUPLICATE_PERSON_IDS_VIEW_BUILDER,
 )
@@ -993,6 +996,17 @@ def get_all_validations() -> List[DataValidationCheck]:
                 "distinct_id_count",
             ],
             validation_category=ValidationCategory.INVARIANT,
+            region_configs=region_configs,
+        ),
+        SamenessDataValidationCheck(
+            view_builder=CLIENT_AND_RESIDENT_RECORD_PERCENT_CHANGE_IN_ELIGIBILITY_EXCEEDED_VIEW_BUILDER,
+            comparison_columns=[
+                "last_export_eligibility_count",
+                "current_eligibility_count",
+            ],
+            soft_max_allowed_error=0.10,
+            hard_max_allowed_error=0.30,
+            validation_category=ValidationCategory.CONSISTENCY,
             region_configs=region_configs,
         ),
     ]
