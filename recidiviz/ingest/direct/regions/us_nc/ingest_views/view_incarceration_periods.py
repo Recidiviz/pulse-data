@@ -98,12 +98,12 @@ sentences_with_reasons_split AS (
     sentence_begin_date as start_date,
     end_date,
     CASE 
-      WHEN ABS(DATE_DIFF(movement_date, sentence_begin_date, DAY)) < 7 
+      WHEN ABS(DATE_DIFF(CAST(movement_date AS DATETIME), CAST(sentence_begin_date AS DATETIME), DAY)) < 7 
       THEN movement_type 
       ELSE NULL 
     END AS start_reason,
     CASE
-      WHEN ABS(DATE_DIFF(movement_date, end_date, DAY)) < 7 
+      WHEN ABS(DATE_DIFF(CAST(movement_date AS DATETIME), CAST(end_date AS DATETIME), DAY)) < 7 
       THEN movement_type
       ELSE NULL
     END AS end_reason,
