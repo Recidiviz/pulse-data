@@ -8,6 +8,7 @@ input_columns:
   - end_reason
   - facility
   - custody_level
+  - period_seq_num
 unused_columns: []
 output:
   StatePerson:
@@ -17,7 +18,11 @@ output:
           id_type: $literal("US_NC_DOC_INMATE")
     incarceration_periods:
       - StateIncarcerationPeriod:
-          external_id: doc_id
+          external_id:
+            $concat:
+              $values:
+                - doc_id
+                - period_seq_num
           incarceration_type:
             $conditional:
               - $if:
