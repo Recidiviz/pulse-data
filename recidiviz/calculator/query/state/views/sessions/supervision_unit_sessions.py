@@ -26,7 +26,6 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
-    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -77,15 +76,43 @@ sub_sessions_dedup_cte AS (
     FROM
         sub_sessions_with_attributes
 )
+, agg_sessions_cte AS (
+    SELECT
+        person_id,
+        state_code,
+        supervision_unit_session_id,
+        supervision_district,
+        supervision_unit,
+        supervision_unit_name,
+        MIN(start_date) AS start_date,
+        {revert_nonnull_end_date_clause(f"MAX({nonnull_end_date_clause('end_date')})")} AS end_date,
+    FROM (
+        SELECT
+            * EXCEPT(date_gap),
+            SUM(IF(date_gap, 1, 0)) OVER (
+                PARTITION BY person_id, supervision_district, supervision_unit, supervision_unit_name 
+                ORDER BY start_date, {nonnull_end_date_clause("end_date")}
+            ) AS supervision_unit_session_id,
+        FROM (
+            SELECT
+                *,
+                IFNULL(
+                    LAG(end_date) OVER(
+                        PARTITION BY person_id, supervision_district, supervision_unit, supervision_unit_name
+                        ORDER BY start_date, {nonnull_end_date_clause("end_date")}
+                    ) != start_date, TRUE
+                ) AS date_gap,
+            FROM
+                sub_sessions_dedup_cte
+        )
+    )
+    GROUP BY 1, 2, 3, 4, 5, 6
+)
 SELECT
     *,
     end_date AS end_date_exclusive,
-FROM ({aggregate_adjacent_spans(
-    table_name="sub_sessions_dedup_cte",
-    attribute=["supervision_district", "supervision_unit", "supervision_unit_name"],
-    session_id_output_name="supervision_unit_session_id",
-    end_date_field_name="end_date"
-)})
+FROM
+    agg_sessions_cte
 
 """
 
