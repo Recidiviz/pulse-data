@@ -157,7 +157,7 @@ const formatPageName = (page: string) => {
     .replace(/Sql/g, "SQL") // Correctly case acronyms
     .replace(/Gcs/g, "GCS")
     .replace(/Po/g, "PO")
-    .replace(/POpulation/g, "Population")
+    .replace(/POp/g, "Pop")
     .replace(/Csv/g, "CSV")
     .replace(/Pfi/g, "PFI");
 };
