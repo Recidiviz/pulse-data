@@ -315,7 +315,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
 
         # Update existing report by updating metric
-        report_metric = self.test_schema_objects.reported_residents_metric
+        report_metric = self.test_schema_objects.arrests_metric
         ReportInterface.add_or_update_metric(
             session=self.session,
             report=monthly_report_1,
@@ -2186,7 +2186,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             ]
         )
 
-        report_metric = self.test_schema_objects.reported_residents_metric
+        report_metric = self.test_schema_objects.arrests_metric
         ReportInterface.add_or_update_metric(
             session=self.session,
             report=report,
@@ -2217,11 +2217,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.assertEqual(response_json_datapoint["is_published"], False)
         self.assertEqual(
             response_json_datapoint["metric_definition_key"],
-            "LAW_ENFORCEMENT_RESIDENTS",
+            "LAW_ENFORCEMENT_ARRESTS",
         )
-        self.assertEqual(
-            response_json_datapoint["metric_display_name"], "Jurisdiction Residents"
-        )
+        self.assertEqual(response_json_datapoint["metric_display_name"], "Arrests")
         self.assertEqual(
             response_json_datapoint["start_date"], "Wed, 01 Jun 2022 00:00:00 GMT"
         )

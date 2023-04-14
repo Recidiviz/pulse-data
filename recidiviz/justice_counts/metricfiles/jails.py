@@ -19,6 +19,7 @@
 from recidiviz.justice_counts.dimensions.jails import (
     ExpenseType,
     FundingType,
+    GrievancesUpheldType,
     PostAdjudicationReleaseType,
     PreAdjudicationReleaseType,
     StaffType,
@@ -154,5 +155,11 @@ JAILS_METRIC_FILES = [
     MetricFile(
         canonical_filename="grievances_upheld",
         definition=jails.grievances_upheld,
+    ),
+    MetricFile(
+        canonical_filename="grievances_upheld_by_type",
+        definition=jails.grievances_upheld,
+        disaggregation=GrievancesUpheldType,
+        disaggregation_column_name="grievances_upheld_type",
     ),
 ]

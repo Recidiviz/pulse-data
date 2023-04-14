@@ -24,11 +24,7 @@ from recidiviz.justice_counts.dimensions.courts import (
     SentenceType,
     StaffType,
 )
-from recidiviz.justice_counts.dimensions.person import (
-    BiologicalSex,
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.includes_excludes.common import (
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
@@ -81,21 +77,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
     System,
-)
-
-residents = MetricDefinition(
-    system=System.COURTS_AND_PRETRIAL,
-    metric_type=MetricType.RESIDENTS,
-    category=MetricCategory.POPULATIONS,
-    display_name="Jurisdiction Residents",
-    description="Measures the number of residents in your agency's jurisdiction.",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
-    ],
-    disabled=True,
 )
 
 funding = MetricDefinition(

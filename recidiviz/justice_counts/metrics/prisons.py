@@ -16,11 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Prison system."""
 from recidiviz.justice_counts.dimensions.offense import OffenseType
-from recidiviz.justice_counts.dimensions.person import (
-    BiologicalSex,
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.prisons import (
     ExpenseType,
     FundingType,
@@ -90,21 +86,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     MetricType,
     ReportingFrequency,
     System,
-)
-
-residents = MetricDefinition(
-    system=System.PRISONS,
-    metric_type=MetricType.RESIDENTS,
-    category=MetricCategory.POPULATIONS,
-    display_name="Jurisdiction Residents",
-    description="Measures the number of residents in your agency's jurisdiction.",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
-    ],
-    disabled=True,
 )
 
 funding = MetricDefinition(

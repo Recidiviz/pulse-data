@@ -18,10 +18,7 @@
 
 from recidiviz.justice_counts.dimensions.common import CaseSeverityType
 from recidiviz.justice_counts.dimensions.defense import ExpenseType, FundingType
-from recidiviz.justice_counts.dimensions.person import (
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.dimensions.prosecution import DispositionType, StaffType
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import defense
@@ -104,10 +101,10 @@ DEFENSE_METRIC_FILES = [
         disaggregation_column_name="race/ethnicity",
     ),
     MetricFile(
-        canonical_filename="cases_disposed_by_gender",
+        canonical_filename="cases_disposed_by_sex",
         definition=defense.cases_disposed,
-        disaggregation=GenderRestricted,
-        disaggregation_column_name="gender",
+        disaggregation=BiologicalSex,
+        disaggregation_column_name="biological_sex",
     ),
     MetricFile(
         canonical_filename="complaints_sustained",

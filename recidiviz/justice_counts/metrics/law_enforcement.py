@@ -16,7 +16,6 @@
 # =============================================================================
 """Defines all Justice Counts metrics for the Law Enforcement system."""
 
-from recidiviz.common.constants.justice_counts import ContextKey, ValueType
 from recidiviz.justice_counts.dimensions.common import ExpenseType
 from recidiviz.justice_counts.dimensions.law_enforcement import (
     CallType,
@@ -26,11 +25,7 @@ from recidiviz.justice_counts.dimensions.law_enforcement import (
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.offense import OffenseType
-from recidiviz.justice_counts.dimensions.person import (
-    BiologicalSex,
-    GenderRestricted,
-    RaceAndEthnicity,
-)
+from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.includes_excludes.law_enforcement import (
     CallsForServiceEmergencyCallsIncludesExcludes,
     CallsForServiceIncludesExcludes,
@@ -75,7 +70,6 @@ from recidiviz.justice_counts.includes_excludes.person import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     IncludesExcludesSet,
     MetricCategory,
     MetricDefinition,
@@ -85,29 +79,6 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     MeasurementType,
     MetricType,
     System,
-)
-
-residents = MetricDefinition(
-    system=System.LAW_ENFORCEMENT,
-    metric_type=MetricType.RESIDENTS,
-    category=MetricCategory.POPULATIONS,
-    display_name="Jurisdiction Residents",
-    description="Measures the number of residents in your agency's jurisdiction.",
-    measurement_type=MeasurementType.INSTANT,
-    reporting_frequencies=[ReportingFrequency.MONTHLY, ReportingFrequency.ANNUAL],
-    specified_contexts=[
-        Context(
-            key=ContextKey.JURISDICTION_AREA,
-            value_type=ValueType.NUMBER,
-            label="Please provide the land size (area) of the jurisdiction in square miles.",
-            required=False,
-        )
-    ],
-    aggregated_dimensions=[
-        AggregatedDimension(dimension=RaceAndEthnicity, required=True),
-        AggregatedDimension(dimension=GenderRestricted, required=True),
-    ],
-    disabled=True,
 )
 
 funding = MetricDefinition(
