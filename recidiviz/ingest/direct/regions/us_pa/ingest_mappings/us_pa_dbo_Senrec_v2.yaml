@@ -118,6 +118,7 @@ output:
           effective_date: sent_start_date
           completion_date: sent_stop_date
           projected_min_release_date: min_expir_date
+          parole_eligibility_date: min_expir_date
           projected_max_release_date: max_expir_date
           county_code: sentcing_cnty
           is_life:
