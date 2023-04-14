@@ -20,7 +20,6 @@ columns:
     description: |-
       Assessment Tool Reference ID
   - name: LOC_REF_ID
-    is_pii: True
     description: |-
       Location Reference ID
   - name: SCORE_BY_USER_REF_ID
@@ -28,7 +27,6 @@ columns:
     description: |-
       Score By User Reference ID
   - name: OVERRIDE_EVALUATION_REF_ID
-    is_pii: True
     description: |-
       Evaluation Override Reference ID
   - name: EVAL_OVERRIDE_CD

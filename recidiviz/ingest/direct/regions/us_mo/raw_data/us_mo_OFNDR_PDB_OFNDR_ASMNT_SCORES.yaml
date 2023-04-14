@@ -7,80 +7,58 @@ data_classification: source
 primary_key_cols:
   - OFNDR_ASMNT_SCORE_REF_ID
 columns:
-  # TODO(#17289): fill in once we have documentation
   - name: OFNDR_ASMNT_SCORE_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Offender Assessment Score Reference ID
   - name: OFNDR_ASMNT_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Offender Assessment Reference ID
   - name: EVALUATION_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Evaluation Reference ID
   - name: SECTION_EVALUATION_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Section Evaluation Reference ID
   - name: SCORING_PART_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Scoring Part Referene ID
   - name: SECTION_CATEGORY_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Section Category Reference ID
   - name: SECTION_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Section Reference ID
   - name: ASMNT_SCORING_TYPE_CD
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Assessment Scoring Type Code
   - name: SCORING_TYPE_SCORE_VALUE
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Scoring Type Score Value
   - name: OVERRIDE_TOOL_SCORE_IND
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Override Tool Score Indicator
   - name: OVERRIDE_TOOL_SCORE_VALUE
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Override Tool Score Value
   - name: RAW_TOOL_SCORE_VALUE
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Raw Tool Score Value
   - name: CREATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Create User Reference ID
   - name: CREATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Created At Timestamp
   - name: UPDATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update User Reference ID
   - name: UPDATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update Timestamp
   - name: DELETE_IND
     description: |-
-      XXX
+      Row Deletion Indicator

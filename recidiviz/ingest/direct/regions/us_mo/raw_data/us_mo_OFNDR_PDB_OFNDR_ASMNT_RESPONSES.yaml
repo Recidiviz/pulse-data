@@ -7,44 +7,35 @@ data_classification: source
 primary_key_cols:
   - OFNDR_RESPONSE_REF_ID
 columns:
-  # TODO(#17289): fill in once we have documentation
   - name: OFNDR_RESPONSE_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Offender Response Reference ID
   - name: OFNDR_ASMNT_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Offender Assessment Reference ID
   - name: RESPONSE_REF_ID
+    description: |-
+      Response Reference ID
+  - name: RESPONSE_COMMENT
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
-  - name: RESPONSE_COMMENT
-    description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Response Comment
   - name: CREATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Create User Reference ID
   - name: CREATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Created At Timestamp
   - name: UPDATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update User Reference ID
   - name: UPDATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update Timestamp
   - name: DELETE_IND
     description: |-
-      XXX
+      Row Deletion Indicator

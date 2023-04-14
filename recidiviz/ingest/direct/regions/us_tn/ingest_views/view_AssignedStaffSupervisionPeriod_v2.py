@@ -68,7 +68,7 @@ cleaned_assignment_periods AS (
         )
 ),
 raw_supervision_level_periods AS (
-    -- First, group supervision level periods by person and by supervisison type (e.g. parole, probation, etc.)
+    -- First, group supervision level periods by person and by supervision type (e.g. parole, probation, etc.)
     -- and then flag any periods where the supervision level is different from the previous one or the periods
     -- are noncontiguous.
     SELECT
