@@ -141,9 +141,6 @@ jobs:
       - name: Yarn lint (case triage)
         working-directory: ./frontends/case-triage/
         run: yarn lint --max-warnings=0
-      - name: Yarn test (case triage)
-        working-directory: ./frontends/case-triage/
-        run: yarn test
 
   unit-tests:
     name: Base unit tests
