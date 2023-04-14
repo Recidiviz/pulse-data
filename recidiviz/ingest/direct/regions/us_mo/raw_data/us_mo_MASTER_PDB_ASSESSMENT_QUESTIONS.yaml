@@ -7,60 +7,45 @@ data_classification: source
 primary_key_cols:
   - QUESTION_REF_ID
 columns:
-  # TODO(#17289): fill in once we have documentation
   - name: QUESTION_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Question Reference ID
   - name: SECTION_REF_ID
-    is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Section Reference ID
   - name: QUESTION_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Question ID
   - name: QUESTION_TEXT
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Question Text
   - name: QUESTION_TYPE_CD
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Question Type Code
   - name: RESPONSE_REQ_IND
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Response Required Indicator
   - name: MULTIPLE_RESPONSE_IND
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Multiple Responses Possible Indicator
   - name: ACTIVE_IND
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Active Indicator
   - name: CREATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Create User Reference ID
   - name: CREATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Created At Timestamp
   - name: UPDATE_USER_REF_ID
     is_pii: True
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update User Reference ID
   - name: UPDATE_TS
     description: |-
-      XXX
-  # TODO(#17289): fill in once we have documentation
+      Update Timestamp
   - name: DELETE_IND
     description: |-
-      XXX
+      Row Deletion Indicator
