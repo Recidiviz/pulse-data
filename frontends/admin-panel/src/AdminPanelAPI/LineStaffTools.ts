@@ -23,29 +23,6 @@ import {
   deleteResource,
 } from "./utils";
 
-// Cloud SQL -> GCS CSV Export
-export const generateNonETLExports = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/line_staff_tools/generate_non_etl_exports");
-};
-
-// GCS CSV -> Cloud SQL Import
-export const fetchETLViewIds = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/line_staff_tools/fetch_etl_view_ids");
-};
-
-export const runCloudSQLImport = async (
-  viewIds: string[]
-): Promise<Response> => {
-  return postWithURLAndBody("/api/line_staff_tools/run_gcs_import", {
-    viewIds,
-  });
-};
-
-// PO Feedback
-export const getPOFeedback = async (): Promise<Response> => {
-  return postWithURLAndBody("/api/line_staff_tools/get_po_feedback");
-};
-
 // Fetch states for po monthly reports
 export const fetchEmailStateCodes = async (): Promise<Response> => {
   return postWithURLAndBody("/api/line_staff_tools/fetch_email_state_codes");
