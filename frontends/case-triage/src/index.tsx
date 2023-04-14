@@ -14,10 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import React from "react";
-import ReactDOM from "react-dom";
 
-ReactDOM.render(<div />, document.getElementById("root"), () => {
-  // Redirecting to Recidiviz Dashboard now that Case Triage is deprecated.
-  window.location.replace("https://dashboard.recidiviz.org");
-});
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Get around "All files must be modules" error
+import React from "react";
