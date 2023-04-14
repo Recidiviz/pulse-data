@@ -16,7 +16,6 @@
 # =============================================================================
 """Defines routes for the Case Triage API endpoints in the admin panel."""
 import logging
-import os
 import tempfile
 from http import HTTPStatus
 from json import JSONDecodeError
@@ -29,10 +28,6 @@ from google.api_core import exceptions
 from numpy import datetime64
 
 from recidiviz.admin_panel.admin_stores import fetch_state_codes
-from recidiviz.admin_panel.case_triage_helpers import (
-    columns_for_case_triage_view,
-    get_importable_csvs,
-)
 from recidiviz.admin_panel.line_staff_tools.constants import (
     EMAIL_STATE_CODES,
     RAW_FILES_CONFIG,
@@ -42,30 +37,9 @@ from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.calculator.query.state.dataset_config import (
     STATIC_REFERENCE_TABLES_DATASET,
 )
-from recidiviz.case_triage.views.view_config import (
-    CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
-    ETL_TABLES,
-)
-from recidiviz.cloud_sql.cloud_sql_export_to_gcs import export_from_cloud_sql_to_gcs_csv
-from recidiviz.cloud_sql.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import is_date_str
 from recidiviz.common.results import MultiRequestResult
-from recidiviz.metrics.export.export_config import (
-    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
-)
-from recidiviz.persistence.database.schema.case_triage import (
-    schema as case_triage_schema,
-)
-from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
-from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.persistence.database.schema_utils import (
-    get_case_triage_table_classes,
-    get_database_entity_by_table_name,
-)
-from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.reporting import data_retrieval, email_delivery
 from recidiviz.reporting.context.po_monthly_report.constants import Batch, ReportType
 from recidiviz.reporting.email_reporting_handler import (
@@ -79,9 +53,7 @@ from recidiviz.reporting.email_reporting_utils import (
     validate_email_address,
 )
 from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
-from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.types import assert_type
 
 
@@ -94,134 +66,6 @@ def get_email_handler() -> EmailReportingHandler:
 
 def add_line_staff_tools_routes(bp: Blueprint) -> None:
     """Adds the relevant Case Triage API routes to an input Blueprint."""
-
-    # Fetch ETL View Ids for GCS -> Cloud SQL Import
-    @bp.route("/api/line_staff_tools/fetch_etl_view_ids", methods=["POST"])
-    @requires_gae_auth
-    def _fetch_etl_view_ids() -> Tuple[Response, HTTPStatus]:
-        return (
-            jsonify(
-                [builder.view_id for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS]
-                + list(get_importable_csvs().keys())
-            ),
-            HTTPStatus.OK,
-        )
-
-    # Generate Case Updates export from Cloud SQL -> GCS
-    @bp.route("/api/line_staff_tools/generate_non_etl_exports", methods=["POST"])
-    @requires_gae_auth
-    def _generate_non_etl_exports() -> Tuple[str, HTTPStatus]:
-        etl_table_classes = [t.__table__ for t in ETL_TABLES]
-        for table_class in get_case_triage_table_classes():
-            if table_class in etl_table_classes:
-                continue
-
-            export_from_cloud_sql_to_gcs_csv(
-                SchemaType.CASE_TRIAGE,
-                table_class.name,
-                GcsfsFilePath.from_absolute_path(
-                    os.path.join(
-                        StrictStringFormatter().format(
-                            CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
-                            project_id=metadata.project_id(),
-                        ),
-                        "exported",
-                        f"{table_class.name}.csv",
-                    )
-                ),
-                [col.name for col in table_class.columns],
-            )
-
-        return "", HTTPStatus.OK
-
-    # Run GCS -> Cloud SQL Import
-    @bp.route("/api/line_staff_tools/run_gcs_import", methods=["POST"])
-    @requires_gae_auth
-    def _run_gcs_import() -> Tuple[str, HTTPStatus]:
-        """Executes an import of data from Google Cloud Storage into Cloud SQL,
-        based on the query parameters in the request."""
-
-        request_json = assert_type(request.json, dict)
-        if "viewIds" not in request_json:
-            return "`viewIds` must be present in arugment list", HTTPStatus.BAD_REQUEST
-
-        known_view_builders = {
-            builder.view_id: builder for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
-        }
-        importable_csvs = get_importable_csvs()
-
-        for view_id in request_json["viewIds"]:
-            if view_id in importable_csvs:
-                # CSVs put in to_import override ones from known view builders
-                csv_path = importable_csvs[view_id]
-                try:
-                    columns = columns_for_case_triage_view(view_id)
-                except ValueError:
-                    logging.warning(
-                        "View_id (%s) found in to_import/ folder but does not have corresponding columns",
-                        view_id,
-                    )
-                    continue
-            elif view_id in known_view_builders:
-                csv_path = GcsfsFilePath.from_absolute_path(
-                    os.path.join(
-                        StrictStringFormatter().format(
-                            CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
-                            project_id=metadata.project_id(),
-                        ),
-                        f"{view_id}.csv",
-                    )
-                )
-                columns = known_view_builders[view_id].columns
-            else:
-                logging.warning(
-                    "Unexpected view_id (%s) found in call to run_gcs_import", view_id
-                )
-                continue
-
-            # NOTE: We are currently taking advantage of the fact that the destination table name
-            # matches the view id of the corresponding builder here. This invariant isn't enforced
-            # in code (yet), but the aim is to preserve this invariant for as long as possible.
-            import_gcs_csv_to_cloud_sql(
-                SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE),
-                get_database_entity_by_table_name(case_triage_schema, view_id),
-                csv_path,
-                columns,
-            )
-            logging.info("View (%s) successfully imported", view_id)
-
-        return "", HTTPStatus.OK
-
-    # fetch PO monthly report states
-    @bp.route("/api/line_staff_tools/get_po_feedback", methods=["POST"])
-    @requires_gae_auth
-    def _fetch_po_user_feedback() -> Tuple[Response, HTTPStatus]:
-        with SessionFactory.using_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE), autocommit=False
-        ) as session:
-            results = (
-                session.query(CaseUpdate)
-                .filter(
-                    CaseUpdate.comment.isnot(None),
-                    CaseUpdate.officer_external_id.notlike("demo::%"),
-                )
-                .all()
-            )
-            return (
-                jsonify(
-                    [
-                        {
-                            "personExternalId": res.person_external_id,
-                            "officerExternalId": res.officer_external_id,
-                            "actionType": res.action_type,
-                            "comment": res.comment,
-                            "timestamp": str(res.action_ts),
-                        }
-                        for res in results
-                    ]
-                ),
-                HTTPStatus.OK,
-            )
 
     @bp.route("/api/line_staff_tools/fetch_email_state_codes", methods=["POST"])
     @requires_gae_auth

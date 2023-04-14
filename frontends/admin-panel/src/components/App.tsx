@@ -33,8 +33,6 @@ import * as IngestOperations from "../navigation/IngestOperations";
 import * as JusticeCountsTools from "../navigation/JusticeCountsTools";
 import * as LineStaffTools from "../navigation/LineStaffTools";
 import "../style/App.css";
-import CloudSQLExportView from "./CloudSQLExportView";
-import CloudSQLImportView from "./CloudSQLImportView";
 import DataFreshnessView from "./DataFreshnessView";
 import DatasetView from "./Datasets/DatasetView";
 import DirectSandboxRawImport from "./DirectSandboxRawImportView";
@@ -44,7 +42,6 @@ import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
-import POFeedbackView from "./POFeedbackView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
 import StateUserPermissionsView from "./StateUserPermissions/StateUserPermissionsView";
 import UploadRawFilesView from "./UploadRawFilesView";
@@ -259,18 +256,6 @@ const App = (): JSX.Element => {
             exact
             path={IngestOperations.FLASH_DB_CHECKLIST_ROUTE}
             component={FlashDatabaseChecklist}
-          />
-          <Route
-            path={LineStaffTools.GCS_CSV_TO_CLOUD_SQL_ROUTE}
-            component={CloudSQLImportView}
-          />
-          <Route
-            path={LineStaffTools.CLOUD_SQL_TO_GCS_CSV_ROUTE}
-            component={CloudSQLExportView}
-          />
-          <Route
-            path={LineStaffTools.PO_FEEDBACK_ROUTE}
-            component={POFeedbackView}
           />
           <Route
             path={LineStaffTools.EMAIL_REPORTS_ROUTE}
