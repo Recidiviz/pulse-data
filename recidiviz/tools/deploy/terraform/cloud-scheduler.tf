@@ -55,7 +55,7 @@ resource "google_cloud_scheduler_job" "prune_old_dataflow_data" {
 
   http_target {
     uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/prune_old_dataflow_data"
-    http_method = "POST"
+    http_method = "GET"
 
     oidc_token {
       service_account_email = data.google_app_engine_default_service_account.default.email
@@ -78,7 +78,7 @@ resource "google_cloud_scheduler_job" "delete_empty_bq_datasets" {
 
   http_target {
     uri         = "https://${var.project_id}.appspot.com/calculation_data_storage_manager/delete_empty_datasets"
-    http_method = "POST"
+    http_method = "GET"
 
     oidc_token {
       service_account_email = data.google_app_engine_default_service_account.default.email
@@ -101,7 +101,7 @@ resource "google_cloud_scheduler_job" "update_long_term_backups" {
 
   http_target {
     uri         = "https://${var.project_id}.appspot.com/backup_manager/update_long_term_backups"
-    http_method = "POST"
+    http_method = "GET"
 
     oidc_token {
       service_account_email = data.google_app_engine_default_service_account.default.email
