@@ -136,7 +136,7 @@ WITH field_assignments_ce AS (
                     FLD_ASSN_BEG_DT,
                     FLD_ASSN_END_DT
             ) AS FIELD_ASSIGNMENT_SEQ_NUM
-        FROM augmented_field_assignments
+        FROM field_assignments_with_unique_date_spans
         WHERE REGION != 'UNCLASSIFIED_REGION'
     ),
     status_bw AS (
