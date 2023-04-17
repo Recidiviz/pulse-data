@@ -21,14 +21,14 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view_dag_walker import ProcessDagPerfConfig
 from recidiviz.utils import environment
 
-_MAX_SINGLE_VIEW_REMATERIALIZATION_TIME_SECONDS = 60 * 6  # 6 min
+_MAX_SINGLE_VIEW_MATERIALIZATION_TIME_SECONDS = 60 * 6  # 6 min
 
 # Add overrides here for graph nodes that are known to be more expensive to process.
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # IF YOU MUST MODIFY THIS MAP, PLEASE ADD Recidiviz/infra-review AS A REVIEWER TO YOUR
 # PULL REQUEST.
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-_ALLOWED_REMATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
+_ALLOWED_MATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
     # This is a foundational view that is know to be expensive - we're ok with this
     # taking a bit longer to materialize.
     BigQueryAddress(
@@ -38,10 +38,10 @@ _ALLOWED_REMATERIALIZATION_TIME_OVERRIDES: Dict[BigQueryAddress, float] = {
 }
 
 
-def get_view_dag_rematerialization_perf_config() -> ProcessDagPerfConfig:
-    """Returns perf configuration for any process_dag() calls that rematerialize views"""
+def get_deployed_view_dag_update_perf_config() -> ProcessDagPerfConfig:
+    """Returns perf configuration for any process_dag() calls that materializes views"""
 
-    node_max_processing_time_seconds = _MAX_SINGLE_VIEW_REMATERIALIZATION_TIME_SECONDS
+    node_max_processing_time_seconds = _MAX_SINGLE_VIEW_MATERIALIZATION_TIME_SECONDS
     if environment.in_gcp():
         # Add extra buffer when in GCP because sometimes materialization takes longer
         # due to contention with other AppEngine processes.
@@ -49,5 +49,5 @@ def get_view_dag_rematerialization_perf_config() -> ProcessDagPerfConfig:
 
     return ProcessDagPerfConfig(
         node_max_processing_time_seconds=node_max_processing_time_seconds,
-        node_allowed_process_time_overrides=_ALLOWED_REMATERIALIZATION_TIME_OVERRIDES,
+        node_allowed_process_time_overrides=_ALLOWED_MATERIALIZATION_TIME_OVERRIDES,
     )

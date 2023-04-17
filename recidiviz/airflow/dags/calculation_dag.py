@@ -419,7 +419,7 @@ def create_calculation_dag() -> None:
                 pipeline_config_parameters,
                 dataflow_pipeline_task_groups[state_code],
             )
-            # Metric pipelines should complete before view rematerialization starts
+            # Metric pipelines should complete before view update starts
             metric_pipeline_operator >> trigger_update_all_views
 
             # This ensures that all of the normalization pipelines for a state will

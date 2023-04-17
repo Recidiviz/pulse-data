@@ -38,12 +38,9 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
-from recidiviz.big_query.rematerialization_success_persister import (
-    AllViewsUpdateSuccessPersister,
-    RematerializationSuccessPersister,
-)
+from recidiviz.big_query.success_persister import AllViewsUpdateSuccessPersister
 from recidiviz.big_query.view_update_config import (
-    get_view_dag_rematerialization_perf_config,
+    get_deployed_view_dag_update_perf_config,
 )
 from recidiviz.big_query.view_update_manager_utils import (
     cleanup_datasets_and_delete_unmanaged_views,
@@ -124,90 +121,6 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     logging.info("All managed views successfully updated and materialized.")
 
     return "", HTTPStatus.OK
-
-
-@view_update_manager_blueprint.route(
-    "/rematerialize_all_deployed_views", methods=["POST"]
-)
-@requires_gae_auth
-def rematerialize_all_deployed_views() -> Tuple[str, HTTPStatus]:
-    """API endpoint to rematerialize all deployed views."""
-
-    start = datetime.datetime.now()
-    view_builders = deployed_view_builders(metadata.project_id())
-    _rematerialize_all_deployed_views(
-        all_view_builders=view_builders,
-        view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-    )
-    end = datetime.datetime.now()
-
-    runtime_sec = int((end - start).total_seconds())
-
-    success_persister = RematerializationSuccessPersister(
-        bq_client=BigQueryClientImpl()
-    )
-    success_persister.record_success_in_bq(
-        deployed_view_builders=view_builders,
-        runtime_sec=runtime_sec,
-        cloud_task_id=get_current_cloud_task_id(),
-    )
-    logging.info("All deployed views successfully rematerialized.")
-
-    return "", HTTPStatus.OK
-
-
-def _rematerialize_all_deployed_views(
-    all_view_builders: Sequence[BigQueryViewBuilder],
-    view_source_table_datasets: Set[str],
-) -> None:
-    """For all views corresponding to the builders in |views_to_update_builders| list,
-    re-materializes any materialized views. This should be called only when we want to
-    refresh the data in the materialized view(s), not when we want to update the
-    underlying query of the view(s).
-
-    Args:
-        all_view_builders: Superset of the views_to_update that contains all views that
-            either depend on or are dependents of the list of input views.
-        view_source_table_datasets: Set of datasets containing tables that can be
-            treated as root nodes in the view dependency graph.
-    """
-    try:
-        bq_client = BigQueryClientImpl()
-
-        full_dag_walker = BigQueryViewDagWalker(
-            build_views_to_update(
-                view_source_table_datasets=view_source_table_datasets,
-                candidate_view_builders=all_view_builders,
-                address_overrides=None,
-            )
-        )
-
-        def _materialize_view(
-            v: BigQueryView, _parent_results: Dict[BigQueryView, None]
-        ) -> None:
-            if not v.materialized_address:
-                logging.info(
-                    "Skipping non-materialized view [%s.%s].", v.dataset_id, v.view_id
-                )
-                return
-
-            try:
-                bq_client.materialize_view_to_table(view=v, use_query_cache=True)
-            except Exception as e_inner:
-                raise ValueError(
-                    f"Failed to materialize view [{v.address}]"
-                ) from e_inner
-
-        results = full_dag_walker.process_dag(
-            _materialize_view,
-            synchronous=False,
-            perf_config=get_view_dag_rematerialization_perf_config(),
-        )
-        results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
-    except Exception as e:
-        with monitoring.measurements() as measurements:
-            measurements.measure_int_put(m_failed_view_update, 1)
-        raise e
 
 
 def create_managed_dataset_and_deploy_views_for_view_builders(
@@ -472,7 +385,7 @@ def _create_managed_dataset_and_deploy_views(
     results = dag_walker.process_dag(
         process_fn,
         synchronous=False,
-        perf_config=get_view_dag_rematerialization_perf_config(),
+        perf_config=get_deployed_view_dag_update_perf_config(),
     )
     results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
 
