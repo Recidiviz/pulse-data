@@ -79,7 +79,4 @@ class AgencyJurisdictionInterface:
             else:
                 excluded_ids.append(jurisdiction.jurisdiction_id)
 
-        return {
-            "agency_id": agency_id,
-            "jurisdictions": {"included": included_ids, "excluded": excluded_ids},
-        }
+        return {"included": included_ids, "excluded": excluded_ids}
