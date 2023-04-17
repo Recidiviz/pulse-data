@@ -81,7 +81,6 @@ class SpreadsheetUploader:
         session: Session,
         rows: List[Dict[str, Any]],
         invalid_sheet_names: List[str],
-        metric_key_to_successfully_ingested_sheet_names: Dict[str, List[str]],
         metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -128,10 +127,6 @@ class SpreadsheetUploader:
                     metricfile=metricfile,
                     metric_key_to_errors=metric_key_to_errors,
                 )
-                if len(new_datapoint_json_list) > 0:
-                    metric_key_to_successfully_ingested_sheet_names[
-                        metricfile.definition.key
-                    ].append(self.sheet_name)
             except Exception as e:
                 new_datapoint_json_list = []
                 curr_metricfile = sheet_name_to_metricfile[self.sheet_name]

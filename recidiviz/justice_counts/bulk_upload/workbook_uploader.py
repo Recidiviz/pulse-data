@@ -17,7 +17,6 @@
 """Functionality for bulk upload of an Excel workbook into the Justice Counts database."""
 
 import datetime
-import itertools
 import logging
 from collections import defaultdict
 from itertools import groupby
@@ -131,11 +130,6 @@ class WorkbookUploader:
             unique_key: datapoint.get_value()
             for unique_key, datapoint in existing_datapoints_dict.items()
         }
-        # Sheets that have been successfully ingested in upload_rows will be added to
-        # metric_key_to_successfully_ingested_sheet_names.
-        metric_key_to_successfully_ingested_sheet_names: Dict[
-            str, List[str]
-        ] = defaultdict(list)
         sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[self.system.value]
 
         # 2. Sort sheet_names so that we process by aggregate sheets first
@@ -178,7 +172,6 @@ class WorkbookUploader:
                 session=session,
                 rows=rows,
                 invalid_sheet_names=invalid_sheet_names,
-                metric_key_to_successfully_ingested_sheet_names=metric_key_to_successfully_ingested_sheet_names,
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
                 metric_key_to_errors=self.metric_key_to_errors,
             )
@@ -195,7 +188,7 @@ class WorkbookUploader:
             invalid_sheet_names=invalid_sheet_names,
             sheet_name_to_metricfile=sheet_name_to_metricfile,
             metric_definitions=metric_definitions,
-            metric_key_to_successfully_ingested_sheet_names=metric_key_to_successfully_ingested_sheet_names,
+            actual_sheet_names=actual_sheet_names,
         )
 
         return (
@@ -274,7 +267,7 @@ class WorkbookUploader:
         self,
         invalid_sheet_names: List[str],
         sheet_name_to_metricfile: Dict[str, MetricFile],
-        metric_key_to_successfully_ingested_sheet_names: Dict[str, List[str]],
+        actual_sheet_names: List[str],
         metric_definitions: List[MetricDefinition],
     ) -> None:
         """Adds invalid sheet name errors to metric_key_to_errors."""
@@ -289,7 +282,7 @@ class WorkbookUploader:
         # to metric_key_to_errors
         self._add_missing_sheet_warnings(
             metric_definitions=metric_definitions,
-            metric_key_to_successfully_ingested_sheet_names=metric_key_to_successfully_ingested_sheet_names,
+            actual_sheet_names=actual_sheet_names,
         )
 
     def _add_invalid_sheet_name_error(
@@ -316,15 +309,12 @@ class WorkbookUploader:
 
     def _add_missing_sheet_warnings(
         self,
-        metric_key_to_successfully_ingested_sheet_names: Dict[str, List[str]],
         metric_definitions: List[MetricDefinition],
+        actual_sheet_names: List[str],
     ) -> None:
-        """This function adds a Missing Breakdown warning if a breakdown data is missing.
-        It also adds a Missing Total Value warning if the workbook is missing data in
+        """This function adds a Missing Breakdown Sheet warning if a breakdown sheet is missing.
+        It also adds a Missing Total Sheet warning if the workbook is missing
         an aggregate total sheet."""
-        successfully_ingested_sheet_names = set(
-            itertools.chain(*metric_key_to_successfully_ingested_sheet_names.values())
-        )
         for metric_definition in metric_definitions:
             sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
                 metric_definition.system.value
@@ -337,16 +327,6 @@ class WorkbookUploader:
                 )
             ):
                 continue
-            unsuccessfully_ingested_sheet_names = {
-                sheet_name
-                for sheet_name, metricfile in sheet_name_to_metricfile.items()
-                if metricfile.definition.key == metric_definition.key
-                and metricfile.canonical_filename
-                not in successfully_ingested_sheet_names
-            }
-
-            if len(unsuccessfully_ingested_sheet_names) == 0:
-                continue
 
             totals_filename = {
                 sheet_name
@@ -354,55 +334,49 @@ class WorkbookUploader:
                 if metricfile.definition.key == metric_definition.key
                 and metricfile.disaggregation is None
             }.pop()
-            breakdown_filenames = {
+            breakdown_filenames = [
                 sheet_name
                 for sheet_name, metricfile in sheet_name_to_metricfile.items()
                 if metricfile.definition.key == metric_definition.key
                 and metricfile.disaggregation is not None
-            }
+            ]
 
             # No longer raising 'Missing Metric' warning
             # If aggregate and breakdown sheets are not provided for a metric,
             # we will handle on the frontend
-            if (
-                unsuccessfully_ingested_sheet_names
-                == {totals_filename} | breakdown_filenames
-            ):
-                continue
+            for breakdown_filename in breakdown_filenames:
+                # If the whole metric is not missing, add missing breakdown warning
+                # for any missing breakdowns.
+                if (
+                    breakdown_filename not in actual_sheet_names
+                    and totals_filename in actual_sheet_names
+                ):
+                    breakdown_warning = JusticeCountsBulkUploadException(
+                        title="Missing Breakdown Sheet",
+                        message_type=BulkUploadMessageType.WARNING,
+                        description=f"Please provide data in a sheet named {breakdown_filename}.",
+                        sheet_name=breakdown_filename,
+                    )
+                    self.metric_key_to_errors[metric_definition.key].append(
+                        breakdown_warning
+                    )
 
-            # If the whole metric is not missing, add missing breakdown warning
-            # for any missing breakdowns.
-            for (
-                missing_breakdown_file
-            ) in unsuccessfully_ingested_sheet_names.intersection(breakdown_filenames):
-                metricfile = sheet_name_to_metricfile[missing_breakdown_file]
-                description_suffix = (
-                    f"Please provide data in a sheet named {missing_breakdown_file}."
-                )
-                breakdown_warning = JusticeCountsBulkUploadException(
-                    title="Missing Breakdown Sheet",
-                    message_type=BulkUploadMessageType.WARNING,
-                    description=f"No data for the {metricfile.disaggregation.human_readable_name()} breakdown was provided. "  # type: ignore[union-attr]
-                    + description_suffix,
-                    sheet_name=missing_breakdown_file,
-                )
-                self.metric_key_to_errors[metric_definition.key].append(
-                    breakdown_warning
-                )
-            # If the total sheet is missing, add missing totals warning.
-            if totals_filename in unsuccessfully_ingested_sheet_names:
-                breakdown_sheet = metric_key_to_successfully_ingested_sheet_names[
-                    metric_definition.key
-                ].pop()
-                missing_total_error = JusticeCountsBulkUploadException(
-                    title="Missing Total Value",
-                    message_type=BulkUploadMessageType.WARNING,
-                    sheet_name=totals_filename,
-                    description=(
-                        f"No total values were provided for this metric. The total values will be assumed "
-                        f"to be equal to the sum of the breakdown values provided in {breakdown_sheet}."
-                    ),
-                )
-                self.metric_key_to_errors[metric_definition.key].append(
-                    missing_total_error
-                )
+                # If the total sheet is missing, add missing totals warning.
+                if (
+                    totals_filename not in actual_sheet_names
+                    and breakdown_filename in actual_sheet_names
+                ):
+                    missing_total_error = JusticeCountsBulkUploadException(
+                        title="Missing Total Sheet",
+                        message_type=BulkUploadMessageType.WARNING,
+                        sheet_name=totals_filename,
+                        description=(
+                            f"No total values sheet was provided for this metric. The total values will be assumed "
+                            f"to be equal to the sum of the breakdown values provided in {breakdown_filename}."
+                        ),
+                    )
+                    self.metric_key_to_errors[metric_definition.key].append(
+                        missing_total_error
+                    )
+                    # only need 1 totals warning per metric
+                    break
