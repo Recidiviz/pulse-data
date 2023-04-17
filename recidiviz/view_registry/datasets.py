@@ -18,9 +18,7 @@
 import re
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
-from recidiviz.big_query.rematerialization_success_persister import (
-    VIEW_UPDATE_METADATA_DATASET,
-)
+from recidiviz.big_query.success_persister import VIEW_UPDATE_METADATA_DATASET
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )

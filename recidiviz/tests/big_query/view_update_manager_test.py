@@ -133,42 +133,6 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
         self.assertEqual(self.mock_client.delete_table.call_count, 2)
 
-    def test_rematerialize_all_deployed_views(self) -> None:
-        """Test that _rematerialize_all_deployed_views updates the appropriate
-        views.
-        """
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-
-        mock_view_builders = [
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view",
-                description="my_fake_view description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=True,
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view_2",
-                description="my_fake_view_2 description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=False,
-            ),
-        ]
-
-        self.mock_client.dataset_ref_for_id.return_value = dataset
-
-        # pylint: disable=protected-access
-        view_update_manager._rematerialize_all_deployed_views(
-            view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-            all_view_builders=mock_view_builders,
-        )
-
-        self.mock_client.materialize_view_to_table.assert_has_calls(
-            [mock.call(view=mock_view_builders[0].build(), use_query_cache=True)],
-            any_order=True,
-        )
-
     def test_create_managed_dataset_and_deploy_views_for_view_builders_no_materialize_no_update(
         self,
     ) -> None:
@@ -897,46 +861,6 @@ class ViewManagerTest(unittest.TestCase):
                     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
                 )
 
-    def test_rematerialize_all_deployed_views_raises_error(self) -> None:
-        """Tests the /view_update/rematerialize_all_deployed_views endpoint failures."""
-
-        self.mock_client.materialize_view_to_table.side_effect = Exception(
-            "Something bad happened!"
-        )
-        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
-
-        mock_view_builders = [
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view",
-                description="my_fake_view description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=True,
-            ),
-            SimpleBigQueryViewBuilder(
-                dataset_id=_DATASET_NAME,
-                view_id="my_fake_view_2",
-                description="my_fake_view_2 description",
-                view_query_template="SELECT NULL LIMIT 0",
-                should_materialize=False,
-            ),
-        ]
-
-        self.mock_client.dataset_ref_for_id.return_value = dataset
-
-        with self.assertRaises(Exception) as e:
-            # pylint: disable=protected-access
-            view_update_manager._rematerialize_all_deployed_views(
-                view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
-                all_view_builders=mock_view_builders,
-            )
-        self.assertEqual(
-            str(e.exception),
-            "Failed to materialize view [BigQueryAddress(dataset_id='my_views_dataset', "
-            "table_id='my_fake_view')]",
-        )
-        self.assertEqual(str(e.exception.__context__), "Something bad happened!")
-
 
 @mock.patch(
     "recidiviz.utils.metadata.project_number", MagicMock(return_value="123456789")
@@ -962,16 +886,6 @@ class TestViewUpdateEndpoints(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.mock_project_id
 
-        self.rematerialization_success_persister_patcher = patch(
-            "recidiviz.big_query.view_update_manager.RematerializationSuccessPersister"
-        )
-        self.rematerialization_success_persister_constructor = (
-            self.rematerialization_success_persister_patcher.start()
-        )
-        self.mock_rematerialization_success_persister = (
-            self.rematerialization_success_persister_constructor.return_value
-        )
-
         self.all_views_update_success_persister_patcher = patch(
             "recidiviz.big_query.view_update_manager.AllViewsUpdateSuccessPersister"
         )
@@ -984,7 +898,6 @@ class TestViewUpdateEndpoints(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
-        self.rematerialization_success_persister_patcher.stop()
         self.all_views_update_success_persister_patcher.stop()
 
     @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
@@ -1014,38 +927,6 @@ class TestViewUpdateEndpoints(unittest.TestCase):
 
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
-            deployed_view_builders=mock.ANY,
-            runtime_sec=mock.ANY,
-            cloud_task_id=current_cloud_task_id,
-        )
-
-    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
-    @mock.patch(
-        "recidiviz.big_query.view_update_manager._rematerialize_all_deployed_views"
-    )
-    def test_rematerialize_all_deployed_views(
-        self, mock_rematerialize: MagicMock, _mock_bq_client: MagicMock
-    ) -> None:
-        """Tests the /view_update/rematerialize_all_deployed_views endpoint."""
-
-        current_cloud_task_id = "my_cloud_task_id_abcd"
-        headers: Dict[str, Any] = {
-            **self.base_headers,
-            "X-AppEngine-TaskName": current_cloud_task_id,
-        }
-        with self.app.test_request_context():
-            rematerialize_all_deployed_views_url = flask.url_for(
-                "view_update.rematerialize_all_deployed_views"
-            )
-            response = self.client.post(
-                rematerialize_all_deployed_views_url,
-                headers=headers,
-            )
-
-        self.assertEqual(HTTPStatus.OK, response.status_code)
-
-        mock_rematerialize.assert_called()
-        self.mock_rematerialization_success_persister.record_success_in_bq.assert_called_with(
             deployed_view_builders=mock.ANY,
             runtime_sec=mock.ANY,
             cloud_task_id=current_cloud_task_id,

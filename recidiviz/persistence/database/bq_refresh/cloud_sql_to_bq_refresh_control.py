@@ -25,9 +25,7 @@ import flask
 from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.rematerialization_success_persister import (
-    RefreshBQDatasetSuccessPersister,
-)
+from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (

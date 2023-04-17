@@ -22,7 +22,7 @@ import pytz
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.big_query.rematerialization_success_persister import (
+from recidiviz.big_query.success_persister import (
     CLOUD_TASK_ID_COL,
     SUCCESS_TIMESTAMP_COL,
     SuccessPersister,

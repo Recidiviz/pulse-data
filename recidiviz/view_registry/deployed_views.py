@@ -14,7 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Views that are regularly updated with the deploy and rematerialized with metric exports.."""
+"""Views that are regularly updated and materialized as necessary via the deploy, and may be referenced in product
+exports.
+"""
 import itertools
 import logging
 from typing import Dict, List, Set
