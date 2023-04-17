@@ -120,8 +120,8 @@ const FlashChecklistStepSection = {
   DONE: 11,
 };
 
-const CancelFlashChecklistStepSection = {
-  /* Ordered list of sections in the flash cancellation checklist.
+const CancelRerunChecklistStepSection = {
+  /* Ordered list of sections in the rerun cancellation checklist.
   NOTE: The relative order of these steps is important.
   IF YOU ADD A NEW STEP SECTION,
   you MUST add it in the relative order to other sections. */
@@ -464,25 +464,25 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             validated and can be copied to PRIMARY.
           </li>
           <li>
-            <b>Cancel flash to PRIMARY.</b> Delete and clean up results in
+            <b>Cancel secondary rerun.</b> Delete and clean up results in
             SECONDARY and do not copy over to PRIMARY.
           </li>
         </ul>
         <Button type="primary" onClick={onSelectProceed}>
           Proceed with Flash
         </Button>
-        <Button onClick={onSelectCancel}>Cancel Flash</Button>
+        <Button onClick={onSelectCancel}>Cancel Rerun</Button>
       </div>
     );
   };
 
-  const StateCancelFlashChecklist = ({
+  const StateCancelRerunChecklist = ({
     stateCode,
   }: StateFlashingChecklistProps): JSX.Element => {
     const secondaryIngestViewResultsDataset = `${stateCode.toLowerCase()}_ingest_view_results_secondary`;
     return (
       <div>
-        <h1>Canceling Flash of Rerun Results from SECONDARY to PRIMARY </h1>
+        <h1>Canceling SECONDARY Rerun</h1>
         <h3 style={{ color: "green" }}>
           Raw data source:{" "}
           {currentSecondaryRawDataSourceInstance === null
@@ -497,7 +497,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={CancelFlashChecklistStepSection.PAUSE_OPERATIONS}
+          stepSection={CancelRerunChecklistStepSection.PAUSE_OPERATIONS}
           headerContents="Pause Operations"
         >
           <StyledStep
@@ -525,14 +525,14 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               acquireBQExportLock(stateCode, DirectIngestInstance.SECONDARY)
             }
-            nextSection={CancelFlashChecklistStepSection.START_CANCELLATION}
+            nextSection={CancelRerunChecklistStepSection.START_CANCELLATION}
           />
         </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={CancelFlashChecklistStepSection.START_CANCELLATION}
-          headerContents={<p>Start Flash Cancellation</p>}
+          stepSection={CancelRerunChecklistStepSection.START_CANCELLATION}
+          headerContents={<p>Start Rerun Cancellation</p>}
         >
           <StyledStep
             title="Set status to RERUN_CANCELLATION_IN_PROGRESS"
@@ -554,8 +554,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             }
             nextSection={
               isSecondaryRawDataImport
-                ? CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
-                : CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+                ? CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                : CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
             }
           />
         </ChecklistSection>
@@ -564,7 +564,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             currentStep={currentStep}
             currentStepSection={currentStepSection}
             stepSection={
-              CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+              CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
             }
             headerContents={
               <p>
@@ -605,7 +605,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     // TODO(#17068): Update to python script, once it exists.
                     enabled={
                       currentStepSection ===
-                      CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                      CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                     }
                   >
                     gsutil -m mv &#39;gs://{projectId}
@@ -629,7 +629,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   <CodeBlock
                     enabled={
                       currentStepSection ===
-                      CancelFlashChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
+                      CancelRerunChecklistStepSection.SECONDARY_RAW_DATA_CLEANUP
                     }
                   >
                     python -m
@@ -659,7 +659,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 )
               }
               nextSection={
-                CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+                CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
               }
             />
           </ChecklistSection>
@@ -668,7 +668,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
           currentStep={currentStep}
           currentStepSection={currentStepSection}
           stepSection={
-            CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+            CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
           }
           headerContents={
             <p>
@@ -691,7 +691,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                   <CodeBlock
                     enabled={
                       currentStepSection ===
-                      CancelFlashChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
+                      CancelRerunChecklistStepSection.SECONDARY_INGEST_VIEW_CLEANUP
                     }
                   >
                     python -m recidiviz.tools.migrations.purge_state_db \
@@ -735,14 +735,14 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               deleteContentsInSecondaryIngestViewDataset(stateCode)
             }
-            nextSection={CancelFlashChecklistStepSection.FINALIZE_CANCELLATION}
+            nextSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
           />
         </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={CancelFlashChecklistStepSection.FINALIZE_CANCELLATION}
-          headerContents={<p>Finalize Flash Cancellation</p>}
+          stepSection={CancelRerunChecklistStepSection.FINALIZE_CANCELLATION}
+          headerContents={<p>Finalize Rerun Cancellation</p>}
         >
           <StyledStep
             title="Set SECONDARY status to RERUN_CANCELED"
@@ -779,13 +779,13 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                 "NO_RERUN_IN_PROGRESS"
               )
             }
-            nextSection={CancelFlashChecklistStepSection.RESUME_OPERATIONS}
+            nextSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
           />
         </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={CancelFlashChecklistStepSection.RESUME_OPERATIONS}
+          stepSection={CancelRerunChecklistStepSection.RESUME_OPERATIONS}
           headerContents={<p>Resume Operations</p>}
         >
           <StyledStep
@@ -806,7 +806,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             title="Unpause queues"
             description={
               <p>
-                Now that the database flashing is complete, unpause the queues.
+                Now that the database cleanup is complete, unpause the queues.
               </p>
             }
             actionButtonTitle="Unpause Queues"
@@ -814,15 +814,15 @@ const FlashDatabaseChecklist = (): JSX.Element => {
             onActionButtonClick={async () =>
               updateIngestQueuesState(stateCode, QueueState.RUNNING)
             }
-            nextSection={CancelFlashChecklistStepSection.DONE}
+            nextSection={CancelRerunChecklistStepSection.DONE}
           />
         </ChecklistSection>
         <ChecklistSection
           currentStep={currentStep}
           currentStepSection={currentStepSection}
-          stepSection={CancelFlashChecklistStepSection.DONE}
+          stepSection={CancelRerunChecklistStepSection.DONE}
           headerContents={
-            <p style={{ color: "green" }}>Flash cancellation is complete!</p>
+            <p style={{ color: "green" }}>Rerun cancellation is complete!</p>
           }
         >
           <p>DONE</p>
@@ -1582,17 +1582,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         )}
         <h3 style={{ color: "green" }}>
           Regardless of ingest bucket status, you may proceed with cleaning up
-          the secondary instance and canceling the flash:{" "}
+          the secondary instance and canceling the rerun in SECONDARY:{" "}
           <Button
             type="primary"
             onClick={async () => {
               setProceedWithFlash(false);
               moveToNextChecklistSection(
-                CancelFlashChecklistStepSection.PAUSE_OPERATIONS
+                CancelRerunChecklistStepSection.PAUSE_OPERATIONS
               );
             }}
           >
-            CLEAN UP SECONDARY + CANCEL FLASH
+            CLEAN UP SECONDARY + CANCEL RERUN
           </Button>
         </h3>
       </div>
@@ -1607,7 +1607,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     currentStep === 0
   ) {
     /* If we have loaded a status but it does not indicate that we can proceed with flashing, show an alert on top of the checklist */
-    /* Regardless of status, we can cancel a flash to primary at any time */
+    /* Regardless of status, we can cancel a secondary rerun any time */
     const cannotFlashDescription = `Primary: ${currentPrimaryIngestInstanceStatus}. Secondary: ${currentSecondaryIngestInstanceStatus}.`;
     activeComponent = (
       <div>
@@ -1629,17 +1629,17 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         ) : (
           <h3 style={{ color: "green" }}>
             Regardless of ingest instance status, you may proceed with cleaning
-            up the secondary instance and canceling the flash:{" "}
+            up the secondary instance and canceling the rerun:{" "}
             <Button
               type="primary"
               onClick={async () => {
                 setProceedWithFlash(false);
                 moveToNextChecklistSection(
-                  CancelFlashChecklistStepSection.PAUSE_OPERATIONS
+                  CancelRerunChecklistStepSection.PAUSE_OPERATIONS
                 );
               }}
             >
-              CLEAN UP SECONDARY + CANCEL FLASH
+              CLEAN UP SECONDARY + CANCEL RERUN
             </Button>
           </h3>
         )}
@@ -1647,7 +1647,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     );
   } else if (proceedWithFlash === null && isReadyToFlash) {
     activeComponent = (
-      /* This is the only time that someone can choose whether to cancel or
+      /* This is the only time that someone can choose whether to cancel a rerun or
       move forward with a flash. */
       <FlashDecisionComponent
         onSelectProceed={async () => {
@@ -1659,7 +1659,7 @@ const FlashDatabaseChecklist = (): JSX.Element => {
         onSelectCancel={async () => {
           setProceedWithFlash(false);
           moveToNextChecklistSection(
-            CancelFlashChecklistStepSection.PAUSE_OPERATIONS
+            CancelRerunChecklistStepSection.PAUSE_OPERATIONS
           );
         }}
       />
@@ -1678,8 +1678,8 @@ const FlashDatabaseChecklist = (): JSX.Element => {
     );
   } else if (!proceedWithFlash || isRerunCancellationInProgress) {
     activeComponent = (
-      /* If decision has been made to cancel a flash from SECONDARY to PRIMARY */
-      <StateCancelFlashChecklist stateCode={stateInfo.code} />
+      /* If decision has been made to cancel a rerun in SECONDARY */
+      <StateCancelRerunChecklist stateCode={stateInfo.code} />
     );
   }
 
