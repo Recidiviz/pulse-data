@@ -170,27 +170,15 @@ def get_api_blueprint(
                 session=current_session,
                 agency_id=agency_id,
             )
-            return jsonify(
-                {"settings": [setting.to_json() for setting in agency_settings]}
-            )
-        except Exception as e:
-            raise _get_error(error=e) from e
-
-    @api_blueprint.route("/agencies/<agency_id>/jurisdictions", methods=["GET"])
-    @auth_decorator
-    def get_agency_jurisdictions(agency_id: int) -> Response:
-        try:
-            request_json = assert_type(request.values, dict)
-            user = UserAccountInterface.get_user_by_auth0_user_id(
-                session=current_session,
-                auth0_user_id=get_auth0_user_id(request_dict=request_json),
-            )
-            raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
-
             jurisdictions = AgencyJurisdictionInterface.to_json(
                 session=current_session, agency_id=agency_id
             )
-            return jsonify(jurisdictions)
+            return jsonify(
+                {
+                    "settings": [setting.to_json() for setting in agency_settings],
+                    "jurisdictions": jurisdictions,
+                }
+            )
         except Exception as e:
             raise _get_error(error=e) from e
 

@@ -2568,7 +2568,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                             "value": "www.agencyhomepage.com",
                             "source_id": agency_id,
                         },
-                    ]
+                    ],
+                    "jurisdictions": {"excluded": [], "included": []},
                 },
             )
 
@@ -2609,17 +2610,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(patch_response.status_code, 200)
             get_response = self.client.get(
-                f"/api/agencies/{agency_id}/jurisdictions",
+                f"/api/agencies/{agency_id}",
             )
             self.assertEqual(get_response.status_code, 200)
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "agency_id": str(agency_id),
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
                         "excluded": [],
                     },
+                    "settings": [],
                 },
                 jurisdictions,
             )
@@ -2637,17 +2638,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(patch_response.status_code, 200)
             get_response = self.client.get(
-                f"/api/agencies/{agency_id}/jurisdictions",
+                f"/api/agencies/{agency_id}",
             )
             self.assertEqual(get_response.status_code, 200)
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "agency_id": str(agency_id),
                     "jurisdictions": {
                         "included": ["0100000000", "0103100000", "0104700000"],
                         "excluded": ["0105500000", "0105900000"],
                     },
+                    "settings": [],
                 },
                 jurisdictions,
             )
@@ -2665,17 +2666,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(patch_response.status_code, 200)
             get_response = self.client.get(
-                f"/api/agencies/{agency_id}/jurisdictions",
+                f"/api/agencies/{agency_id}",
             )
             self.assertEqual(get_response.status_code, 200)
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "agency_id": str(agency_id),
                     "jurisdictions": {
                         "included": [],
                         "excluded": ["0105500000", "0105900000"],
                     },
+                    "settings": [],
                 },
                 jurisdictions,
             )
@@ -2693,17 +2694,17 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
             self.assertEqual(patch_response.status_code, 200)
             get_response = self.client.get(
-                f"/api/agencies/{agency_id}/jurisdictions",
+                f"/api/agencies/{agency_id}",
             )
             self.assertEqual(get_response.status_code, 200)
             jurisdictions = get_response.json
             self.assertEqual(
                 {
-                    "agency_id": str(agency_id),
                     "jurisdictions": {
                         "included": [],
                         "excluded": [],
                     },
+                    "settings": [],
                 },
                 jurisdictions,
             )
