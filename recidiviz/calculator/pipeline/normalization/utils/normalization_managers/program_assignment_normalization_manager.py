@@ -19,7 +19,7 @@ normalization of StateProgramAssignment entities in the calculation
 pipelines."""
 import datetime
 from copy import deepcopy
-from typing import List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -27,6 +27,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.en
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -125,6 +126,30 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
         cls,
         program_assignments: List[StateProgramAssignment],
     ) -> AdditionalAttributesMap:
-        return get_shared_additional_attributes_map_for_entities(
-            entities=program_assignments
+
+        shared_additional_attributes_map = (
+            get_shared_additional_attributes_map_for_entities(
+                entities=program_assignments
+            )
+        )
+        program_assignments_additional_attributes_map: Dict[
+            str, Dict[int, Dict[str, Any]]
+        ] = {StateProgramAssignment.__name__: {}}
+
+        for program_assignment in program_assignments:
+            if not program_assignment.program_assignment_id:
+                raise ValueError(
+                    "Expected non-null program_assignment_id values"
+                    f"at this point. Found {program_assignment}."
+                )
+            program_assignments_additional_attributes_map[
+                StateProgramAssignment.__name__
+            ][program_assignment.program_assignment_id] = {
+                "referring_staff_id": None,
+            }
+        return merge_additional_attributes_maps(
+            [
+                shared_additional_attributes_map,
+                program_assignments_additional_attributes_map,
+            ]
         )

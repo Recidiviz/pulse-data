@@ -126,8 +126,16 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
 
         expected_additional_attributes = {
             StateAssessment.__name__: {
-                1: {"assessment_score_bucket": "0-23", "sequence_num": 0},
-                2: {"assessment_score_bucket": "NOT_ASSESSED", "sequence_num": 1},
+                1: {
+                    "assessment_score_bucket": "0-23",
+                    "conducting_staff_id": None,
+                    "sequence_num": 0,
+                },
+                2: {
+                    "assessment_score_bucket": "NOT_ASSESSED",
+                    "conducting_staff_id": None,
+                    "sequence_num": 1,
+                },
             }
         }
 
@@ -157,7 +165,11 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
 
         expected_additional_attributes = {
             StateAssessment.__name__: {
-                1: {"assessment_score_bucket": bucket, "sequence_num": 0}
+                1: {
+                    "assessment_score_bucket": bucket,
+                    "conducting_staff_id": None,
+                    "sequence_num": 0,
+                }
             }
         }
         self.assertEqual(expected_additional_attributes, additional_attributes)
@@ -211,7 +223,11 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
 
         expected_additional_attributes = {
             StateAssessment.__name__: {
-                1: {"assessment_score_bucket": bucket, "sequence_num": 0}
+                1: {
+                    "assessment_score_bucket": bucket,
+                    "conducting_staff_id": None,
+                    "sequence_num": 0,
+                }
             }
         }
         self.assertEqual(expected_additional_attributes, additional_attributes)

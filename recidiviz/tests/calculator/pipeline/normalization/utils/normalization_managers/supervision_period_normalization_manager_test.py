@@ -430,8 +430,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         expected_additional_attributes = {
             StateSupervisionPeriod.__name__: {
-                111: {"sequence_num": 0},
-                222: {"sequence_num": 1},
+                111: {"supervising_officer_staff_id": None, "sequence_num": 0},
+                222: {"supervising_officer_staff_id": None, "sequence_num": 1},
             }
         }
 

@@ -235,7 +235,8 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
             ] = {
                 "assessment_score_bucket": assessment_id_to_score_bucket[
                     assessment.assessment_id
-                ]
+                ],
+                "conducting_staff_id": None,
             }
 
         return merge_additional_attributes_maps(

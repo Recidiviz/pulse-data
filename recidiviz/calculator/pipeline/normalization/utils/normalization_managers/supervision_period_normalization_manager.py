@@ -20,7 +20,7 @@ import abc
 import datetime
 import logging
 from copy import deepcopy
-from typing import List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -35,6 +35,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
     get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
@@ -433,6 +434,30 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         cls,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> AdditionalAttributesMap:
-        return get_shared_additional_attributes_map_for_entities(
-            entities=supervision_periods
+        shared_additional_attributes_map = (
+            get_shared_additional_attributes_map_for_entities(
+                entities=supervision_periods
+            )
+        )
+
+        supervision_periods_additional_attributes_map: Dict[
+            str, Dict[int, Dict[str, Any]]
+        ] = {StateSupervisionPeriod.__name__: {}}
+
+        for supervision_period in supervision_periods:
+            if not supervision_period.supervision_period_id:
+                raise ValueError(
+                    "Expected non-null supervision_period_id values"
+                    f"at this point. Found {supervision_period}."
+                )
+            supervision_periods_additional_attributes_map[
+                StateSupervisionPeriod.__name__
+            ][supervision_period.supervision_period_id] = {
+                "supervising_officer_staff_id": None,
+            }
+        return merge_additional_attributes_maps(
+            [
+                shared_additional_attributes_map,
+                supervision_periods_additional_attributes_map,
+            ]
         )
