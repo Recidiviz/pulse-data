@@ -23,6 +23,9 @@ from typing import List
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_contact_normalization_manager import (
     SupervisionContactNormalizationManager,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    AdditionalAttributesMap,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
@@ -54,15 +57,32 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
 
         return processed_supervision_contacts
 
-    def test_simple_supervision_contacts_normalization(self) -> None:
+    def _normalized_supervision_contacts_additional_attributes(
+        self, supervision_contacts: List[StateSupervisionContact]
+    ) -> AdditionalAttributesMap:
+        entity_normalization_manager = SupervisionContactNormalizationManager(
+            supervision_contacts=supervision_contacts,
+        )
 
+        (
+            _,
+            additional_attributes,
+        ) = (
+            entity_normalization_manager.normalized_supervision_contacts_and_additional_attributes()
+        )
+
+        return additional_attributes
+
+    def test_simple_supervision_contacts_normalization(self) -> None:
         sc_1 = StateSupervisionContact.new_with_defaults(
+            supervision_contact_id=1234,
             state_code=StateCode.US_IX.value,
             contact_date=datetime.date(2018, 3, 6),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
         )
         sc_2 = StateSupervisionContact.new_with_defaults(
+            supervision_contact_id=1234,
             state_code=StateCode.US_IX.value,
             contact_date=datetime.date(2022, 1, 5),
             contact_type=StateSupervisionContactType.INTERNAL_UNKNOWN,
@@ -75,3 +95,25 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
         )
 
         self.assertEqual([sc_1, sc_2], normalized_contacts)
+
+    def test_supervision_contacts_additional_attributes(self) -> None:
+        sc = StateSupervisionContact.new_with_defaults(
+            supervision_contact_id=1,
+            state_code=StateCode.US_IX.value,
+            contact_date=datetime.date(2018, 3, 6),
+            contact_type=StateSupervisionContactType.DIRECT,
+            status=StateSupervisionContactStatus.COMPLETED,
+        )
+        supervision_contacts = [sc]
+
+        additional_attributes = (
+            self._normalized_supervision_contacts_additional_attributes(
+                supervision_contacts=supervision_contacts
+            )
+        )
+
+        expected_attributes: AdditionalAttributesMap = {
+            StateSupervisionContact.__name__: {1: {"contacting_staff_id": None}}
+        }
+
+        self.assertDictEqual(additional_attributes, expected_attributes)

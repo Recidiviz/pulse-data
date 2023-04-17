@@ -66,27 +66,32 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         self,
     ) -> None:
         null_dates = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=1234,
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
         )
         pg_1 = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=1234,
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             referral_date=datetime.date(2000, 1, 1),
             start_date=datetime.date(2000, 1, 1),
         )
         pg_2 = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=1234,
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             discharge_date=datetime.date(2000, 2, 1),
         )
         pg_3 = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=1234,
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             referral_date=datetime.date(2000, 4, 1),
             start_date=datetime.date(2000, 4, 1),
         )
         pg_4 = StateProgramAssignment.new_with_defaults(
+            program_assignment_id=1234,
             state_code=self.state_code,
             participation_status=StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN,
             discharge_date=datetime.date(2000, 3, 1),

@@ -17,15 +17,16 @@
 """Contains the logic for a SupervisionContactNormalizationManager that manages the
 normalization of StateSupervisionContact entities in the calculation
 pipelines."""
-from collections import defaultdict
 from copy import deepcopy
-from typing import List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
+    get_shared_additional_attributes_map_for_entities,
+    merge_additional_attributes_maps,
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
@@ -54,7 +55,9 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
 
             self._normalized_supervision_contacts_and_additional_attributes = (
                 contacts_for_normalization,
-                defaultdict(dict),
+                self.additional_attributes_map_for_normalized_scs(
+                    contacts_for_normalization
+                ),
             )
 
         return self._normalized_supervision_contacts_and_additional_attributes
@@ -62,3 +65,36 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateSupervisionContact]
+
+    @classmethod
+    def additional_attributes_map_for_normalized_scs(
+        cls,
+        supervision_contacts: List[StateSupervisionContact],
+    ) -> AdditionalAttributesMap:
+
+        shared_additional_attributes_map = (
+            get_shared_additional_attributes_map_for_entities(
+                entities=supervision_contacts
+            )
+        )
+        supervision_contacts_additional_attributes_map: Dict[
+            str, Dict[int, Dict[str, Any]]
+        ] = {StateSupervisionContact.__name__: {}}
+
+        for supervision_contact in supervision_contacts:
+            if not supervision_contact.supervision_contact_id:
+                raise ValueError(
+                    "Expected non-null supervision_contact_id values"
+                    f"at this point. Found {supervision_contact}."
+                )
+            supervision_contacts_additional_attributes_map[
+                StateSupervisionContact.__name__
+            ][supervision_contact.supervision_contact_id] = {
+                "contacting_staff_id": None,
+            }
+        return merge_additional_attributes_maps(
+            [
+                shared_additional_attributes_map,
+                supervision_contacts_additional_attributes_map,
+            ]
+        )

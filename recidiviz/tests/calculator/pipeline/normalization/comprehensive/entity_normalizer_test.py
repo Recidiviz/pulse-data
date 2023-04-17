@@ -166,6 +166,7 @@ class TestNormalizeEntities(unittest.TestCase):
             {
                 StateSupervisionPeriod.__name__: {
                     sp.supervision_period_id: {
+                        "supervising_officer_staff_id": None,
                         "sequence_num": index,
                     }
                     for index, sp in enumerate(
@@ -180,6 +181,7 @@ class TestNormalizeEntities(unittest.TestCase):
             {
                 StateProgramAssignment.__name__: {
                     pa.program_assignment_id: {
+                        "referring_staff_id": None,
                         "sequence_num": index,
                     }
                     for index, pa in enumerate(
@@ -212,12 +214,27 @@ class TestNormalizeEntities(unittest.TestCase):
                         "assessment_score_bucket": "39+"
                         if assessment.assessment_score == 55
                         else "0-23",
+                        "conducting_staff_id": None,
                         "sequence_num": index,
                     }
                     for index, assessment in enumerate(
                         self.full_graph_person.assessments
                     )
                     if assessment.assessment_id
+                }
+            }
+        )
+
+        expected_additional_attributes_map.update(
+            {
+                StateSupervisionContact.__name__: {
+                    supervision_contact.supervision_contact_id: {
+                        "contacting_staff_id": None,
+                    }
+                    for index, supervision_contact in enumerate(
+                        self.full_graph_person.supervision_contacts
+                    )
+                    if supervision_contact.supervision_contact_id
                 }
             }
         )
@@ -589,6 +606,9 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                         for field, value in sc.__dict__.items()
                         # TODO(#20010): remove this filtering after legacy field is deleted
                         if field != "contacted_agent"
+                    },
+                    **{
+                        "contacting_staff_id": None,
                     },
                 }
             )

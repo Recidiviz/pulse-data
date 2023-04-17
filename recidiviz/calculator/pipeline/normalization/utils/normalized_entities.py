@@ -167,6 +167,9 @@ class NormalizedStateAssessment(
     # A string representing an interval category based on assessment score
     assessment_score_bucket: Optional[str] = attr.ib(default=None)
 
+    # StateStaff id foreign key for the conducting officer
+    conducting_staff_id: Optional[int] = attr.ib(default=None)
+
 
 # StateIncarcerationPeriod subtree
 @attr.s(
@@ -203,6 +206,9 @@ class NormalizedStateProgramAssignment(
     """Stores instances of StateProgramAssignment entities that have been
     normalized and are prepared to be used in calculations."""
 
+    # StateStaff id foreign key for the referring officer
+    referring_staff_id: Optional[int] = attr.ib(default=None)
+
 
 # StateSupervisionContact subtree
 @attr.s(
@@ -213,6 +219,9 @@ class NormalizedStateProgramAssignment(
 class NormalizedStateSupervisionContact(StateSupervisionContact, NormalizedStateEntity):
     """Stores instances of StateSupervisionContact entities that have been
     normalized and are prepared to be used in calculations."""
+
+    # StateStaff id foreign key for the contacting officer
+    contacting_staff_id: Optional[int] = attr.ib(default=None)
 
 
 # StateSupervisionPeriod subtree
@@ -226,6 +235,9 @@ class NormalizedStateSupervisionPeriod(
 ):
     """Stores instances of StateSupervisionPeriod entities that have been
     normalized and are prepared to be used in calculations."""
+
+    # StateStaff id foreign key for the supervising officer
+    supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
 
     @property
     def duration(self) -> NonNegativeDateRange:

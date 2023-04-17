@@ -74,6 +74,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                 StateAssessment.__name__: {
                     1: {
                         "assessment_score_bucket": StateAssessmentLevel.LOW.value,
+                        "conducting_staff_id": None,
                         "sequence_num": 0,
                     }
                 }
@@ -98,6 +99,7 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
                 StateAssessment.__name__: {
                     1: {
                         "assessment_score_bucket": DEFAULT_ASSESSMENT_SCORE_BUCKET,
+                        "conducting_staff_id": None,
                         "sequence_num": 0,
                     }
                 }
