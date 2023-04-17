@@ -134,7 +134,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             cases_disposed_errors: List[
                 JusticeCountsBulkUploadException
             ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
-            self.assertEqual(len(cases_disposed_errors), 2)
+            self.assertEqual(len(cases_disposed_errors), 1)
             cases_disposed_by_type_error = cases_disposed_errors[0]
 
             self.assertTrue(
@@ -590,6 +590,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     "use_of_force_by_type",
                     "staff_by_race",
                     "staff_by_biological_sex",
+                    "staff_by_type",
                 },
             )
 
@@ -607,26 +608,37 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 ],
             )
 
+            # Case 1 (Missing entire metric)
+            # Use of Force has 1 breakdown
+            # We expect niether a Missing Breakdown Sheet nor Missing Total Sheet warning
+            # because entire metric is missing. This will be handled on the frontend
             self.assertEqual(len(metric_key_to_errors), 2)
+
+            # Case 2 (Missing Total Sheet)
+            # Arrests has 3 breakdowns
+            # We expect 1 Missing Total Sheet warning
             arrest_errors = metric_key_to_errors[law_enforcement.arrests.key]
             self.assertEqual(len(arrest_errors), 1)
             arrest_error = arrest_errors[0]
-            self.assertEqual(arrest_error.title, "Missing Total Value")
+            self.assertEqual(arrest_error.title, "Missing Total Sheet")
             self.assertEqual(arrest_error.message_type, BulkUploadMessageType.WARNING)
-            self.assertTrue(
-                "No total values were provided for this metric"
-                in arrest_error.description,
+            self.assertIn(
+                "No total values sheet was provided for this metric. The total values will be assumed to be equal to the sum of the breakdown values provided in arrests_by_",
+                arrest_error.description,
             )
 
+            # Case 3 (Missing breakdown sheets)
+            # Staff has 3 breakdowns
+            # We expect 3 Missing Breakdown Sheet warnings
             staff_errors = metric_key_to_errors[law_enforcement.staff.key]
-            self.assertEqual(len(staff_errors), 2)
+            self.assertEqual(len(staff_errors), 3)
             for error in staff_errors:
                 if error.sheet_name == "staff_by_race":
                     self.assertEqual(error.title, "Missing Breakdown Sheet")
                     self.assertEqual(error.message_type, BulkUploadMessageType.WARNING)
-                    self.assertTrue(
-                        "No data for the Race / Ethnicity breakdown was provided. Please provide data in a sheet named staff_by_race"
-                        in error.description,
+                    self.assertEqual(
+                        "Please provide data in a sheet named staff_by_race.",
+                        error.description,
                     )
                 elif error.sheet_name == "staff_by_biological_sex":
                     self.assertEqual(error.title, "Missing Breakdown Sheet")
@@ -634,9 +646,19 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                         error.message_type,
                         BulkUploadMessageType.WARNING,
                     )
-                    self.assertTrue(
-                        "No data for the Biological Sex breakdown was provided. Please provide data in a sheet named staff_by_biological_sex"
-                        in error.description,
+                    self.assertEqual(
+                        "Please provide data in a sheet named staff_by_biological_sex.",
+                        error.description,
+                    )
+                elif error.sheet_name == "staff_by_type":
+                    self.assertEqual(error.title, "Missing Breakdown Sheet")
+                    self.assertEqual(
+                        error.message_type,
+                        BulkUploadMessageType.WARNING,
+                    )
+                    self.assertEqual(
+                        "Please provide data in a sheet named staff_by_type.",
+                        error.description,
                     )
                 else:
                     raise ValueError(
