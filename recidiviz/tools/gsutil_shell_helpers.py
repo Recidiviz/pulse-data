@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for calling gsutil commands inside of Python scripts."""
+import logging
 import os
 from typing import List, Optional
 
@@ -113,11 +114,12 @@ def gsutil_get_storage_subdirs_containing_raw_files(
     storage_bucket_path: str,
     upper_bound_date: Optional[str],
     lower_bound_date: Optional[str],
+    file_tag_filters: Optional[List[str]] = None,
 ) -> List[str]:
-    """Returns all subdirs containing files of type |file_type| in the provided |storage_bucket_path| for a given
+    """Returns all subdirs containing files in the provided |storage_bucket_path| for a given
     region."""
-    # We search with a double wildcard and then filter in python becaue it is much
-    # faster than doing `gs://{storage_bucket_path}/{file_type.value}/*/*/*/`
+    # We search with a double wildcard and then filter in python because it is much
+    # faster than doing `gs://{storage_bucket_path}/raw/*/*/*/`
     all_files_wildcard = f"gs://{storage_bucket_path}/raw/**"
     paths = gsutil_ls(all_files_wildcard)
 
@@ -126,12 +128,36 @@ def gsutil_get_storage_subdirs_containing_raw_files(
     subdirs_containing_files = []
     for subdir in all_subdirs:
         subdir_date = _date_str_from_date_subdir_path(subdir)
-
         if is_date_str(subdir_date) and is_between_date_strs_inclusive(
             upper_bound_date=upper_bound_date,
             lower_bound_date=lower_bound_date,
             date_of_interest=subdir_date,
         ):
-            subdirs_containing_files.append(subdir)
+            if file_tag_filters:
+                found_matches = False
+                for file_tag_filter in file_tag_filters:
+                    path = subdir + f"/*{file_tag_filter}*"
+                    try:
+                        located_matching_files = "\n\t * ".join(gsutil_ls(path))
+                        logging.info(
+                            "Found the following files matching the file_tag_filter='%s' in the GCS "
+                            "subdirectory='%s':\n\t * %s",
+                            file_tag_filter,
+                            subdir,
+                            located_matching_files,
+                        )
+                        found_matches = True
+                    except Exception:
+                        logging.info(
+                            "Files matching the file_tag_filter='%s' were not present in the "
+                            "GCS subdirectory='%s'",
+                            file_tag_filter,
+                            subdir,
+                        )
+                if found_matches:
+                    subdirs_containing_files.append(subdir)
+            else:
+                # If there are no filters, then automatically append the subdirectory, since it is within the date range
+                subdirs_containing_files.append(subdir)
 
     return sorted(subdirs_containing_files)
