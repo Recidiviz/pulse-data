@@ -18,7 +18,7 @@
 
 from recidiviz.persistence.database.schema.justice_counts.schema import Report, Source
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
+from recidiviz.tests.justice_counts.utils.utils import JusticeCountsDatabaseTestCase
 from recidiviz.tools.justice_counts.control_panel.load_fixtures import (
     reset_justice_counts_fixtures,
 )

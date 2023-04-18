@@ -22,7 +22,7 @@ from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.justice_counts.utils import JusticeCountsDatabaseTestCase
+from recidiviz.tests.justice_counts.utils.utils import JusticeCountsDatabaseTestCase
 
 
 class TestAgencyInterface(JusticeCountsDatabaseTestCase):
