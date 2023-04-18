@@ -202,7 +202,7 @@ def parse_arguments() -> argparse.Namespace:
 
 def main() -> None:
     """Runs the move_state_files_to_deprecated script."""
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    logging.getLogger().setLevel(logging.INFO)
 
     args = parse_arguments()
 

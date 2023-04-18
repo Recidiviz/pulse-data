@@ -102,6 +102,7 @@ class OperateOnStorageRawFilesController:
 
     def run(self) -> None:
         """Main function that will execute the copy/move."""
+        logging.basicConfig(level=logging.INFO)
         prompt_for_confirmation(
             f"Will {self.operation_type.value.lower()} files from "
             f"[{self.source_region_storage_dir_path.abs_path()}] to "
@@ -113,7 +114,6 @@ class OperateOnStorageRawFilesController:
             "Collecting subdirectories to %s...", self.operation_type.value.lower()
         )
         subdirs_to_operate_on = self._get_subdirs_to_operate_on()
-
         prompt_for_confirmation(
             f"Found [{len(subdirs_to_operate_on)}] subdirectories to "
             f"{self.operation_type.value.lower()} - continue?",
@@ -156,6 +156,7 @@ class OperateOnStorageRawFilesController:
             storage_bucket_path=self.source_region_storage_dir_path.abs_path(),
             upper_bound_date=self.end_date_bound,
             lower_bound_date=self.start_date_bound,
+            file_tag_filters=self.file_tag_filters,
         )
 
     def _write_copies_to_log_file(self) -> None:
@@ -228,8 +229,9 @@ class OperateOnStorageRawFilesController:
         )
 
         all_operations = list(itertools.chain(*operations_lists))
+        dry_run_str = "[DRY_RUN] " if self.dry_run else ""
         self.file_operation_progress = Bar(
-            f"{self.operation_type.gerund().capitalize()} files from subdirectories...",
+            f"{dry_run_str}{self.operation_type.gerund().capitalize()} files from subdirectories...",
             max=len(all_operations),
         )
         thread_pool.map(self._do_file_operation, all_operations)
