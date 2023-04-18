@@ -19,14 +19,14 @@
 from typing import Optional, Sequence
 
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevel,
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
 )
 
 
 # function for aggregating monthly-levels to quarter and year
 def get_unioned_time_granularity_clause(
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     metrics: Sequence[AggregatedMetric],
     manual_metrics_str: Optional[str] = None,
 ) -> str:
@@ -36,8 +36,8 @@ def get_unioned_time_granularity_clause(
 
     Params
     ------
-    aggregation_level : MetricAggregationLevel
-        A MetricAggregationLevel object used to get index columns of the query
+    aggregation_level : MetricUnitOfAnalysis
+        A MetricUnitOfAnalysis object used to get index columns of the query
 
     metrics : List[AggregatedMetric]
         A list of AggregatedMetric objects used to construct the select statement

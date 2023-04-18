@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Constants related to a MetricAggregationLevelType."""
+"""Constants related to a MetricUnitOfAnalysisType."""
 from enum import Enum
 from typing import Dict, List, Optional
 
@@ -40,8 +40,8 @@ COLUMN_SOURCE_DICT = {
 }
 
 
-class MetricAggregationLevelType(Enum):
-    """The type of metric aggregation level."""
+class MetricUnitOfAnalysisType(Enum):
+    """The type of metric unit of analysis level."""
 
     STATE_CODE = "STATE"
     FACILITY = "FACILITY"
@@ -52,19 +52,19 @@ class MetricAggregationLevelType(Enum):
 
 
 @attr.define(frozen=True, kw_only=True)
-class MetricAggregationLevel:
-    """Class that stores information about a unit of aggregation, along with functions to help generate SQL fragments"""
+class MetricUnitOfAnalysis:
+    """Class that stores information about a unit of analysis, along with functions to help generate SQL fragments"""
 
     # The level type object enum
-    level_type: MetricAggregationLevelType
+    level_type: MetricUnitOfAnalysisType
 
-    # The source query containing client assignments to the aggregation level
+    # The source query containing client assignments to the level of analysis
     client_assignment_query: str = attr.field(validator=attr_validators.is_str)
 
     # List of columns present in the assignment table that serve as the primary keys of the table
     primary_key_columns: List[str]
 
-    # List of attribute columns in the assignment table that provide additional information about the aggregation level
+    # List of attribute columns in the assignment table that provide additional information about the level of analysis
     attribute_columns: List[str]
 
     # Dictionary of additional bigquery dataset args for assembly of a bigquery view builder
@@ -120,48 +120,48 @@ class MetricAggregationLevel:
         return ", ".join(renamed_columns)
 
 
-METRIC_AGGREGATION_LEVELS_BY_TYPE = {
-    MetricAggregationLevelType.FACILITY: MetricAggregationLevel(
-        level_type=MetricAggregationLevelType.FACILITY,
+METRIC_UNITS_OF_ANALYSIS_BY_TYPE = {
+    MetricUnitOfAnalysisType.FACILITY: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.FACILITY,
         client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "facility"],
         attribute_columns=["facility_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
-    MetricAggregationLevelType.STATE_CODE: MetricAggregationLevel(
-        level_type=MetricAggregationLevelType.STATE_CODE,
+    MetricUnitOfAnalysisType.STATE_CODE: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.STATE_CODE,
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`",
         primary_key_columns=["state_code"],
         attribute_columns=[],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
-    MetricAggregationLevelType.SUPERVISION_DISTRICT: MetricAggregationLevel(
-        level_type=MetricAggregationLevelType.SUPERVISION_DISTRICT,
+    MetricUnitOfAnalysisType.SUPERVISION_DISTRICT: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "district"],
         attribute_columns=["district_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
-    MetricAggregationLevelType.SUPERVISION_OFFICE: MetricAggregationLevel(
-        level_type=MetricAggregationLevelType.SUPERVISION_OFFICE,
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICE: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.location_sessions_materialized`",
         primary_key_columns=["state_code", "district", "office"],
         attribute_columns=["district_name", "office_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
-    MetricAggregationLevelType.SUPERVISION_UNIT: MetricAggregationLevel(
-        level_type=MetricAggregationLevelType.SUPERVISION_UNIT,
+    MetricUnitOfAnalysisType.SUPERVISION_UNIT: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.SUPERVISION_UNIT,
         client_assignment_query="SELECT * "
         "FROM `{project_id}.{sessions_dataset}.supervision_unit_sessions_materialized`",
         primary_key_columns=["state_code", "district", "unit"],
         attribute_columns=["unit_name"],
         dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
-    MetricAggregationLevelType.SUPERVISION_OFFICER: MetricAggregationLevel(
-        level_type=MetricAggregationLevelType.SUPERVISION_OFFICER,
+    MetricUnitOfAnalysisType.SUPERVISION_OFFICER: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
         client_assignment_query="""
 SELECT a.*, b.full_name_clean AS officer_name
 FROM 

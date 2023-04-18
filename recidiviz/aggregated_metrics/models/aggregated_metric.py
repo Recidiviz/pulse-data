@@ -21,15 +21,15 @@ from typing import Dict, List, Optional, Sequence, Union
 
 import attr
 
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevelType,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    MetricPopulationType,
-)
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     nonnull_current_date_exclusive_clause,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysisType,
 )
 from recidiviz.common import attr_validators
 
@@ -72,7 +72,7 @@ class MiscAggregatedMetric(AggregatedMetric):
     populations: List[MetricPopulationType]
 
     # Aggregation levels compatible with metric
-    aggregation_levels: List[MetricAggregationLevelType]
+    aggregation_levels: List[MetricUnitOfAnalysisType]
 
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"ARRAY_AGG({self.name}) AS {self.name}"

@@ -37,15 +37,15 @@ from recidiviz.aggregated_metrics.aggregated_metrics import (
     generate_aggregated_metrics_view_builder,
 )
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    METRIC_AGGREGATION_LEVELS_BY_TYPE,
-    MetricAggregationLevel,
-    MetricAggregationLevelType,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
     MetricPopulation,
     MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
+    MetricUnitOfAnalysisType,
 )
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
@@ -69,7 +69,7 @@ from recidiviz.utils.params import str_to_bool
 
 def get_lookml_view_for_metrics(
     population: MetricPopulation,
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     metrics: List[AggregatedMetric],
 ) -> LookMLView:
     """Generates LookML view string for the specified population, aggregation level, and metrics"""
@@ -171,9 +171,9 @@ def parse_arguments() -> argparse.Namespace:
         "--aggregation_level",
         dest="aggregation_level",
         help="Name of the aggregation level enum used to generate aggregated metrics.",
-        type=MetricAggregationLevelType,
-        choices=list(MetricAggregationLevelType),
-        default=MetricAggregationLevelType.STATE_CODE,
+        type=MetricUnitOfAnalysisType,
+        choices=list(MetricUnitOfAnalysisType),
+        default=MetricUnitOfAnalysisType.STATE_CODE,
         required=True,
     )
 
@@ -199,13 +199,13 @@ def parse_arguments() -> argparse.Namespace:
 
 def main(
     population_type: MetricPopulationType,
-    aggregation_level_type: MetricAggregationLevelType,
+    aggregation_level_type: MetricUnitOfAnalysisType,
     print_view: bool,
     output_directory: Optional[str],
 ) -> None:
     lookml_view = get_lookml_view_for_metrics(
         population=METRIC_POPULATIONS_BY_TYPE[population_type],
-        aggregation_level=METRIC_AGGREGATION_LEVELS_BY_TYPE[aggregation_level_type],
+        aggregation_level=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[aggregation_level_type],
         metrics=METRICS_BY_POPULATION_TYPE[population_type],
     )
 

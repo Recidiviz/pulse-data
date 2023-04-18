@@ -32,8 +32,8 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     EventValueMetric,
     SumSpanDaysMetric,
 )
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevel,
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
 )
 from recidiviz.looker import lookml_view_field_parameter
 from recidiviz.looker.lookml_view_field import (
@@ -149,7 +149,7 @@ def measure_for_metric(
 
 def get_metric_filter_parameter(
     metrics: List[AggregatedMetric],
-    aggregation_level: Optional[MetricAggregationLevel] = None,
+    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
 ) -> ParameterLookMLViewField:
     """
     Returns a LookML parameter for metric selection, with allowed values for all supported metrics.
@@ -180,7 +180,7 @@ def get_metric_filter_parameter(
 def get_metric_value_measure(
     view_name: str,
     metric_filter_parameter: ParameterLookMLViewField,
-    aggregation_level: Optional[MetricAggregationLevel] = None,
+    aggregation_level: Optional[MetricUnitOfAnalysis] = None,
 ) -> MeasureLookMLViewField:
     """
     Returns a measure LookML field that uses liquid to return the metric measure selected via the metric menu filter.

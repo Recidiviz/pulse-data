@@ -21,13 +21,13 @@ import unittest
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     METRICS_BY_POPULATION_TYPE,
 )
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    METRIC_AGGREGATION_LEVELS_BY_TYPE,
-    MetricAggregationLevelType,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
     MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
 )
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator import (
     get_lookml_view_for_metrics,
@@ -41,8 +41,8 @@ class LookMLViewTest(unittest.TestCase):
         # Test passes if this doesn't crash
         _ = get_lookml_view_for_metrics(
             population=METRIC_POPULATIONS_BY_TYPE[MetricPopulationType.SUPERVISION],
-            aggregation_level=METRIC_AGGREGATION_LEVELS_BY_TYPE[
-                MetricAggregationLevelType.SUPERVISION_DISTRICT
+            aggregation_level=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
+                MetricUnitOfAnalysisType.SUPERVISION_DISTRICT
             ],
             metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
         )

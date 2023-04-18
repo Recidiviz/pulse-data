@@ -138,14 +138,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     VIOLATIONS,
     VIOLATIONS_BY_TYPE_METRICS,
 )
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    METRIC_AGGREGATION_LEVELS_BY_TYPE,
-    MetricAggregationLevelType,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    METRIC_POPULATIONS_BY_TYPE,
-    MetricPopulationType,
-)
 from recidiviz.aggregated_metrics.period_event_aggregated_metrics import (
     generate_period_event_aggregated_metrics_view_builder,
 )
@@ -153,6 +145,14 @@ from recidiviz.aggregated_metrics.period_span_aggregated_metrics import (
     generate_period_span_aggregated_metrics_view_builder,
 )
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    METRIC_POPULATIONS_BY_TYPE,
+    MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysisType,
+)
 
 METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] = {
     MetricPopulationType.INCARCERATION: [
@@ -303,18 +303,18 @@ METRICS_BY_POPULATION_TYPE: Dict[MetricPopulationType, List[AggregatedMetric]] =
 }
 
 LEVELS_BY_POPULATION_TYPE: Dict[
-    MetricPopulationType, List[MetricAggregationLevelType]
+    MetricPopulationType, List[MetricUnitOfAnalysisType]
 ] = {
     MetricPopulationType.INCARCERATION: [
-        MetricAggregationLevelType.FACILITY,
-        MetricAggregationLevelType.STATE_CODE,
+        MetricUnitOfAnalysisType.FACILITY,
+        MetricUnitOfAnalysisType.STATE_CODE,
     ],
     MetricPopulationType.SUPERVISION: [
-        MetricAggregationLevelType.SUPERVISION_OFFICER,
-        MetricAggregationLevelType.SUPERVISION_UNIT,
-        MetricAggregationLevelType.SUPERVISION_OFFICE,
-        MetricAggregationLevelType.SUPERVISION_DISTRICT,
-        MetricAggregationLevelType.STATE_CODE,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
+        MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+        MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+        MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+        MetricUnitOfAnalysisType.STATE_CODE,
     ],
 }
 
@@ -330,7 +330,7 @@ def collect_aggregated_metrics_view_builders() -> List[SimpleBigQueryViewBuilder
         if not all_metrics:
             continue
         for level_type in LEVELS_BY_POPULATION_TYPE[population_type]:
-            level = METRIC_AGGREGATION_LEVELS_BY_TYPE[level_type]
+            level = METRIC_UNITS_OF_ANALYSIS_BY_TYPE[level_type]
             # Build assignment table
             view_builders.append(
                 generate_metric_assignment_sessions_view_builder(

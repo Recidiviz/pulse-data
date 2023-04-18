@@ -31,14 +31,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import
     SUPERVISION_OFFICE_INFERRED,
     SUPERVISION_UNIT,
 )
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevel,
-    MetricAggregationLevelType,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    MetricPopulation,
-    MetricPopulationType,
-)
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     join_on_columns_fragment,
@@ -50,34 +42,39 @@ from recidiviz.calculator.query.state.dataset_config import (
     ANALYST_VIEWS_DATASET,
     SESSIONS_DATASET,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulation,
+    MetricPopulationType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+    MetricUnitOfAnalysisType,
+)
 
-# List of [MetricPopulationType, MetricAggregationLevelType] tuples that are supported by
+# List of [MetricPopulationType, MetricUnitOfAnalysisType] tuples that are supported by
 # `generate_misc_aggregated_metrics_view_builder` function.
 _MISC_METRICS_SUPPORTED_POPULATIONS_AGGREGATION_LEVELS: List[
-    Tuple[MetricPopulationType, MetricAggregationLevelType]
+    Tuple[MetricPopulationType, MetricUnitOfAnalysisType]
 ] = [
-    (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_OFFICER),
-    (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_UNIT),
-    (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_OFFICE),
-    (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.SUPERVISION_DISTRICT),
-    (MetricPopulationType.SUPERVISION, MetricAggregationLevelType.STATE_CODE),
+    (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_OFFICER),
+    (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_UNIT),
+    (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_OFFICE),
+    (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.SUPERVISION_DISTRICT),
+    (MetricPopulationType.SUPERVISION, MetricUnitOfAnalysisType.STATE_CODE),
 ]
 
 _MIN_OFFICER_CASELOAD_SIZE = 10
 
 
 def _query_template_and_format_args(
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     population: MetricPopulation,
 ) -> Tuple[str, Dict[str, str]]:
     """Returns the appropriate query template (and associated dataset keyword args for
     that template) for the provided population and aggregation level.
     """
     if population.population_type == MetricPopulationType.SUPERVISION:
-        if (
-            aggregation_level.level_type
-            == MetricAggregationLevelType.SUPERVISION_OFFICER
-        ):
+        if aggregation_level.level_type == MetricUnitOfAnalysisType.SUPERVISION_OFFICER:
             group_by_range = range(1, len(aggregation_level.primary_key_columns) + 9)
             group_by_range_str = ", ".join(list(map(str, group_by_range)))
             cte = f"""
@@ -158,10 +155,10 @@ def _query_template_and_format_args(
                 "sessions_dataset": SESSIONS_DATASET,
             }
         if aggregation_level.level_type in [
-            MetricAggregationLevelType.SUPERVISION_UNIT,
-            MetricAggregationLevelType.SUPERVISION_OFFICE,
-            MetricAggregationLevelType.SUPERVISION_DISTRICT,
-            MetricAggregationLevelType.STATE_CODE,
+            MetricUnitOfAnalysisType.SUPERVISION_UNIT,
+            MetricUnitOfAnalysisType.SUPERVISION_OFFICE,
+            MetricUnitOfAnalysisType.SUPERVISION_DISTRICT,
+            MetricUnitOfAnalysisType.STATE_CODE,
         ]:
             cte = f"""
     SELECT
@@ -195,7 +192,7 @@ def _query_template_and_format_args(
 
 
 def generate_misc_aggregated_metrics_view_builder(
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     population: MetricPopulation,
     metrics: List[MiscAggregatedMetric],
 ) -> Optional[SimpleBigQueryViewBuilder]:
