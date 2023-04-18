@@ -51,11 +51,6 @@ normalization_pipelines:
     job_name: us-mi-normalization
     state_code: US_MI
     region: us-central1
-  - pipeline: comprehensive_normalization
-    job_name: us-nc-normalization
-    state_code: US_NC
-    region: us-east1
-    staging_only: True
 
 metric_pipelines:
   # Full US_ND calculations with no time limit
@@ -278,20 +273,6 @@ metric_pipelines:
     state_code: US_OZ
     metric_types: INCARCERATION_POPULATION_SPAN SUPERVISION_POPULATION_SPAN
     region: us-west3
-    staging_only: True
-
-  # Full US_NC incarceration calculations with no time limit
-  - pipeline: population_span_metrics
-    job_name: full-us-nc-population-span-metrics
-    state_code: US_NC
-    metric_types: INCARCERATION_POPULATION_SPAN
-    region: us-east1
-    staging_only: True
-  - pipeline: incarceration_metrics
-    job_name: full-us-nc-incarceration-metrics
-    state_code: US_NC
-    metric_types: INCARCERATION_ADMISSION INCARCERATION_COMMITMENT_FROM_SUPERVISION INCARCERATION_RELEASE
-    region: us-east1
     staging_only: True
 
 supplemental_dataset_pipelines:
