@@ -35,6 +35,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_person import StateResidencyStatus
+from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
 )
@@ -701,3 +702,9 @@ def supervision_period_supervision_type_mapper(
         supervision_types.add(supervision_type)
 
     return get_most_relevant_supervision_type(supervision_types)
+
+
+def role_type_mapper(raw_text: str) -> Optional[StateStaffRoleType]:
+    if raw_text:
+        return StateStaffRoleType.SUPERVISION_OFFICER
+    return StateStaffRoleType.INTERNAL_UNKNOWN
