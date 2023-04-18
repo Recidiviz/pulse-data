@@ -268,6 +268,8 @@ output:
               $mappings:
                 StateIncarcerationPeriodReleaseReason.RELEASED_TO_SUPERVISION:
                   - "78" # Returned to Parole
+                StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION:
+                  - "55" # Released after Erroneous Admission
                 StateIncarcerationPeriodReleaseReason.COMMUTED:
                   - "50" # Commutation
                 StateIncarcerationPeriodReleaseReason.TRANSFER:
@@ -310,10 +312,10 @@ output:
                   - "20" # Return from Escape
                   - "2C" # Returned from AWOL
                 StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN:
-                  - "01" # New CO Commitment - TODO(#13602) Update after schema change
-                  - "06" # Recommitment - TODO(#13602) Update after schema change
-                  - "10" # Returned from Parole - TODO(#13602) Update after schema change
-                  - "2D" # Returned from Other Jurisdiction - TODO(#13602) Update after schema change
+                  - "01" # New CO Commitment
+                  - "06" # Recommitment
+                  - "10" # Returned from Parole
+                  - "2D" # Returned from Other Jurisdiction
                   - "37" # Halfway-In (at CCC)
                 StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE:
                   - "60" # Paroled
