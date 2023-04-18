@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests functionality of MetricAggregationLevel functions"""
+"""Tests functionality of MetricPopulationType functions"""
 
 import re
 import unittest
 
-from recidiviz.aggregated_metrics.models.metric_population_type import (
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
     MetricPopulation,
     MetricPopulationType,

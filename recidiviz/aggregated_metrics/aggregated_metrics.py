@@ -26,15 +26,17 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     MetricConditionsMixin,
     MiscAggregatedMetric,
 )
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevel,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import MetricPopulation
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulation,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+)
 
 
 def generate_aggregated_metrics_view_builder(
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     population: MetricPopulation,
     metrics: List[AggregatedMetric],
 ) -> SimpleBigQueryViewBuilder:

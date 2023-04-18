@@ -14,50 +14,50 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests functionality of MetricAggregationLevel functions"""
+"""Tests functionality of MetricUnitOfAnalysis functions"""
 
 import re
 import unittest
 
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    METRIC_AGGREGATION_LEVELS_BY_TYPE,
-    MetricAggregationLevel,
-    MetricAggregationLevelType,
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
+    MetricUnitOfAnalysis,
+    MetricUnitOfAnalysisType,
 )
 
 
-class MetricAggregationLevelsByTypeTest(unittest.TestCase):
+class MetricUnitOfAnalysissByTypeTest(unittest.TestCase):
     # check that index columns have no repeats
     def test_index_columns_no_repeats(self) -> None:
-        for _, value in METRIC_AGGREGATION_LEVELS_BY_TYPE.items():
+        for _, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
             if len(value.index_columns) != len(set(value.index_columns)):
                 raise ValueError(
-                    "MetricAggregationLevelType `primary_key_columns` and `attribute_columns`"
+                    "MetricUnitOfAnalysisType `primary_key_columns` and `attribute_columns`"
                     " cannot have repeated/shared values."
                 )
 
     # check that level_type = key value
     def test_level_type_matches_key(self) -> None:
-        for key, value in METRIC_AGGREGATION_LEVELS_BY_TYPE.items():
+        for key, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
             self.assertEqual(
                 value.level_type,
                 key,
-                "MetricAggregationLevel `level_type` does not match key value.",
+                "MetricUnitOfAnalysis `level_type` does not match key value.",
             )
 
     # check that level_name_short only has valid character types
     def test_level_name_short_char_types(self) -> None:
-        for _, value in METRIC_AGGREGATION_LEVELS_BY_TYPE.items():
+        for _, value in METRIC_UNITS_OF_ANALYSIS_BY_TYPE.items():
             if not re.match(r"^\w+$", value.level_name_short):
                 raise ValueError(
-                    "All characters in MetricAggregationLevelType value must be alphanumeric or underscores."
+                    "All characters in MetricUnitOfAnalysisType value must be alphanumeric or underscores."
                 )
 
 
-class MetricAggregationLevelTest(unittest.TestCase):
+class MetricUnitOfAnalysisTest(unittest.TestCase):
     def test_get_index_columns_query_string(self) -> None:
-        my_metric_aggregation_level = MetricAggregationLevel(
-            level_type=MetricAggregationLevelType.SUPERVISION_OFFICER,
+        my_metric_aggregation_level = MetricUnitOfAnalysis(
+            level_type=MetricUnitOfAnalysisType.SUPERVISION_OFFICER,
             client_assignment_query="SELECT * FROM `{project_id}.{my_dataset}.my_table`",
             primary_key_columns=["region_code", "my_officer_id"],
             attribute_columns=["my_officer_attribute"],

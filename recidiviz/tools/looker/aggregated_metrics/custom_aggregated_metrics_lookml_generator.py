@@ -39,9 +39,6 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
 from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
     AVG_DAILY_POPULATION,
 )
-from recidiviz.aggregated_metrics.models.metric_population_type import (
-    MetricPopulationType,
-)
 from recidiviz.calculator.query.bq_utils import (
     nonnull_current_date_clause,
     nonnull_end_date_clause,
@@ -49,6 +46,9 @@ from recidiviz.calculator.query.bq_utils import (
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulationType,
+)
 from recidiviz.looker.lookml_view import LookMLView
 from recidiviz.looker.lookml_view_field import (
     LookMLFieldParameter,

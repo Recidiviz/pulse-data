@@ -24,17 +24,19 @@ from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATAS
 from recidiviz.aggregated_metrics.models.aggregated_metric import (
     PeriodEventAggregatedMetric,
 )
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevel,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import MetricPopulation
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulation,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+)
 
 
 def generate_period_event_aggregated_metrics_view_builder(
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     population: MetricPopulation,
     metrics: List[PeriodEventAggregatedMetric],
 ) -> SimpleBigQueryViewBuilder:

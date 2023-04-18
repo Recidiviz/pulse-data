@@ -16,10 +16,6 @@
 # =============================================================================
 """Generates view builder creating spans of assignment to a level of analysis for a specified population"""
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.aggregated_metrics.models.metric_aggregation_level_type import (
-    MetricAggregationLevel,
-)
-from recidiviz.aggregated_metrics.models.metric_population_type import MetricPopulation
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     MAGIC_END_DATE,
@@ -30,10 +26,16 @@ from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
+    MetricPopulation,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
+    MetricUnitOfAnalysis,
+)
 
 
 def generate_metric_assignment_sessions_view_builder(
-    aggregation_level: MetricAggregationLevel,
+    aggregation_level: MetricUnitOfAnalysis,
     population: MetricPopulation,
 ) -> SimpleBigQueryViewBuilder:
     """
