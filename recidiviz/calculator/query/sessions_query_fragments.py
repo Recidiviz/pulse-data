@@ -268,7 +268,7 @@ def join_sentence_spans_to_compartment_1_sessions(
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
         ON span.state_code = sess.state_code
         AND span.person_id = sess.person_id
-        -- Restrict to spans that overlap with supervision sessions
+        -- Restrict to spans that overlap with supervision/incarceration sessions
         AND sess.compartment_level_1 IN ({compartment_level_1_to_overlap})
         -- Use strictly less than for exclusive end_dates
         AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
