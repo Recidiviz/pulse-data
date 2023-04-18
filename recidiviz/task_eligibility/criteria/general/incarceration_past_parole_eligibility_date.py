@@ -15,11 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a client has past their parole eligibility date."""
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_1_sessions,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
+    critical_date_has_passed_spans_cte,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -28,13 +33,38 @@ _CRITERIA_NAME = "INCARCERATION_PAST_PAROLE_ELIGIBILITY_DATE"
 
 _DESCRIPTION = """Describes the spans of time when a client has past their parole eligibility date."""
 
-_REASON_QUERY = """TO_JSON(STRUCT(DATE('9999-12-31') AS parole_eligibility_date))"""
+_REASON_QUERY = f"""
+WITH critical_date_spans AS (
+    SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date AS start_datetime,
+        span.end_date AS end_datetime,
+        MAX(sent.parole_eligibility_date) AS critical_date,
+    {join_sentence_spans_to_compartment_1_sessions("('INCARCERATION')")}
+    WHERE
+        sent.effective_date < {nonnull_end_date_clause('sent.projected_completion_date_max')}
+        AND sent.sentence_type = 'INCARCERATION'
+        AND sent.parole_eligibility_date IS NOT NULL
+    GROUP BY 1, 2, 3, 4
+),
+{critical_date_has_passed_spans_cte()}
+SELECT
+    cd.state_code,
+    cd.person_id,
+    cd.start_date,
+    cd.end_date,
+    cd.critical_date_has_passed AS meets_criteria,
+    TO_JSON(STRUCT(cd.critical_date AS eligible_date)) AS reason,
+FROM critical_date_has_passed_spans cd
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_REASON_QUERY,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 
