@@ -546,7 +546,7 @@ class Report(JusticeCountsBase):
     # All Agencies are Sources, but not all Sources are agencies
     # report.source will only load the Source columns, not the Agency columns
     # So we need a separate relationship for reports that belong to Agencies
-    agency = relationship(Agency)
+    agency = relationship(Agency, overlaps="source")
 
     recurring_report = relationship(
         "Report", uselist=False, remote_side=[id], backref=backref("children")
