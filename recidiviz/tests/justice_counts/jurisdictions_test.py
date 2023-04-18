@@ -20,7 +20,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
+from recidiviz.tests.justice_counts.utils.utils import JusticeCountsSchemaTestObjects
 from recidiviz.tools.datasets.jurisdictions import get_all_jurisdictions
 
 

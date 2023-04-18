@@ -19,7 +19,7 @@
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.justice_counts.utils import (
+from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
 )

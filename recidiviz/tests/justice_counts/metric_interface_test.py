@@ -73,7 +73,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.schema.justice_counts.schema import (
     ReportingFrequency,
 )
-from recidiviz.tests.justice_counts.utils import JusticeCountsSchemaTestObjects
+from recidiviz.tests.justice_counts.utils.utils import JusticeCountsSchemaTestObjects
 from recidiviz.utils.types import assert_type
 
 

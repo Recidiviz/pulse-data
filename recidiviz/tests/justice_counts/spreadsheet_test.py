@@ -34,7 +34,7 @@ from recidiviz.tests.justice_counts.spreadsheet_helpers import (
     TEST_EXCEL_FILE,
     create_excel_file,
 )
-from recidiviz.tests.justice_counts.utils import (
+from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
 )

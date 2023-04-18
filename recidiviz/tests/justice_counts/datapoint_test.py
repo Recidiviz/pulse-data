@@ -50,7 +50,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
     UserAccount,
 )
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.justice_counts.utils import (
+from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
 )
