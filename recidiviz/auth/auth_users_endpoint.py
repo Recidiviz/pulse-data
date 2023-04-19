@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Endpoints related to getting/setting information about users of Recidiviz applications."""
+import csv
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -30,12 +31,17 @@ from sqlalchemy.engine.row import Row
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.exc import NoResultFound
+from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_api_schemas import (
     FullUserSchema,
+    ReasonSchema,
+    StateCodeSchema,
+    UploadSchema,
     UserRequestSchema,
     UserSchema,
 )
+from recidiviz.auth.auth_endpoint import _upsert_roster_rows
 from recidiviz.auth.helpers import generate_user_hash, log_reason
 from recidiviz.persistence.database.schema.case_triage.schema import (
     PermissionsOverride,
@@ -165,6 +171,65 @@ class UsersAPI(MethodView):
             raise e
         except (ProgrammingError, ValueError) as error:
             abort(HTTPStatus.BAD_REQUEST, message=f"{error}")
+
+    @users_blueprint.arguments(
+        StateCodeSchema,
+        location="query",
+        # Return BAD_REQUEST on schema validation errors
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @users_blueprint.arguments(
+        ReasonSchema,
+        location="form",
+        # Return BAD_REQUEST on schema validation errors
+        error_status_code=HTTPStatus.BAD_REQUEST,
+    )
+    @users_blueprint.arguments(UploadSchema, location="files")
+    @users_blueprint.response(HTTPStatus.OK)
+    def put(
+        self,
+        query_args: Dict[str, str],
+        form: Dict[str, str],
+        files: Dict[str, FileStorage],
+    ) -> str:
+        """Adds records to the "roster" table if existing record is not found,
+        otherwise updates the existing record and returns the number of records updated.
+        Removes any existing overrides for uploaded rosters.
+        It assumes that the caller has manually formatted the CSV appropriately.
+        Returns an error message if there was an error creating the records.
+        """
+        state_code = query_args["state_code"]
+        log_reason(
+            form,
+            f"uploading roster for state {state_code}",
+        )
+
+        dict_reader = csv.DictReader(
+            files["file"].read().decode("utf-8-sig").splitlines()
+        )
+        rows = list(dict_reader)
+        try:
+            _upsert_roster_rows(current_session, state_code, rows)
+
+            for row in rows:
+                # If UserOverride exists, delete it
+                existing_user_override = (
+                    current_session.query(UserOverride)
+                    .filter(UserOverride.email_address == row["email_address"].lower())
+                    .first()
+                )
+                if existing_user_override:
+                    current_session.delete(existing_user_override)
+
+            current_session.commit()
+
+            return f"{len(rows)} users added/updated to the roster"
+        except IntegrityError as e:
+            if isinstance(e.orig, NotNullViolation):
+                abort(HTTPStatus.BAD_REQUEST, message=f"{e}")
+            raise e
+        except (ProgrammingError, ValueError) as e:
+            abort(HTTPStatus.BAD_REQUEST, message=f"{e}")
 
 
 @users_blueprint.route("<path:user_hash>")

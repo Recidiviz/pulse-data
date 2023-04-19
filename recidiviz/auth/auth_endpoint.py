@@ -17,7 +17,6 @@
 
 """Endpoints related to auth operations.
 """
-import csv
 import json
 import logging
 import os
@@ -135,7 +134,8 @@ def handle_import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
 @requires_gae_auth
 def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
     """This endpoint triggers the import of the user restrictions CSV file to Cloud SQL. It is requested by a Cloud
-    Function that is triggered when a new file is created in the user restrictions bucket."""
+    Function that is triggered when a new file is created in the user restrictions bucket.
+    """
     try:
         body = get_cloud_task_json_body()
         region_code = body.get("region_code")
@@ -186,9 +186,9 @@ def import_user_restrictions_csv_to_sql() -> Tuple[str, HTTPStatus]:
 
 @auth_endpoint_blueprint.route("/dashboard_user_restrictions_by_email", methods=["GET"])
 @requires_gae_auth
-def dashboard_user_restrictions_by_email() -> Tuple[
-    Union[CaseTriageAuth0AppMetadata, str], HTTPStatus
-]:
+def dashboard_user_restrictions_by_email() -> (
+    Tuple[Union[CaseTriageAuth0AppMetadata, str], HTTPStatus]
+):
     """This endpoint is accessed by a service account used by an Auth0 hook that is called at the pre-registration when
     a user first signs up for an account. Given a user email address in the request, it responds with
     the app_metadata that the hook will save on the user so that the UP dashboards can apply the appropriate
@@ -394,67 +394,6 @@ def _upsert_roster_rows(
             session.add(roster)
 
     session.commit()
-
-
-@auth_endpoint_blueprint.route("/users", methods=["PUT"])
-@requires_gae_auth
-def upload_roster() -> Tuple[str, HTTPStatus]:
-    """Adds records to the "roster" table if existing record is not found,
-    otherwise updates the existing record and returns the number of records updated.
-    It assumes that the caller has manually formatted the CSV appropriately.
-    Returns an error message if there was an error creating the records.
-    """
-    state_code = get_only_str_param_value("state_code", request.args)
-
-    try:
-        if state_code is None:
-            raise ValueError("Request is missing the state_code param")
-
-        request_dict = convert_nested_dictionary_keys(
-            assert_type(request.form, dict), to_snake_case
-        )
-        log_reason(
-            request_dict,
-            f"uploading roster for state {state_code}",
-        )
-
-        with SessionFactory.using_database(
-            SQLAlchemyDatabaseKey.for_schema(SchemaType.CASE_TRIAGE)
-        ) as session:
-            dict_reader = csv.DictReader(
-                request.files["file"].read().decode("utf-8-sig").splitlines()
-            )
-            rows = list(dict_reader)
-            _upsert_roster_rows(session, state_code, rows)
-
-            for row in rows:
-                # If UserOverride exists, delete it
-                existing_user_override = (
-                    session.query(UserOverride)
-                    .filter(UserOverride.email_address == row["email_address"].lower())
-                    .first()
-                )
-                if existing_user_override:
-                    session.delete(existing_user_override)
-
-            session.commit()
-
-            return (
-                f"{len(rows)} users added/updated to the roster",
-                HTTPStatus.OK,
-            )
-    except IntegrityError as e:
-        if isinstance(e.orig, NotNullViolation):
-            return (
-                f"{e}",
-                HTTPStatus.BAD_REQUEST,
-            )
-        raise e
-    except (ProgrammingError, ValueError) as error:
-        return (
-            f"{error}",
-            HTTPStatus.BAD_REQUEST,
-        )
 
 
 @auth_endpoint_blueprint.route("/states", methods=["GET"])
@@ -687,7 +626,8 @@ def delete_state_role(
     state_code: str, role: str
 ) -> Union[tuple[Response, int], tuple[str, int]]:
     """Removes a role in a given state. Fails if there are still active users with that role in that
-    state. If there are no active users, removes any blocked users with that role in that state."""
+    state. If there are no active users, removes any blocked users with that role in that state.
+    """
     if not StateCode.is_state_code(state_code.upper()):
         return (
             f"Unknown state_code [{state_code}] received, must be a valid state code.",
@@ -741,7 +681,7 @@ def delete_state_role(
             )
 
             # Delete remaining users
-            for (override_user, roster_user) in state_role_users:
+            for override_user, roster_user in state_role_users:
                 if override_user:
                     session.delete(override_user)
                 if roster_user:
