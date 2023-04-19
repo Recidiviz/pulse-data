@@ -233,7 +233,9 @@ output:
 
                       # TODO(#11304): [US_TN] Update ingest mappings for supervision level
                       StateSupervisionLevel.INTERNAL_UNKNOWN:
-                        - 5T1 # This is a new value as of 4/1/23 and will be mapped to INTERNAL_UNKNOWN until we get a reply from TN about what it means
+                        - 5T1 # TREATMENT ORIENTED PHASE1 - New as of 4/1/2023
+                        - 5T2 # TREATMENT ORIENTED PHASE2 - New as of 4/1/2023
+                        - 5T3 # TREATMENT ORIENTED PHASE3 - New as of 4/1/2023
                         - 1SA # SPEC RESTRCT - SANCTIONED
                         - 2P1 # RESTRICTED - PSU PHASE ONE
                         - 2PV # RESTRICTED - POST VIOLATN
