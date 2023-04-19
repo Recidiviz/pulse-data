@@ -14,34 +14,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows when hearings have occurred or the "next review date" has passed
+"""Defines a view that shows all releases from incarceration to parole for any
+person, across all states.
 """
+
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    TaskCompletionEventBigQueryViewBuilder,
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows when hearings have occurred or the "next review date" has passed"
-"""
+_DESCRIPTION = """Defines a view that shows all releases from incarceration to parole
+for any person, across all states."""
 
-# STUB TODO(#18772)
 _QUERY_TEMPLATE = """
 SELECT
-    state_code,
-    person_id,
-    start_date AS completion_event_date,
+  state_code,
+  person_id,
+  start_date AS completion_event_date,
 FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-WHERE FALSE
+WHERE compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
+  AND compartment_level_2 = "PAROLE"
+  AND inflow_from_level_1 IN ("INCARCERATION", "PENDING_SUPERVISION")
 """
 
-VIEW_BUILDER: TaskCompletionEventBigQueryViewBuilder = TaskCompletionEventBigQueryViewBuilder(
-    completion_event_type=TaskCompletionEventType.HEARING_OCCURRED_OR_PAST_REVIEW_DATE,
-    description=_DESCRIPTION,
-    completion_event_query_template=_QUERY_TEMPLATE,
-    sessions_dataset=dataset_config.SESSIONS_DATASET,
+VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+        completion_event_type=TaskCompletionEventType.RELEASE_TO_PAROLE,
+        description=_DESCRIPTION,
+        completion_event_query_template=_QUERY_TEMPLATE,
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
+    )
 )
 
 if __name__ == "__main__":

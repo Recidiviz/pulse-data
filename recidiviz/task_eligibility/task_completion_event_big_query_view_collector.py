@@ -23,8 +23,15 @@ from recidiviz.big_query.big_query_view_collector import (
     BigQueryViewCollector,
     filename_matches_view_id_validator,
 )
-from recidiviz.task_eligibility import completion_events
+from recidiviz.task_eligibility.completion_events import (
+    general as general_completion_events_module,
+)
+from recidiviz.task_eligibility.completion_events import (
+    state_specific as state_specific_completion_event_module,
+)
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventBigQueryViewBuilder,
 )
 
@@ -37,9 +44,26 @@ class TaskCompletionEventBigQueryViewCollector(
     """
 
     def collect_view_builders(self) -> List[TaskCompletionEventBigQueryViewBuilder]:
-        """Returns a list of all defined TaskCriteriaBigQueryViewBuilder."""
-        return self.collect_view_builders_in_module(
-            builder_type=TaskCompletionEventBigQueryViewBuilder,
-            view_dir_module=completion_events,
+        """Returns a list of all defined TaskCompletionEventBigQueryViewBuilder, both the
+        StateAgnosticTaskCompletionEventBigQueryViewBuilders which contain general queries that
+        can be used for any state and the StateSpecificTaskCompletionEventBigQueryViewBuilders
+        which apply logic specific to a particular state.
+        """
+        view_builders = self.collect_view_builders_in_module(
+            builder_type=StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+            view_dir_module=general_completion_events_module,
             validate_builder_fn=filename_matches_view_id_validator,
         )
+
+        for state_completion_event_module in self.get_submodules(
+            state_specific_completion_event_module, submodule_name_prefix_filter=None
+        ):
+            view_builders.extend(
+                self.collect_view_builders_in_module(
+                    builder_type=StateSpecificTaskCompletionEventBigQueryViewBuilder,
+                    view_dir_module=state_completion_event_module,
+                    validate_builder_fn=filename_matches_view_id_validator,
+                )
+            )
+
+        return view_builders

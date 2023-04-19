@@ -21,7 +21,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events import supervision_level_downgrade
+from recidiviz.task_eligibility.completion_events.general import (
+    supervision_level_downgrade,
+)
 from recidiviz.task_eligibility.criteria.general import (
     initial_assessment_level_minimum_or_medium,
     on_minimum_supervision_at_least_six_months,

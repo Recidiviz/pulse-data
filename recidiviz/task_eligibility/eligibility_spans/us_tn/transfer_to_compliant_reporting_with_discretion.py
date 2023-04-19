@@ -20,11 +20,13 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events import transfer_to_limited_supervision
 from recidiviz.task_eligibility.criteria.general import (
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
     supervision_level_is_not_unassigned,
+)
+from recidiviz.task_eligibility.completion_events.general import (
+    transfer_to_limited_supervision,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
     fines_fees_eligible,

@@ -21,7 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events import early_discharge
+from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     supervision_not_past_full_term_completion_date,
     supervision_past_half_full_term_release_date,

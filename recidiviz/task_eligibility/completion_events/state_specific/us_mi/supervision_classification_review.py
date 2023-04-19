@@ -14,29 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""US_MI - supervision classification review dates"""
-
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    NORMALIZED_STATE_DATASET,
-)
+"""Defines a view that shows all classification review dates for clients in Michigan.
+"""
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
+    TaskCompletionEventType,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_NAME = (
-    "supervision_classification_review_dates"
-)
+_DESCRIPTION = """Defines a view that shows all classification review dates for clients in Michigan. Classification
+reviews happen every 6 months after the initial classification review and should result in a supervision level 
+downgrade unless there are extenuating circumstances. 
+"""
 
-SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_DESCRIPTION = """Supervision classification review dates used
-to hydrate task completion events"""
-
-SUPERVISION_CLASSIFICATION_REVIEW_DATES_QUERY_TEMPLATE = """
+_QUERY_TEMPLATE = """
 SELECT DISTINCT
     pei.state_code,
     pei.person_id,
@@ -54,19 +52,20 @@ WHERE ref1.description = 'Classification Review'
 AND item_complete_date IS NOT NULL
 """
 
-SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    view_id=SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_NAME,
-    dataset_id=ANALYST_VIEWS_DATASET,
-    description=SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_DESCRIPTION,
-    view_query_template=SUPERVISION_CLASSIFICATION_REVIEW_DATES_QUERY_TEMPLATE,
-    normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+VIEW_BUILDER: StateSpecificTaskCompletionEventBigQueryViewBuilder = (
+    StateSpecificTaskCompletionEventBigQueryViewBuilder(
         state_code=StateCode.US_MI,
-        instance=DirectIngestInstance.PRIMARY,
-    ),
-    should_materialize=True,
+        completion_event_type=TaskCompletionEventType.SUPERVISION_CLASSIFICATION_REVIEW,
+        description=_DESCRIPTION,
+        completion_event_query_template=_QUERY_TEMPLATE,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+    )
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_CLASSIFICATION_REVIEW_DATES_VIEW_BUILDER.build_and_print()
+        VIEW_BUILDER.build_and_print()

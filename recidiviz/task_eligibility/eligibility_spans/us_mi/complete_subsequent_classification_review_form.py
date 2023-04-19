@@ -21,7 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events import (
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     supervision_classification_review,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (

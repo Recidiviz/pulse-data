@@ -23,7 +23,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_active_supervision_and_supervision_out_of_state_population,
 )
-from recidiviz.task_eligibility.completion_events import early_discharge
+from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     no_conviction_within_6_months,
     on_medium_supervision_level_or_lower,

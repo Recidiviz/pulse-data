@@ -21,7 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events import release_to_parole
+from recidiviz.task_eligibility.completion_events.general import release_to_parole
 from recidiviz.task_eligibility.criteria.general import (
     incarceration_past_parole_eligibility_date,
 )
