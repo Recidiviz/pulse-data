@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_man
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
+from recidiviz.persistence.entity.operations.entities import DirectIngestInstanceStatus
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -783,4 +784,57 @@ class PostgresDirectIngestInstanceStatusManagerTest(TestCase):
         self.assertEqual(
             start_timestamp,
             us_yy_primary_manager.get_current_ingest_rerun_start_timestamp(),
+        )
+
+    def test_get_flash_timestamps(
+        self,
+    ) -> None:
+        start_timestamp = datetime.datetime(2022, 7, 1, 0, tzinfo=pytz.UTC)
+        statuses = [
+            DirectIngestStatus.STANDARD_RERUN_STARTED,
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+            DirectIngestStatus.FLASH_IN_PROGRESS,
+            DirectIngestStatus.FLASH_COMPLETED,
+            DirectIngestStatus.UP_TO_DATE,
+            DirectIngestStatus.RAW_DATA_IMPORT_IN_PROGRESS,
+            DirectIngestStatus.INGEST_VIEW_MATERIALIZATION_IN_PROGRESS,
+            DirectIngestStatus.EXTRACT_AND_MERGE_IN_PROGRESS,
+            DirectIngestStatus.FLASH_IN_PROGRESS,
+            DirectIngestStatus.FLASH_COMPLETED,
+            DirectIngestStatus.UP_TO_DATE,
+        ]
+        us_yy_primary_manager = PostgresDirectIngestInstanceStatusManager(
+            StateCode.US_YY.value, DirectIngestInstance.PRIMARY
+        )
+        self._add_instance_statuses_in_hour_increments(
+            start_timestamp, us_yy_primary_manager, statuses
+        )
+
+        self.assertEqual(
+            [
+                DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    status_timestamp=datetime.datetime(2022, 7, 1, 12, tzinfo=pytz.UTC),
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.UP_TO_DATE,
+                ),
+                DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    status_timestamp=datetime.datetime(2022, 7, 1, 11, tzinfo=pytz.UTC),
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.FLASH_COMPLETED,
+                ),
+                DirectIngestInstanceStatus(
+                    region_code=StateCode.US_YY.value,
+                    status_timestamp=datetime.datetime(2022, 7, 1, 10, tzinfo=pytz.UTC),
+                    instance=DirectIngestInstance.PRIMARY,
+                    status=DirectIngestStatus.FLASH_IN_PROGRESS,
+                ),
+            ],
+            # Only get the last three statuses
+            us_yy_primary_manager.get_statuses_since(
+                datetime.datetime(2022, 7, 1, 9, tzinfo=pytz.UTC)
+            ),
         )

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines admin panel routes for ingest operations."""
+import datetime
 import logging
 from http import HTTPStatus
 from typing import List, Optional, Tuple, Union
@@ -830,6 +831,29 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             )
 
         return "", HTTPStatus.OK
+
+    @bp.route(
+        "/api/ingest_operations/get_recent_ingest_instance_status_history/<state_code_str>"
+    )
+    @requires_gae_auth
+    def _get_recent_ingest_instance_status_history(
+        state_code_str: str,
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            state_code = StateCode(state_code_str)
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        status_manager = PostgresDirectIngestInstanceStatusManager(
+            state_code.value, DirectIngestInstance.PRIMARY
+        )
+        statuses = status_manager.get_statuses_since(
+            datetime.datetime.now() - datetime.timedelta(days=180)
+        )
+        return (
+            jsonify([status.for_api() for status in statuses]),
+            HTTPStatus.OK,
+        )
 
     @bp.route(
         "/api/ingest_operations/flash_primary_db/copy_raw_data_to_backup",

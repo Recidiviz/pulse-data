@@ -20,6 +20,7 @@ import datetime
 from typing import Dict, List, Optional, Union
 
 import attr
+import pytz
 from google.cloud.bigquery.table import Row
 
 from recidiviz.admin_panel.admin_panel_store import AdminPanelStore
@@ -46,7 +47,7 @@ from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
 
-def cloud_sql_refresh_status_query_for_schema(
+def cloud_sql_current_refresh_status_query_for_schema(
     project_id: str, bq_refresh_address: BigQueryAddress, schema: SchemaType
 ) -> str:
     return f"""
@@ -66,6 +67,23 @@ def cloud_sql_refresh_status_query_for_schema(
     -- Get the row with the most recent status
     WHERE ordinal = 1
     AND schema = "{schema.name}"
+    """
+
+
+def cloud_sql_refresh_status_history_for_schema_and_state(
+    project_id: str,
+    bq_refresh_address: BigQueryAddress,
+    schema: SchemaType,
+    state_code: StateCode,
+    start_timestamp: datetime.datetime,
+) -> str:
+    return f"""
+    SELECT last_refresh_datetime
+    FROM `{project_id}.{bq_refresh_address.dataset_id}.{bq_refresh_address.table_id}`
+    WHERE region_code = "{state_code.value}"
+    AND schema = "{schema.name}"
+    AND last_refresh_datetime > "{start_timestamp.isoformat()}"
+    ORDER BY last_refresh_datetime DESC
     """
 
 
@@ -143,11 +161,11 @@ class IngestDataFreshnessStore(AdminPanelStore):
         self._data_freshness_results_last_calculated = datetime.datetime.now()
         return self._data_freshness_results
 
-    def get_statuses_for_schema(
+    def get_current_statuses_for_schema(
         self, schema: SchemaType
     ) -> Dict[Optional[StateCode], CloudSqlToBqRefreshStatus]:
         query_job = self.bq_client.run_query_async(
-            query_str=cloud_sql_refresh_status_query_for_schema(
+            query_str=cloud_sql_current_refresh_status_query_for_schema(
                 metadata.project_id(),
                 CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
                 schema,
@@ -165,6 +183,27 @@ class IngestDataFreshnessStore(AdminPanelStore):
             ] = record
         return records
 
+    def get_refresh_timestamps_for_schema_and_state_since(
+        self,
+        state_code: StateCode,
+        start_timestamp: datetime.datetime,
+    ) -> List[datetime.datetime]:
+        # TODO(#20103): Add most recent data processed times
+        query_job = self.bq_client.run_query_async(
+            query_str=cloud_sql_refresh_status_history_for_schema_and_state(
+                metadata.project_id(),
+                CLOUD_SQL_TO_BQ_REFRESH_STATUS_ADDRESS,
+                SchemaType.STATE,
+                state_code=state_code,
+                start_timestamp=start_timestamp,
+            ),
+            use_query_cache=True,
+        )
+
+        return [
+            row["last_refresh_datetime"].replace(tzinfo=pytz.UTC) for row in query_job
+        ]
+
     def get_data_freshness_by_state(
         self,
         state_codes: List[StateCode],
@@ -175,7 +214,7 @@ class IngestDataFreshnessStore(AdminPanelStore):
         where all files on or before that date are processed for a that state
         """
         date_freshness_by_state: Dict[StateCode, StateDataFreshnessInfo] = {}
-        refresh_status_bq = self.get_statuses_for_schema(SchemaType.STATE)
+        refresh_status_bq = self.get_current_statuses_for_schema(SchemaType.STATE)
 
         for state_code in state_codes:
             content = InstanceIngestViewContentsImpl(
@@ -259,7 +298,7 @@ def _bq_refresh_status_record_for_row(row: Row) -> CloudSqlToBqRefreshStatus:
 
     return CloudSqlToBqRefreshStatus(
         refresh_run_id=row["refresh_run_id"],
-        last_refresh_datetime=row["last_refresh_datetime"],
+        last_refresh_datetime=row["last_refresh_datetime"].replace(tzinfo=pytz.UTC),
         schema=row["schema"],
         region_code=row["region_code"],
     )

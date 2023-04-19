@@ -19,6 +19,7 @@ import { InfoCircleOutlined } from "@ant-design/icons";
 import {
   Badge,
   Card,
+  Checkbox,
   Descriptions,
   Divider,
   message,
@@ -32,12 +33,18 @@ import {
   fetchValidationDescription,
   fetchValidationDetails,
   fetchValidationErrorTable,
+  getAllBQRefreshTimestamps,
 } from "../../AdminPanelAPI";
+import { getRecentIngestInstanceStatusHistory } from "../../AdminPanelAPI/IngestOperations";
 import { useFetchedDataJSON, useFetchedDataProtobuf } from "../../hooks";
 import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../recidiviz/admin_panel/models/validation_pb";
+import {
+  IngestInstanceStatusInfo,
+  IngestStatusRefreshInfo,
+} from "../IngestOperationsView/constants";
 import { gcpEnvironment } from "../Utilities/EnvironmentUtilities";
 import {
   RecordStatus,
@@ -59,6 +66,95 @@ import {
 import ValidationDetailsGraph from "./ValidationDetailsGraph";
 import ValidationErrorTable from "./ValidationErrorTable";
 
+const getValidationLogLink = (
+  validationName: string,
+  stateCode: string,
+  traceId?: string
+): string | undefined => {
+  if (!traceId) {
+    // Needs to have traceId to locate correct log
+    return;
+  }
+
+  const queryEnv = gcpEnvironment.isProduction
+    ? "recidiviz-123"
+    : "recidiviz-staging";
+
+  // Time range is set to 5 days which should be fine since ValidationDetails is focusing on the most recent runs.
+  return `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2F${queryEnv}%2Flogs%2Fapp%22%0Atrace%3D%22projects%2F${queryEnv}%2Ftraces%2F${traceId}%22%0A%22${validationName}%22%0A%22${stateCode}%22;timeRange=P5D?project=${queryEnv}`;
+};
+
+/** Determines which ingest statuses were active during each BigQuery refresh. See
+ * `IngestStatusRefreshInfo` for details on the relationship between a refresh and
+ * ingest instance statuses. */
+const getIngestEvents = (
+  refreshTimestamps: string[] | undefined,
+  ingestInstanceStatuses: IngestInstanceStatusInfo[] | undefined
+): IngestStatusRefreshInfo[] => {
+  if (!refreshTimestamps || !ingestInstanceStatuses) {
+    return [];
+  }
+
+  let statusIdx = 0;
+  const results = [];
+  for (
+    let refreshTimestampIdx = 0;
+    refreshTimestampIdx < refreshTimestamps.length;
+    refreshTimestampIdx += 1
+  ) {
+    // If the status happened after the refresh, move to the next status. This will only
+    // happen for the first (most recent) refresh.
+    while (
+      statusIdx < ingestInstanceStatuses.length &&
+      ingestInstanceStatuses[statusIdx].statusTimestamp >
+        refreshTimestamps[refreshTimestampIdx]
+    ) {
+      statusIdx += 1;
+    }
+
+    const statusStartIdx = statusIdx;
+    if (refreshTimestampIdx + 1 === refreshTimestamps.length) {
+      // If this is the most recent refresh, include the rest of the statuses.
+      statusIdx = ingestInstanceStatuses.length;
+    } else {
+      // Otherwise, just get the statuses until we find one that is before the prior
+      // refresh.
+      while (
+        statusIdx < ingestInstanceStatuses.length &&
+        ingestInstanceStatuses[statusIdx].statusTimestamp >
+          refreshTimestamps[refreshTimestampIdx + 1]
+      ) {
+        statusIdx += 1;
+      }
+    }
+
+    results.push({
+      refreshTimestamp: refreshTimestamps[refreshTimestampIdx],
+      ingestStatuses: ingestInstanceStatuses.slice(
+        statusStartIdx,
+        statusIdx + 1 // Keep the next one, as it is still active during this refresh.
+      ),
+    });
+  }
+  return results;
+};
+
+const getAllVersionChanges = (
+  records: ValidationStatusRecord[]
+): { [systemVersion: string]: string } => {
+  return records.reduce((acc, record) => {
+    const systemVersion = record.getSystemVersion() || "";
+    const runDatetime = record.getRunDatetime().toDate();
+    return {
+      ...acc,
+      [systemVersion]:
+        systemVersion in acc && acc[systemVersion] < runDatetime
+          ? acc[systemVersion]
+          : runDatetime,
+    };
+  }, {} as { [systemVersion: string]: string });
+};
+
 const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   validationName,
   stateCode,
@@ -72,20 +168,6 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
 
   const { loading: errorTableLoading, data: errorTable } =
     useFetchedDataJSON<ValidationErrorTableData>(fetchErrorTable);
-
-  const getValidationLogLink = (traceId?: string) => {
-    if (!traceId) {
-      // Needs to have traceId to locate correct log
-      return;
-    }
-
-    const queryEnv = gcpEnvironment.isProduction
-      ? "recidiviz-123"
-      : "recidiviz-staging";
-
-    // Time range is set to 5 days which should be fine since ValidationDetails is focusing on the most recent runs.
-    return `https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2F${queryEnv}%2Flogs%2Fapp%22%0Atrace%3D%22projects%2F${queryEnv}%2Ftraces%2F${traceId}%22%0A%22${validationName}%22%0A%22${stateCode}%22;timeRange=P5D?project=${queryEnv}`;
-  };
 
   const [lookbackDays, setLookbackDays] = React.useState(30);
 
@@ -123,7 +205,53 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
   const latestResultStatus =
     (latestRecord && getRecordStatus(latestRecord)) || RecordStatus.UNKNOWN;
   const validationLogLink =
-    latestRecord && getValidationLogLink(latestRecord.getTraceId());
+    latestRecord &&
+    getValidationLogLink(validationName, stateCode, latestRecord.getTraceId());
+
+  // Get the ingest status changes and group them by which refresh they were included in
+  const [includeIngestEvents, setIncludeIngestEvents] = React.useState(true);
+
+  const fetchIngestInstanceStatuses = React.useCallback(() => {
+    return getRecentIngestInstanceStatusHistory(stateCode);
+  }, [stateCode]);
+
+  const {
+    loading: ingestInstanceStatusesLoading,
+    data: ingestInstanceStatuses,
+  } = useFetchedDataJSON<IngestInstanceStatusInfo[]>(
+    fetchIngestInstanceStatuses
+  );
+
+  const fetchRefreshTimestamps = React.useCallback(() => {
+    return getAllBQRefreshTimestamps(stateCode);
+  }, [stateCode]);
+  const { loading: refreshTimestampsLoading, data: refreshTimestamps } =
+    useFetchedDataJSON<string[]>(fetchRefreshTimestamps);
+
+  // Do the actual grouping by refresh (both lists are in descending order)
+  const ingestEventsLoading =
+    ingestInstanceStatusesLoading || refreshTimestampsLoading;
+  const ingestEvents = includeIngestEvents
+    ? getIngestEvents(refreshTimestamps, ingestInstanceStatuses).filter(
+        // Only include
+        ({ refreshTimestamp }) => {
+          const refreshDate = new Date(refreshTimestamp);
+          return (
+            records.length > 0 &&
+            refreshDate >= records.slice(-1)[0].getRunDatetime().toDate() &&
+            refreshDate < latestRecord.getRunDatetime().toDate()
+          );
+        }
+      )
+    : [];
+
+  // Note, this will still show a version change even if the view update failed and so
+  // not all the changes from that version had taken effect.
+  const [includeVersionChanges, setIncludeVersionChanges] =
+    React.useState(false);
+  const versionChanges = includeVersionChanges
+    ? getAllVersionChanges(records)
+    : {};
 
   return (
     <>
@@ -235,12 +363,40 @@ const ValidationDetails: React.FC<ValidationDetailsProps> = ({
               onChange={(value) => setLookbackDays(value as number)}
             />
           }
+          actions={[
+            <>
+              {includeIngestEvents && ingestEventsLoading && <Spin />}
+              <Checkbox
+                defaultChecked={includeIngestEvents}
+                indeterminate={includeIngestEvents && ingestEventsLoading}
+                onChange={(event) =>
+                  setIncludeIngestEvents(event.target.checked)
+                }
+              >
+                Show Ingest Events
+              </Checkbox>
+            </>,
+            <>
+              {includeVersionChanges && validationLoading && <Spin />}
+              <Checkbox
+                defaultChecked={includeVersionChanges}
+                indeterminate={includeVersionChanges && validationLoading}
+                onChange={(event) =>
+                  setIncludeVersionChanges(event.target.checked)
+                }
+              >
+                Show Version Changes
+              </Checkbox>
+            </>,
+          ]}
         >
           <ValidationDetailsGraph
             // Use slice() to copy before reversing.
             records={records.slice().reverse()}
             isPercent={latestRecord?.getIsPercentage()}
             loading={validationLoading}
+            ingestEvents={ingestEvents}
+            versionChanges={versionChanges}
           />
         </Card>
 

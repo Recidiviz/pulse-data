@@ -114,22 +114,24 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
         return None
 
     def _get_rows_after_timestamp(
-        self, session: Session, status_timestamp: datetime
+        self,
+        session: Session,
+        status_timestamp: datetime,
     ) -> List[DirectIngestInstanceStatus]:
         """Returns all rows, if any, whose timestamps are strictly after the passed in
         status_timestamp.
+
+        If `status_filter` is provided, then only return rows for the given status.
         """
-        results = (
-            session.query(schema.DirectIngestInstanceStatus)
-            .filter(
-                schema.DirectIngestInstanceStatus.region_code == self.region_code,
-                schema.DirectIngestInstanceStatus.instance
-                == self.ingest_instance.value,
-                schema.DirectIngestInstanceStatus.status_timestamp > status_timestamp,
-            )
-            .order_by(schema.DirectIngestInstanceStatus.status_timestamp.desc())
-            .all()
+        query = session.query(schema.DirectIngestInstanceStatus).filter(
+            schema.DirectIngestInstanceStatus.region_code == self.region_code,
+            schema.DirectIngestInstanceStatus.instance == self.ingest_instance.value,
+            schema.DirectIngestInstanceStatus.status_timestamp > status_timestamp,
         )
+
+        results = query.order_by(
+            schema.DirectIngestInstanceStatus.status_timestamp.desc()
+        ).all()
 
         return [
             self._direct_ingest_instance_status_as_entity(result) for result in results
@@ -291,6 +293,15 @@ class PostgresDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManage
     def get_all_statuses(self) -> List[DirectIngestInstanceStatus]:
         with SessionFactory.using_database(self.db_key) as session:
             return self._get_rows_after_timestamp(session, datetime.min)
+
+    def get_statuses_since(
+        self, start_timestamp: datetime
+    ) -> List[DirectIngestInstanceStatus]:
+        with SessionFactory.using_database(self.db_key) as session:
+            return self._get_rows_after_timestamp(
+                session,
+                status_timestamp=start_timestamp,
+            )
 
     def get_current_status(self) -> DirectIngestStatus:
         """Get current status."""

@@ -16,7 +16,7 @@
 // =============================================================================
 
 import MetadataDataset from "../models/MetadataDatasets";
-import { postWithURLAndBody } from "./utils";
+import { getResource, postWithURLAndBody } from "./utils";
 
 // Fetch dataset metadata
 export const fetchColumnObjectCountsByValue = async (
@@ -51,6 +51,14 @@ export const fetchObjectCountsByTable = async (
 // Fetch data freshness
 export const fetchDataFreshness = async (): Promise<Response> => {
   return postWithURLAndBody("/api/ingest_metadata/data_freshness");
+};
+
+export const getAllBQRefreshTimestamps = async (
+  stateCode: string
+): Promise<Response> => {
+  return getResource(
+    `/api/ingest_metadata/get_all_bq_refresh_timestamps/${stateCode}`
+  );
 };
 
 // Fetch validation status

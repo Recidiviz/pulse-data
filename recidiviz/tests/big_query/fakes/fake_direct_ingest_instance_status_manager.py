@@ -121,3 +121,12 @@ class FakeDirectIngestInstanceStatusManager(DirectIngestInstanceStatusManager):
             ]:
                 return status.status_timestamp
         return None
+
+    def get_statuses_since(
+        self, start_timestamp: datetime.datetime
+    ) -> List[DirectIngestInstanceStatus]:
+        return [
+            status
+            for status in reversed(self.statuses)
+            if status.status_timestamp > start_timestamp
+        ]

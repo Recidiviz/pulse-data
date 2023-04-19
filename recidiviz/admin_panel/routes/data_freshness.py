@@ -15,12 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines routes for the Data Freshness API the admin panel."""
+import datetime
 from http import HTTPStatus
-from typing import Tuple
+from typing import Tuple, Union
 
 from flask import Blueprint, Response, jsonify
 
 from recidiviz.admin_panel.admin_stores import get_ingest_data_freshness_store
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.auth.gae import requires_gae_auth
 
 
@@ -34,5 +36,25 @@ def add_data_freshness_routes(admin_panel_blueprint: Blueprint) -> None:
     def fetch_ingest_data_freshness() -> Tuple[Response, HTTPStatus]:
         return (
             jsonify(get_ingest_data_freshness_store().data_freshness_results),
+            HTTPStatus.OK,
+        )
+
+    @admin_panel_blueprint.route(
+        "/api/ingest_metadata/get_all_bq_refresh_timestamps/<state_code_str>"
+    )
+    @requires_gae_auth
+    def _get_refresh_timestamps(
+        state_code_str: str,
+    ) -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            state_code = StateCode(state_code_str)
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        timestamps = get_ingest_data_freshness_store().get_refresh_timestamps_for_schema_and_state_since(
+            state_code, datetime.datetime.now() - datetime.timedelta(days=180)
+        )
+        return (
+            jsonify([timestamp.isoformat() for timestamp in timestamps]),
             HTTPStatus.OK,
         )

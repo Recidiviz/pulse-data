@@ -255,6 +255,13 @@ class DirectIngestInstanceStatusManager:
     def get_current_status_info(self) -> DirectIngestInstanceStatus:
         """Get current status and associated information."""
 
+    @abc.abstractmethod
+    def get_statuses_since(
+        self, start_timestamp: datetime.datetime
+    ) -> List[DirectIngestInstanceStatus]:
+        """Returns all of the statuses since the given timestamp (exclusive), with the
+        most recent first."""
+
     @environment.test_only
     @abc.abstractmethod
     def add_instance_status(self, status: DirectIngestStatus) -> None:
