@@ -299,9 +299,15 @@ class SamenessPerViewValidationResultDetails(DataValidationJobResultDetails):
                 ValidationResultStatus.FAIL_SOFT: "soft",
                 ValidationResultStatus.FAIL_HARD: "hard",
             }
+
+            num_allowed_rows_by_type = {
+                ValidationResultStatus.FAIL_SOFT: self.soft_max_allowed_error,
+                ValidationResultStatus.FAIL_HARD: self.hard_max_allowed_error,
+            }
+
             return (
                 f"{self.num_error_rows} out of {self.total_num_rows} row(s) did not contain matching strings. "
-                f"The acceptable margin of error is {self.soft_max_allowed_error} ({error_type_text[validation_result_status]}), "
+                f"The acceptable margin of error is {num_allowed_rows_by_type[validation_result_status]} ({error_type_text[validation_result_status]}), "
                 f"but the validation returned an error rate of {round(self.error_rate, 4)}."
             )
         raise AttributeError(

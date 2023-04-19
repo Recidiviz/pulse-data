@@ -155,9 +155,15 @@ class ExistenceValidationResultDetails(DataValidationJobResultDetails):
                 ValidationResultStatus.FAIL_SOFT: "soft",
                 ValidationResultStatus.FAIL_HARD: "hard",
             }
+
+            num_allowed_rows_by_type = {
+                ValidationResultStatus.FAIL_SOFT: self.soft_num_allowed_rows,
+                ValidationResultStatus.FAIL_HARD: self.hard_num_allowed_rows,
+            }
+
             return (
                 f"Found [{self.num_invalid_rows}] invalid rows, more than the allowed "
-                f"[{self.soft_num_allowed_rows}] ({error_type_text[validation_result_status]})"
+                f"[{num_allowed_rows_by_type[validation_result_status]}] ({error_type_text[validation_result_status]})"
             )
         raise AttributeError(
             f"failure_description for validation_result_status {validation_result_status} not set"
