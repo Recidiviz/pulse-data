@@ -143,8 +143,11 @@ class TestSamenessValidationCheckers(TestCase):
         self.assertEqual(check_with_name_suffix.validation_name, "test_view_b_c_only")
 
     def test_sameness_check_numbers_different_values_no_allowed_error(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"a": 98, "b": 100, "c": 99, "error_rate": 0.02}
+        self.mock_client.run_query_async.side_effect = [
+            # Failed Rows
+            [{"a": 98, "b": 100, "c": 99, "error_rate": 0.02}],
+            # Total Row Count
+            [[4]],
         ]
 
         job = DataValidationJob(
@@ -180,14 +183,20 @@ class TestSamenessValidationCheckers(TestCase):
                     ],
                     hard_max_allowed_error=0.0,
                     soft_max_allowed_error=0.0,
+                    total_num_rows=4,
                 ),
             ),
         )
 
     def test_sameness_check_numbers_multiple_rows_above_margin(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"a": 97, "b": 100, "c": 99, "error_rate": 0.03},
-            {"a": 14, "b": 21, "c": 14, "error_rate": 0.3333333333333333},
+        self.mock_client.run_query_async.side_effect = [
+            # Failed Rows
+            [
+                {"a": 97, "b": 100, "c": 99, "error_rate": 0.03},
+                {"a": 14, "b": 21, "c": 14, "error_rate": 0.3333333333333333},
+            ],
+            # Total Row Count
+            [[247]],
         ]
 
         job = DataValidationJob(
@@ -231,6 +240,7 @@ class TestSamenessValidationCheckers(TestCase):
                     ],
                     hard_max_allowed_error=0.02,
                     soft_max_allowed_error=0.02,
+                    total_num_rows=247,
                 ),
             ),
         )
@@ -238,15 +248,20 @@ class TestSamenessValidationCheckers(TestCase):
     def test_sameness_check_numbers_multiple_rows_and_some_above_hard_margin(
         self,
     ) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"a": 20, "b": 100, "c": 99, "error_rate": 0.8, "error_type": "hard"},
-            {
-                "a": 14,
-                "b": 21,
-                "c": 14,
-                "error_rate": 0.3333333333333333,
-                "error_type": "soft",
-            },
+        self.mock_client.run_query_async.side_effect = [
+            # Failed Rows
+            [
+                {"a": 20, "b": 100, "c": 99, "error_rate": 0.8, "error_type": "hard"},
+                {
+                    "a": 14,
+                    "b": 21,
+                    "c": 14,
+                    "error_rate": 0.3333333333333333,
+                    "error_type": "soft",
+                },
+            ],
+            # Total Row Count
+            [[109]],
         ]
 
         job = DataValidationJob(
@@ -290,12 +305,18 @@ class TestSamenessValidationCheckers(TestCase):
                     ],
                     hard_max_allowed_error=0.5,
                     soft_max_allowed_error=0.03,
+                    total_num_rows=109,
                 ),
             ),
         )
 
     def test_sameness_check_incorrect_max_errors_raises_error(self) -> None:
-        self.mock_client.run_query_async.return_value = [{"a": 10, "b": 10, "c": 10}]
+        self.mock_client.run_query_async.side_effect = [
+            # Failed Rows
+            [{"a": 10, "b": 10, "c": 10}],
+            # Total Row Count
+            [[7]],
+        ]
 
         with self.assertRaisesRegex(
             ValueError,
@@ -321,8 +342,11 @@ class TestSamenessValidationCheckers(TestCase):
             )
 
     def test_sameness_check_numbers_one_none(self) -> None:
-        self.mock_client.run_query_async.return_value = [
-            {"a": 3, "b": 3, "c": None, "error_rate": 1.0, "error_type": "hard"}
+        self.mock_client.run_query_async.side_effect = [
+            # Failed Rows
+            [{"a": 3, "b": 3, "c": None, "error_rate": 1.0, "error_type": "hard"}],
+            # Total Row Count
+            [[94]],
         ]
 
         job = DataValidationJob(
@@ -359,6 +383,7 @@ class TestSamenessValidationCheckers(TestCase):
                     ],
                     hard_max_allowed_error=0.02,
                     soft_max_allowed_error=0.02,
+                    total_num_rows=94,
                 ),
             ),
         )
