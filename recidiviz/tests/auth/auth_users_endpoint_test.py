@@ -17,6 +17,7 @@
 
 """Tests for auth/auth_users_endpoint.py."""
 import json
+import os
 from http import HTTPStatus
 from typing import Any, Dict, List, Optional
 from unittest import TestCase
@@ -26,12 +27,16 @@ import flask
 import pytest
 from flask import Flask
 from flask_smorest import Api
+from flask_sqlalchemy_session import current_session
+from werkzeug.datastructures import FileStorage
 
 from recidiviz.auth.auth_endpoint import auth_endpoint_blueprint
 from recidiviz.auth.auth_users_endpoint import users_blueprint
+from recidiviz.persistence.database.schema.case_triage.schema import UserOverride
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
+from recidiviz.tests.auth.auth_endpoint_test import _FIXTURE_PATH
 from recidiviz.tests.auth.helpers import (
     add_entity_to_database_session,
     generate_fake_default_permissions,
@@ -98,7 +103,9 @@ class AuthUsersEndpointTestCase(TestCase):
         self.database_key.declarative_meta.metadata.create_all(engine)
 
         with self.app.test_request_context():
-            self.users = flask.url_for("users.UsersAPI")
+            self.users = lambda state_code=None: flask.url_for(
+                "users.UsersAPI", state_code=state_code
+            )
             self.user = flask.url_for(
                 "users.UsersByHashAPI",
                 user_hash=_PARAMETER_USER_HASH,
@@ -207,10 +214,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 "userHash": _SUPERVISION_STAFF_HASH,
             },
         ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
         self.assertEqual(expected, json.loads(response.data))
 
     def test_get_users_with_empty_overrides(self) -> None:
@@ -246,10 +254,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 "userHash": _LEADERSHIP_USER_HASH,
             },
         ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
         self.assertEqual(expected, json.loads(response.data))
 
     def test_get_users_with_null_values(self) -> None:
@@ -294,18 +303,20 @@ class AuthUsersEndpointTestCase(TestCase):
                 "userHash": _LEADERSHIP_USER_HASH,
             },
         ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
         self.assertEqual(expected, json.loads(response.data))
 
     def test_get_users_no_users(self) -> None:
         expected_restrictions: list[str] = []
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
         self.assertEqual(expected_restrictions, json.loads(response.data))
 
     def test_get_users_no_permissions(self) -> None:
@@ -336,10 +347,11 @@ class AuthUsersEndpointTestCase(TestCase):
                 "userHash": _LEADERSHIP_USER_HASH,
             },
         ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
+        with self.app.test_request_context():
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
         self.assertEqual(expected, json.loads(response.data))
 
     ########
@@ -428,9 +440,9 @@ class AuthUsersEndpointTestCase(TestCase):
             feature_variants={"D": "E"},
         )
         add_entity_to_database_session(self.database_key, [user_1, default])
-        with self.assertLogs(level="INFO") as log:
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             self.client.post(
-                self.users,
+                self.users(),
                 headers=self.headers,
                 json={
                     "stateCode": "US_MO",
@@ -447,80 +459,81 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output, "adding user parameter@domain.org with reason: test"
             )
 
-        expected = [
-            {
-                "allowedSupervisionLocationIds": "",
-                "allowedSupervisionLocationLevel": "",
-                "blocked": False,
-                "district": "District",
-                "emailAddress": "add_user@domain.org",
-                "externalId": "ABC",
-                "firstName": None,
-                "lastName": None,
-                "role": "leadership_role",
-                "stateCode": "US_CO",
-                "routes": None,
-                "featureVariants": None,
-                "userHash": _ADD_USER_HASH,
-            },
-            {  # handles MO's specific logic
-                "allowedSupervisionLocationIds": "1, 2",
-                "allowedSupervisionLocationLevel": "level_1_supervision_location",
-                "blocked": False,
-                "district": "1, 2",
-                "emailAddress": "parameter@domain.org",
-                "externalId": None,
-                "firstName": None,
-                "lastName": None,
-                "role": "leadership_role",
-                "stateCode": "US_MO",
-                "routes": {"A": True, "B": False},
-                "featureVariants": {"D": "E"},
-                "userHash": _PARAMETER_USER_HASH,
-            },
-        ]
-        response = self.client.get(
-            self.users,
-            headers=self.headers,
-        )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "District",
+                    "emailAddress": "add_user@domain.org",
+                    "externalId": "ABC",
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_CO",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _ADD_USER_HASH,
+                },
+                {  # handles MO's specific logic
+                    "allowedSupervisionLocationIds": "1, 2",
+                    "allowedSupervisionLocationLevel": "level_1_supervision_location",
+                    "blocked": False,
+                    "district": "1, 2",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_MO",
+                    "routes": {"A": True, "B": False},
+                    "featureVariants": {"D": "E"},
+                    "userHash": _PARAMETER_USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
         self.assertEqual(expected, json.loads(response.data))
 
     def test_add_user_bad_request(self) -> None:
-        no_state = self.client.post(
-            self.users,
-            headers=self.headers,
-            json={
-                "stateCode": None,
-                "emailAddress": "parameter@domain.org",
-                "externalId": "XYZ",
-                "role": "leadership_role",
-                "district": "D1",
-                "firstName": "Test",
-                "lastName": "User",
-                "reason": "test",
-            },
-        )
-        self.assertEqual(HTTPStatus.BAD_REQUEST, no_state.status_code)
-        wrong_type = self.client.post(
-            self.users,
-            headers=self.headers,
-            json={
-                "stateCode": "US_ID",
-                "emailAddress": "parameter@domain.org",
-                "externalId": "XYZ",
-                "role": {"A": "B"},
-                "district": "D1",
-                "firstName": "Test",
-                "lastName": "User",
-                "reason": "test",
-            },
-        )
-        self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
+        with self.app.test_request_context():
+            no_state = self.client.post(
+                self.users(),
+                headers=self.headers,
+                json={
+                    "stateCode": None,
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": "XYZ",
+                    "role": "leadership_role",
+                    "district": "D1",
+                    "firstName": "Test",
+                    "lastName": "User",
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, no_state.status_code)
+            wrong_type = self.client.post(
+                self.users(),
+                headers=self.headers,
+                json={
+                    "stateCode": "US_ID",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": "XYZ",
+                    "role": {"A": "B"},
+                    "district": "D1",
+                    "firstName": "Test",
+                    "lastName": "User",
+                    "reason": "test",
+                },
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, wrong_type.status_code)
 
     def test_add_user_repeat_email(self) -> None:
-        with self.assertLogs(level="INFO") as log:
+        with self.app.test_request_context(), self.assertLogs(level="INFO") as log:
             user_override_user = self.client.post(
-                self.users,
+                self.users(),
                 headers=self.headers,
                 json={
                     "stateCode": "US_ID",
@@ -551,7 +564,7 @@ class AuthUsersEndpointTestCase(TestCase):
                 log.output, "adding user parameter@domain.org with reason: Test"
             )
             repeat_user_override_user = self.client.post(
-                self.users,
+                self.users(),
                 headers=self.headers,
                 json={
                     "stateCode": "US_ND",
@@ -578,21 +591,429 @@ class AuthUsersEndpointTestCase(TestCase):
             district="40",
         )
         add_entity_to_database_session(self.database_key, [roster_user])
-        repeat_roster_user = self.client.post(
-            self.users,
-            headers=self.headers,
-            json={
-                "stateCode": "US_TN",
-                "emailAddress": "parameter@domain.org",
-                "externalId": None,
-                "role": "leadership_role",
-                "district": "40",
-                "firstName": None,
-                "lastName": None,
-            },
-        )
+        with self.app.test_request_context():
+            repeat_roster_user = self.client.post(
+                self.users(),
+                headers=self.headers,
+                json={
+                    "stateCode": "US_TN",
+                    "emailAddress": "parameter@domain.org",
+                    "externalId": None,
+                    "role": "leadership_role",
+                    "district": "40",
+                    "firstName": None,
+                    "lastName": None,
+                },
+            )
         self.assertEqual(
             HTTPStatus.UNPROCESSABLE_ENTITY,
             repeat_roster_user.status_code,
             repeat_roster_user.data,
         )
+
+    ########
+    # PUT /users
+    ########
+
+    def test_upload_roster(self) -> None:
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(
+            level="INFO"
+        ) as log:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            # Create associated default permissions by role
+            leadership_default = generate_fake_default_permissions(
+                state="US_XX",
+                role="leadership_role",
+                routes={"A": True},
+            )
+            supervision_staff_default = generate_fake_default_permissions(
+                state="US_XX",
+                role="supervision_staff",
+                routes={"B": True},
+            )
+            add_entity_to_database_session(
+                self.database_key, [leadership_default, supervision_staff_default]
+            )
+
+            resp = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(resp.status_code, HTTPStatus.OK, resp.data)
+            self.assertReasonLog(
+                log.output,
+                "uploading roster for state US_XX with reason: test",
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "3975",
+                    "firstName": "leadership",
+                    "lastName": "user",
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": {"A": True},
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "supervision_staff@domain.org",
+                    "externalId": "3706",
+                    "firstName": "supervision",
+                    "lastName": "user",
+                    "role": "supervision_staff",
+                    "stateCode": "US_XX",
+                    "routes": {"B": True},
+                    "featureVariants": None,
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_with_missing_email_address(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",
+            district="",
+        )
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_missing_email.csv"), "rb"
+        ) as fixture, self.app.test_request_context():
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            response = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            error_message = (
+                "Roster contains a row that is missing an email address (required)"
+            )
+            self.assertEqual(error_message, json.loads(response.data)["message"])
+
+            # Existing rows should not have been deleted
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "0000",
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_with_malformed_email_address(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",
+            district="",
+        )
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_malformed_email.csv"), "rb"
+        ) as fixture, self.app.test_request_context():
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            response = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            error_message = "Invalid email address format: [email.gov]"
+            self.assertEqual(error_message, json.loads(response.data)["message"])
+
+            # Existing rows should not have been deleted
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "0000",
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_with_missing_associated_role(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should not change because user is not updated
+            district="",
+        )
+
+        add_entity_to_database_session(self.database_key, [roster_leadership_user])
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster.csv"), "rb"
+        ) as fixture, self.app.test_request_context():
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            response = self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            error_message = "Roster contains a row that with a role that does not exist in the default state role permissions. Offending row has email supervision_staff@domain.org"
+            self.assertEqual(error_message, json.loads(response.data)["message"])
+
+            # Existing rows should not have been deleted
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "0000",
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": None,
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_update_user(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should change with the new upload
+            district="",
+        )
+        # This user will not change
+        roster_supervision_staff = generate_fake_rosters(
+            email="supervision_staff@domain.org",
+            region_code="US_XX",
+            role="supervision_staff",
+            district="",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+            routes={"A": True},
+        )
+        supervision_staff_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="supervision_staff",
+            routes={"B": True},
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_leadership_user,
+                roster_supervision_staff,
+                leadership_default,
+                supervision_staff_default,
+            ],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(
+            level="INFO"
+        ) as log:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertReasonLog(
+                log.output,
+                "uploading roster for state US_XX with reason: test",
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "3975",
+                    "firstName": "leadership",
+                    "lastName": "user",
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": {"A": True},
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "supervision_staff@domain.org",
+                    "externalId": None,
+                    "firstName": None,
+                    "lastName": None,
+                    "role": "supervision_staff",
+                    "stateCode": "US_XX",
+                    "routes": {"B": True},
+                    "featureVariants": None,
+                    "userHash": _SUPERVISION_STAFF_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+
+    def test_upload_roster_update_user_with_override(self) -> None:
+        roster_leadership_user = generate_fake_rosters(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="0000",  # This should change with the new upload
+            district="",
+        )
+        # Create associated default permissions by role
+        leadership_default = generate_fake_default_permissions(
+            state="US_XX",
+            role="leadership_role",
+            routes={"A": True},
+        )
+        # Create associated user_override - this should be deleted during the upload
+        override = generate_fake_user_overrides(
+            email="leadership@domain.org",
+            region_code="US_XX",
+            role="leadership_role",
+            external_id="xxxx",
+            district="XYZ",
+        )
+        add_entity_to_database_session(
+            self.database_key,
+            [
+                roster_leadership_user,
+                leadership_default,
+                override,
+            ],
+        )
+
+        with open(
+            os.path.join(_FIXTURE_PATH, "us_xx_roster_leadership_only.csv"), "rb"
+        ) as fixture, self.app.test_request_context(), self.assertLogs(
+            level="INFO"
+        ) as log:
+            file = FileStorage(fixture)
+            data = {"file": file, "reason": "test"}
+
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.client.put(
+                self.users("us_xx"),
+                headers=self.headers,
+                data=data,
+                follow_redirects=True,
+                content_type="multipart/form-data",
+            )
+            self.assertReasonLog(
+                log.output,
+                "uploading roster for state US_XX with reason: test",
+            )
+            expected = [
+                {
+                    "allowedSupervisionLocationIds": "",
+                    "allowedSupervisionLocationLevel": "",
+                    "blocked": False,
+                    "district": "",
+                    "emailAddress": "leadership@domain.org",
+                    "externalId": "3975",
+                    "firstName": "leadership",
+                    "lastName": "user",
+                    "role": "leadership_role",
+                    "stateCode": "US_XX",
+                    "routes": {"A": True},
+                    "featureVariants": None,
+                    "userHash": _LEADERSHIP_USER_HASH,
+                },
+            ]
+            response = self.client.get(
+                self.users(),
+                headers=self.headers,
+            )
+            self.assertEqual(expected, json.loads(response.data))
+            existing_user_override = (
+                current_session.query(UserOverride)
+                .filter(UserOverride.email_address == "leadership@domain.org")
+                .first()
+            )
+            self.assertEqual(existing_user_override, None)

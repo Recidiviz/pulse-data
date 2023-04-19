@@ -18,9 +18,13 @@
 
 from typing import Any, Dict
 
+from flask_smorest.fields import Upload
 from marshmallow import fields, post_load
 
-from recidiviz.case_triage.api_schemas_utils import CamelCaseSchema
+from recidiviz.case_triage.api_schemas_utils import (
+    CamelCaseSchema,
+    CamelOrSnakeCaseSchema,
+)
 
 
 class UserSchema(CamelCaseSchema):
@@ -41,7 +45,8 @@ class UserSchema(CamelCaseSchema):
         self, data: Dict[str, Any], **kwargs: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Process input after it has been deserialized (converted from its external JSON
-        representation into python data types), but before it gets passed to our endpoints."""
+        representation into python data types), but before it gets passed to our endpoints.
+        """
         # Enforce casing for columns where we have a preference.
         data["email_address"] = data["email_address"].lower()
         data["state_code"] = data["state_code"].upper()
@@ -51,11 +56,11 @@ class UserSchema(CamelCaseSchema):
         return data
 
 
-class ReasonMixin:
+class ReasonSchema(CamelCaseSchema):
     reason = fields.Str()
 
 
-class UserRequestSchema(UserSchema, ReasonMixin):
+class UserRequestSchema(UserSchema, ReasonSchema):
     pass
 
 
@@ -71,3 +76,22 @@ class FullUserSchema(UserSchema, CamelCaseSchema):
     routes = fields.Dict(keys=fields.Str(), values=fields.Bool())
     feature_variants = fields.Dict(keys=fields.Str(), values=fields.Raw())
     blocked = fields.Bool()
+
+
+class StateCodeSchema(CamelOrSnakeCaseSchema):
+    state_code = fields.Str(required=True)
+
+    @post_load
+    # pylint: disable=unused-argument
+    def process_input(
+        self, data: Dict[str, Any], **kwargs: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Process input after it has been deserialized (converted from its external JSON
+        representation into python data types), but before it gets passed to our endpoints.
+        """
+        data["state_code"] = data["state_code"].upper()
+        return data
+
+
+class UploadSchema(CamelCaseSchema):
+    file = Upload()
