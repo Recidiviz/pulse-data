@@ -94,6 +94,14 @@ class DirectIngestRegionLockManagerTest(unittest.TestCase):
             self.assertFalse(self.lock_manager.is_locked())
         self.assertFalse(self.lock_manager.is_locked())
 
+    def test_locking_raise(self) -> None:
+        self.assertFalse(self.lock_manager.is_locked())
+        with self.assertRaises(ValueError):
+            with self.lock_manager.using_region_lock(expiration_in_seconds=10):
+                self.assertTrue(self.lock_manager.is_locked())
+                raise ValueError("test error")
+        self.assertFalse(self.lock_manager.is_locked())
+
     def test_can_proceed(self) -> None:
         self.assertTrue(self.lock_manager.can_proceed())
         self.lock_manager.lock_manager.lock(self.blocking_locks[0])
