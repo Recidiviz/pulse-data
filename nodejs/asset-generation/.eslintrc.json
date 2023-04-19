@@ -1,0 +1,20 @@
+{
+  "extends": [
+    "@recidiviz"
+  ],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "styled-components/macro",
+            "message": "Please import 'styled-components' instead"
+          }
+        ]
+      }
+    ],
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off"
+  }
+}
