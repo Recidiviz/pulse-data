@@ -77,7 +77,10 @@ class TestValidationResultStorage(unittest.TestCase):
                 ),
             ),
             result_details=SamenessPerRowValidationResultDetails(
-                failed_rows=[], hard_max_allowed_error=0.0, soft_max_allowed_error=0.0
+                failed_rows=[],
+                hard_max_allowed_error=0.0,
+                soft_max_allowed_error=0.0,
+                total_num_rows=924,
             ),
         )
 
@@ -107,6 +110,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     failed_rows=[],
                     hard_max_allowed_error=0.0,
                     soft_max_allowed_error=0.0,
+                    total_num_rows=924,
                 ),
                 validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
                 exception_log=None,
@@ -127,7 +131,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "validation_result_status": "SUCCESS",
                 "failure_description": None,
                 "result_details_type": "SamenessPerRowValidationResultDetails",
-                "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
+                "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "total_num_rows": 924, "dev_mode": false}',
                 "validation_category": "EXTERNAL_AGGREGATE",
                 "exception_log": None,
                 "trace_id": result.trace_id,
@@ -226,6 +230,7 @@ class TestValidationResultStorage(unittest.TestCase):
             ],
             hard_max_allowed_error=0.0,
             soft_max_allowed_error=0.0,
+            total_num_rows=8,
         )
         job_result = DataValidationJobResult(
             validation_job=DataValidationJob(
@@ -300,7 +305,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], '
                 '"comparison_values": [5, 10]}, 0.5]], '
                 '"hard_max_allowed_error": 0.0, "soft_max_allowed_error": '
-                '0.0, "dev_mode": false}',
+                '0.0, "total_num_rows": 8, "dev_mode": false}',
                 "result_details_type": "SamenessPerRowValidationResultDetails",
                 "validation_category": "EXTERNAL_AGGREGATE",
                 "trace_id": result.trace_id,
@@ -446,6 +451,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 failed_rows=[],
                 hard_max_allowed_error=0.0,
                 soft_max_allowed_error=0.0,
+                total_num_rows=3,
             ),
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             exception_log=None,
@@ -474,6 +480,7 @@ class TestValidationResultStorage(unittest.TestCase):
                 ],
                 hard_max_allowed_error=0.0,
                 soft_max_allowed_error=0.0,
+                total_num_rows=5,
             ),
             validation_category=ValidationCategory.EXTERNAL_AGGREGATE,
             exception_log=None,
@@ -522,7 +529,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_result_status": "SUCCESS",
                     "failure_description": None,
                     "result_details_type": "SamenessPerRowValidationResultDetails",
-                    "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
+                    "result_details": '{"failed_rows": [], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "total_num_rows": 3, "dev_mode": false}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                     "exception_log": None,
                     "trace_id": storage_result_1.trace_id,
@@ -540,7 +547,7 @@ class TestValidationResultStorage(unittest.TestCase):
                     "validation_result_status": "FAIL_HARD",
                     "failure_description": "1 row(s) had unacceptable margins of error. The acceptable margin of error is only 0.0, but the validation returned rows with errors as high as 0.5.",
                     "result_details_type": "SamenessPerRowValidationResultDetails",
-                    "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "dev_mode": false}',
+                    "result_details": '{"failed_rows": [[{"label_values": ["US_XX"], "comparison_values": [5, 10]}, 0.5]], "hard_max_allowed_error": 0.0, "soft_max_allowed_error": 0.0, "total_num_rows": 5, "dev_mode": false}',
                     "validation_category": "EXTERNAL_AGGREGATE",
                     "exception_log": None,
                     "trace_id": storage_result_2.trace_id,

@@ -3,7 +3,6 @@
 
 import * as jspb from "google-protobuf";
 import * as google_protobuf_timestamp_pb from "google-protobuf/google/protobuf/timestamp_pb";
-import * as google_protobuf_any_pb from "google-protobuf/google/protobuf/any_pb";
 
 export class ComparisonValue extends jspb.Message {
   hasValue(): boolean;
@@ -77,6 +76,11 @@ export class SamenessPerRowValidationResultDetails extends jspb.Message {
   setFailedRowsList(value: Array<SamenessPerRowValidationResultDetails.RowWithError>): void;
   addFailedRows(value?: SamenessPerRowValidationResultDetails.RowWithError, index?: number): SamenessPerRowValidationResultDetails.RowWithError;
 
+  hasTotalNumRows(): boolean;
+  clearTotalNumRows(): void;
+  getTotalNumRows(): number | undefined;
+  setTotalNumRows(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SamenessPerRowValidationResultDetails.AsObject;
   static toObject(includeInstance: boolean, msg: SamenessPerRowValidationResultDetails): SamenessPerRowValidationResultDetails.AsObject;
@@ -90,6 +94,7 @@ export class SamenessPerRowValidationResultDetails extends jspb.Message {
 export namespace SamenessPerRowValidationResultDetails {
   export type AsObject = {
     failedRowsList: Array<SamenessPerRowValidationResultDetails.RowWithError.AsObject>,
+    totalNumRows?: number,
   }
 
   export class RowWithError extends jspb.Message {

@@ -47,7 +47,6 @@ package recidiviz.admin_panel.models;
 // https://developers.google.com/protocol-buffers/docs/reference/javascript-generated
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
 
 // These mirror the `DataValidationJobResultDetails` objects but are trimmed to contain
 // any information that is specific to the child class. Information that is common to
@@ -71,6 +70,7 @@ message SamenessPerRowValidationResultDetails {
         optional float error = 2;
     }
     repeated RowWithError failed_rows = 1;
+    optional int32 total_num_rows = 2;
 }
 
 message SamenessPerViewValidationResultDetails {

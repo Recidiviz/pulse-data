@@ -105,21 +105,30 @@ class SamenessPerRowValidationResultDetails(google.protobuf.message.Message):
         ) -> None: ...
 
     FAILED_ROWS_FIELD_NUMBER: builtins.int
+    TOTAL_NUM_ROWS_FIELD_NUMBER: builtins.int
     @property
     def failed_rows(
         self,
     ) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[
         global___SamenessPerRowValidationResultDetails.RowWithError
     ]: ...
+    total_num_rows: builtins.int = ...
     def __init__(
         self,
         *,
         failed_rows: typing.Optional[
             typing.Iterable[global___SamenessPerRowValidationResultDetails.RowWithError]
         ] = ...,
+        total_num_rows: typing.Optional[builtins.int] = ...,
     ) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["total_num_rows", b"total_num_rows"]
+    ) -> builtins.bool: ...
     def ClearField(
-        self, field_name: typing_extensions.Literal["failed_rows", b"failed_rows"]
+        self,
+        field_name: typing_extensions.Literal[
+            "failed_rows", b"failed_rows", "total_num_rows", b"total_num_rows"
+        ],
     ) -> None: ...
 
 global___SamenessPerRowValidationResultDetails = SamenessPerRowValidationResultDetails

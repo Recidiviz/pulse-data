@@ -326,11 +326,14 @@ class SamenessPerRowValidationResultDetails(DataValidationJobResultDetails):
     hard_max_allowed_error: float = attr.ib()
     soft_max_allowed_error: float = attr.ib()
 
+    total_num_rows: Optional[int] = attr.ib(default=None)
     dev_mode: bool = attr.ib(default=False)
 
     @property
     def has_data(self) -> bool:
-        return True
+        # Historical records do not have `total_num_rows`, so we default to True if it
+        # is not set.
+        return self.total_num_rows > 0 if self.total_num_rows is not None else True
 
     @property
     def is_dev_mode(self) -> bool:
@@ -438,7 +441,12 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
             use_query_cache=True,
             query_parameters=[],
         )
+        num_total_query_job = BigQueryClientImpl().run_query_async(
+            query_str=_get_row_count_query(validation_job.original_builder_query_str()),
+            use_query_cache=True,
+        )
 
+        [[total_num_rows]] = num_total_query_job
         failed_rows: List[Tuple[ResultRow, float]] = []
 
         row: Row
@@ -479,6 +487,7 @@ class SamenessPerRowValidationChecker(ValidationChecker[SamenessDataValidationCh
             validation_job=validation_job,
             result_details=SamenessPerRowValidationResultDetails(
                 failed_rows=failed_rows,
+                total_num_rows=total_num_rows,
                 dev_mode=validation.dev_mode,
                 hard_max_allowed_error=validation.hard_max_allowed_error,
                 soft_max_allowed_error=validation.soft_max_allowed_error,

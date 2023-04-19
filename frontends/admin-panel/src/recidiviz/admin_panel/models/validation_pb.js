@@ -13,18 +13,10 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = (function() {
-  if (this) { return this; }
-  if (typeof window !== 'undefined') { return window; }
-  if (typeof global !== 'undefined') { return global; }
-  if (typeof self !== 'undefined') { return self; }
-  return Function('return this')();
-}.call(null));
+var global = Function('return this')();
 
 var google_protobuf_timestamp_pb = require('google-protobuf/google/protobuf/timestamp_pb.js');
 goog.object.extend(proto, google_protobuf_timestamp_pb);
-var google_protobuf_any_pb = require('google-protobuf/google/protobuf/any_pb.js');
-goog.object.extend(proto, google_protobuf_any_pb);
 goog.exportSymbol('proto.recidiviz.admin_panel.models.ComparisonValue', null, global);
 goog.exportSymbol('proto.recidiviz.admin_panel.models.ExistenceValidationResultDetails', null, global);
 goog.exportSymbol('proto.recidiviz.admin_panel.models.ResultRow', null, global);
@@ -724,7 +716,8 @@ proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototy
 proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.toObject = function(includeInstance, msg) {
   var f, obj = {
     failedRowsList: jspb.Message.toObjectList(msg.getFailedRowsList(),
-    proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.RowWithError.toObject, includeInstance)
+    proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.RowWithError.toObject, includeInstance),
+    totalNumRows: (f = jspb.Message.getField(msg, 2)) == null ? undefined : f
   };
 
   if (includeInstance) {
@@ -766,6 +759,10 @@ proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.deseria
       reader.readMessage(value,proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.RowWithError.deserializeBinaryFromReader);
       msg.addFailedRows(value);
       break;
+    case 2:
+      var value = /** @type {number} */ (reader.readInt32());
+      msg.setTotalNumRows(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -801,6 +798,13 @@ proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.seriali
       1,
       f,
       proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.RowWithError.serializeBinaryToWriter
+    );
+  }
+  f = /** @type {number} */ (jspb.Message.getField(message, 2));
+  if (f != null) {
+    writer.writeInt32(
+      2,
+      f
     );
   }
 };
@@ -1040,6 +1044,42 @@ proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototy
  */
 proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototype.clearFailedRowsList = function() {
   return this.setFailedRowsList([]);
+};
+
+
+/**
+ * optional int32 total_num_rows = 2;
+ * @return {number}
+ */
+proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototype.getTotalNumRows = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+};
+
+
+/**
+ * @param {number} value
+ * @return {!proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails} returns this
+ */
+proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototype.setTotalNumRows = function(value) {
+  return jspb.Message.setField(this, 2, value);
+};
+
+
+/**
+ * Clears the field making it undefined.
+ * @return {!proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails} returns this
+ */
+proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototype.clearTotalNumRows = function() {
+  return jspb.Message.setField(this, 2, undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.recidiviz.admin_panel.models.SamenessPerRowValidationResultDetails.prototype.hasTotalNumRows = function() {
+  return jspb.Message.getField(this, 2) != null;
 };
 
 

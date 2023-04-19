@@ -244,7 +244,8 @@ def _convert_result_details(
                     error=row[1],
                 )
                 for row in result_details.failed_rows
-            ]
+            ],
+            total_num_rows=result_details.total_num_rows,
         )
     if (
         result_details_type
