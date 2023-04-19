@@ -132,7 +132,7 @@ def _federated_bq_regional_dataset_refresh(
     config: CloudSqlToBQConfig,
     dataset_override_prefix: Optional[str] = None,
 ) -> Optional[List[StateCode]]:
-    """Queries data in the appropriate CloudSQL instance for the given schema / conifg
+    """Queries data in the appropriate CloudSQL instance for the given schema / config
     and loads it into a single, unified dataset **in the same** region as the CloudSQL
     instance. In the process, creates / updates views that provide direct federated
     connections to the CloudSQL instance and intermediate state-segmented datasets

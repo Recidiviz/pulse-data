@@ -41,9 +41,40 @@ export type QueueMetadata = {
   state: QueueState;
 };
 
+export enum IngestStatus {
+  RERUN_WITH_RAW_DATA_IMPORT_STARTED = "RERUN_WITH_RAW_DATA_IMPORT_STARTED",
+  STANDARD_RERUN_STARTED = "STANDARD_RERUN_STARTED",
+  RAW_DATA_IMPORT_IN_PROGRESS = "RAW_DATA_IMPORT_IN_PROGRESS",
+  BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT = "BLOCKED_ON_PRIMARY_RAW_DATA_IMPORT",
+  INGEST_VIEW_MATERIALIZATION_IN_PROGRESS = "INGEST_VIEW_MATERIALIZATION_IN_PROGRESS",
+  EXTRACT_AND_MERGE_IN_PROGRESS = "EXTRACT_AND_MERGE_IN_PROGRESS",
+  READY_TO_FLASH = "READY_TO_FLASH",
+  FLASH_IN_PROGRESS = "FLASH_IN_PROGRESS",
+  FLASH_COMPLETED = "FLASH_COMPLETED",
+  RERUN_CANCELED = "RERUN_CANCELED",
+  RERUN_CANCELLATION_IN_PROGRESS = "FLASH_CANCELLATION_IN_PROGRESS",
+  UP_TO_DATE = "UP_TO_DATE",
+  STALE_RAW_DATA = "STALE_RAW_DATA",
+  NO_RERUN_IN_PROGRESS = "NO_RERUN_IN_PROGRESS",
+}
+
 export type IngestInstanceStatusInfo = {
-  status: string;
+  status: IngestStatus;
   statusTimestamp: string;
+};
+
+/** Information about a particular BigQuery refresh. */
+export type IngestStatusRefreshInfo = {
+  /** The timestamp that the BigQuery refresh occurred. */
+  refreshTimestamp: string;
+  /** All of the ingest statuses that were active during the time covered by this
+   * refresh (at any point between the prior refresh and this refresh).
+   *
+   * For instance, if ingest view materialization was ongoing during the prior refresh,
+   * and then extract and merge ran and completed and the ingest instance was up to date,
+   * and this BigQuery refresh took place while it was up to date, all three of those
+   * statuses will be present in this list. */
+  ingestStatuses: IngestInstanceStatusInfo[];
 };
 
 export type IngestInstanceStatusResponse = {

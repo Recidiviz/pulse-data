@@ -20,6 +20,7 @@ import {
   SamenessPerViewValidationResultDetails,
   ValidationStatusRecord,
 } from "../../recidiviz/admin_panel/models/validation_pb";
+import { IngestInstanceStatusInfo } from "../IngestOperationsView/constants";
 
 export const ANCHOR_VALIDATION_FAILURE_SUMMARY = "failure-summary";
 export const ANCHOR_VALIDATION_HARD_FAILURES = "hard-failures";
@@ -46,6 +47,11 @@ export interface ValidationDetailsGraphProps {
   records: ValidationStatusRecord[];
   isPercent: boolean | undefined;
   loading: boolean;
+  ingestEvents: {
+    refreshTimestamp: string;
+    ingestStatuses: IngestInstanceStatusInfo[];
+  }[];
+  versionChanges: { [systemVersion: string]: string };
 }
 
 export interface SamenessPerRowDetailsProps {
