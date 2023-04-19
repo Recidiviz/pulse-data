@@ -24,14 +24,14 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events import supervision_level_downgrade
 from recidiviz.task_eligibility.criteria.general import (
     initial_assessment_level_minimum_or_medium,
-    on_active_supervision_at_least_six_months,
-    supervision_not_within_90_days_of_full_term_completion_date,
+    on_minimum_supervision_at_least_six_months,
+    supervision_not_past_full_term_completion_date_or_upcoming_90_days,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
+    not_required_to_register_under_sora,
     not_serving_an_ouil_or_owi,
     not_serving_ineligible_offenses_for_telephone_reporting,
     supervision_level_is_minimum_low_or_minimum_in_person,
-    not_required_to_register_under_sora,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -45,7 +45,7 @@ someone in MI is eligible for minimum telephone reporting.
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
-    task_name="complete_minimum_telephone_reporting_request",
+    task_name="complete_transfer_to_telephone_reporting_request",
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
@@ -54,8 +54,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         supervision_level_is_minimum_low_or_minimum_in_person.VIEW_BUILDER,
         initial_assessment_level_minimum_or_medium.VIEW_BUILDER,
         not_required_to_register_under_sora.VIEW_BUILDER,
-        on_active_supervision_at_least_six_months.VIEW_BUILDER,
-        supervision_not_within_90_days_of_full_term_completion_date.VIEW_BUILDER,
+        supervision_not_past_full_term_completion_date_or_upcoming_90_days.VIEW_BUILDER,
+        on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
