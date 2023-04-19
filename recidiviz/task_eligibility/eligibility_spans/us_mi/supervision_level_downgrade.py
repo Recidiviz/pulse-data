@@ -31,6 +31,11 @@ from recidiviz.task_eligibility.completion_events.general import (
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     supervision_level_higher_than_assessment_level,
+    not_past_initial_classification_review_date,
+    no_ineligible_offenses_for_downgrade_from_supervision_level,
+    not_required_to_register_under_sora,
+    not_on_electronic_monitoring,
+    supervision_level_is_not_sai,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -49,6 +54,11 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     candidate_population_view_builder=active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
+        not_past_initial_classification_review_date.VIEW_BUILDER,
+        no_ineligible_offenses_for_downgrade_from_supervision_level.VIEW_BUILDER,
+        not_required_to_register_under_sora.VIEW_BUILDER,
+        not_on_electronic_monitoring.VIEW_BUILDER,
+        supervision_level_is_not_sai.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
