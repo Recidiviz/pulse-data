@@ -25,7 +25,6 @@ from recidiviz.big_query.union_all_big_query_view_builder import (
     UnionAllBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.dataset_config import (
-    TASK_COMPLETION_EVENTS_DATASET_ID,
     TASK_ELIGIBILITY_DATASET_ID,
     task_eligibility_spans_state_specific_dataset,
 )
@@ -44,6 +43,8 @@ from recidiviz.task_eligibility.task_completion_event_big_query_view_builder imp
     TaskCompletionEventBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventBigQueryViewCollector,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -66,7 +67,7 @@ CRITERIA_SPANS_ALL_STATE_SPECIFIC_CRITERIA_VIEW_ID = "all_state_specific_criteri
 
 
 ALL_CRITERIA_GENERAL_DESCRIPTION_TEMPLATE = """
-This view contains all criteria spans for that do not use any state-specific logic. It
+This view contains all criteria spans that do not use any state-specific logic. It
 unions the results of all general single-criteria views for this state,
 aka all the other views in this dataset (`{general_criteria_dataset_id}`).
 """
@@ -95,7 +96,7 @@ POPULATION_SPANS_ALL_STATE_SPECIFIC_POPULATIONS_VIEW_ID = (
 
 
 ALL_POPULATIONS_GENERAL_DESCRIPTION_TEMPLATE = """
-This view contains all candidate population spans for that do not use any state-specific
+This view contains all candidate population spans that do not use any state-specific
 logic. It unions the results of all general single-population views for this state,
 aka all the other views in this dataset (`{general_population_dataset_id}`).
 """
@@ -103,18 +104,41 @@ POPULATION_SPANS_ALL_GENERAL_POPULATIONS_VIEW_ID = "all_general_candidate_popula
 
 
 ALL_POPULATIONS_DESCRIPTION = """
-This view contains all criteria spans used in any for task elibility spans view. It 
-unions the results of all single-state `all_state_specific_criteria` views (e.g. 
-`task_eligibility_us_xx.all_state_specific_criteria`) as well as the 
-`all_general_criteria` view.
+This view contains all candidate populations used in any for task elibility spans view. It 
+unions the results of all single-state `all_state_specific_candidate_populations` views (e.g. 
+`task_eligibility_us_xx.all_state_specific_candidate_populations`) as well as the 
+`all_general_candidate_populations` view.
 """
 
 ALL_POPULATIONS_VIEW_ID = "all_candidate_populations"
 
 
+ALL_COMPLETION_EVENTS_STATE_SPECIFIC_DESCRIPTION_TEMPLATE = """
+This view contains all completion events for {state_code} with state-specific
+underlying logic. It unions the results of all state-specific single-completion-event
+views for this state, aka all the other views in this dataset 
+(`{state_specific_completion_event_dataset_id}`).
+"""
+COMPLETION_EVENTS_ALL_STATE_SPECIFIC_COMPLETION_EVENTS_VIEW_ID = (
+    "all_state_specific_completion_events"
+)
+
+
+ALL_COMPLETION_EVENTS_GENERAL_DESCRIPTION_TEMPLATE = """
+This view contains all completion events that do not use any state-specific
+logic. It unions the results of all general single-completion-event views for this state,
+aka all the other views in this dataset (`{general_completion_event_dataset_id}`).
+"""
+COMPLETION_EVENTS_ALL_GENERAL_COMPLETION_EVENTS_VIEW_ID = (
+    "all_general_completion_events"
+)
+
+
 ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE = """
 This view contains all task completion events for all people across all states. It 
-unions the results of all the completion event views in `{completion_event_dataset_id}`.
+unions the results of all single-state `all_state_specific_completion_events` views (e.g. 
+`task_eligibility_us_xx.all_state_specific_completion_events`) as well as the 
+`all_general_completion_events` view.
 """
 ALL_COMPLETION_EVENTS_VIEW_ID = "all_completion_events"
 
@@ -333,24 +357,88 @@ def _get_candidate_population_unioned_view_builders() -> Sequence[BigQueryViewBu
     ]
 
 
-def get_completion_events_unioned_view_builder() -> UnionAllBigQueryViewBuilder:
+def _get_completion_events_unioned_view_builders() -> Sequence[BigQueryViewBuilder]:
+    """Returns a list of view builders containing:
+    a) one view per state, which unions completion events with state-specific
+     logic for that state into a single 'all_state_specific_completion_events' view for that
+     state, and
+    b) one view that unions all state-agnostic completion events into a single
+        `all_general_completion_events` view.
+    b) one view that unions all the data from the views listed above into one
+        'all_completion_events' view.
+    """
     view_collector = TaskCompletionEventBigQueryViewCollector()
+
+    general_builders = []
+    state_specific_builders = defaultdict(list)
+    for view_builder in view_collector.collect_view_builders():
+        if isinstance(
+            view_builder, StateAgnosticTaskCompletionEventBigQueryViewBuilder
+        ):
+            general_builders.append(view_builder)
+        elif isinstance(
+            view_builder, StateSpecificTaskCompletionEventBigQueryViewBuilder
+        ):
+            state_specific_builders[view_builder.state_code].append(view_builder)
+        else:
+            raise ValueError(f"Unexpected view builder type: {view_builder}")
 
     def get_completion_event_select_statement(
         vb: TaskCompletionEventBigQueryViewBuilder,
     ) -> str:
         return f"SELECT '{vb.completion_event_type}' AS completion_event_type, state_code, person_id, completion_event_date"
 
-    return UnionAllBigQueryViewBuilder(
-        dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
-        view_id=ALL_COMPLETION_EVENTS_VIEW_ID,
-        description=StrictStringFormatter().format(
-            ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE,
-            completion_event_dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
-        ),
-        parent_view_builders=view_collector.collect_view_builders(),
-        builder_to_select_statement=get_completion_event_select_statement,
+    subpart_unioned_view_builders = []
+    for (
+        state_code,
+        completion_event_view_builders,
+    ) in state_specific_builders.items():
+        if not completion_event_view_builders:
+            raise ValueError(
+                f"Found no defined StateSpecificCompletionEventBigQueryViewBuilder for "
+                f"[{state_code}] - is there an empty module for this state?"
+            )
+
+        dataset_id = f"task_eligibility_completion_events_{state_code.value.lower()}"
+        subpart_unioned_view_builders.append(
+            UnionAllBigQueryViewBuilder(
+                dataset_id=dataset_id,
+                view_id=COMPLETION_EVENTS_ALL_STATE_SPECIFIC_COMPLETION_EVENTS_VIEW_ID,
+                description=StrictStringFormatter().format(
+                    ALL_COMPLETION_EVENTS_STATE_SPECIFIC_DESCRIPTION_TEMPLATE,
+                    state_code=state_code.value,
+                    state_specific_completion_event_dataset_id=dataset_id,
+                ),
+                parent_view_builders=completion_event_view_builders,
+                builder_to_select_statement=get_completion_event_select_statement,
+            )
+        )
+
+    dataset_id = "task_eligibility_completion_events_general"
+    subpart_unioned_view_builders.append(
+        UnionAllBigQueryViewBuilder(
+            dataset_id=dataset_id,
+            view_id=COMPLETION_EVENTS_ALL_GENERAL_COMPLETION_EVENTS_VIEW_ID,
+            description=StrictStringFormatter().format(
+                ALL_COMPLETION_EVENTS_GENERAL_DESCRIPTION_TEMPLATE,
+                general_completion_event_dataset_id=dataset_id,
+            ),
+            parent_view_builders=general_builders,
+            builder_to_select_statement=get_completion_event_select_statement,
+        )
     )
+
+    return subpart_unioned_view_builders + [
+        UnionAllBigQueryViewBuilder(
+            dataset_id=TASK_ELIGIBILITY_DATASET_ID,
+            view_id=ALL_COMPLETION_EVENTS_VIEW_ID,
+            description=StrictStringFormatter().format(
+                ALL_COMPLETION_EVENTS_DESCRIPTION_TEMPLATE,
+            ),
+            parent_view_builders=view_collector.collect_view_builders(),
+            builder_to_select_statement=get_completion_event_select_statement,
+        )
+    ]
 
 
 def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
@@ -361,6 +449,6 @@ def get_unioned_view_builders() -> List[BigQueryViewBuilder]:
     return [
         *_get_criteria_unioned_view_builders(),
         *_get_candidate_population_unioned_view_builders(),
-        get_completion_events_unioned_view_builder(),
+        *_get_completion_events_unioned_view_builders(),
         *_get_eligiblity_spans_unioned_view_builders(),
     ]

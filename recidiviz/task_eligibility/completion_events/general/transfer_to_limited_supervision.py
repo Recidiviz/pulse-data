@@ -14,32 +14,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all classification review dates for clients in Michigan.
+"""Defines a view that shows all transfer to limited supervision events for any person,
+across all states.
 """
-from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    TaskCompletionEventBigQueryViewBuilder,
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all classification review dates for clients in Michigan. Classification
-reviews happen every 6 months after the initial classification review and should result in a supervision level 
-downgrade unless there are extenuating circumstances. 
-"""
-# TODO(#19779) remove reference to analyst data once state specific support is enabled
+_DESCRIPTION = """Defines a view that shows all transfer to limited supervision events
+for any person, across all states."""
+
 _QUERY_TEMPLATE = """
-SELECT *
-FROM `{project_id}.{analyst_data_dataset}.supervision_classification_review_dates_materialized`
+SELECT
+    state_code,
+    person_id,
+    start_date AS completion_event_date,
+FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+WHERE supervision_level = "LIMITED"
 """
 
-VIEW_BUILDER: TaskCompletionEventBigQueryViewBuilder = (
-    TaskCompletionEventBigQueryViewBuilder(
-        completion_event_type=TaskCompletionEventType.SUPERVISION_CLASSIFICATION_REVIEW,
+VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+        completion_event_type=TaskCompletionEventType.TRANSFER_TO_LIMITED_SUPERVISION,
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
-        analyst_data_dataset=ANALYST_VIEWS_DATASET,
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
     )
 )
 

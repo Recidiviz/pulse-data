@@ -18,8 +18,10 @@
 given type. These views are used as inputs to a task eligibility spans view.
 """
 from enum import Enum
+from typing import Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import TASK_COMPLETION_EVENTS_DATASET_ID
 
 
@@ -34,10 +36,42 @@ class TaskCompletionEventType(Enum):
     )
     RELEASE_TO_PAROLE = "RELEASE_TO_PAROLE"
     TRANSFER_OUT_OF_SOLITARY_CONFINEMENT = "TRANSFER_OUT_OF_SOLITARY_CONFINEMENT"
-    HEARING_OCCURRED_OR_PAST_REVIEW_DATE = "HEARING_OCCURRED_OR_PAST_REVIEW_DATE"
+    SCHEDULED_HEARING_OCCURRED = "SCHEDULED_HEARING_OCCURRED"
 
 
-class TaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
+class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
+    """Defines a BigQueryViewBuilder that can be used to define task completion events
+    of a given type. These views are used as inputs to a task eligibility spans view.
+    """
+
+    def __init__(
+        self,
+        state_code: StateCode,
+        completion_event_type: TaskCompletionEventType,
+        completion_event_query_template: str,
+        description: str,
+        **query_format_kwargs: str,
+    ) -> None:
+        view_id = completion_event_type.value.lower()
+        super().__init__(
+            dataset_id=f"{TASK_COMPLETION_EVENTS_DATASET_ID}_{state_code.value.lower()}",
+            view_id=view_id,
+            description=description,
+            view_query_template=completion_event_query_template,
+            should_materialize=True,
+            materialized_address_override=None,
+            projects_to_deploy=None,
+            should_deploy_predicate=None,
+            clustering_fields=None,
+            **query_format_kwargs,
+        )
+        self.completion_event_type = completion_event_type
+        self.state_code = state_code
+        self.task_type_name = completion_event_type.name
+        self.task_title = self.task_type_name.replace("_", " ").title()
+
+
+class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     """Defines a BigQueryViewBuilder that can be used to define task completion events
     of a given type. These views are used as inputs to a task eligibility spans view.
     """
@@ -51,7 +85,7 @@ class TaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
     ) -> None:
         view_id = completion_event_type.value.lower()
         super().__init__(
-            dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
+            dataset_id=f"{TASK_COMPLETION_EVENTS_DATASET_ID}_general",
             view_id=view_id,
             description=description,
             view_query_template=completion_event_query_template,
@@ -65,3 +99,9 @@ class TaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
         self.completion_event_type = completion_event_type
         self.task_type_name = completion_event_type.name
         self.task_title = self.task_type_name.replace("_", " ").title()
+
+
+TaskCompletionEventBigQueryViewBuilder = Union[
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
+]

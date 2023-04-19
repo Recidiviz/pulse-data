@@ -20,7 +20,8 @@ from collections import defaultdict
 from unittest.mock import Mock, patch
 
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    TaskCompletionEventBigQueryViewBuilder,
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
+    StateSpecificTaskCompletionEventBigQueryViewBuilder,
 )
 from recidiviz.task_eligibility.task_completion_event_big_query_view_collector import (
     TaskCompletionEventBigQueryViewCollector,
@@ -40,7 +41,11 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
         self.assertGreater(len(all_completion_event_builders), 0)
 
         for builder in all_completion_event_builders:
-            if not isinstance(builder, TaskCompletionEventBigQueryViewBuilder):
+            if not isinstance(
+                builder, StateSpecificTaskCompletionEventBigQueryViewBuilder
+            ) and not isinstance(
+                builder, StateAgnosticTaskCompletionEventBigQueryViewBuilder
+            ):
                 raise ValueError(
                     f"Found unexpected completion event view builder type [{type(builder)}]: {builder}"
                 )
@@ -57,17 +62,21 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
 
         event_type_to_builders = defaultdict(list)
         for builder in all_completion_event_builders:
-            if not isinstance(builder, TaskCompletionEventBigQueryViewBuilder):
+            if not isinstance(
+                builder, StateSpecificTaskCompletionEventBigQueryViewBuilder
+            ) and not isinstance(
+                builder, StateAgnosticTaskCompletionEventBigQueryViewBuilder
+            ):
                 raise ValueError(
                     f"Found unexpected completion event view builder type [{type(builder)}]: {builder}"
                 )
 
             event_type_to_builders[builder.completion_event_type].append(builder)
 
-        for population_name, builders in event_type_to_builders.items():
+        for completion_event_name, builders in event_type_to_builders.items():
             if len(builders) > 1:
                 raise ValueError(
-                    f"Found reused completion event type [{population_name}] for builders: "
+                    f"Found reused completion event type [{completion_event_name}] for builders: "
                     f"{[b.address for b in builders]}"
                 )
 
@@ -75,12 +84,13 @@ class TestTaskCompletionEventBigQueryViewCollector(unittest.TestCase):
         collector = TaskCompletionEventBigQueryViewCollector()
         all_completion_event_builders = collector.collect_view_builders()
         for builder in all_completion_event_builders:
-            view = builder.build()
+            if isinstance(builder, StateAgnosticTaskCompletionEventBigQueryViewBuilder):
+                view = builder.build()
 
-            for parent_address in view.parent_tables:
-                if is_state_specific_address(parent_address):
-                    raise ValueError(
-                        f"Found state-specific address [{parent_address}] "
-                        f"referenced from state-agnostic completion event view "
-                        f"[{view.address}]."
-                    )
+                for parent_address in view.parent_tables:
+                    if is_state_specific_address(parent_address):
+                        raise ValueError(
+                            f"Found state-specific address [{parent_address}] "
+                            f"referenced from state-agnostic completion event view "
+                            f"[{view.address}]."
+                        )

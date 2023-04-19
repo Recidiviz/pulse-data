@@ -21,8 +21,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events import (
-    hearing_occurred_or_past_review_date,
+from recidiviz.task_eligibility.completion_events.state_specific.us_mo import (
+    scheduled_hearing_occurred,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mo import (
     has_upcoming_hearing,
@@ -45,7 +45,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         in_restrictive_housing.VIEW_BUILDER,
         has_upcoming_hearing.VIEW_BUILDER,
     ],
-    completion_event_builder=hearing_occurred_or_past_review_date.VIEW_BUILDER,
+    completion_event_builder=scheduled_hearing_occurred.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

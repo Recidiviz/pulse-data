@@ -21,7 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events import early_discharge
+from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
     serving_at_least_one_year_on_parole_supervision,
     supervision_level_is_not_high,

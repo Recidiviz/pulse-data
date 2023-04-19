@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2023 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,35 +14,36 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Defines a view that shows all releases from incarceration to parole for any
-person, across all states.
+"""Defines a view that shows all supervision level downgrade events
+for any person, across all states. This does not include transfers to limited
+supervision, which are captured by the transfer_to_limited_supervision view.
 """
-
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.task_eligibility.task_completion_event_big_query_view_builder import (
-    TaskCompletionEventBigQueryViewBuilder,
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder,
     TaskCompletionEventType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_DESCRIPTION = """Defines a view that shows all releases from incarceration to parole
-for any person, across all states."""
+_DESCRIPTION = """Defines a view that shows all supervision level downgrade events
+for any person, across all states. This does not include transfers to limited 
+supervision, which are captured by the transfer_to_limited_supervision view.
+"""
 
 _QUERY_TEMPLATE = """
 SELECT
-  state_code,
-  person_id,
-  start_date AS completion_event_date,
-FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-WHERE compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
-  AND compartment_level_2 = "PAROLE"
-  AND inflow_from_level_1 IN ("INCARCERATION", "PENDING_SUPERVISION")
+    state_code,
+    person_id,
+    start_date AS completion_event_date,
+FROM `{project_id}.{sessions_dataset}.supervision_level_sessions_materialized`
+WHERE supervision_downgrade = 1
+    AND supervision_level != "LIMITED"
 """
 
-VIEW_BUILDER: TaskCompletionEventBigQueryViewBuilder = (
-    TaskCompletionEventBigQueryViewBuilder(
-        completion_event_type=TaskCompletionEventType.RELEASE_TO_PAROLE,
+VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
+    StateAgnosticTaskCompletionEventBigQueryViewBuilder(
+        completion_event_type=TaskCompletionEventType.SUPERVISION_LEVEL_DOWNGRADE,
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         sessions_dataset=dataset_config.SESSIONS_DATASET,
