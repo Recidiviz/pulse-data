@@ -2,10 +2,10 @@
 manifest_language: 1.0.0
 input_columns:
   - OFFICER
-  - LNAME
-  - FNAME
   - SUPERVISOR
   - SUPERVISOR_ID
+  - LNAME
+  - FNAME
   - STATUS
   - period_seq_num
   - start_date
@@ -13,16 +13,14 @@ input_columns:
 unused_columns:
   - STATUS # Employment status, currently unused
   - SUPERVISOR # Y/N this officer is a supervisor, currently unused
+  - LNAME
+  - FNAME
 output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
           external_id: OFFICER
           id_type: $literal("US_ND_DOCSTARS_OFFICER")
-    full_name:
-      $person_name:
-        $given_names: FNAME
-        $surname: LNAME
     supervisor_periods:
       - StateStaffSupervisorPeriod:
           external_id:

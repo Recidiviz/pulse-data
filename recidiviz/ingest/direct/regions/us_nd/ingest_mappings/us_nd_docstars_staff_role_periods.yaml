@@ -2,24 +2,22 @@
 manifest_language: 1.0.0
 input_columns:
   - OFFICER
-  - FNAME
-  - LNAME
   - STATUS
+  - LNAME
+  - FNAME
   - period_seq_num
   - start_date
   - end_date
 unused_columns:
   - STATUS # Employment status, currently unused directly
+  - FNAME
+  - LNAME
 output:
   StateStaff:
     external_ids:
       - StateStaffExternalId:
           external_id: OFFICER
           id_type: $literal("US_ND_DOCSTARS_OFFICER")
-    full_name:
-      $person_name:
-        $given_names: FNAME
-        $surname: LNAME
     role_periods:
       - StateStaffRolePeriod:
           external_id:
