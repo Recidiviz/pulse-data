@@ -20,8 +20,11 @@
 from typing import List, Optional, Union
 
 from recidiviz.calculator.query.bq_utils import (
+    join_on_columns_fragment,
     list_to_query_string,
     nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+    nonnull_start_date_clause,
     revert_nonnull_end_date_clause,
 )
 
@@ -300,3 +303,67 @@ def join_sentence_spans_to_compartment_2_sessions(
         AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
         AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
 """
+
+
+def create_intersection_spans(
+    table_1_name: str,
+    table_2_name: str,
+    index_columns: List[str],
+    use_left_join: Optional[bool] = False,
+    include_zero_day_intersections: Optional[bool] = False,
+    table_1_columns: Optional[List[str]] = None,
+    table_2_columns: Optional[List[str]] = None,
+    table_1_start_date_field_name: Optional[str] = "start_date",
+    table_2_start_date_field_name: Optional[str] = "start_date",
+    table_1_end_date_field_name: Optional[str] = "end_date_exclusive",
+    table_2_end_date_field_name: Optional[str] = "end_date_exclusive",
+) -> str:
+    """
+    Generates a query fragment taking the intersection of two overlapping span tables.
+    Input tables must be end date exclusive.
+
+    Function performs an inner join by default. If `use_left_join` parameter is set to True,
+    function will perform a left join using table 1 as the primary table, which will result in preserving
+    the original table 1 span in cases where no intersection exists with table 2.
+
+    """
+    select_columns_str = list_to_query_string(index_columns, table_prefix=table_1_name)
+    if table_1_columns:
+        select_columns_str = list_to_query_string(
+            [
+                select_columns_str,
+                list_to_query_string(table_1_columns, table_prefix=table_1_name),
+            ]
+        )
+    if table_2_columns:
+        select_columns_str = list_to_query_string(
+            [
+                select_columns_str,
+                list_to_query_string(table_2_columns, table_prefix=table_2_name),
+            ]
+        )
+
+    end_date_clause_function = (
+        nonnull_end_date_clause
+        if include_zero_day_intersections
+        else nonnull_end_date_exclusive_clause
+    )
+    join_fragment = "INNER"
+    if use_left_join:
+        join_fragment = "LEFT"
+    return f"""
+    SELECT
+        {select_columns_str},
+        GREATEST({table_1_name}.{table_1_start_date_field_name}, {nonnull_start_date_clause(f'{table_2_name}.{table_2_start_date_field_name}')}) AS start_date,
+        {revert_nonnull_end_date_clause(f"LEAST({nonnull_end_date_clause(f'{table_1_name}.{table_1_end_date_field_name}')},{nonnull_end_date_clause(f'{table_2_name}.{table_2_end_date_field_name}')})")} AS end_date_exclusive,
+    FROM 
+        {table_1_name}
+    {join_fragment} JOIN
+        {table_2_name}
+    ON
+        {join_on_columns_fragment(columns=index_columns, table1 = table_1_name, table2 = table_2_name)}
+        AND (
+            {table_1_name}.{table_1_start_date_field_name} BETWEEN {table_2_name}.{table_2_start_date_field_name} AND {end_date_clause_function(f"{table_2_name}.{table_2_end_date_field_name}")}
+            OR {table_2_name}.{table_2_start_date_field_name} BETWEEN {table_1_name}.{table_1_start_date_field_name} AND {end_date_clause_function(f"{table_1_name}.{table_1_end_date_field_name}")}
+        )
+    """

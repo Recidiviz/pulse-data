@@ -22,10 +22,10 @@ between officers and their supervisor unit.
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
-    nonnull_end_date_exclusive_clause,
     revert_nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.sessions_query_fragments import (
+    create_intersection_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
@@ -40,36 +40,32 @@ associated with a given supervision unit. Unit sessions may be overlapping.
 """
 
 SUPERVISION_UNIT_SESSIONS_QUERY_TEMPLATE = f"""
-WITH overlapping_spans AS (
-    SELECT
-        a.state_code,
-        a.person_id,
-        GREATEST(a.start_date, b.start_date) AS start_date,
-        {revert_nonnull_end_date_clause(f"LEAST({nonnull_end_date_clause('a.end_date_exclusive')}, "
-                                        f"{nonnull_end_date_clause('b.end_date_exclusive')})")} AS end_date,
-        supervision_district,
-        supervision_unit,
-        supervision_unit_name,
-    FROM
-        `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized` a
-    INNER JOIN
-        `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` b
-    ON
-        a.state_code = b.state_code
-        AND a.supervising_officer_external_id = b.officer_id
-        AND (
-            a.start_date BETWEEN b.start_date AND {nonnull_end_date_exclusive_clause("b.end_date_exclusive")}
-            OR b.start_date BETWEEN a.start_date AND {nonnull_end_date_exclusive_clause("a.end_date_exclusive")}
-        )
+WITH officer_sessions AS (
+    SELECT *, supervising_officer_external_id AS officer_id, 
+    FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_sessions_materialized`
 )
 ,
-{create_sub_sessions_with_attributes(table_name="overlapping_spans")},
+officer_attributes AS (
+    SELECT * FROM `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized`
+)
+,
+overlapping_spans AS (
+    {create_intersection_spans(
+        table_1_name="officer_sessions", 
+        table_2_name="officer_attributes", 
+        index_columns=["state_code", "officer_id"],
+        table_1_columns=["person_id"],
+        table_2_columns=["supervision_district", "supervision_unit", "supervision_unit_name"]
+    )}
+)
+,
+{create_sub_sessions_with_attributes(table_name="overlapping_spans", end_date_field_name="end_date_exclusive")},
 sub_sessions_dedup_cte AS (
     SELECT DISTINCT
         state_code,
         person_id,
         start_date,
-        end_date,
+        end_date_exclusive,
         supervision_district,
         supervision_unit,
         supervision_unit_name,
@@ -85,21 +81,21 @@ sub_sessions_dedup_cte AS (
         supervision_unit,
         supervision_unit_name,
         MIN(start_date) AS start_date,
-        {revert_nonnull_end_date_clause(f"MAX({nonnull_end_date_clause('end_date')})")} AS end_date,
+        {revert_nonnull_end_date_clause(f"MAX({nonnull_end_date_clause('end_date_exclusive')})")} AS end_date_exclusive,
     FROM (
         SELECT
             * EXCEPT(date_gap),
             SUM(IF(date_gap, 1, 0)) OVER (
                 PARTITION BY person_id, supervision_district, supervision_unit, supervision_unit_name 
-                ORDER BY start_date, {nonnull_end_date_clause("end_date")}
+                ORDER BY start_date, {nonnull_end_date_clause("end_date_exclusive")}
             ) AS supervision_unit_session_id,
         FROM (
             SELECT
                 *,
                 IFNULL(
-                    LAG(end_date) OVER(
+                    LAG(end_date_exclusive) OVER(
                         PARTITION BY person_id, supervision_district, supervision_unit, supervision_unit_name
-                        ORDER BY start_date, {nonnull_end_date_clause("end_date")}
+                        ORDER BY start_date, {nonnull_end_date_clause("end_date_exclusive")}
                     ) != start_date, TRUE
                 ) AS date_gap,
             FROM
@@ -110,7 +106,7 @@ sub_sessions_dedup_cte AS (
 )
 SELECT
     *,
-    end_date AS end_date_exclusive,
+    end_date_exclusive AS end_date
 FROM
     agg_sessions_cte
 

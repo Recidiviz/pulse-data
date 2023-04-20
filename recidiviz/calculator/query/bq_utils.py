@@ -330,12 +330,17 @@ def array_concat_with_null(arrays_to_concat: List[str]) -> str:
     return f'ARRAY_CONCAT({", ".join(array_expr)})'
 
 
-def list_to_query_string(string_list: Sequence[str], quoted: bool = False) -> str:
+def list_to_query_string(
+    string_list: Sequence[str], quoted: bool = False, table_prefix: Optional[str] = None
+) -> str:
     """Combines a list or tuple of strings into a comma-separated string, with the
-    option to maintain quoted strings"""
+    option to maintain quoted strings and/or add a prefix"""
+    string_list_modified = string_list
+    if table_prefix is not None:
+        string_list_modified = [f"{table_prefix}.{string}" for string in string_list]
     if quoted:
-        return ", ".join([f'"{string}"' for string in string_list])
-    return ", ".join(string_list)
+        string_list_modified = [f'"{string}"' for string in string_list_modified]
+    return ", ".join(string_list_modified)
 
 
 def columns_to_array(columns: Iterable[str]) -> str:
