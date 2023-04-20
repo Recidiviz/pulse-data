@@ -20,7 +20,9 @@ their subsequent classification review date.
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.dataset_config import TASK_COMPLETION_EVENTS_DATASET_ID
+from recidiviz.task_eligibility.dataset_config import (
+    completion_event_state_specific_dataset,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -73,7 +75,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_name=_CRITERIA_NAME,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        completion_dataset=TASK_COMPLETION_EVENTS_DATASET_ID,
+        completion_dataset=completion_event_state_specific_dataset(StateCode.US_MI),
         sessions_dataset=SESSIONS_DATASET,
     )
 )
