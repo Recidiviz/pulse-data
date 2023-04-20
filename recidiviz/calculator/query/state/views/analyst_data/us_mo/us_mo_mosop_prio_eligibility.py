@@ -30,9 +30,9 @@ the us_mo_program_tracks view to pull a list of people believed to be eligible f
 MOSOP prioritization."""
 
 US_MO_MOSOP_PRIO_ELIGIBILITY_QUERY_TEMPLATE = """
-SELECT   
-    person_id,
-    external_id AS DOC_ID,
+SELECT 
+    DOC_ID,
+    gender,
     facility,
     minimum_eligibility_date,
     minimum_mandatory_release_date,
@@ -41,25 +41,47 @@ SELECT
     max_discharge,
     prioritized_date,
     mosop_indicator,
-    CASE WHEN cr_date_in_bounds AND NOT prio_date_in_bounds
-        THEN TRUE ELSE FALSE 
-        END AS prioritized_using_conditional_release,
-    CASE WHEN cr_date_in_bounds AND NOT prio_date_in_bounds
-        THEN 'Max Discharge Given Instead of CR' ELSE "Prioritized Date 12-18 Months Out" 
-        END AS prioritization_flag,
+    months_until_prioritized_date,
+    prioritization_flag,
+    eligibility_category,
+    has_no_exits,
+    has_uns,
+    has_nof
 FROM (
-    SELECT 
-        *,
-        DATE_DIFF(prioritized_date, CURRENT_DATE, MONTH) BETWEEN 12 AND 18 AS prio_date_in_bounds,
-        board_determined_release_date = max_discharge AND
-            conditional_release IS NOT NULL AND
-            DATE_DIFF(conditional_release, CURRENT_DATE, MONTH) <= 18 AS cr_date_in_bounds,
-    CASE WHEN ongoing_flag = TRUE THEN "ongoing" ELSE "no_ongoing" END AS eligibility_category
-    FROM `{project_id}.{analyst_dataset}.us_mo_program_tracks_materialized`
+    SELECT   
+        person_id,
+        external_id AS DOC_ID,
+        gender,
+        facility,
+        minimum_eligibility_date,
+        minimum_mandatory_release_date,
+        board_determined_release_date,
+        conditional_release,
+        max_discharge,
+        prioritized_date,
+        mosop_indicator,
+        DATE_DIFF(prioritized_date, CURRENT_DATE('US/Eastern'), MONTH) AS months_until_prioritized_date,
+        CASE WHEN cr_date_in_bounds AND NOT prio_date_in_bounds
+            THEN 'Max Discharge Given Instead of CR' ELSE "Prioritized Date 12-18 Months Out" 
+            END AS prioritization_flag,
+        eligibility_category,
+        has_no_exits,
+        has_uns,
+        has_nof
+    FROM (
+        SELECT 
+            *,
+            DATE_DIFF(prioritized_date, CURRENT_DATE('US/Eastern'), MONTH) BETWEEN 12 AND 18 AS prio_date_in_bounds,
+            board_determined_release_date = max_discharge AND
+                conditional_release IS NOT NULL AND
+                DATE_DIFF(conditional_release, CURRENT_DATE('US/Eastern'), MONTH) <= 18 AS cr_date_in_bounds,
+        CASE WHEN ongoing_flag = TRUE THEN "ongoing" ELSE "no_ongoing" END AS eligibility_category
+        FROM `{project_id}.{analyst_dataset}.us_mo_program_tracks_materialized`
+    )
+    WHERE
+        mosop_indicator = TRUE AND completed_flag = FALSE AND (prio_date_in_bounds OR cr_date_in_bounds)
 )
-WHERE
-    mosop_indicator = TRUE AND completed_flag = FALSE AND (prio_date_in_bounds OR cr_date_in_bounds)
-ORDER BY eligibility_category
+ORDER BY prioritization_flag, eligibility_category, months_until_prioritized_date
 """
 
 PRIORITIZED_ELIGIBILITY = SimpleBigQueryViewBuilder(

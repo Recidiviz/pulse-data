@@ -57,10 +57,9 @@ WITH mosop_details AS (
   USING (CLASS_EXIT_REASON_CD)
   WHERE 
     se.DELETE_IND = "N" AND xref.DELETE_IND = "N" AND classes.DELETE_IND = "N"
-    -- TODO(#19596): Verify that string matching is a sufficient way to distinguish MOSOP clases
     AND CLASS_TITLE LIKE "%MOSOP%"
 ),
-mosop_completed AS (
+mosop_completion_flags AS (
   /* MOSOP completion is identified based on the individual's most recent cycle involving
   MOSOP classes. "Completion" is only met when every MOSOP class in that cycle has a 
   EXIT_TYPE_CD of "SFL", which encompasses the three exit types that count as completion:
@@ -71,11 +70,17 @@ mosop_completed AS (
   */
   SELECT 
     DOC_ID,
-    LOGICAL_AND(completed_flag) AS all_complete 
+    LOGICAL_AND(sfl_flag) AS all_complete,
+    LOGICAL_OR(uns_flag) AS has_uns,  
+    LOGICAL_OR(nof_flag) AS has_nof,
+    LOGICAL_OR(any_exit_flag) AS has_any_exit  
   FROM (
     SELECT 
       mosop_most_recent_cyc.DOC_ID,
-      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' THEN TRUE ELSE FALSE END AS completed_flag 
+      CASE WHEN ACTUAL_EXIT_DT!='7799-12-31' THEN TRUE ELSE FALSE END AS any_exit_flag,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'UNS' THEN TRUE ELSE FALSE END AS uns_flag,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'NOF' THEN TRUE ELSE FALSE END AS nof_flag,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' THEN TRUE ELSE FALSE END AS sfl_flag
     FROM (
       SELECT 
         DOC_ID,
@@ -96,11 +101,14 @@ mosop_completed_or_ongoing AS (
     SELECT 
       DOC_ID,
       LOGICAL_OR(all_complete) AS completed_flag,
-      LOGICAL_OR(CASE WHEN ACTUAL_EXIT_DT='7799-12-31' AND ACTUAL_START_DT != '7799-12-31' THEN TRUE ELSE FALSE END) AS ongoing_flag 
+      LOGICAL_OR(has_uns) AS has_uns,  
+      LOGICAL_OR(has_nof) AS has_nof,
+      LOGICAL_OR(has_any_exit) AS has_any_exit,
+      LOGICAL_OR(CASE WHEN ACTUAL_EXIT_DT = '7799-12-31' AND ACTUAL_START_DT != '7799-12-31' THEN TRUE ELSE FALSE END) AS ongoing_flag 
     FROM (
       SELECT * 
       FROM mosop_details 
-      LEFT JOIN mosop_completed 
+      LEFT JOIN mosop_completion_flags 
       USING (DOC_ID)
     ) 
   GROUP BY DOC_ID
@@ -228,6 +236,7 @@ pivoted_asmts AS (
   /* The previous cte is "long" on assessments - this cte pivots to have one column per relevant assessment */
   SELECT person_id,
        external_id,
+       gender,
        compartment_level_2,
        facility,
        start_date,
@@ -239,6 +248,7 @@ pivoted_asmts AS (
   FROM
     (SELECT person_id, 
             external_id,
+            gender,
             start_date,
             compartment_level_2,
             compartment_location_end AS facility,
@@ -384,7 +394,10 @@ SELECT
     pt.max_discharge
   ) AS prioritized_date,
   COALESCE(mosop.ongoing_flag, FALSE) AS ongoing_flag,
-  COALESCE(mosop.completed_flag, FALSE) AS completed_flag
+  COALESCE(mosop.completed_flag, FALSE) AS completed_flag,
+  NOT COALESCE(mosop.has_any_exit, FALSE) AS has_no_exits,
+  COALESCE(mosop.has_uns, FALSE) AS has_uns,
+  COALESCE(mosop.has_nof, FALSE) AS has_nof
 FROM unprioritized_program_tracks pt
 LEFT JOIN mosop_completed_or_ongoing mosop
 USING (person_id)
