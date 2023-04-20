@@ -86,9 +86,7 @@ class SQLAlchemyEngineManager:
             # to stale connections. Cloud SQL will close connections that have
             # been stale for 10 minutes.
             # https://cloud.google.com/sql/docs/postgres/diagnose-issues#compute-engine
-            pool_recycle=-1
-            if database_key.schema_type == SchemaType.JUSTICE_COUNTS
-            else 600,
+            pool_recycle=600,
             **additional_kwargs,
         )
 
