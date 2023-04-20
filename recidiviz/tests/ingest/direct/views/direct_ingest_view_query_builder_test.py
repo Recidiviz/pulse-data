@@ -101,6 +101,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -120,6 +121,7 @@ file_tag_second_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_2a
     FROM filtered_rows
@@ -202,6 +204,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -303,6 +306,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -322,6 +326,7 @@ file_tag_second_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_2a
     FROM filtered_rows
@@ -438,6 +443,7 @@ ORDER BY col1, col2;"""
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -457,6 +463,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_2a
     FROM filtered_rows
@@ -551,6 +558,7 @@ ORDER BY col1, col2;"""
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -570,6 +578,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_2a
     FROM filtered_rows
@@ -675,6 +684,7 @@ ORDER BY col1, col2
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -694,6 +704,7 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_2a
     FROM filtered_rows
@@ -795,6 +806,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -814,6 +826,7 @@ file_tag_second_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_2a
     FROM filtered_rows
@@ -879,6 +892,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -1040,6 +1054,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -1127,6 +1142,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows

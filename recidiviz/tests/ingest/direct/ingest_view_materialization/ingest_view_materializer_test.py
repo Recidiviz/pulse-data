@@ -91,6 +91,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -142,6 +143,7 @@ _DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT = """CREATE TEMP 
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -670,6 +672,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -722,6 +725,7 @@ file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -798,6 +802,7 @@ ORDER BY colA, colC;"""
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -849,6 +854,7 @@ CREATE TEMP TABLE lower_file_tag_first_generated_view AS (
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows
@@ -934,6 +940,7 @@ ORDER BY colA, colC;"""
         ) a
         WHERE
             recency_rank = 1
+            AND is_deleted = False
     )
     SELECT col_name_1a, col_name_1b
     FROM filtered_rows

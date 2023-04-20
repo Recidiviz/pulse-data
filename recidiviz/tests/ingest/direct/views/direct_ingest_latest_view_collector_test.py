@@ -53,6 +53,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT col1, col2
 FROM filtered_rows

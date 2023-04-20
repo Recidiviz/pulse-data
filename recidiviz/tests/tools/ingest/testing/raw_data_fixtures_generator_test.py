@@ -166,6 +166,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
@@ -198,6 +199,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
@@ -232,6 +234,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows
@@ -262,6 +265,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT Primary_Key_Col, External_Id_Col, External_Id_Col_2, External_Id_Col_3
 FROM filtered_rows

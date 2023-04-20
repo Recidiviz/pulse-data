@@ -20,6 +20,8 @@ import datetime
 import unittest
 
 import attr
+import mock
+from mock import patch
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -115,6 +117,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT col1, 
         COALESCE(
@@ -167,7 +170,7 @@ FROM filtered_rows
 
         self.assertEqual(expected_view_query, query)
 
-    def test_date_and_latest_filter_historical_file_query(self) -> None:
+    def test_date_and_latest_filter_historical_file_query_cannot_prune(self) -> None:
         raw_file_config = attr.evolve(
             self.raw_file_config, always_historical_export=True
         )
@@ -268,6 +271,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT col1, 
         COALESCE(
@@ -313,6 +317,7 @@ WITH filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )
 SELECT col1, col2, col3
 FROM filtered_rows
@@ -358,3 +363,54 @@ FROM filtered_rows
             r"`primary_key_cols` is not empty: \['col1'\]",
         ):
             _ = attr.evolve(self.raw_file_config, no_valid_primary_keys=True)
+
+    @patch(
+        "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance"
+    )
+    def test_always_historical_can_prune(self, mock_is_enabled: mock.MagicMock) -> None:
+        mock_is_enabled.return_value = True
+        raw_file_config = attr.evolve(
+            self.raw_file_config, always_historical_export=True
+        )
+        query = self.query_builder.build_query(
+            raw_file_config,
+            address_overrides=None,
+            normalized_column_values=True,
+            raw_data_datetime_upper_bound=None,
+            filter_to_latest=True,
+        )
+
+        expected_view_query = """
+WITH filtered_rows AS (
+    SELECT
+        * EXCEPT (recency_rank)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY col1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.table_name`
+        
+    ) a
+    WHERE
+        recency_rank = 1
+        AND is_deleted = False
+)
+SELECT col1, 
+        COALESCE(
+            CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            col2
+        ) AS col2, 
+        COALESCE(
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%b %e %Y %H:%M:%S', REGEXP_REPLACE(col3, r'\:\d\d\d.*', '')) AS DATETIME) AS STRING),
+            col3
+        ) AS col3
+FROM filtered_rows
+"""
+
+        self.assertEqual(expected_view_query, query)

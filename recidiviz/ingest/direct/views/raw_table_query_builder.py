@@ -25,6 +25,9 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    raw_data_pruning_enabled_in_state_and_instance,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
@@ -37,7 +40,9 @@ DATE_ONLY_FILTER_CLAUSE = """filtered_rows AS (
     FROM `{{project_id}}.{raw_table_dataset_id}.{raw_table_name}`
     {date_filter_clause}
 )"""
-
+# When querying raw data we receive as diffs or full historical dumps
+# that DO rely on raw data pruning, we can collapse rows to get the most
+# recent version of a row that has `is_deleted = False`.
 LATEST_INCREMENTAL_FILE_FILTER_CLAUSE = """filtered_rows AS (
     SELECT
         * EXCEPT (recency_rank)
@@ -52,12 +57,14 @@ LATEST_INCREMENTAL_FILE_FILTER_CLAUSE = """filtered_rows AS (
     ) a
     WHERE
         recency_rank = 1
+        AND is_deleted = False
 )"""
 
-# When querying raw data we receive as full historical dumps every transfer, we don't
-# need to collapse rows down to one per primary key, because we believe that the
-# contents of a single file are the correct, non-duplicated contents of the source table.
-LATEST_HISTORICAL_FILE_FILTER_CLAUSE = """max_update_datetime AS (
+# When querying raw data we receive as full historical dumps every transfer
+# that does NOT rely on raw data pruning, we don't need to collapse rows down
+# to one per primary key, because we believe that the contents of a single
+# file are the correct, non-duplicated contents of the source table.
+LATEST_UNPRUNED_HISTORICAL_FILE_FILTER_CLAUSE = """max_update_datetime AS (
     SELECT
         MAX(update_datetime) AS update_datetime
     FROM
@@ -134,16 +141,14 @@ class RawTableQueryBuilder:
                 normalized).
             raw_data_datetime_upper_bound: If set, this raw data query will only return
                 rows received on or before this datetime.
-            filter_to_latest: If true, only returns the latest version of each row, if
-                if we have received multiple versions of the same row from the state
-                over time. If we receive a file historically every day, this means we
-                return just the rows from the latest version of this raw file we
-                received. If false, do no filtering and return |update_datetime| as an
-                additional column. TODO(#19495): Update docstring here once logic for
-                historical files change as part of automatic raw data pruning work.
+            filter_to_latest: If true, only returns the latest (non-deleted) version
+                of each row, if we have received multiple versions of the same row
+                from the state over time. If we receive a file historically
+                every day and do not perform raw data pruning on that file,
+                this means we return just the rows from the latest version
+                of this raw file we received. If false, do no filtering and
+                return |update_datetime| as an additional column.
         """
-        # TODO(#19495): Adjust logic and query templates in this function to properly
-        #  handle tables where automatic raw data pruning is enabled.
         if normalized_column_values:
             columns_clause = self.normalized_columns_for_config(raw_file_config)
         else:
@@ -157,6 +162,13 @@ class RawTableQueryBuilder:
         else:
             date_filter_clause = ""
 
+        can_prune_historical = (
+            raw_data_pruning_enabled_in_state_and_instance(
+                state_code=self.state_code, instance=self.raw_data_source_instance
+            )
+            and not raw_file_config.is_exempt_from_raw_data_pruning()
+        )
+
         raw_table_dataset_id = raw_tables_dataset_for_region(
             state_code=self.state_code,
             instance=self.raw_data_source_instance,
@@ -169,7 +181,7 @@ class RawTableQueryBuilder:
                 raw_table_name=raw_file_config.file_tag,
                 date_filter_clause=date_filter_clause,
             )
-        elif not raw_file_config.always_historical_export:
+        elif not raw_file_config.always_historical_export or can_prune_historical:
             filtered_rows_cte = StrictStringFormatter().format(
                 LATEST_INCREMENTAL_FILE_FILTER_CLAUSE,
                 raw_table_dataset_id=raw_table_dataset_id,
@@ -182,7 +194,7 @@ class RawTableQueryBuilder:
             )
         else:
             filtered_rows_cte = StrictStringFormatter().format(
-                LATEST_HISTORICAL_FILE_FILTER_CLAUSE,
+                LATEST_UNPRUNED_HISTORICAL_FILE_FILTER_CLAUSE,
                 raw_table_dataset_id=raw_table_dataset_id,
                 raw_table_name=raw_file_config.file_tag,
                 date_filter_clause=date_filter_clause,
