@@ -159,14 +159,11 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 SUPERVISION_SITE AS level_1_supervision_location_name,
         FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
     )
-    # TODO(#19319): Delete this clause / logic when MO supervision locations added to location_metadata
+    # TODO(#19319): Delete this clause / logic when ME supervision locations added to location_metadata
     SELECT * FROM me_location_names
     UNION ALL
     # TODO(#19340): Delete this clause / logic when MO supervision locations added to location_metadata
     SELECT * FROM mo_location_names
-    UNION ALL
-    # TODO(#19339): Delete this clause / logic when ND supervision locations added to location_metadata
-    SELECT * FROM nd_location_names
     UNION ALL
     # TODO(#19318): Delete this clause / logic when TN supervision locations added to location_metadata
     SELECT * FROM tn_location_names
@@ -185,8 +182,14 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
     # etc instead of level_1/level_2...).
     SELECT DISTINCT
         state_code, 
-        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_region_id') AS level_3_supervision_location_external_id,
-        JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_region_name') AS level_3_supervision_location_name,
+        COALESCE(
+            JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_region_id'),
+            'NOT_APPLICABLE'
+        ) AS level_3_supervision_location_external_id,
+        COALESCE(
+            JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_region_name'),
+            'NOT_APPLICABLE'
+        ) AS level_3_supervision_location_name,
         JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_id') AS level_2_supervision_location_external_id,
         JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_district_name') AS level_2_supervision_location_name,
         JSON_EXTRACT_SCALAR(location_metadata, '$.supervision_office_id') AS level_1_supervision_location_external_id,
