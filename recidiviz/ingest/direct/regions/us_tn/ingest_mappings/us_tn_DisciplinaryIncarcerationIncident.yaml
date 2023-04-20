@@ -1,0 +1,373 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_IncarcerationIncident` to
+#  corresponding Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID
+  - IncidentId
+  - SiteId
+  - Location
+  - IncidentType
+  - IncidentDate
+  - DisciplinaryClass #put in incident_metadata
+  - OffenderAccount
+  - DispositionDate
+  - SentenceType
+  - SentenceDays
+  - SentenceDate
+  - InjuryLevel
+  - SentId
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    incarceration_incidents:
+      - StateIncarcerationIncident:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - IncidentId
+                - SentId
+          incident_date: IncidentDate
+          facility: SiteId
+          location_within_facility: Location
+          incident_type:
+            $enum_mapping:
+              $raw_text: IncidentType
+              $mappings:
+                StateIncarcerationIncidentType.CONTRABAND:
+                  - DRJ # **DRUGS-CONFIS-SIGNIF AMOUNT-OFN (B)
+                  - DRK # DRUGS-CONFIS-SIGNIF AMOUNT-STAFF (B)
+                  - DRL # DRUGS-CONFIS SIGNIF AMNT-VISITOR (B)
+                  - DRM # **DRUGS - CONFISCATION (C)
+                  - DRN # DRUGS - CONFIS. - STAFF (B)
+                  - DRO # DRUGS - CONFIS. - VISITOR (B)
+                  - DRP # DRUG PARAPHERNALIA (C)
+                  - DRQ # **DRUGS - CONFIS. - OFFENDER (C)
+                  - DRR # **DRUGS FOUND ON PROPERTY (C)
+                  - DRS # DRUG SELLING/POSSESSION/USE (C)
+                  - WAB # WEAPON-AMMUNITION (B)
+                  - WAM # WEAPON-AMMUNITION-SIGN AMOUNT (A)
+                  - WCF # WEAPON-COMMERCIAL FIREARM (A)
+                  - WCK # WEAPON-COMMERICAL KNIFE (B)
+                  - WDA # WEAPON - DISCHARGE - NON TRAINING (B)
+                  - WEB # WEAPON - EXPLOSIVE (A)
+                  - WEX # WEAPON-EXPLOSIVE-SIGNIF AMOUNT (A)
+                  - WFN # WEAPON FOUND- NOT ON STATE PROP. (C)
+                  - WHF # WEAPON-NON COMMERCIAL FIREARM (B)
+                  - WHK # WEAPON-NON COMMERCIAL KNIFE (B)
+                  - WOT # WEAPON-OTHER (B)
+                  - WPC # WEAPON-CLUB (C)
+                  - WRM # WEAPON-RAW MATERIALS (C)
+                  - WTA # WEAPON-CLASS A TOOL (B)
+                  - WTB # WEAPON-CLASS B TOOL (B)
+                  - CFM # CONFIS OF US CURRENCY FROM OFN (C)
+                  - CIP # CELL INSIDE SECURE PERIMETER NO POSS (C)
+                  - COD # **CONFISCATION DRUGS/CONTROL SUB
+                  - CON # CONTRABAND (C)
+                  - DFO # DRUGS OUTSIDE SECURE PERIMETER (C)
+                  - DPO # **DRUG POSSESSION
+                  - IPO # **INTOXICANTS - POSSESSION (C)
+                  - IAD # **INTOXICANTS-DRUGS (C)
+                  - IAL # **INTOXICANTS-ALCOHOL (C)
+                  - IAP # INTOXICANTS-POSSESSION/SELLING/USE (C)
+                  - IAS # **INTOXICANTS-SELLING (C)
+                  - PDW # **POSSESSION OF A DEADLY WEAPON
+                  - PFM # **POSS. FREE WORLD MONEY
+                  - PCO # POSS/FIND CELL PHN O/S PERIM FNCE (B)
+                  - PCT # POSS/USE OF CELLULAR TELEPHONE (B)
+
+                StateIncarcerationIncidentType.DISORDERLY_CONDUCT:
+                  - ARD # ARSON-INJ-PROP DAMG>$500-OPER DIS (A) # does arson count for here, if not where?
+                  - ARE # ARSON-INJ-PROP DAMAGE <$500 (B)
+                  - ARF # ARSON-PROP DAMAGE <$500 (C)
+                  - ARI # ARSN-SR-INJ-PR DMG>$500 OPR DIS (A)
+                  - ARP # ARSON-PROP DAMG >$500 OPR DISRUP (B)
+                  - ARS # **ARSON-PROP DAMG<$500 (C)
+                  - IND # INDECENT EXPOSURE (C)
+                  - BTH # BOMB THREAT (B)
+                  - BUR # BURGLARY (C)
+                  - DSA # DRUG SCREEN-ATTEMPT TO ALTER (C)
+                  - DSF # DRUG SCREEN-REFUSED (C)
+                  - DSO # DRUG SCREEN-POSITIVE (C)
+                  - DSP # DESTROYING STATE PROPERTY (C)
+                  - SAA # STRONG-ARMED ACTIVITY (C)
+                  - SAR # STRONG-ARMED ROBBERY (C)
+                  - SBT # SABOTAGE-OPR DISRUP (A)
+                  - SIP # **STAFF/INMATE PROVOCATION (C)
+                  - SKI # STRIKE-INMATE-OPER DISRUP (A)
+                  - TOF # THREATENING OFFENDER (C)
+                  - TSD # TAMPERING/SECURITY DEV OR EQUIP (C)
+                  - VPR # VIOL OF TDOC/INS POLICIES (C)
+                  - VSL # VIOLATION OF STATE LAW (B)
+                  - EXT # EXTORTION (C)
+                  - FAL # FAL/ALT/FOR NAME OFF DOC (C)
+                  - RAP # RAPE (A)
+                  - RIO # RIOT (A)
+                  - SXH # SEXUAL HARASSMENT (C)
+                  - SXM # SEXUAL MISCONDUCT (C)
+                  - TEM # **THREATENING EMPLOYEE (C)
+                  - HOS # HOSTAGE SITUATION (A)
+                  - PDA # PROPERTY DAMAGE OVER >$500 (B)
+
+                StateIncarcerationIncidentType.ESCAPE:
+                  - ACM # ABSCOND CUSTODY MINIMUM SECURITY (A)
+                  - AES # **ATTEMPTED ESCAPE-SUPERVISION (A) # why is this showing up???
+                  - ESA # ESCAPE SECURE SUPERVISION (A)
+                  - ESC # ESCAPE MINIMUM SECURITY UNIT (A)
+                  - ESE # **ESCAPE FURLOUGH/PASS (A)
+                  - ESF # ESCAPE ATT. SECURE SUPER. (A)
+                  - ESH # **ESCAPE ATT. MIN. SECURITY-VIOL (A)
+                  - ESI # ESCAPE - ATT - MINIMUM SECURITY (A)
+                  - ESP # **ESC MIN SEC WORK CREW/SUPER. (A)
+                  - ESR # RETURN FROM ESCAPE PRIOR TO TOMIS (C)
+                  - ESU # **ESC MIN SEC WORK CREW/UN SUPRV. (A)
+
+                StateIncarcerationIncidentType.MINOR_OFFENSE:
+                  - DRI # **DRINKING (C)
+                  - ADS # **ATTEMPT TO ALTER DRUG SCREEN (A)
+                  - CVS # CONSPIRACY TO VIOLATE STATE LAW (C)
+                  - DCV # DRESS CODE VIOLATION (C)
+                  - DFN # DEFIANCE (C)
+                  - DRV # **DRESS CODE VIOLATION
+                  - DPP # DESTRUCTION OF PERSONAL PROPERTY (C)
+                  - DSR # **DISRESPECT (C)
+                  - TFT # RECEIVING TWO FOOD TRAYS (C)
+                  - RCA # REFUSED CELL ASSIGNMENT (C)
+                  - RDN # REFUSING TO PROVIDE DNA SPECIMEN (C)
+                  - RDO # **REFUSE DIRECT ORDER (C)
+                  - RDR # **REFUSAL OF A DRUG SCREEN
+                  - RTP # REFUSED TO PARTICIPATE (C)
+                  - SMK # **SMOKING IN A PROHIBITED AREA (C)
+                  - SOS # SOLICITATION OF STAFF (B)
+                  - TAT # TATTOO NOT RECRD AT DIAG INTAKE (C)
+                  - TEL # TELEPHONE PRIVILEGES ABUSE (C)
+                  - FRG # **FORGERY (C)
+                  - FRS # FAILURE TO REPORT AS SCHEDULED (C)
+                  - FTE # FAILURE TO TURN IN EARNINGS (C)
+                  - PTO # POSS/USE/INTRO/SELL TOBACCO PROD-OFNDR B
+                  - RAA # REFUSAL/ATTEMPT ALTER DRG TEST (C)
+                  - LAR # LARCENY (C)
+                  - LIT # LITTERING (C)
+                  - LRT # LATE RETURNING (C)
+                  - NID # NO TDOC CARD ON PERSON (C)
+                  - NOC # NO TDOC ON CLOTHING (C)
+                  - FTR # **FAILURE TO RETURN PASS/FURLOUGH (C)
+                  - FVI # FURLOUGH VIOLATION (C)
+                  - GAG # GAMBLING/GAMING (C)
+                  - HOR # HORSEPLAY (C)
+                  - IAU # **INTOXICANTS-USE (C)
+                  - IDR # **INTOXICATED - DRUGS
+                  - INH # INHALANTS (C)
+                  - ISE # **INTOXICANTS - SELLING (C)
+                  - IUS # **INTOXICANTS - USE
+                  - OOP # OUT OF PLACE (C)
+                  - OUV # OPERATING UNAUTHORIZED VEHICLE (C)
+                  - PPR # PERSONAL PROPERTY VIOLATION (C)
+                  - PPV # **POLICY VIOL. PERSONAL PROPERTY
+                  - PTE # POSS/USE/INTRO/SELL TOBACCO PROD-EMP (B)
+                  - PDB # PROP DAMAGE <$500 (C)
+                  - PDR # **POSITIVE DRUG SCREEN
+                  - PGA # PARTICIPATE SEC.THREAT GRP ACTV (C)
+                  - PGM # POSSESS/SEC. THREAT GRP MATERIAL (C)
+
+                StateIncarcerationIncidentType.REPORT:
+                  - BCS # BODY CAVITY SEARCH (C)
+                  - ASU # **ATTEMPTED SUICIDE
+                  - MEC # **MEDIA
+                  - MEO # **MEDICAL EMERGENCY - OFFENDER
+                  - MES # **MEDICAL EMERGENCY - STAFF
+                  - MIO # **MEDICAL INJURY/OFFENDER
+                  - MIS # **MINOR INJURY - STAFF
+                  - MUT # **MULTILATION
+                  - NAT # NATURAL DISASTER (B)
+                  - NEW # NEWS MEDIA (C)
+                  - BOT # **BREACH OF TRUST
+                  - ESS # **EMPLOYEE STRIKE/WORK STOPPAGE
+                  - INS # INSTITUTIONAL SHAKE DOWN (C)
+                  - INT # **INTERFERENCE OF OFFICER DUTIES (C)
+                  - IOF # ILLNESS OFFENDER (C)
+                  - IOM # **ILLNESS - OFN (C)
+                  - IOP # INTOXICANTS FOUND ON PROPERTY (C)
+                  - DEA # DEATH-OFN-NATURAL (A)
+                  - DEC # DEATH-OFN-EXEC-ELEC CHR (A)
+                  - DEG # DEATH-STAFF-HOMICIDE (ON DUTY) (A)
+                  - DEH # DEATH-OFN-HOMICIDE (A)
+                  - DEI # DEATH-OFN-EXEC-LETH INJ (A)
+                  - DEP # DEATH-OFN-MANNER-PENDING (A)
+                  - DES # DEATH-OFN-SUICIDE (A)
+                  - DET # DEATH-STAFF-NATURAL (ON DUTY) (A)
+                  - DEU # DEATH-OFN-MANNER-UNDETERMINED (A)
+                  - DFI # DRUGS INSIDE SECURE PERIMETER NO POSS (C)
+                  - VSP # VISITOR PROBLEM (C)
+                  - DIL # DISTURBANCE-TEMP.CONTROL LOSS (A)
+                  - DIR # DISTURBANCE-THREAT CONTROL LOSS (B)
+                  - DIS # DISTURBANCE-MINOR (C)
+                  - DOA # DEATH-OFN-ACCIDENT (A)
+                  - UOD # USE OF CANINES, NON-ROUTINE (C)
+                  - UOF # **USE OF FORCE-DISCHARGE FIREARM
+                  - VAN # **VANDALISM
+                  - VES # VEHICLE SEARCH (C)
+                  - VIA # **VISITOR ARREST
+                  - DVA # DEATH-VISITOR-ACCIDENT (A)
+                  - DVN # DEATH-VISITOR-NATURAL (A)
+                  - EHT # EPIDEMIC-PUBLIC HEALTH THREAT (B)
+                  - EPA # EQUIP PROBLEM-MAJOR DISRUPTION (B)
+                  - EPB # EQUIP. PROBLEM-MINOR DISRUPTION (C)
+                  - EUI # EMERG USE INM CREW OUTSIDE AGCY (C)
+                  - EWH # ENTERING WAREHOUSE (C)
+                  - ULO # **UNAUTHORIZED LOCATION (C)
+                  - UMI # **UTILITY/MAINTENANCE INTERRUPTION
+                  - UNV # **UNAUTHORIZED VISITOR (C)
+                  - UFC # USE OF FORCE-CHEMICAL AGENTS (B)
+                  - UFD # USE OF FORCE-DEADLY WEAPON (A)
+                  - UFE # USE OF FORCE-ELEC. RESTRAINTS (B)
+                  - UFL # USE OF FORCE - LESS THAN LETHAL (B)
+                  - UFM # USE OF FORCE-MEDICAL (C)
+                  - UFN # **USE OF FORCE-NON MEDICAL
+                  - UFP # USE OF FORCE-PHYSICAL (C)
+                  - UFS # USE OF FORCE-SECURITY RESTRAINTS (C)
+                  - TRM # TRANSFER DEATH ROW/MAX INMATE (C)
+                  - FCM # **FAIL TO COMPLETE MEDICAL APPT.
+                  - ISH # ILL-STAFF-SERIOUS-HOSP(ON DUTY) (B)
+                  - ISS # **INMATE STRIKE/WORK STOPPAGE
+                  - STI # **SERIOUS LIFE THREATING INJURY
+                  - SUA # **SUICIDE-ATT-SERIOUS INJURY (A)
+                  - SUB # **SUICIDE-ATT-INST SUI INTERV (B)
+                  - SUC # SUICIDE-ATTEMPT (C) (Y - indicates it's required to fill in level of injury)
+                  - SUI # **SUICIDE
+                  - TEO # TEMPORARY ADDITION
+                  - PTS # **PEND. TRANSFER SECURE FACILITY
+                  - PTV # POSS/USE/INTRO/SELL TOBACCO PROD-VISTR (B)
+                  - IOT # ILLNESS-OFN-SERIOUS-HOSP (B)
+                  - ISD # **ILLNESS-STAFF-(ON DUTY) (C)
+                  - FII # FIRE-SER INJ-PROP DMG>$500-DISRUP (A)
+                  - FIP # FIRE-INJ-PROP DMG>$500-OPR DISRUP (B)
+                  - FIR # FIRE-PROP DMG <$500 (C)
+                  - FIS # FIRE-PROP DMG >$500-OPR DISRUP (B)
+                  - FLD # FLOODING THE WALK/CELL (C)
+                  - FLP # FACILITY LOCK PROBLEM (C)
+                  - FTN # FIRE TRUCK - NON TDOC USE (C)
+                  - IAO # INJURY ACCIDENT OFFENDER (C)
+                  - IHA # **INJURY-ACCIDENT-OFN-SERIOUS (A)
+                  - IHB # **INJURY-ACCIDENT-OFN (C)
+                  - IHC # INJURY-ACCIDENT-OFN-WORK RELATED (C) (Y - indicates it's required to fill in level of injury)
+                  - IJA # **INJURY-ACCIDENT-STAFF-SERIOUS (A)
+                  - IJB # INJURY-ACCIDENT-STAFF (C) (Y - indicates it's required to fill in level of injury)
+                  - ILA # **INJURY-ACCIDENT-VISITOR-SERIOUS (A)
+                  - ILB # INJURY-ACCIDENT-VISITOR (C) (Y - indicates it's required to fill in level of injury)
+                  - ILP # INSTITUTIONAL LOCK-DOWN-PARTIAL (A)
+                  - ILT # INSTITUTIONAL LOCK-DOWN - TOTAL (A)
+                  - INB # **INJURY-SELF INFLICTED-SERIOUS (A)
+                  - INC # INJURY-SELF INFLICTED (C) (Y - indicates it's required to fill in level of injury)
+                  - IVM # **ILLNESS-VISITOR (C)
+                  - IVS # ILLNESS-VISITOR-SERIOUS-HOSP (B)
+                  - OMA # **OUTSIDE MEDICAL ATTENTION
+                  - PHT # **PUBLIC HEALTH THREAT-EPIDEMIC
+                  - PIN # PENDING INVESTIGATION (C)
+
+                StateIncarcerationIncidentType.INTERNAL_UNKNOWN:
+                  - ABM # ARREST-FURL/PASS-MISDEMEANOR (A)
+                  - ABS # ARREST-FURL/PASS-FELONY (A)
+                  - ABT # ARREST-FURL/PASS-VIOLENT CRIME (A)
+                  - AFO # ARREST-FELONY-OFN (B)
+                  - AFS # ARREST-FELONY-STAFF (B)
+                  - AFV # ARREST-FELONY-VISITOR (B)
+                  - AIE # **ATTEMPT TO INTIMIDATE EMPLOYEE (C)
+                  - AMS # ARREST - MISDEMEANOR - STAFF
+                  - ANM # ARREST-PROBATIONER-NEWS MEDIA (B)
+                  - UFT # UNAUTH FIN OBLIG/TRANS (C)
+                  - RPS # REFUSED TO ADEQUATE PARTIC-SAIU (C)
+
+                StateIncarcerationIncidentType.VIOLENCE:
+                  - AOO # ASSAULT OFFENDER - WITHOUT WEAPON (A) (Y - indicates it's required to fill in level of injury)
+                  - AOS # **ASSAULT ON STAFF
+                  - AOW # ASSAULT OFFENDER - WEAPON (A) (Y - indicates it's required to fill in level of injury)
+                  - ASA # **ASSAULT-STAFF-SERIOUS INJURY (A)
+                  - ASB # **ASSAULT-STAFF-INJURY (B)
+                  - ASC # **ASSAULT-STAFF-MINOR INJURY (C)
+                  - ASD # **ASSAULT-OFN-SERIOUS INJURY (A)
+                  - ASE # **ASSAULT-OFN-INJURY (B)
+                  - ASF # **ASSAULT-OFN-MINOR INJURY (C)
+                  - ASG # **ASSAULT-VIS-SERIOUS INJURY (A)
+                  - ASH # **ASSAULT-VIS-INJURY (B)
+                  - ASI # **ASSAULT-VIS-MINOR INJURY (C)
+                  - ASJ # **ASSAULT STAFF NO INJURY (C)
+                  - ASK # **ASSAULT OFFENDER NO INJURY (C)
+                  - ASL # **ASSAULT
+                  - ASM # **ASSAULT VISITOR NO INJURY (C)
+                  - ASO # ASSAULT STAFF - WITHOUT WEAPON (A) (Y - indicates it's required to fill in level of injury)
+                  - ASW # ASSAULT STAFF - WEAPON (A) (Y - indicates it's required to fill in level of injury)
+                  - AVO # ASSAULT VISITOR/GUEST - WITHOUT WEAPON (A) (Y - indicates it's required to fill in level of injury)
+                  - AVW # ASSAULT VISITOR/GUEST - WEAPON (A) (Y - indicates it's required to fill in level of injury)
+                  - FIG # FIGHTING (C) (Y - indicates it's required to fill in level of injury)
+
+          incident_details: OffenderAccount
+          incident_metadata:
+            $json_dict:
+              Class: DisciplinaryClass
+              InjuryLevel: InjuryLevel
+          incarceration_incident_outcomes:
+            - StateIncarcerationIncidentOutcome:
+                external_id:
+                  $concat:
+                    $values:
+                      - OffenderID
+                      - IncidentId
+                      - SentId
+                hearing_date: DispositionDate
+                date_effective: SentenceDate
+                report_date: IncidentDate
+                outcome_type:
+                  $enum_mapping:
+                    $raw_text: SentenceType
+                    $mappings:
+                      StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT:
+                        - CER # CELL RESTRICTION
+                      StateIncarcerationIncidentOutcomeType.RESTRICTED_CONFINEMENT:
+                        - RES # RESTRICTION
+                      StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
+                        - KP # KP/EXTRA DUTY
+                      #StateIncarcerationIncidentOutcomeType.DISMISSED:
+                      #StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION:
+                      StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
+                        - RTN # RESTITUTION
+                        - FIN # FINE
+                      StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS:
+                        - LGH # LOSE GOOD AND HONOR CREDIT
+                        - RGT # REMOVE GOOD TIME
+                        - RHT # REMOVE HONOR TIME
+                        - LIT # LOSE INCENTIVE TIME
+                        - LPP # LOSS OF Prisoner Performance Sentence Credits (PPSC) /Prisoner Sentence Reduction Credits (PSRC) CREDITS
+                      StateIncarcerationIncidentOutcomeType.INTERNAL_UNKNOWN:
+                        - CNV # CONVERSION
+                        - PRO # PROBATION/SUSPENDED SENTENCE
+                        - RTF # RECOMMEND TRANSFER
+                        - TSV # TIME SERVED
+                        - IPT # IMPOSED PROBATED TIME
+                        - RIC # RECOMMEND INTENSIVE COUNSELING
+                        - ROC # RECOMMEND OUTSIDE COURT
+                        - RCR # RECOMMEND CELL/ROOM CHANGE
+                        - SET # SENTENCE EXTENSION TIME
+                        - CLC # CUSTODY LEVEL CHANGE
+                        - RUC # RECOMMEND UNIT CHANGE
+                        - RPE # RECOMMEND PSYCHIATRIC EVALUATION
+                      #StateIncarcerationIncidentOutcomeType.NOT_GUILTY:
+                      StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
+                        - LRP # LOSE RECREATION PRIVILEGES
+                        - JTE # PROGRAM/JOB TERMINATION
+                        - TEL # TELEPHONE RESTRICTION
+                        - VIS # VISITATION SUSPENSION
+                        - PAY # PAY DECREASE
+                      StateIncarcerationIncidentOutcomeType.SOLITARY:
+                        - ADS # ADMINISTRATIVE SEGREGATION
+                        - AST # ADMINISTRATIVE SEGREG AND/OR TRANSFER
+                        - PSG # PUNITIVE SEGREGATION
+                      StateIncarcerationIncidentOutcomeType.WARNING:
+                        - VRE # VERBAL REPRIMAND
+                        - WRE # WRITTEN REPRIMAND
+                punishment_length_days: SentenceDays
