@@ -35,7 +35,7 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
     get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        minimum_time_served_years=20,
+        minimum_time_served=20,
         compartment_level_1_types=["INCARCERATION"],
     )
 )

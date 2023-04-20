@@ -20,8 +20,8 @@
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.general_criteria_builders import (
+    get_minimum_time_served_criteria_query,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -31,14 +31,13 @@ _CRITERIA_NAME = "ON_MINIMUM_SUPERVISION_AT_LEAST_SIX_MONTHS"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has
  completed at least six months on minimum supervision"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS eligible_date))"""
-
-
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    get_minimum_time_served_criteria_query(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        time_served_interval="MONTH",
+        minimum_time_served=6,
+        supervision_level_types=["MINIMUM"],
     )
 )
 

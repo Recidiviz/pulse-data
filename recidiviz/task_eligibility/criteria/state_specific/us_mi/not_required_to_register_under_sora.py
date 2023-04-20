@@ -17,12 +17,14 @@
 """Defines a criteria span view that shows spans of time during which someone was not
 required to register under SORA (Sex Offender Registration Act)
 """
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,15 +34,36 @@ _CRITERIA_NAME = "US_MI_NOT_REQUIRED_TO_REGISTER_UNDER_SORA"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone was not
 required to register under SORA"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS ineligible_date))"""
+_QUERY_TEMPLATE = """
+    SELECT
+        state_code,
+        person_id,
+        --find the earliest date imposed for a sex offense requiring registration
+        MIN(date_imposed) AS start_date,
+        CAST(NULL AS DATE) AS end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(MIN(date_imposed) AS ineligible_date)) AS reason
+    FROM `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sent
+    INNER JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest` l
+        ON sent.statute = l.statute_code
+        AND CAST(requires_so_registration AS BOOL)
+    WHERE state_code = "US_MI" 
+    GROUP BY 1,2
+"""
 
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        meets_criteria_default=True,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 
