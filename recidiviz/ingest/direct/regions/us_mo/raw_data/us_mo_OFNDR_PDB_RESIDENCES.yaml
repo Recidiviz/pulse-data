@@ -28,9 +28,9 @@ columns:
     is_pii: True
     description: |-
       Contact Reference ID
-  - name: CUSTODY_TYPE_ID
+  - name: CUSTODY_TYPE_CD
     description: |-
-      Custody Type
+      Custody Type Code
   - name: ADDR_VALIDATED_IND
     description: |-
       Address Validation Indicator
