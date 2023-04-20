@@ -28,7 +28,7 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.dataset_config import (
-    TASK_COMPLETION_EVENTS_DATASET_ID,
+    completion_event_state_specific_dataset,
     task_eligibility_criteria_state_specific_dataset,
 )
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -263,7 +263,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_dataset=task_eligibility_criteria_state_specific_dataset(
             StateCode.US_MI
         ),
-        completion_dataset=TASK_COMPLETION_EVENTS_DATASET_ID,
+        completion_dataset=completion_event_state_specific_dataset(StateCode.US_MI),
     )
 )
 if __name__ == "__main__":
