@@ -415,3 +415,10 @@ module "direct-ingest-county-storage" {
   storage_class = "REGIONAL"
   name_suffix   = "direct-ingest-county-storage"
 }
+
+module "outliers-etl-data" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "outliers-etl-data"
+}

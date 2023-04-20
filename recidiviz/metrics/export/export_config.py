@@ -47,6 +47,9 @@ from recidiviz.calculator.query.state.views.dashboard.population_projections.pop
 from recidiviz.calculator.query.state.views.dashboard.vitals_summaries.vitals_views import (
     VITALS_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.outliers.outliers_views import (
+    OUTLIERS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_discharge_alert_data_views import (
     OVERDUE_DISCHARGE_ALERT_DATA_VIEW_BUILDER,
 )
@@ -188,6 +191,7 @@ PRODUCT_USER_IMPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-product-user-impor
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 VALIDATION_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-validation-metadata"
 WORKFLOWS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-practices-etl-data"
+OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-outliers-etl-data"
 
 
 EXPORT_ATLAS_TO_ID = {StateCode.US_IX.value: StateCode.US_ID.value}
@@ -360,6 +364,19 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="PRODUCT_USER_IMPORT",
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: [ExportValidationType.EXISTS]
+        },
+    ),
+    # Outliers views
+    ExportViewCollectionConfig(
+        view_builders_to_export=OUTLIERS_VIEW_BUILDERS,
+        output_directory_uri_template=OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
+        export_name="OUTLIERS",
+        export_override_state_codes=EXPORT_ATLAS_TO_ID,
+        export_output_formats_and_validations={
+            ExportOutputFormatType.HEADERLESS_CSV: [
+                ExportValidationType.EXISTS,
+                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
+            ]
         },
     ),
 ]

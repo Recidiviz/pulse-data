@@ -40,6 +40,9 @@ from recidiviz.calculator.query.state.views.external_reference.external_referenc
 from recidiviz.calculator.query.state.views.line_staff_validation.line_staff_validation_views import (
     LINE_STAFF_VALIDATION_VIEW_BUILDERS,
 )
+from recidiviz.calculator.query.state.views.outliers.outliers_views import (
+    OUTLIERS_VIEW_BUILDERS,
+)
 from recidiviz.calculator.query.state.views.overdue_discharge_alert.overdue_discharge_alert_data_views import (
     OVERDUE_DISCHARGE_ALERT_VIEW_BUILDERS,
 )
@@ -87,6 +90,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             SESSIONS_VIEW_BUILDERS,
             SHARED_METRIC_VIEW_BUILDERS,
             VITALS_REPORT_VIEW_BUILDERS,
+            OUTLIERS_VIEW_BUILDERS,
         )
     )
 )
