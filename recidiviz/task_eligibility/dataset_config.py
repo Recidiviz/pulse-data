@@ -22,7 +22,7 @@ from recidiviz.common.constants.states import StateCode
 # component criteria, and populations.
 TASK_ELIGIBILITY_DATASET_ID = "task_eligibility"
 
-TASK_COMPLETION_EVENTS_DATASET_ID = "task_eligibility_completion_events"
+TASK_COMPLETION_EVENTS_DATASET_ID = "task_eligibility_completion_events_general"
 
 
 def task_eligibility_spans_state_specific_dataset(state_code: StateCode) -> str:

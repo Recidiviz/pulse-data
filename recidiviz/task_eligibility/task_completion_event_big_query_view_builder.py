@@ -22,7 +22,10 @@ from typing import Union
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.common.constants.states import StateCode
-from recidiviz.task_eligibility.dataset_config import TASK_COMPLETION_EVENTS_DATASET_ID
+from recidiviz.task_eligibility.dataset_config import (
+    TASK_COMPLETION_EVENTS_DATASET_ID,
+    completion_event_state_specific_dataset,
+)
 
 
 class TaskCompletionEventType(Enum):
@@ -54,7 +57,7 @@ class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
     ) -> None:
         view_id = completion_event_type.value.lower()
         super().__init__(
-            dataset_id=f"{TASK_COMPLETION_EVENTS_DATASET_ID}_{state_code.value.lower()}",
+            dataset_id=completion_event_state_specific_dataset(state_code),
             view_id=view_id,
             description=description,
             view_query_template=completion_event_query_template,
@@ -85,7 +88,7 @@ class StateAgnosticTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuil
     ) -> None:
         view_id = completion_event_type.value.lower()
         super().__init__(
-            dataset_id=f"{TASK_COMPLETION_EVENTS_DATASET_ID}_general",
+            dataset_id=TASK_COMPLETION_EVENTS_DATASET_ID,
             view_id=view_id,
             description=description,
             view_query_template=completion_event_query_template,
