@@ -65,9 +65,11 @@ def get_minimum_age_criteria(
 def get_minimum_time_served_criteria_query(
     criteria_name: str,
     description: str,
-    minimum_time_served_years: int,
+    minimum_time_served: int,
+    time_served_interval: str = "YEAR",
     compartment_level_1_types: Optional[List[str]] = None,
     compartment_level_2_types: Optional[List[str]] = None,
+    supervision_level_types: Optional[List[str]] = None,
 ) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
     """Returns a state agnostic criteria view builder indicating spans of time when a person has served
     |minimum_time_served| years or more. The compartment level filters can be used to restrict the type of session
@@ -89,6 +91,16 @@ def get_minimum_time_served_criteria_query(
             f"compartment_level_2 IN ('{', '.join(compartment_level_2_types)}')"
         )
 
+    if supervision_level_types:
+        if compartment_level_1_types or compartment_level_2_types:
+            raise ValueError(
+                "Compartment level 1 and 2 values are not supported in supervision level sessions"
+            )
+        sessions_table = "supervision_level_sessions_materialized"
+        sessions_conditions.append(
+            f"supervision_level IN ('{', '.join(supervision_level_types)}')"
+        )
+
     if len(sessions_conditions) > 0:
         condition_string = "WHERE " + "\n\t\tAND ".join(sessions_conditions)
     else:
@@ -101,7 +113,7 @@ def get_minimum_time_served_criteria_query(
         person_id,
         start_date AS start_datetime,
         end_date_exclusive AS end_datetime,
-        DATE_ADD(start_date, INTERVAL {minimum_time_served_years} YEAR) AS critical_date,
+        DATE_ADD(start_date, INTERVAL {minimum_time_served} {time_served_interval}) AS critical_date,
       FROM `{{project_id}}.{{sessions_dataset}}.{sessions_table}`
       {condition_string}
     ),

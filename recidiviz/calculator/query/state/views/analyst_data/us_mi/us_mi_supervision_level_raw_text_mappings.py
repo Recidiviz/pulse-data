@@ -44,6 +44,8 @@ SELECT
       AND (LOWER(ref.description) NOT LIKE '%non-ems%' AND LOWER(ref.description) NOT LIKE '%non-gps%')), TRUE, NULL) AS is_em,
     IF(LOWER(ref.description) LIKE '%admin%' OR LOWER(ref.description) LIKE '%mail%',TRUE, NULL) AS is_minimum_excluded,
     IF(LOWER(ref.description) LIKE '%telephone%',TRUE, NULL) AS is_telephone,
+    IF(LOWER(ref.description) LIKE '%person%',TRUE, NULL) AS is_minimum_in_person,
+    IF(LOWER(ref.description) LIKE '%low%',TRUE, NULL) AS is_minimum_low,
 FROM `{project_id}.{normalized_state_dataset}.state_supervision_period` sp
 LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.ADH_REFERENCE_CODE_latest` ref 
     ON sp.supervision_level_raw_text = ref.reference_code_id

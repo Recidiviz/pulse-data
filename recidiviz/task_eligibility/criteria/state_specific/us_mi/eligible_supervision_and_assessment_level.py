@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone's supervision level is minimum
-low or minimum in person
+low or minimum in person w/ an initial assessment score of medium/minimum
 """
+
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
@@ -27,10 +28,10 @@ from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_SUPERVISION_LEVEL_IS_MINIMUM_LOW_OR_MINIMUM_IN_PERSON"
+_CRITERIA_NAME = "US_MI_ELIGIBLE_SUPERVISION_AND_ASSESSMENT_LEVEL"
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone's supervision level is minimum
-low or minimum in person"""
+low or minimum in person w/ an initial assessment score of medium/minimum"""
 
 _REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS eligible_date))"""
 
