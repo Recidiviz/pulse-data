@@ -31,6 +31,7 @@ input_columns:
   - MOST_RECENT_SENTENCE_STATUS_DATE
   - SENT_FLAG
   - CG_MD
+  - BS_CRC
 unused_columns:
   - BT_PIE
 variables:
@@ -207,3 +208,4 @@ output:
                     $function: us_mo_custom_parsers.set_charge_is_violent_from_ncic
                     $args:
                       ncic_code: BS_NCI
+                judicial_district_code: BS_CRC

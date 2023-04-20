@@ -93,6 +93,7 @@ VIEW_QUERY_TEMPLATE = """
         sentence_bs.BS_PD,
         sentence_bs.BS_DO,
         sentence_bs.BS_COD,
+        sentence_bs.BS_CRC,
 
         sentence_inst_bt.BT_SD,
         sentence_inst_bt.BT_SLY,
