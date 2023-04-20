@@ -18,6 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -75,17 +76,6 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
             '7', -- Adult Pre-Release Centers
             '16' -- Re-Entry Centers
         )
-    ), nd_location_names AS (
-        SELECT
-            'US_ND' AS state_code,
-            'NOT_APPLICABLE' AS level_3_incarceration_location_external_id,
-            'NOT_APPLICABLE' AS level_3_incarceration_location_name,
-            'NOT_APPLICABLE' AS level_2_incarceration_location_external_id,
-            'NOT_APPLICABLE' AS level_2_incarceration_location_name,
-            facility_code AS level_1_incarceration_location_external_id,
-            facility_name AS level_1_incarceration_location_name,
-            facility_code AS level_1_incarceration_location_alias
-        FROM `{project_id}.{external_reference_dataset}.us_nd_incarceration_facility_names`
     ),
     id_location_names AS (
         SELECT
@@ -194,21 +184,54 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = """
                 incarceration_location_level_1_external_id AS level_1_incarceration_location_alias
         FROM `{project_id}.{external_reference_dataset}.us_mo_incarceration_facility_names`
     )
+    # TODO(#19319): Delete this clause / logic when ME incarceration locations added to location_metadata
     SELECT * FROM me_location_names
-    UNION ALL
-    SELECT * FROM nd_location_names
     UNION ALL
     SELECT * FROM id_location_names
     UNION ALL
+    # TODO(#19317): Delete this clause / logic when IX incarceration locations added to location_metadata
     SELECT * FROM ix_location_names
     UNION ALL
+    # TODO(#19318): Delete this clause / logic when TN incarceration locations added to location_metadata
     SELECT * FROM tn_location_names
     UNION ALL
+    # TODO(#19316): Delete this clause / logic when MI incarceration locations added to location_metadata
     SELECT * FROM mi_location_names
     UNION ALL
+    # TODO(#20339): Delete this clause / logic when CO incarceration locations added to location_metadata
     SELECT * FROM co_location_names
     UNION ALL
+    # TODO(#19340): Delete this clause / logic when MO incarceration locations added to location_metadata
     SELECT * FROM mo_location_names
+    
+    UNION ALL
+
+    # TODO(#19343): Eventually update the output columns to be the "nice" names in the 
+    # `location_metadata` table (e.g. 'supervision_region_id', 'supervision_district_id',
+    # etc instead of level_1/level_2...).
+    SELECT DISTINCT
+        state_code, 
+        'NOT_APPLICABLE' AS level_3_incarceration_location_external_id,
+        'NOT_APPLICABLE' AS level_3_incarceration_location_name,
+        COALESCE(
+            JSON_EXTRACT_SCALAR(location_metadata, '$.facility_group_external_id'), 
+            'NOT_APPLICABLE'
+        ) AS level_2_incarceration_location_external_id,
+        COALESCE(
+            JSON_EXTRACT_SCALAR(location_metadata, '$.facility_group_name'), 
+            'NOT_APPLICABLE'
+        ) AS level_2_incarceration_location_name,
+        location_external_id AS level_1_incarceration_location_external_id,
+        location_name AS level_1_incarceration_location_name,
+        JSON_EXTRACT_SCALAR(location_metadata, '$.location_acronym') AS level_1_incarceration_location_alias
+    FROM `{project_id}.{reference_views_dataset}.location_metadata_materialized`
+    WHERE location_type IN (
+        'STATE_PRISON',
+        'COUNTY_JAIL',
+        'FEDERAL_PRISON',
+        'RESIDENTIAL_PROGRAM',
+        'OUT_OF_STATE'
+    );
     """
 
 INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -217,6 +240,7 @@ INCARCERATION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=INCARCERATION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=INCARCERATION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
     external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
+    reference_views_dataset=REFERENCE_VIEWS_DATASET,
     us_me_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),

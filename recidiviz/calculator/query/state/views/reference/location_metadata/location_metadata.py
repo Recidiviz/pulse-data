@@ -66,7 +66,8 @@ When filling out the `supervision_*` fields in `location_metadata`, please hydra
 | is_active_location | A flag indicating whether this location is currently active. |
 | location_subtype | Extra location type information not provided by location_type. |
 | location_acronym | An acronym / abbreviation used to reference a given location (often a facility). For example, SMP to represent 'State Prison of Southern Michigan'. |
-| facility_group |  A grouping for facility locations that may be provided by the state and is useful for analysis (e.g. groups all out-of-state facilities together). |
+| facility_group_external_id |  A grouping for facility locations that may be provided by the state and is useful for analysis (e.g. groups all out-of-state facilities together). |
+| facility_group_name |  The human-readable name for this location's facility group. |
 | facility_security_level | The security level associated with this location, if it is a facility (e.g. Minimum Security). |
 | supervision_unit_id | The external id for this location's supervision unit (see definition above). |
 | supervision_unit_name | The human-readable name for this location's supervision unit (see definition above). |
@@ -90,8 +91,12 @@ When filling out the `supervision_*` fields in `location_metadata`, please hydra
 # TODO(#19318): Hydrate US_TN location metadata in this view
 # TODO(#19316): Hydrate US_MI location metadata in this view
 # TODO(#19317): Hydrate US_IX location metadata in this view
-# TODO(#19339): Hydrate US_ND location metadata in this view
 LOCATION_METADATA_QUERY_TEMPLATE = """
+SELECT state_code, location_external_id, location_name, location_type, location_metadata
+FROM `{project_id}.{reference_views_dataset}.us_nd_location_metadata_materialized`
+
+UNION ALL
+
 SELECT state_code, location_external_id, location_name, location_type, location_metadata
 FROM `{project_id}.{reference_views_dataset}.us_pa_location_metadata_materialized`;
 """
