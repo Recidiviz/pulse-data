@@ -30,12 +30,22 @@ export function renderToStaticSvg(Cmp: ComponentType): string {
   const svgString = renderToStaticMarkup(sheet.collectStyles(<Cmp />));
 
   // verify that this is an SVG before proceeding
-  if (!svgString.startsWith("<svg")) {
+  const openingTagPattern = /^<svg.*?>/;
+
+  let newOpeningTag = svgString.match(openingTagPattern)?.[0];
+
+  if (!newOpeningTag) {
     throw new Error("Expected component to render an SVG");
   }
 
+  // make sure the namespace is included for proper display
+  const namespaceAttr = `xmlns="http://www.w3.org/2000/svg"`;
+  if (!newOpeningTag.includes(namespaceAttr)) {
+    newOpeningTag = newOpeningTag.replace(/^<svg/, `$& ${namespaceAttr}`);
+  }
+
   // inject the styles into the final output
-  const stylesElement = `<defs>${sheet.getStyleTags()}</defs>`;
-  const openingTagPattern = /^<svg.*?>/;
-  return svgString.replace(openingTagPattern, `$&${stylesElement}`);
+  newOpeningTag += `<defs>${sheet.getStyleTags()}</defs>`;
+
+  return svgString.replace(openingTagPattern, newOpeningTag);
 }
