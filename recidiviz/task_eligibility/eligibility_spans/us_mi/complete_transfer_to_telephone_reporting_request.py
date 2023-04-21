@@ -21,8 +21,8 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     probation_parole_dual_active_supervision_population,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    supervision_level_downgrade,
+from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
+    transfer_to_telephone_reporting_supervision,
 )
 from recidiviz.task_eligibility.criteria.general import (
     on_minimum_supervision_at_least_six_months,
@@ -55,7 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         on_minimum_supervision_at_least_six_months.VIEW_BUILDER,
         eligible_supervision_and_assessment_level.VIEW_BUILDER,
     ],
-    completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
+    completion_event_builder=transfer_to_telephone_reporting_supervision.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":

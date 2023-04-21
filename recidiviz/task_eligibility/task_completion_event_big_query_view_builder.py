@@ -40,6 +40,10 @@ class TaskCompletionEventType(Enum):
     RELEASE_TO_PAROLE = "RELEASE_TO_PAROLE"
     TRANSFER_OUT_OF_SOLITARY_CONFINEMENT = "TRANSFER_OUT_OF_SOLITARY_CONFINEMENT"
     SCHEDULED_HEARING_OCCURRED = "SCHEDULED_HEARING_OCCURRED"
+    # TODO(#20408) delete this once telephone reporting levels are remapped to LIMITED
+    TRANSFER_TO_TELEPHONE_REPORTING_SUPERVISION = (
+        "TRANSFER_TO_TELEPHONE_REPORTING_SUPERVISION"
+    )
 
 
 class StateSpecificTaskCompletionEventBigQueryViewBuilder(SimpleBigQueryViewBuilder):
