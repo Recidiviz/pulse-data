@@ -21,6 +21,9 @@ from types import ModuleType
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
+    raw_data_pruning_enabled_in_state_and_instance,
+)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
@@ -116,6 +119,13 @@ class RawDataDiffQueryBuilder:
         self._region_module = region_module
 
     def build_query(self) -> str:
+        if not raw_data_pruning_enabled_in_state_and_instance(
+            self.state_code, self.raw_data_instance
+        ):
+            raise ValueError(
+                f"Raw data pruning is not yet enabled for state_code={self.state_code.value}, "
+                f"instance={self.raw_data_instance.value}"
+            )
         query_kwargs = {
             "project_id": self.project_id,
             "table_name": self.table_name,
