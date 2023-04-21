@@ -35,13 +35,13 @@ TIME_STEP: 1 month
 
 # add whatever modules you need
 import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
 from recidiviz.calculator.modeling.population_projection.utils.spark_preprocessing_utils import (
     transitions_uniform,
 )
-
 
 # TRANSITIONS TABLE
 # populate transitions_data using utils
@@ -64,15 +64,17 @@ compartments_to = [
 lengths_of_stay = [37, 37, 24, 24, 31, 8, 31, 8]
 probabilities = [0.61, 0.39, 0.71, 0.29, 0.26, 0.74, 0.10, 0.90]
 transitions_data = pd.DataFrame()
-for i, _ in enumerate(lengths_of_stay):
+for compartment_from, compartment_to, length_of_stay, probability in zip(
+    compartments_from, compartments_to, lengths_of_stay, probabilities
+):
     transitions_data = pd.concat(
         [
             transitions_data,
             transitions_uniform(
-                compartments_from[i],
-                compartments_to[i],
-                lengths_of_stay[i],
-                probabilities[i],
+                compartment_from,
+                compartment_to,
+                length_of_stay,
+                probability,
             ),
         ]
     )
