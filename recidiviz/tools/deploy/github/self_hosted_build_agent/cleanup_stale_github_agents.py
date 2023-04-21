@@ -24,6 +24,7 @@ import argparse
 import logging
 import sys
 from typing import List, Tuple
+
 import requests
 
 REPO_URL = "https://api.github.com/repos/Recidiviz/pulse-data"
@@ -59,7 +60,7 @@ def kill_stale_agents(agents: List[dict], github_token: str) -> None:
 
     for agent in agents:
         url = f"{REPO_URL}/actions/runners/{agent['id']}"
-        response = requests.request("DELETE", url, headers=headers)
+        response = requests.request("DELETE", url, headers=headers, timeout=180)
         if response.status_code == 204:
             logging.info("Successfully killed agent: [%s]", {agent["id"]})
         else:
@@ -71,7 +72,7 @@ def get_stale_build_agents(github_token: str) -> List[dict]:
     url = f"{REPO_URL}/actions/runners"
     headers = generate_headers(github_token)
 
-    response = requests.request("GET", url, headers=headers)
+    response = requests.request("GET", url, headers=headers, timeout=180)
     runners = response.json().get("runners")
     stale_agents = [r for r in runners if r.get("status") == "offline"]
     return stale_agents
