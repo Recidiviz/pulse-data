@@ -55,7 +55,7 @@ US_TN_SUPERVISION_CLIENTS_QUERY_TEMPLATE = f"""
     tn_compliant_reporting_eligibility AS (
         SELECT
             *,
-            CASE WHEN cr.compliant_reporting_eligible IS NOT NULL THEN "compliantReporting" ELSE null END AS opportunity_name,
+            CASE WHEN cr.compliant_reporting_eligible IS NOT NULL AND cr.remaining_criteria_needed <= 1 THEN "compliantReporting" ELSE null END AS opportunity_name,
         FROM `{{project_id}}.{{analyst_views_dataset}}.us_tn_compliant_reporting_logic_materialized` cr
         INNER JOIN 
             include_tn_clients
