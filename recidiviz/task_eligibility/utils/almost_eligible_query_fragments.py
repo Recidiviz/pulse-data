@@ -17,6 +17,7 @@
 """
 Helper SQL queries to find almost eligible individuals
 """
+from typing import Optional
 
 
 def json_to_array_cte(from_table: str) -> str:
@@ -39,28 +40,66 @@ def json_to_array_cte(from_table: str) -> str:
     """
 
 
-def one_criteria_away_from_eligibility(criteria_name: str) -> str:
+def one_criteria_away_from_eligibility(
+    criteria_name: str,
+    criteria_condition: Optional[str] = None,
+    field_name_in_reasons_blob: Optional[str] = None,
+) -> str:
     """Helper method that returns a query where individuals
     with only one ineligible criteria (criteria_name) are
     returned.
 
     This method requires json_to_array_cte CTE to be defined previously in
-    the query (see function with the same name above). It also requires it
-    to contain the columns ineligible_criteria, array_reasons, and is_eligible
+    the query (see function with the same name above). It requires the columns
+    ineligible_criteria, array_reasons, and is_eligible.
 
     Args:
         criteria_name (str): Name of criteria; has_usually the following form
             US_XX_CRITERIA_NAME
+        criteria_condition (str): String with a condition to filter AE cases. E.g.
+            if criteria_condition = '< 100', only clients with a 'criteria_name' of less
+            than 100 will be surfaced as almost eligible.
+        field_name_in_reasons_blob (str): Field name where the value is stored in the
+        reasons column of the eligibility spans.
     """
 
-    return f"""SELECT
-    * EXCEPT(array_reasons, is_eligible),
-FROM json_to_array_cte
-WHERE 
-    -- keep if only ineligible criteria is criteria_name
-    '{criteria_name}' IN UNNEST(ineligible_criteria) 
-    AND ARRAY_LENGTH(ineligible_criteria) = 1
-    """
+    criteria_value_query_fragment = ""
+    criteria_value_where_clause = ""
+
+    # If a criteria_condition was specified, we create the string that will pull
+    #   the value for us as a column (criteria_value_query_fragment) and we filter
+    #   based off this column and the criteria_condition
+    if criteria_condition is not None:
+        criteria_value_query_fragment = f"""
+        CAST( 
+            ARRAY(
+                SELECT JSON_VALUE(x.reason.{field_name_in_reasons_blob})
+                FROM UNNEST(array_reasons) AS x
+                WHERE STRING(x.criteria_name) = '{criteria_name}'
+            )[OFFSET(0)] AS FLOAT64) AS criteria_value
+        """
+
+        criteria_value_where_clause = f"""
+        WHERE criteria_value {criteria_condition}
+        """
+
+    return f"""
+SELECT 
+    external_id,
+    state_code,
+    reasons,
+    ineligible_criteria
+FROM (SELECT
+        * EXCEPT(array_reasons, is_eligible),
+        {criteria_value_query_fragment}
+    FROM json_to_array_cte
+    WHERE 
+        -- keep if only ineligible criteria is criteria_name
+        '{criteria_name}' IN UNNEST(ineligible_criteria) 
+        AND ARRAY_LENGTH(ineligible_criteria) = 1
+)
+{criteria_value_where_clause}
+"""
 
 
 def x_time_away_from_eligibility(

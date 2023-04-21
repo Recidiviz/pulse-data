@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.dataset_config import (
 )
 from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     json_to_array_cte,
+    one_criteria_away_from_eligibility,
     x_time_away_from_eligibility,
 )
 from recidiviz.task_eligibility.utils.raw_table_import import (
@@ -202,6 +203,14 @@ eligible_and_almost_eligible AS (
     -- ALMOST ELIGIBLE (<6mo remaining before half time)
     {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
         criteria_name= 'SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE')}
+
+    UNION ALL
+    
+    -- ALMOST ELIGIBLE (<1000$ in owed restitutions)
+    {one_criteria_away_from_eligibility(
+        criteria_name = 'US_ME_PAID_ALL_OWED_RESTITUTION',
+        criteria_condition = '< 1000',
+        field_name_in_reasons_blob = 'amount_owed')}
 ),
 
 array_case_notes_cte AS (
