@@ -49,7 +49,7 @@ resource "google_cloud_scheduler_job" "prune_old_dataflow_data" {
   attempt_deadline = "600s" # 10 minutes
 
   retry_config {
-    min_backoff_duration = "2.5s"
+    min_backoff_duration = "2.500s"
     max_doublings        = 5
   }
 
@@ -72,7 +72,7 @@ resource "google_cloud_scheduler_job" "delete_empty_bq_datasets" {
   attempt_deadline = "600s" # 10 minutes
 
   retry_config {
-    min_backoff_duration = "2.5s"
+    min_backoff_duration = "2.500s"
     max_doublings        = 5
   }
 
@@ -95,7 +95,7 @@ resource "google_cloud_scheduler_job" "update_long_term_backups" {
   attempt_deadline = "600s" # 10 minutes
 
   retry_config {
-    min_backoff_duration = "2.5s"
+    min_backoff_duration = "2.500s"
     max_doublings        = 5
   }
 
@@ -118,7 +118,7 @@ resource "google_cloud_scheduler_job" "ensure_all_raw_paths_normalized" {
   attempt_deadline = "600s" # 10 minutes
 
   retry_config {
-    min_backoff_duration = "2.5s"
+    min_backoff_duration = "2.500s"
     max_doublings        = 5
   }
 
