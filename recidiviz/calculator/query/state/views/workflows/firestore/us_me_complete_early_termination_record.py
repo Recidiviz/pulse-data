@@ -38,6 +38,59 @@ from recidiviz.task_eligibility.utils.raw_table_import import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+_STANDARD_PAROLE_CONDITIONS = ", ".join(
+    [
+        "1",
+        "2",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "21",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "36",
+        "44",
+        "47",
+        "58",
+        "60",
+        "62",
+        "63",
+        "64",
+        "76",
+        "107",
+        "136",
+        "156",
+        "157",
+        "169",
+        "5",
+        "6",
+        "14",
+        "20",
+        "30",
+        "32",
+        "35",
+        "39",
+        "52",
+        "56",
+        "170",
+        "34",
+        "59",
+    ]
+)
+
+
 US_ME_COMPLETE_EARLY_TERMINATION_FORM_RECORD_VIEW_NAME = (
     "us_me_complete_early_termination_record"
 )
@@ -70,7 +123,7 @@ case_notes_cte AS (
     -- Supervision conditions
     SELECT
         crt.Cis_400_Cis_100_Client_Id AS external_id,
-        "Supervision Conditions" AS criteria,
+        "Special Supervision Conditions" AS criteria,
         CONCAT(ct.E_Condition_Type_Desc, IF(c.Completed_Ind = 'Y', ' - Completed', '')) AS note_title,
         c.General_Comments_Tx AS note_body,
         SAFE_CAST(LEFT(c.Due_Date, 10) AS DATE) AS event_date,
@@ -84,6 +137,9 @@ case_notes_cte AS (
     WHERE Logical_Delete_Ind != 'Y'
         # Exclude completed sentences
         AND crt.Cis_4010_Crt_Order_Status_Cd != '3' 
+        # We are not surfacing standard supervision conditions, since they apply to all
+        #   probationees.
+        AND CAST(ct.Condition_Type_Cd AS INT64) NOT IN ({_STANDARD_PAROLE_CONDITIONS})
 
     UNION ALL
 
@@ -108,6 +164,28 @@ case_notes_cte AS (
                                   violation_type_for_criteria='Felonies (in the past 6 months)',
                                   time_interval = 6,
                                   date_part = 'MONTH')}
+
+                                  
+    UNION ALL
+
+    -- Pending violations
+    SELECT 
+        v.Cis_100_Client_Id AS external_id,
+        'Pending Violations (in the past 3 years)' AS criteria,
+        CONCAT(sc.Sent_Calc_Sys_Desc, ' - ', sc2.Sent_Calc_Sys_Desc) AS note_title,
+        CONCAT(v.Violation_Descr_Tx, 
+                IF(v.Finding_Notes_Tx IS NOT NULL,
+                    ' - ',
+                    ''), 
+                COALESCE(v.Finding_Notes_Tx, '')) AS note_body,
+        SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_480_VIOLATION_latest` v
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4009_SENT_CALC_SYS_latest` sc
+    ON v.Cis_4009_Violation_Type_Cd = sc.Sent_Calc_Sys_Cd
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_4009_SENT_CALC_SYS_latest` sc2
+    ON v.Cis_4009_Toll_Violation_Cd = sc2.Sent_Calc_Sys_Cd
+    WHERE v.Cis_4800_Violation_Finding_Cd IS NULL
+        AND DATE_SUB(CURRENT_DATE('US/Eastern') , INTERVAL 3 YEAR) <= SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE)
 ), 
 
 {json_to_array_cte('current_supervision_pop_cte')}, 
