@@ -155,6 +155,9 @@ from recidiviz.validation.views.state.invalid_release_reasons_for_temporary_cust
 from recidiviz.validation.views.state.location_ids_to_names_unique_ids import (
     LOCATION_IDS_TO_NAMES_UNIQUE_IDS_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.location_metadata.configured_validations import (
+    get_all_location_metadata_validations,
+)
 from recidiviz.validation.views.state.multiple_supervision_info_for_commitment_admission import (
     MULTIPLE_SUPERVISION_INFO_FOR_COMMITMENT_ADMISSION_VIEW_BUILDER,
 )
@@ -356,6 +359,7 @@ def get_all_validations() -> List[DataValidationCheck]:
     all_data_validations: List[DataValidationCheck] = [
         *get_all_task_eligibility_validations(),
         *get_all_dataflow_metrics_validations(),
+        *get_all_location_metadata_validations(),
         ExistenceDataValidationCheck(
             view_builder=ADMISSION_PFI_POP_PFI_MISMATCH_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,

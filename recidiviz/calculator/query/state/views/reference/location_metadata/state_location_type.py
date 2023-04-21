@@ -37,8 +37,6 @@ class StateLocationType(Enum):
 
     # Any sort of residential program where a person may live for an extended period of
     # time.
-    # TODO(#19313): Is there reason to split out a separate COMMUNITY_CORRECTIONS
-    #   from this?
     RESIDENTIAL_PROGRAM = "RESIDENTIAL_PROGRAM"
 
     # Used for any location where supervision is administered (e.g. a supervision unit

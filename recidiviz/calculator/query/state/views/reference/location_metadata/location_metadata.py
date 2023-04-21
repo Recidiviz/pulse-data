@@ -79,14 +79,6 @@ When filling out the `supervision_*` fields in `location_metadata`, please hydra
 | supervision_region_name |   The human-readable name for this location's supervision region (see definition above). |
 """
 
-# TODO(#19312): Add validation enforcing that for every location_external_id in
-#  state_staff_location_period, we have a row in reference_views.location_metadata.
-# TODO(#19313): Add validation that enforces that location_type values in
-#  reference_views.location_metadata only match values in enum StateLocationType
-# TODO(#19314): Add validation that enforces that JSON metadata keys in
-#  location_metadata matched allow-listed set of keys
-# TODO(#19315): Add validation that enforces location_name or any metadata keys ending
-#  in *_name do not parse as an int (i.e. it should be a human-readable name)
 # TODO(#19319): Hydrate US_ME location metadata in this view
 # TODO(#19318): Hydrate US_TN location metadata in this view
 # TODO(#19316): Hydrate US_MI location metadata in this view

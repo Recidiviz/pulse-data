@@ -19,6 +19,9 @@ locations in PA that can be associated with a person or staff member."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.reference.location_metadata.location_metadata_key import (
+    LocationMetadataKey,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -34,7 +37,7 @@ locations in PA that can be associated with a person or staff member.
 """
 
 # TODO(#19341): Update this to pull in other types of locations (e.g. facilities)
-US_PA_LOCATION_METADATA_QUERY_TEMPLATE = """
+US_PA_LOCATION_METADATA_QUERY_TEMPLATE = f"""
 SELECT 
     'US_PA' AS state_code,
     Org_cd AS location_external_id,
@@ -42,17 +45,17 @@ SELECT
     'SUPERVISION_LOCATION' AS location_type,
     TO_JSON(
       STRUCT(
-        IF(Org_Name LIKE '%UNIT%', Org_cd, NULL) AS supervision_unit_id,
-        IF(Org_Name LIKE '%UNIT%', Org_Name, NULL) AS supervision_unit_name,
-        level_1_supervision_location_external_id AS supervision_office_id,
-        level_1_supervision_location_name AS supervision_office_name,
-        level_2_supervision_location_external_id AS supervision_district_id,
-        level_2_supervision_location_name AS supervision_district_name,
-        level_3_supervision_location_external_id AS supervision_region_id,
-        level_3_supervision_location_name AS supervision_region_name
+        IF(Org_Name LIKE '%UNIT%', Org_cd, NULL) AS {LocationMetadataKey.SUPERVISION_UNIT_ID.value},
+        IF(Org_Name LIKE '%UNIT%', Org_Name, NULL) AS {LocationMetadataKey.SUPERVISION_UNIT_NAME.value},
+        level_1_supervision_location_external_id AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+        level_1_supervision_location_name AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
+        level_2_supervision_location_external_id AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+        level_2_supervision_location_name AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value},
+        level_3_supervision_location_external_id AS {LocationMetadataKey.SUPERVISION_REGION_ID.value},
+        level_3_supervision_location_name AS {LocationMetadataKey.SUPERVISION_REGION_NAME.value}
       )
     ) AS location_metadata,
-FROM `{project_id}.{us_pa_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+FROM `{{project_id}}.{{us_pa_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
 -- There are a few of organization codes associated with the central office across
 -- regions other than the CENTRAL region (CR). We filter these out to make downstream 
 -- deduplication easier.
