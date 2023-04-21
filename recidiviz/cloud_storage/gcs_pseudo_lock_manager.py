@@ -20,10 +20,10 @@ import json
 import logging
 from contextlib import contextmanager
 from datetime import datetime, timedelta
-from typing import Any, Dict, Iterator, Optional
+from typing import Dict, Iterator, Optional, Union
 
 import attr
-import dateutil.parser
+import pytz
 
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -54,15 +54,13 @@ class GCSPseudoLockBody:
     expiration_in_seconds: Optional[int] = attr.ib(default=None)
 
     def is_expired(self) -> bool:
-        return (
-            self.expiration_in_seconds is not None
-            and self.lock_time + timedelta(seconds=self.expiration_in_seconds)
-            < datetime.now()
-        )
+        return self.expiration_in_seconds is not None and self.lock_time + timedelta(
+            seconds=self.expiration_in_seconds
+        ) < datetime.now(tz=pytz.UTC)
 
-    def to_json(self) -> Dict[str, Any]:
-        output_json: Dict[str, Any] = {
-            LOCK_TIME_KEY: self.lock_time,
+    def to_json(self) -> Dict[str, Union[str, int]]:
+        output_json: Dict[str, Union[str, int]] = {
+            LOCK_TIME_KEY: self.lock_time.isoformat(),
         }
         if self.payload is not None:
             output_json[PAYLOAD_KEY] = self.payload
@@ -101,7 +99,10 @@ class GCSPseudoLockBody:
             return None
 
         try:
-            lock_time = dateutil.parser.parse(json_body[LOCK_TIME_KEY])
+            lock_time = datetime.fromisoformat(json_body[LOCK_TIME_KEY])
+            # TODO(#20053): Remove once all lock files have timezones.
+            if lock_time.tzinfo is None:
+                lock_time = lock_time.astimezone()
         except (TypeError, ValueError):
             logging.warning(
                 "lock_time key did not correspond to valid datetime in lock's internal json. "
@@ -176,14 +177,12 @@ class GCSPseudoLockManager:
             )
 
         lock_body = GCSPseudoLockBody(
-            lock_time=datetime.now(),
+            lock_time=datetime.now(tz=pytz.UTC),
             payload=payload,
             expiration_in_seconds=expiration_in_seconds,
         )
         path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
-        self.fs.upload_from_string(
-            path, json.dumps(lock_body.to_json(), default=str), "text/plain"
-        )
+        self.fs.upload_from_string(path, json.dumps(lock_body.to_json()), "text/plain")
         logging.debug("Created lock file with name: %s", name)
 
     def unlock(self, name: str) -> None:
