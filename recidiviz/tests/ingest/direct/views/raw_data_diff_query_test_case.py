@@ -86,19 +86,22 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
 
     def _create_mock_raw_bq_table_from_fixture(
         self,
+        fixture_directory_name: str,
         file_tag: str,
         fixture_type: RawDataDiffFixtureType,
     ) -> None:
         """Create a mock raw data bigquery table from a raw data fixture."""
-        raw_data_df = self._get_raw_data_from_fixture(file_tag, fixture_type)
+        raw_data_df = self._get_raw_data_from_fixture(
+            fixture_directory_name, fixture_type
+        )
         self._load_mock_raw_table_to_bq(file_tag, fixture_type, raw_data_df)
 
     def _get_raw_data_from_fixture(
-        self, file_tag: str, fixture_type: RawDataDiffFixtureType
+        self, fixture_directory_name: str, fixture_type: RawDataDiffFixtureType
     ) -> pd.DataFrame:
         """Pull data from a raw data fixture."""
         raw_fixture_path = fixture_type.get_absolute_directory_path_from_fixture_type(
-            file_tag
+            fixture_directory_name
         )
         fixture_columns = csv.get_csv_columns(raw_fixture_path)
         raw_data_df = load_dataframe_from_path(raw_fixture_path, fixture_columns)
@@ -132,18 +135,24 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         )
         self.load_rows_into_table(address, mock_data.to_dict("records"))
 
-    def _load_existing_and_temporary_fixtures_to_bq(self, file_tag: str) -> None:
+    def _load_existing_and_temporary_fixtures_to_bq(
+        self, fixture_directory_name: str, file_tag: str
+    ) -> None:
         """Load existing and temporary raw data fixtures to BigQuery."""
         self._create_mock_raw_bq_table_from_fixture(
-            file_tag, RawDataDiffFixtureType.EXISTING
+            fixture_directory_name, file_tag, RawDataDiffFixtureType.EXISTING
         )
         self._create_mock_raw_bq_table_from_fixture(
-            file_tag, RawDataDiffFixtureType.NEW
+            fixture_directory_name, file_tag, RawDataDiffFixtureType.NEW
         )
 
-    def run_diff_query_and_validate_output(self, file_tag: str) -> None:
+    def run_diff_query_and_validate_output(
+        self, file_tag: str, fixture_directory_name: str
+    ) -> None:
         """For a given fixture file tag, run a raw data diff query and validate output matches expected output."""
-        self._load_existing_and_temporary_fixtures_to_bq(file_tag)
+        self._load_existing_and_temporary_fixtures_to_bq(
+            fixture_directory_name, file_tag
+        )
 
         raw_file_config = get_region_raw_file_config(
             region_code=self.state_code.value, region_module=fake_regions
@@ -161,7 +170,7 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         results = self.query(diff_query)
 
         expected_results = self._get_raw_data_from_fixture(
-            file_tag, RawDataDiffFixtureType.EXPECTED_RESULTS
+            fixture_directory_name, RawDataDiffFixtureType.EXPECTED_RESULTS
         )
         BigQueryTestHelper.compare_expected_and_result_dfs(
             expected=expected_results, results=results

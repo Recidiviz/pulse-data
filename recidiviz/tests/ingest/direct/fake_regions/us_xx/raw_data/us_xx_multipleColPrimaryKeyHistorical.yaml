@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: multipleColPrimaryKeyHistorical
+file_description: |-
+  multipleColPrimaryKeyHistorical file description
+data_classification: source
+primary_key_cols:
+  - primary_key_1
+  - primary_key_2
+  - primary_key_3
+columns:
+  - name: primary_key_1
+    description: |-
+      primary_key_1 description
+  - name: primary_key_2
+    description: |-
+      primary_key_2 description
+  - name: primary_key_3
+    description: |-
+      primary_key_3 description
+  - name: value
+    description: |-
+      value description
+always_historical_export: True

@@ -19,11 +19,22 @@
 To run, you must first run:
   pipenv run start-bq-emulator
 """
+import mock
+from mock import patch
+
 from recidiviz.tests.ingest.direct.views.raw_data_diff_query_test_case import (
     RawDataDiffEmulatorQueryTestCase,
 )
 
 
+@patch(
+    "recidiviz.ingest.direct.views.raw_table_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+    mock.MagicMock(return_value=True),
+)
+@patch(
+    "recidiviz.ingest.direct.views.raw_data_diff_query_builder.raw_data_pruning_enabled_in_state_and_instance",
+    mock.MagicMock(return_value=True),
+)
 class RawDataDiffQueryTest(RawDataDiffEmulatorQueryTestCase):
     """Tests the raw data diff query functionality."""
 
@@ -31,4 +42,12 @@ class RawDataDiffQueryTest(RawDataDiffEmulatorQueryTestCase):
         super().setUp()
 
     def test_raw_data_diff_query_simple(self) -> None:
-        self.run_diff_query_and_validate_output("singlePrimaryKey")
+        self.run_diff_query_and_validate_output(
+            file_tag="singlePrimaryKey", fixture_directory_name="singlePrimaryKey"
+        )
+
+    def test_raw_data_diff_query_multiple_col_primary_key_historical(self) -> None:
+        self.run_diff_query_and_validate_output(
+            file_tag="multipleColPrimaryKeyHistorical",
+            fixture_directory_name="multipleColPrimaryKeyHistoricalManyIsDeleted",
+        )
