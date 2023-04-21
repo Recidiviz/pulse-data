@@ -32,7 +32,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         SELECT
           sessions.person_id,
           sessions.state_code,
-          pei.external_id AS person_external_id,
+          pei.person_external_id,
           sessions.compartment_level_2 AS supervision_type,
             -- Pull the officer ID from compartment_sessions instead of supervision_officer_sessions
             -- to make sure we choose the officer that aligns with other compartment session attributes.
@@ -44,10 +44,9 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sessions
         LEFT JOIN {{project_id}}.{{static_reference_tables_dataset}}.agent_multiple_ids_map ids
             ON sessions.supervising_officer_external_id_end = ids.external_id_to_map AND sessions.state_code = ids.state_code 
-        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code
-            AND {{state_id_type}} = pei.id_type
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
             ON sessions.state_code = projected_end.state_code
             AND sessions.person_id = projected_end.person_id
@@ -123,21 +122,20 @@ _CLIENT_RECORD_PHONE_NUMBERS_CTE = f"""
         # TODO(#14676): Pull from state_person.phone_number once hydrated
         SELECT
             "US_ND" AS state_code,
-            pei.external_id AS person_external_id, 
+            pei.person_external_id, 
             doc.PHONE AS phone_number
         FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.docstars_offenders_latest` doc
-        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON doc.SID = pei.external_id
-        AND pei.id_type = "US_ND_SID"
+        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
+        ON doc.SID = pei.person_external_id AND pei.state_code = "US_ND"
 
         UNION ALL
 
         SELECT
             sp.state_code,
-            pei.external_id AS person_external_id,
+            pei.person_external_id,
             sp.current_phone_number
         FROM `{{project_id}}.{{normalized_state_dataset}}.state_person` sp
-        INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             USING (person_id)
         WHERE
             sp.state_code IN ({{workflows_supervision_states}})
@@ -149,10 +147,10 @@ _CLIENT_RECORD_EMAIL_ADDRESSES_CTE = """
     email_addresses AS (
         SELECT
             sp.state_code,
-            pei.external_id AS person_external_id,
+            pei.person_external_id,
             sp.current_email_address as email_address
         FROM `{project_id}.{normalized_state_dataset}.state_person` sp
-        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
             USING (person_id)
         WHERE
             sp.state_code IN ({workflows_supervision_states})
@@ -288,10 +286,9 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
             person_id,
             state_code,
         FROM `{project_id}.{us_tn_raw_data_up_to_date_dataset}.Offender_latest` tn_raw
-        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-            ON tn_raw.OffenderID = pei.external_id
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+            ON tn_raw.OffenderID = pei.person_external_id
             AND pei.state_code = "US_TN"
-            AND pei.id_type = "US_TN_DOC"
     
         UNION ALL
     
@@ -299,10 +296,9 @@ _CLIENT_RECORD_INCLUDE_CLIENTS_CTE = """
             person_id,
             state_code,
         FROM `{project_id}.{us_mi_raw_data_up_to_date_dataset}.ADH_OFFENDER_latest` mi_raw
-        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-            ON mi_raw.offender_number = pei.external_id
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+            ON mi_raw.offender_number = pei.person_external_id
             AND pei.state_code = "US_MI"
-            AND pei.id_type = "US_MI_DOC"
         
         UNION ALL
         

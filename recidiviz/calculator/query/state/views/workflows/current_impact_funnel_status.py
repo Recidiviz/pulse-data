@@ -50,7 +50,7 @@ WITH eligibility AS (
   FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
   INNER JOIN `{{project_id}}.{{reference_views_dataset}}.task_to_completion_event` tce
     USING (task_name)
-  INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id` pei
+  INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.person_id_to_external_id_materialized` pei
     USING (state_code, person_id)
   WHERE CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_exclusive_clause("end_date")}
     -- TODO(#19015): Exclude TN CR until the subsequent sub-query is removed

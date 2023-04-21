@@ -98,8 +98,8 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
         FROM `{project_id}.{us_me_raw_data_dataset}.CIS_112_CUSTODY_LEVEL` cl
         INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1017_CLIENT_SYS_latest` cs
             ON cl.CIS_1017_CLIENT_SYS_CD = cs.CLIENT_SYS_CD
-        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-            ON cl.CIS_100_CLIENT_ID = pei.external_id
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+            ON cl.CIS_100_CLIENT_ID = pei.person_external_id
             AND pei.state_code = "US_ME"
         WHERE TRUE
         QUALIFY ROW_NUMBER() OVER (
@@ -113,8 +113,8 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
             pei.person_id,
             BL_ICA AS custody_level
         FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBAKRDTA_TAK015_latest` tak015
-        INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
-            ON BL_DOC = pei.external_id
+        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+            ON BL_DOC = pei.person_external_id
             AND pei.state_code = "US_MO"
         QUALIFY ROW_NUMBER() OVER(PARTITION BY BL_DOC ORDER BY SAFE.PARSE_DATE('%Y%m%d', tak015.BL_IC) DESC) = 1
     ),

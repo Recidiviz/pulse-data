@@ -19,10 +19,7 @@ from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.bq_utils import list_to_query_string
-from recidiviz.calculator.query.state import (
-    dataset_config,
-    state_specific_query_strings,
-)
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.reference.workflows_opportunity_configs import (
     WORKFLOWS_OPPORTUNITY_CONFIGS,
     PersonRecordType,
@@ -144,9 +141,6 @@ CLIENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         state_code=StateCode.US_MI, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
-    state_id_type=state_specific_query_strings.state_specific_external_id_type(
-        "sessions"
-    ),
     workflows_supervision_states=list_to_query_string(
         WORKFLOWS_SUPERVISION_STATES, quoted=True
     ),
