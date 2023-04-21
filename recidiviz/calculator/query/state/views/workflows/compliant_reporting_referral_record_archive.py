@@ -145,7 +145,7 @@ COMPLIANT_REPORTING_REFERRAL_RECORD_ARCHIVE_QUERY_TEMPLATE = """
         almost_eligible_serious_sanctions,
     FROM date_to_archive_map
     LEFT JOIN records_by_state_by_date USING (state_code, export_date)
-    LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id` 
+    LEFT JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` 
         USING (state_code, person_external_id)
     WHERE compliant_reporting_eligible IS NOT NULL
 """
