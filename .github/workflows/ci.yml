@@ -135,6 +135,26 @@ jobs:
         working-directory: ./frontends/admin-panel/
         run: yarn lint --max-warnings=0
 
+  asset-generation-tests:
+    name: Asset Generation Service tests
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-directory: ./nodejs/asset-generation/
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "yarn"
+          cache-dependency-path: nodejs/asset-generation/yarn.lock
+      - name: Yarn install
+        run: yarn install --frozen-lockfile
+      - name: Lint
+        run: yarn lint --max-warnings=0
+      - name: Test
+        run: yarn test
+
   unit-tests:
     name: Base unit tests
     runs-on: ubuntu-20.04

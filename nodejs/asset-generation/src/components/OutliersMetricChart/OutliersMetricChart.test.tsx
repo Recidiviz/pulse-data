@@ -14,45 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+// TODO(https://github.com/Recidiviz/recidiviz-dashboards/issues/3298): add SSR support to design-system and remove this
+// @vitest-environment jsdom
 
-import type { Meta, StoryObj } from "@storybook/react";
+import { expect, test } from "vitest";
 
-import { districtData, locationData, officerData } from "./fixtures";
+import { renderToStaticSvg } from "../utils";
+import { officerData } from "./fixtures";
 import { OutliersMetricChart } from "./OutliersMetricChart";
 
-const meta: Meta<typeof OutliersMetricChart> = {
-  title: "OutliersMetricChart",
-  component: OutliersMetricChart,
-};
-
-export default meta;
-type Story = StoryObj<typeof OutliersMetricChart>;
-
-const render: Story["render"] = (props) => <OutliersMetricChart {...props} />;
-
-export const WithPersonNames: Story = {
-  render,
-  args: {
-    width: 570,
-    entityLabel: "Agent",
-    data: officerData,
-  },
-};
-
-export const WithLocationNames: Story = {
-  render,
-  args: {
-    width: 570,
-    entityLabel: "District Office",
-    data: locationData,
-  },
-};
-
-export const WithDistrictNames: Story = {
-  render,
-  args: {
-    width: 570,
-    entityLabel: "District",
-    data: districtData,
-  },
-};
+test("rendering", () => {
+  function TestCmp() {
+    return (
+      <OutliersMetricChart
+        data={officerData}
+        width={570}
+        entityLabel="Officers"
+      />
+    );
+  }
+  expect(renderToStaticSvg(TestCmp)).toMatchFileSnapshot(
+    "./__snapshots__/OfficerChart.svg"
+  );
+});
