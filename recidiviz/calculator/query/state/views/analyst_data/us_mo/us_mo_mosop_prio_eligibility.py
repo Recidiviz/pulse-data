@@ -61,8 +61,10 @@ FROM (
         prioritized_date,
         mosop_indicator,
         DATE_DIFF(prioritized_date, CURRENT_DATE('US/Eastern'), MONTH) AS months_until_prioritized_date,
-        CASE WHEN cr_date_in_bounds AND NOT prio_date_in_bounds
-            THEN 'Max Discharge Given Instead of CR' ELSE "Prioritized Date 12-18 Months Out" 
+        CASE 
+            WHEN cr_date_in_bounds AND NOT prio_date_in_bounds THEN 'Max Discharge Given Instead of CR' 
+            WHEN prio_date_in_bounds THEN "Prioritized Date 12-18 Months Out" 
+            WHEN prio_date_within_year THEN "Prioritized Date Less Than 12 Months Out" 
             END AS prioritization_flag,
         eligibility_category,
         has_no_exits,
@@ -72,6 +74,7 @@ FROM (
         SELECT 
             *,
             DATE_DIFF(prioritized_date, CURRENT_DATE('US/Eastern'), MONTH) BETWEEN 12 AND 18 AS prio_date_in_bounds,
+            DATE_DIFF(prioritized_date, CURRENT_DATE('US/Eastern'), MONTH) BETWEEN 0 AND 12 AS prio_date_within_year,
             board_determined_release_date = max_discharge AND
                 conditional_release IS NOT NULL AND
                 DATE_DIFF(conditional_release, CURRENT_DATE('US/Eastern'), MONTH) <= 18 AS cr_date_in_bounds,
@@ -79,7 +82,7 @@ FROM (
         FROM `{project_id}.{analyst_dataset}.us_mo_program_tracks_materialized`
     )
     WHERE
-        mosop_indicator = TRUE AND completed_flag = FALSE AND (prio_date_in_bounds OR cr_date_in_bounds)
+        mosop_indicator = TRUE AND completed_flag = FALSE AND (prio_date_in_bounds OR cr_date_in_bounds OR prio_date_within_year)
 )
 ORDER BY prioritization_flag, eligibility_category, months_until_prioritized_date
 """
