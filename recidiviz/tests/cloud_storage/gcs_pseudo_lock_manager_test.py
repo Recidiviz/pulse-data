@@ -20,6 +20,8 @@ import unittest
 from datetime import datetime, timedelta
 from unittest import mock
 
+import pytz
+
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     EXPIRATION_IN_SECONDS_KEY,
     LOCK_TIME_KEY,
@@ -39,30 +41,44 @@ class TestGCSPseudoLockContents(unittest.TestCase):
     """Class to test GCSPseudoLockContents"""
 
     def test_to_json_no_optionals(self) -> None:
-        now = datetime.now()
-        body = GCSPseudoLockBody(lock_time=now)
+        time = datetime(2023, 3, 15, 12, 1, 12, 123, tzinfo=pytz.UTC)
+        body = GCSPseudoLockBody(lock_time=time)
         encoded_contents = body.to_json()
 
-        self.assertEqual(encoded_contents[LOCK_TIME_KEY], now)
+        self.assertEqual(
+            encoded_contents[LOCK_TIME_KEY], "2023-03-15T12:01:12.000123+00:00"
+        )
         self.assertTrue(PAYLOAD_KEY not in encoded_contents)
         self.assertTrue(EXPIRATION_IN_SECONDS_KEY not in encoded_contents)
 
     def test_to_json(self) -> None:
-        now = datetime.now()
+        time = datetime(2023, 3, 15, 12, 1, 12, 123, tzinfo=pytz.UTC)
         text_payload = "SECRET_CONTENTS"
         expiration_in_seconds = 4
         body = GCSPseudoLockBody(
-            lock_time=now,
+            lock_time=time,
             payload=text_payload,
             expiration_in_seconds=expiration_in_seconds,
         )
         encoded_contents = body.to_json()
 
-        self.assertEqual(encoded_contents[LOCK_TIME_KEY], now)
+        self.assertEqual(
+            encoded_contents[LOCK_TIME_KEY], "2023-03-15T12:01:12.000123+00:00"
+        )
         self.assertEqual(encoded_contents[PAYLOAD_KEY], text_payload)
         self.assertEqual(
             encoded_contents[EXPIRATION_IN_SECONDS_KEY], expiration_in_seconds
         )
+
+    # TODO(#20053): Remove once all lock files have timezones.
+    def test_to_json_no_timezone(self) -> None:
+        time = datetime(2023, 3, 15, 12, 1, 12, 123)
+        body = GCSPseudoLockBody(lock_time=time)
+        encoded_contents = body.to_json()
+
+        self.assertEqual(encoded_contents[LOCK_TIME_KEY], "2023-03-15T12:01:12.000123")
+        self.assertTrue(PAYLOAD_KEY not in encoded_contents)
+        self.assertTrue(EXPIRATION_IN_SECONDS_KEY not in encoded_contents)
 
     def test_from_json_failures(self) -> None:
         self.assertIsNone(GCSPseudoLockBody.from_json_string("malformed}{"))
@@ -157,8 +173,8 @@ class TestGCSPseudoLockManager(unittest.TestCase):
     def _upload_fake_expired_lock(
         self, lock_manager: GCSPseudoLockManager, lock_name: str
     ) -> None:
-        now = datetime.now()
-        yesterday = now - timedelta(days=1)
+        now = datetime.now(tz=pytz.UTC)
+        yesterday = now - timedelta(hours=1)
         path = GcsfsFilePath(bucket_name=lock_manager.bucket_name, blob_name=lock_name)
         self.fs.upload_from_string(
             path,
@@ -166,7 +182,6 @@ class TestGCSPseudoLockManager(unittest.TestCase):
                 GCSPseudoLockBody(
                     lock_time=yesterday, expiration_in_seconds=3600
                 ).to_json(),
-                default=str,
             ),
             content_type="text/text",
         )
@@ -401,7 +416,7 @@ class TestGCSPseudoLockManager(unittest.TestCase):
                 pass
 
     def test_lock_expiration_not_met(self) -> None:
-        now = datetime.now()
+        now = datetime.now(pytz.UTC)
         lock_manager = GCSPseudoLockManager()
 
         path = GcsfsFilePath(
@@ -411,8 +426,25 @@ class TestGCSPseudoLockManager(unittest.TestCase):
             path,
             json.dumps(
                 GCSPseudoLockBody(lock_time=now, expiration_in_seconds=60).to_json(),
-                default=str,
             ),
+            content_type="text/text",
+        )
+        self.assertTrue(lock_manager.is_locked(self.LOCK_NAME))
+
+    # TODO(#20053): Remove once all lock files have timezones.
+    def test_lock_expiration_not_met_timezone_naive(self) -> None:
+        now = datetime.now()
+        lock_manager = GCSPseudoLockManager()
+        body = GCSPseudoLockBody(lock_time=now, expiration_in_seconds=60).to_json()
+        # Overwrite as old format
+        body[LOCK_TIME_KEY] = str(now)
+
+        path = GcsfsFilePath(
+            bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME
+        )
+        self.fs.upload_from_string(
+            path,
+            json.dumps(body),
             content_type="text/text",
         )
         self.assertTrue(lock_manager.is_locked(self.LOCK_NAME))
