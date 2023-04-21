@@ -19,6 +19,9 @@ locations in PA that can be associated with a person or staff member."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.reference.location_metadata.location_metadata_key import (
+    LocationMetadataKey,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -34,7 +37,7 @@ US_ND_LOCATION_METADATA_DESCRIPTION = """Reference table with metadata about spe
 locations in ND that can be associated with a person or staff member.
 """
 
-US_ND_LOCATION_METADATA_QUERY_TEMPLATE = """
+US_ND_LOCATION_METADATA_QUERY_TEMPLATE = f"""
 SELECT 
     'US_ND' AS state_code,
     level_1_supervision_location_external_id AS location_external_id,
@@ -42,13 +45,13 @@ SELECT
     'SUPERVISION_LOCATION' AS location_type,
     TO_JSON(
       STRUCT(
-        level_1_supervision_location_external_id AS supervision_office_id,
-        level_1_supervision_location_name AS supervision_office_name,
-        level_2_supervision_location_external_id AS supervision_district_id,
-        level_2_supervision_location_name AS supervision_district_name
+        level_1_supervision_location_external_id AS {LocationMetadataKey.SUPERVISION_OFFICE_ID.value},
+        level_1_supervision_location_name AS {LocationMetadataKey.SUPERVISION_OFFICE_NAME.value},
+        level_2_supervision_location_external_id AS {LocationMetadataKey.SUPERVISION_DISTRICT_ID.value},
+        level_2_supervision_location_name AS {LocationMetadataKey.SUPERVISION_DISTRICT_NAME.value}
       )
     ) AS location_metadata,
-FROM `{project_id}.{us_nd_raw_data_up_to_date_dataset}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+FROM `{{project_id}}.{{us_nd_raw_data_up_to_date_dataset}}.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
 
 UNION ALL
 
@@ -67,10 +70,10 @@ SELECT
     END AS location_type,
     TO_JSON(
       STRUCT(
-        facility_code AS location_acronym
+        facility_code AS {LocationMetadataKey.LOCATION_ACRONYM.value}
       )
     ) AS location_metadata,
-FROM `{project_id}.{external_reference_dataset}.us_nd_incarceration_facility_names`
+FROM `{{project_id}}.{{external_reference_dataset}}.us_nd_incarceration_facility_names`
 """
 
 US_ND_LOCATION_METADATA_VIEW_BUILDER = SimpleBigQueryViewBuilder(
