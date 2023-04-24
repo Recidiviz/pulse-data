@@ -306,6 +306,13 @@ def today_between_start_date_and_nullable_end_date_clause(
     return f'CURRENT_DATE("US/Pacific") BETWEEN {start_date_column} AND {nonnull_end_date_clause(end_date_column)}'
 
 
+def today_between_start_date_and_nullable_end_date_exclusive_clause(
+    start_date_column: str, end_date_column: str
+) -> str:
+    """Filter to spans where today falls after the start date and before the exclusive end date if it is not NULL."""
+    return f'CURRENT_DATE("US/Pacific") BETWEEN {start_date_column} AND {nonnull_end_date_exclusive_clause(end_date_column)}'
+
+
 def revert_nonnull_end_date_clause(column_name: str) -> str:
     """Convert end dates far in the future to NULL"""
     return f'IF({column_name} = "{MAGIC_END_DATE}", NULL, {column_name})'
