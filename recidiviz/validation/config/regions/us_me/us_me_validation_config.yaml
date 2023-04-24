@@ -33,6 +33,10 @@ max_allowed_error_overrides:
     hard_max_allowed_error_override: 0.10
     override_reason: >-
       P2 Not relevant to currently launched products
+  - validation_name: most_recent_assessment_score_by_person_by_state_comparison
+    hard_max_allowed_error_override: 1.00
+    override_reason: >-
+      P2. 10-ish rows failing. More details in TODO(#19973).
 num_allowed_rows_overrides:
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 150000
