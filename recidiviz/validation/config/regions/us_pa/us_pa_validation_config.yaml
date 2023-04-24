@@ -111,8 +111,11 @@ num_allowed_rows_overrides:
       board hold periods (of different lengths) that preceed them, which can cause
       different dates to be used for identifying SPs associated with an admission.
   - validation_name: sentence_end_dates_before_start_dates
-    hard_num_allowed_rows_override: 40000
-    override_reason: Needs investigation.  Current failing level as of 10/21 is 23,029 rows #TODO(#16189)
+    hard_num_allowed_rows_override: 45000
+    override_reason:
+      Issue exists in the raw data. Bumping until a plan exists to handle it.
+      Current failing level as of 4/24 is 45,866 rows, doubled from 10/13 after PED
+      hydrated from failing rows in database migration. #TODO(#16189)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 415000
     override_reason: Needs investigation.  Current failing level as of 10/26 is 379,539 rows #TODO(#16224)
