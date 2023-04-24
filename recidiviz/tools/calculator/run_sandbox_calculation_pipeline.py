@@ -21,7 +21,7 @@ See http://go/run-dataflow/ for more information on running Dataflow pipelines.
 
 usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           --pipeline PIPELINE_NAME \
-          --pipeline_type PIPELINE_TYPE \
+          --type PIPELINE_TYPE \
           --job_name JOB_NAME \
           --project PROJECT \
           --state_code STATE_CODE \
@@ -39,16 +39,16 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
 Examples:
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
         --pipeline recidivism_metrics \
-        --pipeline_type metrics \
+        --type metrics \
         --project recidiviz-staging \
         --job_name my-nd-recidivism-metrics-test \
         --sandbox_output_dataset username_dataflow_metrics \
         --state_code US_ND \
-        --metric_types REINCARCERATION_COUNT REINCARCERATION_RATE
+        --metric_types "REINCARCERATION_COUNT REINCARCERATION_RATE"
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
         --pipeline comprehensive_normalization \
-        --pipeline_type normalization \
+        --type normalization \
         --project recidiviz-staging \
         --job_name my-nd-normalization-test \
         --sandbox_output_dataset username_normalized_state \
@@ -56,7 +56,7 @@ Examples:
 
     python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
         --pipeline us_ix_case_note_extracted_entities_supplemental \
-        --pipeline_type supplemental \
+        --type supplemental \
         --project recidiviz-staging \
         --job_name my-id-supplemental-test \
         --sandbox_output_dataset username_supplemental_data \
@@ -72,216 +72,52 @@ import json
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Type
 
 import google.auth
 import google.auth.transport.requests
 import requests
 
-from recidiviz.airflow.dags.utils.pipeline_parameters import (
+from recidiviz.calculator import pipeline
+from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
     MetricsPipelineParameters,
+)
+from recidiviz.calculator.pipeline.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
-    PipelineParameters,
+)
+from recidiviz.calculator.pipeline.pipeline_parameters import PipelineParameters
+from recidiviz.calculator.pipeline.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
-from recidiviz.calculator import pipeline
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    calculation_month_count_arg,
-)
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
-    collect_all_pipeline_names,
-)
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation, run_command
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
 
-class ValidateSandboxDataset(argparse.Action):
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Any = None,
-    ) -> None:
-        if values == DATAFLOW_METRICS_DATASET:
-            parser.error(
-                f"--sandbox_output_dataset argument for test pipelines must be "
-                f"different than the standard Dataflow metrics dataset: "
-                f"{DATAFLOW_METRICS_DATASET}."
-            )
-        setattr(namespace, self.dest, values)
-
-
-class NormalizeJobName(argparse.Action):
-    """Since this is a test run, make sure the job name has a -test suffix."""
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Any = None,
-    ) -> None:
-        job_name = values
-        if not job_name.endswith("-test"):
-            job_name = job_name + "-test"
-            logging.info(
-                "Appending -test to the job_name because this is a test job: [%s]",
-                job_name,
-            )
-        setattr(namespace, self.dest, job_name)
-
-
-class NormalizeMetricTypes(argparse.Action):
-    """Join all the metric type arguments into a single string which can be used in a
-    Dataflow Flex template."""
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Any = None,
-    ) -> None:
-        metric_types_str = " ".join(values)
-        setattr(namespace, self.dest, metric_types_str)
-
-
-class NormalizePersonFilterIds(argparse.Action):
-    """Join all the person filter id arguments into a single string which can be used in
-    a Dataflow Flex template."""
-
-    def __call__(
-        self,
-        parser: argparse.ArgumentParser,
-        namespace: argparse.Namespace,
-        values: Any,
-        option_string: Any = None,
-    ) -> None:
-        person_ids_str = " ".join([str(v) for v in values])
-        setattr(namespace, self.dest, person_ids_str)
-
-
-def parse_run_arguments() -> argparse.Namespace:
+def parse_run_arguments() -> PipelineParameters:
     """Parses the arguments needed to start a sandbox pipeline to a Namespace."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--pipeline",
-        dest="pipeline",
+        "--type",
         type=str,
-        choices=collect_all_pipeline_names(),
-        help="The name of the pipeline that should be run.",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--job_name",
-        dest="job_name",
-        type=str,
-        help="The name of the pipeline job to be run.",
-        required=True,
-        action=NormalizeJobName,
-    )
-
-    parser.add_argument(
-        "--sandbox_output_dataset",
-        # Change output name to match what pipeline args expect
-        dest="output",
-        type=str,
-        help="Output metrics dataset where results should be written to for test jobs.",
-        required=True,
-        action=ValidateSandboxDataset,
-    )
-
-    parser.add_argument(
-        "--state_code",
-        dest="state_code",
-        type=str,
-        help="state code",
-        required=True,
-    )
-
-    parser.add_argument(
-        "--project",
-        type=str,
-        help="ID of the GCP project.",
-        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-        required=True,
-    )
-
-    parser.add_argument(
-        "--pipeline_type",
-        type=str,
+        dest="pipeline_type",
         help="type of the pipeline",
         choices=["metrics", "normalization", "supplemental"],
         required=True,
     )
 
-    parser.add_argument(
-        "--region",
-        type=str,
-        help="The Google Cloud region to run the job on (e.g. us-west1).",
-        default="us-west1",
-    )
+    known_args, remaining_args = parser.parse_known_args()
 
-    parser.add_argument(
-        "--normalized_input",
-        type=str,
-        help="BigQuery dataset to query for normalized versions of entities.",
-        required=False,
-    )
+    parameter_cls: Type[PipelineParameters]
+    if known_args.pipeline_type == "metrics":
+        parameter_cls = MetricsPipelineParameters
+    elif known_args.pipeline_type == "normalization":
+        parameter_cls = NormalizationPipelineParameters
+    elif known_args.pipeline_type == "supplemental":
+        parameter_cls = SupplementalPipelineParameters
+    else:
+        raise ValueError(f"Unexpected pipeline_type [{known_args.pipeline_type}]")
 
-    parser.add_argument(
-        "--data_input", type=str, help="BigQuery dataset to query.", required=False
-    )
-
-    parser.add_argument(
-        "--reference_view_input",
-        type=str,
-        help="BigQuery reference view dataset to query.",
-        required=False,
-    )
-
-    parser.add_argument(
-        "--person_filter_ids",
-        type=int,
-        nargs="+",
-        help="An optional list of DB person_id values. When present, the pipeline "
-        "will only calculate metrics for these people and will not output to BQ.",
-        action=NormalizePersonFilterIds,
-    )
-
-    # metric_types, calculation_month_count, static_reference_input can only be used for metric type pipelines
-    parser.add_argument(
-        "--metric_types",
-        dest="metric_types",
-        type=str,
-        nargs="+",
-        help="A list of the types of metric to calculate.",
-        action=NormalizeMetricTypes,
-        required=False,
-    )
-
-    parser.add_argument(
-        "--calculation_month_count",
-        dest="calculation_month_count",
-        type=calculation_month_count_arg,
-        help="The number of months (including this one) to limit the monthly "
-        "calculation output to. If set to -1, does not limit the "
-        "calculations.",
-        required=False,
-    )
-
-    parser.add_argument(
-        "--static_reference_input",
-        type=str,
-        help="BigQuery static reference table dataset to query.",
-        required=False,
-    )
-
-    return parser.parse_args()
+    return parameter_cls.parse_from_args(remaining_args, sandbox_pipeline=True)
 
 
 def fetch_google_auth_token() -> str:
@@ -293,24 +129,6 @@ def fetch_google_auth_token() -> str:
     creds.refresh(auth_req)
 
     return creds.token  # type: ignore[attr-defined]
-
-
-def get_pipeline_parameters(
-    pipeline_type: str, template_metadata_subdir: str, arguments_dict: Dict[str, Any]
-) -> PipelineParameters:
-    if pipeline_type == "metrics":
-        return MetricsPipelineParameters(
-            **arguments_dict, template_metadata_subdir=template_metadata_subdir
-        )
-    if pipeline_type == "normalization":
-        return NormalizationPipelineParameters(
-            **arguments_dict, template_metadata_subdir=template_metadata_subdir
-        )
-    if pipeline_type == "supplemental":
-        return SupplementalPipelineParameters(
-            **arguments_dict, template_metadata_subdir=template_metadata_subdir
-        )
-    raise ValueError(f"Received invalid pipeline type: {pipeline_type}")
 
 
 def get_cloudbuild_path() -> str:
@@ -326,27 +144,14 @@ def get_template_path(pipeline_type: str) -> str:
     return os.path.join(pipeline_root_path, template_path)
 
 
-def run_sandbox_calculation_pipeline(
-    project: str,
-    pipeline_type: str,
-    # Remainder of arguments passed through to pipelines
-    **arguments_dict: Any,
-) -> None:
+def run_sandbox_calculation_pipeline() -> None:
     """Runs the pipeline designated by the given --pipeline argument."""
-
-    username = run_command("git config user.name", timeout_sec=300)
-    username = username.replace(" ", "").strip().lower()
-    if not username:
-        raise ValueError("Found no configured git username")
-
-    template_metadata_subdir = f"template_metadata_dev/{username}"
-    params: PipelineParameters = get_pipeline_parameters(
-        pipeline_type, template_metadata_subdir, arguments_dict
-    )
-    launch_body = params.flex_template_launch_body(project)
-    template_gcs_path = params.template_gcs_path(project)
+    params = parse_run_arguments()
+    _, username = os.path.split(params.template_metadata_subdir)
+    launch_body = params.flex_template_launch_body()
+    template_gcs_path = params.template_gcs_path(params.project)
     cloudbuild_absolute_path = get_cloudbuild_path()
-    template_absolute_path = get_template_path(pipeline_type)
+    template_absolute_path = get_template_path(params.flex_template_name)
     artifact_reg_image_path = (
         f"us-docker.pkg.dev/recidiviz-staging/dataflow-dev/{username}/build:latest"
     )
@@ -364,7 +169,7 @@ def run_sandbox_calculation_pipeline(
         "Submitting build (this takes a few minutes, or longer on the first run).....\n"
     )
     run_command(
-        f"gcloud builds submit --project={project} --config {cloudbuild_absolute_path} --substitutions=_IMAGE_PATH={artifact_reg_image_path}",
+        f"gcloud builds submit --project={params.project} --config {cloudbuild_absolute_path} --substitutions=_IMAGE_PATH={artifact_reg_image_path}",
         timeout_sec=900,
     )
 
@@ -401,7 +206,7 @@ def run_sandbox_calculation_pipeline(
 
     if response.ok:
         print(
-            f"Job {params.job_name} successfully launched - go to https://console.cloud.google.com/dataflow/jobs?project={project} to monitor job progress"
+            f"Job {params.job_name} successfully launched - go to https://console.cloud.google.com/dataflow/jobs?project={params.project} to monitor job progress"
         )
     else:
         print("Job launch failed..")
@@ -410,7 +215,4 @@ def run_sandbox_calculation_pipeline(
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
-    args = parse_run_arguments()
-    # Collect all parsed arguments and filter out the ones that are not set
-    set_kwargs = {k: v for k, v in vars(args).items() if v is not None}
-    run_sandbox_calculation_pipeline(**set_kwargs)
+    run_sandbox_calculation_pipeline()

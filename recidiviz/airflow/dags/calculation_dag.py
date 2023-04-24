@@ -46,10 +46,14 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 )
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
-from recidiviz.airflow.dags.utils.pipeline_parameters import (
+from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
     MetricsPipelineParameters,
+)
+from recidiviz.calculator.pipeline.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
-    PipelineParameters,
+)
+from recidiviz.calculator.pipeline.pipeline_parameters import PipelineParameters
+from recidiviz.calculator.pipeline.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
 from recidiviz.metrics.export.products.product_configs import (
@@ -81,7 +85,7 @@ def flex_dataflow_operator_for_pipeline(
     return RecidivizDataflowFlexTemplateOperator(
         task_id=pipeline_parameters.job_name,
         location=region,
-        body=pipeline_parameters.flex_template_launch_body(project_id=project_id),
+        body=pipeline_parameters.flex_template_launch_body(),
         project_id=project_id,
         task_group=task_group,
     )
@@ -401,7 +405,7 @@ def create_calculation_dag() -> None:
     for metric_pipeline in metric_pipelines:
 
         # define both a MetricsPipelineParameters for flex templates and a legacy PipelineConfigArgs
-        pipeline_config_parameters = MetricsPipelineParameters(**metric_pipeline.get())  # type: ignore
+        pipeline_config_parameters = MetricsPipelineParameters(project=project_id, **metric_pipeline.get())  # type: ignore
 
         state_code = pipeline_config_parameters.state_code
 
@@ -436,7 +440,7 @@ def create_calculation_dag() -> None:
     normalization_task_group = TaskGroup("normalization")
     for normalization_pipeline in normalization_pipelines:
         normalization_pipeline_parameters = NormalizationPipelineParameters(
-            **normalization_pipeline.get()  # type: ignore
+            project=project_id, **normalization_pipeline.get()  # type: ignore
         )
 
         if (
@@ -461,7 +465,7 @@ def create_calculation_dag() -> None:
     )
     for supplemental_pipeline in supplemental_dataset_pipelines:
         supplemental_pipeline_parameters = SupplementalPipelineParameters(
-            **supplemental_pipeline.get()  # type: ignore
+            project=project_id, **supplemental_pipeline.get()  # type: ignore
         )
         state_code = supplemental_pipeline_parameters.state_code
 

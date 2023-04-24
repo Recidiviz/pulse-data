@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import argparse
 import logging
+import sys
 from typing import List, Type
 
 from recidiviz.calculator.pipeline.base_pipeline import (
@@ -62,11 +63,10 @@ if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--pipeline", help="name of pipeline to run")
+    parser.add_argument(
+        "--pipeline", dest="pipeline", type=str, help="name of pipeline to run"
+    )
 
     args, other_args = parser.parse_known_args()
 
-    run_flex_pipeline(
-        pipeline_name=args.pipeline,
-        argv=other_args,
-    )
+    run_flex_pipeline(pipeline_name=args.pipeline, argv=sys.argv[1:])

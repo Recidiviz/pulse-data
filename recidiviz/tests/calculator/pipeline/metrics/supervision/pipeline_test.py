@@ -21,7 +21,6 @@ from typing import Any, Callable, Collection, Dict, List, Optional, Set
 from unittest import mock
 
 import apache_beam as beam
-from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import BeamAssertException, assert_that, equal_to
 from freezegun import freeze_time
@@ -29,8 +28,10 @@ from more_itertools import one
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     ClassifyResults,
-    MetricPipelineJobArgs,
     ProduceMetrics,
+)
+from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
+    MetricsPipelineParameters,
 )
 from recidiviz.calculator.pipeline.metrics.supervision import identifier, pipeline
 from recidiviz.calculator.pipeline.metrics.supervision.events import (
@@ -1288,29 +1289,20 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
 
         self.metric_producer = pipeline.metric_producer.SupervisionMetricProducer()
 
-        default_beam_args: List[str] = [
-            "--project",
-            "recidiviz-staging",
-            "--job_name",
-            "test",
-        ]
-
-        beam_pipeline_options = PipelineOptions(default_beam_args)
-
-        self.pipeline_job_args = MetricPipelineJobArgs(
+        self.pipeline_parameters = MetricsPipelineParameters(
+            project="recidiviz-456",
             state_code="US_XX",
-            project_id="project",
-            input_dataset="dataset_id",
-            normalized_input_dataset="dataset_id",
-            reference_dataset="dataset_id",
-            static_reference_dataset="dataset_id",
-            output_dataset="dataset_id",
-            metric_inclusions=self.metric_inclusions_dict,
+            pipeline="supervision_metrics",
+            data_input="dataset_id",
+            normalized_input="dataset_id",
+            reference_view_input="dataset_id",
+            static_reference_input="dataset_id",
+            output="dataset_id",
+            metric_types="ALL",
             region="region",
             job_name="job",
-            person_id_filter_set=None,
+            person_filter_ids=None,
             calculation_month_count=-1,
-            apache_beam_pipeline_options=beam_pipeline_options,
         )
 
     def tearDown(self) -> None:
@@ -1372,7 +1364,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_job_args,
+                self.pipeline_parameters.project,
+                self.pipeline_parameters.region,
+                self.pipeline_parameters.job_name,
+                self.pipeline_parameters.state_code,
+                self.pipeline_parameters.metric_types,
+                self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
         )
@@ -1416,7 +1413,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_job_args,
+                self.pipeline_parameters.project,
+                self.pipeline_parameters.region,
+                self.pipeline_parameters.job_name,
+                self.pipeline_parameters.state_code,
+                self.pipeline_parameters.metric_types,
+                self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
         )
@@ -1438,7 +1440,12 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             | "Calculate Supervision Metrics"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_job_args,
+                self.pipeline_parameters.project,
+                self.pipeline_parameters.region,
+                self.pipeline_parameters.job_name,
+                self.pipeline_parameters.state_code,
+                self.pipeline_parameters.metric_types,
+                self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
         )

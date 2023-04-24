@@ -16,7 +16,6 @@
 # =============================================================================
 """Classes for running all normalization calculation pipelines."""
 import abc
-import argparse
 from typing import (
     Any,
     Dict,
@@ -37,11 +36,13 @@ from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.base_pipeline import (
     PipelineConfig,
-    PipelineJobArgs,
     PipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
+)
+from recidiviz.calculator.pipeline.normalization.pipeline_parameters import (
+    NormalizationPipelineParameters,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.entity_normalization_manager import (
     EntityNormalizationManager,
@@ -68,17 +69,19 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    normalized_state_dataset_for_state_code,
-)
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 
 
-class NormalizationPipelineRunDelegate(PipelineRunDelegate):
+class NormalizationPipelineRunDelegate(
+    PipelineRunDelegate[NormalizationPipelineParameters]
+):
     """Delegate for running an entity normalization pipeline."""
+
+    @classmethod
+    def parameters_type(cls) -> Type[NormalizationPipelineParameters]:
+        return NormalizationPipelineParameters
 
     @classmethod
     @abc.abstractmethod
@@ -105,17 +108,6 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
                 f"{self.pipeline_config().pipeline_name} pipeline."
             )
 
-    @classmethod
-    def _build_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str]
-    ) -> PipelineJobArgs:
-        """Builds the PipelineJobArgs object from the provided args."""
-        return cls._get_base_pipeline_job_args(parser, argv)
-
-    @classmethod
-    def default_output_dataset(cls, state_code: str) -> str:
-        return normalized_state_dataset_for_state_code(StateCode(state_code))
-
     def run_data_transforms(
         self, p: PBegin, pipeline_data: beam.Pipeline
     ) -> beam.Pipeline:
@@ -123,7 +115,7 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
         Returns the normalized entities to be written to BigQuery."""
         normalized_entities = pipeline_data | "Normalize entities" >> beam.ParDo(
             NormalizeEntities(),
-            state_code=self.pipeline_job_args.state_code,
+            state_code=self.pipeline_parameters.state_code,
             entity_normalizer=self.entity_normalizer(),
             pipeline_config=self.pipeline_config(),
         )
@@ -152,7 +144,7 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
             | "Convert to dict to be written to BQ"
             >> beam.ParDo(
                 NormalizedEntityTreeWritableDicts(),
-                state_code=self.pipeline_job_args.state_code,
+                state_code=self.pipeline_parameters.state_code,
             ).with_outputs(
                 *normalized_entity_class_names, *normalized_entity_associations
             )
@@ -176,10 +168,10 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
 
             _ = getattr(writable_metrics, entity_class_name) | (
                 f"Write Normalized{entity_class_name} to BQ table: "
-                f"{self.pipeline_job_args.output_dataset}.{table_id}"
+                f"{self.pipeline_parameters.output}.{table_id}"
             ) >> WriteToBigQuery(
                 output_table=table_id,
-                output_dataset=self.pipeline_job_args.output_dataset,
+                output_dataset=self.pipeline_parameters.output,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
                 schema=schema,
             )
@@ -192,10 +184,10 @@ class NormalizationPipelineRunDelegate(PipelineRunDelegate):
 
             _ = getattr(writable_metrics, entity_association) | (
                 f"Write Normalized{child_class_name} to Normalized{parent_class_name} associations to BQ table: "
-                f"{self.pipeline_job_args.output_dataset}.{table_id}"
+                f"{self.pipeline_parameters.output}.{table_id}"
             ) >> WriteToBigQuery(
                 output_table=table_id,
-                output_dataset=self.pipeline_job_args.output_dataset,
+                output_dataset=self.pipeline_parameters.output,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
             )
 

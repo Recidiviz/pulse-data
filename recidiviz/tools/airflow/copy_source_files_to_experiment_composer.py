@@ -48,16 +48,12 @@ from recidiviz.utils.params import str_to_bool
 DAGS_FOLDER = "dags"
 ROOT = os.path.dirname(recidiviz.__file__)
 
-AIRFLOW_SOURCE_FILES = os.path.join(
-    ROOT,
-    "tools/deploy/terraform/config/cloud_composer_airflow_files_to_copy.yaml",
-)
 OTHER_SOURCE_FILES = os.path.join(
     ROOT,
     "tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml",
 )
 
-SOURCE_FILE_YAML_PATHS = [AIRFLOW_SOURCE_FILES, OTHER_SOURCE_FILES]
+SOURCE_FILE_YAML_PATHS = [OTHER_SOURCE_FILES]
 
 EXPERIMENT = "us-central1-experiment-eecbc35e-bucket"
 EXPERIMENT_2 = "us-central1-experiment-2-8bb6ce5a-bucket"
@@ -98,7 +94,9 @@ def main(files: list[str], environment: str, dry_run: bool) -> None:
         local_path_list = []
         for source_file_yaml in SOURCE_FILE_YAML_PATHS:
             with open(source_file_yaml, encoding="utf-8") as f:
-                file_patterns = yaml.safe_load(f)
+                file_patterns = yaml.safe_load(f) + [
+                    ("recidiviz/airflow/dags", "*dag*.py")
+                ]
                 for path, pattern in file_patterns:
                     local_path_list.extend(
                         glob(f"{path.replace('recidiviz', ROOT)}/{pattern}")

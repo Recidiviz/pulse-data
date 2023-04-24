@@ -1,6 +1,6 @@
 {
-  "name": "Normalization",
-  "description": "Flex template for normalization pipeline",
+  "name": "supplemental",
+  "description": "Flex template for supplemental pipeline",
   "parameters": [
     {
       "name": "pipeline",

@@ -223,6 +223,8 @@ def default_arg_list_for_pipeline(
         state_code,
         "--job_name",
         "test_job",
+        "--pipeline",
+        "pipeline",
     ]
 
     if unifying_id_field_filter_set:
@@ -278,8 +280,7 @@ def _additional_default_args_for_metrics_pipeline(
 
     additional_args.append("--metric_types")
     if metric_types_filter:
-        for metric in metric_types_filter:
-            additional_args.append(metric)
+        additional_args.append(f"{' '.join(list(metric_types_filter))}")
     else:
         additional_args.append("ALL")
 
