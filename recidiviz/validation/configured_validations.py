@@ -238,6 +238,9 @@ from recidiviz.validation.views.state.sentences.session_liberty_releases_with_no
 from recidiviz.validation.views.state.sentences.session_new_admissions_with_no_sentence_date_imposed import (
     SESSION_NEW_ADMISSIONS_WITH_NO_SENTENCE_DATE_IMPOSED_VIEW_BUILDER,
 )
+from recidiviz.validation.views.state.sentences.sessions_missing_closest_sentence_imposed_group import (
+    SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
+)
 from recidiviz.validation.views.state.sessions_validation.sessions_persons_in_incarceration_or_supervision import (
     SESSIONS_IN_INCARCERATION_OR_SUPERVISION_VIEW_BUILDER,
 )
@@ -532,6 +535,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=NORMALIZED_STATE_CHARGE_MISSING_UNIFORM_OFFENSE_LABELS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=SESSIONS_MISSING_CLOSEST_SENTENCE_IMPOSED_GROUP_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
         SamenessDataValidationCheck(

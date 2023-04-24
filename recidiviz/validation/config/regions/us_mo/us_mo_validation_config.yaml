@@ -73,3 +73,6 @@ num_allowed_rows_overrides:
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 2000000
     override_reason: MO charges must be sanitized of PII. Current failing level as of 4/5/23 is 1,726,658 rows (98%) #TODO(#18436)
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    hard_num_allowed_rows_override: 65000
+    override_reason: Current failing level as of 4/20/23 is 61,378 rows (5%) #TODO(#20402)
