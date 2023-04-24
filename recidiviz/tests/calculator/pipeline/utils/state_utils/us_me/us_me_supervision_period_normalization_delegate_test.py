@@ -70,7 +70,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MEDIUM,
             self._build_delegate(assessments).supervision_level_override(
-                supervision_period
+                0, [supervision_period]
             ),
         )
 
@@ -86,7 +86,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.INTERNAL_UNKNOWN,
             self._build_delegate(assessments).supervision_level_override(
-                supervision_period
+                0, [supervision_period]
             ),
         )
 
@@ -114,7 +114,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.HIGH,
             self._build_delegate(assessments).supervision_level_override(
-                supervision_period
+                0, [supervision_period]
             ),
         )
 
@@ -148,7 +148,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MAXIMUM,
             self._build_delegate(assessments).supervision_level_override(
-                supervision_period
+                0, [supervision_period]
             ),
         )
 
@@ -192,7 +192,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MEDIUM,
             self._build_delegate(assessments).supervision_level_override(
-                supervision_period
+                0, [supervision_period]
             ),
         )
 
@@ -222,7 +222,7 @@ class TestUsMeSupervisionNormalizationDelegate(unittest.TestCase):
         self.assertEqual(
             StateSupervisionLevel.MINIMUM,
             self._build_delegate(assessments).supervision_level_override(
-                supervision_period
+                0, [supervision_period]
             ),
         )
 

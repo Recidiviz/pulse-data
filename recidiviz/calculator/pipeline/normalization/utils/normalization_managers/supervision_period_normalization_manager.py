@@ -77,11 +77,15 @@ class StateSpecificSupervisionNormalizationDelegate(abc.ABC, StateSpecificDelega
         return supervision_periods
 
     def supervision_level_override(
-        self, supervision_period: StateSupervisionPeriod
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionLevel]:
         """States may have specific logic that determines the supervision level for a supervision period.
         By default, uses the one on the supervision period as ingested."""
-        return supervision_period.supervision_level
+        return sorted_supervision_periods[
+            supervision_period_list_index
+        ].supervision_level
 
     def supervision_admission_reason_override(
         self,
@@ -416,7 +420,13 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             - Updating any admission reasons based on state-specific logic."""
         updated_periods: List[StateSupervisionPeriod] = []
 
-        for sp in supervision_periods:
+        for index, sp in enumerate(supervision_periods):
+            # For supervision level changes inferred using adjacent periods or other information
+            sp.supervision_level = self.delegate.supervision_level_override(
+                supervision_period_list_index=index,
+                sorted_supervision_periods=supervision_periods,
+            )
+
             sp.admission_reason = self.delegate.supervision_admission_reason_override(
                 sp, supervision_periods
             )
@@ -425,7 +435,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                     sp, supervision_sentences
                 )
             )
-            sp.supervision_level = self.delegate.supervision_level_override(sp)
             updated_periods.append(sp)
         return updated_periods
 
