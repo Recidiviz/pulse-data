@@ -60,6 +60,7 @@ _STATE_ASSESSMENT_CLASS_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
 class StateAssessmentType(StateEntityEnum):
     """An enumeration of assessment types tracked in our schema."""
 
+    CAF = state_enum_strings.state_assessment_type_caf
     CSSM = state_enum_strings.state_assessment_type_cssm
     COMPAS = state_enum_strings.state_assessment_type_compas
     HIQ = state_enum_strings.state_assessment_type_hiq
@@ -110,6 +111,7 @@ class StateAssessmentType(StateEntityEnum):
 
 
 _STATE_ASSESSMENT_TYPE_VALUE_DESCRIPTIONS: Dict[StateEntityEnum, str] = {
+    StateAssessmentType.CAF: "Custody Assessment Form (CAF)",
     StateAssessmentType.CSSM: "Criminal Sentiments Scale – Modified (CSM-R)",
     StateAssessmentType.COMPAS: "Correctional Offender Management Profiling for Alternative Sanctions (COMPAS)",
     StateAssessmentType.HIQ: "Hostile Interpretations Questionnaire (HIQ) ",

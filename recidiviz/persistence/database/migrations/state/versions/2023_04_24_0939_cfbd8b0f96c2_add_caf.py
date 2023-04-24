@@ -1,22 +1,23 @@
 # pylint: skip-file
-"""add_compas
+"""add_caf
 
-Revision ID: 9c37ad604edd
-Revises: 94e2f817b9c3
-Create Date: 2022-11-03 15:15:07.316035
+Revision ID: cfbd8b0f96c2
+Revises: 8d9b12b33005
+Create Date: 2023-04-24 09:39:07.967087
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "9c37ad604edd"
-down_revision = "94e2f817b9c3"
+revision = "cfbd8b0f96c2"
+down_revision = "8d9b12b33005"
 branch_labels = None
 depends_on = None
 
-# Include COMPAS
+# Include CAF
 new_values = [
+    "CAF",
     "CSSM",
     "COMPAS",
     "HIQ",
@@ -46,9 +47,10 @@ new_values = [
     "EXTERNAL_UNKNOWN",
 ]
 
-# WIthout Compas
+# WIthout CAF
 old_values = [
     "CSSM",
+    "COMPAS",
     "HIQ",
     "J_SOAP",
     "LSIR",
