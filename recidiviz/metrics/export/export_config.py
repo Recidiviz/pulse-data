@@ -375,7 +375,6 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_output_formats_and_validations={
             ExportOutputFormatType.HEADERLESS_CSV: [
                 ExportValidationType.EXISTS,
-                ExportValidationType.NON_EMPTY_COLUMNS_HEADERLESS,
             ]
         },
     ),
