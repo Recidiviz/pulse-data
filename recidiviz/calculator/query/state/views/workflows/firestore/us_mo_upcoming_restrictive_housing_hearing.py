@@ -148,14 +148,12 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
     cdv_all AS (
         SELECT
             person_id,
-            cdv.cdv_date as event_date,
-            cdv.cdv_rule as note_title,
-            NULL as note_body,
+            cdv.cdv_date,
+            cdv.cdv_rule,
             -- Major violations are rules 1-9
             -- Further info on CDVs here: 
             -- https://doc.mo.gov/sites/doc/files/media/pdf/2020/03/Offender_Rulebook_REVISED_2019.pdf
             cdv.cdv_rule_part1 < 10 AS is_major_violation,
-            h.most_recent_hearing_date,
             -- Excludes violations that occur the day of a hearing, which could in reality
             -- occur either before or after the hearing, since hearings are likely to be
             -- scheduled further in advance than on the same day as the violation.
@@ -171,9 +169,9 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             TO_JSON(
                 ARRAY_AGG(
                     STRUCT(
-                        note_title,
-                        note_body,
-                        event_date,
+                        cdv_rule as note_title,
+                        NULL as note_body,
+                        cdv_date as event_date,
                         -- Separate violations into mutually exclusive groups:
                         -- All major CDVs, minor CDVs since the most recent hearing,
                         -- and minor CDVs before the most recent hearing
@@ -184,17 +182,51 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
                             ELSE "Other Minor CDVs, past 6 months" END
                         ) AS criteria
                     )
-                    ORDER BY event_date DESC
+                    ORDER BY cdv_date DESC
                 )
             ) AS case_notes
         FROM cdv_all
         WHERE 
             -- Only surface CDVs corresponding to the criteria groups
-            (is_major_violation AND event_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH))
+            (is_major_violation AND cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH))
             OR
-            ((NOT is_major_violation) AND event_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_minor_months_to_display}} MONTH))
+            ((NOT is_major_violation) AND cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_minor_months_to_display}} MONTH))
             OR
             (occurred_since_last_hearing)
+        GROUP BY 1
+    )
+    ,
+    cdv_majors_recent AS (
+        SELECT
+            person_id,
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+        FROM cdv_all
+        WHERE
+            cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_major_months_to_display}} MONTH)
+            AND is_major_violation
+        GROUP BY 1
+    )
+    ,
+    cdv_minors_since_hearing AS (
+        SELECT
+            person_id,
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+        FROM cdv_all
+        WHERE
+            occurred_since_last_hearing
+            AND NOT is_major_violation
+        GROUP BY 1
+    )
+    ,
+    cdv_minors_recent AS (
+        SELECT
+            person_id,
+            ARRAY_AGG(STRUCT(cdv_date, cdv_rule) ORDER BY cdv_date DESC) AS cdvs
+        FROM cdv_all
+        WHERE
+            cdv_date >= DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL {{us_mo_cdv_minor_months_to_display}} MONTH)
+            AND NOT occurred_since_last_hearing
+            AND NOT is_major_violation
         GROUP BY 1
     )
     ,
@@ -215,6 +247,9 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
             bed.building_number AS metadata_building_number,
             bed.housing_use_code AS metadata_housing_use_code,
             IFNULL(cdv.case_notes, PARSE_JSON("[]")) AS metadata_case_notes,
+            TO_JSON(IFNULL(cdv_majors_recent.cdvs, [])) AS metadata_major_cdvs,
+            TO_JSON(IFNULL(cdv_minors_since_hearing.cdvs, [])) AS metadata_cdvs_since_last_hearing,
+            IFNULL(ARRAY_LENGTH(cdv_minors_recent.cdvs), 0) AS metadata_num_minor_cdvs_before_last_hearing
         FROM base_query base
         LEFT JOIN most_recent_hearings_with_comment hearings
         USING (person_id)
@@ -225,6 +260,12 @@ US_MO_UPCOMING_RESTRICTIVE_HOUSING_HEARING_RECORD_QUERY_TEMPLATE = f"""
         LEFT JOIN current_bed_stay bed
         USING (person_id)
         LEFT JOIN cdv_case_notes cdv
+        USING (person_id)
+        LEFT JOIN cdv_majors_recent
+        USING (person_id)
+        LEFT JOIN cdv_minors_since_hearing
+        USING (person_id)
+        LEFT JOIN cdv_minors_recent
         USING (person_id)
     )
     SELECT * FROM final
