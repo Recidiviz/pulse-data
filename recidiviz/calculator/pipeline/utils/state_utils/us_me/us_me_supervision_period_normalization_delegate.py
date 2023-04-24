@@ -81,7 +81,9 @@ class UsMeSupervisionNormalizationDelegate(
         return supervision_period.termination_reason
 
     def supervision_level_override(
-        self, supervision_period: StateSupervisionPeriod
+        self,
+        supervision_period_list_index: int,
+        sorted_supervision_periods: List[StateSupervisionPeriod],
     ) -> Optional[StateSupervisionLevel]:
         """US_ME specific logic for determining supervision level from assessment scores."""
         if not self._assessments:
@@ -107,6 +109,8 @@ class UsMeSupervisionNormalizationDelegate(
         )
 
         assessments_before_period_ends: List[StateAssessment] = []
+
+        supervision_period = sorted_supervision_periods[supervision_period_list_index]
 
         for assessment in self._assessments:
             # Only include assessments done before the supervision period's end date
