@@ -82,8 +82,12 @@ def user_event_template(
         QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY loaded_at DESC) = 1
     ) events
     -- inner join to filter out recidiviz users and others unidentified (if any)
-    INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users`
-        USING (user_id)
+    INNER JOIN `{{project_id}}.{{workflows_views_dataset}}.reidentified_dashboard_users` rdu
+        ON events.user_id = rdu.user_id
+            -- Handle events from before https://github.com/Recidiviz/pulse-data/pull/20056
+            OR (STARTS_WITH(rdu.user_id, "_")
+                AND STARTS_WITH(events.user_id, "/")
+                AND SUBSTR(rdu.user_id, 2) = SUBSTR(events.user_id, 2))
     INNER JOIN clients USING (state_code, pseudonymized_id)
     -- We get the state_code above from `reidentified_dashboard_users`, which could have have an
     -- entry for a user for both US_ID and US_IX. We can't use the pseudonymized id to distinguish

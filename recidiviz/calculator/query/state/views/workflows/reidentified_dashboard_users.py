@@ -32,14 +32,16 @@ REIDENTIFIED_DASHBOARD_USERS_VIEW_DESCRIPTION = (
 
 REIDENTIFIED_DASHBOARD_USERS_QUERY_TEMPLATE = """
 SELECT
-    user_hash AS user_id,
-    rosters.id AS user_external_id,
-    users.state_code,
-    rosters.district,
-FROM `{project_id}.{reference_views_dataset}.dashboard_user_restrictions_materialized` users
-INNER JOIN `{project_id}.{workflows_views_dataset}.staff_record_materialized` rosters
-    ON users.state_code = rosters.state_code
-    AND LOWER(users.restricted_user_email) = LOWER(rosters.email)
+    staff.state_code,
+    users.user_hash AS user_id,
+    -- Not all users have entries in staff_record so fill in information from the roster for them
+    COALESCE(staff.id, users.external_id) AS user_external_id,
+    COALESCE(staff.district, users.district) AS district,
+FROM `{project_id}.{reference_views_dataset}.product_roster_materialized` users
+LEFT JOIN `{project_id}.{workflows_views_dataset}.staff_record_materialized` staff
+    -- The roster only has US_ID and the staff record only has US_IX
+    ON (users.state_code = staff.state_code OR (users.state_code = "US_ID" AND staff.state_code = "US_IX"))
+    AND LOWER(users.email_address) = LOWER(staff.email)
 """
 
 REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
