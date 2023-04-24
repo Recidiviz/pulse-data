@@ -16,7 +16,6 @@
 # =============================================================================
 """Classes for running all supplemental dataset calculation pipelines."""
 import abc
-import argparse
 from typing import Dict, List, Type
 
 from google.cloud import bigquery
@@ -24,16 +23,21 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_utils import schema_field_for_type
 from recidiviz.calculator.pipeline.base_pipeline import (
     PipelineConfig,
-    PipelineJobArgs,
     PipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.supplemental.dataset_config import (
-    SUPPLEMENTAL_DATA_DATASET,
+from recidiviz.calculator.pipeline.supplemental.pipeline_parameters import (
+    SupplementalPipelineParameters,
 )
 
 
-class SupplementalDatasetPipelineRunDelegate(PipelineRunDelegate):
+class SupplementalDatasetPipelineRunDelegate(
+    PipelineRunDelegate[SupplementalPipelineParameters]
+):
     """Delegate for running a supplemental dataset pipeline."""
+
+    @classmethod
+    def parameters_type(cls) -> Type[SupplementalPipelineParameters]:
+        return SupplementalPipelineParameters
 
     @classmethod
     @abc.abstractmethod
@@ -68,14 +72,3 @@ class SupplementalDatasetPipelineRunDelegate(PipelineRunDelegate):
                 "Can only use SupplementalDatasetPipelineRunDelegate for a supplemental"
                 f"dataset pipeline. Trying to run a {self.pipeline_config().pipeline_name} pipeline."
             )
-
-    @classmethod
-    def _build_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str]
-    ) -> PipelineJobArgs:
-        """Builds the PipelineJobArgs object from the provided args."""
-        return cls._get_base_pipeline_job_args(parser, argv)
-
-    @classmethod
-    def default_output_dataset(cls, state_code: str) -> str:
-        return SUPPLEMENTAL_DATA_DATASET

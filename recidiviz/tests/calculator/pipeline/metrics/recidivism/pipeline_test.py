@@ -34,9 +34,11 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     ClassifyResults,
-    MetricPipelineJobArgs,
     ProduceMetrics,
     RecidivizMetricWritableDict,
+)
+from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
+    MetricsPipelineParameters,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism import identifier, pipeline
 from recidiviz.calculator.pipeline.metrics.recidivism.events import (
@@ -761,29 +763,20 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
 
         self.metric_producer = pipeline.metric_producer.RecidivismMetricProducer()
 
-        default_beam_args: List[str] = [
-            "--project",
-            "recidiviz-staging",
-            "--job_name",
-            "test",
-        ]
-
-        beam_pipeline_options = PipelineOptions(default_beam_args)
-
-        self.pipeline_job_args = MetricPipelineJobArgs(
+        self.pipeline_parameters = MetricsPipelineParameters(
+            project="recidiviz-staging",
             state_code="US_XX",
-            project_id="project",
-            input_dataset="dataset_id",
-            normalized_input_dataset="dataset_id",
-            reference_dataset="dataset_id",
-            static_reference_dataset="dataset_id",
-            output_dataset="dataset_id",
-            metric_inclusions=ALL_METRIC_INCLUSIONS_DICT,
+            pipeline="recidivism_metrics",
+            data_input="dataset_id",
+            normalized_input="dataset_id",
+            reference_view_input="dataset_id",
+            static_reference_input="dataset_id",
+            output="dataset_id",
+            metric_types="ALL",
             region="region",
             job_name="job",
-            person_id_filter_set=None,
+            person_filter_ids=None,
             calculation_month_count=-1,
-            apache_beam_pipeline_options=beam_pipeline_options,
         )
 
     def tearDown(self) -> None:
@@ -877,7 +870,12 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_job_args,
+                self.pipeline_parameters.project,
+                self.pipeline_parameters.region,
+                self.pipeline_parameters.job_name,
+                self.pipeline_parameters.state_code,
+                self.pipeline_parameters.metric_types,
+                self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
         )
@@ -923,7 +921,12 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_job_args,
+                self.pipeline_parameters.project,
+                self.pipeline_parameters.region,
+                self.pipeline_parameters.job_name,
+                self.pipeline_parameters.state_code,
+                self.pipeline_parameters.metric_types,
+                self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
         )
@@ -943,7 +946,12 @@ class TestProduceRecidivismMetrics(unittest.TestCase):
             | "Produce Metric Combinations"
             >> beam.ParDo(
                 ProduceMetrics(),
-                self.pipeline_job_args,
+                self.pipeline_parameters.project,
+                self.pipeline_parameters.region,
+                self.pipeline_parameters.job_name,
+                self.pipeline_parameters.state_code,
+                self.pipeline_parameters.metric_types,
+                self.pipeline_parameters.calculation_month_count,
                 self.metric_producer,
             )
         )

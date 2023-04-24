@@ -199,10 +199,10 @@ class UsIxCaseNoteExtractedEntitiesPipelineRunDelegate(
     def write_output(self, pipeline: beam.Pipeline) -> None:
         _ = (
             pipeline
-            | f"Write extracted text entities to {self.pipeline_job_args.output_dataset}.{self.table_id()}"
+            | f"Write extracted text entities to {self.pipeline_parameters.output}.{self.table_id()}"
             >> WriteToBigQuery(
                 output_table=self.table_id(),
-                output_dataset=self.pipeline_job_args.output_dataset,
+                output_dataset=self.pipeline_parameters.output,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE,
             )
         )

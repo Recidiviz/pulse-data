@@ -40,6 +40,7 @@ REQUIRED_PACKAGES = [
     "google-api-python-client",
     "google-cloud-monitoring",
     "google-cloud-secret-manager",
+    "google-cloud-storage",
     "html5lib",
     "lxml",
     "more-itertools",
@@ -62,5 +63,12 @@ setuptools.setup(
     version="1.0.0",
     install_requires=REQUIRED_PACKAGES,
     packages=setuptools.find_packages(),
-    package_data={"recidiviz.common": ["data_sets/*.csv"]},
+    package_data={
+        "recidiviz.common": ["data_sets/*.csv"],
+        "recidiviz.calculator.pipeline": [
+            "supplemental/template_metadata.json",
+            "metrics/template_metadata.json",
+            "normalization/template_metadata.json",
+        ],
+    },
 )

@@ -16,64 +16,26 @@
 # =============================================================================
 """Abstract class for all pipelines that operate on state entities."""
 import abc
-import argparse
-from typing import Any, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
+from typing import Dict, Generic, List, Type, TypeVar, Union
 
 import apache_beam as beam
 import attr
-from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from apache_beam.pvalue import PBegin
 
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
 )
+from recidiviz.calculator.pipeline.pipeline_parameters import PipelineParametersT
 from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
     ExtractDataForPipeline,
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
 )
-from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-    normalized_state_dataset_for_state_code,
-)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
-
-
-@attr.s(frozen=True)
-class PipelineJobArgs:
-    """Stores information about the arguments provided to trigger the pipeline job
-    being run."""
-
-    # The state_code of the current pipeline
-    state_code: str = attr.ib()
-
-    # The project the pipeline is running in
-    project_id: str = attr.ib()
-
-    # Which dataset to query from for the data input
-    input_dataset: str = attr.ib()
-
-    # Which dataset to query from for normalized data input
-    normalized_input_dataset: str = attr.ib()
-
-    # Which dataset in BigQuery to write output
-    output_dataset: str = attr.ib()
-
-    # Which dataset to query from for the reference views
-    reference_dataset: str = attr.ib()
-
-    # Options needed to create an apache-beam pipeline
-    apache_beam_pipeline_options: PipelineOptions = attr.ib()
-
-    # An optional set of person_ids. When present, the pipeline will only operate on
-    # data for these people and will not produce any output. Should be used for
-    # debugging purposes only.
-    person_id_filter_set: Optional[Set[int]] = attr.ib()
 
 
 @attr.s(frozen=True)
@@ -104,18 +66,17 @@ class PipelineConfig:
     state_specific_required_reference_tables: Dict[StateCode, List[str]] = attr.ib()
 
 
-PipelineJobArgsT = TypeVar("PipelineJobArgsT", bound=PipelineJobArgs)
 PipelineRunDelegateT = TypeVar("PipelineRunDelegateT", bound="PipelineRunDelegate")
 
 
-class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
+class PipelineRunDelegate(abc.ABC, Generic[PipelineParametersT]):
     """Base delegate interface required for running a pipeline."""
 
     def __init__(
         self,
-        pipeline_job_args: PipelineJobArgsT,
+        pipeline_parameters: PipelineParametersT,
     ) -> None:
-        self.pipeline_job_args = pipeline_job_args
+        self.pipeline_parameters = pipeline_parameters
         self._validate_pipeline_config()
 
     ##### VALIDATION #####
@@ -129,107 +90,17 @@ class PipelineRunDelegate(abc.ABC, Generic[PipelineJobArgsT]):
         cls: Type[PipelineRunDelegateT], argv: List[str]
     ) -> PipelineRunDelegateT:
         """Builds a PipelineRunDelegate from the provided arguments."""
-        parser: argparse.ArgumentParser = SplitSpacesArgumentParser()
-        cls.add_pipeline_job_args_to_parser(parser)
-
-        pipeline_job_args = cls._build_pipeline_job_args(parser, argv)
-
         return cls(
-            pipeline_job_args=pipeline_job_args,
-        )
-
-    @classmethod
-    def add_pipeline_job_args_to_parser(cls, parser: argparse.ArgumentParser) -> None:
-        """Adds argument configs to the |parser| for base pipeline args."""
-        parser.add_argument(
-            "--state_code",
-            dest="state_code",
-            required=True,
-            type=str,
-            help="The state_code to include in the calculations.",
-        )
-
-        parser.add_argument(
-            "--data_input",
-            type=str,
-            help="BigQuery dataset to query.",
-            default=STATE_BASE_DATASET,
-        )
-
-        parser.add_argument(
-            "--normalized_input",
-            type=str,
-            help="BigQuery dataset to query for normalized versions of entities.",
-            required=False,
-        )
-
-        parser.add_argument(
-            "--output",
-            type=str,
-            help="Output dataset to write results to. Pipelines must specify a default "
-            "via the default_output_dataset() function on the delegate.",
-            required=False,
-        )
-
-        parser.add_argument(
-            "--reference_view_input",
-            type=str,
-            help="BigQuery reference view dataset to query.",
-            default=REFERENCE_VIEWS_DATASET,
-        )
-
-        parser.add_argument(
-            "--person_filter_ids",
-            type=int,
-            nargs="+",
-            help="An optional list of DB person_id values. When present, the pipeline "
-            "will only calculate metrics for these people and will not output to BQ.",
+            pipeline_parameters=cls.parameters_type().parse_from_args(
+                argv=argv,
+                sandbox_pipeline=False,
+            )
         )
 
     @classmethod
     @abc.abstractmethod
-    def _build_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str]
-    ) -> PipelineJobArgsT:
-        """Builds the PipelineJobArgs object from the provided args."""
-
-    @classmethod
-    def _get_base_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str]
-    ) -> PipelineJobArgs:
-        (
-            known_args,
-            remaining_args,
-        ) = parser.parse_known_args(argv)
-
-        apache_beam_pipeline_options = PipelineOptions(remaining_args)
-        apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
-
-        if person_filter_ids := known_args.person_filter_ids:
-            person_id_filter_set = {int(person_id) for person_id in person_filter_ids}
-        else:
-            person_id_filter_set = None
-
-        return PipelineJobArgs(
-            state_code=known_args.state_code,
-            project_id=apache_beam_pipeline_options.get_all_options()["project"],
-            input_dataset=known_args.data_input,
-            normalized_input_dataset=known_args.normalized_input
-            or normalized_state_dataset_for_state_code(
-                StateCode((known_args.state_code))
-            ),
-            output_dataset=known_args.output
-            or cls.default_output_dataset(known_args.state_code),
-            reference_dataset=known_args.reference_view_input,
-            apache_beam_pipeline_options=apache_beam_pipeline_options,
-            person_id_filter_set=person_id_filter_set,
-        )
-
-    @classmethod
-    @abc.abstractmethod
-    def default_output_dataset(cls, state_code: str) -> str:
-        """The default output dataset for the pipeline job. Must be implemented by
-        subclasses."""
+    def parameters_type(cls) -> Type[PipelineParametersT]:
+        """Defines the PipelineParameters class needed for this PipelineRunDelegate."""
 
     ##### STATIC / CLASS CONFIGURATION #####
 
@@ -269,13 +140,21 @@ class BasePipeline:
         # successfully accessed.
         _ = schema.StatePerson()
 
-        pipeline_job_args = self.pipeline_run_delegate.pipeline_job_args
-        state_code = pipeline_job_args.state_code
-        person_id_filter_set = pipeline_job_args.person_id_filter_set
+        pipeline_parameters = self.pipeline_run_delegate.pipeline_parameters
+        state_code = pipeline_parameters.state_code
+        person_id_filter_set = (
+            {
+                int(person_id)
+                for person_id in pipeline_parameters.person_filter_ids.split(" ")
+            }
+            if pipeline_parameters.person_filter_ids
+            else None
+        )
 
-        with beam.Pipeline(
-            options=self.pipeline_run_delegate.pipeline_job_args.apache_beam_pipeline_options
-        ) as p:
+        options = pipeline_parameters.apache_beam_pipeline_options
+        if not options:
+            raise ValueError("Expected nonnull apache_beam_pipeline_options")
+        with beam.Pipeline(options=options) as p:
             required_reference_tables = (
                 self.pipeline_run_delegate.pipeline_config().required_reference_tables.copy()
             )
@@ -293,10 +172,10 @@ class BasePipeline:
             # Get all required entities and reference data
             pipeline_data = p | "Load required data" >> ExtractDataForPipeline(
                 state_code=state_code,
-                project_id=pipeline_job_args.project_id,
-                entities_dataset=pipeline_job_args.input_dataset,
-                normalized_entities_dataset=pipeline_job_args.normalized_input_dataset,
-                reference_dataset=pipeline_job_args.reference_dataset,
+                project_id=pipeline_parameters.project,
+                entities_dataset=pipeline_parameters.data_input,
+                normalized_entities_dataset=pipeline_parameters.normalized_input,
+                reference_dataset=pipeline_parameters.reference_view_input,
                 required_entity_classes=self.pipeline_run_delegate.pipeline_config().required_entities,
                 required_reference_tables=required_reference_tables,
                 required_state_based_reference_tables=required_state_based_reference_tables,
@@ -309,26 +188,3 @@ class BasePipeline:
             )
 
             self.pipeline_run_delegate.write_output(pipeline_output)
-
-
-class SplitSpacesArgumentParser(argparse.ArgumentParser):
-    """
-    If there are spaces in an argument, and that argument is for a list, this splits the spaces.
-    For example, if the argument was "ARG1 ARG2 ARG3", the SplitSpaces parser would parse
-    it to ["ARG1", "ARG2", "ARG3"]. The regular ArgumentParser would parse it incorrectly to a single
-    argument "ARG1 ARG2 ARG3".
-
-    This parser is needed because while a yaml config file can parse a list,
-    the metadata file for flex template jobs (template_metadat.json) must follow the format in
-    com.google.api.services.dataflow.model.TemplateMetadata, which only takes strings
-    (https://cloud.google.com/dataflow/docs/guides/templates/configuring-flex-templates).
-    """
-
-    def _get_values(self, action: argparse.Action, arg_strings: List[str]) -> Any:
-        if action.nargs not in [None, argparse.OPTIONAL]:
-            new_arg_strings = []
-            for arg_string in arg_strings:
-                new_arg_strings.extend(arg_string.split(" "))
-            arg_strings = new_arg_strings
-
-        return super()._get_values(action, arg_strings)

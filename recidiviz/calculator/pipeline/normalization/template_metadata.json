@@ -1,5 +1,5 @@
 {
-  "name": "Normalization",
+  "name": "normalization",
   "description": "Flex template for normalization pipeline",
   "parameters": [
     {

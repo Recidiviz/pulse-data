@@ -60,7 +60,11 @@ class ModuleCollectorMixin:
         for submodule_name in cls._get_submodule_names(
             base_module, submodule_name_prefix_filter
         ):
-            submodules.append(cls.get_relative_module(base_module, [submodule_name]))
+            try:
+                rel_module = cls.get_relative_module(base_module, [submodule_name])
+                submodules.append(rel_module)
+            except ModuleNotFoundError:
+                continue
 
         return submodules
 

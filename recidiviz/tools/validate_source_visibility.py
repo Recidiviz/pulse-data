@@ -236,8 +236,10 @@ def main() -> int:
             "recidiviz.big_query.big_query_utils",
             "recidiviz.big_query.big_query_view",
             "recidiviz.calculator",
+            "recidiviz.cloud_storage",
             "recidiviz.common",
             "recidiviz.persistence",
+            "recidiviz.tools",
             "recidiviz.utils",
         }
         if "metrics" in pipeline.__name__ or "normalization" in pipeline.__name__:
@@ -269,11 +271,14 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.dags",
+                "recidiviz.calculator.pipeline",
+                "recidiviz.calculator.query.state.dataset_config",
                 "recidiviz.cloud_functions.cloud_function_utils",
                 "recidiviz.cloud_storage",
                 "recidiviz.common.attr_validators",
                 "recidiviz.common.constants.states",
                 "recidiviz.metrics.export.products",
+                "recidiviz.tools",
                 "recidiviz.utils.environment",
                 "recidiviz.utils.yaml_dict",
             }

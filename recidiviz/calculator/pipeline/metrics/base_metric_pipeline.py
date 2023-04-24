@@ -16,13 +16,11 @@
 # =============================================================================
 """Classes for running all metric calculation pipelines."""
 import abc
-import argparse
 import logging
 from typing import (
     Any,
     Dict,
     Generator,
-    Generic,
     Iterable,
     List,
     Sequence,
@@ -33,9 +31,7 @@ from typing import (
 )
 
 import apache_beam as beam
-import attr
 from apache_beam.pvalue import AsList, PBegin
-from apache_beam.typehints import with_input_types, with_output_types
 from apache_beam.typehints.decorators import with_input_types, with_output_types
 
 from recidiviz.calculator.dataflow_config import (
@@ -44,18 +40,19 @@ from recidiviz.calculator.dataflow_config import (
 )
 from recidiviz.calculator.pipeline.base_pipeline import (
     PipelineConfig,
-    PipelineJobArgs,
     PipelineRunDelegate,
 )
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
+from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
+    MetricsPipelineParameters,
+)
 from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     PersonMetadata,
     RecidivizMetric,
     RecidivizMetricType,
-    RecidivizMetricTypeT,
     json_serializable_list_value_handler,
 )
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
@@ -71,7 +68,6 @@ from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
 )
 from recidiviz.calculator.pipeline.utils.execution_utils import (
     TableRow,
-    calculation_month_count_arg,
     get_job_id,
     person_and_kwargs_for_identifier,
 )
@@ -82,10 +78,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
 )
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
     StateSpecificDelegate,
-)
-from recidiviz.calculator.query.state.dataset_config import (
-    DATAFLOW_METRICS_DATASET,
-    STATIC_REFERENCE_TABLES_DATASET,
 )
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
@@ -113,28 +105,12 @@ def clear_job_id() -> None:
     _job_id = None
 
 
-@attr.s(frozen=True)
-class MetricPipelineJobArgs(Generic[RecidivizMetricTypeT], PipelineJobArgs):
-    """Stores information about the metric calculation pipeline job being run."""
-
-    # The name of the pipeline job
-    job_name: str = attr.ib()
-
-    # Which GCP region the job is being run in
-    region: str = attr.ib()
-
-    # Which dataset to query from for static reference tables
-    static_reference_dataset: str = attr.ib()
-
-    # Which metrics should included in the output of the pipeline
-    metric_inclusions: Dict[RecidivizMetricTypeT, bool] = attr.ib()
-
-    # How many months of output metrics should be written to BigQuery
-    calculation_month_count: int = attr.ib()
-
-
-class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
+class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
     """Delegate for running a metric pipeline."""
+
+    @classmethod
+    def parameters_type(cls) -> Type[MetricsPipelineParameters]:
+        return MetricsPipelineParameters
 
     @classmethod
     @abc.abstractmethod
@@ -156,109 +132,6 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
     def include_calculation_limit_args(cls) -> bool:
         """Whether or not to include the args relevant to limiting calculation metric
         output to a specific set of months. Should be overwritten by subclasses."""
-
-    @classmethod
-    def default_output_dataset(cls, state_code: str) -> str:
-        return DATAFLOW_METRICS_DATASET
-
-    @classmethod
-    def add_pipeline_job_args_to_parser(
-        cls,
-        parser: argparse.ArgumentParser,
-    ) -> None:
-        """Adds argument configs to the |parser| for the calculation pipeline args."""
-        super().add_pipeline_job_args_to_parser(parser)
-
-        parser.add_argument(
-            "--static_reference_input",
-            type=str,
-            help="BigQuery static reference table dataset to query.",
-            default=STATIC_REFERENCE_TABLES_DATASET,
-        )
-
-        metric_type_options: List[str] = cls._metric_type_values()
-        metric_type_options.append("ALL")
-
-        parser.add_argument(
-            "--metric_types",
-            dest="metric_types",
-            type=str,
-            nargs="+",
-            choices=metric_type_options,
-            help="A list of the types of metric to calculate.",
-            default={"ALL"},
-        )
-
-        if cls.include_calculation_limit_args():
-            # Only for pipelines that may receive these arguments
-            parser.add_argument(
-                "--calculation_month_count",
-                dest="calculation_month_count",
-                type=calculation_month_count_arg,
-                help="The number of months (including this one) to limit the monthly "
-                "calculation output to. If set to -1, does not limit the "
-                "calculations.",
-                default=-1,
-            )
-
-    @classmethod
-    def _build_pipeline_job_args(
-        cls, parser: argparse.ArgumentParser, argv: List[str]
-    ) -> MetricPipelineJobArgs:
-        """Builds the MetricPipelineJobArgs object from the provided args."""
-        base_pipeline_args = cls._get_base_pipeline_job_args(parser, argv)
-
-        # Re-parse the args to get the ones relevant to the CalculationPipelineJobArgs
-        (
-            known_args,
-            _,
-        ) = parser.parse_known_args(argv)
-
-        all_beam_options = (
-            base_pipeline_args.apache_beam_pipeline_options.get_all_options()
-        )
-
-        static_reference_dataset = known_args.static_reference_input
-
-        metric_types = set(known_args.metric_types)
-        metric_inclusions: Dict[RecidivizMetricType, bool] = {}
-
-        for metric_option in cls.metric_producer().metric_class.metric_type_cls:
-            if metric_option.value in metric_types or "ALL" in metric_types:
-                metric_inclusions[metric_option] = True
-                logging.info("Producing %s metrics", metric_option.value)
-            else:
-                metric_inclusions[metric_option] = False
-
-        calculation_month_count = int(
-            known_args.calculation_month_count
-            if cls.include_calculation_limit_args()
-            else ALL_MONTHS_IN_OUTPUT
-        )
-
-        month_count_string = (
-            str(calculation_month_count) if calculation_month_count != -1 else "all"
-        )
-        logging.info(
-            "Producing metric output for %s month(s) up to the current month",
-            month_count_string,
-        )
-
-        return MetricPipelineJobArgs(
-            state_code=base_pipeline_args.state_code,
-            project_id=base_pipeline_args.project_id,
-            input_dataset=base_pipeline_args.input_dataset,
-            normalized_input_dataset=base_pipeline_args.normalized_input_dataset,
-            reference_dataset=base_pipeline_args.reference_dataset,
-            output_dataset=base_pipeline_args.output_dataset,
-            apache_beam_pipeline_options=base_pipeline_args.apache_beam_pipeline_options,
-            static_reference_dataset=static_reference_dataset,
-            person_id_filter_set=base_pipeline_args.person_id_filter_set,
-            metric_inclusions=metric_inclusions,
-            region=str(all_beam_options["region"]),
-            job_name=str(all_beam_options["job_name"]),
-            calculation_month_count=calculation_month_count,
-        )
 
     def _validate_pipeline_config(self) -> None:
         """Validates the contents of the PipelineConfig."""
@@ -288,7 +161,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         into metrics. Returns thee metrics to be written to BigQuery."""
         person_events = pipeline_data | "Get Events" >> beam.ParDo(
             ClassifyResults(),
-            state_code=self.pipeline_job_args.state_code,
+            state_code=self.pipeline_parameters.state_code,
             identifier=self.identifier(),
             pipeline_config=self.pipeline_config(),
         )
@@ -297,10 +170,10 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             p
             | "Load state_race_ethnicity_population_counts"
             >> ImportTable(
-                project_id=self.pipeline_job_args.project_id,
-                dataset_id=self.pipeline_job_args.static_reference_dataset,
+                project_id=self.pipeline_parameters.project,
+                dataset_id=self.pipeline_parameters.static_reference_input,
                 table_id=STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
-                state_code_filter=self.pipeline_job_args.state_code,
+                state_code_filter=self.pipeline_parameters.state_code,
             )
         )
 
@@ -322,11 +195,19 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
             >> beam.ParDo(ExtractPersonEventsMetadata())
         )
 
-        # Return the metrics
-        return person_events_with_metadata | "Get Metrics" >> GetMetrics(
-            pipeline_job_args=self.pipeline_job_args,
+        metrics = person_events_with_metadata | "Produce Metrics" >> beam.ParDo(
+            ProduceMetrics(),
+            project_id=self.pipeline_parameters.project,
+            region=self.pipeline_parameters.region,
+            job_name=self.pipeline_parameters.job_name,
+            state_code=self.pipeline_parameters.state_code,
+            metric_types_str=self.pipeline_parameters.metric_types,
+            calculation_month_count=self.pipeline_parameters.calculation_month_count,
             metric_producer=self.metric_producer(),
         )
+
+        # Return the metrics
+        return metrics
 
     def write_output(self, pipeline: beam.Pipeline) -> None:
         """Takes the output from the pipeline and writes it into a
@@ -351,7 +232,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
                 writable_metrics, metric_type.value
             ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteToBigQuery(
                 output_table=table_id,
-                output_dataset=self.pipeline_job_args.output_dataset,
+                output_dataset=self.pipeline_parameters.output,
                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
             )
 
@@ -381,7 +262,12 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricPipelineJobArgs]):
         Union[Dict[int, IdentifierResult], List[IdentifierResult]],
         PersonMetadata,
     ],
-    beam.typehints.Optional[MetricPipelineJobArgs],
+    beam.typehints.Optional[str],
+    beam.typehints.Optional[str],
+    beam.typehints.Optional[str],
+    beam.typehints.Optional[str],
+    beam.typehints.Optional[str],
+    beam.typehints.Optional[int],
     beam.typehints.Optional[BaseMetricProducer],
 )
 @with_output_types(RecidivizMetric)
@@ -399,7 +285,12 @@ class ProduceMetrics(beam.DoFn):
             Union[Dict[int, IdentifierResult], List[IdentifierResult]],
             PersonMetadata,
         ],
-        pipeline_job_args: MetricPipelineJobArgs,
+        project_id: str,
+        region: str,
+        job_name: str,
+        state_code: str,
+        metric_types_str: str,
+        calculation_month_count: int,
         metric_producer: BaseMetricProducer,
     ) -> Generator[RecidivizMetric, None, None]:
         """Produces various metrics.
@@ -414,63 +305,41 @@ class ProduceMetrics(beam.DoFn):
         Yields:
             Each metric."""
         person, results, person_metadata = element
-
         pipeline_job_id = job_id(
-            project_id=pipeline_job_args.project_id,
-            region=pipeline_job_args.region,
-            job_name=pipeline_job_args.job_name,
+            project_id=project_id,
+            region=region,
+            job_name=job_name,
         )
 
         metrics_producer_delegates = (
             get_required_state_specific_metrics_producer_delegates(
-                pipeline_job_args.state_code,
+                state_code,
                 set(metric_producer.metrics_producer_delegate_classes.values()),
             )
         )
 
+        metric_types = set(metric_types_str.split(" "))
+        metric_inclusions: Dict[RecidivizMetricType, bool] = {}
+
+        for metric_option in metric_producer.metric_class.metric_type_cls:
+            if metric_option.value in metric_types or "ALL" in metric_types:
+                metric_inclusions[metric_option] = True
+                logging.info("Producing %s metrics", metric_option.value)
+            else:
+                metric_inclusions[metric_option] = False
+
         metrics = metric_producer.produce_metrics(
             person=person,
             identifier_results=results,
-            metric_inclusions=pipeline_job_args.metric_inclusions,
+            metric_inclusions=metric_inclusions,
             person_metadata=person_metadata,
             pipeline_job_id=pipeline_job_id,
-            calculation_month_count=pipeline_job_args.calculation_month_count,
+            calculation_month_count=calculation_month_count,
             metrics_producer_delegates=metrics_producer_delegates,
         )
 
         for metric in metrics:
             yield metric
-
-
-@with_input_types(
-    beam.typehints.Tuple[
-        entities.StatePerson,
-        Union[Dict[int, IdentifierResult], List[IdentifierResult]],
-        PersonMetadata,
-    ],
-)
-@with_output_types(RecidivizMetric)
-class GetMetrics(beam.PTransform):
-    """A PTransform that transforms a StatePerson and their corresponding events to
-    corresponding metrics."""
-
-    def __init__(
-        self,
-        pipeline_job_args: MetricPipelineJobArgs,
-        metric_producer: BaseMetricProducer,
-    ) -> None:
-        super().__init__()
-        self._pipeline_job_args = pipeline_job_args
-        self._metric_producer = metric_producer
-
-    def expand(self, input_or_inputs: List[Any]) -> List[RecidivizMetric]:
-        metrics = input_or_inputs | "Produce Metrics" >> beam.ParDo(
-            ProduceMetrics(),
-            self._pipeline_job_args,
-            self._metric_producer,
-        )
-
-        return metrics
 
 
 @with_input_types(
