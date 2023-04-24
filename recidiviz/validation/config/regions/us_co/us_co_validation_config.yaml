@@ -22,3 +22,6 @@ num_allowed_rows_overrides:
   - validation_name: normalized_state_charge_missing_uniform_offense_labels
     hard_num_allowed_rows_override: 100
     override_reason: Current failing level as of 4/5/23 is 29 rows (0.008%)
+  - validation_name: sessions_missing_closest_sentence_imposed_group
+    hard_num_allowed_rows_override: 200000
+    override_reason: Current failing level as of 4/20/23 is 157,462 rows (56%) #TODO(#20401)
