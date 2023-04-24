@@ -4,6 +4,17 @@ region_code: US_ME
 dev_mode: False
 exclusions: []
 max_allowed_error_overrides:
+  - validation_name: incarceration_population_person_level_external_comparison
+    hard_max_allowed_error_override: 0.04
+    override_reason: >-
+      P2 we generally seem to be overcounting by a bit, so not so worried that
+      we're missing people. TODO(#19918)
+  - validation_name: incarceration_population_by_state_by_date_justice_counts_comparison
+    hard_max_allowed_error_override: 0.1
+    override_reason: >-
+      P1 Small-ish error, and we're overestimating the population, so not super
+      concerned that we are missing people. But worth looking at soon, along
+      with the other incarceration related issues. TODO(#19917)
   - validation_name: supervision_termination_person_level_external_comparison
     hard_max_allowed_error_override: 0.65
     override_reason: >-
@@ -51,17 +62,18 @@ num_allowed_rows_overrides:
       supervision_population_person_level_external_comparison we do), though
       concerning.
   - validation_name: overlapping_incarceration_periods
-    hard_num_allowed_rows_override: 5
+    hard_num_allowed_rows_override: 50
     override_reason: >-
       P2 we currently use raw data for SCCP, so while relevant, it isn't used.
+      TODO(#19371)
   - validation_name: invalid_release_reasons_for_temporary_custody
     hard_num_allowed_rows_override: 5
     override_reason: >-
-      P2 Not relevant to currently launched products
+      P2 Not relevant to currently launched products TODO(#18831)
   - validation_name: invalid_admission_reasons_for_temporary_custody
-    hard_num_allowed_rows_override: 5
+    hard_num_allowed_rows_override: 50
     override_reason: >-
-      P2 Not relevant to currently launched products
+      P2 Not relevant to currently launched products. TODO(#18829)
   - validation_name: invalid_admission_reason_and_pfi
     hard_num_allowed_rows_override: 2100
     override_reason: >-
@@ -71,9 +83,9 @@ num_allowed_rows_overrides:
     override_reason: >-
       P2 Not relevant to currently launched products
   - validation_name: incarceration_admission_after_open_period
-    hard_num_allowed_rows_override: 5
+    hard_num_allowed_rows_override: 30
     override_reason: >-
-      P2 Not relevant to currently launched products
+      P2 Not relevant to currently launched products TODO(#19370)
   - validation_name: admission_pfi_pop_pfi_mismatch
     hard_num_allowed_rows_override: 20
     override_reason: >-
