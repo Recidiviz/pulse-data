@@ -62,6 +62,7 @@ WITH pending_violations_resulting_in_arrest AS (
   -- Violation resulted in an arrest
     AND v.Cis_4009_Toll_Violation_Cd = '60'
     AND Logical_Delete_Ind != 'Y'
+    AND v.Toll_Start_Date IS NOT NULL
   GROUP BY 1,2
 )
 
