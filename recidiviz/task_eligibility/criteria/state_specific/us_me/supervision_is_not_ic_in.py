@@ -46,6 +46,7 @@ WITH sup_period_curr_status AS (
     FROM `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period`
     WHERE state_code = 'US_ME'
         AND SPLIT(supervision_type_raw_text, '@@')[OFFSET(1)] = 'INTERSTATE COMPACT IN'
+        AND start_date != termination_date
 ),
 
 {create_sub_sessions_with_attributes('sup_period_curr_status')},
