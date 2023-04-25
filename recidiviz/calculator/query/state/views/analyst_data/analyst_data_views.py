@@ -21,11 +21,26 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state.views.analyst_data.agent_supervisor_preprocessed import (
     AGENT_SUPERVISOR_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.consecutive_payments_preprocessed import (
+    CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.early_discharge_sessions import (
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.fines_fees_sessions import (
+    FINES_FEES_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
+    INVOICES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
     OFFICER_EVENTS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.payments_preprocessed import (
+    PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.permanent_exemptions_preprocessed import (
+    PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.person_events import (
     PERSON_EVENTS_VIEW_BUILDER,
@@ -210,8 +225,23 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sentence_preprocessing import (
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_preprocessed import (
+    US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_fines_fees_sessions_preprocessed import (
+    US_TN_FINES_FEES_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_invoices_preprocessed import (
+    US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_overdue_for_discharge import (
     US_TN_OVERDUE_FOR_DISCHARGE_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_preprocessed import (
+    US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_permanent_exemptions_preprocessed import (
+    US_TN_PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
@@ -290,6 +320,16 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = (
         US_MO_PROGRAM_TRACKS_VIEW_BUILDER,
         US_MO_SENTENCING_DATES_PREPROCESSED_VIEW_BUILDER,
         PRIORITIZED_ELIGIBILITY,
+        US_TN_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+        US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
+        US_TN_INVOICES_PREPROCESSED_VIEW_BUILDER,
+        US_TN_FINES_FEES_SESSIONS_PREPROCESSED_VIEW_BUILDER,
+        INVOICES_PREPROCESSED_VIEW_BUILDER,
+        PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+        CONSECUTIVE_PAYMENTS_PREPROCESSED_VIEW_BUILDER,
+        US_TN_PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
+        PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
+        FINES_FEES_SESSIONS_VIEW_BUILDER,
     ]
     + SUPERVISION_UNNESTED_METRICS_PREPROCESSED_SESSIONS_VIEW_BUILDERS
     + SUPERVISION_UNNESTED_METRICS_VIEW_BUILDERS
