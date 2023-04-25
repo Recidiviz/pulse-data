@@ -15,17 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// this lets us add a `test` property to the config object for vitest
-/// <reference types="vitest" />
-
-import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vite";
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globalSetup: ["./globalTestSetup.ts"],
-    setupFiles: ["./testSetup.ts"],
-  },
-});
+export async function setup() {
+  // need to import this here so that it's properly available to worker threads
+  // see https://sharp.pixelplumbing.com/install#worker-threads
+  // and https://github.com/vitest-dev/vitest/issues/740#issuecomment-1254766751
+  await import("sharp");
+}

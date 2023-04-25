@@ -145,9 +145,13 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "18"
           cache: "yarn"
           cache-dependency-path: nodejs/asset-generation/yarn.lock
+      - name: Install fonts
+        run: |
+          cp src/fonts/* /usr/share/fonts/
+          fc-cache -fv
       - name: Yarn install
         run: yarn install --frozen-lockfile
       - name: Lint

@@ -15,17 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// this lets us add a `test` property to the config object for vitest
-/// <reference types="vitest" />
+import sharp from "sharp";
 
-import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vite";
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globalSetup: ["./globalTestSetup.ts"],
-    setupFiles: ["./testSetup.ts"],
-  },
-});
+export async function convertToImage(source: string) {
+  return sharp(Buffer.from(source)).png().toBuffer();
+}

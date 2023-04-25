@@ -15,17 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// this lets us add a `test` property to the config object for vitest
-/// <reference types="vitest" />
+import { expect, test } from "vitest";
 
-import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vite";
+import { convertToImage } from "./convertToImage";
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globalSetup: ["./globalTestSetup.ts"],
-    setupFiles: ["./testSetup.ts"],
-  },
+test("converts svg to png", async () => {
+  const imageData = await convertToImage(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><rect width="10" height="20" x="5" y="5"></rect></svg>`
+  );
+
+  expect(imageData).toMatchImageSnapshot();
 });

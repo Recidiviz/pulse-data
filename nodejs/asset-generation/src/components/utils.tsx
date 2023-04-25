@@ -20,6 +20,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ServerStyleSheet } from "styled-components";
 
 /**
+ * Given a string containing CSS rules, identifies any rem units and converts them to px,
+ * using 1rem=16px by default
+ */
+export function convertRemToPx(styles: string, remSize = 16) {
+  return styles.replace(
+    /(\d*\.?\d+)rem/g,
+    (match, num) => `${num * remSize}px`
+  );
+}
+
+/**
  * Renders the given component (which must render a root <svg>) to a markup string.
  * Any styles collected from Styled Components within the component tree will be injected
  * into the markup as a <style> tag.
@@ -45,7 +56,10 @@ export function renderToStaticSvg(Cmp: ComponentType): string {
   }
 
   // inject the styles into the final output
-  newOpeningTag += `<defs>${sheet.getStyleTags()}</defs>`;
+  newOpeningTag += `<defs>${
+    // most of our design-system styles use rem units but these are not supported by the image library
+    convertRemToPx(sheet.getStyleTags())
+  }</defs>`;
 
   return svgString.replace(openingTagPattern, newOpeningTag);
 }

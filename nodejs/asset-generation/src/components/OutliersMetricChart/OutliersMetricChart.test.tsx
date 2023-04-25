@@ -14,26 +14,36 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-// TODO(https://github.com/Recidiviz/recidiviz-dashboards/issues/3298): add SSR support to design-system and remove this
-// @vitest-environment jsdom
 
 import { expect, test } from "vitest";
 
+import { convertToImage } from "../../server/convertToImage";
 import { renderToStaticSvg } from "../utils";
 import { officerData } from "./fixtures";
 import { OutliersMetricChart } from "./OutliersMetricChart";
 
+function TestComponent() {
+  return (
+    <OutliersMetricChart
+      data={officerData}
+      width={570}
+      entityLabel="Officers"
+    />
+  );
+}
+
 test("rendering", () => {
-  function TestCmp() {
-    return (
-      <OutliersMetricChart
-        data={officerData}
-        width={570}
-        entityLabel="Officers"
-      />
-    );
-  }
-  expect(renderToStaticSvg(TestCmp)).toMatchFileSnapshot(
+  expect(renderToStaticSvg(TestComponent)).toMatchFileSnapshot(
     "./__snapshots__/OfficerChart.svg"
   );
+});
+
+test("image rendering", async () => {
+  expect(
+    await convertToImage(renderToStaticSvg(TestComponent))
+  ).toMatchImageSnapshot({
+    // Set a .5% failure threshold to account for differences between machines
+    failureThreshold: 0.005,
+    failureThresholdType: "percent",
+  });
 });
