@@ -37,9 +37,6 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.datafl
 from recidiviz.calculator.query.state.views.external_reference.external_reference_views import (
     EXTERNAL_REFERENCE_VIEW_BUILDERS,
 )
-from recidiviz.calculator.query.state.views.line_staff_validation.line_staff_validation_views import (
-    LINE_STAFF_VALIDATION_VIEW_BUILDERS,
-)
 from recidiviz.calculator.query.state.views.outliers.outliers_views import (
     OUTLIERS_VIEW_BUILDERS,
 )
@@ -79,7 +76,6 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(
             DASHBOARD_VIEW_BUILDERS,
             DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
             EXTERNAL_REFERENCE_VIEW_BUILDERS,
-            LINE_STAFF_VALIDATION_VIEW_BUILDERS,
             OVERDUE_DISCHARGE_ALERT_VIEW_BUILDERS,
             PATHWAYS_HELPER_VIEW_BUILDERS,
             PO_REPORT_VIEW_BUILDERS,
