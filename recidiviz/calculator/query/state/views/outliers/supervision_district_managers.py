@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A district or regional manager, usually a supervisor of supervisors who is associated with a supervision district"""
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
     staff_query_template,
@@ -30,16 +32,31 @@ SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION = """A district or regional manager, u
 
 
 SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE = f"""
-{staff_query_template(role="SUPERVISION_REGIONAL_MANAGER")}
+WITH 
+supervision_district_managers AS (
+    {staff_query_template(role="SUPERVISION_REGIONAL_MANAGER")}
+)
+
+SELECT 
+    {{columns}}
+FROM supervision_district_managers
 """
 
-SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
     view_id=SUPERVISION_DISTRICT_MANAGERS_VIEW_NAME,
     view_query_template=SUPERVISION_DISTRICT_MANAGERS_QUERY_TEMPLATE,
     description=SUPERVISION_DISTRICT_MANAGERS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
+    columns=[
+        "state_code",
+        "external_id",
+        "staff_id",
+        "full_name",
+        "email",
+        "location_external_id",
+    ],
 )
 
 if __name__ == "__main__":

@@ -16,7 +16,9 @@
 # =============================================================================
 """Aggregated metrics at the unit-level for supervision-related metrics"""
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
@@ -36,16 +38,32 @@ SUPERVISION_UNIT_METRICS_DESCRIPTION = (
 
 
 SUPERVISION_UNIT_METRICS_QUERY_TEMPLATE = f"""
-{supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_UNIT])}
+WITH 
+supervision_unit_metrics AS (
+    {supervision_metric_query_template(unit_of_analysis=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[MetricUnitOfAnalysisType.SUPERVISION_UNIT])}
+)
+
+SELECT 
+    {{columns}}
+FROM supervision_unit_metrics
 """
 
-SUPERVISION_UNIT_METRICS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_UNIT_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
     view_id=SUPERVISION_UNIT_METRICS_VIEW_NAME,
     view_query_template=SUPERVISION_UNIT_METRICS_QUERY_TEMPLATE,
     description=SUPERVISION_UNIT_METRICS_DESCRIPTION,
     aggregated_metrics_dataset=AGGREGATED_METRICS_DATASET_ID,
     should_materialize=True,
+    columns=[
+        "state_code",
+        "metric_id",
+        "metric_value",
+        "period",
+        "end_date",
+        "district",
+        "unit",
+    ],
 )
 
 if __name__ == "__main__":
