@@ -15,17 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// this lets us add a `test` property to the config object for vitest
-/// <reference types="vitest" />
+import { toMatchImageSnapshot } from "jest-image-snapshot";
+import { expect } from "vitest";
 
-import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vite";
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globalSetup: ["./globalTestSetup.ts"],
-    setupFiles: ["./testSetup.ts"],
-  },
-});
+expect.extend({ toMatchImageSnapshot });

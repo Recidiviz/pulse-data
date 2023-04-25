@@ -18,7 +18,33 @@
 import styled from "styled-components";
 import { describe, expect, test } from "vitest";
 
-import { renderToStaticSvg } from "./utils";
+import { convertRemToPx, renderToStaticSvg } from "./utils";
+
+describe("convertRemToPx", () => {
+  test("converts a property value", () => {
+    expect(
+      convertRemToPx(`<style>.abc123{font-size: 1.5rem;}</style>`)
+    ).toMatchInlineSnapshot('"<style>.abc123{font-size: 24px;}</style>"');
+  });
+  test("converts all property values", () => {
+    expect(
+      convertRemToPx(
+        `<style>.abc123{font-size: 1.5rem; padding: 0.4rem;}.xyz789{height:4rem;width: 8rem;}</style>`
+      )
+    ).toMatchInlineSnapshot(
+      '"<style>.abc123{font-size: 24px; padding: 6.4px;}.xyz789{height:64px;width: 128px;}</style>"'
+    );
+  });
+  test("converts part of a value", () => {
+    expect(
+      convertRemToPx(
+        `<style>.abc123{font:500 1rem/1.2 "Public Sans",sans-serif;padding:5px 1rem 0.5em;}</style>`
+      )
+    ).toMatchInlineSnapshot(
+      '"<style>.abc123{font:500 16px/1.2 \\"Public Sans\\",sans-serif;padding:5px 16px 0.5em;}</style>"'
+    );
+  });
+});
 
 describe("renderToStaticSvg", () => {
   test("renders the entire component tree to a string", () => {
