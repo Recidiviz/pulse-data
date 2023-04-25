@@ -57,12 +57,14 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
         self,
         program_assignments: List[StateProgramAssignment],
         normalization_delegate: StateSpecificProgramAssignmentNormalizationDelegate,
+        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     ) -> None:
         self._program_assignments = deepcopy(program_assignments)
         self.normalization_delegate = normalization_delegate
         self._normalized_program_assignments_and_additional_attributes: Optional[
             Tuple[List[StateProgramAssignment], AdditionalAttributesMap]
         ] = None
+        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
 
     def normalized_program_assignments_and_additional_attributes(
         self,
@@ -121,12 +123,11 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
         )
         return program_assignments
 
-    @classmethod
     def additional_attributes_map_for_normalized_pas(
-        cls,
+        self,
         program_assignments: List[StateProgramAssignment],
     ) -> AdditionalAttributesMap:
-
+        """Get additional attributes for each StateProgramAssignment."""
         shared_additional_attributes_map = (
             get_shared_additional_attributes_map_for_entities(
                 entities=program_assignments
@@ -142,10 +143,24 @@ class ProgramAssignmentNormalizationManager(EntityNormalizationManager):
                     "Expected non-null program_assignment_id values"
                     f"at this point. Found {program_assignment}."
                 )
+            referring_staff_id = None
+            if program_assignment.referring_staff_external_id:
+                if not program_assignment.referring_staff_external_id_type:
+                    raise ValueError(
+                        f"Found no referring_staff_external_id_type for referring_staff_external_id "
+                        f"{program_assignment.referring_staff_external_id} on person "
+                        f"{program_assignment.person}"
+                    )
+                referring_staff_id = self.staff_external_id_to_staff_id[
+                    (
+                        program_assignment.referring_staff_external_id,
+                        program_assignment.referring_staff_external_id_type,
+                    )
+                ]
             program_assignments_additional_attributes_map[
                 StateProgramAssignment.__name__
             ][program_assignment.program_assignment_id] = {
-                "referring_staff_id": None,
+                "referring_staff_id": referring_staff_id,
             }
         return merge_additional_attributes_maps(
             [

@@ -27,6 +27,9 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_period_normalization_manager import (
     SupervisionPeriodNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_supervision_period_normalization_delegate import (
     UsXxSupervisionNormalizationDelegate,
 )
@@ -35,6 +38,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodTerminationReason,
 )
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
+from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
+    STATE_PERSON_TO_STATE_STAFF_LIST,
+)
 
 
 class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
@@ -53,6 +59,9 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             incarceration_sentences=None,
             supervision_sentences=None,
             incarceration_periods=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -398,6 +407,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervising_officer_staff_external_id="EMP1",
+            supervising_officer_staff_external_id_type="US_XX_STAFF_ID",
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -407,6 +418,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             termination_date=datetime.date(2000, 1, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervising_officer_staff_external_id="EMP2",
+            supervising_officer_staff_external_id_type="US_XX_STAFF_ID",
         )
 
         supervision_periods = [supervision_period_1, supervision_period_2]
@@ -419,6 +432,9 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
             incarceration_sentences=None,
             supervision_sentences=None,
             incarceration_periods=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -430,8 +446,8 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
 
         expected_additional_attributes = {
             StateSupervisionPeriod.__name__: {
-                111: {"supervising_officer_staff_id": None, "sequence_num": 0},
-                222: {"supervising_officer_staff_id": None, "sequence_num": 1},
+                111: {"supervising_officer_staff_id": 10000, "sequence_num": 0},
+                222: {"supervising_officer_staff_id": 20000, "sequence_num": 1},
             }
         }
 
@@ -466,3 +482,57 @@ class TestSupervisionPeriodNormalizationManager(unittest.TestCase):
         )
 
         self.assertEqual([expected_period], normalized_sps)
+
+    def test_additional_attributes_supervision_staff_none(self) -> None:
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            supervision_period_id=111,
+            start_date=datetime.date(2000, 1, 1),
+            termination_date=datetime.date(2000, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.RELEASE_FROM_INCARCERATION,
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervising_officer_staff_external_id=None,
+            supervising_officer_staff_external_id_type=None,
+        )
+
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code="US_XX",
+            supervision_period_id=222,
+            start_date=datetime.date(2000, 1, 1),
+            termination_date=datetime.date(2000, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervising_officer_staff_external_id=None,
+            supervising_officer_staff_external_id_type=None,
+        )
+
+        supervision_periods = [supervision_period_1, supervision_period_2]
+
+        sp_normalization_manager = SupervisionPeriodNormalizationManager(
+            person_id=123,
+            supervision_periods=supervision_periods,
+            delegate=UsXxSupervisionNormalizationDelegate(),
+            earliest_death_date=None,
+            incarceration_sentences=None,
+            supervision_sentences=None,
+            incarceration_periods=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
+        )
+
+        (
+            _,
+            additional_attributes,
+        ) = (
+            sp_normalization_manager.normalized_supervision_periods_and_additional_attributes()
+        )
+
+        expected_additional_attributes = {
+            StateSupervisionPeriod.__name__: {
+                111: {"supervising_officer_staff_id": None, "sequence_num": 0},
+                222: {"supervising_officer_staff_id": None, "sequence_num": 1},
+            }
+        }
+
+        self.assertEqual(expected_additional_attributes, additional_attributes)
