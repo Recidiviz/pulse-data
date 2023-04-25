@@ -17,6 +17,8 @@
 """Helper SQL fragments that do standard queries against tables with "critical dates",
 such as eligibility dates, due dates, etc.
 """
+from typing import List, Optional
+
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     revert_nonnull_end_date_clause,
@@ -57,6 +59,7 @@ def critical_date_spans_cte() -> str:
 
 def critical_date_has_passed_spans_cte(
     meets_criteria_leading_window_days: int = 0,
+    attributes: Optional[List[str]] = None,
 ) -> str:
     """Returns a CTE that indicates the span of time where a particular critical date
     was set and comes on or before the current date. The
@@ -67,7 +70,23 @@ def critical_date_has_passed_spans_cte(
 
     There must be a CTE defined before this clause with the name |critical_date_spans|
     that has columns state_code (string), person_id (string), start_datetime (datetime),
-    end_datetime (datetime), critical_date (date)."""
+    end_datetime (datetime), critical_date (date).
+
+    Params:
+    ------
+    meets_criteria_leading_window_days : int
+        Modifier to move the start_date by a constant value to account, for example, for time before the critical date
+        where some criteria is met.
+
+    attributes : Optional[List[str]]
+        List of column names that will be passed through to the output CTE
+    """
+
+    if attributes:
+        attribute_str = ", ".join(attributes)
+    else:
+        attribute_str = ""
+
     return f"""
     /*
     Cast datetimes to dates, convert null dates to future dates, and create the
@@ -89,6 +108,7 @@ def critical_date_has_passed_spans_cte(
             )} AS critical_or_in_window_date,
             -- Maintain the original critical date for the final output
             critical_date,
+            {attribute_str}
         FROM critical_date_spans
     ),
     criteria_spans AS (
@@ -105,6 +125,7 @@ def critical_date_has_passed_spans_cte(
             LEAST(end_date, critical_or_in_window_date) AS end_date,
             FALSE AS critical_date_has_passed,
             critical_date,
+            {attribute_str}
         FROM critical_date_spans_no_nulls
         WHERE start_date < critical_or_in_window_date
         UNION ALL
@@ -120,6 +141,7 @@ def critical_date_has_passed_spans_cte(
             end_date,
             TRUE AS critical_date_has_passed,
             critical_date,
+            {attribute_str}
         FROM critical_date_spans_no_nulls
         WHERE critical_or_in_window_date < end_date
     ),
@@ -132,6 +154,7 @@ def critical_date_has_passed_spans_cte(
             {revert_nonnull_end_date_clause('end_date')} AS end_date,
             critical_date_has_passed,
             critical_date,
+            {attribute_str}
         FROM criteria_spans
     )"""
 

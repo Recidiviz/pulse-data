@@ -16,12 +16,14 @@
 # ============================================================================
 """Describes the spans of time when a TN client is not eligible due to being permanently rejected from
 compliant reporting."""
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,18 +31,57 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "US_TN_NOT_PERMANENTLY_REJECTED_FROM_COMPLIANT_REPORTING"
 
 _DESCRIPTION = """Describes the spans of time when a TN client is not eligible due to being permanently rejected from
-compliant reporting."""
+compliant reporting.
+"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(['9999-99-99','9999-99-99'] AS contact_code,
-                                  '9999-99-99' AS contact_code_date
-                            ))"""
+_QUERY_TEMPLATE = """
+    WITH cte AS 
+    (
+    /*
+    Use the ContactNoteType table to get the unique person/days in which a person had a contact note of type DEIJ
+    or DECR. Store these contact note type values as an array.
+    */
+    SELECT 
+        person_id,
+        "US_TN" AS state_code,
+        CAST(CAST(ContactNoteDateTime AS DATETIME) AS DATE) AS contact_date,
+        ARRAY_AGG(DISTINCT ContactNoteType ORDER BY ContactNoteType) AS contact_code
+    FROM `{project_id}.{raw_data_up_to_date_views_dataset}.ContactNoteType_latest` a
+    INNER JOIN `{project_id}.{normalized_state_dataset}.state_person_external_id` pei
+        ON a.OffenderID = pei.external_id
+        AND pei.state_code = 'US_TN'
+    WHERE ContactNoteType IN ('DEIJ','DECR')
+    GROUP BY 1,2,3
+    )
+    /*
+    Create sessions between contact_dates so that we can report the most recent contact that prevents a person from
+    being eligible
+    */
+    SELECT 
+        state_code,
+        person_id,
+        contact_date AS start_date,
+        LEAD(contact_date) OVER(PARTITION BY person_id ORDER BY contact_date) AS end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(
+            contact_code AS contact_code,
+            contact_date AS contact_code_date
+        )) AS reason     
+    FROM cte
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_TN,
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=_DESCRIPTION,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_TN,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        meets_criteria_default=True,
     )
 )
 
