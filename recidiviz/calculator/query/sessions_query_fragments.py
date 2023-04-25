@@ -231,6 +231,7 @@ def aggregate_adjacent_spans(
     SELECT
         {index_col_str},
         {session_id_output_name},
+        date_gap_id,
         MIN(start_date) AS start_date,
         {revert_nonnull_end_date_clause(f'MAX({end_date_field_name})')} AS {end_date_field_name},
         {aggregation_str}
@@ -239,7 +240,9 @@ def aggregate_adjacent_spans(
         SELECT 
             *,
             SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY {index_col_str}
-                ORDER BY start_date, {end_date_field_name}) AS {session_id_output_name}
+                ORDER BY start_date, {end_date_field_name}) AS {session_id_output_name},
+            SUM(IF(date_gap,1,0)) OVER(PARTITION BY {index_col_str}
+                ORDER BY start_date, {end_date_field_name}) AS date_gap_id
         FROM
             (
             SELECT
@@ -253,7 +256,7 @@ def aggregate_adjacent_spans(
             WINDOW w AS (PARTITION BY {index_col_str} ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})
             )
         )
-        GROUP BY {index_col_str}, {session_id_output_name}
+        GROUP BY {index_col_str}, {session_id_output_name}, date_gap_id
 """
 
 

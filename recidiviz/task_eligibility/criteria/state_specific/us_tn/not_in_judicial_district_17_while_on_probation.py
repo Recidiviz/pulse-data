@@ -14,33 +14,72 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a TN client is serving sentences in counties that allow compliant reporting"""
+"""Describes the spans of time when a TN client is serving sentences in counties that do not allow compliant reporting"""
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 _CRITERIA_NAME = "US_TN_NOT_IN_JUDICIAL_DISTRICT_17_WHILE_ON_PROBATION"
 
-_DESCRIPTION = """Describes the spans of time when a TN client is serving sentences in counties that allow
+_DESCRIPTION = """Describes the spans of time when a TN client is serving sentences in counties that do not allow
 compliant reporting. These means not being on probation in Judicial District 17.
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT(['9999-99-99','9999-99-99'] AS judicial_district,
-                                  '9999-99-99' AS sentence_type
-                            ))"""
+_QUERY_TEMPLATE = f"""
+    --TODO(#20497) Investigate discrepancies because of non-probation sentence types or probation sentence types with non-probation supervision types
+    WITH cte AS 
+    (
+    /*
+    Get all spans where a person is serving any sentence that is from judicial district 17.
+    */
+    SELECT DISTINCT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date_exclusive AS end_date,
+        sent.judicial_district,
+        sent.sentence_sub_type,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
+    UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
+    JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
+        USING (state_code, person_id, sentences_preprocessed_id)
+      WHERE span.state_code = 'US_TN'
+        AND sent.judicial_district = '17'
+        AND sent.sentence_sub_type = 'PROBATION'
+    )
+    ,
+    sessionized_cte AS 
+    (
+    {aggregate_adjacent_spans(table_name='cte',
+                       attribute=['judicial_district','sentence_sub_type'],
+                       end_date_field_name='end_date')}
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        FALSE meets_criteria,
+        TO_JSON(STRUCT(
+            judicial_district AS judicial_district,
+            sentence_sub_type AS sentence_type
+        )) AS reason
+    FROM sessionized_cte
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_TN,
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=_DESCRIPTION,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
     )
 )
 
