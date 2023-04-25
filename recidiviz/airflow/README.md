@@ -91,7 +91,7 @@ process.
 ## Testing DAGs in GCP
 
 To test DAGs in GCP, you will need to first upload all of your source code to the GCS
-bucket for the `experiment` Cloud Composer environment (you can see the GCS bucket by
+bucket for the `experiment` or `experiment-2` Cloud Composer environment (you can see the GCS bucket by
 clicking on DAGS folder). To do this, you must:
 
 First, exit the Airflow virtualenv and go back to the main root virtualenv. 
@@ -99,17 +99,29 @@ First, exit the Airflow virtualenv and go back to the main root virtualenv.
 Then, run the following script:
 
 ```
-python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer --dry-run False
+python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer --environment experiment --dry-run False
+```
+
+or
+```
+python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer --environment experiment-2 --dry-run False
 ```
 
 You can then refresh the appropriate DAG you're working on and trigger a test run.
+
+This script also allows you to specify individual files that you want to upload
+```
+python -m recidiviz.tools.airflow.copy_source_files_to_experiment_composer \
+       --dry-run False --environment experiment \
+       --files recidiviz/airflow/dags/calculation_dag.py recidiviz/airflow/dags/operators/recidiviz_dataflow_operator.py
+```
 
 ## Adding New Source Files
 
 If you're referencing new source files from pulse-data in Airflow or you need to add
 new paths within the `recidiviz/airflow` package, be sure to update the Terraform config
-under `recidiviz/tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml` 
-or `recidiviz/tools/deploy/terraform/config/cloud_composer_airflow_files_to_copy.yaml`. 
+under `recidiviz/tools/deploy/terraform/config/cloud_composer_source_files_to_copy.yaml`.
+DAG files will automatically get uploaded as part of the Terraform deploy (see `cloud-composer.tf`).
 The first entry is the innermost directory that doesn't have a wildcard. The second entry
 is the path that either is the file name or the wildcard pattern. See Testing for ways
 to then update the experiment bucket.
