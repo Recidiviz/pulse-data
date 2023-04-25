@@ -39,6 +39,7 @@ METRICS = [
     courts.judges_and_staff,
     courts.pretrial_releases,
     courts.criminal_case_filings,
+    courts.cases_disposed,
     courts.sentences_imposed,
     courts.new_offenses_while_on_pretrial_release,
     courts.cases_overturned,

@@ -160,6 +160,16 @@ class MisdemeanorOrInfractionCriminalCaseFilingsIncludesExcludes(enum.Enum):
     INFRACTION_CHARGE = "Cases with a leading infraction charge"
 
 
+# Cases Disposed
+class CasesDisposedIncludesExcludes(enum.Enum):
+    DIVERTED = "Criminal cases diverted from traditional case processing"
+    DISMISSED = "Criminal cases dismissed"
+    PLEA = "Criminal cases resolved by plea"
+    RESOLVED_TRIAL = "Criminal cases resolved at trial"
+    INACTIVE = "Cases marked as inactive, but not closed"
+    PENDING = "Pending criminal cases"
+
+
 # Cases Overturned on Appeal
 class CasesOverturnedOnAppealIncludesExcludes(enum.Enum):
     OVERTURNED = "Cases overturned on appeal"

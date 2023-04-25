@@ -16,10 +16,10 @@
 # =============================================================================
 """Metricfile objects used for Defense metrics."""
 
-from recidiviz.justice_counts.dimensions.common import CaseSeverityType
+from recidiviz.justice_counts.dimensions.common import CaseSeverityType, DispositionType
 from recidiviz.justice_counts.dimensions.defense import ExpenseType, FundingType
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
-from recidiviz.justice_counts.dimensions.prosecution import DispositionType, StaffType
+from recidiviz.justice_counts.dimensions.prosecution import StaffType
 from recidiviz.justice_counts.metricfile import MetricFile
 from recidiviz.justice_counts.metrics import defense
 

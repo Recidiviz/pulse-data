@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Defense."""
 
-from recidiviz.justice_counts.dimensions.common import CaseSeverityType
+from recidiviz.justice_counts.dimensions.common import CaseSeverityType, DispositionType
 from recidiviz.justice_counts.dimensions.defense import (
     CaseAppointedSeverityType,
     ExpenseType,
@@ -24,7 +24,6 @@ from recidiviz.justice_counts.dimensions.defense import (
     StaffType,
 )
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
-from recidiviz.justice_counts.dimensions.prosecution import DispositionType
 from recidiviz.justice_counts.includes_excludes.common import (
     CaseloadNumeratorIncludesExcludes,
     CasesDismissedIncludesExcludes,

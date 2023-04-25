@@ -35,6 +35,7 @@ from recidiviz.justice_counts.dimensions import (
 DIMENSIONS = [
     common.ExpenseType,
     common.CaseSeverityType,
+    common.DispositionType,
     offense.OffenseType,
     person.BiologicalSex,
     person.Race,
@@ -77,7 +78,6 @@ DIMENSIONS = [
     prosecution.DivertedCaseSeverityType,
     prosecution.ReferredCaseSeverityType,
     prosecution.CaseDeclinedSeverityType,
-    prosecution.DispositionType,
     prosecution.StaffType,
     prosecution.FundingType,
     prosecution.ProsecutedCaseSeverityType,

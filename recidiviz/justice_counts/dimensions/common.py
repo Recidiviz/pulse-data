@@ -43,3 +43,15 @@ class CaseSeverityType(DimensionBase, enum.Enum):
     @classmethod
     def dimension_identifier(cls) -> str:
         return "metric/severity/prosecution_defense/type"
+
+
+class DispositionType(DimensionBase, enum.Enum):
+    DISMISSAL = "Cases Disposed by Dismissal"
+    PLEA = "Cases Resolved by Plea"
+    TRIAL = "Cases Resolved at Trial"
+    OTHER = "Other Disposition"
+    UNKNOWN = "Unknown Disposition"
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return "metric/disposition/type"
