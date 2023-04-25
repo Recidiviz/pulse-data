@@ -26,12 +26,18 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
     StateSupervisionContactType,
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateSupervisionContact
+from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
+    STATE_PERSON_TO_STATE_STAFF_LIST,
+)
 
 
 class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
@@ -46,6 +52,9 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
     ) -> List[StateSupervisionContact]:
         entity_normalization_manager = SupervisionContactNormalizationManager(
             supervision_contacts=supervision_contacts,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -62,6 +71,9 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
     ) -> AdditionalAttributesMap:
         entity_normalization_manager = SupervisionContactNormalizationManager(
             supervision_contacts=supervision_contacts,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -103,6 +115,32 @@ class TestPrepareSupervisionContactsForCalculations(unittest.TestCase):
             contact_date=datetime.date(2018, 3, 6),
             contact_type=StateSupervisionContactType.DIRECT,
             status=StateSupervisionContactStatus.COMPLETED,
+            contacting_staff_external_id="EMP1",
+            contacting_staff_external_id_type="US_XX_STAFF_ID",
+        )
+        supervision_contacts = [sc]
+
+        additional_attributes = (
+            self._normalized_supervision_contacts_additional_attributes(
+                supervision_contacts=supervision_contacts
+            )
+        )
+
+        expected_attributes: AdditionalAttributesMap = {
+            StateSupervisionContact.__name__: {1: {"contacting_staff_id": 10000}}
+        }
+
+        self.assertDictEqual(additional_attributes, expected_attributes)
+
+    def test_supervision_contacts_additional_attributes_none(self) -> None:
+        sc = StateSupervisionContact.new_with_defaults(
+            supervision_contact_id=1,
+            state_code=StateCode.US_IX.value,
+            contact_date=datetime.date(2018, 3, 6),
+            contact_type=StateSupervisionContactType.DIRECT,
+            status=StateSupervisionContactStatus.COMPLETED,
+            contacting_staff_external_id=None,
+            contacting_staff_external_id_type=None,
         )
         supervision_contacts = [sc]
 

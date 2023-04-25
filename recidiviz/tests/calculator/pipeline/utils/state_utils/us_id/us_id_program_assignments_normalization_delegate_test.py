@@ -25,6 +25,9 @@ import attr
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_program_assignment_normalization_delegate import (
     UsIdProgramAssignmentNormalizationDelegate,
 )
@@ -33,6 +36,9 @@ from recidiviz.common.constants.state.state_program_assignment import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
+from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
+    STATE_PERSON_TO_STATE_STAFF_LIST,
+)
 
 
 class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
@@ -51,6 +57,9 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         entity_normalization_manager = ProgramAssignmentNormalizationManager(
             program_assignments=program_assignments,
             normalization_delegate=self.delegate,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
