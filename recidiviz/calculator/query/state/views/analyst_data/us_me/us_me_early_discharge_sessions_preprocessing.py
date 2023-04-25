@@ -41,14 +41,14 @@ US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION = (
 
 _DEATH_REGEX_FILTER = "|".join(["DIED", "PASSED", "DECEASED", "DEATH"])
 
+DISCHARGE_SESSION_DIFF_DAYS = "7"
+
 US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = f"""
 WITH early_terminations_me AS (
   SELECT 
     DISTINCT 
-      Cis_319_Term_Id, 
       Cis_400_Cis_100_Client_Id, 
       SAFE_CAST(LEFT(Comm_Override_Rel_Date, 10) AS DATE) AS ed_date,
-      Comm_Override_Notes_Tx
   FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_401_CRT_ORDER_HDR_latest` crt
   LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_400_CHARGE_latest` ch
     ON ch.Charge_Id = crt.Cis_400_Charge_Id 
@@ -56,6 +56,9 @@ WITH early_terminations_me AS (
   -- Only keep 'Early Termination' cases (code 119) and exclude Juvenile cases
   WHERE Cis_4009_Comm_Override_Rsn_Cd = '119'
     AND ch.Juvenile_Ind !='Y'
+    -- Some POs have filed ETs when the cause was death
+    AND NOT REGEXP_CONTAINS(UPPER(COALESCE(Comm_Override_Notes_Tx, '')), r'{_DEATH_REGEX_FILTER}')
+
 ),
 
 probation_sessions_me AS (
@@ -85,13 +88,14 @@ probation_sessions_ed AS (
   INNER JOIN probation_sessions_me ses
     ON ses.external_id = et.Cis_400_Cis_100_Client_Id
     AND ed_date BETWEEN start_date AND {nonnull_end_date_clause('ses.end_date_exclusive')}
-  -- Some POs have filed ETs when the cause was death
-  WHERE NOT REGEXP_CONTAINS(UPPER(COALESCE(Comm_Override_Notes_Tx, '')), r'{_DEATH_REGEX_FILTER}')
+  QUALIFY ROW_NUMBER() OVER(PARTITION BY ses.person_id, ses.session_id, ses.state_code
+    ORDER BY et.ed_date DESC) = 1
 )
 
 SELECT 
   *
 FROM probation_sessions_ed s
+WHERE discharge_to_session_end_days <= CAST({{discharge_session_diff_days}} AS INT64) 
 """
 
 US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -104,6 +108,7 @@ US_ME_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     ),
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    discharge_session_diff_days=DISCHARGE_SESSION_DIFF_DAYS,
     should_materialize=False,
 )
 

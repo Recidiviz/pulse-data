@@ -34,6 +34,8 @@ US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION = (
     """Michigan state-specific preprocessing for early discharge sessions"""
 )
 
+DISCHARGE_SESSION_DIFF_DAYS = "7"
+
 US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = f"""
     -- Probation: state_supervision_period.termination_reason_raw_text = “125” (Early Discharge from Probation)
     WITH us_mi_ed_probation AS (
@@ -83,6 +85,7 @@ US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = f"""
         ) = 1
     )
     SELECT * FROM us_mi_ed_sessions
+    WHERE discharge_to_session_end_days <= CAST({{discharge_session_diff_days}} AS INT64) 
 """
 
 US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -92,6 +95,7 @@ US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     view_query_template=US_MI_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    discharge_session_diff_days=DISCHARGE_SESSION_DIFF_DAYS,
     should_materialize=False,
 )
 

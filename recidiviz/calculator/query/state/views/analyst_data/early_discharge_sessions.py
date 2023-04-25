@@ -28,7 +28,6 @@ from recidiviz.utils.metadata import local_project_id_override
 # TODO(#10706): explore how many people/sessions we are dropping with this filter
 # Limit (in days) for difference between discharge date and session end date
 # in order for the discharge to be considered a valid early discharge
-DISCHARGE_SESSION_DIFF_DAYS = "7"
 
 # States currently supported
 SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME", "US_MI")
@@ -39,35 +38,28 @@ EARLY_DISCHARGE_SESSIONS_VIEW_DESCRIPTION = """View of compartment sessions with
 
 EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
     -- Join separate states datasets and restrict to successful early discharges
-    WITH all_ed_sessions AS (
-        SELECT *
-        FROM (
-            SELECT * FROM `{project_id}.{analyst_dataset}.us_id_early_discharge_sessions_preprocessing`
-            UNION ALL
-            SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
-            UNION ALL
-            SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
-            UNION ALL 
-            SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
-        )
-        -- Only count sessions ending in release where the discharge date is within a specified number of days of session end date
-        WHERE outflow_to_level_1 = 'LIBERTY'
-            AND discharge_to_session_end_days <= CAST({discharge_session_diff_days} AS INT64)
-    ),
-    -- Create a flag for early discharge
-    final_sessions AS (
-        SELECT
-            sessions.*,
-            ed.ed_date,
-            CASE WHEN ed.state_code IS NOT NULL THEN 1 ELSE 0 END AS early_discharge,
-        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
-        LEFT JOIN all_ed_sessions ed
-            USING (state_code, person_id, session_id)
-        -- Restrict final output to only include states where we have early discharge data
-        WHERE sessions.state_code IN ('{supported_states}')
+    WITH all_ed_sessions AS 
+    (
+    SELECT * FROM `{project_id}.{analyst_dataset}.us_id_early_discharge_sessions_preprocessing`
+    UNION ALL
+    SELECT * FROM `{project_id}.{analyst_dataset}.us_nd_early_discharge_sessions_preprocessing`
+    UNION ALL
+    SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
+    UNION ALL 
+    SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
     )
-
-    SELECT * FROM final_sessions
+    SELECT
+        sessions.person_id,
+        sessions.state_code,
+        sessions.session_id,
+        sessions.end_date_exclusive AS discharge_date,
+        IF(ed.state_code IS NOT NULL,1,0) AS early_discharge,
+    FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized` sessions
+    LEFT JOIN all_ed_sessions ed
+        USING (state_code, person_id, session_id)
+    WHERE sessions.compartment_level_1 IN ('SUPERVISION','SUPERVISION_OUT_OF_STATE')
+        AND sessions.outflow_to_level_1 = 'LIBERTY'
+        AND sessions.state_code IN ('{supported_states}')
 """
 
 EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -78,7 +70,6 @@ EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     analyst_dataset=ANALYST_VIEWS_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     supported_states="', '".join(SUPPORTED_STATES),
-    discharge_session_diff_days=DISCHARGE_SESSION_DIFF_DAYS,
     should_materialize=True,
 )
 

@@ -44,6 +44,8 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION = (
     """North Dakota state-specific preprocessing for early discharge sessions"""
 )
 
+DISCHARGE_SESSION_DIFF_DAYS = "7"
+
 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
     WITH us_nd_ed_deferred_sentence AS (
         SELECT
@@ -127,6 +129,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
     )
 
     SELECT * FROM us_nd_ed_sessions
+    WHERE discharge_to_session_end_days <= CAST({discharge_session_diff_days} AS INT64) 
 """
 
 US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -137,6 +140,7 @@ US_ND_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
     should_materialize=False,
+    discharge_session_diff_days=DISCHARGE_SESSION_DIFF_DAYS,
     us_nd_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ND, instance=DirectIngestInstance.PRIMARY
     ),

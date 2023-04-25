@@ -33,7 +33,7 @@ _QUERY_TEMPLATE = """
 SELECT
     state_code,
     person_id,
-    DATE_ADD(end_date, INTERVAL 1 DAY) AS completion_event_date,
+    discharge_date AS completion_event_date,
 FROM `{project_id}.{analyst_data_dataset}.early_discharge_sessions_materialized`
 WHERE early_discharge = 1
 """
