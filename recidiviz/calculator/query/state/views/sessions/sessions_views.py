@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -98,6 +98,9 @@ from recidiviz.calculator.query.state.views.sessions.incarceration_super_session
 )
 from recidiviz.calculator.query.state.views.sessions.location_sessions import (
     LOCATION_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_sessions import (
+    PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.person_age_sessions import (
     PERSON_AGE_SESSIONS_VIEW_BUILDER,
@@ -237,6 +240,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_pr
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_judicial_district_sessions import (
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_sessions import (
+    US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_sentence_summary import (
     US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
 )
@@ -281,6 +287,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     LOCATION_SESSIONS_VIEW_BUILDER,
+    PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     PERSON_AGE_SESSIONS_VIEW_BUILDER,
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
     REINCARCERATION_SESSIONS_FROM_SESSIONS_VIEW_BUILDER,
@@ -319,6 +326,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
+    US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
     SENTENCE_RELATIONSHIP_VIEW_BUILDER,
