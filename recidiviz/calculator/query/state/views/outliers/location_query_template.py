@@ -15,6 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """Helpers for querying reference_views.location_metadata"""
+from recidiviz.calculator.query.bq_utils import list_to_query_string
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 
 
 def location_query_template(
@@ -33,9 +37,10 @@ def location_query_template(
     )
     
     SELECT 
-        DISTINCT {location}_id AS external_id, {location}_name AS name,
-        state_code,
-        {parent_id} AS parent_id,
+        DISTINCT {location}_id AS external_id, 
+        {location}_name AS name,
+        state_code, {f"{parent_id}," if parent_id != "state_code" else ""}
     FROM location_metadata
     WHERE {location}_id IS NOT NULL
+        AND state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)}) 
     """

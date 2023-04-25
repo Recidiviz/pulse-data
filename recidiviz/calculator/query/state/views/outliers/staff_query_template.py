@@ -19,8 +19,9 @@ from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
     today_between_start_date_and_nullable_end_date_exclusive_clause,
 )
-
-OUTLIERS_STATES = ["US_PA"]
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 
 
 def staff_query_template(role: str) -> str:
@@ -46,7 +47,7 @@ INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_location_per
   USING (state_code, staff_id)
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_role_period` role
   USING (state_code, staff_id)
-WHERE staff.state_code IN ({list_to_query_string(OUTLIERS_STATES, quoted=True)}) 
+WHERE staff.state_code IN ({list_to_query_string(get_outliers_enabled_states(), quoted=True)}) 
   AND {today_between_start_date_and_nullable_end_date_exclusive_clause("location.start_date", "location.end_date")}
   AND {today_between_start_date_and_nullable_end_date_exclusive_clause("role.start_date", "role.end_date")}
   AND role.role_subtype = '{role}'
