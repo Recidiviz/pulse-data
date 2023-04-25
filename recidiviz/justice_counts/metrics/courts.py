@@ -16,7 +16,7 @@
 # =============================================================================
 """Defines all Justice Counts metrics for Courts and Pretrial."""
 
-from recidiviz.justice_counts.dimensions.common import ExpenseType
+from recidiviz.justice_counts.dimensions.common import DispositionType, ExpenseType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
     FundingType,
@@ -26,12 +26,16 @@ from recidiviz.justice_counts.dimensions.courts import (
 )
 from recidiviz.justice_counts.dimensions.person import BiologicalSex, RaceAndEthnicity
 from recidiviz.justice_counts.includes_excludes.common import (
+    CasesDismissedIncludesExcludes,
+    CasesResolvedAtTrialIncludesExcludes,
+    CasesResolvedByPleaIncludesExcludes,
     CountyOrMunicipalAppropriationIncludesExcludes,
     GrantsIncludesExcludes,
     StaffIncludesExcludes,
     StateAppropriationIncludesExcludes,
 )
 from recidiviz.justice_counts.includes_excludes.courts import (
+    CasesDisposedIncludesExcludes,
     CasesOverturnedOnAppealIncludesExcludes,
     CommunitySupervisionOnlySentencesIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
@@ -498,6 +502,50 @@ criminal_case_filings = MetricDefinition(
                 CaseSeverityType.MISDEMEANOR: "The number of criminal cases filed with the court in which the leading charge was for a misdemeanor offense.",
                 CaseSeverityType.OTHER: "The number of criminal cases filed with the court in which the leading charge was not for a felony or misdemeanor or infraction offense.",
                 CaseSeverityType.UNKNOWN: "The number of criminal cases filed with the court in which the leading charge was of unknown severity.",
+            },
+        )
+    ],
+)
+
+
+cases_disposed = MetricDefinition(
+    system=System.COURTS_AND_PRETRIAL,
+    metric_type=MetricType.CASES_DISPOSED,
+    category=MetricCategory.POPULATIONS,
+    display_name="Cases Disposed",
+    description="The number of criminal cases closed with the court.",
+    measurement_type=MeasurementType.DELTA,
+    reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=[
+        IncludesExcludesSet(
+            members=CasesDisposedIncludesExcludes,
+            excluded_set={
+                CasesDisposedIncludesExcludes.INACTIVE,
+                CasesDisposedIncludesExcludes.PENDING,
+            },
+        )
+    ],
+    aggregated_dimensions=[
+        AggregatedDimension(
+            dimension=DispositionType,
+            required=False,
+            dimension_to_includes_excludes={
+                DispositionType.DISMISSAL: [
+                    IncludesExcludesSet(members=CasesDismissedIncludesExcludes),
+                ],
+                DispositionType.PLEA: [
+                    IncludesExcludesSet(members=CasesResolvedByPleaIncludesExcludes),
+                ],
+                DispositionType.TRIAL: [
+                    IncludesExcludesSet(members=CasesResolvedAtTrialIncludesExcludes),
+                ],
+            },
+            dimension_to_description={
+                DispositionType.DISMISSAL: "The number of criminal cases dismissed after filing and closed with the court.",
+                DispositionType.PLEA: "The number of criminal cases resolved by plea and closed with the court.",
+                DispositionType.TRIAL: "The number of criminal cases resolved by trial and closed with the court.",
+                DispositionType.OTHER: "The number of criminal cases disposed closed with the court that were not dismissed, resolved by plea, or resolved at trial but disposed by another means.",
+                DispositionType.UNKNOWN: "The number of criminal cases closed with the court for which the disposition method is unknown.",
             },
         )
     ],

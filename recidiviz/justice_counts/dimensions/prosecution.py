@@ -68,18 +68,6 @@ class DivertedCaseSeverityType(DimensionBase, enum.Enum):
         return "metric/severity/diverted/prosecution/type"
 
 
-class DispositionType(DimensionBase, enum.Enum):
-    DISMISSAL = "Cases Disposed by Dismissal"
-    PLEA = "Cases Resolved by Plea"
-    TRIAL = "Cases Resolved at Trial"
-    OTHER = "Other Disposition"
-    UNKNOWN = "Unknown Disposition"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/disposition/type"
-
-
 class FundingType(DimensionBase, enum.Enum):
     STATE_APPROPRIATIONS = "State Appropriations"
     COUNTY_OR_MUNICIPAL_APPROPRIATIONS = "County or Municipal Appropriations"

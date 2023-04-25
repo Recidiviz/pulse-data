@@ -16,7 +16,7 @@
 # =============================================================================
 """Metricfile objects used for Courts metrics."""
 
-from recidiviz.justice_counts.dimensions.common import ExpenseType
+from recidiviz.justice_counts.dimensions.common import DispositionType, ExpenseType
 from recidiviz.justice_counts.dimensions.courts import (
     CaseSeverityType,
     FundingType,
@@ -68,6 +68,16 @@ COURTS_METRIC_FILES = [
         definition=courts.pretrial_releases,
         disaggregation=ReleaseType,
         disaggregation_column_name="release_type",
+    ),
+    MetricFile(
+        canonical_filename="cases_disposed",
+        definition=courts.cases_disposed,
+    ),
+    MetricFile(
+        canonical_filename="cases_disposed_by_type",
+        definition=courts.cases_disposed,
+        disaggregation=DispositionType,
+        disaggregation_column_name="disposition_type",
     ),
     MetricFile(
         canonical_filename="sentences_imposed",
