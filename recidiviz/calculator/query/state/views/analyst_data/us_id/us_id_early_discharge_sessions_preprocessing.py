@@ -33,6 +33,8 @@ US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_DESCRIPTION = (
     """Idaho state-specific preprocessing for early discharge sessions"""
 )
 
+DISCHARGE_SESSION_DIFF_DAYS = "7"
+
 US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
     -- Probation: SupervisionPeriod.termination_reason = 'DISCHARGE'
     WITH us_id_ed_probation AS (
@@ -84,6 +86,7 @@ US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE = """
     )
 
     SELECT * FROM us_id_ed_sessions
+    WHERE discharge_to_session_end_days <= CAST({discharge_session_diff_days} AS INT64) 
 """
 
 US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -93,6 +96,7 @@ US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_VIEW_BUILDER = SimpleBigQueryViewBu
     view_query_template=US_ID_EARLY_DISCHARGE_SESSIONS_PREPROCESSING_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
+    discharge_session_diff_days=DISCHARGE_SESSION_DIFF_DAYS,
     should_materialize=False,
 )
 

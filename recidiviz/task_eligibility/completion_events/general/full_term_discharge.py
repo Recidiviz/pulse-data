@@ -31,11 +31,12 @@ _QUERY_TEMPLATE = """
 SELECT
     state_code,
     person_id,
-    DATE_ADD(end_date, INTERVAL 1 DAY) AS completion_event_date,
+    discharge_date AS completion_event_date,
 FROM `{project_id}.{analyst_data_dataset}.early_discharge_sessions_materialized`
+JOIN `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+    USING(person_id, state_code, session_id)
 WHERE early_discharge = 0
-    AND compartment_level_1 = "SUPERVISION"
-    AND outflow_to_level_1 = "LIBERTY"
+    AND compartment_level_1 != 'SUPERVISION_OUT_OF_STATE'
 """
 
 VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
@@ -44,6 +45,7 @@ VIEW_BUILDER: StateAgnosticTaskCompletionEventBigQueryViewBuilder = (
         description=_DESCRIPTION,
         completion_event_query_template=_QUERY_TEMPLATE,
         analyst_data_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+        sessions_dataset=dataset_config.SESSIONS_DATASET,
     )
 )
 
