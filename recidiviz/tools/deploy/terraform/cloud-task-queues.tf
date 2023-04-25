@@ -112,3 +112,13 @@ module "workflows-external-system-requests-queue" {
   max_retry_attempts        = 1
 }
 
+# Queue used to process tasks that import data into the outliers DB.
+module "outliers-db-import-queue" {
+  source = "./modules/base-task-queue"
+
+  queue_name = "outliers-db-import"
+  region     = var.app_engine_region
+  # Use the default of 1 concurrent dispatch because only one SQL operation can run on an instance
+  # at a time.
+}
+
