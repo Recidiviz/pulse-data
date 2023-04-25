@@ -18,6 +18,7 @@ input_columns:
   - BS_PD
   - BS_DO
   - BS_COD
+  - BS_CRC
   - BU_SF
   - BU_SBY
   - BU_SBM
@@ -215,3 +216,4 @@ output:
                     $function: us_mo_custom_parsers.set_charge_is_violent_from_ncic
                     $args:
                       ncic_code: BS_NCI
+                judicial_district_code: BS_CRC

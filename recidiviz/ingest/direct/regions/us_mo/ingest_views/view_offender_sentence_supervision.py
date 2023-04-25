@@ -328,10 +328,12 @@ VIEW_QUERY_TEMPLATE = f"""
         full_supervision_sentence_info.BS_PD,
         full_supervision_sentence_info.BS_DO, 
         full_supervision_sentence_info.BS_COD, 
+        full_supervision_sentence_info.BS_CRC,
         full_supervision_sentence_info.BU_SF,
         full_supervision_sentence_info.BU_SBY,
         full_supervision_sentence_info.BU_SBM,
         full_supervision_sentence_info.BU_SBD,
+
 
         most_recent_fso_and_status_for_sentence.SENTENCE_TYPE,
         shock_sentence.SENT_FLAG, 
