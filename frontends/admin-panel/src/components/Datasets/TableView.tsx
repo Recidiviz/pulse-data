@@ -21,6 +21,7 @@ import { fetchTableNonNullCountsByColumn } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
 import MetadataDataset from "../../models/MetadataDatasets";
 import * as DatasetMetadata from "../../navigation/DatasetMetadata";
+import { MetadataAPIResult } from "../../types";
 import MetadataTable from "../MetadataTable";
 import DatasetsHeader from "./DatasetsHeader";
 

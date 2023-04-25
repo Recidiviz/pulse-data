@@ -15,8 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Button, Form, Input, Popconfirm, Select } from "antd";
-import * as React from "react";
 import { useState } from "react";
+import {
+  StateRolePermissionsResponse,
+  StateUserForm,
+  StateUserPermissionsResponse,
+} from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
 import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
@@ -31,7 +35,7 @@ export const EditUserForm = ({
   stateRoleData,
 }: {
   editVisible: boolean;
-  editOnCreate: (arg0: StateUserPermissionsRequest) => Promise<void>;
+  editOnCreate: (arg0: StateUserForm) => Promise<void>;
   editOnCancel: () => void;
   onRevokeAccess: (reason: string) => Promise<void>;
   selectedUsers: StateUserPermissionsResponse[];
@@ -62,7 +66,7 @@ export const EditUserForm = ({
     editOnCancel();
   };
   const handleEdit = () => {
-    validateAndFocus<StateUserPermissionsRequest>(form, (values) => {
+    validateAndFocus<StateUserForm>(form, (values) => {
       form.resetFields();
       showPermissions(false);
       editOnCreate(values);
@@ -70,7 +74,7 @@ export const EditUserForm = ({
   };
 
   const handleRevokeAccess = () => {
-    validateAndFocus<StateUserPermissionsRequest>(form, (values) => {
+    validateAndFocus<StateUserForm>(form, (values) => {
       form.resetFields();
       showPermissions(false);
       onRevokeAccess(values.reason);
@@ -107,6 +111,7 @@ export const EditUserForm = ({
           Edit
         </Button>,
       ]}
+      width={700}
     >
       <p>
         <span style={{ fontWeight: "bold" }}>
@@ -151,7 +156,7 @@ export const EditUserForm = ({
             <Option value={false}>Delete custom permissions</Option>
           </Select>
         </Form.Item>
-        <CustomPermissionsPanel hidePermissions={hidePermissions} />
+        <CustomPermissionsPanel hidePermissions={hidePermissions} form={form} />
       </Form>
     </DraggableModal>
   );

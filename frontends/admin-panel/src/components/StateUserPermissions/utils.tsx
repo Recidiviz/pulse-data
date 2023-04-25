@@ -14,36 +14,46 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Button, FormInstance, Input, Space, Typography } from "antd";
-import * as React from "react";
-import { ColumnType, FilterDropdownProps } from "antd/lib/table/interface";
 import { SearchOutlined } from "@ant-design/icons";
-import { Routes } from "../constants";
+import { Button, FormInstance, Input, Space, Typography } from "antd";
+import { ColumnType, FilterDropdownProps } from "antd/lib/table/interface";
+import {
+  FeatureVariants,
+  Routes,
+  StateRolePermissionsResponse,
+  StateUserForm,
+  StateUserPermissionsResponse,
+} from "../../types";
+import { ROUTES_PERMISSIONS_LABELS } from "../constants";
 
-export const updatePermissionsObject = (
-  existingRoutes: Routes,
-  updatedRoutes: Partial<StateUserPermissionsResponse>,
-  validPermissions: Record<string, string>
-): Routes | undefined => {
-  const newRoutes = Object.entries(updatedRoutes).reduce(
+export function updatePermissionsObject(
+  existing: Partial<Routes>,
+  updated: Partial<Routes>
+): Partial<Routes> | undefined;
+
+export function updatePermissionsObject(
+  existing: Partial<FeatureVariants>,
+  updated: Partial<FeatureVariants>
+): Partial<FeatureVariants> | undefined;
+
+export function updatePermissionsObject(
+  existing: Partial<Routes> | Partial<FeatureVariants>,
+  updated: Partial<Routes> | Partial<FeatureVariants>
+): Partial<Routes> | Partial<FeatureVariants> | undefined {
+  const newPermission = Object.entries(updated).reduce(
     (permissions, [permissionType, permissionValue]) => {
-      if (
-        Object.keys(validPermissions).includes(permissionType) &&
-        permissionValue !== undefined
-      ) {
+      if (permissionValue !== undefined) {
         return {
           ...permissions,
-          // If the permission type is a route or feature variant (requirement of this logic branch),
-          // the value will be a boolean so typecasting is safe
-          [permissionType]: permissionValue as boolean,
+          [permissionType]: permissionValue,
         };
       }
       return { ...permissions };
     },
-    existingRoutes
+    existing
   );
-  return Object.keys(newRoutes).length > 0 ? newRoutes : undefined;
-};
+  return Object.keys(newPermission).length > 0 ? newPermission : undefined;
+}
 
 export const checkResponse = async (response: Response): Promise<void> => {
   if (!response.ok) {
@@ -271,6 +281,7 @@ export const getPermissionsTableColumns = (
                 JSON.stringify(role?.routes) === JSON.stringify(record.routes)
                   ? "none"
                   : "yellow",
+              whiteSpace: "pre",
             },
           },
           children: formatText(
@@ -287,7 +298,7 @@ export const getPermissionsTableColumns = (
       width: 350,
       ...getColumnSearchProps("featureVariants"),
       render: (
-        text: Record<string, unknown>,
+        text: Record<string, string>,
         record: StateUserPermissionsResponse
       ) => {
         const role = stateRoleData.find(
@@ -301,12 +312,10 @@ export const getPermissionsTableColumns = (
                 JSON.stringify(record.featureVariants)
                   ? "none"
                   : "yellow",
+              whiteSpace: "pre",
             },
           },
-          children: formatText(
-            JSON.stringify(text, null, "\t").slice(2, -2),
-            record
-          ),
+          children: formatFeatureVariants(text),
         };
       },
     },
@@ -406,4 +415,42 @@ export const getPermissionsTableColumns = (
       },
     },
   ];
+};
+
+export const aggregateFormPermissionResults = (
+  formResults: Partial<StateUserForm>
+): {
+  routes: Partial<Routes>;
+  featureVariants: Partial<FeatureVariants>;
+} => {
+  const routes = Object.fromEntries(
+    Object.keys(ROUTES_PERMISSIONS_LABELS)
+      .filter((key) => key in formResults)
+      .map((key) => [key, formResults[key as keyof StateUserForm]])
+  ) as Partial<Routes>;
+  const featureVariants = formResults.featureVariantName
+    ? {
+        [formResults.featureVariantName]: formResults.featureVariantValue,
+      }
+    : {};
+  return { routes, featureVariants };
+};
+
+export const formatFeatureVariants = (
+  text: Record<string, string | boolean>
+): string => {
+  if (!text) return "";
+  return Object.keys(text)
+    .sort()
+    .map((fvName) => {
+      const rawVariant = text[fvName];
+      const variant =
+        typeof rawVariant === "string" ? JSON.parse(rawVariant) : rawVariant;
+      const value =
+        !variant || variant.activeDate === undefined
+          ? !!variant
+          : variant.activeDate;
+      return `${fvName}: ${value}`;
+    })
+    .join("\n");
 };

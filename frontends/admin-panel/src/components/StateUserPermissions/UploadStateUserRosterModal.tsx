@@ -17,6 +17,7 @@
 import { useState } from "react";
 import UploadRoster from "./UploadRoster";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import { StateRolePermissionsResponse } from "../../types";
 
 export const UploadStateUserRosterModal = ({
   visible,

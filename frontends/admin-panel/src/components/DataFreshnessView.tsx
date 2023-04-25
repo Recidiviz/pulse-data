@@ -19,6 +19,7 @@ import { ColumnsType } from "antd/lib/table";
 import * as React from "react";
 import { fetchDataFreshness } from "../AdminPanelAPI";
 import { useFetchedDataJSON } from "../hooks";
+import { DataFreshnessResult } from "../types";
 import { optionalStringSort } from "./Utilities/GeneralUtilities";
 
 const DataFreshnessView = (): JSX.Element => {

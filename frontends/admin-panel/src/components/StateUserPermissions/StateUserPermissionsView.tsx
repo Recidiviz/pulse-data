@@ -28,19 +28,22 @@ import {
 import { getStateRoleDefaultPermissions } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
-  FEATURE_VARIANTS_LABELS,
-  ROUTES_PERMISSIONS_LABELS,
-} from "../constants";
-import {
-  checkResponse,
-  getPermissionsTableColumns,
-  updatePermissionsObject,
-} from "./utils";
+  AddUserRequest,
+  StateRolePermissionsResponse,
+  StateUserForm,
+  StateUserPermissionsResponse,
+} from "../../types";
 import { AddUserForm } from "./AddUserForm";
 import { EditUserForm } from "./EditUsersForm";
 import { CreateEnableUserForm } from "./EnableUserForm";
 import { ReasonsLogButton } from "./ReasonsLogButton";
 import { UploadStateUserRosterModal } from "./UploadStateUserRosterModal";
+import {
+  aggregateFormPermissionResults,
+  checkResponse,
+  getPermissionsTableColumns,
+  updatePermissionsObject,
+} from "./utils";
 
 const StateUserPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -150,9 +153,8 @@ const StateUserPermissionsView = (): JSX.Element => {
     useCustomPermissions,
     reason,
     ...rest
-  }: StateUserPermissionsRequest) => {
+  }: StateUserForm) => {
     const results: Promise<unknown>[] = [];
-
     selectedRows.forEach((row: StateUserPermissionsResponse) => {
       const editRow = async () => {
         // update user info
@@ -179,16 +181,14 @@ const StateUserPermissionsView = (): JSX.Element => {
           await checkResponse(deletedPermissions);
         }
 
+        const { routes, featureVariants } =
+          aggregateFormPermissionResults(rest);
+
         // update user's custom permissions
-        const newRoutes = updatePermissionsObject(
-          row.routes,
-          rest,
-          ROUTES_PERMISSIONS_LABELS
-        );
+        const newRoutes = updatePermissionsObject(row.routes, routes);
         const newFeatureVariants = updatePermissionsObject(
           row.featureVariants,
-          rest,
-          FEATURE_VARIANTS_LABELS
+          featureVariants
         );
         if (useCustomPermissions) {
           const updatedPermissions = await updateUserPermissions(

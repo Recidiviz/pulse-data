@@ -14,8 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { ROUTES_PERMISSIONS_LABELS } from "./components/constants";
 
-interface MetadataRecord<T> {
+export interface MetadataRecord<T> {
   name: string;
   resultsByState: {
     [stateCode: string]: T;
@@ -23,19 +24,19 @@ interface MetadataRecord<T> {
 }
 
 // Ingest Metadata Column Counts
-interface MetadataAPIResult {
+export interface MetadataAPIResult {
   [name: string]: {
     [stateCode: string]: MetadataCount;
   };
 }
 
-interface MetadataCount {
+export interface MetadataCount {
   placeholderCount?: number;
   totalCount: number;
 }
 
 // Ingest Metadata Freshness
-interface DataFreshnessResult {
+export interface DataFreshnessResult {
   state: string;
   date: string;
   lastRefreshDate?: string;
@@ -43,7 +44,7 @@ interface DataFreshnessResult {
 }
 
 // PO Feedback responses
-interface POFeedbackResponse {
+export interface POFeedbackResponse {
   officerExternalId: string;
   personExternalId: string;
   actionType: string;
@@ -51,8 +52,18 @@ interface POFeedbackResponse {
   timestamp: string;
 }
 
+export type User = {
+  email: string;
+  stateCode: string;
+  externalId?: string;
+  role: string;
+  district?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
 // State User Permissions
-interface AddUserRequest {
+export interface AddUserRequest {
   emailAddress: string;
   stateCode: string;
   externalId: string;
@@ -63,34 +74,52 @@ interface AddUserRequest {
   reason: string;
 }
 
-interface StateUserPermissionsResponse {
+export interface StateUserPermissionsResponse {
   emailAddress: string;
   stateCode: string;
   allowedSupervisionLocationIds: string;
   allowedSupervisionLocationLevel: string;
-  routes: Record<string, boolean>;
+  routes: Partial<Routes>;
   blocked: boolean;
   firstName: string;
   lastName: string;
   externalId: string;
   role: string;
   district: string;
-  featureVariants: Record<string, boolean>;
+  featureVariants: Partial<FeatureVariants>;
   userHash: string;
 }
 
-interface StateUserPermissionsRequest extends StateUserPermissionsResponse {
+export interface StateUserForm extends StateUserPermissionsResponse, Routes {
   useCustomPermissions: boolean;
   reason: string;
+  featureVariantName: string;
+  featureVariantValue: FeatureVariantValue;
 }
 
 // State Role Permissions
-interface StateRolePermissionsResponse {
+export interface StateRolePermissionsResponse {
   stateCode: string;
   role: string;
-  routes: Record<string, boolean>;
-  featureVariants: Record<string, boolean>;
+  routes: Routes;
+  featureVariants: FeatureVariants;
 }
-interface StateRolePermissionsRequest extends StateRolePermissionsResponse {
+export interface StateRoleForm extends StateRolePermissionsResponse, Routes {
   reason: string;
+  featureVariantName: string;
+  featureVariantValue: FeatureVariantValue;
 }
+
+type FeatureVariantValue = { activeDate?: Date; variant?: string } | false;
+/*
+ * For each feature, an optional activeDate can control when the user gets access.
+ * If this is missing, access will be granted immediately.
+ * The `variant` property can be used to segment users to different variants of the feature,
+ * e.g. for A/B testing.
+ */
+export type FeatureVariants = Record<string, FeatureVariantValue>;
+export type FeatureVariantRecord = Partial<FeatureVariants>;
+
+export type Route = keyof typeof ROUTES_PERMISSIONS_LABELS;
+export type Routes = Record<Route, boolean>;
+export type RouteRecord = Partial<Routes>;

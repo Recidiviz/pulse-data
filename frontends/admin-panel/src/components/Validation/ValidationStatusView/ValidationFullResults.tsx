@@ -19,6 +19,7 @@ import { Alert } from "antd";
 import Title from "antd/lib/typography/Title";
 import { FC } from "react";
 import { ValidationStatusRecord } from "../../../recidiviz/admin_panel/models/validation_pb";
+import { MetadataRecord } from "../../../types";
 import { ANCHOR_VALIDATION_FULL_RESULTS } from "../constants";
 import { readableNameForCategoryId } from "../utils";
 import ValidationCategoryFullResultsTable from "../ValidationCategoryFullResultsTable";

@@ -18,6 +18,7 @@
 import * as React from "react";
 import { fetchDataFreshness } from "../../AdminPanelAPI";
 import { useFetchedDataJSON } from "../../hooks";
+import { DataFreshnessResult } from "../../types";
 
 interface DataFreshnessInfoProps {
   state: string;
