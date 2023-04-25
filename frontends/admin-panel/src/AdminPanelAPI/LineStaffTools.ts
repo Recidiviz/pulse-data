@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { AddUserRequest, FeatureVariants, Routes } from "../types";
 import {
-  postWithURLAndBody,
-  getAuthResource,
-  postAuthWithURLAndBody,
-  patchAuthWithURLAndBody,
-  putAuthWithURLAndBody,
   deleteResource,
+  getAuthResource,
+  patchAuthWithURLAndBody,
+  postAuthWithURLAndBody,
+  postWithURLAndBody,
+  putAuthWithURLAndBody,
 } from "./utils";
 
 // Fetch states for po monthly reports
@@ -148,8 +149,8 @@ export const updateUser = async ({
 export const updateUserPermissions = async (
   userHash: string,
   reason: string,
-  routes?: Record<string, boolean>,
-  featureVariants?: Record<string, boolean>
+  routes?: Partial<Routes>,
+  featureVariants?: Partial<FeatureVariants>
 ): Promise<Response> => {
   return putAuthWithURLAndBody(
     `/users/${encodeURIComponent(userHash)}/permissions`,
@@ -181,8 +182,8 @@ export const createStateRolePermissions = async (
   stateCode: string,
   role: string,
   reason: string,
-  routes: Record<string, boolean> | undefined,
-  featureVariants?: Record<string, boolean>
+  routes?: Partial<Routes>,
+  featureVariants?: Partial<FeatureVariants>
 ): Promise<Response> => {
   return postAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
     routes,
@@ -195,8 +196,8 @@ export const updateStateRolePermissions = async (
   stateCode: string,
   role: string,
   reason: string,
-  routes: Record<string, boolean> | undefined,
-  featureVariants?: Record<string, boolean>
+  routes?: Partial<Routes>,
+  featureVariants?: Partial<FeatureVariants>
 ): Promise<Response> => {
   return patchAuthWithURLAndBody(`/states/${stateCode}/roles/${role}`, {
     routes,

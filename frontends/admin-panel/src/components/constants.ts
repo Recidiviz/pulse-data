@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-/* eslint-disable camelcase */
 
 export const formLayout = {
   labelCol: { span: 4 },
@@ -22,23 +21,6 @@ export const formLayout = {
 };
 export const formTailLayout = {
   wrapperCol: { offset: 4, span: 20 },
-};
-
-export type Routes = {
-  operations?: boolean;
-  workflows?: boolean;
-  system_libertyToPrison?: boolean;
-  system_prison?: boolean;
-  system_prisonToSupervision?: boolean;
-  system_supervision?: boolean;
-  system_supervisionToPrison?: boolean;
-  system_supervisionToLiberty?: boolean;
-};
-
-export const FEATURE_VARIANTS_LABELS = {
-  usTnExpiration: "US_TN Expiration",
-  CompliantReportingAlmostEligible: "Compliant Reporting Almost Eligible",
-  usTnSupervisionLevelDowngrade: "US_TN Supervision Level Downgrade",
 };
 
 export const WORKFLOWS_PERMISSIONS_LABELS = {

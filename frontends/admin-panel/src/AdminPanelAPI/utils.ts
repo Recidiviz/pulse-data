@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { User } from "../types";
+
 export const getResource = async (url: string): Promise<Response> => {
   return fetch(`/admin${url}`, {
     headers: {
@@ -67,16 +69,6 @@ export const getAuthResource = async (url: string): Promise<Response> => {
       "Content-Type": "application/json",
     },
   });
-};
-
-export type User = {
-  email: string;
-  stateCode: string;
-  externalId?: string;
-  role: string;
-  district?: string;
-  firstName?: string;
-  lastName?: string;
 };
 
 export const postAuthWithURLAndBody = async (

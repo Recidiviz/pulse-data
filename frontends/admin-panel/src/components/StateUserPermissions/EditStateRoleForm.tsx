@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { Form, Button, Popconfirm } from "antd";
-import CustomPermissionsPanel from "./CustomPermissionsPanel";
+import { Button, Form, Popconfirm } from "antd";
+import { StateRoleForm, StateRolePermissionsResponse } from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
-import { validateAndFocus } from "./utils";
+import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
+import { validateAndFocus } from "./utils";
 
 export const CreateEditStateRoleForm = ({
   editVisible,
@@ -28,7 +29,7 @@ export const CreateEditStateRoleForm = ({
   selectedRows,
 }: {
   editVisible: boolean;
-  editOnCreate: (arg0: StateRolePermissionsRequest) => Promise<void>;
+  editOnCreate: (arg0: StateRoleForm) => Promise<void>;
   editOnCancel: () => void;
   editOnDelete: (reason: string) => Promise<void>;
   selectedRows: StateRolePermissionsResponse[];
@@ -44,13 +45,13 @@ export const CreateEditStateRoleForm = ({
     editOnCancel();
   };
   const handleEdit = () => {
-    validateAndFocus<StateRolePermissionsRequest>(form, (values) => {
+    validateAndFocus<StateRoleForm>(form, (values) => {
       form.resetFields();
       editOnCreate(values);
     });
   };
   const handleDelete = () => {
-    validateAndFocus<StateRolePermissionsRequest>(form, (values) => {
+    validateAndFocus<StateRoleForm>(form, (values) => {
       form.resetFields();
       editOnDelete(values.reason);
     });
@@ -82,6 +83,7 @@ export const CreateEditStateRoleForm = ({
           Update
         </Button>,
       ]}
+      width={700}
     >
       <p>
         <span style={{ fontWeight: "bold" }}>
@@ -96,7 +98,7 @@ export const CreateEditStateRoleForm = ({
       <Form form={form} layout="horizontal" labelCol={{ span: 6 }}>
         <ReasonInput label="Reason for modification" />
         <hr />
-        <CustomPermissionsPanel hidePermissions={false} />
+        <CustomPermissionsPanel hidePermissions={false} form={form} />
       </Form>
     </DraggableModal>
   );

@@ -20,6 +20,7 @@ import { ColumnsType, ColumnType } from "antd/lib/table";
 import { FC } from "react";
 import { useHistory } from "react-router-dom";
 import { ValidationStatusRecord } from "../../recidiviz/admin_panel/models/validation_pb";
+import { MetadataRecord } from "../../types";
 import {
   optionalNumberSort,
   getUniqueValues,

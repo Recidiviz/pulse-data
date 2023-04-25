@@ -21,6 +21,7 @@ import { CheckboxChangeEvent } from "antd/es/checkbox";
 import { ColumnsType } from "antd/es/table";
 import { Link } from "react-router-dom";
 import { addStateCodeQueryToLink } from "../navigation/DatasetMetadata";
+import { MetadataAPIResult, MetadataCount, MetadataRecord } from "../types";
 
 const emptyCell = <div className="center">N/A</div>;
 

@@ -15,8 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { Form, Input } from "antd";
-import CustomPermissionsPanel from "./CustomPermissionsPanel";
+import { StateRoleForm } from "../../types";
 import { DraggableModal } from "../Utilities/DraggableModal";
+import CustomPermissionsPanel from "./CustomPermissionsPanel";
 import ReasonInput from "./ReasonInput";
 
 export const CreateAddStateRoleForm = ({
@@ -25,7 +26,7 @@ export const CreateAddStateRoleForm = ({
   addOnCancel,
 }: {
   addVisible: boolean;
-  addOnCreate: (arg0: StateRolePermissionsRequest) => Promise<void>;
+  addOnCreate: (arg0: StateRoleForm) => Promise<void>;
   addOnCancel: () => void;
 }): JSX.Element => {
   const [form] = Form.useForm();
@@ -41,6 +42,7 @@ export const CreateAddStateRoleForm = ({
           addOnCreate(values);
         });
       }}
+      width={700}
     >
       <Form form={form} layout="horizontal" labelCol={{ span: 8 }}>
         <ReasonInput label="Reason for addition" />
@@ -71,7 +73,7 @@ export const CreateAddStateRoleForm = ({
         >
           <Input />
         </Form.Item>
-        <CustomPermissionsPanel hidePermissions={false} />
+        <CustomPermissionsPanel hidePermissions={false} form={form} />
       </Form>
     </DraggableModal>
   );

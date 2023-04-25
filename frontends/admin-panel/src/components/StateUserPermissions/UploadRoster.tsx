@@ -17,6 +17,7 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Alert, Button, Input, message, Select, Space, Upload } from "antd";
 import { useState } from "react";
+import { StateRolePermissionsResponse } from "../../types";
 
 type UploadRosterProps = {
   action: string;

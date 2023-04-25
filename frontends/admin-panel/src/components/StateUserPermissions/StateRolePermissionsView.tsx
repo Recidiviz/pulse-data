@@ -16,8 +16,8 @@
 // =============================================================================
 
 import { Button, message, PageHeader, Space, Spin, Table } from "antd";
-import React, { useState } from "react";
 import { ColumnType } from "antd/lib/table";
+import React, { useState } from "react";
 import {
   createStateRolePermissions,
   deleteStateRole,
@@ -26,17 +26,19 @@ import {
 } from "../../AdminPanelAPI/LineStaffTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
-  FEATURE_VARIANTS_LABELS,
-  ROUTES_PERMISSIONS_LABELS,
-} from "../constants";
+  StateRoleForm,
+  StateRolePermissionsResponse,
+  StateUserPermissionsResponse,
+} from "../../types";
 import { CreateAddStateRoleForm } from "./AddStateRoleForm";
 import { CreateEditStateRoleForm } from "./EditStateRoleForm";
+import { ReasonsLogButton } from "./ReasonsLogButton";
 import {
+  aggregateFormPermissionResults,
   checkResponse,
   getPermissionsTableColumns,
   updatePermissionsObject,
 } from "./utils";
-import { ReasonsLogButton } from "./ReasonsLogButton";
 
 const StateRoleDefaultPermissionsView = (): JSX.Element => {
   const { loading, data, setData } = useFetchedDataJSON<
@@ -108,19 +110,15 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     }
   };
 
-  const onAdd = async ({
-    stateCode,
-    role,
-    reason,
-    ...rest
-  }: StateRolePermissionsRequest) => {
+  const onAdd = async ({ stateCode, role, reason, ...rest }: StateRoleForm) => {
     try {
+      const { routes, featureVariants } = aggregateFormPermissionResults(rest);
       const createdRole = await createStateRolePermissions(
         stateCode,
         role,
         reason,
-        updatePermissionsObject({}, rest, ROUTES_PERMISSIONS_LABELS),
-        updatePermissionsObject({}, rest, FEATURE_VARIANTS_LABELS)
+        updatePermissionsObject({}, routes),
+        updatePermissionsObject({}, featureVariants)
       );
       await checkResponse(createdRole);
       setAddVisible(false);
@@ -136,16 +134,18 @@ const StateRoleDefaultPermissionsView = (): JSX.Element => {
     role,
     reason,
     ...rest
-  }: StateRolePermissionsRequest) => {
+  }: StateRoleForm) => {
     const results: Promise<unknown>[] = [];
     selectedRows.forEach((row: StateRolePermissionsResponse) => {
       const editRow = async () => {
+        const { routes, featureVariants } =
+          aggregateFormPermissionResults(rest);
         const response = await updateStateRolePermissions(
           row.stateCode,
           row.role,
           reason,
-          updatePermissionsObject({}, rest, ROUTES_PERMISSIONS_LABELS),
-          updatePermissionsObject({}, rest, FEATURE_VARIANTS_LABELS)
+          updatePermissionsObject({}, routes),
+          updatePermissionsObject({}, featureVariants)
         );
         await checkResponse(response);
       };

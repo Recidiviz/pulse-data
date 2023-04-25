@@ -36,6 +36,7 @@ import {
   ValidationStatusRecord,
   ValidationStatusRecords,
 } from "../../../recidiviz/admin_panel/models/validation_pb";
+import { MetadataRecord } from "../../../types";
 import StateSelectorPageHeader from "../../general/StateSelectorPageHeader";
 import { StateCodeInfo } from "../../IngestOperationsView/constants";
 import { scrollToAnchor } from "../../Utilities/GeneralUtilities";

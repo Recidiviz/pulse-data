@@ -15,6 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
+import { MetadataRecord } from "../../types";
+
 const uniqueStates = <T,>(records: MetadataRecord<T>[]): string[] => {
   const listOfStates = records.reduce(
     (acc, record) => acc.concat(Object.keys(record.resultsByState)),
