@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A parole and/or probation officer/agent who serves in a manager or supervisor role and doesn't supervise a typical caseload"""
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.staff_query_template import (
     staff_query_template,
@@ -29,16 +31,31 @@ SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION = """A parole and/or probation offic
 
 
 SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE = f"""
-{staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
+WITH 
+supervision_officer_supervisors AS (
+    {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
+)
+
+SELECT 
+    {{columns}}
+FROM supervision_officer_supervisors
 """
 
-SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_OFFICER_SUPERVISORS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
     view_id=SUPERVISION_OFFICER_SUPERVISORS_VIEW_NAME,
     view_query_template=SUPERVISION_OFFICER_SUPERVISORS_QUERY_TEMPLATE,
     description=SUPERVISION_OFFICER_SUPERVISORS_DESCRIPTION,
     normalized_state_dataset=dataset_config.NORMALIZED_STATE_DATASET,
     should_materialize=True,
+    columns=[
+        "state_code",
+        "external_id",
+        "staff_id",
+        "full_name",
+        "email",
+        "location_external_id",
+    ],
 )
 
 if __name__ == "__main__":

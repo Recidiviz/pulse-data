@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A row in this view represents a supervision district in a state, a grouping of offices at the finest level available """
-
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.location_query_template import (
     location_query_template,
@@ -29,16 +30,24 @@ SUPERVISION_DISTRICTS_VIEW_NAME = "supervision_districts"
 SUPERVISION_DISTRICTS_DESCRIPTION = """A row in this view represents a supervision district, a grouping of offices at the finest level available, whose parent is a state"""
 
 SUPERVISION_DISTRICTS_QUERY_TEMPLATE = f"""
-{location_query_template(location="supervision_district", parent_id="state_code")}
+WITH
+supervision_districts AS (
+    {location_query_template(location="supervision_district", parent_id="state_code")}
+)
+
+SELECT 
+    {{columns}}
+FROM supervision_districts
 """
 
-SUPERVISION_DISTRICTS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_DISTRICTS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
     view_id=SUPERVISION_DISTRICTS_VIEW_NAME,
     view_query_template=SUPERVISION_DISTRICTS_QUERY_TEMPLATE,
     description=SUPERVISION_DISTRICTS_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     should_materialize=True,
+    columns=["state_code", "external_id", "name"],
 )
 
 if __name__ == "__main__":

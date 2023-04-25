@@ -15,7 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """A supervision unit is a group of officers associated with a common manager officer, whose parent is a supervision district."""
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.views.outliers.location_query_template import (
     location_query_template,
@@ -29,16 +31,24 @@ SUPERVISION_UNITS_DESCRIPTION = """A supervision unit is a group of officers ass
 
 
 SUPERVISION_UNITS_QUERY_TEMPLATE = f"""
-{location_query_template(location="supervision_unit", parent_id="supervision_district_id")}
+WITH
+supervision_units AS (
+    {location_query_template(location="supervision_unit", parent_id="supervision_district_id")}
+)
+
+SELECT 
+    {{columns}}
+FROM supervision_units
 """
 
-SUPERVISION_UNITS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+SUPERVISION_UNITS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=dataset_config.OUTLIERS_VIEWS_DATASET,
     view_id=SUPERVISION_UNITS_VIEW_NAME,
     view_query_template=SUPERVISION_UNITS_QUERY_TEMPLATE,
     description=SUPERVISION_UNITS_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     should_materialize=True,
+    columns=["state_code", "external_id", "name", "supervision_district_id"],
 )
 
 if __name__ == "__main__":
