@@ -27,9 +27,27 @@ PAYMENTS_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed view of fines/fees paym
 state code"""
 
 PAYMENTS_PREPROCESSED_QUERY_TEMPLATE = """
-SELECT *
+SELECT
+    state_code,
+    person_id,
+    external_id,
+    fee_type,
+    payment_date,
+    payment_amount
 FROM
     `{project_id}.{analyst_dataset}.us_tn_payments_preprocessed`
+    
+UNION ALL
+
+SELECT
+    state_code,
+    person_id,
+    external_id,
+    fee_type,
+    payment_date,
+    payment_amount
+FROM
+    `{project_id}.{analyst_dataset}.us_me_payments_preprocessed`
 
 """
 

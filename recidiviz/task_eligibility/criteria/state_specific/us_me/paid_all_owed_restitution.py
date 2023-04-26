@@ -40,8 +40,20 @@ any remaining balance in their restitution payments.
 
 _QUERY_TEMPLATE = f"""
 WITH fines_fees AS (
-    SELECT * 
-    FROM `{{project_id}}.{{analyst_dataset}}.us_me_fines_fees_sessions_preprocessed_materialized` 
+    SELECT
+        state_code,
+        person_id,
+        external_id,
+        fee_type,
+        transaction_type,
+        start_date,
+        end_date,
+        unpaid_balance,
+    FROM
+        `{{project_id}}.{{analyst_dataset}}.fines_fees_sessions_materialized`
+    WHERE
+        state_code = 'US_ME'
+     
 ),
 
 {create_sub_sessions_with_attributes('fines_fees')},

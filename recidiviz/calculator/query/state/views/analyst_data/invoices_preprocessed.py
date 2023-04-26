@@ -27,9 +27,29 @@ INVOICES_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed view of fines/fees invo
 state code"""
 
 INVOICES_PREPROCESSED_QUERY_TEMPLATE = """
-SELECT *
+SELECT
+    state_code,
+    person_id,
+    external_id,
+    fee_type,
+    invoice_date,
+    invoice_amount,
+    invoice_amount_adjusted,
 FROM
     `{project_id}.{analyst_dataset}.us_tn_invoices_preprocessed`
+    
+UNION ALL
+
+SELECT
+    state_code,
+    person_id,
+    external_id,
+    fee_type,
+    invoice_date,
+    invoice_amount,
+    invoice_amount_adjusted,
+FROM
+    `{project_id}.{analyst_dataset}.us_me_invoices_preprocessed`
 
 """
 

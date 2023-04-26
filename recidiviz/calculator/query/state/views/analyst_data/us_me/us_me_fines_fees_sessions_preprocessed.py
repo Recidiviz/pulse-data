@@ -45,7 +45,6 @@ person_id, external_id (client_id + client_case ID), fee_type, start_date, end_d
 CLOSED_REST_STATUSES = """ '51', '50', '46', '47', '48' """
 
 US_ME_FINES_FEES_SESSIONS_PREPROCESSED_QUERY_TEMPLATE = f"""
-#TODO(#19798): align with TN logic
 WITH payments_n_invoices AS (
   -- Combine payments and invoices, group if they happened on the same date
       SELECT 
@@ -67,7 +66,10 @@ WITH payments_n_invoices AS (
             invoice_amount_adjusted AS invoice_amount,
             invoice_amount_adjusted AS activity_amount,
             'INVOICE' AS transaction_type 
-          FROM `{{project_id}}.{{analyst_dataset}}.us_me_invoices_preprocessed_materialized`
+          FROM
+            `{{project_id}}.{{analyst_dataset}}.invoices_preprocessed_materialized`
+          WHERE
+            state_code = 'US_ME'
         
           UNION ALL
         
@@ -80,7 +82,10 @@ WITH payments_n_invoices AS (
             0 AS invoice_amount,
             -1 * payment_amount AS activity_amount,
             'PAYMENT' AS transaction_type
-          FROM `{{project_id}}.{{analyst_dataset}}.us_me_payments_preprocessed_materialized`
+          FROM
+            `{{project_id}}.{{analyst_dataset}}.payments_preprocessed_materialized`
+          WHERE
+            state_code = 'US_ME'
       )
       GROUP BY 1,2,3,4,5
 ),
@@ -202,7 +207,7 @@ US_ME_FINES_FEES_SESSIONS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
-    should_materialize=True,
+    should_materialize=False,
 )
 
 if __name__ == "__main__":

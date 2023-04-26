@@ -70,7 +70,6 @@ SELECT
   invoice_date,
   SUM(invoice_amount) AS invoice_amount,
   SUM(invoice_amount_adjusted) AS invoice_amount_adjusted,
-  SUM(invoice_amount_adjusted) AS unpaid_amount,
 FROM invoices_cte
 GROUP BY 1,2,3,4,5
 """
@@ -85,7 +84,7 @@ US_ME_INVOICES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
     static_reference_tables=STATIC_REFERENCE_TABLES_DATASET,
-    should_materialize=True,
+    should_materialize=False,
 )
 
 if __name__ == "__main__":
