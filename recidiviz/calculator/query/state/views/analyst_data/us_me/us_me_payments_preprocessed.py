@@ -77,7 +77,7 @@ US_ME_PAYMENTS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_ME, instance=DirectIngestInstance.PRIMARY
     ),
-    should_materialize=True,
+    should_materialize=False,
 )
 
 if __name__ == "__main__":

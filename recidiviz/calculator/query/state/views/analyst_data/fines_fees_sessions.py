@@ -57,7 +57,7 @@ SELECT
     unpaid_balance,
     NULL AS compartment_level_0_unpaid_balance    
 FROM
-    `{project_id}.{analyst_dataset}.us_me_fines_fees_sessions_preprocessed_materialized`
+    `{project_id}.{analyst_dataset}.us_me_fines_fees_sessions_preprocessed`
 
 """
 FINES_FEES_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
