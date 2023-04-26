@@ -227,8 +227,6 @@ def generate_full_graph_state_person(
         assessment_level_raw_text="MED",
         assessment_metadata="assessment metadata",
         conducting_agent=assessment_agent,
-        conducting_staff_external_id="EMP3",
-        conducting_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     assessment2 = entities.StateAssessment.new_with_defaults(
@@ -243,8 +241,6 @@ def generate_full_graph_state_person(
         assessment_level_raw_text="LOW",
         assessment_metadata="more assessment metadata",
         conducting_agent=assessment_agent,
-        conducting_staff_external_id="EMP3",
-        conducting_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     person.assessments = [assessment1, assessment2]
@@ -265,8 +261,6 @@ def generate_full_graph_state_person(
         program_id="program_id",
         program_location_id="program_location_id",
         referring_agent=program_assignment_agent,
-        referring_staff_external_id="EMP1",
-        referring_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     program_assignment2 = StateProgramAssignment.new_with_defaults(
@@ -280,8 +274,6 @@ def generate_full_graph_state_person(
         program_id="program_id",
         program_location_id="program_location_id",
         referring_agent=program_assignment_agent,
-        referring_staff_external_id="EMP1",
-        referring_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     person.program_assignments = [program_assignment, program_assignment2]
@@ -350,8 +342,6 @@ def generate_full_graph_state_person(
         verified_employment=True,
         resulted_in_arrest=False,
         contacted_agent=supervising_officer,
-        contacting_staff_external_id="EMP2",
-        contacting_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     person.supervision_contacts = [supervision_contact]
@@ -550,8 +540,6 @@ def generate_full_graph_state_person(
         conditions="10PM CURFEW",
         supervising_officer=supervising_officer,
         case_type_entries=[supervision_case_type_entry],
-        supervising_officer_staff_external_id="EMP1",
-        supervising_officer_staff_external_id_type="US_XX_STAFF_ID",
     )
 
     person.supervision_periods = [supervision_period]

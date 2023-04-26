@@ -155,7 +155,6 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
         supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
-        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
         earliest_death_date: Optional[datetime.date] = None,
     ):
         self._person_id = person_id
@@ -163,7 +162,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         self._normalized_supervision_periods_and_additional_attributes: Optional[
             Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]
         ] = None
-        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
+
         self.delegate = delegate
 
         self._incarceration_sentences: Optional[
@@ -439,11 +438,11 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             updated_periods.append(sp)
         return updated_periods
 
+    @classmethod
     def additional_attributes_map_for_normalized_sps(
-        self,
+        cls,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> AdditionalAttributesMap:
-        """Get additional attributes for each StateSupervisionPeriod."""
         shared_additional_attributes_map = (
             get_shared_additional_attributes_map_for_entities(
                 entities=supervision_periods
@@ -460,24 +459,10 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                     "Expected non-null supervision_period_id values"
                     f"at this point. Found {supervision_period}."
                 )
-            supervising_officer_staff_id = None
-            if supervision_period.supervising_officer_staff_external_id:
-                if not supervision_period.supervising_officer_staff_external_id_type:
-                    raise ValueError(
-                        f"Found no supervising_officer_staff_external_id_type for supervising_officer_staff_external_id"
-                        f" {supervision_period.supervising_officer_staff_external_id} on person "
-                        f"{supervision_period.person}"
-                    )
-                supervising_officer_staff_id = self.staff_external_id_to_staff_id[
-                    (
-                        supervision_period.supervising_officer_staff_external_id,
-                        supervision_period.supervising_officer_staff_external_id_type,
-                    )
-                ]
             supervision_periods_additional_attributes_map[
                 StateSupervisionPeriod.__name__
             ][supervision_period.supervision_period_id] = {
-                "supervising_officer_staff_id": supervising_officer_staff_id,
+                "supervising_officer_staff_id": None,
             }
         return merge_additional_attributes_maps(
             [

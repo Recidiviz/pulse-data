@@ -16,7 +16,7 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
@@ -62,14 +62,8 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
     convert_entity_trees_to_normalized_versions,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    build_staff_external_id_to_staff_id_map,
-)
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
-)
-from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
-    STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
 )
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
@@ -142,9 +136,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             charge_offense_descriptions_to_labels=normalizer_args[
                 STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME
             ],
-            state_person_to_state_staff=normalizer_args[
-                STATE_PERSON_TO_STATE_STAFF_VIEW_NAME
-            ],
         )
 
     def _normalize_entities(
@@ -165,13 +156,8 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
         assessments: List[StateAssessment],
         supervision_contacts: List[StateSupervisionContact],
         charge_offense_descriptions_to_labels: List[Dict[str, Any]],
-        state_person_to_state_staff: List[Dict[str, Any]],
     ) -> EntityNormalizerResult:
         """Normalizes all entities with corresponding normalization managers."""
-
-        staff_external_id_to_staff_id: Dict[
-            Tuple[str, str], int
-        ] = build_staff_external_id_to_staff_id_map(state_person_to_state_staff)
         processed_entities = all_normalized_entities(
             person_id=person_id,
             ip_normalization_delegate=ip_normalization_delegate,
@@ -189,7 +175,6 @@ class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
             assessments=assessments,
             supervision_contacts=supervision_contacts,
             charge_offense_descriptions_to_labels=charge_offense_descriptions_to_labels,
-            staff_external_id_to_staff_id=staff_external_id_to_staff_id,
             field_index=self.field_index,
         )
 
@@ -213,7 +198,6 @@ def all_normalized_entities(
     assessments: List[StateAssessment],
     supervision_contacts: List[StateSupervisionContact],
     charge_offense_descriptions_to_labels: List[Dict[str, Any]],
-    staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     field_index: CoreEntityFieldIndex,
 ) -> EntityNormalizerResult:
     """Normalizes all entities that have corresponding comprehensive managers.
@@ -277,7 +261,6 @@ def all_normalized_entities(
     program_assignment_manager = ProgramAssignmentNormalizationManager(
         program_assignments,
         program_assignment_normalization_delegate,
-        staff_external_id_to_staff_id,
     )
 
     (
@@ -288,8 +271,7 @@ def all_normalized_entities(
     )
 
     supervision_contact_manager = SupervisionContactNormalizationManager(
-        supervision_contacts,
-        staff_external_id_to_staff_id,
+        supervision_contacts
     )
 
     (
@@ -312,13 +294,10 @@ def all_normalized_entities(
         field_index=field_index,
         incarceration_sentences=normalized_incarceration_sentences,
         supervision_sentences=normalized_supervision_sentences,
-        staff_external_id_to_staff_id=staff_external_id_to_staff_id,
     )
 
     assessment_normalization_manager = AssessmentNormalizationManager(
-        assessments,
-        assessment_normalization_delegate,
-        staff_external_id_to_staff_id,
+        assessments, assessment_normalization_delegate
     )
 
     (

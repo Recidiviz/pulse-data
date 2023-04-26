@@ -329,22 +329,6 @@ def list_of_dicts_to_dict_with_keys(
     return result_dict
 
 
-def build_staff_external_id_to_staff_id_map(
-    state_person_to_state_staff_list: List[Dict[str, Any]]
-) -> Dict[Tuple[str, str], int]:
-    """Converts a list of dictionaries, each dictionary containing a
-    staff_external_id+type, staff_id, and person_id, into one dictionary
-    where each item has key (staff_external_id, staff_external_id_type)
-    and value staff_id.
-    """
-    return {
-        (id_set["staff_external_id"], id_set["staff_external_id_type"]): id_set[
-            "staff_id"
-        ]
-        for id_set in state_person_to_state_staff_list
-    }
-
-
 def extract_county_of_residence_from_rows(
     persons_to_recent_county_of_residence: List[Dict[str, Any]]
 ) -> Optional[str]:
