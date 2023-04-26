@@ -38,13 +38,11 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
     def __init__(
         self,
         supervision_contacts: List[StateSupervisionContact],
-        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     ) -> None:
         self._supervision_contacts = deepcopy(supervision_contacts)
         self._normalized_supervision_contacts_and_additional_attributes: Optional[
             Tuple[List[StateSupervisionContact], AdditionalAttributesMap]
         ] = None
-        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
 
     def normalized_supervision_contacts_and_additional_attributes(
         self,
@@ -68,11 +66,11 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
     def normalized_entity_classes() -> List[Type[Entity]]:
         return [StateSupervisionContact]
 
+    @classmethod
     def additional_attributes_map_for_normalized_scs(
-        self,
+        cls,
         supervision_contacts: List[StateSupervisionContact],
     ) -> AdditionalAttributesMap:
-        """Get additional attributes for each StateSupervisionContact."""
 
         shared_additional_attributes_map = (
             get_shared_additional_attributes_map_for_entities(
@@ -89,25 +87,10 @@ class SupervisionContactNormalizationManager(EntityNormalizationManager):
                     "Expected non-null supervision_contact_id values"
                     f"at this point. Found {supervision_contact}."
                 )
-
-            contacting_staff_id = None
-            if supervision_contact.contacting_staff_external_id:
-                if not supervision_contact.contacting_staff_external_id_type:
-                    raise ValueError(
-                        f"Found no contacting_staff_external_id_type for contacting_staff_external_id "
-                        f"{supervision_contact.contacting_staff_external_id} on person "
-                        f"{supervision_contact.person}"
-                    )
-                contacting_staff_id = self.staff_external_id_to_staff_id[
-                    (
-                        supervision_contact.contacting_staff_external_id,
-                        supervision_contact.contacting_staff_external_id_type,
-                    )
-                ]
             supervision_contacts_additional_attributes_map[
                 StateSupervisionContact.__name__
             ][supervision_contact.supervision_contact_id] = {
-                "contacting_staff_id": contacting_staff_id
+                "contacting_staff_id": None,
             }
         return merge_additional_attributes_maps(
             [

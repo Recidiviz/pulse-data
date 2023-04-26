@@ -53,9 +53,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate imp
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
 )
-from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
-    STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
-)
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
@@ -73,9 +70,6 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionSentence,
     StateSupervisionViolation,
     StateSupervisionViolationResponse,
-)
-from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
-    STATE_PERSON_TO_STATE_STAFF_LIST,
 )
 from recidiviz.tests.calculator.pipeline.normalization.utils.normalized_entities_utils_test import (
     get_normalized_violation_tree,
@@ -121,7 +115,6 @@ class TestNormalizeEntities(unittest.TestCase):
         supervision_contacts: Optional[List[StateSupervisionContact]] = None,
         charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
         state_code_override: Optional[str] = None,
-        state_person_to_state_staff: Optional[List[Dict[str, Any]]] = None,
     ) -> EntityNormalizerResult:
         """Helper for testing the normalize_entities function on the
         ComprehensiveEntityNormalizer."""
@@ -137,7 +130,6 @@ class TestNormalizeEntities(unittest.TestCase):
             StateSupervisionContact.__name__: supervision_contacts or [],
             STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
             or [],
-            STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
         }
         if not state_code_override:
             required_delegates = STATE_DELEGATES_FOR_TESTS
@@ -174,8 +166,8 @@ class TestNormalizeEntities(unittest.TestCase):
             {
                 StateSupervisionPeriod.__name__: {
                     sp.supervision_period_id: {
+                        "supervising_officer_staff_id": None,
                         "sequence_num": index,
-                        "supervising_officer_staff_id": 10000,
                     }
                     for index, sp in enumerate(
                         self.full_graph_person.supervision_periods
@@ -189,7 +181,7 @@ class TestNormalizeEntities(unittest.TestCase):
             {
                 StateProgramAssignment.__name__: {
                     pa.program_assignment_id: {
-                        "referring_staff_id": 10000,
+                        "referring_staff_id": None,
                         "sequence_num": index,
                     }
                     for index, pa in enumerate(
@@ -222,7 +214,7 @@ class TestNormalizeEntities(unittest.TestCase):
                         "assessment_score_bucket": "39+"
                         if assessment.assessment_score == 55
                         else "0-23",
-                        "conducting_staff_id": 30000,
+                        "conducting_staff_id": None,
                         "sequence_num": index,
                     }
                     for index, assessment in enumerate(
@@ -237,7 +229,7 @@ class TestNormalizeEntities(unittest.TestCase):
             {
                 StateSupervisionContact.__name__: {
                     supervision_contact.supervision_contact_id: {
-                        "contacting_staff_id": 20000,
+                        "contacting_staff_id": None,
                     }
                     for index, supervision_contact in enumerate(
                         self.full_graph_person.supervision_contacts
@@ -417,26 +409,6 @@ class TestNormalizeEntities(unittest.TestCase):
                 for charge in supervision_sentence.charges
                 if charge.charge_id
             ],
-            state_person_to_state_staff=[
-                {
-                    "person_id": self.full_graph_person.person_id,
-                    "staff_id": 10000,
-                    "staff_external_id": "EMP1",
-                    "staff_external_id_type": "US_XX_STAFF_ID",
-                },
-                {
-                    "person_id": self.full_graph_person.person_id,
-                    "staff_id": 20000,
-                    "staff_external_id": "EMP2",
-                    "staff_external_id_type": "US_XX_STAFF_ID",
-                },
-                {
-                    "person_id": self.full_graph_person.person_id,
-                    "staff_id": 30000,
-                    "staff_external_id": "EMP3",
-                    "staff_external_id_type": "US_XX_STAFF_ID",
-                },
-            ],
         )
         self.assertDictEqual(
             expected_additional_attributes_map, additional_attributes_map
@@ -497,7 +469,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         persons: Optional[List[StatePerson]] = None,
         state_code_override: Optional[str] = None,
         charge_offense_descriptions_to_labels: Optional[List[Dict[str, Any]]] = None,
-        state_person_to_state_staff: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Sequence[NormalizedStateEntity]]:
         """Helper for testing the find_events function on the identifier."""
         entity_kwargs: Dict[str, Union[Sequence[Entity], List[TableRow]]] = {
@@ -512,7 +483,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             StateSupervisionContact.__name__: supervision_contacts or [],
             STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME: charge_offense_descriptions_to_labels
             or [],
-            STATE_PERSON_TO_STATE_STAFF_VIEW_NAME: state_person_to_state_staff or [],
         }
 
         if not state_code_override:
@@ -598,7 +568,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     **{
                         "sequence_num": index,
                         "case_type_entries": normalized_case_type_entries,
-                        "supervising_officer_staff_id": 10000,
                     },
                 }
             )
@@ -621,7 +590,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                     },
                     **{
                         "sequence_num": index,
-                        "referring_staff_id": 10000,
                     },
                 }
             )
@@ -640,7 +608,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
                         if field != "contacted_agent"
                     },
                     **{
-                        "contacting_staff_id": 20000,
+                        "contacting_staff_id": None,
                     },
                 }
             )
@@ -653,7 +621,6 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
             violation_responses=get_violation_tree().supervision_violation_responses,
             program_assignments=self.full_graph_person.program_assignments,
             supervision_contacts=self.full_graph_person.supervision_contacts,
-            state_person_to_state_staff=STATE_PERSON_TO_STATE_STAFF_LIST,
         )
 
         expected_normalized_entities: Dict[str, Sequence[NormalizedStateEntity]] = {

@@ -23,9 +23,6 @@ from typing import List
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.program_assignment_normalization_manager import (
     ProgramAssignmentNormalizationManager,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    build_staff_external_id_to_staff_id_map,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_program_assignment_normalization_delegate import (
     UsXxProgramAssignmentNormalizationDelegate,
 )
@@ -33,9 +30,6 @@ from recidiviz.common.constants.state.state_program_assignment import (
     StateProgramAssignmentParticipationStatus,
 )
 from recidiviz.persistence.entity.state.entities import StateProgramAssignment
-from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
-    STATE_PERSON_TO_STATE_STAFF_LIST,
-)
 
 
 class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
@@ -52,9 +46,6 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         entity_normalization_manager = ProgramAssignmentNormalizationManager(
             program_assignments=program_assignments,
             normalization_delegate=self.delegate,
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
         )
 
         (
@@ -140,62 +131,18 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
             program_assignment_id=1,
             participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
             referral_date=datetime.date(2000, 1, 1),
-            referring_staff_external_id="EMP1",
-            referring_staff_external_id_type="US_XX_STAFF_ID",
         )
         pg_2 = StateProgramAssignment.new_with_defaults(
             state_code=self.state_code,
             program_assignment_id=2,
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
             discharge_date=datetime.date(2001, 2, 3),
-            referring_staff_external_id="EMP1",
-            referring_staff_external_id_type="US_XX_STAFF_ID",
         )
         program_assignments = [pg_1, pg_2]
 
         entity_normalization_manager = ProgramAssignmentNormalizationManager(
             program_assignments=program_assignments,
             normalization_delegate=self.delegate,
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
-        )
-
-        (
-            _,
-            additional_attributes,
-        ) = (
-            entity_normalization_manager.normalized_program_assignments_and_additional_attributes()
-        )
-
-        expected_additional_attributes = {
-            StateProgramAssignment.__name__: {
-                1: {"referring_staff_id": 10000, "sequence_num": 0},
-                2: {"referring_staff_id": 10000, "sequence_num": 1},
-            }
-        }
-
-        self.assertEqual(expected_additional_attributes, additional_attributes)
-
-    def test_program_assignments_additional_attributes_referring_staff_none(
-        self,
-    ) -> None:
-        pg_1 = StateProgramAssignment.new_with_defaults(
-            state_code=self.state_code,
-            program_assignment_id=1,
-            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
-            referral_date=datetime.date(2000, 1, 1),
-            referring_staff_external_id=None,
-            referring_staff_external_id_type=None,
-        )
-        program_assignments = [pg_1]
-
-        entity_normalization_manager = ProgramAssignmentNormalizationManager(
-            program_assignments=program_assignments,
-            normalization_delegate=self.delegate,
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
         )
 
         (
@@ -208,6 +155,7 @@ class TestPrepareProgramAssignmentsForCalculations(unittest.TestCase):
         expected_additional_attributes = {
             StateProgramAssignment.__name__: {
                 1: {"referring_staff_id": None, "sequence_num": 0},
+                2: {"referring_staff_id": None, "sequence_num": 1},
             }
         }
 

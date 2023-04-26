@@ -16,7 +16,7 @@
 # =============================================================================
 """Utils for the normalization of state entities for calculations."""
 import datetime
-from typing import Dict, List, Optional, Tuple, Type, Union
+from typing import List, Optional, Tuple, Type, Union
 
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
     AssessmentNormalizationManager,
@@ -95,7 +95,6 @@ def normalized_periods_for_calculations(
     field_index: CoreEntityFieldIndex,
     incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
     supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
-    staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
 ) -> Tuple[
     Tuple[List[StateIncarcerationPeriod], AdditionalAttributesMap],
     Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap],
@@ -172,7 +171,6 @@ def normalized_periods_for_calculations(
             incarceration_sentences=incarceration_sentences,
             supervision_sentences=supervision_sentences,
             incarceration_periods=incarceration_periods,
-            staff_external_id_to_staff_id=staff_external_id_to_staff_id,
         )
 
         (

@@ -71,14 +71,12 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
         self,
         assessments: List[StateAssessment],
         delegate: StateSpecificAssessmentNormalizationDelegate,
-        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     ) -> None:
         self._assessments = deepcopy(assessments)
         self.delegate = delegate
         self._normalized_assessments_and_additional_attributes: Optional[
             Tuple[List[StateAssessment], AdditionalAttributesMap]
         ] = None
-        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
 
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
@@ -207,8 +205,9 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
 
         return DEFAULT_ASSESSMENT_SCORE_BUCKET
 
+    @classmethod
     def additional_attributes_map_for_normalized_assessments(
-        self,
+        cls,
         assessments: List[StateAssessment],
         assessment_id_to_score_bucket: Dict[int, Optional[str]],
     ) -> AdditionalAttributesMap:
@@ -231,28 +230,13 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                     f"at this point. Found {assessment}."
                 )
 
-            conducting_staff_id = None
-            if assessment.conducting_staff_external_id:
-                if not assessment.conducting_staff_external_id_type:
-                    # if conducting_staff_external_id is set, a conducting_staff_external_id_type must be set
-                    raise ValueError(
-                        f"Found no conducting_staff_external_id_type for conducting_staff_external_id "
-                        f"{assessment.conducting_staff_external_id} on person {assessment.person}"
-                    )
-                conducting_staff_id = self.staff_external_id_to_staff_id[
-                    (
-                        assessment.conducting_staff_external_id,
-                        assessment.conducting_staff_external_id_type,
-                    )
-                ]
-
             assessment_additional_attributes_map[StateAssessment.__name__][
                 assessment.assessment_id
             ] = {
                 "assessment_score_bucket": assessment_id_to_score_bucket[
                     assessment.assessment_id
                 ],
-                "conducting_staff_id": conducting_staff_id,
+                "conducting_staff_id": None,
             }
 
         return merge_additional_attributes_maps(

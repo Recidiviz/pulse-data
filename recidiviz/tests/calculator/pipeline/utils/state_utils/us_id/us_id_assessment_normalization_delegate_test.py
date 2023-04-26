@@ -28,18 +28,12 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.as
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
-from recidiviz.calculator.pipeline.utils.execution_utils import (
-    build_staff_external_id_to_staff_id_map,
-)
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_assessment_normalization_delegate import (
     UsIdAssessmentNormalizationDelegate,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.persistence.entity.state.entities import StateAssessment, StatePerson
-from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
-    STATE_PERSON_TO_STATE_STAFF_LIST,
-)
 
 STATE_CODE = "US_ID"
 
@@ -57,9 +51,6 @@ class TestNormalizedAssessmentPeriodsForCalculations(unittest.TestCase):
         assessments_normalization_manager = AssessmentNormalizationManager(
             assessments=assessments,
             delegate=UsIdAssessmentNormalizationDelegate(persons=persons),
-            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
-                STATE_PERSON_TO_STATE_STAFF_LIST
-            ),
         )
 
         return (
