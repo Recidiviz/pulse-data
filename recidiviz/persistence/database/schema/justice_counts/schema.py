@@ -294,7 +294,20 @@ class Source(JusticeCountsBase):
     # in this case, either "source" or "agency".
     type = Column(String(255))
 
-    __table_args__ = tuple([PrimaryKeyConstraint(id), UniqueConstraint(name)])
+    # The super_agency_id column will hold the id of another agency that has the
+    # permissions to submit data for the current agency. Agencies that can
+    # upload data for multiple agencies are considered 'Super Agencies'.
+    super_agency_id = Column(Integer, nullable=True)
+
+    __table_args__ = tuple(
+        [
+            PrimaryKeyConstraint(id),
+            UniqueConstraint(name),
+            ForeignKeyConstraint(
+                [super_agency_id], ["source.id"], name="super_agency_id_constraint"
+            ),
+        ]
+    )
 
     # We use SQLAlchemy's single table inheritance (https://docs.sqlalchemy.org/en/14/orm/inheritance.html)
     # to represent different types of Sources.
