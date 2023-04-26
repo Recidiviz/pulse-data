@@ -31,6 +31,7 @@ WITH  disciplinary_base AS (
     IncidentID,
     DisciplinaryClass,
     REGEXP_REPLACE(OffenderAccount, '                                      ', ' ') AS OffenderAccount, 
+    Disposition,
     DispositionDate, 
   FROM {Disciplinary}
 ), inc_base AS (
@@ -61,6 +62,7 @@ disc_outcome AS (
     IncidentDate,
     DisciplinaryClass,
     OffenderAccount, 
+    Disposition,
     DispositionDate,
     SentenceType,
     SentenceDays,

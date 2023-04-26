@@ -11,6 +11,7 @@ input_columns:
   - IncidentDate
   - DisciplinaryClass #put in incident_metadata
   - OffenderAccount
+  - Disposition
   - DispositionDate
   - SentenceType
   - SentenceDays
@@ -310,6 +311,7 @@ output:
           incident_metadata:
             $json_dict:
               Class: DisciplinaryClass
+              Disposition: Disposition
               InjuryLevel: InjuryLevel
           incarceration_incident_outcomes:
             - StateIncarcerationIncidentOutcome:
@@ -332,8 +334,6 @@ output:
                         - RES # RESTRICTION
                       StateIncarcerationIncidentOutcomeType.DISCIPLINARY_LABOR:
                         - KP # KP/EXTRA DUTY
-                      #StateIncarcerationIncidentOutcomeType.DISMISSED:
-                      #StateIncarcerationIncidentOutcomeType.EXTERNAL_PROSECUTION:
                       StateIncarcerationIncidentOutcomeType.FINANCIAL_PENALTY:
                         - RTN # RESTITUTION
                         - FIN # FINE
@@ -356,7 +356,6 @@ output:
                         - CLC # CUSTODY LEVEL CHANGE
                         - RUC # RECOMMEND UNIT CHANGE
                         - RPE # RECOMMEND PSYCHIATRIC EVALUATION
-                      #StateIncarcerationIncidentOutcomeType.NOT_GUILTY:
                       StateIncarcerationIncidentOutcomeType.PRIVILEGE_LOSS:
                         - LRP # LOSE RECREATION PRIVILEGES
                         - JTE # PROGRAM/JOB TERMINATION
