@@ -150,3 +150,42 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 fips_county_code="us_ca_sacramento",
                 user_account_id=user.id,
             )
+
+    def test_get_child_agencies(self) -> None:
+        with SessionFactory.using_database(self.database_key) as session:
+            user = UserAccountInterface.create_or_update_user(
+                session=session, auth0_user_id="test_auth0_user"
+            )
+            super_agency = AgencyInterface.create_agency(
+                session=session,
+                name="Super Agency",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+                user_account_id=user.id,
+            )
+            child_agency = AgencyInterface.create_agency(
+                session=session,
+                name="Child Agency",
+                systems=[schema.System.LAW_ENFORCEMENT],
+                state_code="us_ca",
+                fips_county_code="us_ca_sacramento",
+                user_account_id=user.id,
+                super_agency_id=super_agency.id,
+            )
+            UserAccountInterface.add_or_update_user_agency_association(
+                session=session, user=user, agencies=[super_agency, child_agency]
+            )
+        session.add_all([user, super_agency, child_agency])
+        session.flush()
+        # The super agency will have the child agency in its list of child agencies.
+        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
+            session=session, agency_id=super_agency.id
+        )
+        self.assertEqual(child_agencies, [child_agency])
+
+        # The child agency will have no agencies in its list of child agencies.
+        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
+            session=session, agency_id=child_agency.id
+        )
+        self.assertEqual(child_agencies, [])
