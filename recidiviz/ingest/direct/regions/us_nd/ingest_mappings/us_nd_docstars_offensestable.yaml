@@ -19,8 +19,6 @@ input_columns:
   - REQUIRES_REGISTRATION
   - Common_Statute_Number
   - JUDGE
-  - description
-  - violence_flag
   - ncic_code
 unused_columns:
   - COUNT # No apparent use for this
@@ -62,33 +60,15 @@ output:
                       raw_charge_text: LEVEL
                 ncic_code: ncic_code
                 description:
-                  $conditional:
-                    - $if:
-                        $not_null: description
-                      $then: description
-                    - $else:
-                        $custom:
-                          $function: us_nd_custom_parsers.extract_description_from_ncic_code
-                          $args:
-                            ncic_code: ncic_code
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_description_from_ncic_code
+                    $args:
+                      ncic_code: ncic_code
                 is_violent:
-                  $conditional:
-                    - $if:
-                        $is_null: violence_flag
-                      $then:
-                        $custom:
-                          $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
-                          $args:
-                            ncic_code: ncic_code
-                    - $else:
-                        $conditional:
-                          - $if:
-                              $equal:
-                                - violence_flag
-                                - $literal("N")
-                            $then: $literal_bool(False)
-                          - $else: $literal_bool(True)
-
+                  $custom:
+                    $function: us_nd_custom_parsers.extract_is_violent_from_ncic_code
+                    $args:
+                      ncic_code: ncic_code
                 county_code:
                   $custom:
                     $function: us_nd_custom_parsers.normalize_county_code
