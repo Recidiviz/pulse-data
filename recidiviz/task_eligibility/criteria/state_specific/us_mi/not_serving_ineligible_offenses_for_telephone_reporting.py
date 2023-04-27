@@ -17,12 +17,17 @@
 """Defines a criteria span view that shows spans of time during which
 someone is not serving ineligible offenses on supervision for downgrade to minimum telephone reporting
 """
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_1_sessions,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -37,15 +42,49 @@ someone is not serving ineligible offenses (below) for downgrade to minimum tele
         - not serving for a SORA Offense 
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT(['750.520', '750.520']  AS ineligible_offenses))"""
-
+_QUERY_TEMPLATE = f"""
+ SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        FALSE as meets_criteria,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+                        ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY sent.status) AS sentence_status,
+                         LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
+                         ARRAY_AGG(DISTINCT ref.description IGNORE NULLS ORDER BY ref.description) AS sentence_status_raw_text)) AS reason,
+    {join_sentence_spans_to_compartment_1_sessions()}
+    LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest` ref 
+        ON sent.status_raw_text = ref.reference_code_id
+    WHERE span.state_code = "US_MI"
+    #TODO(#20351) add subsections of excluded MCL codes for telephone reporting
+    --offenses that are excluded for TR and offenses that requires SO registration 
+    AND (sent.statute IN (SELECT statute_code 
+                            FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
+                            WHERE (CAST(is_excluded AS BOOL) OR CAST(requires_so_registration AS BOOL))
+                            )
+        --OWI/OUIL offenses
+        OR sent.statute LIKE '257.625%'
+        OR sent.status = 'COMMUTED'
+        OR sent.life_sentence
+        --serving probation with delay of sentence
+        OR LOWER(ref.description) like '%delay%'
+        )
+    GROUP BY 1, 2, 3, 4, 5
+    """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_MI,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
     )
 )
 
