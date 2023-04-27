@@ -17,9 +17,21 @@ To run the app locally, you need to spin up both the backend and frontend simult
 
 ## Setting up your environment
 
-### Aliases
+### Initial setup
 
-See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-data/blob/71d117466a7a1a07ed1dc0157bb0f8952abdd62d/Pipfile#L200) for some useful aliases, all of which can be run via `pipenv run <name>` (e.g. `pipenv run docker-jc`).
+- Set up your backend developer environment (go/backend-eng-setup)
+- Set up your [frontend developer environment](https://docs.google.com/document/d/1y-yJwZN6yM1s5OKqTDCk56FN2p7ZA62buwph1YdnJAc)
+
+### Set up gcloud CLI
+
+Run
+
+```
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project recidiviz-staging
+gcloud auth configure-docker
+```
 
 ### Development secrets
 
@@ -37,6 +49,10 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 ./recidiviz/tools/justice_counts/control_panel/initialize_development_environment.sh
 ```
 
+### Aliases
+
+See the [[scripts] section of our Pipfile](https://github.com/Recidiviz/pulse-data/blob/71d117466a7a1a07ed1dc0157bb0f8952abdd62d/Pipfile#L200) for some useful aliases, all of which can be run via `pipenv run <name>` (e.g. `pipenv run docker-jc`).
+
 ## Running locally
 
 1. Build the Justice Counts Docker image using the command below: (At this point, it doesn't matter which frontend url you use, because you'll run the frontend locally in step 7, which will take precendence over the frontend that is bundled in the docker image.)
@@ -45,6 +61,8 @@ Run this script from the root of the repository (i.e. `pulse-data`) to set up th
 pipenv run docker-build-jc-publisher \
   --build-arg FRONTEND_URL=https://github.com/Recidiviz/justice-counts/archive/main.tar.gz \
 ```
+
+NOTE: If you get a 401 Unauthorized permissions error, run `gcloud auth configure-docker` and then retry.
 
 2. Now run the Justice Counts Docker image using `docker-compose`:
 
@@ -106,6 +124,11 @@ The following query pulls all existing report datapoints for a given agency and 
 ```
 
 ## Deploying
+
+Pre-deploy:
+
+1. Make sure you've run `brew install jq` (this only has to be done once)
+2. Make sure your Docker daemon is running
 
 Use the `./deploy_to_staging.sh`, `deploy_to_production.sh`, and `deploy_for_playtesting.sh` scripts in the `pulse-data/recidiviz/tools/deploy/justice_counts` directory. Example usages:
 
