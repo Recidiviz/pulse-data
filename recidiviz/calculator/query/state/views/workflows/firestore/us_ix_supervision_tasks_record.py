@@ -69,8 +69,8 @@ SUPERVISION_TASK_CONFIGS = [
               'contact' as type,
               MAX(next_recommended_face_to_face_date) AS due_date,
               STRUCT(
-                MAX(client.supervision_level) AS supervision_level
-                MAX(most_recent_face_to_face_date) AS last_contacted,
+                MAX(client.supervision_level) AS supervision_level,
+                MAX(most_recent_face_to_face_date) AS last_contacted
               ) AS details
             )
         """,
