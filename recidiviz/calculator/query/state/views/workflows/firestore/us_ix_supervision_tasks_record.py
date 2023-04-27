@@ -55,7 +55,11 @@ SUPERVISION_TASK_CONFIGS = [
         task_details_struct="""STRUCT(
               'homeVisit' as type,
               MAX(next_recommended_home_visit_date) AS due_date,
-              STRUCT(MAX(client.supervision_level) AS supervision_level, MAX(client.address) AS current_address) AS details
+              STRUCT(
+                MAX(most_recent_home_visit_date) AS last_home_visit,
+                MAX(client.supervision_level) AS supervision_level, 
+                MAX(client.address) AS current_address
+	          ) AS details
             )
         """,
     ),
@@ -64,17 +68,23 @@ SUPERVISION_TASK_CONFIGS = [
         task_details_struct="""STRUCT(
               'contact' as type,
               MAX(next_recommended_face_to_face_date) AS due_date,
-              STRUCT(MAX(client.supervision_level) AS supervision_level) AS details
+              STRUCT(
+                MAX(client.supervision_level) AS supervision_level
+                MAX(most_recent_face_to_face_date) AS last_contacted,
+              ) AS details
             )
         """,
     ),
     UsIxSupervisionTaskQueryConfig(
         due_date_column="next_recommended_assessment_date",
         task_details_struct="""STRUCT(
-          'assessment' as type,
-          MAX(next_recommended_assessment_date) AS due_date,
-          STRUCT(MAX(ss.assessment_level_raw_text) AS risk_level, MAX(ss.assessment_date) AS last_assessed_on) AS details
-          )
+              'assessment' as type,
+              MAX(next_recommended_assessment_date) AS due_date,
+              STRUCT(
+                MAX(ss.assessment_level_raw_text) AS risk_level, 
+                MAX(ss.assessment_date) AS last_assessed_on
+              ) AS details
+            )
         """,
         task_details_joins="\n".join([ASSESSMENT_SCORE_JOIN]),
     ),
