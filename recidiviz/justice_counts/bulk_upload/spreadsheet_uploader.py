@@ -89,59 +89,108 @@ class SpreadsheetUploader:
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
-        """Generally, a file will only contain metrics for one system. In the case
-        of supervision, the file could contain metrics for supervision, parole, or
-        probation. This is indicated by the `system` column. In this case, we break
-        up the rows by system, and then ingest one system at a time."""
-        system_to_rows = self._get_system_to_rows(
-            system=self.system,
-            rows=rows,
-            metric_key_to_errors=metric_key_to_errors,
-        )
-        for current_system, current_rows in system_to_rows.items():
+        """Uploads the rows of a sheet by type. Generally, a file will only
+        contain metrics for one system. In the case of supervision,
+        the sheet could contain metrics for supervision, parole, or probation.
+        This is indicated by the `system` column. In this case, we break up
+        the rows by system, and then ingest one system at a time."""
 
-            # Redefine this here to properly handle sheets that contain
-            # rows for multiple systems (e.g. a Supervision sheet can
-            # contain rows for Parole and Probation)
-            sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[
-                current_system.value
-            ]
+        if self.system == schema.System.SUPERVISION:
 
-            # Based on the system and the name of the CSV file, determine which
-            # Justice Counts metric this file contains data for
-            metricfile = get_metricfile_by_sheet_name(
-                sheet_name=self.sheet_name, system=current_system
+            system_to_rows = self._get_system_to_rows(
+                rows=rows,
+                metric_key_to_errors=metric_key_to_errors,
             )
-            if not metricfile:
-                invalid_sheet_names.append(self.sheet_name)
-                return metric_key_to_datapoint_jsons, metric_key_to_errors
-
-            existing_datapoint_json_list = metric_key_to_datapoint_jsons[
-                metricfile.definition.key
-            ]
-
-            try:
-                new_datapoint_json_list = self._upload_rows_for_metricfile(
-                    session=session,
-                    rows=current_rows,
-                    metricfile=metricfile,
-                    metric_key_to_errors=metric_key_to_errors,
-                )
-            except Exception as e:
-                new_datapoint_json_list = []
-                curr_metricfile = sheet_name_to_metricfile[self.sheet_name]
-                metric_key_to_errors[curr_metricfile.definition.key].append(
-                    self._handle_error(
-                        e=e,
-                        sheet_name=self.sheet_name,
-                    )
-                )
-
-            metric_key_to_datapoint_jsons[metricfile.definition.key] = (
-                existing_datapoint_json_list + new_datapoint_json_list
+            self._upload_supervision_sheet(
+                session=session,
+                system_to_rows=system_to_rows,
+                invalid_sheet_names=invalid_sheet_names,
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
             )
-
+        else:
+            self._upload_rows(
+                session=session,
+                rows=rows,
+                system=self.system,
+                invalid_sheet_names=invalid_sheet_names,
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
+            )
         return metric_key_to_datapoint_jsons, metric_key_to_errors
+
+    def _upload_supervision_sheet(
+        self,
+        session: Session,
+        system_to_rows: Dict[schema.System, List[Dict[str, Any]]],
+        invalid_sheet_names: List[str],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+    ) -> None:
+        """Uploads supervision rows one system at a time."""
+        for current_system, current_rows in system_to_rows.items():
+            self._upload_rows(
+                session=session,
+                rows=current_rows,
+                system=current_system,
+                invalid_sheet_names=invalid_sheet_names,
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
+            )
+
+    def _upload_rows(
+        self,
+        session: Session,
+        rows: List[Dict[str, Any]],
+        system: schema.System,
+        invalid_sheet_names: List[str],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+    ) -> None:
+        """Uploads rows for a system."""
+
+        # Redefine this here to properly handle sheets that contain
+        # rows for multiple systems (e.g. a Supervision sheet can
+        # contain rows for Parole and Probation)
+        sheet_name_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
+
+        # Based on the system and the name of the CSV file, determine which
+        # Justice Counts metric this file contains data for
+        metricfile = get_metricfile_by_sheet_name(
+            sheet_name=self.sheet_name, system=system
+        )
+        if not metricfile:
+            invalid_sheet_names.append(self.sheet_name)
+            return
+
+        existing_datapoint_json_list = metric_key_to_datapoint_jsons[
+            metricfile.definition.key
+        ]
+
+        try:
+            new_datapoint_json_list = self._upload_rows_for_metricfile(
+                session=session,
+                rows=rows,
+                metricfile=metricfile,
+                metric_key_to_errors=metric_key_to_errors,
+            )
+        except Exception as e:
+            new_datapoint_json_list = []
+            curr_metricfile = sheet_name_to_metricfile[self.sheet_name]
+            metric_key_to_errors[curr_metricfile.definition.key].append(
+                self._handle_error(
+                    e=e,
+                    sheet_name=self.sheet_name,
+                )
+            )
+
+        metric_key_to_datapoint_jsons[metricfile.definition.key] = (
+            existing_datapoint_json_list + new_datapoint_json_list
+        )
 
     def _upload_rows_for_metricfile(
         self,
@@ -427,7 +476,6 @@ class SpreadsheetUploader:
 
     def _get_system_to_rows(
         self,
-        system: schema.System,
         rows: List[Dict[str, Any]],
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
@@ -436,45 +484,40 @@ class SpreadsheetUploader:
         """Groups the rows in the file by the value of the `system` column.
         Returns a dictionary mapping each system to its list of rows."""
         system_to_rows = {}
-        if system == schema.System.SUPERVISION:
-            system_value_to_rows = {
-                k: list(v)
-                for k, v in groupby(
-                    sorted(rows, key=lambda x: x.get("system", "both")),
-                    lambda x: x.get("system", "both"),
-                )
-            }
-            normalized_system_value_to_system = {
-                "supervision": schema.System.SUPERVISION,
-                "all": schema.System.SUPERVISION,
-                "parole": schema.System.PAROLE,
-                "probation": schema.System.PROBATION,
-                "other supervision": schema.System.OTHER_SUPERVISION,
-                "pretrial supervision": schema.System.PRETRIAL_SUPERVISION,
-            }
-            for system_value, system_rows in system_value_to_rows.items():
-                normalized_system_value = (
-                    system_value.lower().strip().replace("-", " ").replace("_", " ")
-                )
-                if normalized_system_value not in normalized_system_value_to_system:
-                    metric_key_to_errors[None].append(
-                        JusticeCountsBulkUploadException(
-                            title="System Not Recognized",
-                            description=(
-                                f'"{system_value}" is not a valid value for the System column. '
-                                f"The valid values for this column are {', '.join(v.value for v in normalized_system_value_to_system.values())}."
-                            ),
-                            message_type=BulkUploadMessageType.ERROR,
-                            sheet_name=self.sheet_name,
-                        )
+        system_value_to_rows = {
+            k: list(v)
+            for k, v in groupby(
+                sorted(rows, key=lambda x: x.get("system", "all")),
+                lambda x: x.get("system", "all"),
+            )
+        }
+        normalized_system_value_to_system = {
+            "supervision": schema.System.SUPERVISION,
+            "all": schema.System.SUPERVISION,
+            "parole": schema.System.PAROLE,
+            "probation": schema.System.PROBATION,
+            "other supervision": schema.System.OTHER_SUPERVISION,
+            "pretrial supervision": schema.System.PRETRIAL_SUPERVISION,
+        }
+        for system_value, system_rows in system_value_to_rows.items():
+            normalized_system_value = (
+                system_value.lower().strip().replace("-", " ").replace("_", " ")
+            )
+            if normalized_system_value not in normalized_system_value_to_system:
+                metric_key_to_errors[None].append(
+                    JusticeCountsBulkUploadException(
+                        title="System Not Recognized",
+                        description=(
+                            f'"{system_value}" is not a valid value for the System column. '
+                            f"The valid values for this column are {', '.join(v.value for v in normalized_system_value_to_system.values())}."
+                        ),
+                        message_type=BulkUploadMessageType.ERROR,
+                        sheet_name=self.sheet_name,
                     )
-                    continue
-                mapped_system = normalized_system_value_to_system[
-                    normalized_system_value
-                ]
-                system_to_rows[mapped_system] = system_rows
-        else:
-            system_to_rows[system] = rows
+                )
+                continue
+            mapped_system = normalized_system_value_to_system[normalized_system_value]
+            system_to_rows[mapped_system] = system_rows
         return system_to_rows
 
     def _handle_error(

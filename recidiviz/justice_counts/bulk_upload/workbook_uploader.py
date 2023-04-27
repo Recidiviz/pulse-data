@@ -103,8 +103,7 @@ class WorkbookUploader:
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
     ]:
         """Iterate through all tabs in an Excel spreadsheet and upload them
-        to the Justice Counts database using the `BulkUpload.upload_rows` method defined in BulkUpload.py.
-        If an error is encountered in a particular sheet, log it and continue.
+        to the Justice Counts database.
         """
         # 1. Fetch existing reports and datapoints for this agency, so that
         # we know what objects to update vs. what new objects to create.
