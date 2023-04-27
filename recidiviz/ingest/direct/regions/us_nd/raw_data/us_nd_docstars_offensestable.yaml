@@ -23,7 +23,8 @@ columns:
       Common Statute statute number of the charge that led to this case (and period of supervision).
   - name: Common_Statute_NCIC_Code
     description: |-
-      Common Statute NCIC code of the charge that led to this case (and period of supervision).
+      NCIC code of the charge that led to this case (and period of supervision), used only
+      in rows where Common_Statute_Number is populated. Mutually exclusive of CODE.
   - name: LEVEL
     description: |-
       Classification of the charge that led to this case.
