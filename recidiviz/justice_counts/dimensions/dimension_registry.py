@@ -88,7 +88,6 @@ DIMENSIONS = [
     courts.StaffType,
     courts.SentenceType,
     courts.FundingType,
-    supervision.NewOffenseType,
     supervision.DailyPopulationType,
     supervision.StaffType,
     supervision.DischargeType,
