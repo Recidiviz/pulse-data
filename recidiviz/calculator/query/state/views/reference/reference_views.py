@@ -51,6 +51,9 @@ from recidiviz.calculator.query.state.views.reference.product_roster import (
 from recidiviz.calculator.query.state.views.reference.state_charge_offense_description_to_labels import (
     STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
+    STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.reference.supervision_location_ids_to_names import (
     SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER,
 )
@@ -92,4 +95,5 @@ REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     US_ND_LOCATION_METADATA_VIEW_BUILDER,
     US_PA_LOCATION_METADATA_VIEW_BUILDER,
     WORKFLOWS_OPPORTUNITY_CONFIGS_VIEW_BUILDER,
+    STATE_PERSON_TO_STATE_STAFF_VIEW_BUILDER,
 ]
