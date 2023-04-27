@@ -36,12 +36,14 @@ class AgencyInterface:
         state_code: str,
         fips_county_code: Optional[str],
         user_account_id: Optional[int] = None,
+        super_agency_id: Optional[int] = None,
     ) -> schema.Agency:
         agency = schema.Agency(
             name=name,
             systems=[system.value for system in systems],
             state_code=state_code,
             fips_county_code=fips_county_code,
+            super_agency_id=super_agency_id,
         )
         session.add(agency)
         session.commit()
@@ -135,3 +137,13 @@ class AgencyInterface:
         agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
         agency.name = name
         session.add(agency)
+
+    @staticmethod
+    def get_child_agencies_by_super_agency_id(
+        session: Session, agency_id: int
+    ) -> List[schema.Agency]:
+        return (
+            session.query(schema.Agency)
+            .filter(schema.Agency.super_agency_id == agency_id)
+            .all()
+        )
