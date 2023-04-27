@@ -85,18 +85,6 @@ class DischargeType(DimensionBase, enum.Enum):
         return "metric/supervision/discharge/type"
 
 
-class NewOffenseType(DimensionBase, enum.Enum):
-    VIOLENT = "Violent"
-    PROPERTY = "Property"
-    DRUG = "Drug"
-    OTHER = "Other"
-    UNKNOWN = "Unknown"
-
-    @classmethod
-    def dimension_identifier(cls) -> str:
-        return "metric/supervision/offense/type"
-
-
 class RevocationType(DimensionBase, enum.Enum):
     TECHNICAL = "Revocations for Technical Violations"
     NEW_OFFENSE = "Revocations for New Offense Violations"
