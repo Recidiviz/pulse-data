@@ -113,6 +113,12 @@ def current_bed_stay_cte() -> str:
                     WHEN "NOC" THEN 5
                     WHEN "PRC" THEN 6
                     WHEN "GNP" THEN 7
-                    ELSE 8 END
+                    ELSE 8 END,
+                CASE stay_type
+                    WHEN "TEMPORARY-TASC" THEN 1
+                    WHEN "TEMPORARY-OTHER" THEN 2
+                    WHEN "PERMANENT" THEN 3
+                    ELSE 4 END,
+                start_date DESC
         )
     )"""
