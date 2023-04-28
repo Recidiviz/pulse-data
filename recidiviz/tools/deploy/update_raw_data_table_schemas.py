@@ -25,8 +25,11 @@ from recidiviz.big_query.big_query_client import (
     BigQueryClient,
     BigQueryClientImpl,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import raw_data_table_schema_utils
 from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_data_pruning_new_raw_data_dataset,
+    raw_data_pruning_raw_data_diff_results_dataset,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -47,6 +50,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 TEN_MINUTES = 60 * 10
 
+ONE_DAY_MS = 24 * 60 * 60 * 1000
+
 
 def create_states_raw_data_datasets_if_necessary(
     state_codes: List,
@@ -59,21 +64,38 @@ def create_states_raw_data_datasets_if_necessary(
     logging.info("Creating raw data datasets (if necessary)...")
     for state_code in state_codes:
         for instance in DirectIngestInstance:
-            dataset_id = raw_tables_dataset_for_region(
-                state_code=state_code, instance=instance
-            )
-            dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
-            # pylint: disable=cell-var-from-loop
-            # TODO(PyCQA/pylint#5263): This is a bug in pylint, we can remove once the bug is fixed
-            interactive_prompt_retry_on_exception(
-                fn=lambda: bq_client.create_dataset_if_necessary(dataset_ref),
-                input_text=(
-                    f"The attempt to create {dataset_id} failed. "
-                    f"Should we try again?"
-                ),
-                accepted_response_override="yes",
-                exit_on_cancel=False,
-            )
+            _create_raw_data_datasets(state_code, instance, bq_client)
+
+
+def _create_raw_data_datasets(
+    state_code: StateCode, instance: DirectIngestInstance, bq_client: BigQueryClient
+) -> None:
+    """Create raw data datasets for a given state code and instance."""
+    dataset_ids = [
+        raw_tables_dataset_for_region(state_code=state_code, instance=instance),
+        # For a given state and instance, create the raw datasets used for housing temporary tables related to
+        # raw data pruning. The tables within the dataset will be temporarily added and deleted in the process of
+        # raw data pruning, but the datasets themselves won't.
+        raw_data_pruning_new_raw_data_dataset(state_code, instance),
+        raw_data_pruning_raw_data_diff_results_dataset(state_code, instance),
+    ]
+    for dataset_id in dataset_ids:
+        dataset_ref = bq_client.dataset_ref_for_id(dataset_id)
+        # pylint: disable=cell-var-from-loop
+        # TODO(PyCQA/pylint#5263): This is a bug in pylint, we can remove once the bug is fixed
+        interactive_prompt_retry_on_exception(
+            fn=lambda: bq_client.create_dataset_if_necessary(
+                dataset_ref,
+                # Set default table expiration time for datasets used
+                # for raw data pruning
+                ONE_DAY_MS if dataset_id.startswith("pruning") else None,
+            ),
+            input_text=(
+                f"The attempt to create {dataset_id} failed. " f"Should we try again?"
+            ),
+            accepted_response_override="yes",
+            exit_on_cancel=False,
+        )
 
 
 def update_raw_data_table_schemas(

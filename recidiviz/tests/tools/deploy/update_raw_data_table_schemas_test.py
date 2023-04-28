@@ -26,6 +26,7 @@ import pytest
 
 from recidiviz.ingest.direct import raw_data_table_schema_utils
 from recidiviz.tools.deploy.update_raw_data_table_schemas import (
+    ONE_DAY_MS,
     create_states_raw_data_datasets_if_necessary,
     update_raw_data_table_schemas,
 )
@@ -51,19 +52,43 @@ def test_create_datasets_if_necessary(caplog_info: Any) -> None:
     )
     assert mock_bq_client.dataset_ref_for_id.mock_calls == [
         mock.call("us_xx_raw_data"),
+        mock.call("pruning_us_xx_new_raw_data_primary"),
+        mock.call("pruning_us_xx_raw_data_diff_results_primary"),
         mock.call("us_xx_raw_data_secondary"),
+        mock.call("pruning_us_xx_new_raw_data_secondary"),
+        mock.call("pruning_us_xx_raw_data_diff_results_secondary"),
         mock.call("us_yy_raw_data"),
+        mock.call("pruning_us_yy_new_raw_data_primary"),
+        mock.call("pruning_us_yy_raw_data_diff_results_primary"),
         mock.call("us_yy_raw_data_secondary"),
+        mock.call("pruning_us_yy_new_raw_data_secondary"),
+        mock.call("pruning_us_yy_raw_data_diff_results_secondary"),
         mock.call("us_zz_raw_data"),
+        mock.call("pruning_us_zz_new_raw_data_primary"),
+        mock.call("pruning_us_zz_raw_data_diff_results_primary"),
         mock.call("us_zz_raw_data_secondary"),
+        mock.call("pruning_us_zz_new_raw_data_secondary"),
+        mock.call("pruning_us_zz_raw_data_diff_results_secondary"),
     ]
     assert mock_bq_client.create_dataset_if_necessary.mock_calls == [
-        mock.call("us_xx_raw_data"),
-        mock.call("us_xx_raw_data_secondary"),
-        mock.call("us_yy_raw_data"),
-        mock.call("us_yy_raw_data_secondary"),
-        mock.call("us_zz_raw_data"),
-        mock.call("us_zz_raw_data_secondary"),
+        mock.call("us_xx_raw_data", None),
+        mock.call("pruning_us_xx_new_raw_data_primary", ONE_DAY_MS),
+        mock.call("pruning_us_xx_raw_data_diff_results_primary", ONE_DAY_MS),
+        mock.call("us_xx_raw_data_secondary", None),
+        mock.call("pruning_us_xx_new_raw_data_secondary", ONE_DAY_MS),
+        mock.call("pruning_us_xx_raw_data_diff_results_secondary", ONE_DAY_MS),
+        mock.call("us_yy_raw_data", None),
+        mock.call("pruning_us_yy_new_raw_data_primary", ONE_DAY_MS),
+        mock.call("pruning_us_yy_raw_data_diff_results_primary", ONE_DAY_MS),
+        mock.call("us_yy_raw_data_secondary", None),
+        mock.call("pruning_us_yy_new_raw_data_secondary", ONE_DAY_MS),
+        mock.call("pruning_us_yy_raw_data_diff_results_secondary", ONE_DAY_MS),
+        mock.call("us_zz_raw_data", None),
+        mock.call("pruning_us_zz_new_raw_data_primary", ONE_DAY_MS),
+        mock.call("pruning_us_zz_raw_data_diff_results_primary", ONE_DAY_MS),
+        mock.call("us_zz_raw_data_secondary", None),
+        mock.call("pruning_us_zz_new_raw_data_secondary", ONE_DAY_MS),
+        mock.call("pruning_us_zz_raw_data_diff_results_secondary", ONE_DAY_MS),
     ]
     assert caplog_info.record_tuples == [
         ("root", logging.INFO, "Creating raw data datasets (if necessary)..."),

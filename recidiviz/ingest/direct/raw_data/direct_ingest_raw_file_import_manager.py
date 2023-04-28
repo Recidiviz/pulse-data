@@ -43,12 +43,17 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.ingest.direct import regions
-from recidiviz.ingest.direct.direct_ingest_regions import DirectIngestRegion
+from recidiviz.ingest.direct.direct_ingest_regions import (
+    DirectIngestRegion,
+    raw_data_pruning_enabled_in_state_and_instance,
+)
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
 from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_data_pruning_new_raw_data_dataset,
+    raw_data_pruning_raw_data_diff_results_dataset,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
@@ -64,7 +69,11 @@ from recidiviz.ingest.direct.types.direct_ingest_constants import (
     UPDATE_DATETIME_COL_NAME,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.ingest.direct.views.raw_data_diff_query_builder import (
+    RawDataDiffQueryBuilder,
+)
 from recidiviz.persistence.entity.operations.entities import DirectIngestRawFileMetadata
+from recidiviz.utils import metadata
 
 
 class DirectIngestRawFileReader:
@@ -239,6 +248,7 @@ class DirectIngestRawFileImportManager:
     ):
 
         self.region = region
+        self.state_code = StateCode(self.region.region_code.upper())
         self.fs = fs
         self.temp_output_directory_path = temp_output_directory_path
         self.big_query_client = big_query_client
@@ -262,7 +272,7 @@ class DirectIngestRawFileImportManager:
             regions_module_override=self.region.region_module,
         ).collect_raw_table_migration_queries(sandbox_dataset_prefix)
         self.raw_tables_dataset = raw_tables_dataset_for_region(
-            state_code=StateCode(self.region.region_code.upper()),
+            state_code=self.state_code,
             instance=instance,
             sandbox_dataset_prefix=sandbox_dataset_prefix,
         )
@@ -283,13 +293,26 @@ class DirectIngestRawFileImportManager:
         logging.info("Beginning BigQuery upload of raw file [%s]", path.abs_path())
 
         self._delete_conflicting_contents_from_bigquery(path, file_metadata.file_id)
-        temp_output_paths, columns = self._upload_contents_to_temp_gcs_paths(
+        temp_file_paths, columns = self._upload_contents_to_temp_gcs_paths(
             path, file_metadata
         )
-        if temp_output_paths:
+        if temp_file_paths:
             if not columns:
                 raise ValueError("Found delegate output_columns is unexpectedly None.")
-            self._load_contents_to_bigquery(parts.file_tag, temp_output_paths, columns)
+            if self._should_prune_new_data(parts.file_tag):
+                self._load_pruned_contents_to_bigquery(
+                    file_tag=parts.file_tag,
+                    file_id=file_metadata.file_id,
+                    temp_file_paths=temp_file_paths,
+                    columns=columns,
+                )
+            else:
+                self._load_file_contents_to_bigquery(
+                    destination_table_id=parts.file_tag,
+                    destination_dataset_id=self.raw_tables_dataset,
+                    file_paths=temp_file_paths,
+                    columns=columns,
+                )
 
         migration_queries = self.raw_table_migrations.get(parts.file_tag, [])
 
@@ -364,20 +387,23 @@ class DirectIngestRawFileImportManager:
         delete_job.result()
 
     @retry.Retry(predicate=google_api_retry_predicate)
-    def _load_contents_to_bigquery(
-        self, file_tag: str, temp_output_paths: List[GcsfsFilePath], columns: List[str]
+    def _load_file_contents_to_bigquery(
+        self,
+        destination_table_id: str,
+        destination_dataset_id: str,
+        file_paths: List[GcsfsFilePath],
+        columns: List[str],
     ) -> None:
         """Loads the contents in the given handle to the appropriate table in BigQuery."""
-
         logging.info("Starting chunked load of contents to BigQuery")
 
         try:
             load_job = self.big_query_client.load_table_from_cloud_storage_async(
-                source_uris=[p.uri() for p in temp_output_paths],
+                source_uris=[p.uri() for p in file_paths],
                 destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
-                    self.raw_tables_dataset
+                    destination_dataset_id
                 ),
-                destination_table_id=file_tag,
+                destination_table_id=destination_table_id,
                 destination_table_schema=self.create_raw_table_schema_from_columns(
                     columns
                 ),
@@ -385,21 +411,21 @@ class DirectIngestRawFileImportManager:
             )
         except Exception as e:
             logging.error("Failed to start load job - cleaning up temp paths")
-            self._delete_temp_output_paths(temp_output_paths)
+            self._delete_temporary_file_paths(file_paths)
             raise e
 
         try:
             logging.info(
                 "[%s] Waiting for load of [%s] paths into [%s]",
                 datetime.datetime.now().isoformat(),
-                len(temp_output_paths),
+                len(file_paths),
                 load_job.destination,
             )
             load_job.result()
             logging.info(
                 "[%s] BigQuery load of [%s] paths complete",
                 datetime.datetime.now().isoformat(),
-                len(temp_output_paths),
+                len(file_paths),
             )
         except Exception as e:
             logging.error(
@@ -409,12 +435,96 @@ class DirectIngestRawFileImportManager:
             )
             raise e
         finally:
-            self._delete_temp_output_paths(temp_output_paths)
+            self._delete_temporary_file_paths(file_paths)
 
-    def _delete_temp_output_paths(self, temp_output_paths: List[GcsfsFilePath]) -> None:
-        for temp_output_path in temp_output_paths:
-            logging.info("Deleting temp file [%s].", temp_output_path.abs_path())
-            self.fs.delete(temp_output_path)
+    def _delete_temporary_file_paths(
+        self, temp_file_paths: List[GcsfsFilePath]
+    ) -> None:
+        for temp_file_path in temp_file_paths:
+            logging.info("Deleting temp file [%s].", temp_file_path.abs_path())
+            self.fs.delete(temp_file_path)
+
+    def _should_prune_new_data(self, file_tag: str) -> bool:
+        """Returns whether or not we should prune this file during raw data import."""
+        raw_data_pruning_enabled = raw_data_pruning_enabled_in_state_and_instance(
+            self.state_code, self.instance
+        )
+        if not raw_data_pruning_enabled:
+            return False
+
+        file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        is_exempt_from_raw_data_pruning = file_config.is_exempt_from_raw_data_pruning()
+        return not is_exempt_from_raw_data_pruning
+
+    def _build_raw_data_pruning_query(self, file_tag: str) -> str:
+        """Build a raw data diff query for a particular raw file."""
+        raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
+        return RawDataDiffQueryBuilder(
+            project_id=metadata.project_id(),
+            state_code=self.state_code,
+            raw_data_instance=self.instance,
+            raw_file_config=raw_file_config,
+            new_raw_data_dataset=raw_data_pruning_new_raw_data_dataset(
+                self.state_code, self.instance
+            ),
+        ).build_query()
+
+    def _load_pruned_contents_to_bigquery(
+        self,
+        file_tag: str,
+        file_id: int,
+        temp_file_paths: List[GcsfsFilePath],
+        columns: List[str],
+    ) -> None:
+        """Conduct raw data pruning on a file by determining the diff between it and what is currently on BQ,
+        and append the results to the original table on BQ."""
+        # Fetch the temporary datasets on BQ used for raw data pruning
+        temp_raw_table_dataset_id = raw_data_pruning_new_raw_data_dataset(
+            self.state_code, self.instance
+        )
+        temp_raw_data_diff_results_dataset_id = (
+            raw_data_pruning_raw_data_diff_results_dataset(
+                self.state_code, self.instance
+            )
+        )
+
+        temporary_table_id = f"{file_tag}__{file_id}"
+        # Load new GCS file into a temporary table in BQ
+        self._load_file_contents_to_bigquery(
+            destination_table_id=temporary_table_id,
+            file_paths=temp_file_paths,
+            columns=columns,
+            destination_dataset_id=temp_raw_table_dataset_id,
+        )
+
+        # Create and run raw data diff query between contents of new temporary table on BQ and the latest version
+        # of the raw data table on BQ, then save the results of diff query to a temporary table
+        raw_data_diff_query = self._build_raw_data_pruning_query(file_tag)
+        create_job = self.big_query_client.create_table_from_query_async(
+            dataset_id=temp_raw_data_diff_results_dataset_id,
+            table_id=temporary_table_id,
+            query=raw_data_diff_query,
+            overwrite=True,
+            use_query_cache=False,
+        )
+        create_job.result()
+
+        # Append the results of the raw data diff query to the original raw data table
+        append_job = self.big_query_client.insert_into_table_from_table_async(
+            source_dataset_id=temp_raw_data_diff_results_dataset_id,
+            source_table_id=temporary_table_id,
+            destination_dataset_id=self.raw_tables_dataset,
+            destination_table_id=temporary_table_id,
+            use_query_cache=False,
+        )
+        append_job.result()
+
+        self.big_query_client.delete_table(
+            temp_raw_table_dataset_id, temporary_table_id
+        )
+        self.big_query_client.delete_table(
+            temp_raw_data_diff_results_dataset_id, temporary_table_id
+        )
 
     @staticmethod
     def create_raw_table_schema_from_columns(
@@ -575,11 +685,3 @@ def get_region_raw_file_config(
         ] = DirectIngestRegionRawFileConfig(region_code_lower, region_module)
 
     return _RAW_TABLE_CONFIGS_BY_STATE[region_code_lower]
-
-
-# TODO(#12390): Delete once raw data pruning is live.
-def raw_data_pruning_enabled_in_state_and_instance(
-    state_code: StateCode,  # pylint: disable=unused-argument
-    instance: DirectIngestInstance,  # pylint: disable=unused-argument
-) -> bool:
-    return False

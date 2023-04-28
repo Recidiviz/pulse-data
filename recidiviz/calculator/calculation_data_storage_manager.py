@@ -117,6 +117,15 @@ def _delete_empty_datasets() -> None:
             if label == DATASET_MANAGED_BY_TERRAFORM_KEY and value == "true":
                 managed_by_terraform = True
 
+        # Skip empty datasets that are related to raw data pruning, as they house tables temporarily created and deleted
+        # in the process of raw data pruning
+        if dataset_resource.dataset_id.startswith("pruning"):
+            logging.info(
+                "Skipping empty dataset that is used for housing temporary tables used in raw data "
+                "pruning [%s]",
+                dataset_ref.dataset_id,
+            )
+
         if managed_by_terraform:
             logging.info(
                 "Skipping empty dataset that is in Terraform state [%s]",
