@@ -20,8 +20,8 @@ import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
+  addUserToAgencyOrUpdateRole,
   getAgency,
-  updateAgencyUserRole,
 } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
@@ -38,7 +38,7 @@ const AgencyProvisioningView = (): JSX.Element => {
 
   const onAgencyUserRoleChange = async (email: string, role: string) => {
     try {
-      const response = await updateAgencyUserRole(agencyId, email, role);
+      const response = await addUserToAgencyOrUpdateRole(agencyId, email, role);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);

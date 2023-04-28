@@ -161,31 +161,35 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             )
             session.commit()
             return (
-                jsonify({"status": "ok", "status_code": HTTPStatus.OK}),
+                jsonify({"agency": agency.to_json()}),
                 HTTPStatus.OK,
             )
 
     @bp.route("/api/justice_counts_tools/agency/<agency_id>/users", methods=["DELETE"])
     @requires_gae_auth
-    def remove_agency_user(agency_id: int) -> Tuple[Response, HTTPStatus]:
+    def remove_agency_users(agency_id: int) -> Tuple[Response, HTTPStatus]:
         """Remove a User from an Agency."""
         with SessionFactory.using_database(
             SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
         ) as session:
             request_json = assert_type(request.json, dict)
-            email = assert_type(request_json.get("email"), str)
+            emails = assert_type(request_json.get("emails"), list)
 
-            if email is None:
+            if emails is None:
                 raise ValueError("email is required")
 
-            AgencyUserAccountAssociationInterface.remove_user_from_agency(
-                email=email,
-                agency_id=int(agency_id),
-                session=session,
-            )
+            for email in emails:
+                AgencyUserAccountAssociationInterface.remove_user_from_agency(
+                    email=email,
+                    agency_id=int(agency_id),
+                    session=session,
+                )
             session.commit()
+            agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=int(agency_id)
+            )
             return (
-                jsonify({"status": "ok", "status_code": HTTPStatus.OK}),
+                jsonify({"agency": agency.to_json()}),
                 HTTPStatus.OK,
             )
 

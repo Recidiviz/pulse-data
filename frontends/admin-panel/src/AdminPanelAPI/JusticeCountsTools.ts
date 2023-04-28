@@ -17,6 +17,7 @@
 
 import { User } from "../components/JusticeCountsTools/constants";
 import {
+  deleteWithUrlAndBody,
   getResource,
   patchWithURLAndBody,
   postWithURLAndBody,
@@ -46,7 +47,7 @@ export const createAgency = async (
   });
 };
 
-export const updateAgencyUserRole = async (
+export const addUserToAgencyOrUpdateRole = async (
   agencyId: string,
   email: string,
   role: string
@@ -85,6 +86,18 @@ export const updateUser = async (
     auth0_user_id: user.auth0_user_id,
     agency_ids: agencyIds,
   });
+};
+
+export const removeUsersFromAgency = async (
+  agencyId: number,
+  emails: string[]
+): Promise<Response> => {
+  return deleteWithUrlAndBody(
+    `/api/justice_counts_tools/agency/${agencyId}/users`,
+    {
+      emails,
+    }
+  );
 };
 
 export const updateAgency = async (
