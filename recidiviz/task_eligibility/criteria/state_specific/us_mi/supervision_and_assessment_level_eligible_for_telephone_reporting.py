@@ -47,7 +47,7 @@ supervision */
     sls.state_code,
     sls.person_id,
     sls.start_date,
-    sls.end_date,
+    sls.end_date_exclusive AS end_date,
     sls.date_gap_id,
     sls.supervision_level_raw_text,
     FIRST_VALUE(assessment_level_raw_text) 
