@@ -1,0 +1,56 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Builder for a task eligiblity spans view that shows the spans of time during which
+someone in TN is eligible for a custody level downgrade.
+"""
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.candidate_populations.general import (
+    incarceration_population,
+)
+from recidiviz.task_eligibility.completion_events.general import full_term_discharge
+from recidiviz.task_eligibility.criteria.general import (
+    at_least_6_months_since_most_recent_incarceration_incident,
+    custody_level_higher_than_recommended,
+    has_had_at_least_1_incarceration_incident_past_year,
+)
+from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
+    SingleTaskEligibilitySpansBigQueryViewBuilder,
+)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
+_DESCRIPTION = """Builder for a task eligiblity spans view that shows the spans of time during which
+someone in TN is eligible for a custody level downgrade.
+"""
+
+VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
+    state_code=StateCode.US_TN,
+    task_name="CUSTODY_LEVEL_DOWNGRADE",
+    description=_DESCRIPTION,
+    candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
+    criteria_spans_view_builders=[
+        has_had_at_least_1_incarceration_incident_past_year.VIEW_BUILDER,
+        at_least_6_months_since_most_recent_incarceration_incident.VIEW_BUILDER,
+        custody_level_higher_than_recommended.VIEW_BUILDER,
+    ],
+    # TODO(#20577): Replace with completion event for Custody Level Downgrade
+    completion_event_builder=full_term_discharge.VIEW_BUILDER,
+)
+
+if __name__ == "__main__":
+    with local_project_id_override(GCP_PROJECT_STAGING):
+        VIEW_BUILDER.build_and_print()
