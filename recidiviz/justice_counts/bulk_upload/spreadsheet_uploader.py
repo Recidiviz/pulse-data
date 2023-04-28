@@ -85,6 +85,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
+        uploaded_report_ids: Set[int],
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -107,6 +108,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
+                uploaded_report_ids=uploaded_report_ids,
             )
         else:
             self._upload_rows(
@@ -116,6 +118,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
+                uploaded_report_ids=uploaded_report_ids,
             )
         return metric_key_to_datapoint_jsons, metric_key_to_errors
 
@@ -128,6 +131,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
+        uploaded_report_ids: Set[int],
     ) -> None:
         """Uploads supervision rows one system at a time."""
         for current_system, current_rows in system_to_rows.items():
@@ -138,6 +142,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
+                uploaded_report_ids=uploaded_report_ids,
             )
 
     def _upload_rows(
@@ -150,6 +155,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
+        uploaded_report_ids: Set[int],
     ) -> None:
         """Uploads rows for a system."""
 
@@ -177,6 +183,7 @@ class SpreadsheetUploader:
                 rows=rows,
                 metricfile=metricfile,
                 metric_key_to_errors=metric_key_to_errors,
+                uploaded_report_ids=uploaded_report_ids,
             )
         except Exception as e:
             new_datapoint_json_list = []
@@ -200,6 +207,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
+        uploaded_report_ids: Set[int],
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -268,6 +276,8 @@ class SpreadsheetUploader:
                     metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
                 )
                 existing_report = self.reports_by_time_range.get(time_range)
+                if existing_report is not None and existing_report[0].id is not None:
+                    uploaded_report_ids.add(existing_report[0].id)
                 (
                     report,
                     datapoint_json_list_for_time_range,

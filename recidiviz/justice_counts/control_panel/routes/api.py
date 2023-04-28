@@ -1159,6 +1159,7 @@ def get_api_blueprint(
                 metric_key_to_errors,
                 updated_report_ids,
                 existing_report_ids,
+                unchanged_report_ids,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
                 spreadsheet=spreadsheet,
@@ -1190,6 +1191,7 @@ def get_api_blueprint(
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                     updated_report_ids=updated_report_ids,
                     new_report_jsons=new_report_jsons,
+                    unchanged_report_ids=unchanged_report_ids,
                 )
             )
 

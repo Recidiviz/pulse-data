@@ -92,6 +92,8 @@ class WorkbookUploader:
         self.existing_report_ids: List[int]
         # A set of existing report IDs that have been changed/updated after bulk upload
         self.updated_report_ids: Set[int] = set()
+        # A set of uploaded report IDs will be used to create the `unchanged_report_ids` set
+        self.uploaded_report_ids: Set[int] = set()
 
     def upload_workbook(
         self,
@@ -173,6 +175,7 @@ class WorkbookUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
                 metric_key_to_errors=self.metric_key_to_errors,
+                uploaded_report_ids=self.uploaded_report_ids,
             )
 
         # 4. For any report that was updated, set its status to DRAFT

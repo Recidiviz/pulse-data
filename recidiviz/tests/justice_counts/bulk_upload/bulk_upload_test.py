@@ -1085,7 +1085,15 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
             self.assertEqual(len(reports), 9)
+            self.assertEqual(len(workbook_uploader.uploaded_report_ids), 9)
             self.assertEqual(len(workbook_uploader.updated_report_ids), 2)
             self.assertEqual(
                 workbook_uploader.updated_report_ids, {reports[3].id, reports[6].id}
             )
+            unchanged_report_ids = {
+                id
+                for id in workbook_uploader.uploaded_report_ids
+                if id not in workbook_uploader.updated_report_ids
+            }
+            # Since only 2 out of 9 reports were updated, we should expect the other 7 reports to be in the `unchanged_report_ids` set
+            self.assertEqual(len(unchanged_report_ids), 7)
