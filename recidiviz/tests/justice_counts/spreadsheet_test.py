@@ -198,6 +198,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_errors,
                 _,
                 _,
+                _,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
                 xls=pd.ExcelFile(TEST_EXCEL_FILE),
@@ -223,6 +224,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 updated_report_ids=set(),
                 new_report_jsons=[],
+                unchanged_report_ids=set(),
             )
             metric_key_to_json = {m["key"]: m for m in json["metrics"]}
             for definition in metric_definitions:
