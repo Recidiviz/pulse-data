@@ -244,6 +244,17 @@ module "practices-etl-data" {
   project_id                  = var.project_id
   name_suffix                 = "practices-etl-data"
   uniform_bucket_level_access = false
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 7
+      }
+    }
+  ]
 }
 
 module "practices-etl-data-archive" {
