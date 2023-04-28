@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_VantagePointAssessments` to corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderID
+  - CAFDate
+  - CAFScore
+  - ScheduleAScore
+  - ScheduleBScore
+  - CAFCustodyLevel
+  - Question1
+  - Question2
+  - Question3
+  - Question4
+  - Question5
+  - Question6
+  - Question7
+  - Question8
+  - Question9
+  - CAFSiteID
+  - CAF_ID
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderID
+          id_type: $literal("US_TN_DOC")
+    assessments:
+      - StateAssessment:
+          external_id:
+            $concat:
+              $values:
+                - OffenderID
+                - CAF_ID
+          assessment_type: $literal_enum(StateAssessmentType.CAF)
+          assessment_date: CAFDate
+          assessment_score: CAFScore
+          assessment_level:
+            $enum_mapping:
+              $raw_text: CAFCustodyLevel
+              $mappings:
+                StateAssessmentLevel.MINIMUM:
+                  - "MIN"
+                StateAssessmentLevel.MEDIUM:
+                  - "MED"
+                StateAssessmentLevel.MEDIUM_HIGH:
+                  - "CLS"
+                StateAssessmentLevel.MAXIMUM:
+                  - "MAX"
+          assessment_metadata:
+            $json_dict:
+              Question1: Question1
+              Question2: Question2
+              Question3: Question3
+              Question4: Question4
+              Question5: Question5
+              Question6: Question6
+              Question7: Question7
+              Question8: Question8
+              Question9: Question9
+              ScheduleAScore: ScheduleAScore
+              ScheduleBScore: ScheduleBScore
+              CAFScore: CAFScore
+              CAFSite: CAFSiteID
