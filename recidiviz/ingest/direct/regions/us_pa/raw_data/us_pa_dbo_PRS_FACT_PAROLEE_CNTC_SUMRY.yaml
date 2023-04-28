@@ -6,20 +6,23 @@ file_description: |-
   This table can have rows retroactively updated by agents with corrections between ingest dates
   as well as multiple rows within one ingest date that semantically represent the same contact made to
   a person on supervision.
-  Fields such as METHOD, CONTACT_TYPE, ATTEMPTED, ASSISTED, COLLATERAL_TYPE are not included in this primary key due to
-  evidence of retroactive updates to those fields. 
-  PRL_AGNT_EMPL_NO is also relatively stable in combination to the four fields identified below but is excluded out of 
-  possibility that it could transfer from one agent to another within PADOC.
-  The four fields PAROLE_NUMBER, CREATED_DATE, CONTACT_TYPE, DURATION_MINS are identified as relatively stable to represent one contact 
-  - CREATED_DATE may indicate a date later than START_DATE or END_DATE due to manual input by parole agents, but is hardly changed due 
-  to every other adjustment after is a retroactive update to other fields. CONTACT_TYPE and DURATION_MINS, in this case, also hardly change, 
-  but DURATION_MINS is included because there may be multiple of the same CONTACT_TYPE contacts created but for slightly different purposes.
+
+  In a few early transfers of this file, there are a number of instances of a single
+  FACT_PAROLEE_CNTC_SUMRY_ID value being attached to more than one PAROLE_NUMBER value.
+  This seems like an issue that was resolved before this file began being transferred
+  automatically each day.
+
+  The PKs here assume that each combination of FACT_PAROLEE_CNTC_SUMRY_ID and PAROLE_NUMBER
+  is meant to represent a unique contact, not an update to the previous information
+  stored under that FACT_PAROLEE_CNTC_SUMRY_ID.
+
+  TODO(#18307): Clarify with PA that this is the correct interpretation of a single
+  FACT_PAROLEE_CNTC_SUMRY_ID having more than one associated PAROLE_NUMBER.
+
 data_classification: source
 primary_key_cols:
+  - FACT_PAROLEE_CNTC_SUMRY_ID
   - PAROLE_NUMBER
-  - CREATED_DATE
-  - CONTACT_TYPE
-  - DURATION_MINS
 columns:
   - name: FACT_PAROLEE_CNTC_SUMRY_ID
     is_pii: True
