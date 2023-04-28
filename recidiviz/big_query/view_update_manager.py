@@ -131,14 +131,18 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     bq_region_override: Optional[str] = None,
     force_materialize: bool = False,
     default_table_expiration_for_new_datasets: Optional[int] = None,
+    views_might_exist: bool = True,
 ) -> None:
     """Creates or updates all the views in the provided list with the view query in the
     provided view builder list. If any materialized view has been updated (or if an
     ancestor view has been updated) or the force_materialize flag is set, the view
     will be re-materialized to ensure the schemas remain consistent.
 
-    If a |historically_managed_datasets_to_clean| set is provided,
+    If a `historically_managed_datasets_to_clean` set is provided,
     then cleans up unmanaged views and datasets by deleting them from BigQuery.
+
+    If `views_might_exist` is set then we will optimistically try to update
+    them, and fallback to creating the views if they do not exist.
 
     Should only be called if we expect the views to have changed (either the view query
     or schema from querying underlying tables), e.g. at deploy time.
@@ -164,6 +168,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             force_materialize,
             historically_managed_datasets_to_clean=historically_managed_datasets_to_clean,
             default_table_expiration_for_new_datasets=default_table_expiration_for_new_datasets,
+            views_might_exist=views_might_exist,
         )
     except Exception as e:
         with monitoring.measurements() as measurements:
@@ -326,6 +331,7 @@ def _create_managed_dataset_and_deploy_views(
     force_materialize: bool,
     historically_managed_datasets_to_clean: Optional[Set[str]] = None,
     default_table_expiration_for_new_datasets: Optional[int] = None,
+    views_might_exist: bool = True,
 ) -> None:
     """Create and update the given views and their parent datasets. Cleans up unmanaged views and datasets
 
@@ -347,6 +353,8 @@ def _create_managed_dataset_and_deploy_views(
             process. If null, does not perform the cleanup step. If provided,
             will error if any dataset required for the |views_to_update| is not
             included in this set.
+        views_might_exist: If set then we will optimistically try to update
+            them, and fallback to creating the views if they do not exist.
     """
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
     dag_walker = BigQueryViewDagWalker(views_to_update)
@@ -377,7 +385,11 @@ def _create_managed_dataset_and_deploy_views(
         """Returns True if this view or any of its parents were updated."""
         try:
             return _create_or_update_view_and_materialize_if_necessary(
-                bq_client, v, parent_results, force_materialize
+                bq_client,
+                v,
+                parent_results,
+                force_materialize,
+                might_exist=views_might_exist,
             )
         except Exception as e:
             raise ValueError(f"Error creating or updating view [{v.address}]") from e
@@ -395,6 +407,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     view: BigQueryView,
     parent_results: Dict[BigQueryView, CreateOrUpdateViewStatus],
     force_materialize: bool,
+    might_exist: bool,
 ) -> CreateOrUpdateViewStatus:
     """Creates or updates the provided view in BigQuery and materializes that view into
     a table when appropriate. Returns:
@@ -448,7 +461,7 @@ def _create_or_update_view_and_materialize_if_necessary(
     # changes from underlying tables to be reflected in its schema.
     if old_schema is not None:
         bq_client.delete_table(dataset_ref.dataset_id, view.view_id)
-    updated_view = bq_client.create_or_update_view(view)
+    updated_view = bq_client.create_or_update_view(view, might_exist=might_exist)
 
     if updated_view.schema != old_schema:
         # We also check for schema changes, just in case a parent view or table has added a column

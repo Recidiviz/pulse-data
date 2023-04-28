@@ -237,13 +237,17 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
+    def create_or_update_view(
+        self, view: BigQueryView, might_exist: bool = True
+    ) -> bigquery.Table:
         """Create a View if it does not exist, or update its query if it does.
 
         This runs synchronously and waits for the job to complete.
 
         Args:
             view: The View to create or update.
+            might_exist: If it is possible this view already exists, so we
+            should optimistically attempt to update it.
 
         Returns:
             The Table that was just created.
@@ -910,7 +914,9 @@ class BigQueryClientImpl(BigQueryClient):
     ) -> bigquery.Table:
         return self.client.create_table(table, exists_ok=overwrite)
 
-    def create_or_update_view(self, view: BigQueryView) -> bigquery.Table:
+    def create_or_update_view(
+        self, view: BigQueryView, might_exist: bool = True
+    ) -> bigquery.Table:
         if not view.should_deploy():
             raise ValueError(
                 f"Cannot create / update view [{view.address}] - should_deploy() is "
@@ -921,14 +927,21 @@ class BigQueryClientImpl(BigQueryClient):
         bq_view.description = view.bq_description
 
         try:
-            logging.info("Optimistically updating view [%s]", str(bq_view))
-            return self.client.update_table(bq_view, ["view_query", "description"])
-        except exceptions.NotFound:
-            logging.info(
-                "Creating view [%s] as it was not found while attempting to update",
-                str(bq_view),
-            )
-            return self.client.create_table(bq_view)
+            if might_exist:
+                try:
+                    logging.info("Optimistically updating view [%s]", str(bq_view))
+                    return self.client.update_table(
+                        bq_view, ["view_query", "description"]
+                    )
+                except exceptions.NotFound:
+                    logging.info(
+                        "Creating view [%s] as it was not found while attempting to update",
+                        str(bq_view),
+                    )
+                    return self.client.create_table(bq_view)
+            else:
+                logging.info("Creating view [%s]", str(bq_view))
+                return self.client.create_table(bq_view)
         except exceptions.BadRequest as e:
             raise ValueError(
                 f"Cannot update view query for [{view.address.to_str()}]"

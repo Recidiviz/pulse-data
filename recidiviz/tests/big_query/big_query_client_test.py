@@ -170,6 +170,12 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.update_table.assert_called()
         self.mock_client.create_table.assert_not_called()
 
+    def test_create_or_update_view_creates_view_not_might_exist(self) -> None:
+        """create_or_update_view creates a View if `might_exist` is not set"""
+        self.bq_client.create_or_update_view(self.mock_view, might_exist=False)
+        self.mock_client.update_table.assert_not_called()
+        self.mock_client.create_table.assert_called()
+
     def test_export_to_cloud_storage(self) -> None:
         """export_to_cloud_storage extracts the table corresponding to the
         view."""
