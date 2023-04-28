@@ -57,10 +57,10 @@ sentences AS (
       span.person_id,
       span.start_date,
       span.end_date,
-      ARRAY_AGG(DISTINCT statute) AS statutes_being_served,
+      ARRAY_AGG(DISTINCT statute IGNORE NULLS) AS statutes_being_served,
       LOGICAL_OR(sent.life_sentence) AS any_life_sentence,
       --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
-      LOGICAL_OR(IF((statute IN ("750.110", "750.110A") AND CAST(DATE_DIFF(projected_completion_date_max,effective_date,DAY) AS INT64) >= 5475),
+      LOGICAL_OR(IF((statute IN ("750.110", "750.110A") AND CAST(DATE_DIFF(projected_completion_date_max,effective_date,YEAR) AS INT64) >= 15),
                   true, false)) AS any_qualifying_statute_term
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
   UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
