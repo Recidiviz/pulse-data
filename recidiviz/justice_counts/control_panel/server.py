@@ -21,13 +21,11 @@ from http import HTTPStatus
 from typing import Optional, Tuple
 
 import pandas as pd
-import sentry_sdk
 from flask import Flask, Response, make_response, request, send_from_directory, url_for
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect
-from sentry_sdk.integrations.flask import FlaskIntegration
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from recidiviz.justice_counts.control_panel.config import Config
@@ -39,12 +37,7 @@ from recidiviz.justice_counts.control_panel.routes.auth import get_auth_blueprin
 from recidiviz.justice_counts.exceptions import JusticeCountsServerError
 from recidiviz.justice_counts.feed import FeedInterface
 from recidiviz.persistence.database.sqlalchemy_flask_utils import setup_scoped_sessions
-from recidiviz.utils.environment import (
-    GCP_PROJECT_STAGING,
-    get_gcp_environment,
-    in_development,
-    in_gcp,
-)
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, in_development
 from recidiviz.utils.metadata import set_development_project_id_override
 from recidiviz.utils.secrets import get_secret
 
@@ -78,20 +71,6 @@ def create_app(config: Optional[Config] = None) -> Flask:
     if in_development():
         # Set the project to recidiviz-staging if we are running the application locallly.
         set_development_project_id_override(GCP_PROJECT_STAGING)
-
-    if in_gcp():
-        # pylint: disable=abstract-class-instantiated
-        sentry_sdk.init(
-            # not a secret!
-            dsn="https://3e8c790dbf0c407b8c039b91c7af9abc@o432474.ingest.sentry.io/4504532096516096",
-            integrations=[FlaskIntegration()],
-            traces_sample_rate=1.0,
-            environment=get_gcp_environment(),
-            # enable profiling
-            _experiments={
-                "profiles_sample_rate": 1.0,
-            },
-        )
 
     app = Flask(__name__, static_folder=static_folder)
     config = config or Config()
