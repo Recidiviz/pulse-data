@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: elite_offense_in_custody_and_pos_report_data
+file_description: |-
+  All data for offenses committed in custody, their results and sanctions attached to
+  each offense.
+data_classification: source
+primary_key_cols:
+  - ROOT_OFFENDER_ID
+  - OIC_INCIDENT_ID
+  - OIC_OFFENCE_CODE
+  - SANCTION_SEQ
+  - OIC_HEARING_ID
+columns:
+  - name: ROOT_OFFENDER_ID
+  - name: LAST_NAME
+    is_pii: True
+  - name: FIRST_NAME
+    is_pii: True
+  - name: OFFENDER_BOOK_ID
+  - name: OIC_INCIDENT_ID
+  - name: AGENCY_INCIDENT_ID
+  - name: INCIDENT_DATE
+    is_datetime: True
+  - name: INCIDENT_TYPE
+  - name: INCIDENT_TYPE_DESC
+  - name: INCIDENT_DETAILS
+    is_pii: True
+  - name: AGY_LOC_ID
+  - name: OMS_OWNER_V_OIC_INCIDENTS___INT_LOC_DESCRIPTION
+  - name: REPORT_DATE
+    is_datetime: True
+  - name: OIC_HEARING_ID
+  - name: OIC_HEARING_TYPE
+  - name: OIC_HEARING_TYPE_DESC
+  - name: HEARING_DATE
+    is_datetime: True
+  - name: HEARING_STAFF_NAME
+  - name: OMS_OWNER_V_OIC_HEARINGS_COMMENT_TEXT
+  - name: OMS_OWNER_V_OIC_HEARINGS_INT_LOC_DESCRIPTION
+  - name: OMS_OWNER_V_OIC_HEARING_RESULTS_RESULT_SEQ
+  - name: OIC_OFFENCE_CATEGORY
+  - name: OIC_OFFENCE_CODE
+  - name: OIC_OFFENCE_DESCRIPTION
+  - name: PLEA_DESCRIPTION
+  - name: FINDING_DESCRIPTION
+  - name: RESULT_OIC_OFFENCE_CATEGORY
+  - name: RESULT_OIC_OFFENCE_CODE
+  - name: RESULT_OIC_OFFENCE_DESCRIPTION
+  - name: OIC_SANCTION_DESC
+  - name: Expr1030
+  - name: SANCTION_SEQ
+  - name: COMPENSATION_AMOUNT
+  - name: SANCTION_MONTHS
+  - name: SANCTION_DAYS
+  - name: OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_COMMENT_TEXT
+    is_pii: True
+  - name: EFFECTIVE_DATE
+    is_datetime: True
+  - name: OIC_SANCTION_CODE
+  - name: OMS_OWNER_V_OFFENDER_OIC_SANCTIONS_RESULT_SEQ
+  - name: ALIAS_NAME_TYPE
+always_historical_export: True

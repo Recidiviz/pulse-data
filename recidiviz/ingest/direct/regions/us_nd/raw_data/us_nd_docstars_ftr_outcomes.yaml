@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: docstars_ftr_outcomes
+file_description: |-
+  Monthly evaluation results of each participant in the Free Through Recovery
+  program to see if they are meeting the four criteria for the program.
+data_classification: source
+primary_key_cols:
+  - OUTCOME_ID
+columns:
+  - name: OUTCOME_ID
+  - name: PROVIDER_ID
+  - name: OFFICER
+    is_pii: True
+  - name: EPISODE_ID
+  - name: MONTH
+  - name: OUTCOME1
+  - name: OUTCOME1_COMMENT
+    is_pii: True
+  - name: OUTCOME2
+  - name: OUTCOME2_COMMENT
+    is_pii: True
+  - name: OUTCOME3
+  - name: OUTCOME3_COMMENT
+    is_pii: True
+  - name: OUTCOME4
+  - name: OUTCOME4_COMMENT
+    is_pii: True
+  - name: ON_TIME
+  - name: PAY_STATUS
+  - name: SUBMITTED_DATE
+    is_datetime: True
+  - name: SUBMITTED_BY
+    is_pii: True
+  - name: SUBMITTED_BY_NAME
+    is_pii: True
+  - name: TYPE
+  - name: SOURCE
+  - name: NOTE
+    is_pii: True
