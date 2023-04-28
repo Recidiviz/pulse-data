@@ -50,6 +50,19 @@ export const putWithURLAndBody = async (
   });
 };
 
+export const deleteWithUrlAndBody = async (
+  url: string,
+  body?: Record<string, unknown>
+): Promise<Response> => {
+  return fetch(`/admin${url}`, {
+    method: "DELETE",
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
+
 export const patchWithURLAndBody = async (
   url: string,
   body: Record<string, unknown> = {}

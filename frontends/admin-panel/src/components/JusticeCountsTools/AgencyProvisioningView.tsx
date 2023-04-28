@@ -19,38 +19,49 @@ import {
   Button,
   Form,
   Input,
-  message,
   PageHeader,
   Select,
   Space,
   Spin,
   Table,
   Typography,
+  message,
 } from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { createAgency, getAgencies } from "../../AdminPanelAPI";
-import { updateAgency } from "../../AdminPanelAPI/JusticeCountsTools";
+import {
+  addUserToAgencyOrUpdateRole,
+  getUsers,
+  removeUsersFromAgency,
+  updateAgency,
+} from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import { formLayout, formTailLayout } from "../constants";
 import {
   AgenciesResponse,
   Agency,
+  AgencyResponse,
+  AgencyTeamMember,
   CreateAgencyRequest,
   CreateAgencyResponse,
+  CreateUserResponse,
   ErrorResponse,
   FipsCountyCode,
   FipsCountyCodeKey,
   StateCode,
   StateCodeKey,
   System,
+  UsersResponse,
 } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
   const [showSpinner, setShowSpinner] = useState(false);
   const [selectedStateCode, setSelectedStateCode] = useState<string>("");
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
+  const { data: usersData, setData: setUsersData } =
+    useFetchedDataJSON<UsersResponse>(getUsers);
   const [form] = Form.useForm();
   const onFinish = async ({
     name,
@@ -84,6 +95,10 @@ const AgencyProvisioningView = (): JSX.Element => {
         agencies: data?.agencies ? [...data.agencies, agency] : [agency],
         systems: data?.systems || [],
       });
+      const { user } = (await response.json()) as CreateUserResponse;
+      setUsersData({
+        users: [...(usersData?.users || []), user],
+      });
       form.resetFields();
       setShowSpinner(false);
       message.success(`"${nameTrimmed}" added!`);
@@ -99,6 +114,7 @@ const AgencyProvisioningView = (): JSX.Element => {
     systems: string[];
     state: string;
     county?: string;
+    team: AgencyTeamMember[];
   };
 
   const getColumnSearchProps = (dataIndex: keyof AgencyRecord) => ({
@@ -176,6 +192,95 @@ const AgencyProvisioningView = (): JSX.Element => {
     }
   };
 
+  const getRoleFromEmail = (email: string) => {
+    if (email.includes("recidiviz.org") || email.includes("csg.org")) {
+      return "JUSTICE_COUNTS_ADMIN";
+    }
+    return "AGENCY_ADMIN";
+  };
+
+  const onUpdateTeamMember = async (
+    newTeamMemberEmails: string[],
+    currentTeamMemberEmails: string[],
+    currentAgency: Agency
+  ) => {
+    // This function supports the UI functionality where user can be added or removed
+    // from agencies. Users can be removed from an agency individually or all users
+    // can be cleared (via an X button). Users can only be added one at a time.
+    if (newTeamMemberEmails.length < currentTeamMemberEmails.length) {
+      // Remove user from agency
+      const removedMemberEmailsList = currentTeamMemberEmails.filter(
+        (email) => !newTeamMemberEmails.includes(email)
+      );
+      try {
+        const response = await removeUsersFromAgency(
+          currentAgency.id,
+          removedMemberEmailsList
+        );
+        if (!response.ok) {
+          const { error } = (await response.json()) as ErrorResponse;
+          message.error(`An error occured: ${error}`);
+          return;
+        }
+        const { agency } = (await response.json()) as AgencyResponse;
+        const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
+        if (agencyIndex !== undefined && data !== undefined) {
+          const updatedAgencies = data.agencies;
+          updatedAgencies[agencyIndex] = agency;
+          setData({
+            agencies: updatedAgencies,
+            systems: data?.systems || [],
+          });
+          const msg =
+            removedMemberEmailsList.length === 1
+              ? `User with email '${removedMemberEmailsList[0]}' was removed from ${currentAgency.name}!`
+              : `All users were removed from ${currentAgency.name}!`;
+          message.success(msg);
+        } else {
+          message.error("Agency cannot be found.");
+        }
+      } catch (err) {
+        message.error(`An error occured: ${err}`);
+      }
+    } else {
+      // Add user to agency
+      const addedMemberList = newTeamMemberEmails.filter(
+        (x) => !currentTeamMemberEmails.includes(x)
+      );
+      const userEmail = addedMemberList[0];
+      const role = getRoleFromEmail(userEmail);
+      try {
+        const response = await addUserToAgencyOrUpdateRole(
+          currentAgency.id.toString(),
+          userEmail,
+          role
+        );
+        if (!response.ok) {
+          const { error } = (await response.json()) as ErrorResponse;
+          message.error(`An error occured: ${error}`);
+          return;
+        }
+        const { agency } = (await response.json()) as AgencyResponse;
+        const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
+        if (agencyIndex !== undefined && data !== undefined) {
+          const updatedAgencies = data.agencies;
+          updatedAgencies[agencyIndex] = agency;
+          setData({
+            agencies: updatedAgencies,
+            systems: data?.systems || [],
+          });
+          message.success(
+            `User with email '${userEmail}' was added to ${currentAgency.name}!`
+          );
+        } else {
+          message.error("Agency cannot be found.");
+        }
+      } catch (err) {
+        message.error(`An error occured: ${err}`);
+      }
+    }
+  };
+
   const columns = [
     {
       title: "ID",
@@ -203,12 +308,11 @@ const AgencyProvisioningView = (): JSX.Element => {
       dataIndex: "systems",
       key: "system",
       render: (systems: string[], agency: Agency) => {
-        const currentSystems = systems;
         return (
           <Select
             mode="multiple"
             allowClear
-            defaultValue={currentSystems}
+            defaultValue={systems}
             showSearch
             optionFilterProp="children"
             disabled={showSpinner}
@@ -246,16 +350,52 @@ const AgencyProvisioningView = (): JSX.Element => {
     },
     {
       title: "Team Members",
+      key: "fipsCountyCode",
+      render: (agency: Agency) => {
+        const { team } = agency;
+        const currentTeamMemberEmails = team.map((user) => user.email);
+        return (
+          <Select
+            mode="multiple"
+            allowClear
+            defaultValue={currentTeamMemberEmails}
+            showSearch
+            optionFilterProp="children"
+            disabled={showSpinner}
+            filterOption={(input, option) =>
+              (option?.children as unknown as string)
+                .toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
+            }
+            onChange={(newTeamMemberEmails: string[]) => {
+              onUpdateTeamMember(
+                newTeamMemberEmails,
+                currentTeamMemberEmails,
+                agency
+              );
+            }}
+            style={{ minWidth: 250 }}
+          >
+            {/* #TODO(#12091): Replace with debounced search bar */}
+            {usersData?.users.map((user) => (
+              <Select.Option key={user.email} value={user.email}>
+                {user.name}
+              </Select.Option>
+            ))}
+          </Select>
+        );
+      },
+    },
+    {
+      title: "Roles",
       dataIndex: "id",
       key: "fipsCountyCode",
       render: (agencyId: number) => {
         const linkUrl = `/admin/justice_counts_tools/agency/${agencyId}/users`;
-        return <Link to={linkUrl}>Team Members</Link>;
+        return <Link to={linkUrl}>Team Member Roles</Link>;
       },
-      ...getColumnSearchProps("county"),
     },
   ];
-
   return (
     <>
       <PageHeader title="Agency Provisioning" />
@@ -266,6 +406,7 @@ const AgencyProvisioningView = (): JSX.Element => {
           state:
             StateCode[agency.state_code?.toLocaleLowerCase() as StateCodeKey],
           county: FipsCountyCode[agency.fips_county_code as FipsCountyCodeKey],
+          teamMembers: agency.team.map((u) => u.email),
         }))}
         pagination={{
           hideOnSinglePage: true,

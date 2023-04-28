@@ -94,6 +94,7 @@ class UserAccountInterface:
                     user_account=user,
                     agency=agency,
                     invitation_status=invitation_status,
+                    role=role,
                 )
             )
 
