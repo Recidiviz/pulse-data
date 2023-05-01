@@ -31,6 +31,9 @@ DATES_WITH_AVAILABLE_DATA = [
     date(2022, 10, 21),
     date(2022, 12, 23),
     date(2023, 1, 20),
+    date(2023, 2, 24),
+    date(2023, 3, 24),
+    date(2023, 4, 21),
 ]
 
 
