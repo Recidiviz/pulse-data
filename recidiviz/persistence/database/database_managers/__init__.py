@@ -14,20 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""SchemaType enumerations for the database schemas."""
-import enum
-
-
-@enum.unique
-class SchemaType(enum.Enum):
-    STATE = "STATE"
-    OPERATIONS = "OPERATIONS"
-    JUSTICE_COUNTS = "JUSTICE_COUNTS"
-    CASE_TRIAGE = "CASE_TRIAGE"
-    PATHWAYS = "PATHWAYS"
-    OUTLIERS = "OUTLIERS"
-
-    @property
-    def is_multi_db_schema(self) -> bool:
-        """Returns True if this schema is segmented into multiple databases"""
-        return self in [SchemaType.STATE, SchemaType.PATHWAYS, SchemaType.OUTLIERS]

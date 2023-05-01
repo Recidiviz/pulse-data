@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -223,6 +224,7 @@ def _is_database_entity_subclass(member: Any) -> bool:
         and member is not OperationsBase
         and member is not CaseTriageBase
         and member is not PathwaysBase
+        and member is not OutliersBase
     )
 
 
@@ -303,6 +305,8 @@ def schema_type_for_object(schema_object: DatabaseEntity) -> SchemaType:
         return SchemaType.CASE_TRIAGE
     if isinstance(schema_object, PathwaysBase):
         return SchemaType.PATHWAYS
+    if isinstance(schema_object, OutliersBase):
+        return SchemaType.OUTLIERS
 
     raise ValueError(f"Object of type [{type(schema_object)}] has unknown schema base.")
 
@@ -318,5 +322,7 @@ def schema_type_to_schema_base(schema_type: SchemaType) -> DeclarativeMeta:
         return CaseTriageBase
     if schema_type == SchemaType.PATHWAYS:
         return PathwaysBase
+    if schema_type == SchemaType.OUTLIERS:
+        return OutliersBase
 
     raise ValueError(f"Unexpected schema type [{schema_type}].")

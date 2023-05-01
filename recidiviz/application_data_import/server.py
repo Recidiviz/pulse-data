@@ -23,6 +23,7 @@ from typing import Tuple
 
 from flask import Flask, request
 from google.api_core.exceptions import AlreadyExists
+from google.cloud import pubsub
 from sqlalchemy import delete
 
 from recidiviz.big_query.selected_columns_big_query_view import (
@@ -30,6 +31,12 @@ from recidiviz.big_query.selected_columns_big_query_view import (
 )
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_views import (
     PATHWAYS_EVENT_LEVEL_VIEW_BUILDERS,
+)
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
+from recidiviz.calculator.query.state.views.outliers.outliers_views import (
+    OUTLIERS_VIEW_BUILDERS,
 )
 from recidiviz.case_triage.pathways.enabled_metrics import get_metrics_for_entity
 from recidiviz.case_triage.pathways.metric_cache import PathwaysMetricCache
@@ -46,9 +53,15 @@ from recidiviz.common.google_cloud.single_cloud_task_queue_manager import (
 )
 from recidiviz.metrics.export.export_config import (
     DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+    OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
 )
+from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
+    StateSegmentedDatabaseManager,
+)
+from recidiviz.persistence.database.schema.outliers import schema as outliers_schema
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.pathways.schema import MetricMetadata
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.schema_utils import (
     get_database_entity_by_table_name,
 )
@@ -79,11 +92,27 @@ else:
     )
 
 PATHWAYS_DB_IMPORT_QUEUE = "pathways-db-import"
+OUTLIERS_DB_IMPORT_QUEUE = "outliers-db-import"
+
+
+def _dashboard_event_level_bucket() -> str:
+    return StrictStringFormatter().format(
+        DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
+        project_id=metadata.project_id(),
+    )
+
+
+def _outliers_bucket() -> str:
+    return StrictStringFormatter().format(
+        OUTLIERS_VIEWS_OUTPUT_DIRECTORY_URI,
+        project_id=metadata.project_id(),
+    )
 
 
 @app.route("/import/pathways/<state_code>/<filename>", methods=["POST"])
 def _import_pathways(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
     """Imports a CSV file from GCS into the Pathways Cloud SQL database"""
+    # TODO(#20600): Create a helper for the shared logic between this endpoint and /import/outliers
     if not StateCode.is_state_code(state_code.upper()):
         return (
             f"Unknown state_code [{state_code}] received, must be a valid state code.",
@@ -163,48 +192,162 @@ def _import_trigger_pathways() -> Tuple[str, HTTPStatus]:
     except Exception as e:
         return str(e), HTTPStatus.BAD_REQUEST
 
+    try:
+        create_import_task_helper(
+            request_path=request.path,
+            message=message,
+            gcs_bucket=_dashboard_event_level_bucket(),
+            import_queue_name=PATHWAYS_DB_IMPORT_QUEUE,
+            task_prefix="import-pathways",
+            task_url="/import/pathways",
+        )
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    return "", HTTPStatus.OK
+
+
+@app.route("/import/trigger_outliers", methods=["POST"])
+def _import_trigger_outliers() -> Tuple[str, HTTPStatus]:
+    """Exposes an endpoint to trigger standard GCS imports for outliers."""
+
+    try:
+        message = extract_pubsub_message_from_json(request.get_json())
+    except Exception as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    try:
+        create_import_task_helper(
+            request_path=request.path,
+            message=message,
+            gcs_bucket=_outliers_bucket(),
+            import_queue_name=OUTLIERS_DB_IMPORT_QUEUE,
+            task_prefix="import-outliers",
+            task_url="/import/outliers",
+        )
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    return "", HTTPStatus.OK
+
+
+def create_import_task_helper(
+    request_path: str,
+    message: pubsub.types.PubsubMessage,
+    gcs_bucket: str,
+    import_queue_name: str,
+    task_prefix: str,
+    task_url: str,
+) -> None:
+    """
+    Creates a CloudTask to import a file from a bucket via an import endpoint.
+
+    :param message: The Pub/Sub message that triggered this endpoint
+    :param gcs_bucket: The bucket that is expected to have sent the Pub/Sub message
+    :param import_queue_name: The name of the TaskQueue that the import task should be queued to
+    :param task_prefix: A more general prefix to use for the task id
+    :param task_url: The endpoint that will handle the task
+    :rtype: None
+    """
     if not message.attributes:
-        return "Invalid Pub/Sub message", HTTPStatus.BAD_REQUEST
+        logging.error("Invalid Pub/Sub message")
+        raise ValueError("Invalid Pub/Sub message")
+
     attributes = message.attributes
 
     bucket_id = attributes[BUCKET_ID]
     object_id = attributes[OBJECT_ID]
-    if "gs://" + bucket_id != _dashboard_event_level_bucket():
-        return (
-            f"/trigger_pathways is only configured for the dashboard-event-level-data bucket, saw {bucket_id}",
-            HTTPStatus.BAD_REQUEST,
+    if "gs://" + bucket_id != gcs_bucket:
+        logging.error(
+            "%s is only configured for the %s bucket, saw %s",
+            request_path,
+            gcs_bucket,
+            bucket_id,
+        )
+        raise ValueError(
+            f"{request_path} is only configured for the {gcs_bucket} bucket, saw {bucket_id}"
         )
 
     obj_id_parts = object_id.split("/")
     if len(obj_id_parts) != 2:
-        return (
-            f"Invalid object ID {object_id}, must be of format <state_code>/<filename>",
-            HTTPStatus.BAD_REQUEST,
+        logging.error(
+            "Invalid object ID %s, must be of format <state_code>/<filename>", object_id
+        )
+        raise ValueError(
+            f"Invalid object ID {object_id}, must be of format <state_code>/<filename>"
         )
 
     cloud_task_manager = SingleCloudTaskQueueManager(
-        queue_info_cls=CloudTaskQueueInfo, queue_name=PATHWAYS_DB_IMPORT_QUEUE
+        queue_info_cls=CloudTaskQueueInfo, queue_name=import_queue_name
     )
 
-    pathways_task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"import-pathways-{object_id}")
+    task_id = re.sub(r"[^a-zA-Z0-9_-]", "-", f"{task_prefix}-{object_id}")
 
     try:
         cloud_task_manager.create_task(
-            absolute_uri=f"{cloud_run_metadata.url}/import/pathways/{object_id}",
+            absolute_uri=f"{cloud_run_metadata.url}{task_url}/{object_id}",
             service_account_email=cloud_run_metadata.service_account_email,
-            task_id=pathways_task_id,  # deduplicate import requests for the same file
+            task_id=task_id,  # deduplicate import requests for the same file
         )
-        logging.info("Enqueued gcs_import task to %s", PATHWAYS_DB_IMPORT_QUEUE)
+        logging.info("Enqueued gcs_import task to %s", import_queue_name)
     except AlreadyExists:
         logging.info(
             "Skipping enqueueing of %s because it is already being imported",
-            pathways_task_id,
+            task_id,
         )
-    return "", HTTPStatus.OK
 
 
-def _dashboard_event_level_bucket() -> str:
-    return StrictStringFormatter().format(
-        DASHBOARD_EVENT_LEVEL_VIEWS_OUTPUT_DIRECTORY_URI,
-        project_id=metadata.project_id(),
+@app.route("/import/outliers/<state_code>/<filename>", methods=["POST"])
+def _import_outliers(state_code: str, filename: str) -> Tuple[str, HTTPStatus]:
+    """Imports a CSV file from GCS into the Outliers Cloud SQL database"""
+    # TODO(#20600): Create a helper for the shared logic between this endpoint and /import/outliers
+    if not StateCode.is_state_code(state_code.upper()):
+        return (
+            f"Unknown state_code [{state_code}] received, must be a valid state code.",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    view_builder = None
+    for builder in OUTLIERS_VIEW_BUILDERS:
+        if f"{builder.view_id}.csv" == filename:
+            view_builder = builder
+    if not view_builder:
+        return (
+            f"Invalid filename {filename}, must match a Outliers view",
+            HTTPStatus.BAD_REQUEST,
+        )
+    if not isinstance(view_builder, SelectedColumnsBigQueryViewBuilder):
+        return (
+            f"Unexpected view builder delegate found when importing {filename}",
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    try:
+        db_entity = get_database_entity_by_table_name(
+            outliers_schema, view_builder.view_id
+        )
+
+    except ValueError as e:
+        return str(e), HTTPStatus.BAD_REQUEST
+
+    csv_path = GcsfsFilePath.from_absolute_path(
+        os.path.join(
+            _outliers_bucket(),
+            state_code + "/" + filename,
+        )
     )
+
+    outliers_db_manager = StateSegmentedDatabaseManager(
+        get_outliers_enabled_states(), SchemaType.OUTLIERS
+    )
+
+    database_key = outliers_db_manager.database_key_for_state(state_code)
+    import_gcs_csv_to_cloud_sql(
+        database_key,
+        db_entity,
+        csv_path,
+        view_builder.columns,
+    )
+    logging.info("View (%s) successfully imported", view_builder.view_id)
+
+    return "", HTTPStatus.OK

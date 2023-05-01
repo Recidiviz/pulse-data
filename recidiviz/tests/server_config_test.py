@@ -39,8 +39,15 @@ class TestServerConfig(unittest.TestCase):
         f"{server_config.__name__}.get_pathways_enabled_states",
         return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
     )
+    @patch(
+        f"{server_config.__name__}.get_outliers_enabled_states",
+        return_value=[StateCode.US_XX.value, StateCode.US_WW.value],
+    )
     def test_get_database_keys_for_schema(
-        self, state_codes_fn: Mock, _pathways_enabled_states: Mock
+        self,
+        state_codes_fn: Mock,
+        _pathways_enabled_states: Mock,
+        _outliers_enabled_states: Mock,
     ) -> None:
         all_keys = []
         for schema_type in SchemaType:
@@ -56,6 +63,8 @@ class TestServerConfig(unittest.TestCase):
             SQLAlchemyDatabaseKey(SchemaType.STATE, db_name="us_ww_secondary"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_xx"),
             SQLAlchemyDatabaseKey(SchemaType.PATHWAYS, db_name="us_ww"),
+            SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_xx"),
+            SQLAlchemyDatabaseKey(SchemaType.OUTLIERS, db_name="us_ww"),
         ]
 
         self.assertCountEqual(expected_all_keys, all_keys)

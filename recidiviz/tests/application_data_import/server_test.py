@@ -27,6 +27,9 @@ import pytest
 from fakeredis import FakeRedis
 
 from recidiviz.application_data_import.server import _dashboard_event_level_bucket, app
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 from recidiviz.case_triage.pathways.metrics.metric_query_builders import (
     ALL_METRICS_BY_NAME,
 )
@@ -37,6 +40,10 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
+    StateSegmentedDatabaseManager,
+)
+from recidiviz.persistence.database.schema.outliers.schema import SupervisionUnit
 from recidiviz.persistence.database.schema.pathways.schema import (
     LibertyToPrisonTransitions,
     MetricMetadata,
@@ -49,7 +56,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 @patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
 @pytest.mark.uses_db
-class TestApplicationDataImportRoutes(TestCase):
+class TestApplicationDataImportPathwaysRoutes(TestCase):
     """Implements tests for the Application Data Import Flask server."""
 
     # Stores the location of the postgres DB for this test run
@@ -137,7 +144,7 @@ class TestApplicationDataImportRoutes(TestCase):
                 },
             )
             self.assertEqual(
-                b"/trigger_pathways is only configured for the dashboard-event-level-data bucket, saw invalid-bucket",
+                b"/import/trigger_pathways is only configured for the gs://test-project-dashboard-event-level-data bucket, saw invalid-bucket",
                 response.data,
             )
             self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
@@ -344,3 +351,181 @@ class TestApplicationDataImportRoutes(TestCase):
             with SessionFactory.using_database(self.database_key) as session:
                 destination_table_rows = session.query(MetricMetadata).all()
                 self.assertFalse(destination_table_rows)
+
+
+@patch("recidiviz.utils.metadata.project_id", MagicMock(return_value="test-project"))
+@pytest.mark.uses_db
+class TestApplicationDataImportOutliersRoutes(TestCase):
+    """Implements tests for the outliers routes in the Application Data Import Flask server."""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(
+            cls.temp_db_dir
+        )
+
+    def setUp(self) -> None:
+        self.app = app
+        self.client = self.app.test_client()
+        self.bucket = "test-project-outliers-etl-data"
+        self.view = "supervision_units"
+        self.state_code = "US_XX"
+        self.columns = [col.name for col in SupervisionUnit.__table__.columns]
+        self.fs = FakeGCSFileSystem()
+        self.fs_patcher = patch.object(GcsfsFactory, "build", return_value=self.fs)
+        self.fs_patcher.start()
+        self.database_manager = StateSegmentedDatabaseManager(
+            get_outliers_enabled_states(), SchemaType.OUTLIERS
+        )
+        self.database_key = self.database_manager.database_key_for_state(
+            self.state_code
+        )
+        local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
+
+    def tearDown(self) -> None:
+        self.fs_patcher.stop()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.database_key)
+
+    @patch("recidiviz.application_data_import.server.SingleCloudTaskQueueManager")
+    def test_import_trigger_outliers(self, mock_task_manager: MagicMock) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_outliers",
+                json={
+                    "message": {
+                        "data": base64.b64encode(b"anything").decode(),
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"{self.state_code}/test-file.csv",
+                        },
+                        "messageId": "12345",
+                    }
+                },
+            )
+            self.assertEqual(b"", response.data)
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+            mock_task_manager.return_value.create_task.assert_called_with(
+                absolute_uri=f"http://localhost:5000/import/outliers/{self.state_code}/test-file.csv",
+                service_account_email="fake-acct@fake-project.iam.gserviceaccount.com",
+                task_id=f"import-outliers-{self.state_code}-test-file-csv",
+            )
+
+    def test_import_trigger_outliers_bad_message(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_outliers",
+                json={"message": {}},
+            )
+            self.assertEqual(b"Invalid Pub/Sub message", response.data)
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_outliers_invalid_bucket(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_outliers",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": "invalid-bucket",
+                            "objectId": f"{self.state_code}/test-file.csv",
+                        },
+                        "messageId": "12345",
+                    },
+                    "subscription": "test-subscription",
+                },
+            )
+            self.assertEqual(
+                b"/import/trigger_outliers is only configured for the gs://test-project-outliers-etl-data bucket, saw invalid-bucket",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    def test_import_trigger_outliers_invalid_object(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                "/import/trigger_outliers",
+                json={
+                    "message": {
+                        "attributes": {
+                            "bucketId": self.bucket,
+                            "objectId": f"staging/{self.state_code}/test-file.csv",
+                        },
+                        "messageId": "12345",
+                    },
+                    "subscription": "test-subscription",
+                },
+            )
+            self.assertEqual(
+                b"Invalid object ID staging/US_XX/test-file.csv, must be of format <state_code>/<filename>",
+                response.data,
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+
+    @patch(
+        "recidiviz.application_data_import.server.import_gcs_csv_to_cloud_sql",
+        autospec=True,
+    )
+    def test_import_outliers_successful(
+        self,
+        mock_import_csv: MagicMock,
+    ) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/outliers/{self.state_code}/{self.view}.csv",
+            )
+            mock_import_csv.assert_called_with(
+                database_key=SQLAlchemyDatabaseKey(
+                    schema_type=SchemaType.OUTLIERS, db_name="us_xx"
+                ),
+                model=SupervisionUnit,
+                gcs_uri=GcsfsFilePath.from_bucket_and_blob_name(
+                    self.bucket, f"{self.state_code}/{self.view}.csv"
+                ),
+                columns=self.columns,
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+
+    def test_import_outliers_invalid_state(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/outliers/US_ABC/{self.view}.csv",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Unknown state_code [US_ABC] received, must be a valid state code.",
+                response.data,
+            )
+
+    def test_import_outliers_invalid_file(self) -> None:
+        with self.app.test_request_context():
+            response = self.client.post(
+                f"/import/outliers/{self.state_code}/unknown_file.csv",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                b"Invalid filename unknown_file.csv, must match a Outliers view",
+                response.data,
+            )
+
+    @patch("recidiviz.application_data_import.server.get_database_entity_by_table_name")
+    def test_import_outliers_invalid_table(self, mock_get_database: MagicMock) -> None:
+        error_message = f"Could not find model with table named {self.view}"
+        with self.app.test_request_context():
+            mock_get_database.side_effect = ValueError(error_message)
+            response = self.client.post(
+                f"/import/outliers/{self.state_code}/{self.view}.csv",
+            )
+            self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
+            self.assertEqual(
+                error_message.encode("UTF-8"),
+                response.data,
+            )

@@ -20,6 +20,9 @@ from typing import List
 from recidiviz.calculator.query.state.views.dashboard.pathways.pathways_enabled_states import (
     get_pathways_enabled_states,
 )
+from recidiviz.calculator.query.state.views.outliers.outliers_enabled_states import (
+    get_outliers_enabled_states,
+)
 from recidiviz.case_triage.pathways.pathways_database_manager import (
     PathwaysDatabaseManager,
 )
@@ -28,6 +31,9 @@ from recidiviz.ingest.direct.regions.direct_ingest_region_utils import (
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.ingest.direct.types.instance_database_key import database_key_for_state
+from recidiviz.persistence.database.database_managers.state_segmented_database_manager import (
+    StateSegmentedDatabaseManager,
+)
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -52,6 +58,15 @@ def database_keys_for_schema_type(
         return [
             PathwaysDatabaseManager.database_key_for_state(state_code)
             for state_code in get_pathways_enabled_states()
+        ]
+
+    if schema_type == SchemaType.OUTLIERS:
+        outliers_db_manager = StateSegmentedDatabaseManager(
+            get_outliers_enabled_states(), SchemaType.OUTLIERS
+        )
+        return [
+            outliers_db_manager.database_key_for_state(state_code)
+            for state_code in get_outliers_enabled_states()
         ]
 
     raise ValueError(f"Unexpected schema_type: [{schema_type}]")

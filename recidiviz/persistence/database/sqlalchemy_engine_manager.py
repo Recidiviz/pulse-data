@@ -191,6 +191,8 @@ class SQLAlchemyEngineManager:
             return "case_triage"
         if schema_type == SchemaType.PATHWAYS:
             return "pathways"
+        if schema_type == SchemaType.OUTLIERS:
+            return "outliers"
 
         raise ValueError(f"Unexpected schema type [{schema_type}].")
 

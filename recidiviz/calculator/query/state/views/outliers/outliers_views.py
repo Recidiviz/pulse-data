@@ -17,7 +17,9 @@
 """All Outliers views."""
 from typing import List
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.big_query.selected_columns_big_query_view import (
+    SelectedColumnsBigQueryViewBuilder,
+)
 from recidiviz.calculator.query.state.views.outliers.supervision_district_managers import (
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
 )
@@ -46,7 +48,7 @@ from recidiviz.calculator.query.state.views.outliers.supervision_units import (
     SUPERVISION_UNITS_VIEW_BUILDER,
 )
 
-OUTLIERS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+OUTLIERS_VIEW_BUILDERS: List[SelectedColumnsBigQueryViewBuilder] = [
     SUPERVISION_DISTRICT_MANAGERS_VIEW_BUILDER,
     SUPERVISION_DISTRICT_METRICS_VIEW_BUILDER,
     SUPERVISION_DISTRICTS_VIEW_BUILDER,
