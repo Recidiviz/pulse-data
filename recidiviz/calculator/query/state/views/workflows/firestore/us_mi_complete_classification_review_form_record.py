@@ -41,6 +41,7 @@ US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_DESCRIPTION = """
 
 US_MI_COMPLETE_CLASSIFICATION_REVIEW_FORM_RECORD_QUERY_TEMPLATE = f"""
 WITH compas_recommended_preprocessed AS (
+# TODO(#20530) deprecate this view in favor of moving this logic further upstream in ingest process
 /* This CTE translates COMPAS scores to the recommended supervision level and partitions by person_id to determine
 the most recent COMPAS score for each client */ 
 SELECT 
