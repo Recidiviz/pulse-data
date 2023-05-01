@@ -17,38 +17,61 @@
 """Defines a criteria span view that shows spans of time during which someone has no ineligible offenses
 for supervision level downgrade
 """
+
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_1_sessions,
+)
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
-)
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_NO_INELIGIBLE_OFFENSES_FOR_DOWNGRADE_FROM_SUPERVISION_LEVEL"
+_CRITERIA_NAME = (
+    "US_MI_NOT_SERVING_INELIGIBLE_OFFENSES_FOR_DOWNGRADE_FROM_SUPERVISION_LEVEL"
+)
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone has no ineligible offenses
 (below) for supervision level downgrade
         - not currently serving for a sex offense
         - not serving for failure to register for SORA offense
-        - currently serving for probation for aggravated stalking or DV 3rd
+        - not currently serving for aggravated stalking or Domestic Violence 3rd
         - not currently serving a life or commuted sentence
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT(['750.520', '750.520']  AS ineligible_offenses))"""
-
+_QUERY_TEMPLATE = f"""
+ SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        FALSE as meets_criteria,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute IGNORE NULLS ORDER BY statute) AS ineligible_offenses,
+                        ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY status) AS sentence_status,
+                         LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
+                         LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense )) AS reason,
+    {join_sentence_spans_to_compartment_1_sessions()}
+    WHERE span.state_code = "US_MI"
+    AND (sent.is_sex_offense
+        --failure to register for sex offense
+        OR sent.statute LIKE '28.729%'
+        --aggravated stalking
+        OR sent.statute = '750.411I'
+        --Domestic Violence 3rd 
+        OR sent.statute = '750.815'
+        OR sent.status = 'COMMUTED'
+        OR sent.life_sentence
+        )
+    GROUP BY 1, 2, 3, 4, 5
+    """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
     )
 )
-
-if __name__ == "__main__":
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        VIEW_BUILDER.build_and_print()

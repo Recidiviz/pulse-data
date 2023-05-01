@@ -75,6 +75,7 @@ _QUERY_TEMPLATE = f"""
                 FIRST_VALUE(assessment_date) OVER (assessment_window) AS assessment_date,
                 FIRST_VALUE(supervision_level) OVER (supervision_level_window) AS supervision_level,
                 FIRST_VALUE(supervision_level_raw_text) OVER (supervision_level_window) AS supervision_level_raw_text,
+        #TODO(#20588) Potentially simplify to remove priority level dedups and just choose non null value
         FROM sub_sessions_with_attributes
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority`
             ON supervision_level = correctional_level

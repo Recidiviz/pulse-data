@@ -76,6 +76,7 @@ _QUERY_TEMPLATE = f"""
                 -- sort from HIGH --> LOW supervision levels and choose the highest 
                 FIRST_VALUE(supervision_level) OVER (supervision_level_window) AS supervision_level,
         FROM sub_sessions_with_attributes
+         #TODO(#20588) Potentially simplify to remove priority level dedups and just choose non null value
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority`
             ON supervision_level = correctional_level
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_level_dedup_priority`

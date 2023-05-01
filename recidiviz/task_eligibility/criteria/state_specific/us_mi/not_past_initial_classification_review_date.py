@@ -18,11 +18,11 @@
 before their initial review date
 """
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_criteria_state_specific_dataset,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,15 +32,26 @@ _CRITERIA_NAME = "US_MI_NOT_PAST_INITIAL_CLASSIFICATION_REVIEW_DATE"
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is in the period of supervision
 before their initial review date"""
 
-_REASON_QUERY = """TO_JSON(STRUCT(DATE("9999-12-31") AS eligible_date))"""
-
+_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NOT meets_criteria AS meets_criteria,
+    reason,
+FROM `{project_id}.{criteria_dataset}.past_initial_classification_review_date_materialized`
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
+        criteria_dataset=task_eligibility_criteria_state_specific_dataset(
+            StateCode.US_MI
+        ),
     )
 )
 

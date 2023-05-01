@@ -35,14 +35,15 @@ is supervised at a stricter level than the risk assessment policy recommends.
 """
 
 _QUERY_TEMPLATE = f"""
-    WITH supervision_and_assessments AS (
+WITH supervision_and_assessments AS (
       SELECT 
         state_code, 
         person_id, 
         assessment_date AS start_date, 
         DATE_ADD(score_end_date, INTERVAL 1 DAY) AS end_date, 
         NULL AS supervision_level, 
-        assessment_level_raw_text AS assessment_level,
+        --set INTERNAL_UNKNOWN assessment levels to NULL so that they will be COALESCED to `MEDIUM/MEDIUM` 
+        IF(assessment_level_raw_text = 'INTERNAL_UNKNOWN', NULL, assessment_level_raw_text) AS assessment_level,
         assessment_date,
       FROM `{{project_id}}.{{sessions_dataset}}.assessment_score_sessions_materialized`
       WHERE state_code = "US_MI"
@@ -68,23 +69,12 @@ _QUERY_TEMPLATE = f"""
                 state_code, 
                 start_date, 
                 end_date, 
-                --if there is no COMPAS level, default to MEDIUM
-                COALESCE(FIRST_VALUE(assessment_level) OVER (assessment_window), 'MEDIUM') AS assessment_level,
-                FIRST_VALUE(assessment_date) OVER (assessment_window) AS assessment_date,
-                FIRST_VALUE(supervision_level) OVER (supervision_level_window) AS supervision_level,
+                --if there is no COMPAS level, default to MEDIUM/MEDIUM assessment score 
+                COALESCE(MAX(assessment_level), 'MEDIUM/MEDIUM') AS assessment_level,
+                MAX(assessment_date) AS assessment_date,
+                MAX(supervision_level) AS supervision_level
         FROM sub_sessions_with_attributes
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority`
-            ON supervision_level = correctional_level
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_level_dedup_priority`
-            USING(assessment_level)
-        WINDOW assessment_window AS (
-            PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY COALESCE(assessment_level_priority, 999)
-        ),
-        supervision_level_window AS (
-            PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY COALESCE(correctional_level_priority, 999)        
-        )
+        GROUP BY 1,2,3,4
     ),
     state_specific_mapping AS (
         SELECT *,
@@ -93,9 +83,13 @@ _QUERY_TEMPLATE = f"""
                     AND supervision_level NOT IN ('MINIMUM', 'LIMITED', 'UNSUPERVISED')
                     AND supervision_level IS NOT NULL 
                     THEN TRUE
-                WHEN assessment_level IN ('LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM', 'HIGH/MEDIUM', 'MEDIUM/HIGH', 'HIGH/LOW', 'LOW/HIGH')
+                WHEN assessment_level IN ('LOW/MEDIUM', 'MEDIUM/LOW', 'MEDIUM/MEDIUM')
                     AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
                     AND supervision_level IS NOT NULL 
+                    THEN TRUE
+                WHEN assessment_level IN ('HIGH/HIGH','HIGH/MEDIUM', 'MEDIUM/HIGH', 'HIGH/LOW', 'LOW/HIGH')
+                    AND supervision_level NOT IN ('MAXIMUM','MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
+                    AND supervision_level IS NOT NULL
                     THEN TRUE
                 ELSE FALSE 
                 END as meets_criteria

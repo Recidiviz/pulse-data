@@ -24,7 +24,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#19465) deprecate this view in favor of moving this logic further upstream in ingest process
+# TODO(#20530) deprecate this view in favor of moving this logic further upstream in ingest process
 US_MI_STATE_ASSESSMENT_PREPROCESSED_VIEW_NAME = "us_mi_state_assessment_preprocessed"
 
 US_MI_STATE_ASSESSMENT_PREPROCESSED_VIEW_DESCRIPTION = """Preprocessed view of COMPAS assessments in Michigan to be used
