@@ -21,20 +21,21 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     active_supervision_population,
 )
+from recidiviz.task_eligibility.completion_events.general import (
+    supervision_level_downgrade,
+)
 from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_not_diversion,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
     supervision_level_is_not_unassigned,
 )
-from recidiviz.task_eligibility.completion_events.general import (
-    supervision_level_downgrade,
-)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
-    supervision_level_higher_than_assessment_level,
-    not_past_initial_classification_review_date,
-    no_ineligible_offenses_for_downgrade_from_supervision_level,
-    not_required_to_register_under_sora,
     not_on_electronic_monitoring,
+    not_past_initial_classification_review_date,
+    not_required_to_register_under_sora,
+    not_serving_ineligible_offenses_for_downgrade_from_supervision_level,
+    supervision_level_higher_than_assessment_level,
     supervision_level_is_not_sai,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -55,13 +56,14 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     criteria_spans_view_builders=[
         supervision_level_higher_than_assessment_level.VIEW_BUILDER,
         not_past_initial_classification_review_date.VIEW_BUILDER,
-        no_ineligible_offenses_for_downgrade_from_supervision_level.VIEW_BUILDER,
+        not_serving_ineligible_offenses_for_downgrade_from_supervision_level.VIEW_BUILDER,
         not_required_to_register_under_sora.VIEW_BUILDER,
         not_on_electronic_monitoring.VIEW_BUILDER,
         supervision_level_is_not_sai.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
         supervision_level_is_not_unassigned.VIEW_BUILDER,
+        supervision_level_is_not_diversion.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_level_downgrade.VIEW_BUILDER,
 )
