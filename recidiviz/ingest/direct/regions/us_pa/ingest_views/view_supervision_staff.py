@@ -24,8 +24,30 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT LastName,FirstName,EMAIL_ADDRESS,Employ_Num
-FROM {RECIDIVIZ_REFERENCE_agent_districts}
+WITH staff_in_roster AS (
+    SELECT LastName,FirstName,EMAIL_ADDRESS,Employ_Num
+    FROM {RECIDIVIZ_REFERENCE_agent_districts}
+)
+
+SELECT 
+    LastName,
+    FirstName,
+    EMAIL_ADDRESS,
+    Employ_Num
+FROM staff_in_roster
+UNION ALL
+-- Fill in missing agent ids staff employee numbers for 
+-- older staff not in the roster.
+
+SELECT DISTINCT
+    LAST_VALUE(PRL_AGNT_LAST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS LastName,
+    LAST_VALUE(PRL_AGNT_FIRST_NAME) OVER (PARTITION BY PRL_AGNT_EMPL_NO ORDER BY CREATED_DATE) AS FirstName,
+    CAST(NULL AS STRING) AS EMAIL_ADDRESS,
+    PRL_AGNT_EMPL_NO AS Employ_Num
+FROM {dbo_PRS_FACT_PAROLEE_CNTC_SUMRY}
+WHERE PRL_AGNT_EMPL_NO NOT IN (
+    SELECT Employ_Num FROM staff_in_roster
+)
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
