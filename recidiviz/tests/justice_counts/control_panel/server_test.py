@@ -2395,7 +2395,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         )
         self.session.commit()
         self.session.flush()
-        agency_id = self.test_schema_objects.test_agency_A.id
+        agency = self.test_schema_objects.test_agency_A
 
         law_enforcement_excel = os.path.abspath(
             os.path.join(
@@ -2405,7 +2405,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             )
         )
         uploader = WorkbookUploader(
-            agency_id=agency_id,
+            agency=agency,
             system=schema.System.LAW_ENFORCEMENT,
             user_account=self.test_schema_objects.test_user_A,
             metric_key_to_agency_datapoints={},
@@ -2419,7 +2419,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
 
         # No data has been published; feed should be empty
         empty_feed_response = self.client.get(
-            f"/feed/{agency_id}", query_string={"metric": "arrests"}
+            f"/feed/{agency.id}", query_string={"metric": "arrests"}
         )
         self.assertEqual(empty_feed_response.status_code, 200)
         self.assertEqual(empty_feed_response.data, b"")
@@ -2429,7 +2429,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         report.status = ReportStatus.PUBLISHED
         self.session.commit()
         partial_feed_response = self.client.get(
-            f"/feed/{agency_id}", query_string={"metric": "arrests"}
+            f"/feed/{agency.id}", query_string={"metric": "arrests"}
         )
         self.assertEqual(partial_feed_response.status_code, 200)
 
@@ -2437,11 +2437,11 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session.query(schema.Report).update({"status": ReportStatus.PUBLISHED})
         self.session.commit()
 
-        feed_response_no_metric = self.client.get(f"/feed/{agency_id}")
+        feed_response_no_metric = self.client.get(f"/feed/{agency.id}")
         self.assertEqual(feed_response_no_metric.status_code, 200)
 
         feed_response_with_metric = self.client.get(
-            f"/feed/{agency_id}", query_string={"metric": "arrests"}
+            f"/feed/{agency.id}", query_string={"metric": "arrests"}
         )
         self.assertEqual(feed_response_with_metric.status_code, 200)
 

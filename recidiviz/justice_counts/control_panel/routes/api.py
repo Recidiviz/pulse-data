@@ -1165,7 +1165,7 @@ def get_api_blueprint(
                 spreadsheet=spreadsheet,
                 auth0_user_id=auth0_user_id,
                 xls=pd.ExcelFile(file),
-                agency_id=agency_id,
+                agency=agency,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 metric_definitions=metric_definitions,
             )

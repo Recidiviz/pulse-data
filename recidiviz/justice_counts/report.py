@@ -106,6 +106,26 @@ class ReportInterface:
         )
 
     @staticmethod
+    def get_reports_by_agency_ids(
+        session: Session,
+        agency_ids: List[int],
+        include_datapoints: bool = False,
+        published_only: bool = False,
+    ) -> List[schema.Report]:
+        q = ReportInterface._get_report_query(
+            session, include_datapoints=include_datapoints
+        )
+
+        if published_only:
+            q = q.filter(schema.Report.status == schema.ReportStatus.PUBLISHED)
+
+        return (
+            q.filter(schema.Report.source_id.in_(agency_ids))
+            .order_by(schema.Report.date_range_end.desc())
+            .all()
+        )
+
+    @staticmethod
     def get_report_ids_by_agency_id(
         session: Session,
         agency_id: int,
@@ -550,6 +570,7 @@ class ReportInterface:
             (
                 report.date_range_start,
                 report.date_range_end,
+                report.source_id,
                 datapoint.metric_definition_key,
                 datapoint.context_key,
                 datapoint.dimension_identifier_to_member

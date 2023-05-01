@@ -54,9 +54,15 @@ from recidiviz.justice_counts.utils.persistence_utils import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 
 # Datapoints are unique by a tuple of:
-# <report ID, metric definition, context key, disaggregations>
+# <report start date, report end date, agency id, metric definition,
+# context key, disaggregations>
 DatapointUniqueKey = Tuple[
-    datetime.date, datetime.date, str, Optional[str], Optional[str]
+    datetime.date,
+    datetime.date,
+    int,
+    str,
+    Optional[str],
+    Optional[str],
 ]
 
 
@@ -331,6 +337,7 @@ class DatapointInterface:
         datapoint_key = (
             report.date_range_start,
             report.date_range_end,
+            report.source_id,
             metric_definition_key,
             context_key.value if context_key else None,
             json.dumps({dimension.dimension_identifier(): dimension.dimension_name})

@@ -52,12 +52,13 @@ class WorkbookUploader:
     def __init__(
         self,
         system: schema.System,
-        agency_id: int,
+        agency: schema.Agency,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
+        child_agency_name_to_id: Optional[Dict[str, int]] = None,
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.system = system
-        self.agency_id = agency_id
+        self.agency = agency
         self.user_account = user_account
         # metric_key_to_agency_datapoints maps metric keys to a list of datapoints
         # that represent an agency's configuration for that metric. These datapoints
@@ -94,6 +95,9 @@ class WorkbookUploader:
         self.updated_report_ids: Set[int] = set()
         # A set of uploaded report IDs will be used to create the `unchanged_report_ids` set
         self.uploaded_report_ids: Set[int] = set()
+        # A child agency is an agency that the current agency has the permission to
+        # upload data for. child_agency_name_to_id maps child agency name to id.
+        self.child_agency_name_to_id = child_agency_name_to_id or {}
 
     def upload_workbook(
         self,
@@ -109,20 +113,36 @@ class WorkbookUploader:
         """
         # 1. Fetch existing reports and datapoints for this agency, so that
         # we know what objects to update vs. what new objects to create.
-        reports = ReportInterface.get_reports_by_agency_id(
-            session, agency_id=self.agency_id, include_datapoints=True
+        agency_ids = list(self.child_agency_name_to_id.values()) + [self.agency.id]
+        reports = ReportInterface.get_reports_by_agency_ids(
+            session, agency_ids=agency_ids, include_datapoints=True
         )
         self.existing_report_ids = [report.id for report in reports]
-        reports_sorted_by_time_range = sorted(
-            reports, key=lambda x: (x.date_range_start, x.date_range_end)
-        )
-        reports_by_time_range = {
+        reports_sorted_by_agency_id = sorted(reports, key=lambda x: x.source_id)
+        reports_by_agency_id = {
             k: list(v)
             for k, v in groupby(
-                reports_sorted_by_time_range,
-                key=lambda x: (x.date_range_start, x.date_range_end),
+                reports_sorted_by_agency_id,
+                key=lambda x: x.source_id,
             )
         }
+
+        agency_id_to_time_range_to_reports: Dict[
+            int, Dict[Tuple[Any, Any], List[schema.Report]]
+        ] = defaultdict(dict)
+
+        for agency_id, curr_reports in reports_by_agency_id.items():
+            reports_sorted_by_time_range = sorted(
+                curr_reports, key=lambda x: (x.date_range_start, x.date_range_end)
+            )
+            reports_by_time_range = {
+                k: list(v)
+                for k, v in groupby(
+                    reports_sorted_by_time_range,
+                    key=lambda x: (x.date_range_start, x.date_range_end),
+                )
+            }
+            agency_id_to_time_range_to_reports[agency_id] = reports_by_time_range
 
         existing_datapoints_dict = ReportInterface.get_existing_datapoints_dict(
             reports=reports
@@ -160,14 +180,15 @@ class WorkbookUploader:
             spreadsheet_uploader = SpreadsheetUploader(
                 text_analyzer=self.text_analyzer,
                 system=self.system,
-                agency_id=self.agency_id,
+                agency=self.agency,
                 user_account=self.user_account,
                 metric_key_to_agency_datapoints=self.metric_key_to_agency_datapoints,
                 sheet_name=sheet_name,
                 column_names=column_names,
-                reports_by_time_range=reports_by_time_range,
+                agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
                 existing_datapoints_dict=existing_datapoints_dict,
                 metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
+                child_agency_name_to_id=self.child_agency_name_to_id,
             )
             spreadsheet_uploader.upload_sheet(
                 session=session,
@@ -182,7 +203,7 @@ class WorkbookUploader:
         self._update_report_status(
             existing_datapoints_dict_changed=existing_datapoints_dict,
             existing_datapoints_dict_unchanged=existing_datapoints_dict_unchanged,
-            reports_by_time_range=reports_by_time_range,
+            agency_id_to_time_range_to_reports=agency_id_to_time_range_to_reports,
         )
 
         # 5. Add any workbook errors to metric_key_to_errors
@@ -201,14 +222,16 @@ class WorkbookUploader:
     def _update_report_status(
         self,
         existing_datapoints_dict_changed: Dict[
-            Tuple[datetime.date, datetime.date, str, Optional[str], Optional[str]],
+            Tuple[datetime.date, datetime.date, int, str, Optional[str], Optional[str]],
             schema.Datapoint,
         ],
         existing_datapoints_dict_unchanged: Dict[
-            Tuple[datetime.date, datetime.date, str, Optional[str], Optional[str]],
+            Tuple[datetime.date, datetime.date, int, str, Optional[str], Optional[str]],
             Optional[float],
         ],
-        reports_by_time_range: Dict[Tuple[Any, Any], List[schema.Report]],
+        agency_id_to_time_range_to_reports: Dict[
+            int, Dict[Tuple[Any, Any], List[schema.Report]]
+        ],
     ) -> None:
         """
         If a user uploads a workbook that changes a Report associated with
@@ -222,7 +245,8 @@ class WorkbookUploader:
         )
         for different_key in unique_key_difference:
             # datapoint that previously did not exist has been added to report
-            updated_report = reports_by_time_range[
+            agency_id = different_key[2]
+            updated_report = agency_id_to_time_range_to_reports[agency_id][
                 (different_key[0], different_key[1])
             ][0]
             # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
@@ -250,9 +274,10 @@ class WorkbookUploader:
                 != datapoint.get_value()
             ):
                 # datapoint that previously existed has been updated/changed
-                updated_report = reports_by_time_range[(unique_key[0], unique_key[1])][
-                    0
-                ]
+                agency_id = unique_key[2]
+                updated_report = agency_id_to_time_range_to_reports[agency_id][
+                    (unique_key[0], unique_key[1])
+                ][0]
                 # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
                 self.updated_report_ids.add(updated_report.id)
 
