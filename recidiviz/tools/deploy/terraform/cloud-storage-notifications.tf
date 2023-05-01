@@ -81,6 +81,15 @@ module "handle_workflows_firestore_etl" {
   suffix = "workflows-firestore-etl"
 }
 
+module "handle_outliers_etl" {
+  source = "./modules/cloud-storage-notification"
+
+  bucket_name           = module.outliers-etl-data.name
+  push_endpoint         = "${google_cloud_run_service.application-data-import.status.0.url}/import/trigger_outliers"
+  service_account_email = google_service_account.application_data_import_cloud_run.email
+  filter                = "NOT hasPrefix(attributes.objectId, \"staging/\")"
+}
+
 locals {
   app_engine_url = "https://${var.project_id}.appspot.com"
   # These client IDs come from the app engine service we want to authenticate to, and can be found
