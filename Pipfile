@@ -22,6 +22,8 @@ fakeredis = "*"
 freezegun = "*"
 ipdb = "*"
 jupyter = "*"
+# TODO(#20615): Unpin orjson dependency when the installation failure is debugged.
+orjson="==3.8.10"
 pytest-alembic = "*"
 pipenv = "*"
 pygit2 = "*"
