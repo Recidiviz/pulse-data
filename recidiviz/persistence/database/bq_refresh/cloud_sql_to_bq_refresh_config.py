@@ -352,6 +352,7 @@ class CloudSqlToBQConfig:
             #  has shipped to prod and support for Justice Counts schema is in place.
             SchemaType.JUSTICE_COUNTS,
             SchemaType.PATHWAYS,
+            SchemaType.OUTLIERS,
         ):
             return False
 
