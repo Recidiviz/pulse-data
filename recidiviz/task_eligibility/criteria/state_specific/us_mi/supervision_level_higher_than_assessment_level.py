@@ -70,6 +70,8 @@ WITH supervision_and_assessments AS (
                 start_date, 
                 end_date, 
                 --if there is no COMPAS level, default to MEDIUM/MEDIUM assessment score 
+                -- since assessment and supervision levels are non-overlapping, MAX() choose the non null 
+                -- value for each span
                 COALESCE(MAX(assessment_level), 'MEDIUM/MEDIUM') AS assessment_level,
                 MAX(assessment_date) AS assessment_date,
                 MAX(supervision_level) AS supervision_level
