@@ -25,11 +25,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT
+    FACT_PAROLEE_CNTC_SUMRY_ID AS external_id,
     PAROLE_NUMBER as parole_number,
-    CAST(CAST(CREATED_DATE AS DATETIME) AS DATE) as created_date,
     CAST(CAST(START_DATE AS DATETIME) AS DATE) AS contact_start_date,
     CAST(CAST(END_DATE AS DATETIME) AS DATE) AS contact_end_date,
-    DURATION_MINS as duration,
     CONTACT_TYPE as contact_type,
     METHOD as method,
     ATTEMPTED as contact_attempt,
