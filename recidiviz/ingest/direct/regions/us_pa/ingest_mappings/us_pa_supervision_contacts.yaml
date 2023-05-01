@@ -3,11 +3,10 @@
 #  corresponding Ingest Object fields.
 manifest_language: 1.0.0
 input_columns:
+  - external_id
   - parole_number
-  - created_date
   - contact_start_date
   - contact_end_date
-  - duration
   - contact_type
   - method
   - contact_attempt
@@ -17,8 +16,10 @@ input_columns:
   - agent_first_name
   - agent_last_name
   - parole_org
-
-unused_columns: [contact_end_date, assisted, parole_org]
+unused_columns:
+  - contact_end_date
+  - assisted
+  - parole_org
 output:
   StatePerson:
     external_ids:
@@ -30,10 +31,8 @@ output:
           external_id:
             $concat:
               $values:
+                - external_id
                 - parole_number
-                - created_date
-                - contact_type
-                - duration
           contacting_staff_external_id: agent_number
           contacting_staff_external_id_type:
             $conditional:
