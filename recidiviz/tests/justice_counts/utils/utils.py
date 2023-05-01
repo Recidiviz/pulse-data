@@ -155,6 +155,24 @@ class JusticeCountsSchemaTestObjects:
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PRISONS.value],
         )
+        self.test_prison_super_agency = schema.Agency(
+            name="Super Agency Prison",
+            state_code="US_XX",
+            fips_county_code="us_ca_san_francisco",
+            systems=[schema.System.PRISONS.value],
+        )
+        self.test_prison_affiliate_A = schema.Agency(
+            name="Affiliate Agency Prison A",
+            state_code="US_PA",
+            fips_county_code="us_ca_san_francisco",
+            systems=[schema.System.PRISONS.value],
+        )
+        self.test_prison_affiliate_B = schema.Agency(
+            name="Affiliate Agency Prison B",
+            state_code="US_XX",
+            fips_county_code="us_ca_san_francisco",
+            systems=[schema.System.PRISONS.value],
+        )
 
         # Auth0 Users
         self.test_auth0_user: Auth0User = {

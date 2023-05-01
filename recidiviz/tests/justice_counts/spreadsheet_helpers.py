@@ -38,7 +38,8 @@ def _get_dimension_columns(
     dimension_list: List[str],
     vary_values: bool,
     null_data: Optional[bool] = False,
-) -> Tuple[List[int], List[str], List[int], List[str]]:
+    child_agencies: Optional[List[schema.Agency]] = None,
+) -> Tuple[List[int], List[str], List[int], List[int], List[str]]:
     """Helper function that creates the columns for the data frame based upon the reporting
     frequency and breakdowns of the MetricFile.
     """
@@ -47,7 +48,7 @@ def _get_dimension_columns(
         value_col = [12, 45, 30] if vary_values else [10, 20, 30]
     else:
         value_col = [None, None, None]  # type: ignore[list-item]
-    month_col, dimension_col = ([], [])
+    month_col, dimension_col, agency_col = ([], [], [])
 
     if len(dimension_list) > 0:
         # # [Person, Property, .. Unknown, Other] -> [Person, ... Unknown, Person ... Unknown]
@@ -79,9 +80,29 @@ def _get_dimension_columns(
                 val for val in dimension_col for _ in (0, 1)
             ]  # [Person, Property, .. Unknown, Other] -> [Person, Person, Property, Property...]
 
+    if child_agencies is not None:
+        agency_names = [a.name for a in child_agencies]
+        agency_col = agency_names * len(
+            value_col
+        )  # [Agency A, Agency B] -> [Agency A, Agency B,... Agency A, Agency B ...]
+        value_col = [
+            val for val in value_col for _ in (0, len(agency_names))
+        ]  # [10, 20, 30] -> [10, 10, 20, 20, 30, 30]
+        month_col = [
+            mon for mon in month_col for _ in (0, len(agency_names))
+        ]  # [January, February] -> [January, January, February, February]
+        if len(dimension_col) > 0:
+            dimension_col = [
+                val for val in dimension_col for _ in (0, len(agency_names))
+            ]  # [Person, Property, .. Unknown, Other] -> [Person, Person, Property, Property...]
+        year_col = [
+            year for year in year_col for _ in (0, len(agency_names))
+        ]  # [2021, 2022, 2023] -> [2021, 2021, 2022, 2022, 2023 ...]
+
     return (
         year_col,
         month_col,
+        agency_col,
         value_col,
         dimension_col,
     )
@@ -90,6 +111,7 @@ def _get_dimension_columns(
 def _create_dataframe_dict(
     metricfile: MetricFile,
     reporting_frequency: schema.ReportingFrequency,
+    child_agencies: Optional[List[schema.Agency]] = None,
     invalid_month: bool = False,
     vary_values: bool = False,
     missing_column: Optional[bool] = False,
@@ -117,11 +139,12 @@ def _create_dataframe_dict(
         else []
     )
 
-    year_col, month_col, value_col, dimension_col, = _get_dimension_columns(
+    year_col, month_col, agency_col, value_col, dimension_col, = _get_dimension_columns(
         month_list=month_list,
         dimension_list=dimension_list,
         vary_values=vary_values,
         null_data=null_data,
+        child_agencies=child_agencies,
     )
 
     if invalid_value_type is True:
@@ -145,6 +168,9 @@ def _create_dataframe_dict(
     if len(month_list) > 0:
         dataframe_dict["month"] = month_col  # type: ignore[assignment]
 
+    if len(agency_col) > 0:
+        dataframe_dict["agency"] = agency_col  # type: ignore[assignment]
+
     if missing_column is False:
         dataframe_dict["value"] = value_col
 
@@ -163,6 +189,7 @@ def _create_dataframe_dict(
 def create_excel_file(
     system: schema.System,
     file_name: str = TEST_EXCEL_FILE,
+    child_agencies: Optional[list] = None,
     metric_key_to_subsystems: Optional[Dict[str, List[schema.System]]] = None,
     invalid_month_sheet_name: Optional[str] = None,
     add_invalid_sheet_name: Optional[bool] = False,
@@ -191,6 +218,7 @@ def create_excel_file(
             ):
                 dataframe_dict = _create_dataframe_dict(
                     metricfile=metricfile,
+                    child_agencies=child_agencies,
                     reporting_frequency=metricfile.definition.reporting_frequency,
                     invalid_month=filename == invalid_month_sheet_name,
                     invalid_value_type=filename == invalid_value_type_sheet_name,
@@ -207,6 +235,7 @@ def create_excel_file(
             else:
                 dataframe_dict = _create_dataframe_dict(
                     metricfile=metricfile,
+                    child_agencies=child_agencies,
                     reporting_frequency=metricfile.definition.reporting_frequency,
                     invalid_month=filename == invalid_month_sheet_name,
                     invalid_value_type=filename == invalid_value_type_sheet_name,

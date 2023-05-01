@@ -31,6 +31,7 @@ from recidiviz.common.io.flask_file_storage_contents_handle import (
     FlaskFileStorageContentsHandle,
 )
 from recidiviz.common.io.local_file_contents_handle import LocalFileContentsHandle
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.agency_user_account_association import (
     AgencyUserAccountAssociationInterface,
 )
@@ -230,7 +231,7 @@ class SpreadsheetInterface:
         spreadsheet: schema.Spreadsheet,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         metric_definitions: List[MetricDefinition],
-        agency_id: int,
+        agency: schema.Agency,
         auth0_user_id: Optional[str] = None,
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
@@ -247,9 +248,15 @@ class SpreadsheetInterface:
                 .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
                 .one()
             )
+        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
+            session=session, agency_id=agency.id
+        )
         uploader = WorkbookUploader(
-            agency_id=spreadsheet.agency_id,
+            agency=agency,
             system=spreadsheet.system,
+            child_agency_name_to_id={
+                a.name.strip().lower(): a.id for a in child_agencies
+            },
             user_account=user_account,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
         )
@@ -270,7 +277,7 @@ class SpreadsheetInterface:
         if not is_ingest_successful:
             logging.info(
                 "Failed to ingest without errors: agency_id: %i, spreadsheet_id: %i, errors: %s",
-                agency_id,
+                agency.id,
                 spreadsheet.id,
                 metric_key_to_errors,
             )
@@ -279,7 +286,7 @@ class SpreadsheetInterface:
         else:
             logging.info(
                 "Ingest successful for agency_id %i, spreadsheet_id: %i",
-                agency_id,
+                agency.id,
                 spreadsheet.id,
             )
             spreadsheet.ingested_by = auth0_user_id
@@ -469,7 +476,7 @@ class SpreadsheetInterface:
             spreadsheet=spreadsheet,
             auth0_user_id=None,
             xls=pd.ExcelFile(file_bytes),
-            agency_id=agency.id,
+            agency=agency,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             metric_definitions=metric_definitions,
         )

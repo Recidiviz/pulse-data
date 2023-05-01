@@ -81,7 +81,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                     xls=pd.ExcelFile(TEST_EXCEL_FILE),
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
-                    agency_id=agency.id,
+                    agency=agency,
                     metric_key_to_agency_datapoints={},
                     metric_definitions=METRICS_BY_SYSTEM[
                         schema.System.LAW_ENFORCEMENT.value
@@ -116,7 +116,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
+                agency=agency,
                 metric_key_to_agency_datapoints={},
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
@@ -204,7 +204,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 xls=pd.ExcelFile(TEST_EXCEL_FILE),
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
-                agency_id=agency.id,
+                agency=agency,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PAROLE.value]
                 + METRICS_BY_SYSTEM[schema.System.PROBATION.value]

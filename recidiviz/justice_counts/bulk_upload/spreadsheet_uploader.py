@@ -52,29 +52,33 @@ class SpreadsheetUploader:
         self,
         text_analyzer: TextAnalyzer,
         system: schema.System,
-        agency_id: int,
+        agency: schema.Agency,
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
         sheet_name: str,
         column_names: List[str],
-        reports_by_time_range: Dict[tuple[datetime.date, datetime.date], Any],
+        agency_id_to_time_range_to_reports: Dict[
+            int, Dict[Tuple[Any, Any], List[schema.Report]]
+        ],
         existing_datapoints_dict: Dict[DatapointUniqueKey, schema.Datapoint],
         metric_key_to_timerange_to_total_value: Dict[
             str, Dict[Tuple[datetime.date, datetime.date], Optional[int]]
         ],
+        child_agency_name_to_id: Dict[str, int],
         user_account: Optional[schema.UserAccount] = None,
     ) -> None:
         self.text_analyzer = text_analyzer
         self.system = system
-        self.agency_id = agency_id
+        self.agency = agency
         self.user_account = user_account
         self.metric_key_to_agency_datapoints = metric_key_to_agency_datapoints
         self.sheet_name = sheet_name
         self.column_names = column_names
-        self.reports_by_time_range = reports_by_time_range
+        self.agency_id_to_time_range_to_reports = agency_id_to_time_range_to_reports
         self.existing_datapoints_dict = existing_datapoints_dict
         self.metric_key_to_timerange_to_total_value = (
             metric_key_to_timerange_to_total_value
         )
+        self.child_agency_name_to_id = child_agency_name_to_id
 
     def upload_sheet(
         self,
@@ -96,8 +100,21 @@ class SpreadsheetUploader:
         This is indicated by the `system` column. In this case, we break up
         the rows by system, and then ingest one system at a time."""
 
-        if self.system == schema.System.SUPERVISION:
-
+        if len(self.child_agency_name_to_id) > 0:
+            agency_id_to_rows = self._get_agency_id_to_rows(
+                rows=rows,
+                metric_key_to_errors=metric_key_to_errors,
+                super_agency=self.agency,
+            )
+            self._upload_super_agency_sheet(
+                session=session,
+                agency_id_to_rows=agency_id_to_rows,
+                invalid_sheet_names=invalid_sheet_names,
+                metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                metric_key_to_errors=metric_key_to_errors,
+                uploaded_report_ids=uploaded_report_ids,
+            )
+        elif self.system == schema.System.SUPERVISION:
             system_to_rows = self._get_system_to_rows(
                 rows=rows,
                 metric_key_to_errors=metric_key_to_errors,
@@ -122,6 +139,47 @@ class SpreadsheetUploader:
             )
         return metric_key_to_datapoint_jsons, metric_key_to_errors
 
+    def _upload_super_agency_sheet(
+        self,
+        session: Session,
+        agency_id_to_rows: Dict[int, List[Dict[str, Any]]],
+        invalid_sheet_names: List[str],
+        metric_key_to_datapoint_jsons: Dict[str, List[DatapointJson]],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        uploaded_report_ids: Set[int],
+    ) -> None:
+        """Uploads agency rows one agency at a time. If the agency is a
+        supervision agency, the rows from each agency will be uploaded one system
+        at a time."""
+        for curr_agency_id, current_rows in agency_id_to_rows.items():
+            if self.system == schema.System.SUPERVISION:
+                system_to_rows = self._get_system_to_rows(
+                    rows=current_rows,
+                    metric_key_to_errors=metric_key_to_errors,
+                )
+                self._upload_supervision_sheet(
+                    session=session,
+                    system_to_rows=system_to_rows,
+                    invalid_sheet_names=invalid_sheet_names,
+                    metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                    metric_key_to_errors=metric_key_to_errors,
+                    child_agency_id=curr_agency_id,
+                    uploaded_report_ids=uploaded_report_ids,
+                )
+            else:
+                self._upload_rows(
+                    session=session,
+                    rows=current_rows,
+                    system=self.system,
+                    invalid_sheet_names=invalid_sheet_names,
+                    metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
+                    metric_key_to_errors=metric_key_to_errors,
+                    child_agency_id=curr_agency_id,
+                    uploaded_report_ids=uploaded_report_ids,
+                )
+
     def _upload_supervision_sheet(
         self,
         session: Session,
@@ -132,6 +190,7 @@ class SpreadsheetUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         uploaded_report_ids: Set[int],
+        child_agency_id: Optional[int] = None,
     ) -> None:
         """Uploads supervision rows one system at a time."""
         for current_system, current_rows in system_to_rows.items():
@@ -143,6 +202,7 @@ class SpreadsheetUploader:
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_report_ids=uploaded_report_ids,
+                child_agency_id=child_agency_id,
             )
 
     def _upload_rows(
@@ -156,9 +216,10 @@ class SpreadsheetUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         uploaded_report_ids: Set[int],
+        child_agency_id: Optional[int] = None,
     ) -> None:
-        """Uploads rows for a system."""
-
+        """Uploads rows for a given system and child agency. If child_agency_id
+        if None, then the rows are uploaded for the agency specified as self.agency."""
         # Redefine this here to properly handle sheets that contain
         # rows for multiple systems (e.g. a Supervision sheet can
         # contain rows for Parole and Probation)
@@ -170,7 +231,8 @@ class SpreadsheetUploader:
             sheet_name=self.sheet_name, system=system
         )
         if not metricfile:
-            invalid_sheet_names.append(self.sheet_name)
+            if self.sheet_name not in invalid_sheet_names:
+                invalid_sheet_names.append(self.sheet_name)
             return
 
         existing_datapoint_json_list = metric_key_to_datapoint_jsons[
@@ -184,6 +246,7 @@ class SpreadsheetUploader:
                 metricfile=metricfile,
                 metric_key_to_errors=metric_key_to_errors,
                 uploaded_report_ids=uploaded_report_ids,
+                child_agency_id=child_agency_id,
             )
         except Exception as e:
             new_datapoint_json_list = []
@@ -208,6 +271,7 @@ class SpreadsheetUploader:
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
         uploaded_report_ids: Set[int],
+        child_agency_id: Optional[int] = None,
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
         in the format of a list of dictionaries, i.e. [{"column_name": <column_value>} ... ].
@@ -262,11 +326,12 @@ class SpreadsheetUploader:
         # Else, create a new report and add the MetricInterface.
         datapoint_jsons_list = []
         for time_range, rows_for_this_time_range in rows_by_time_range.items():
-
             try:
                 time_range_uploader = TimeRangeUploader(
                     time_range=time_range,
-                    agency_id=self.agency_id,
+                    agency_id=self.agency.id
+                    if child_agency_id is None
+                    else child_agency_id,
                     rows_for_this_time_range=rows_for_this_time_range,
                     user_account=self.user_account,
                     # TODO(#15499) Infer aggregate value only if total sheet was not provided.
@@ -275,7 +340,12 @@ class SpreadsheetUploader:
                     metricfile=metricfile,
                     metric_key_to_timerange_to_total_value=self.metric_key_to_timerange_to_total_value,
                 )
-                existing_report = self.reports_by_time_range.get(time_range)
+                curr_agency_id = (
+                    child_agency_id if child_agency_id is not None else self.agency.id
+                )
+                existing_report = self.agency_id_to_time_range_to_reports.get(
+                    curr_agency_id, {}
+                ).get(time_range)
                 if existing_report is not None and existing_report[0].id is not None:
                     uploaded_report_ids.add(existing_report[0].id)
                 (
@@ -287,7 +357,9 @@ class SpreadsheetUploader:
                     existing_report=existing_report,
                     reporting_frequency=reporting_frequency,
                 )  # TODO(#15499) Infer aggregate value only if total sheet was not provided
-                self.reports_by_time_range[time_range] = [report]
+                self.agency_id_to_time_range_to_reports[curr_agency_id][time_range] = [
+                    report
+                ]
                 datapoint_jsons_list += datapoint_json_list_for_time_range
             except Exception as e:
                 metric_key_to_errors[metricfile.definition.key].append(
@@ -388,6 +460,8 @@ class SpreadsheetUploader:
             )
         if metric_definition.system.value == "SUPERVISION":
             expected_columns.add("system")
+        if len(self.child_agency_name_to_id) > 0:
+            expected_columns.add("agency")
         unexpected_columns = actual_columns.difference(expected_columns)
         for unexpected_col in unexpected_columns:
             if unexpected_col == "month":
@@ -409,14 +483,25 @@ class SpreadsheetUploader:
             ):
                 warning_title = "Unexpected Breakdown Column"
                 warning_description = f"Breakdown data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but this sheet should only contain aggregate data."
+            elif unexpected_col == "agency":
+                warning_title = "Unexpected Agency Column"
+                warning_description = f"Agency data ({unexpected_col} column) was provided in the {metricfile.canonical_filename} sheet, but your agency does not have the permissions to upload data for any other agency."
             else:
                 warning_title = "Unexpected Column"
                 warning_description = f"The {metricfile.canonical_filename} sheet contained the following unexpected column: {unexpected_col}. The {unexpected_col} column is not aligned with the Technical Implementation Guides."
             unexpected_column_warning = JusticeCountsBulkUploadException(
                 title=warning_title,
-                message_type=BulkUploadMessageType.WARNING,
+                message_type=BulkUploadMessageType.WARNING
+                if unexpected_col != "agency"
+                else BulkUploadMessageType.ERROR,
                 description=warning_description,
             )
+            if unexpected_col == "agency":
+                # Stop ingest if unexpected_col is "agency! If an agency has no child agencies,
+                # it will skip the logic to ingest the rows one agency at a time.
+                # Ingest needs to be stopped on the sheet so that we can avoid rows being
+                # assigned incorrectly.
+                raise unexpected_column_warning
             metric_key_to_errors[metric_definition.key].append(
                 unexpected_column_warning
             )
@@ -483,6 +568,45 @@ class SpreadsheetUploader:
             time_range_to_year_month[(date_range_start, date_range_end)] = (year, month)
             rows_by_time_range[(date_range_start, date_range_end)].append(row)
         return rows_by_time_range, time_range_to_year_month
+
+    def _get_agency_id_to_rows(
+        self,
+        rows: List[Dict[str, Any]],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        super_agency: schema.Agency,
+    ) -> Dict[int, List[Dict[str, Any]]]:
+        """Groups the rows in the file by the value of the `agency` column.
+        Returns a dictionary mapping each agency to its list of rows."""
+        agency_id_to_rows = {}
+        agency_name_to_rows = {
+            k: list(v)
+            for k, v in groupby(
+                sorted(rows, key=lambda x: x.get("agency", super_agency.name)),
+                lambda x: x.get("agency", super_agency.name),
+            )
+        }
+        for agency_name, agency_rows in agency_name_to_rows.items():
+            normalized_agency_name = agency_name.strip().lower()
+            if (
+                normalized_agency_name not in self.child_agency_name_to_id
+                and normalized_agency_name != super_agency.name.lower()
+            ):
+                metric_key_to_errors[None].append(
+                    JusticeCountsBulkUploadException(
+                        title="Agency Not Recognized",
+                        description=(
+                            f"Failed to upload data for {agency_name}. Either this agency does not exist in our database, or your agency does not have permission to upload for this agency."
+                        ),
+                        message_type=BulkUploadMessageType.WARNING,
+                        sheet_name=self.sheet_name,
+                    )
+                )
+            else:
+                agency_id = self.child_agency_name_to_id[normalized_agency_name]
+                agency_id_to_rows[agency_id] = agency_rows
+        return agency_id_to_rows
 
     def _get_system_to_rows(
         self,
