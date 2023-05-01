@@ -26,7 +26,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = f"""
 WITH cases_with_terminating_officers AS (
   SELECT {{docstars_offendercasestable}}.*,
-       TERMINATING_OFFICER as terminating_officer_id,
+       {{docstars_officers}}.OFFICER as terminating_officer_id,
        {{docstars_officers}}.LNAME AS terminating_officer_lname, 
        {{docstars_officers}}.FNAME AS terminating_officer_fname, 
        {{docstars_officers}}.SITEID AS terminating_officer_siteid,
