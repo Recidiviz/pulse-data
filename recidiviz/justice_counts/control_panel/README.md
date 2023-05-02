@@ -144,36 +144,24 @@ The versions we've deployed to prod are tracked [here](https://paper.dropbox.com
 
 ## Creating Users and Agencies
 
-1. Visit the Admin Panel at [go/admin](https://recidiviz-staging.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning)(staging) or [go/admin-prod](https://recidiviz-123.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning)(production)
+1. Visit the Admin Panel at [go/admin](https://recidiviz-staging.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (staging) or [go/admin-prod](https://recidiviz-123.ue.r.appspot.com/admin/justice_counts_tools/agency_provisioning) (production)
 2. Navigate the the Justice Counts tab
-3. To create a new Agency, navigate to the Agency Provisioning page and scroll to 'Add Agency'\
-   a. Enter the Agency Name, System(s), State, and (optional) County\
-   b. Click Submit\
-   c. The Agency should now appear in the Agency Provisioning table (this table is searchable)\
-   Note: You may be able to infer the agency's system / state / county from its name + a Google search; if not, ask CSG
-
-Note: Once you have completed this step, please also add the agency to the [Production Agencies Table](https://www.notion.so/recidiviz/7238b9d041b64e2cb356ba9aab9a0686?v=2d57b9c201de49f8a75303144aa3f55e) in Notion with all of the relevant information.
-
-- When adding the agency in Notion, assign either Michelle / Nichelle / Mahmoud to be the point of contact. Assign Nichelle if it's an agency on the west coast, otherwise assign whomever of Michelle or Mahmoud currently has fewer agencies.
-- Make sure you give whoever is point of contact to the agency access to it via the Admin Panel (see Step 5 and 7).
-
-4. To create a new User, navigate to the User Provisioning page and scroll to 'Add User'\
-   a. Enter the User's Name and Email\
-   b. Click Submit\
-   c. The User should now appear in the User Provisioning table (this table is searchable)\
-   Note: You may be able to infer the user's name from their email; if not, ask CSG
-5. To add a user to an agency, first find that user in the User Provisioning table.\
-   a. Within the user's row, click on the 'Agencies' cell\
-   b. A dropdown should appear with all available agencies\
-   c. Select the agency that you would like to add the user to
-6. To remove a user from an agency, first find that user in the User Provisioning table.\
-   a. Within the user's row, you can delete an agency from the 'Agencies' cell by clicking the 'x'
-7. To update a user's role for a given agency, navigate to the Agency Provisioning page\
-   a. Find the given agency in the Agency Provisioning table\
-   b. Select Team Members\
-   c. Find the given user in the Agency Team Members table\
-   d. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)\
-   Note: After adding a Recidiviz or CSG user to an agency, always set their role to JUSTICE_COUNTS_ADMIN. After adding anyone else to an agency, always set their role to AGENCY_ADMIN.
+3. To create a new Agency, navigate to the Agency Provisioning page and scroll to "Add Agency"
+   1. Enter the Agency Name, System(s), State, and (optional) County (You may be able to infer the agency's system / state / county from its name + a Google search; if not, ask CSG)
+   2. Click Submit
+   3. The Agency should now appear in the Agency Provisioning table (this table is searchable)
+   4. Add the agency to the [Production Agencies Table](https://www.notion.so/recidiviz/7238b9d041b64e2cb356ba9aab9a0686?v=2d57b9c201de49f8a75303144aa3f55e) in Notion with all of the relevant information.
+4. To create a new User, navigate to the User Provisioning page and scroll to "Add User"
+   1. Enter the User's Name and Email (You may be able to infer the user's name from their email; if not, ask CSG)
+   2. Click Submit
+   3. The User should now appear in the User Provisioning table (this table is searchable)
+5. You can add/remove a user to an agency either from the User Provisioning table ("Agencies" column) or the Agency Provisioning table ("Team Members" column).
+6. To update a user's role for a given agency, navigate to the Agency Provisioning page
+   1. Find the given agency in the Agency Provisioning table
+   2. Click the "Team Member Roles" link
+   3. Find the given user in the Agency Team Members table
+   4. Within the user's row, there should be a drop-down to specify their role (select JUSTICE_COUNTS_ADMIN, AGENCY_ADMIN, or CONTRIBUTOR)
+   5. Note: By default, all @recidiviz or @csg emails should become Justice Counts Admin, and everyone else should become Agency Admin
 
 ## SQLAlchemy Primer
 
