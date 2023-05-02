@@ -179,6 +179,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
             elif assessment_type in [
                 StateAssessmentType.EXTERNAL_UNKNOWN,
                 StateAssessmentType.INTERNAL_UNKNOWN,
+                StateAssessmentType.CAF,
                 StateAssessmentType.CSSM,
                 StateAssessmentType.HIQ,
                 StateAssessmentType.J_SOAP,
