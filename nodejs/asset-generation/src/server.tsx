@@ -15,24 +15,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// this lets us add a `test` property to the config object for vitest
-/// <reference types="vitest" />
+import express from "express";
 
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { defineConfig } from "vite";
+import { generate } from "./server/generate";
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      // https://github.com/vitest-dev/vitest/issues/2794
-      clsx: path.resolve(__dirname, "./node_modules/clsx/dist/clsx.js"),
-    },
-  },
-  test: {
-    globalSetup: ["./globalTestSetup.ts"],
-    setupFiles: ["./testSetup.ts"],
-  },
-});
+async function createServer() {
+  const app = express();
+  const port = 5174; // default vite port + 1
+
+  app.get("/generate", generate);
+
+  const server = app.listen(port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Server listening on port ${port}`);
+  });
+
+  // https://github.com/vitest-dev/vitest/issues/2334
+  if (import.meta.hot) {
+    import.meta.hot.on("vite:beforeFullReload", () => {
+      server.close();
+    });
+  }
+}
+
+createServer();

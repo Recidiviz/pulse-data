@@ -15,24 +15,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// this lets us add a `test` property to the config object for vitest
-/// <reference types="vitest" />
+import { NextFunction, Request, Response } from "express";
+import { writeFile } from "fs";
 
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { defineConfig } from "vite";
+import { officerData } from "../components/OutliersMetricChart/fixtures";
+import { OutliersMetricChart } from "../components/OutliersMetricChart/OutliersMetricChart";
+import { renderToStaticSvg } from "../components/utils";
+import { convertToImage } from "./convertToImage";
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      // https://github.com/vitest-dev/vitest/issues/2794
-      clsx: path.resolve(__dirname, "./node_modules/clsx/dist/clsx.js"),
-    },
-  },
-  test: {
-    globalSetup: ["./globalTestSetup.ts"],
-    setupFiles: ["./testSetup.ts"],
-  },
-});
+function TestCmp() {
+  return (
+    <OutliersMetricChart
+      data={officerData}
+      width={570}
+      entityLabel="Officers"
+    />
+  );
+}
+
+export async function generate(
+  _req: Request,
+  resp: Response,
+  next: NextFunction
+) {
+  const svg = renderToStaticSvg(TestCmp);
+  const img = await convertToImage(svg);
+  writeFile("tmp.png", img, next);
+  resp.sendStatus(200);
+}
