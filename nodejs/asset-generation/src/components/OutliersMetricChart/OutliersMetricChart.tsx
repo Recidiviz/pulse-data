@@ -20,7 +20,7 @@ import { Text } from "@visx/text";
 import { descending } from "d3-array";
 import { format } from "d3-format";
 import { scaleLinear, scalePoint } from "d3-scale";
-import styled from "styled-components";
+import { styled } from "styled-components";
 
 import {
   AXIS_OFFSET,
