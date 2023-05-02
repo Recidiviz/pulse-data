@@ -15,8 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains US_CO implementation of the StateSpecificCommitmentFromSupervisionDelegate."""
+from typing import Optional
+
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+    NormalizedStateSupervisionPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_commitment_from_supervision_delegate import (
     StateSpecificCommitmentFromSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
 )
 
 
@@ -24,3 +36,27 @@ class UsCoCommitmentFromSupervisionDelegate(
     StateSpecificCommitmentFromSupervisionDelegate
 ):
     """US_CO implementation of the StateSpecificCommitmentFromSupervisionDelegate."""
+
+    def get_commitment_from_supervision_supervision_type(
+        self,
+        incarceration_period: NormalizedStateIncarcerationPeriod,
+        previous_supervision_period: Optional[NormalizedStateSupervisionPeriod],
+    ) -> Optional[StateSupervisionPeriodSupervisionType]:
+        """Determines the supervision type for the given supervision period that
+        preceded the given incarceration period that represents a commitment from
+        supervision.
+        """
+        if not incarceration_period.admission_reason:
+            raise ValueError(
+                "Unexpected missing admission_reason on incarceration period: "
+                f"[{incarceration_period}]"
+            )
+
+        if (
+            incarceration_period.admission_reason
+            == StateIncarcerationPeriodAdmissionReason.REVOCATION
+        ):
+            default_supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+            return default_supervision_type
+
+        return None
