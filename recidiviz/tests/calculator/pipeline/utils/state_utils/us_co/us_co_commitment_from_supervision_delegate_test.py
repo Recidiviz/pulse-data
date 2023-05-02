@@ -17,9 +17,20 @@
 """Tests the functions in us_co_commitment_from_supervision_utils.py"""
 
 import unittest
+from datetime import date
 
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.us_co.us_co_commitment_from_supervision_utils import (
     UsCoCommitmentFromSupervisionDelegate,
+)
+from recidiviz.common.constants.state.state_incarceration_period import (
+    StateIncarcerationPeriodAdmissionReason,
+    StateSpecializedPurposeForIncarceration,
+)
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.common.constants.states import StateCode
 
@@ -32,4 +43,42 @@ class TestUsCoCommitmentFromSupervisionDelegate(unittest.TestCase):
     def setUp(self) -> None:
         self.delegate = UsCoCommitmentFromSupervisionDelegate()
 
-    # ~~ Add new tests here ~~
+    def test_us_co_commitment_supervision_type(self) -> None:
+        """Tests that incarceration periods beginning with REVOCATION show coming from
+        superivison type of PAROLE."""
+        ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code="US_CO",
+            incarceration_period_id=111,
+            admission_date=date(2019, 5, 25),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.REVOCATION,
+            admission_reason_raw_text="10",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        results = self.delegate.get_commitment_from_supervision_supervision_type(
+            ip, None
+        )
+
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+
+        self.assertEqual(supervision_type, results)
+
+    def test_us_co_commitment_supervision_type_not_revocation(self) -> None:
+        """Tests that incarceration periods beginning with something other than REVOCATION do not show up as coming from
+        superivison type of PAROLE."""
+        ip = NormalizedStateIncarcerationPeriod.new_with_defaults(
+            state_code="US_CO",
+            incarceration_period_id=111,
+            admission_date=date(2019, 5, 25),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.STATUS_CHANGE,
+            admission_reason_raw_text="10",
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+        )
+
+        results = self.delegate.get_commitment_from_supervision_supervision_type(
+            ip, None
+        )
+
+        supervision_type = StateSupervisionPeriodSupervisionType.PAROLE
+
+        self.assertNotEqual(supervision_type, results)
