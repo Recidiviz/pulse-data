@@ -30,7 +30,10 @@ class NcicTest(unittest.TestCase):
 
     def test_get_all_codes(self) -> None:
         codes = ncic.get_all_codes()
-        self.assertEqual(len(codes), 372)
+        # Ensure that we have the expected number of codes
+        self.assertEqual(len(codes), 458)
+        # Ensure that all codes are unique
+        self.assertEqual(len(codes), len(set(codes)))
 
     def test_get_all_codes_not_modifiable(self) -> None:
         codes = ncic.get_all_codes()
@@ -43,7 +46,12 @@ class NcicTest(unittest.TestCase):
         self.assertEqual(
             code,
             NcicCode(
-                ncic_code="2312", description="THEFT OF CABLE TV", is_violent=False
+                ncic_code="2312",
+                category_code="23",
+                category="LARCENY",
+                description="LARC - FROM INTERSTATE SHIPMENT",
+                is_drug=False,
+                is_violent=False,
             ),
         )
 
@@ -52,31 +60,61 @@ class NcicTest(unittest.TestCase):
             last_code,
             NcicCode(
                 ncic_code="7399",
-                description="PUBLIC ORDER CRIMES - (FREE TEXT)",
+                category_code="73",
+                category="GENERAL CRIMES",
+                description="PUBLIC ORDER CRIMES - (SPECIFY)",
+                is_drug=False,
                 is_violent=False,
             ),
         )
 
-        first_code = ncic.get("0900")
+        first_code = ncic.get("0999")
         self.assertEqual(
             first_code,
             NcicCode(
-                ncic_code="0900", description="HOMICIDE - (FREE TEXT)", is_violent=True
+                ncic_code="0999",
+                category_code="09",
+                category="HOMICIDE",
+                description="HOMICIDE",
+                is_drug=False,
+                is_violent=True,
             ),
         )
 
     def test_get_not_found(self) -> None:
         self.assertIsNone(ncic.get("9999"))
 
+    def test_get_category_code(self) -> None:
+        description = ncic.get_category_code("1313")
+        self.assertEqual(description, "13")
+
+    def test_get_category_code_not_found(self) -> None:
+        self.assertIsNone(ncic.get_category_code("9999"))
+
+    def test_get_category(self) -> None:
+        description = ncic.get_category("1313")
+        self.assertEqual(description, "ASSAULT")
+
+    def test_get_category_not_found(self) -> None:
+        self.assertIsNone(ncic.get_category("9999"))
+
     def test_get_description(self) -> None:
         description = ncic.get_description("1313")
-        self.assertEqual(description, "SIMPLE ASSAULT")
+        self.assertEqual(description, "SIMPLE ASSLT")
 
     def test_get_description_not_found(self) -> None:
         self.assertIsNone(ncic.get_description("9999"))
 
+    def test_get_is_drug(self) -> None:
+        self.assertTrue(ncic.get_is_drug("3501"))
+        self.assertFalse(ncic.get_is_drug("2007"))
+        self.assertIsNotNone(ncic.get_is_drug("2007"))
+
+    def test_get_is_drug_not_found(self) -> None:
+        self.assertIsNone(ncic.get_is_drug("9999"))
+
     def test_get_is_violent(self) -> None:
-        self.assertTrue(ncic.get_is_violent("1317"))
+        self.assertTrue(ncic.get_is_violent("1301"))
         self.assertFalse(ncic.get_is_violent("2007"))
         self.assertIsNotNone(ncic.get_is_violent("2007"))
 
