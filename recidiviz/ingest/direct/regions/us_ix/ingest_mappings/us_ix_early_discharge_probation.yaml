@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - InvestigationId
+  - CompletionDate
+  - Accepted
+  - Cancelled
+  - RequestDate
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ED_PROBATION")
+                - OffenderId
+                - InvestigationId
+          early_discharges:
+            - StateEarlyDischarge:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("ED_PROBATION")
+                      - OffenderId
+                      - InvestigationId
+                deciding_body_type: $literal_enum(StateActingBodyType.COURT)
+                decision_date: CompletionDate
+                requesting_body_type: $literal_enum(StateActingBodyType.SUPERVISION_OFFICER)
+                decision:
+                  $enum_mapping:
+                    $raw_text: Accepted
+                    $mappings:
+                      StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED:
+                        - "1"
+                      StateEarlyDischargeDecision.REQUEST_DENIED:
+                        - "0"
+                request_date: RequestDate
+                decision_status:
+                  $conditional:
+                    - $if:
+                        $equal:
+                          - $literal("1")
+                          - Cancelled
+                      $then: $literal_enum(StateEarlyDischargeDecisionStatus.INVALID)
+                    - $else_if:
+                        $is_null: CompletionDate
+                      $then: $literal_enum(StateEarlyDischargeDecisionStatus.PENDING)
+                    - $else: $literal_enum(StateEarlyDischargeDecisionStatus.DECIDED)

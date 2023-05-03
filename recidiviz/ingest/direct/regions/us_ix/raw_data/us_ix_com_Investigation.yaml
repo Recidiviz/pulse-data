@@ -56,12 +56,15 @@ columns:
   - name: RequestNotes
     description: |-
       Notes regarding the investigation request; can be raw text or a number.
+    is_pii: True
   - name: AssignedById
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: AssignedToId
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: AssignedDate
     description: |-
       TODO(#15329): Fill in column description
@@ -83,21 +86,25 @@ columns:
   - name: ResponseNotes
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: OffenderId
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: Locking
     description: |-
       TODO(#15329): Fill in column description
   - name: InsertUserId
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: InsertDate
     description: |-
       TODO(#15329): Fill in column description
   - name: UpdateUserId
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: UpdateDate
     description: |-
       TODO(#15329): Fill in column description
@@ -110,9 +117,11 @@ columns:
   - name: OtherAssignedById
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: OtherAssignedToId
     description: |-
       TODO(#15329): Fill in column description
+    is_pii: True
   - name: OtherAssignedDate
     description: |-
       TODO(#15329): Fill in column description

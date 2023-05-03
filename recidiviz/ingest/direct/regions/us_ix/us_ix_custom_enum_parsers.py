@@ -23,6 +23,9 @@ my_enum_field:
     $custom_parser: us_ix_custom_enum_parsers.<function name>
 """
 
+from datetime import date
+
+from recidiviz.common.constants.state.state_shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -31,6 +34,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.str_field_utils import parse_date
 
 # Mappings list for contact location
 
@@ -153,3 +157,15 @@ def lsu_supervision_level(raw_text: str) -> StateSupervisionLevel:
     if raw_text:
         return StateSupervisionLevel.LIMITED
     raise ValueError("This parser should never be called on missing raw text.")
+
+
+def determine_ed_requesting_body(raw_text: str) -> StateActingBodyType:
+    """Maps parole early discharge requesting body based on when the request date was since there was a policy change Oct 2019 that
+    changed it such that all parole early discharge requests are now made by the client instead of by the supervision officer"""
+    request_date = parse_date(raw_text)
+    if request_date:
+        if request_date < date(2019, 10, 1):
+            return StateActingBodyType.SUPERVISION_OFFICER
+        return StateActingBodyType.SENTENCED_PERSON
+
+    return StateActingBodyType.INTERNAL_UNKNOWN
