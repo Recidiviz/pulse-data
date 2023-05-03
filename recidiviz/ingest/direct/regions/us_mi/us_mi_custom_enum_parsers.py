@@ -112,11 +112,14 @@ def parse_condition(
     return None
 
 
-minimum_levels = [
+limited_levels = [
     "14165",  # Probation Minimum Telephone Employed
     "14164",  # Probation Minimum Telephone Unemployed
     "14052",  # Parole Minimum Telephone Unemployed
     "14051",  # Parole Minimum Telephone Employed
+]
+
+minimum_levels = [
     "2294",  # Parole Minimum
     "13560",  # Parole Minimum Employed
     "13561",  # Parole Minimum Unemployed
@@ -330,6 +333,9 @@ def parse_supervision_level(
     """Parse supervision level based on assigned supervision level"""
 
     supervision_level_id = raw_text.split("##")[0]
+
+    if supervision_level_id in limited_levels:
+        return StateSupervisionLevel.LIMITED
 
     if supervision_level_id in minimum_levels:
         return StateSupervisionLevel.MINIMUM
