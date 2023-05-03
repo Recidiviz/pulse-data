@@ -28,7 +28,7 @@ def get_hash_of_deployed_commit(project_id: str) -> str:
     """
 
     # First make sure all tags are current locally
-    run_command("git fetch --all --tags --prune --prune-tags", timeout_sec=30)
+    run_command("git fetch --all --tags --prune --prune-tags --force", timeout_sec=30)
 
     get_versions_command = f"gcloud app versions list --project={project_id} --hide-no-traffic --service=default --format=yaml"
     versions_yaml = run_command(get_versions_command, timeout_sec=30).strip()
