@@ -1,22 +1,44 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: Delta
-file_description: |-
-  TODO(#15297): This file lists individuals who were removed from the list of people currently on parole or eligible for parole within 90 days
+file_description: >-
+  This file lists individuals who were removed from the list of people currently on
+  parole or eligible for parole within 90 days.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
+  - OffenderGroup
+  - StatusDate
 columns:
   - name: OffenderId
-    description: |-
-      TODO(#15297) An ID to reference a specific individual in who is in custody or under supervision of CDCR.
+    description: >-
+      An ID to reference a specific individual in who is in custody or under supervision
+      of CDCR.
     is_pii: True
   - name: Cdcno
-    description: |-
-      TODO(#15297) This individual's most recent CDCNO. See CDCNOInCustody or CDCNOParole for more.
+    description: >-
+      This individual's most recent CDCNO. See CDCNOInCustody or CDCNOParole for more.
     is_pii: True
   - name: StatusDate
-    description: |-
-      TODO(#15297)
+    description: >-
+      The date the event occured. If OffenderGroup is "Date Changed", this date will be
+      in the future.
     is_datetime: True
   - name: OffenderGroup
-    description: |-
-      TODO(#15297)
+    description: >-
+      Not really OffenderGroup -- this reflects the type of change that occured and
+      placed someone in the Delta file.
+    known_values:
+      - value: Date Change
+        description: >-
+          Only valid for individuals who are currently incarcerated (in the
+          PersonInCustody table). "Date Change" means that their release date was
+          changed such that they will no longer be eligible for parole within 90 days.
+      - value: Discharged
+        description: >-
+          This person was discharged.
+      - value: Escaped
+      - value: Expired Release Date-Out to Court
+      - value: Record Deleted
+      - value: Release Type Changed to MEPD
+      - value: Removed SACCO
+      - value: Return to Institution
