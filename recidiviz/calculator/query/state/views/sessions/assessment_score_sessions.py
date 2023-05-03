@@ -52,6 +52,7 @@ WITH state_assessment AS (
             assessment_level,
             assessment_level_raw_text,
             assessment_score_bucket,
+            assessment_metadata,
             sequence_num
         FROM
             `{project_id}.{normalized_state_dataset}.state_assessment`
@@ -59,7 +60,7 @@ WITH state_assessment AS (
             state_code NOT IN ("US_MI")   
             -- keep only relevant assessment types
             AND (
-                assessment_type IN ("LSIR", "STRONG_R")
+                assessment_type IN ("LSIR", "STRONG_R", "CAF")
                  OR assessment_type LIKE "ORAS%"
             )
         
@@ -79,6 +80,7 @@ WITH state_assessment AS (
             assessment_level,
             assessment_level_raw_text,
             assessment_score_bucket,
+            NULL AS assessment_metadata,
             sequence_num
         FROM
             `{project_id}.{sessions_dataset}.us_mi_state_assessment_preprocessed_materialized`
@@ -117,6 +119,7 @@ SELECT
     assessment_level,
     assessment_level_raw_text,
     assessment_score_bucket,
+    assessment_metadata,
 FROM
     state_assessment
 """
