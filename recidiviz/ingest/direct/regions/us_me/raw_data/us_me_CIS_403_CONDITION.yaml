@@ -28,6 +28,7 @@ columns:
     description: The date the condition must be met by.
     is_datetime: True
   - name: Fulfilled_Inactive_Comment_Tx
+    description: Free text field where PO writes the reason why the condition was fulfilled or marked as inactive.
   - name: General_Comments_Tx
     description: General comments relevant to the supervision condition and the client
     is_pii: True
