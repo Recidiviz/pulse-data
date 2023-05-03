@@ -67,7 +67,7 @@ CONSECUTIVE_PAYMENTS_PREPROCESSED_QUERY_TEMPLATE = f"""
     sessionized_cte AS
     (
     {aggregate_adjacent_spans(table_name='payments_preprocessed',
-                       attribute=['consecutive_payment','latest_payment'],
+                       attribute=['consecutive_payment','latest_payment','external_id'],
                        session_id_output_name='consecutive_payment_session_id',
                        end_date_field_name='end_date_exclusive')}
     )
