@@ -642,7 +642,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                     project_id=metadata.project_id(),
                     results_dataset=results_address.dataset_id,
                     results_table=results_address.table_id,
-                    datetime_utc=datetime_utc,
+                    datetime_utc=datetime_utc.replace(tzinfo=None).isoformat(),
                     ingest_view_name=ingest_view_name,
                 )
             )
