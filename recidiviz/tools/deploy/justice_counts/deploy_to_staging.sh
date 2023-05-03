@@ -37,7 +37,7 @@ function get_next_version {
     TAG_PREFIX=$1
 
     run_cmd git checkout main && git pull
-    run_cmd git fetch --all --tags --prune --prune-tags
+    run_cmd git fetch --all --tags --prune --prune-tags --force
 
     LAST_VERSION_TAG_ON_BRANCH=$(git tag --merged "main" | grep "${TAG_PREFIX}" | sort_versions | tail -n 1) || exit_on_fail
 

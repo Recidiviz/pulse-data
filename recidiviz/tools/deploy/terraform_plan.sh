@@ -29,7 +29,7 @@ TF_STATE_PREFIX=${2:-""}
 
 echo "##### Running for project $PROJECT_ID ########"
 
-run_cmd git fetch --all --tags --prune --prune-tags
+run_cmd git fetch --all --tags --prune --prune-tags --force
 
 DOCKER_IMAGE_TAG=$(last_version_tag_on_branch HEAD) || exit_on_fail
 LAST_DEPLOYED_VERSION_TAG=$(last_deployed_version_tag "${PROJECT_ID}") || exit_on_fail

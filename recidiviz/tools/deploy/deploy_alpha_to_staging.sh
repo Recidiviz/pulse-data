@@ -12,7 +12,7 @@ source "${BASH_SOURCE_DIR}/../script_base.sh"
 source "${BASH_SOURCE_DIR}/deploy_helpers.sh"
 
 echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune --prune-tags
+run_cmd git fetch --all --tags --prune --prune-tags --force
 
 echo "Checking for existing tags at tip of main"
 check_for_tags_at_branch_tip main

@@ -39,7 +39,7 @@ if [[ ! ${RELEASE_CANDIDATE_BASE_BRANCH} == "main" && ! ${RELEASE_CANDIDATE_BASE
 fi
 
 echo "Fetching all tags"
-run_cmd git fetch --all --tags --prune --prune-tags
+run_cmd git fetch --all --tags --prune --prune-tags --force
 
 run_cmd safe_git_checkout_remote_branch "${RELEASE_CANDIDATE_BASE_BRANCH}"
 
