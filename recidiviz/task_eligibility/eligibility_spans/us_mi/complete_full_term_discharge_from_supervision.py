@@ -19,7 +19,7 @@ someone in MI is eligible for full term discharge from supervision.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_parole_dual_active_supervision_population,
+    parole_dual_active_supervision_population,
 )
 from recidiviz.task_eligibility.completion_events.general import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
@@ -39,7 +39,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_FULL_TERM_DISCHARGE_FROM_SUPERVISION",
     description=_DESCRIPTION,
-    candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         supervision_past_full_term_completion_date.VIEW_BUILDER,
     ],
