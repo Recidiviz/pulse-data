@@ -24,6 +24,9 @@ TASK_ELIGIBILITY_DATASET_ID = "task_eligibility"
 
 TASK_COMPLETION_EVENTS_DATASET_ID = "task_eligibility_completion_events_general"
 
+# Where general TES criteria live
+TASK_ELIGIBILITY_CRITERIA_GENERAL = "task_eligibility_criteria_general"
+
 
 def task_eligibility_spans_state_specific_dataset(state_code: StateCode) -> str:
     """Returns the dataset containing task eligibility spans for this region."""
