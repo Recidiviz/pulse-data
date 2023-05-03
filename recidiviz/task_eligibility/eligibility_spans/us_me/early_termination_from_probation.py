@@ -30,7 +30,7 @@ from recidiviz.task_eligibility.criteria.general import (
     supervision_past_half_full_term_release_date_from_supervision_start,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_me import (
-    no_pending_violations_leading_to_incarceration_while_supervised,
+    no_pending_violations_while_supervised,
     paid_all_owed_restitution,
     supervision_is_not_ic_in,
 )
@@ -55,7 +55,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         on_medium_supervision_level_or_lower.VIEW_BUILDER,
         paid_all_owed_restitution.VIEW_BUILDER,
         supervision_is_not_ic_in.VIEW_BUILDER,
-        no_pending_violations_leading_to_incarceration_while_supervised.VIEW_BUILDER,
+        no_pending_violations_while_supervised.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

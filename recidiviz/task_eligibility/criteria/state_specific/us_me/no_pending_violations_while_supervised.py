@@ -15,15 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-"""Defines a criteria view that shows spans of time where
-clients are NOT currently incarcerated because of a pending violation. 
-
-Context: clients on supervision can be subject to violations. These violations sometimes
-result in incarceration. In cases where they result in incarceration, clients are ineligible
-for ET until the resolution for that violation is availabl; i.e. they are ineligible 
-while they are pending.
+"""Defines a criteria view that shows spans of time where clients do NOT 
+have a pending violation. 
 """
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
@@ -36,46 +34,51 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_ME_NO_PENDING_VIOLATIONS_LEADING_TO_INCARCERATION_WHILE_SUPERVISED"
+_CRITERIA_NAME = "US_ME_NO_PENDING_VIOLATIONS_WHILE_SUPERVISED"
 
-_DESCRIPTION = """Defines a criteria view that shows spans of time where
-clients are NOT currently incarcerated because of a pending violation.
-
-Context: clients on supervision can be subject to violations. These violations sometimes
-result in incarceration. In cases where they result in incarceration, clients are ineligible
-for ET until the resolution for that violation is availabl; i.e. they are ineligible 
-while they are pending.
+_DESCRIPTION = """Defines a criteria view that shows spans of time where clients do NOT
+have a pending violation. 
 """
 
-_QUERY_TEMPLATE = """
-WITH pending_violations_resulting_in_arrest AS (
+_QUERY_TEMPLATE = f"""
+WITH pending_violations AS (
   SELECT 
     peid.state_code,
     peid.person_id,
-    MIN(SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE)) AS start_date,
-  FROM `{project_id}.{raw_data_up_to_date_views_dataset}.CIS_480_VIOLATION_latest` v
-  INNER JOIN {project_id}.{normalized_state_dataset}.state_person_external_id peid
+    SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE) AS start_date,
+  FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.CIS_480_VIOLATION_latest` v
+  INNER JOIN {{project_id}}.{{normalized_state_dataset}}.state_person_external_id peid
     ON peid.external_id = v.Cis_100_Client_Id
       AND id_type ='US_ME_DOC'
   -- Violation is pending
   WHERE v.Cis_4800_Violation_Finding_Cd IS NULL
-  -- Violation resulted in an arrest
-    AND v.Cis_4009_Toll_Violation_Cd = '60'
-    AND Logical_Delete_Ind != 'Y'
-    AND v.Toll_Start_Date IS NOT NULL
-  GROUP BY 1,2
-)
+  -- ME adds this columns to flag rows that should be deleted
+    AND v.Logical_Delete_Ind != 'Y'
+),
+
+pending_violations_wend_date AS (
+  SELECT 
+    *,
+    DATE_ADD(start_date, INTERVAL 3 YEAR) AS end_date,
+    start_date AS violation_date,
+  FROM pending_violations
+),
+
+{create_sub_sessions_with_attributes('pending_violations_wend_date')}
 
 SELECT 
   state_code,
   person_id,
   start_date,
-  # Pending violations only valid for 3 years
-  DATE_ADD(start_date, INTERVAL 3 YEAR) AS end_date,
+  end_date,
   False AS meets_criteria,
-  TO_JSON(STRUCT('Pending Violation - Incarcerated' AS current_status, 
-                 start_date AS violation_date)) AS reason
-FROM pending_violations_resulting_in_arrest
+  TO_JSON(STRUCT('Pending Violation' AS current_status, 
+                 violation_date AS violation_date)) AS reason
+FROM sub_sessions_with_attributes
+WHERE start_date != end_date
+-- If two subsessions, we take the latest violation date
+QUALIFY ROW_NUMBER() OVER(PARTITION BY state_code, person_id, start_date, end_date
+                          ORDER BY violation_date DESC) = 1
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (

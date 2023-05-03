@@ -33,7 +33,10 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
     one_criteria_away_from_eligibility,
     x_time_away_from_eligibility,
 )
-from recidiviz.task_eligibility.utils.raw_table_import import cis_204_notes_cte
+from recidiviz.task_eligibility.utils.raw_table_import import (
+    cis_204_notes_cte,
+    cis_425_program_enrollment_notes,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -91,24 +94,8 @@ WITH current_incarceration_pop_cte AS (
 case_notes_cte AS (
 -- Get together all case_notes
 
-    -- Program enrollment data as notes
-    SELECT 
-        mp.CIS_100_CLIENT_ID AS external_id,
-        "Program Enrollment" AS criteria,
-        CONCAT(st.E_STAT_TYPE_DESC ,' - ', pr.NAME_TX) AS note_title,
-        ps.Comments_Tx AS note_body,
-        -- TODO(#17587) remove LEFT once the YAML file is updated
-        SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS event_date,
-    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
-        ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
-    -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text 
-    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
-        ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
-    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
-        ON ps.Cis_9900_Stat_Type_Cd = st.STAT_TYPE_CD
-    WHERE pr.NAME_TX IS NOT NULL
-    QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
+    -- Program enrollment
+    {cis_425_program_enrollment_notes()}
 
     UNION ALL
   
