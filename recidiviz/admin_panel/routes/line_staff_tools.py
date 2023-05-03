@@ -352,6 +352,11 @@ def add_line_staff_tools_routes(bp: Blueprint) -> None:
                 if value["type"] == "DATE" and key != "date_of_standards"
             },
         )
+        # strip leading and trailing whitespace from column names
+        df.rename(
+            columns=lambda col: col.strip(),
+            inplace=True,
+        )
         df["date_of_standards"] = date_of_standards
 
         # Check that we have all expected columns in the correct order
