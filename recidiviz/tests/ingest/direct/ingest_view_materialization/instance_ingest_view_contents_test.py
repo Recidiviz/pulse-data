@@ -20,6 +20,7 @@ import unittest
 from unittest import mock
 from unittest.mock import call, create_autospec, patch
 
+import pytz
 from freezegun import freeze_time
 from google.api_core import exceptions
 from google.cloud import bigquery
@@ -620,7 +621,7 @@ FROM
         )
 
     def test_get_max_date_of_data_processed_before_datetime(self) -> None:
-        datetime_utc = datetime.datetime(2022, 1, 1, 0, 0, 0, 0)
+        datetime_utc = datetime.datetime(2022, 1, 1, 0, 0, 0, 0, tzinfo=pytz.UTC)
         self.mock_bq_client.list_tables.return_value = iter(
             [
                 bigquery.table.TableListItem(
@@ -677,7 +678,7 @@ SELECT
     "{self.ingest_view_name}" AS ingest_view_name,
     MAX(__upper_bound_datetime_inclusive) as max_processed_upper_bound_date
 FROM `recidiviz-456.us_xx_ingest_view_results_primary.{self.ingest_view_name}`
-WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_utc}")
+WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("2022-01-01T00:00:00")
 
 UNION ALL
 
@@ -685,7 +686,7 @@ SELECT
     "{self.ingest_view_name_2}" AS ingest_view_name,
     MAX(__upper_bound_datetime_inclusive) as max_processed_upper_bound_date
 FROM `recidiviz-456.us_xx_ingest_view_results_primary.{self.ingest_view_name_2}`
-WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_utc}")
+WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("2022-01-01T00:00:00")
 """
 
         self.assertEqual(
@@ -697,7 +698,7 @@ WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_ut
         )
 
     def test_get_max_date_of_data_processed_all_data_unprocessed(self) -> None:
-        datetime_utc = datetime.datetime(2022, 1, 1, 0, 0, 0, 0)
+        datetime_utc = datetime.datetime(2022, 1, 1, 0, 0, 0, 0, tzinfo=pytz.UTC)
         self.mock_bq_client.list_tables.return_value = iter(
             [
                 bigquery.table.TableListItem(
@@ -743,7 +744,7 @@ SELECT
     "{self.ingest_view_name}" AS ingest_view_name,
     MAX(__upper_bound_datetime_inclusive) as max_processed_upper_bound_date
 FROM `recidiviz-456.us_xx_ingest_view_results_primary.{self.ingest_view_name}`
-WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("{datetime_utc}")
+WHERE __processed_time IS NOT NULL AND __processed_time < DATETIME("2022-01-01T00:00:00")
 """
 
         self.assertEqual(
