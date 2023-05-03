@@ -110,5 +110,6 @@ output:
             - "Custody Program"
             - "Conversion"
             - "Mailing"
+          # TODO(#20542) Move this to INTERNAL_UNKNOWN
           StateResidencyStatus.EXTERNAL_UNKNOWN:
             - "PAL Report Submitted"

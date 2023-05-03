@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_violations` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - Violation_ID
+  - OffenderId
+  - Violation_Date
+  - Response_Date
+  - Response_Type
+  - Response_Decision_Type
+  - DecidingBodyType
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_CA_DOC")
+    supervision_violations:
+      - StateSupervisionViolation:
+          external_id: Violation_ID
+          violation_date: Violation_Date
+          # supervision_violation_types:
+          #   - StateSupervisionViolationTypeEntry:
+          # TODO(#20369):
+          # Previously we could not determine the StateSupervisionViolationType
+          # because the violation codes were all concatenated. However, we
+          # recently started receiving a new table which contains this information
+          # broken out. So to complete this ticket, we need to add a new raw data
+          # config for that table and ingest that information.
+
+          # A violation code of 0-99 is a technical violation. Anything else (I
+          # think) is law. Not sure about absconded though. See the raw data docs
+          # or the DOM for more information.
+          supervision_violation_responses:
+            - StateSupervisionViolationResponse:
+                external_id: Violation_ID
+                response_date: Response_Date
+                response_type:
+                  $enum_mapping:
+                    $raw_text: Response_Type
+                    $mappings:
+                      # There are other types like IDLE and SUSPEND, but we ignore these
+                      # for now by filtering for only final = 'Y' violations.
+                      StateSupervisionViolationResponseType.PERMANENT_DECISION:
+                        - "DEFER"
+                        - "DISMISS"
+                        - "REFER"
+                      StateSupervisionViolationResponseType.CITATION:
+                        - "COP"
+                deciding_body_type:
+                  $enum_mapping:
+                    $raw_text: DecidingBodyType
+                    $mappings:
+                      StateSupervisionViolationResponseDecidingBodyType.SUPERVISION_OFFICER:
+                        - "Unit Supervisor"
+                      StateSupervisionViolationResponseDecidingBodyType.COURT:
+                        - "Court"
+                supervision_violation_response_decisions:
+                  - StateSupervisionViolationResponseDecisionEntry:
+                      decision:
+                        $enum_mapping:
+                          $raw_text:
+                            $concat:
+                              $separator: "@@"
+                              $values:
+                                - Response_Type
+                                - Response_Decision_Type
+                              $include_nulls: True
+                          $custom_parser: us_ca_custom_enum_parsers.parse_supervision_violation_response_decision_type

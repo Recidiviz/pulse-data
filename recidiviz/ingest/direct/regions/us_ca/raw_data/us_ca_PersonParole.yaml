@@ -159,6 +159,8 @@ columns:
         description: The proposed address from the RPS.
       - value: Mailing
       - value: PAL Report Submitted
+        description: Don't rely on this value for identifying absconsions -- use
+          OffenderGroup = PAL instead.
       - value: Local Jail
         description: >-
           An offender incarcerated in a county jail within the state of

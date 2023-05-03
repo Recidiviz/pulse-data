@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2021 Recidiviz, Inc.
+# Copyright (C) 2022 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,14 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing CDCR client information. Currently only looks at folks who are on 
-supervision.
-
-Tickets to improve this view:
-
-Things to consider making tickets for:
-1. Parsing the first few characters of the CDCNO to add information.
+"""Query containing CDCR supervision violation information. For more information,
+including to-do's and things we could UXR, see us_ca.md
 """
+
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
 )
@@ -29,23 +25,21 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-  SELECT
-    OffenderId,
-    FirstName,
-    MiddleName,
-    LastName,
-    NameSuffix,
-    Birthday,
-    Sex,
-    Race,
-    Ethnic,
-    AddressType
-  FROM {PersonParole}
+SELECT 
+  Violation_ID,
+  OffenderId,
+  Violation_Date,
+  Response_Date,
+  Response_Type,
+  Response_Decision_Type,
+  DecidingBodyType
+FROM {ParoleViolation}
+WHERE Final = 'Y'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_ca",
-    ingest_view_name="person",
+    ingest_view_name="supervision_violation",
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols="OffenderId",
 )

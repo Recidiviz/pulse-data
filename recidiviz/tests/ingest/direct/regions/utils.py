@@ -57,6 +57,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity, RootEntity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -80,6 +81,24 @@ def populate_root_entity_backedges(root_entities: List[RootEntity]) -> None:
                 and getattr(child, back_edge_field_name, None) is None
             ):
                 child.set_field(back_edge_field_name, root_entity)
+
+
+# When writing parser tests, we'll end up creating many state people with only the external_id
+# and state_code populated. I know we already have several other helpers around this,
+# but this felt like general enough usecase that it was worth providing here as well.
+def build_non_entity_matched_person(
+    external_id: str, state_code: StateCode, unchecked_id_type: str
+) -> entities.StatePerson:
+    return entities.StatePerson(
+        state_code=state_code.value,
+        external_ids=[
+            entities.StatePersonExternalId(
+                state_code=state_code.value,
+                external_id=external_id,
+                id_type=unchecked_id_type,
+            )
+        ],
+    )
 
 
 def build_state_person_entity(
