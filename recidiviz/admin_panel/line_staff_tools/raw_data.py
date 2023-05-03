@@ -236,6 +236,11 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "name": "Last_CCR_Date",
         "type": "DATE",
     },
+    "New Case Start": {
+        "mode": "NULLABLE",
+        "name": "New_Case_Start",
+        "type": "DATE",
+    },
     "Last Strong R": {
         "mode": "NULLABLE",
         "name": "Last_Strong_R",
@@ -290,6 +295,11 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "mode": "NULLABLE",
         "name": "Last_DRU_Type",
         "type": "STRING",
+    },
+    "Number of Drug Screens": {
+        "mode": "NULLABLE",
+        "name": "Number_of_Drug_Screens",
+        "type": "INTEGER",
     },
     "Last DRUL Note": {
         "mode": "NULLABLE",
@@ -410,6 +420,36 @@ US_TN_STANDARDS_DUE_SCHEMA = {
         "mode": "NULLABLE",
         "name": "ZZZI_GT_45_days",
         "type": "BOOLEAN",
+    },
+    "Last ISC Note": {
+        "mode": "NULLABLE",
+        "name": "Last_ISC_Note",
+        "type": "DATE",
+    },
+    "ISC Note Due": {
+        "mode": "NULLABLE",
+        "name": "ISC_Note_Due",
+        "type": "DATE",
+    },
+    "Last IOT Note": {
+        "mode": "NULLABLE",
+        "name": "Last_IOT_Note",
+        "type": "DATE",
+    },
+    "IOT Note Due": {
+        "mode": "NULLABLE",
+        "name": "IOT_Note_Due",
+        "type": "DATE",
+    },
+    "TRTE2 Date": {
+        "mode": "NULLABLE",
+        "name": "TRTE2_Date",
+        "type": "DATE",
+    },
+    "TRTE1 Date": {
+        "mode": "NULLABLE",
+        "name": "TRTE1_Date",
+        "type": "DATE",
     },
     "date_of_standards": {
         "mode": "NULLABLE",
