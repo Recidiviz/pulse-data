@@ -17,9 +17,15 @@
 """Queries information needed to display Early Termination eligibility in ME
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.calculator.query.bq_utils import (
+    nonnull_end_date_clause,
+    nonnull_end_date_exclusive_clause,
+)
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    SESSIONS_DATASET,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
@@ -35,9 +41,24 @@ from recidiviz.task_eligibility.utils.almost_eligible_query_fragments import (
 )
 from recidiviz.task_eligibility.utils.raw_table_import import (
     cis_408_violations_notes_cte,
+    cis_425_program_enrollment_notes,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+_PROGRAM_ENROLLMENT_WHERE_CLAUSE = """
+        AND st.E_STAT_TYPE_DESC = 'Completed Successfully'
+        AND ss.start_date <= SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE)
+"""
+_PROGRAM_ENROLLMENT_ADDITIONAL_JOIN = f"""
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
+        ON peid.external_id = mp.CIS_100_CLIENT_ID
+            AND peid.state_code = 'US_ME'
+            AND peid.id_type = 'US_ME_DOC'
+    LEFT JOIN `{{project_id}}.{{sessions_dataset}}.system_sessions_materialized` ss
+        ON peid.person_id = ss.person_id
+            AND CURRENT_DATE('US/Eastern') BETWEEN ss.start_date AND {nonnull_end_date_clause('ss.end_date_exclusive')}
+"""
 
 _STANDARD_PAROLE_CONDITIONS = ", ".join(
     [
@@ -104,13 +125,13 @@ US_ME_COMPLETE_EARLY_TERMINATION_RECORD_QUERY_TEMPLATE = f"""
 
 WITH current_supervision_pop_cte AS (
     -- Keep individuals on probation today
-    SELECT pei.external_id,
+    SELECT peid.external_id,
         tes.state_code,
         tes.reasons,
         tes.ineligible_criteria,
         tes.is_eligible,
     FROM `{{project_id}}.{{task_eligibility_dataset}}.early_termination_from_probation_materialized` tes
-    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+    LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` peid
         USING(person_id)
     WHERE 
       CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND 
@@ -165,8 +186,7 @@ case_notes_cte AS (
                                   violation_type_for_criteria='Felonies (in the past 6 months)',
                                   time_interval = 6,
                                   date_part = 'MONTH')}
-
-                                  
+                         
     UNION ALL
 
     -- Pending violations
@@ -187,6 +207,20 @@ case_notes_cte AS (
     ON v.Cis_4009_Toll_Violation_Cd = sc2.Sent_Calc_Sys_Cd
     WHERE v.Cis_4800_Violation_Finding_Cd IS NULL
         AND DATE_SUB(CURRENT_DATE('US/Eastern') , INTERVAL 3 YEAR) <= SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE)
+
+    UNION ALL
+
+    #TODO(#20608): get descriptions these programs and add them to the note so POs have
+        # more context
+
+    -- Program enrollment notes: starting from the incarceration period that preceded
+        -- the current supervision period
+    {cis_425_program_enrollment_notes(
+        where_clause= _PROGRAM_ENROLLMENT_WHERE_CLAUSE, 
+        additional_joins=_PROGRAM_ENROLLMENT_ADDITIONAL_JOIN,
+        criteria="'Completed Programs'",
+        note_title = "pr.NAME_TX",
+        note_body = 'pr.DESCRIPTION_TX',)}
 ), 
 
 {json_to_array_cte('current_supervision_pop_cte')}, 
@@ -202,7 +236,7 @@ eligible_and_almost_eligible AS (
 
     -- ALMOST ELIGIBLE (<6mo remaining before half time)
     {x_time_away_from_eligibility(time_interval= 6, date_part= 'MONTH',
-        criteria_name= 'SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE')}
+        criteria_name= 'SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE_FROM_SUPERVISION_START')}
 
     UNION ALL
     
@@ -211,6 +245,12 @@ eligible_and_almost_eligible AS (
         criteria_name = 'US_ME_PAID_ALL_OWED_RESTITUTION',
         criteria_condition = '< 1000',
         field_name_in_reasons_blob = 'amount_owed')}
+
+    UNION ALL
+
+    -- ALMOST ELIGIBLE (At least one pending violation away from eligibility)
+    {one_criteria_away_from_eligibility(
+        criteria_name = 'US_ME_NO_PENDING_VIOLATIONS_WHILE_SUPERVISED')}
 ),
 
 array_case_notes_cte AS (
@@ -243,6 +283,7 @@ US_ME_COMPLETE_EARLY_TERMINATION_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder
     view_query_template=US_ME_COMPLETE_EARLY_TERMINATION_RECORD_QUERY_TEMPLATE,
     description=US_ME_COMPLETE_EARLY_TERMINATION_RECORD_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
+    sessions_dataset=SESSIONS_DATASET,
     task_eligibility_dataset=task_eligibility_spans_state_specific_dataset(
         StateCode.US_ME
     ),

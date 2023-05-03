@@ -17,6 +17,8 @@
 """Helper SQL fragments for ME
 """
 
+from typing import Optional
+
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 
 
@@ -113,4 +115,52 @@ def cis_408_violations_notes_cte(
         AND DATE_ADD(SAFE_CAST(LEFT(v.Toll_Start_Date, 10) AS DATE), INTERVAL {time_interval} {date_part}) > CURRENT_DATE('US/Eastern')
         -- Remove cases where logical_delete_ind = 'Y'
         AND Logical_Delete_Ind = 'N'
+    """
+
+
+def cis_425_program_enrollment_notes(
+    where_clause: Optional[str] = "",
+    additional_joins: Optional[str] = "",
+    criteria: Optional[str] = "'Program enrollment'",
+    note_title: Optional[str] = "CONCAT(st.E_STAT_TYPE_DESC ,' - ', pr.NAME_TX)",
+    note_body: Optional[str] = "ps.Comments_Tx",
+) -> str:
+    """
+    Formats program enrollment data as contact notes for Workflows tools
+
+    Args:
+        where_clause (str, optional): Additional where clause filters (needs to start
+            with 'AND'). Defaults to ''.
+        additional_joins (Optional[str], optional): Additional joins. Defaults to "".
+        criteria (Optional[str], optional): Add what we want to display as criteria.
+            Defaults to "".
+        note_title (Optional[str], optional): Add what we want to display as note_title.
+            Defaults to "".
+        note_body (Optional[str], optional): Add what we want to display as note_body.
+            Defaults to "".
+
+    Returns:
+        str: SQL query
+    """
+
+    return f"""
+    -- Program enrollment data as notes
+    SELECT 
+        mp.CIS_100_CLIENT_ID AS external_id,
+        {criteria} AS criteria,
+        {note_title} AS note_title,
+        {note_body} AS note_body,
+        -- TODO(#17587) remove LEFT once the YAML file is updated
+        SAFE_CAST(LEFT(mp.MODIFIED_ON_DATE, 10) AS DATE) AS event_date,
+    FROM `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_425_MAIN_PROG_latest` mp
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_420_PROGRAMS_latest` pr
+        ON mp.CIS_420_PROGRAM_ID = pr.PROGRAM_ID
+    -- Comments_Tx/Note_body could be NULL, which happens when the record does not contain free text 
+    LEFT JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_426_PROG_STATUS_latest`  ps
+        ON mp.ENROLL_ID = ps.Cis_425_Enroll_Id
+    INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_9900_STATUS_TYPE_latest` st
+        ON ps.Cis_9900_Stat_Type_Cd = st.STAT_TYPE_CD
+    {additional_joins}
+    WHERE pr.NAME_TX IS NOT NULL {where_clause}
+    QUALIFY ROW_NUMBER() OVER(PARTITION BY mp.ENROLL_ID ORDER BY Effct_Datetime DESC) = 1
     """
