@@ -54,7 +54,9 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
+    TEST_CSV_FILE,
     TEST_EXCEL_FILE,
+    create_csv_file,
     create_excel_file,
 )
 from recidiviz.tests.justice_counts.utils.utils import (
@@ -209,6 +211,53 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 0,
             )
             self.assertEqual(metrics[1].value, 20)
+
+    def test_prison_csv(self) -> None:
+        """Bulk upload prison metrics into an empty database."""
+        with SessionFactory.using_database(self.database_key) as session:
+            user_account = UserAccountInterface.get_user_by_id(
+                session=session, user_account_id=self.user_account_id
+            )
+            prison_agency = AgencyInterface.get_agency_by_id(
+                session=session, agency_id=self.prison_agency_id
+            )
+            create_csv_file(system=schema.System.PRISONS, metric="admissions")
+            workbook_uploader = WorkbookUploader(
+                system=schema.System.PRISONS,
+                agency=prison_agency,
+                user_account=user_account,
+                metric_key_to_agency_datapoints={},
+            )
+
+            # Convert csv file to excel
+            csv_df = pd.read_csv(TEST_CSV_FILE)
+            csv_df.to_excel(TEST_EXCEL_FILE, sheet_name="admissions")
+
+            workbook_uploader.upload_workbook(
+                session=session,
+                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
+            )
+
+            reports = ReportInterface.get_reports_by_agency_id(
+                session=session,
+                agency_id=self.prison_agency_id,
+                include_datapoints=True,
+            )
+
+            self.assertEqual(len(reports), 6)
+            self.assertEqual(reports[0].instance, "02 2023 Metrics")
+            self.assertEqual(reports[0].datapoints[0].value, "30.0")
+            self.assertEqual(reports[1].instance, "01 2023 Metrics")
+            self.assertEqual(reports[1].datapoints[0].value, "30.0")
+            self.assertEqual(reports[2].instance, "02 2022 Metrics")
+            self.assertEqual(reports[2].datapoints[0].value, "20.0")
+            self.assertEqual(reports[3].instance, "01 2022 Metrics")
+            self.assertEqual(reports[3].datapoints[0].value, "20.0")
+            self.assertEqual(reports[4].instance, "02 2021 Metrics")
+            self.assertEqual(reports[4].datapoints[0].value, "10.0")
+            self.assertEqual(reports[5].instance, "01 2021 Metrics")
+            self.assertEqual(reports[5].datapoints[0].value, "10.0")
 
     def test_prosecution(self) -> None:
         """Bulk upload prosecution metrics from excel spreadsheet."""

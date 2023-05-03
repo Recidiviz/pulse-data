@@ -1762,7 +1762,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                     "agency_id": agency.id,
                     "system": System.LAW_ENFORCEMENT.value,
                     "file": (
-                        self.bulk_upload_test_files / "law_enforcement/arrests.csv"
+                        self.bulk_upload_test_files / "law_enforcement/arrests.pdf"
                     ).open("rb"),
                 },
             )
@@ -1822,6 +1822,74 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 None,
             )
             self.assertEqual(spreadsheet.original_name, "law_enforcement_metrics.xlsx")
+            standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
+            self.assertEqual(
+                spreadsheet.standardized_name,
+                standardized_name,
+            )
+            self.assertEqual(1, len(self.fs.uploaded_paths))
+            path = one(self.fs.uploaded_paths)
+            self.assertEqual(
+                GcsfsFilePath(
+                    bucket_name="justice-counts-justice-counts-control-panel-ingest",
+                    blob_name=standardized_name,
+                ),
+                path,
+            )
+
+    def test_upload_csv(self) -> None:
+        self.session.add_all(
+            [
+                self.test_schema_objects.test_user_A,
+                self.test_schema_objects.test_agency_A,
+                AgencyUserAccountAssociation(
+                    user_account=self.test_schema_objects.test_user_A,
+                    agency=self.test_schema_objects.test_agency_A,
+                ),
+            ]
+        )
+        self.session.commit()
+        agency = self.session.query(Agency).one_or_none()
+        with self.app.test_request_context():
+            g.user_context = UserContext(
+                auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+
+            response = self.client.post(
+                "/api/spreadsheets",
+                data={
+                    "agency_id": agency.id,
+                    "system": System.LAW_ENFORCEMENT.value,
+                    "file": (
+                        self.bulk_upload_test_files / "law_enforcement/arrests.csv"
+                    ).open("rb"),
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            response_dict = assert_type(response.json, dict)
+            self.assertEqual(response_dict.get("name"), "arrests.csv")
+            self.assertEqual(
+                response_dict.get("uploaded_at"),
+                datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
+            )
+            self.assertEqual(
+                response_dict.get("uploaded_by_v2"),
+                {"name": self.test_schema_objects.test_user_A.name, "role": None},
+            )
+            self.assertEqual(response_dict.get("ingested_at"), None)
+            self.assertEqual(response_dict.get("status"), "UPLOADED")
+            self.assertEqual(response_dict.get("system"), "LAW_ENFORCEMENT")
+            spreadsheet = self.session.query(Spreadsheet).one()
+            self.assertEqual(spreadsheet.system, System.LAW_ENFORCEMENT)
+            self.assertEqual(
+                spreadsheet.uploaded_by,
+                self.test_schema_objects.test_user_A.auth0_user_id,
+            )
+            self.assertEqual(
+                spreadsheet.ingested_at,
+                None,
+            )
+            self.assertEqual(spreadsheet.original_name, "arrests.csv")
             standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
             self.assertEqual(
                 spreadsheet.standardized_name,
