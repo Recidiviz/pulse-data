@@ -64,7 +64,7 @@ from recidiviz.utils.pubsub_helper import (
 )
 from recidiviz.utils.types import assert_type
 
-ALLOWED_EXTENSIONS = ["xlsx", "xls"]
+ALLOWED_EXTENSIONS = ["xlsx", "xls", "csv"]
 
 
 def get_api_blueprint(
@@ -1129,8 +1129,21 @@ def get_api_blueprint(
             )
         if not allowed_file(file.filename):
             raise JusticeCountsServerError(
-                "file_type_error", "Invalid file type: All files must be of type .xlsx."
+                "file_type_error",
+                "Invalid file type: All files must be of type .xlsx or .csv.",
             )
+        if file.filename.rsplit(".", 1)[1].lower() == "csv":  # type: ignore[union-attr]
+            # convert csv to xlsx
+            # Note that invalid metrics will be caught in workbook_uploader._add_invalid_sheet_name_error()
+            # new_file_name is the path of the new xlsx file that we create in line 1142
+            new_file_name = file.filename.rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
+            metric = new_file_name.rsplit(".", 1)[0].split("/")[-1]
+            csv_df = pd.read_csv(file)
+            csv_df.to_excel(new_file_name, sheet_name=metric, index=False)
+            xls = pd.ExcelFile(new_file_name)
+        else:
+            xls = pd.ExcelFile(file)
+
         # Upload spreadsheet to GCS
         spreadsheet = SpreadsheetInterface.upload_spreadsheet(
             session=current_session,
@@ -1164,7 +1177,7 @@ def get_api_blueprint(
                 session=current_session,
                 spreadsheet=spreadsheet,
                 auth0_user_id=auth0_user_id,
-                xls=pd.ExcelFile(file),
+                xls=xls,
                 agency=agency,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
                 metric_definitions=metric_definitions,

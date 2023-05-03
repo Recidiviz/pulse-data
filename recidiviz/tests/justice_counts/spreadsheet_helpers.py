@@ -31,6 +31,10 @@ TEST_EXCEL_FILE = os.path.join(
     os.path.dirname(__file__),
     "bulk_upload/bulk_upload_fixtures/bulk_upload_test.xlsx",
 )
+TEST_CSV_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "bulk_upload/bulk_upload_fixtures/bulk_upload_test.csv",
+)
 
 
 def _get_dimension_columns(
@@ -282,3 +286,51 @@ def create_excel_file(
         if add_invalid_sheet_name:
             df = pd.DataFrame({})
             df.to_excel(writer, sheet_name="gender")
+
+
+def create_csv_file(
+    system: schema.System,
+    metric: str,
+    file_name: str = TEST_CSV_FILE,
+    metric_key_to_subsystems: Optional[Dict[str, List[schema.System]]] = None,
+    too_many_rows_filename: Optional[str] = None,
+) -> None:
+    """Populates bulk_upload_test.csv with fake data to test functions that ingest spreadsheets"""
+    filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
+
+    dataframe_dict = {}
+    for filename, metricfile in filename_to_metricfile.items():
+        if filename == metric:
+            new_dataframe_dict = _create_dataframe_dict(
+                metricfile=metricfile,
+                reporting_frequency=metricfile.definition.reporting_frequency,
+                too_many_rows=too_many_rows_filename == filename,
+                null_data=False,
+            )
+            dataframe_dict.update(new_dataframe_dict)
+
+            # If the metric is for the supervision system add a system column
+            if system == schema.System.SUPERVISION:
+                if "value" in dataframe_dict:
+                    # There will be no value column if the sheet being generated
+                    # has a missing_metric error.
+                    dataframe_dict["system"] = ["all"] * len(dataframe_dict["value"])
+
+                if metric_key_to_subsystems is not None:
+                    subsystems = metric_key_to_subsystems.get(
+                        metricfile.definition.key, []
+                    )
+                    if len(subsystems) > 1:
+                        temp_dataframe_dict = {
+                            key: [val for val in values for _ in (0, len(subsystems))]
+                            for key, values in dataframe_dict.items()
+                        }
+
+                        temp_dataframe_dict["system"] = [
+                            subsystems[x % len(subsystems)].value
+                            for x in range(0, len(temp_dataframe_dict["value"]))
+                        ]
+                        dataframe_dict.update(temp_dataframe_dict)
+
+    df = pd.DataFrame(dataframe_dict)
+    df.to_csv(file_name)
