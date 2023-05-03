@@ -34,5 +34,4 @@ These boxes should be checked by the submitter prior to merging:
 These boxes should be checked by reviewers prior to merging:
 
 - [ ] This pull request has a descriptive title and information useful to a reviewer
-- [ ] This pull request has been moved out of a Draft state, has no "Work In Progress" label, and has assigned reviewers
 - [ ] Potential security implications or infrastructural changes have been considered, if relevant
