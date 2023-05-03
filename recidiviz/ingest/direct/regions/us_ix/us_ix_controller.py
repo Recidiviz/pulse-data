@@ -56,4 +56,7 @@ class UsIxController(BaseDirectIngestController):
             "supervision_violation",
             "supervision_violation_legacy",
             "supervision_contacts",
+            "early_discharge_parole",
+            "early_discharge_probation",
+            "early_discharge_probation_legacy",
         ]

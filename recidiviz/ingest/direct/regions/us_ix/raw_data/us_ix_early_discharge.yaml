@@ -19,6 +19,7 @@ columns:
   - name: ofndr_num
     description: |-
       Id of the person under IDOC supervision
+    is_pii: True
   - name: meets_criteria
     description: |-
       (bool) Whether or not the person meets the early discharge criteria
@@ -46,6 +47,7 @@ columns:
   - name: decision_updt_user_id
     description: |-
       username of the person who input the decision information
+    is_pii: True
   - name: decision_updt_date
     is_datetime: True
     description: |-
@@ -53,6 +55,7 @@ columns:
   - name: submit_updt_user_id
     description: |-
       Username of the person who updated this request
+    is_pii: True
   - name: submit_updt_date
     is_datetime: True
     description: |-
@@ -99,6 +102,7 @@ columns:
   - name: juris_auth_sbmt_id
     description: |-
       Username of the person who submitted the request to the jurisdiction authority
+    is_pii: True
   - name: juris_auth_sbmt_dt
     is_datetime: True
     description: |-
@@ -106,6 +110,7 @@ columns:
   - name: created_by_id
     description: |-
       Username of the person who filled out the form (usually a person’s PO)
+    is_pii: True
   - name: created_by_dt
     is_datetime: True
     description: |-

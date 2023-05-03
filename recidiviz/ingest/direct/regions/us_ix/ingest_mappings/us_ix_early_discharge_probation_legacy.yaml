@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_supervision_contacts` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - ofndr_num
+  - early_discharge_id
+  - authority
+  - decision_official_dt
+  - early_discharge_form_typ_desc
+  - jurisdiction_decision_description
+  - created_by_dt
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: ofndr_num
+          id_type: $literal("US_IX_DOC")
+    supervision_sentences:
+      - StateSupervisionSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ED_PROBATION_LEGACY")
+                - ofndr_num
+                - early_discharge_id
+          early_discharges:
+            - StateEarlyDischarge:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("ED_PROBATION_LEGACY")
+                      - ofndr_num
+                      - early_discharge_id
+                deciding_body_type:
+                  $enum_mapping:
+                    $raw_text: authority
+                    $mappings:
+                      StateActingBodyType.COURT:
+                        - "PROBATION"
+                      StateActingBodyType.PAROLE_BOARD:
+                        - "PAROLE"
+                decision_date: decision_official_dt
+                requesting_body_type:
+                  $enum_mapping:
+                    $raw_text: early_discharge_form_typ_desc
+                    $mappings:
+                      StateActingBodyType.SUPERVISION_OFFICER:
+                        - "REQUEST FOR DISCHARGE: PROBATION"
+                      StateActingBodyType.SENTENCED_PERSON:
+                        - "SPECIAL PROGRESS REPORT MOTION FOR PROBATION DISCHARGE BY DEFENDANT"
+                decision:
+                  $enum_mapping:
+                    $raw_text: jurisdiction_decision_description
+                    $mappings:
+                      StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED:
+                        - "Grant Request to Terminate"
+                      StateEarlyDischargeDecision.REQUEST_DENIED:
+                        - "Deny"
+                        - "Deny - Committed Crime(s) While on Probation"
+                        - "Deny - New Charges"
+                        - "Deny - No Violations, but Unsatisfactory"
+                        - "Deny - Other"
+                        - "Deny - Pending Charge(s)"
+                        - "Deny - Programming Needed"
+                        - "Deny - Serious Nature of the Offense"
+                        - "Deny - Unpaid Restitution"
+                        - "Deny - Unpaid Restitution, Court Costs or Fees"
+                        - "Deny - Unsatisfactory Performance to Date"
+                        - "Deny - Committed Crime(s) While on Probation,Deny - Other"
+                        # In cases where a single early discharge record has a sentence that was denied early discharge and another sentence that was granted darly discharge, we'll still count it as denied overall
+                        - "Deny - Unpaid Restitution, Court Costs or Fees,Grant Request to Terminate"
+                        - "Deny - Unpaid Restitution,Grant Unsupervised Probation"
+                        - "Deny - Other,Deny - Serious Nature of the Offense"
+                      StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED:
+                        - "Grant Unsupervised Probation"
+                request_date: created_by_dt
+                decision_status:
+                  $conditional:
+                    - $if:
+                        $is_null: jurisdiction_decision_description
+                      # 54% of legacy probation early discharge requests don't have a decision attached to them and so their decision statuses will be mapped to INTERNAL_UNKNOWN.
+                      # It's possible that a small number of these are early discharge requests made before the ATLAS migration, but they were either decided on after the ATLAS migration (so they should have a DECIDED status)
+                      # OR they are still slated to be decided on (so they should have a status of PENDING).  However, in these cases, we won't ever see the final decision in the legacy data OR in the ATLAS data
+                      # since the legacy data is no longer updated and the ATLAS data only records requests made after the migration.
+                      # When we ingested StateEarlyDischarge in US_ID, we mapped the status of requests without decisions as PENDING, and as a result 50% of ingested StateEarlyDischarge entities in US_ID have a PENDING status.
+                      $then: $literal_enum(StateEarlyDischargeDecisionStatus.INTERNAL_UNKNOWN)
+                    - $else: $literal_enum(StateEarlyDischargeDecisionStatus.DECIDED)

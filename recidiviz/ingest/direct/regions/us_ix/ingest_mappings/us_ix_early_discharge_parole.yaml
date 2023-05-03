@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=./../../../ingest_mappings/yaml_schema/1.0.0/schema.json
+# This file associates the columns outputted from the query in `view_drug_screen` to the corresponding
+# Ingest Object fields.
+manifest_language: 1.0.0
+input_columns:
+  - OffenderId
+  - first_PBCaseId
+  - request_date
+  - decision_date
+  - BOPVoteValueName
+unused_columns: []
+output:
+  StatePerson:
+    external_ids:
+      - StatePersonExternalId:
+          external_id: OffenderId
+          id_type: $literal("US_IX_DOC")
+    incarceration_sentences:
+      - StateIncarcerationSentence:
+          external_id:
+            $concat:
+              $values:
+                - $literal("ED_PAROLE")
+                - OffenderId
+                - first_PBCaseId
+          early_discharges:
+            - StateEarlyDischarge:
+                external_id:
+                  $concat:
+                    $values:
+                      - $literal("ED_PAROLE")
+                      - OffenderId
+                      - first_PBCaseId
+                decision_date: decision_date
+                decision:
+                  $enum_mapping:
+                    $raw_text: BOPVoteValueName
+                    $mappings:
+                      StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED:
+                        - "Grant"
+                      StateEarlyDischargeDecision.REQUEST_DENIED:
+                        - "Deny"
+                        - "Reject Request"
+                decision_status:
+                  $conditional:
+                    - $if:
+                        $is_null: decision_date
+                      $then: $literal_enum(StateEarlyDischargeDecisionStatus.PENDING)
+                    - $else: $literal_enum(StateEarlyDischargeDecisionStatus.DECIDED)
+                deciding_body_type: $literal_enum(StateActingBodyType.PAROLE_BOARD)
+                request_date: request_date
+                requesting_body_type:
+                  $enum_mapping:
+                    $raw_text: request_date
+                    $custom_parser: us_ix_custom_enum_parsers.determine_ed_requesting_body
