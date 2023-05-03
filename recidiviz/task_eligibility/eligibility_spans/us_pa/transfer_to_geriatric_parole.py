@@ -22,9 +22,9 @@ from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
 from recidiviz.task_eligibility.completion_events.general import release_to_parole
-from recidiviz.task_eligibility.criteria.general import (
-    age_55_years_or_older,
-    incarceration_past_parole_eligibility_date,
+from recidiviz.task_eligibility.criteria.general import age_55_years_or_older
+from recidiviz.task_eligibility.criteria.state_specific.us_pa import (
+    served_half_minimum_or_25_years,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -42,10 +42,8 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        incarceration_past_parole_eligibility_date.VIEW_BUILDER,
         age_55_years_or_older.VIEW_BUILDER,
-        # TODO(#20175) add once this criteria is created
-        # incarceration_past_half_minimum_sentence_or_25_years.VIEW_BUILDER,
+        served_half_minimum_or_25_years.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_parole.VIEW_BUILDER,
 )
