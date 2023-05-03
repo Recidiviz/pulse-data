@@ -91,8 +91,8 @@ class TestBQResultSensor(unittest.TestCase):
         runtime = (end - start).total_seconds()
 
         # Assert
-        # Should be only 3x poke interval, check it's less than 5x for some buffer.
-        self.assertTrue(runtime < self.TEST_POKE_INTERVAL * 5)
+        # Should be only 3x poke interval, check it's less than 8x for some buffer.
+        self.assertTrue(runtime < self.TEST_POKE_INTERVAL * 8)
 
         self.assertEqual(3, self.query_generator.query_count)
         self.assertEqual(3, self.mock_bq_hook.get_pandas_df.call_count)

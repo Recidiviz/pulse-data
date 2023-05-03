@@ -332,7 +332,7 @@ def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
 @dag(
     dag_id=f"{project_id}_calculation_dag",
     default_args=DEFAULT_ARGS,
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
     max_active_runs=1,
 )
