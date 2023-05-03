@@ -59,14 +59,14 @@ resource "google_composer_environment" "default_v2" {
       }
       pypi_packages = {
         "us"                                = "==2.0.2"
-        "apache-airflow-providers-sftp"     = "==4.2.0"
-        "apache-airflow-providers-mysql"    = "==3.4.0"
+        "apache-airflow-providers-sftp"     = "==4.2.4"
+        "apache-airflow-providers-mysql"    = "==5.0.0"
         "apache-airflow-providers-postgres" = "==5.4.0"
         "apache-airflow-providers-sendgrid" = "==3.1.0"
-        "python-levenshtein"                = "==0.20.9"
-        "dateparser"                        = "==1.1.6"
+        "python-levenshtein"                = "==0.21.0"
+        "dateparser"                        = "==1.1.8"
       }
-      image_version = "composer-2.1.4-airflow-2.4.3"
+      image_version = "composer-2.1.14-airflow-2.5.1"
     }
 
     private_environment_config {

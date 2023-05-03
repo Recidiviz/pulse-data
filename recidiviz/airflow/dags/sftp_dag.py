@@ -204,7 +204,7 @@ def queues_were_unpaused(
     dag_id=f"{project_id}_sftp_dag",
     # TODO(apache/airflow#29903) Remove this override and only override mapped task-level retries.
     default_args={**DEFAULT_ARGS, "retries": 3},  # type: ignore
-    schedule_interval=None,
+    schedule=None,
     catchup=False,
     max_active_runs=1,
 )
