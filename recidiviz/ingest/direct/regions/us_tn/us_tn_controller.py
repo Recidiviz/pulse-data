@@ -49,7 +49,6 @@ class UsTnController(BaseDirectIngestController):
             # "OffenderMovementIncarcerationPeriod_v2",
             "AssignedStaffSupervisionPeriod_v2",
             "VantagePointAssessments",
-            "SentencesChargesAndCourtCases_v2",
             "DisciplinaryIncarcerationIncident",
             "CAFScoreAssessment",
         ]
@@ -60,7 +59,13 @@ class UsTnController(BaseDirectIngestController):
             tags.extend(["SupervisionContacts"])
 
         return tags + (
-            ["OffenderMovementIncarcerationPeriod_v2"]
+            [
+                "OffenderMovementIncarcerationPeriod_v2",
+                "SentencesChargesAndCourtCases_v3",
+            ]
             if not environment.in_gcp_production()
-            else ["OffenderMovementIncarcerationPeriod"]
+            else [
+                "OffenderMovementIncarcerationPeriod",
+                "SentencesChargesAndCourtCases_v2",
+            ]
         )
