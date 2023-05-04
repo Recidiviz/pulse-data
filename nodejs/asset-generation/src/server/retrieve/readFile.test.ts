@@ -15,32 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
+import { readFile as fsReadFile } from "fs/promises";
+import { join } from "path";
+import { expect, Mock, test, vi } from "vitest";
 
-import { RETRIEVE_PATH } from "./server/constants";
-import { routes as generateRoutes } from "./server/generate";
-import { routes as retrieveRoutes } from "./server/retrieve";
+import { isDevMode } from "../../utils";
+import { LOCAL_FILE_DIR } from "../constants";
+import { readFile } from "./readFile";
 
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
+vi.mock("../../utils");
+vi.mock("fs/promises");
 
-  app.use("/generate", generateRoutes);
-  app.use(RETRIEVE_PATH, retrieveRoutes);
+test("local dev", async () => {
+  (isDevMode as Mock).mockReturnValue(true);
 
-  const server = app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
+  const fn = "/path/to/file";
+  await readFile(fn);
 
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
-  }
-}
+  expect(fsReadFile).toHaveBeenCalledWith(join(LOCAL_FILE_DIR, fn));
+});
 
-createServer();
+test("unsupported mode", async () => {
+  expect(async () => readFile("whatever")).rejects.toThrow();
+});

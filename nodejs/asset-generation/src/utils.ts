@@ -15,32 +15,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
-
-import { RETRIEVE_PATH } from "./server/constants";
-import { routes as generateRoutes } from "./server/generate";
-import { routes as retrieveRoutes } from "./server/retrieve";
-
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
-
-  app.use("/generate", generateRoutes);
-  app.use(RETRIEVE_PATH, retrieveRoutes);
-
-  const server = app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
-
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
-  }
+export function isDevMode() {
+  return import.meta.env.MODE === "development";
 }
 
-createServer();
+export function isTestMode() {
+  return import.meta.env.MODE === "test";
+}

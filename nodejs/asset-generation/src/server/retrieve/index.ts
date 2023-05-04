@@ -15,32 +15,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
+import { Router } from "express";
+import { fileTypeFromBuffer } from "file-type";
 
-import { RETRIEVE_PATH } from "./server/constants";
-import { routes as generateRoutes } from "./server/generate";
-import { routes as retrieveRoutes } from "./server/retrieve";
+import { getUrlFromAssetToken } from "../token";
+import { readFile } from "./readFile";
 
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
+export const routes = Router();
 
-  app.use("/generate", generateRoutes);
-  app.use(RETRIEVE_PATH, retrieveRoutes);
+routes.get("/:token", async (req, res) => {
+  try {
+    const url = getUrlFromAssetToken(req.params.token);
+    const file = await readFile(url);
 
-  const server = app.listen(port, () => {
+    const { mime } = (await fileTypeFromBuffer(file)) ?? {};
+    if (!mime) throw new Error("unknown file type");
+
+    res.type(mime);
+    res.send(file);
+  } catch (e) {
     // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
-
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
+    console.error(e);
+    res.sendStatus(404);
   }
-}
-
-createServer();
+});

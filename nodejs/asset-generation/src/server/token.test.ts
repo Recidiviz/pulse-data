@@ -15,32 +15,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
+import { expect, test } from "vitest";
 
-import { RETRIEVE_PATH } from "./server/constants";
-import { routes as generateRoutes } from "./server/generate";
-import { routes as retrieveRoutes } from "./server/retrieve";
+import { getTamperedTestToken, getTestToken } from "./testUtils";
+import { getUrlFromAssetToken } from "./token";
 
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
+test("token for URL", () => {
+  const url = "/test/url.png";
+  const token = getTestToken(url);
+  expect(getUrlFromAssetToken(token)).toBe(url);
+});
 
-  app.use("/generate", generateRoutes);
-  app.use(RETRIEVE_PATH, retrieveRoutes);
+test("doctored token is rejected", () => {
+  const doctoredToken = getTamperedTestToken();
 
-  const server = app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
-
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
-  }
-}
-
-createServer();
+  expect(() => getUrlFromAssetToken(doctoredToken)).toThrow();
+});

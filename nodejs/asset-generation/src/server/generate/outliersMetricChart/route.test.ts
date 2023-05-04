@@ -62,7 +62,7 @@ test("valid input", async () => {
   expect(response.body).toMatchInlineSnapshot(`
     {
       "height": 263,
-      "url": "outliers-metric-chart/test-officer-metric-1683072000000.png",
+      "url": "/asset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdXRsaWVycy1tZXRyaWMtY2hhcnQvdGVzdC1vZmZpY2VyLW1ldHJpYy0xNjgzMDcyMDAwMDAwLnBuZyIsImlhdCI6MTY4MzA3MjAwMDAwMH0.nqb6os1P5H0wyhGgo2tcWyYwxRbFxewXrMAq6mpqYcw",
     }
   `);
 });

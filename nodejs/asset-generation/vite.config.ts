@@ -34,5 +34,6 @@ export default defineConfig({
   test: {
     globalSetup: ["./globalTestSetup.ts"],
     setupFiles: ["./testSetup.ts"],
+    mockReset: true,
   },
 });
