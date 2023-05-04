@@ -18,17 +18,22 @@
 import { mkdir, writeFile as fsWriteFile } from "fs/promises";
 import { dirname, join } from "path";
 
-const mockLocalDir = join(__dirname, "../../../local/gcs/");
+import { isDevMode } from "../../utils";
+import { LOCAL_FILE_DIR } from "../constants";
 
 type WriteFunction = (filename: string, filedata: Buffer) => Promise<void>;
 
 const writeLocalFile: WriteFunction = async (filename, filedata) => {
-  const filepath = join(mockLocalDir, filename);
+  const filepath = join(LOCAL_FILE_DIR, filename);
   await mkdir(dirname(filepath), { recursive: true });
   await fsWriteFile(filepath, filedata);
 };
 
 export const writeFile: WriteFunction = async (...args) => {
-  // TODO(Recidiviz/recidiviz-dashboards#3298): support write to GCS
-  await writeLocalFile(...args);
+  if (isDevMode()) {
+    await writeLocalFile(...args);
+  } else {
+    // TODO(Recidiviz/recidiviz-dashboards#3298): support write to GCS
+    throw new Error("not implemented");
+  }
 };

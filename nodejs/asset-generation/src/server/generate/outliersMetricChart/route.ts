@@ -18,6 +18,8 @@
 import { Request, Response } from "express";
 
 import { getRenderedChartSvg } from "../../../components/OutliersMetricChart/OutliersMetricChart";
+import { RETRIEVE_PATH } from "../../constants";
+import { getAssetToken } from "../../token";
 import { convertToImage } from "../convertToImage";
 import { AssetResponse, ValidatedInput } from "../types";
 import { writeFile } from "../writeFile";
@@ -41,7 +43,7 @@ export const outliersMetricChartRoute = async (
   const fileUrl = `outliers-metric-chart/${id}-${Date.now()}.png`;
   await writeFile(fileUrl, img);
   res.json({
-    url: fileUrl,
+    url: `${RETRIEVE_PATH}/${getAssetToken(fileUrl)}`,
     height,
   });
 };
