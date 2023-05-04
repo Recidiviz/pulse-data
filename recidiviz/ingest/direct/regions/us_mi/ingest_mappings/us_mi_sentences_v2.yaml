@@ -28,6 +28,24 @@ input_columns:
   - attempted_id
   - offense_code
 unused_columns: []
+variables:
+  # we'll use parole eligibility date for projected_min_release_date as well
+  - ped:
+      $conditional:
+        - $if:
+            $or:
+              - $not_null: min_length_years
+              - $not_null: min_length_months
+              - $not_null: min_length_days
+          $then:
+            $custom:
+              # calculate parole eligibility date by taking the effective date and adding on the minimum term length
+              $function: us_mi_custom_parsers.calc_parole_elibility_date
+              $args:
+                years_str: min_length_years
+                months_str: min_length_months
+                days_str: min_length_days
+                start_date_str: effective_date
 output:
   StatePerson:
     external_ids:
@@ -401,22 +419,9 @@ output:
                 #              We should move that logic from normalization to here the next time we do a full rerun
                 projected_max_release_date: expiration_date
                 completion_date: closing_date
-                parole_eligibility_date:
-                  $conditional:
-                    - $if:
-                        $or:
-                          - $not_null: min_length_years
-                          - $not_null: min_length_months
-                          - $not_null: min_length_days
-                      $then:
-                        $custom:
-                          # calculate parole eligibility date by taking the effective date and adding on the minimum term length
-                          $function: us_mi_custom_parsers.calc_parole_elibility_date
-                          $args:
-                            years_str: min_length_years
-                            months_str: min_length_months
-                            days_str: min_length_days
-                            start_date_str: effective_date
+                # parole eligibility date and projected min release date are the same in US_MI
+                parole_eligibility_date: $variable(ped)
+                projected_min_release_date: $variable(ped)
                 county_code: county
                 min_length_days:
                   $custom:
