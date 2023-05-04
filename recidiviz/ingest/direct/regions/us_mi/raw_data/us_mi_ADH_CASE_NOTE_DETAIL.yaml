@@ -2,6 +2,7 @@
 file_tag: ADH_CASE_NOTE_DETAIL
 file_description: OMNI database table that contains case note details
 data_classification: source
+always_historical_export: False
 primary_key_cols:
   - case_note_detail_id
 columns:
