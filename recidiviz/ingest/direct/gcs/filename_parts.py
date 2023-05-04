@@ -39,8 +39,7 @@ _INGEST_FILE_SUFFIX_REGEX_PATTERN = (
     r"\.(?P<extension>[A-Za-z]+)$"  # Extension
 )
 _RAW_DATA_FILE_NAME_REGEX = re.compile(
-    _INGEST_FILE_PREFIX_REGEX_PATTERN
-    + r"(?P<file_tag>[A-Za-z][A-Za-z\d]*(_[A-Za-z\d]*)*)"  # file_tag
+    _INGEST_FILE_PREFIX_REGEX_PATTERN + r"(?P<file_tag>[_A-Za-z\d]*)"  # file_tag
     r"(-(?P<filename_suffix>\d+))?"  # Optional filename_suffix
     + _INGEST_FILE_SUFFIX_REGEX_PATTERN
 )

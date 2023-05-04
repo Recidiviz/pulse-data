@@ -91,6 +91,25 @@ class TestFilenamePartsFromPath(TestCase):
         )
         self.assertEqual(parts.date_str, "2021-09-21")
 
+    def test_filename_parts_from_path_raw_file_type_with_leading_underscore(
+        self,
+    ) -> None:
+        parts = filename_parts_from_path(
+            GcsfsFilePath.from_absolute_path(
+                "bucket-us-mo/unprocessed_2023-04-01T00:00:00:000000_raw__HEARING_DATES.csv"
+            )
+        )
+
+        self.assertEqual(parts.processed_state, "unprocessed")
+        self.assertEqual(parts.extension, "csv")
+        self.assertEqual(parts.file_tag, "_HEARING_DATES")
+        self.assertEqual(parts.filename_suffix, None)
+        self.assertEqual(
+            parts.utc_upload_datetime,
+            datetime.datetime(2023, 4, 1, tzinfo=pytz.UTC),
+        )
+        self.assertEqual(parts.date_str, "2023-04-01")
+
     def test_filename_parts_from_path_raw_file_type_suffix(
         self,
     ) -> None:
