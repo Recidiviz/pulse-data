@@ -46,7 +46,7 @@ someone in MI is eligible for minimum telephone reporting.
 
 VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
-    task_name="complete_transfer_to_telephone_reporting_request",
+    task_name="COMPLETE_TRANSFER_TO_TELEPHONE_REPORTING_REQUEST",
     description=_DESCRIPTION,
     candidate_population_view_builder=probation_parole_dual_active_supervision_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
