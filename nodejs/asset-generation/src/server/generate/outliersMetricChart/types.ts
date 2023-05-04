@@ -15,29 +15,32 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
+import { z } from "zod";
 
-import { routes as generateRoutes } from "./server/generate";
+const goalStatusSchema = z.enum(["met", "near", "far"]);
 
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
+export const outliersMetricChartInputSchema = z.object({
+  id: z.string(),
+  width: z.number(),
+  entityLabel: z.string(),
+  data: z.object({
+    min: z.number(),
+    max: z.number(),
+    goal: z.number(),
+    entities: z.array(
+      z.object({
+        name: z.string(),
+        rate: z.number(),
+        goalStatus: goalStatusSchema,
+        previousRate: z.number(),
+        previousGoalStatus: goalStatusSchema,
+      })
+    ),
+  }),
+});
 
-  app.use("/generate", generateRoutes);
+export type OutliersMetricChartInput = z.infer<
+  typeof outliersMetricChartInputSchema
+>;
 
-  const server = app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
-
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
-  }
-}
-
-createServer();
+export type ChartData = OutliersMetricChartInput["data"];

@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { ChartData } from "./types";
+import { ChartData } from "../../server/generate/outliersMetricChart/types";
 
 export const officerData: ChartData = {
   min: 0.00039321014181349645,

@@ -15,29 +15,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
+import { mkdir, writeFile as fsWriteFile } from "fs/promises";
+import { dirname, join } from "path";
 
-import { routes as generateRoutes } from "./server/generate";
+const mockLocalDir = join(__dirname, "../../../local/gcs/");
 
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
+type WriteFunction = (filename: string, filedata: Buffer) => Promise<void>;
 
-  app.use("/generate", generateRoutes);
+const writeLocalFile: WriteFunction = async (filename, filedata) => {
+  const filepath = join(mockLocalDir, filename);
+  await mkdir(dirname(filepath), { recursive: true });
+  await fsWriteFile(filepath, filedata);
+};
 
-  const server = app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
-
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
-  }
-}
-
-createServer();
+export const writeFile: WriteFunction = async (...args) => {
+  // TODO(Recidiviz/recidiviz-dashboards#3298): support write to GCS
+  await writeLocalFile(...args);
+};
