@@ -9,7 +9,7 @@ columns:
     is_pii: True
     description: |-
       An ID to reference a specific individual in who is in custody or under supervision of CDCR.
-  - name: Cdcno
+  - name: Cdcno # Removed 2023-03-29
     is_pii: True
     description: |-
       This has the latest CDCNO for each person. See CDCNOParole for more.
@@ -19,3 +19,10 @@ columns:
   - name: ContactType
   - name: ContactSource
   - name: EmploymentStatus
+  - name: EmploymentStatusDesc # Added 2023-03-29
+  - name: ContactSourceDesc # Added 2023-03-29
+  - name: CONTACTTIME # Added 2023-03-29
+  - name: ContactTypeDesc # Added 2023-03-29
+  - name: in_date # Added 2023-03-29
+  - name: out_date # Added 2023-03-29
+  - name: ParoleEndDate # Added 2023-03-29
