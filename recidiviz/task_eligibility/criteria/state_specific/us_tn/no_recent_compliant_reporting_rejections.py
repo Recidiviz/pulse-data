@@ -16,12 +16,18 @@
 # ============================================================================
 """Describes the spans of time when a TN client is not eligible due to being within 3 months of a non-permanent
 rejection from compliant reporting."""
+from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -32,16 +38,74 @@ _DESCRIPTION = """Describes the spans of time when a TN client is not eligible d
 rejection from compliant reporting.
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT(['9999-99-99','9999-99-99'] AS contact_code,
-                                  '9999-99-99' AS contact_code_date
-                            ))"""
+_QUERY_TEMPLATE = f"""
+    WITH rejections_sessions_cte AS 
+    (
+    SELECT DISTINCT 
+        person_id,
+        "US_TN" AS state_code,
+        CAST(CAST(ContactNoteDateTime AS DATETIME) AS DATE) AS start_date,
+        DATE_ADD(CAST(CAST(ContactNoteDateTime AS DATETIME) AS DATE), INTERVAL 3 MONTH) AS end_date,
+        CAST(CAST(ContactNoteDateTime AS DATETIME) AS DATE) AS latest_cr_rejection_date,
+        ContactNoteType AS contact_code,
+    FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ContactNoteType_latest` a
+    JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei            
+    ON pei.external_id = a.OffenderID
+          AND id_type = "US_TN_DOC"
+    WHERE ContactNoteType IN ('DECF','DEDF','DEDU','DEIO','DEIR')
+    )
+    ,
+    {create_sub_sessions_with_attributes('rejections_sessions_cte')}
+    ,
+    /*
+    If a person has more than 1 CR rejection within a 3 month period, there will be a span in which more than 1
+    rejections are relevant. For that period of time, we store the date of the most recent rejection, and all of the 
+    unique reason codes that apply at that point. 
+    */
+    dedup_cte AS
+    (
+    SELECT
+        person_id,
+        state_code,
+        start_date,
+        end_date,
+        TO_JSON(STRUCT(
+            ARRAY_AGG(DISTINCT latest_cr_rejection_date ORDER BY latest_cr_rejection_date) AS contact_date,
+            ARRAY_AGG(DISTINCT contact_code ORDER BY contact_code) AS contact_code
+        )) AS reason,
+    FROM sub_sessions_with_attributes
+    GROUP BY 1,2,3,4
+    )
+    ,
+    sessionized_cte AS 
+    (
+    {aggregate_adjacent_spans(table_name='dedup_cte',
+                       attribute='reason',
+                       is_struct=True,
+                       end_date_field_name='end_date')}
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        FALSE AS meets_criteria,
+        reason   
+    FROM sessionized_cte
+    """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_TN,
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=_DESCRIPTION,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_TN,
+            instance=DirectIngestInstance.PRIMARY,
+        ),
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=True,
     )
 )
 
