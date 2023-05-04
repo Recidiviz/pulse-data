@@ -103,7 +103,8 @@ cleaned_Sentence_view AS (
             WHEN JOSentence.LifeDeathHabitual IS NOT NULL THEN JOSentence.LifeDeathHabitual 
             WHEN JOSentence.LifetimeSupervision IS NOT NULL THEN JOSentence.LifetimeSupervision
             ELSE NULL END AS lifetime_flag,
-        'SENTENCE' AS sentence_source
+        Sentence.ReleaseEligibilityDate as ReleaseEligibilityDate,
+        'SENTENCE' AS sentence_source,
     FROM {{Sentence}} Sentence
     LEFT JOIN {{JOCharge}} JOCharge
     USING (OffenderID, ConvictionCounty, CaseYear, CaseNumber, CountNumber)
@@ -138,6 +139,7 @@ cleaned_Diversion_view AS (
         CAST(NULL as STRING) AS ConsecutiveCountNumber,
         CAST(NULL as STRING) as ISCSentencyType,
         CAST(NULL as STRING) as lifetime_flag,
+        CAST(NULL as STRING) as ReleaseEligibilityDate,
         'DIVERSION' AS sentence_source
     FROM {{Diversion}} Diversion
     LEFT JOIN {{OffenderStatute}} OffenderStatute USING (Offense)
@@ -198,6 +200,7 @@ cleaned_ISCSentence_view AS (
         ISCR.RelatedCountNumber AS ConsecutiveCountNumber,
         ISC.ISCSentencyType as ISCSentencyType,
         CASE WHEN ISC.Sentence LIKE '%LIFE%' THEN 'is_life' END as lifetime_flag,
+        CAST(NULL as STRING) as ReleaseEligibilityDate,
         'ISC' AS sentence_source
     FROM {{ISCSentence}} ISC
     LEFT JOIN consecutive_ISCRelated_sentences ISCR ON 
@@ -260,6 +263,7 @@ SELECT
     Sentences.SexOffenderFlag,
     Sentences.ISCSentencyType,
     Sentences.lifetime_flag,
+    Sentences.ReleaseEligibilityDate,
     Sentences.sentence_source
 FROM all_sentence_sources_joined Sentences
 LEFT JOIN order_sentence_actions_by_date_per_sentence
