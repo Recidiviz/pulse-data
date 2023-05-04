@@ -15,17 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-type GoalStatus = "near" | "met" | "far";
+import { NextFunction, Request, Response } from "express";
+import { infer as ZodInfer, ZodTypeAny } from "zod";
+import { fromZodError } from "zod-validation-error";
 
-export type ChartData = {
-  min: number;
-  max: number;
-  goal: number;
-  entities: {
-    name: string;
-    rate: number;
-    goalStatus: GoalStatus;
-    previousRate: number;
-    previousGoalStatus: GoalStatus;
-  }[];
-};
+import { ValidatedInput } from "./types";
+
+export function schemaMiddleware<Schema extends ZodTypeAny>(schema: Schema) {
+  return function (
+    req: Request,
+    // note that these types reflect what this function may ADD to the response,
+    // not what we expect to already be there
+    res: Response<{ error: string }, ValidatedInput<ZodInfer<Schema>>>,
+    next: NextFunction
+  ) {
+    const result = schema.safeParse(req.body);
+    if (!result.success) {
+      res.status(400).json({ error: fromZodError(result.error).message });
+    } else {
+      res.locals.data = result.data;
+      next();
+    }
+  };
+}

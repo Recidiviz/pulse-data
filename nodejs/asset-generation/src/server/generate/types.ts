@@ -15,31 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { NextFunction, Request, Response } from "express";
-import { writeFile } from "fs";
+export type ValidatedInput<T> = { data: T };
 
-import { officerData } from "../components/OutliersMetricChart/fixtures";
-import { OutliersMetricChart } from "../components/OutliersMetricChart/OutliersMetricChart";
-import { renderToStaticSvg } from "../components/utils";
-import { convertToImage } from "./convertToImage";
-
-function TestCmp() {
-  return (
-    <OutliersMetricChart
-      data={officerData}
-      width={570}
-      entityLabel="Officers"
-    />
-  );
-}
-
-export async function generate(
-  _req: Request,
-  resp: Response,
-  next: NextFunction
-) {
-  const svg = renderToStaticSvg(TestCmp);
-  const img = await convertToImage(svg);
-  writeFile("tmp.png", img, next);
-  resp.sendStatus(200);
-}
+export type AssetResponse = {
+  url: string;
+};

@@ -17,10 +17,13 @@
 
 import { expect, test } from "vitest";
 
-import { convertToImage } from "../../server/convertToImage";
+import { convertToImage } from "../../server/generate/convertToImage";
 import { renderToStaticSvg } from "../utils";
 import { officerData } from "./fixtures";
-import { OutliersMetricChart } from "./OutliersMetricChart";
+import {
+  calculateChartHeight,
+  OutliersMetricChart,
+} from "./OutliersMetricChart";
 
 function TestComponent() {
   return (
@@ -32,6 +35,10 @@ function TestComponent() {
   );
 }
 
+test("height", () => {
+  expect(calculateChartHeight(officerData)).toMatchInlineSnapshot("263");
+});
+
 test("rendering", () => {
   expect(renderToStaticSvg(TestComponent)).toMatchFileSnapshot(
     "./__snapshots__/OfficerChart.svg"
@@ -42,8 +49,8 @@ test("image rendering", async () => {
   expect(
     await convertToImage(renderToStaticSvg(TestComponent))
   ).toMatchImageSnapshot({
-    // Set a .5% failure threshold to account for differences between machines
-    failureThreshold: 0.005,
+    // Set a higher failure threshold to account for differences between machines
+    failureThreshold: 0.02,
     failureThresholdType: "percent",
   });
 });

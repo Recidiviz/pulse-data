@@ -15,29 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import express from "express";
+import { json, Router } from "express";
 
-import { routes as generateRoutes } from "./server/generate";
+import { outliersMetricChartRoute } from "./outliersMetricChart/route";
+import { outliersMetricChartInputSchema } from "./outliersMetricChart/types";
+import { schemaMiddleware } from "./schemaMiddleware";
 
-async function createServer() {
-  const app = express();
-  const port = 5174; // default vite port + 1
+export const routes = Router();
 
-  app.use("/generate", generateRoutes);
+routes.use(json());
 
-  const server = app.listen(port, () => {
-    // eslint-disable-next-line no-console
-    console.log(
-      `Server in ${import.meta.env.MODE} mode, listening on port ${port}`
-    );
-  });
-
-  // https://github.com/vitest-dev/vitest/issues/2334
-  if (import.meta.hot) {
-    import.meta.hot.on("vite:beforeFullReload", () => {
-      server.close();
-    });
-  }
-}
-
-createServer();
+routes.post(
+  "/outliers-metric-chart",
+  schemaMiddleware(outliersMetricChartInputSchema),
+  outliersMetricChartRoute
+);

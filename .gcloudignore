@@ -178,6 +178,9 @@ recidiviz/case_triage/local/**/*
 # Local Justice Counts files
 recidiviz/justice_counts/control_panel/local/**/*
 
+# Local Asset Generation files
+nodejs/asset-generation/local
+
 # ESLint Cache
 .eslintcache
 

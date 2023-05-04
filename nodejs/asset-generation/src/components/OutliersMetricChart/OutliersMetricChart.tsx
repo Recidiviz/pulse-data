@@ -22,6 +22,8 @@ import { format } from "d3-format";
 import { scaleLinear, scalePoint } from "d3-scale";
 import { styled } from "styled-components";
 
+import { ChartData } from "../../server/generate/outliersMetricChart/types";
+import { renderToStaticSvg } from "../utils";
 import {
   AXIS_OFFSET,
   GOAL_COLORS,
@@ -32,7 +34,6 @@ import {
   TICK_WIDTH,
 } from "./constants";
 import { RateMark } from "./RateMark";
-import { ChartData } from "./types";
 
 const formatExtent = format(".0%");
 const formatGoal = format(".1%");
@@ -64,11 +65,17 @@ type ChartProps = {
   entityLabel: string;
 };
 
+/**
+ * Computes desired chart height based on the number of records in the input data.
+ */
+export function calculateChartHeight(data: ChartData) {
+  return ROWS_OFFSET + ROW_HEIGHT * data.entities.length;
+}
+
 export function OutliersMetricChart({ data, width, entityLabel }: ChartProps) {
   const { min, max, goal, entities } = data;
 
   const rows = entities.sort((a, b) => descending(a.rate, b.rate));
-  const height = ROWS_OFFSET + ROW_HEIGHT * rows.length;
 
   const chartDomain = [min, max];
   // round domain off to full percentages
@@ -79,6 +86,7 @@ export function OutliersMetricChart({ data, width, entityLabel }: ChartProps) {
     .domain(chartDomain)
     .range([AXIS_OFFSET, width - MARGIN.right]);
 
+  const height = calculateChartHeight(data);
   const yScale = scalePoint<number>()
     .domain(rows.map((r, i) => i))
     .range([ROWS_OFFSET, height])
@@ -175,4 +183,12 @@ export function OutliersMetricChart({ data, width, entityLabel }: ChartProps) {
       })}
     </svg>
   );
+}
+
+export function getRenderedChartSvg(props: ChartProps) {
+  const height = calculateChartHeight(props.data);
+  return {
+    height,
+    svg: renderToStaticSvg(() => <OutliersMetricChart {...props} />),
+  };
 }
