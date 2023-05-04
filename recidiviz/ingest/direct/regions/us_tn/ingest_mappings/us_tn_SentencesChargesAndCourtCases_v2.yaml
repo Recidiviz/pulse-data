@@ -40,6 +40,7 @@ input_columns:
   - ISCSentencyType
   - lifetime_flag
   - sentence_source
+  - ReleaseEligibilityDate
 unused_columns:
   - ChargeOffense
 variables:
@@ -231,6 +232,7 @@ output:
                 conditions: Conditions
                 sentence_metadata: $variable(sentence_metadata)
                 initial_time_served_days: PretrialJailCredits
+                parole_eligibility_date: ReleaseEligibilityDate
                 charges:
                   - $variable(charge)
 
