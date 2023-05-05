@@ -39,7 +39,7 @@ VIEW_QUERY_TEMPLATE = """,
 --   ADH_COASSESSMENT stores a record for each assessment
 --   ADH_COASESSMENTSCORES stores a record for each score.  For COMPAS assessments, each assessment involves multiple scores (one for each scale).
 
-COMPAS as (
+COMPAS_unagg as (
   select 
         'COMPAS' as source,
         coassessment.RecId,
@@ -47,7 +47,14 @@ COMPAS as (
         -- are now leading zeroes.  In order to make sure we can still join with ADH_OFFENDER correctly (which has no leading zeroes)
         -- we must trim all leading zeroes off of OffenderNumber
         LTRIM(shoffender.OffenderNumber, '0') as OffenderNumber,
-        FkCoSyScale,
+        FkCoSyScale as FkCoSyScale_raw,
+        -- when the FkCoSyScale is in one of these pairs, then we want to consider each pair a single assessment score
+        case when FkCoSyScale in ('8042', '8043') then '8042/8043'
+             when FkCoSyScale in ('8138', '8139') then '8138/8139'
+             when FkCoSyScale in ('72', '73') then '72/73'
+             when FkCoSyScale in ('7', '8') then '7/8'
+          else FkCoSyScale
+        end as FkCoSyScale,
         corfscaleset.Name as corfscaleset_name,
         cosyscale.Name as cosyscale_name,
         (DATE(coassessment.dateofscreening)) as dateofscreening,
@@ -56,7 +63,8 @@ COMPAS as (
         coassessment.FkShUserScreener,
         shuser.FirstName,
         shuser.MiddleInitial,
-        shuser.LastName
+        shuser.LastName,
+        coassessment.FKCoSyRecSupervisionLevel
   from {ADH_COASSESSMENT} coassessment
     inner join {ADH_SHOFFENDER} shoffender on coassessment.fkshoffender = shoffender.fkshperson
     left join {ADH_CORFSCALESET} corfscaleset on coassessment.FkCoRfScaleSet = corfscaleset.RecId
@@ -69,6 +77,36 @@ COMPAS as (
     shperson.isdeleted = '0' and
     coassessment.iscomputed = '1' and 
     coassessment.iscompleted = '1'
+),
+COMPAS as (
+  select
+    source,
+    RecId,
+    OffenderNumber,
+    FkCoSyScale,
+    corfscaleset_name,
+    STRING_AGG(cosyscale_name, '/' ORDER BY FkCoSyScale_raw) as cosyscale_name,
+    dateofscreening,
+    MAX(COALESCE(CAST(RawScore as FLOAT64), 0)) as RawScore,
+    STRING_AGG(ScoreText, '/' ORDER BY FkCoSyScale_raw) as ScoreText,   
+    FkShUserScreener,
+    FirstName,
+    MiddleInitial,
+    LastName,
+    FKCoSyRecSupervisionLevel
+  from COMPAS_unagg
+  group by
+    source,
+    RecId,
+    OffenderNumber,
+    corfscaleset_name,
+    FkCoSyScale,
+    dateofscreening,
+    FkShuserScreener,
+    FirstName,
+    MiddleInitial,
+    LastName,
+    FKCoSyRecSupervisionLevel
 ),
 
 -- STATIC and STABLE assessments are stored in the COALTERNATIVESCREENING* tables
@@ -89,12 +127,13 @@ STATIC_STABLE as (
           CAST(NULL as string) as corfscaleset_name,
           cosyscale.Name as cosyscale_name,
           (DATE(screening.dateofscreening)) as dateofscreening,
-          score.rawscore,
+          CAST(score.rawscore as FLOAT64) as rawscore,
           score.scoretext,
           screening.fkshuserscreener,
           shuser.FirstName,
           shuser.MiddleInitial,
-          shuser.LastName
+          shuser.LastName,
+          CAST(NULL as string) as FKCoSyRecSupervisionLevel
       FROM {ADH_COALTERNATIVESCREENING} screening
         left join {ADH_COALTERNATIVESCREENINGSCORE} score on score.FkCoAlternativeScreening = screening.RecId
         inner join {ADH_SHOFFENDER} shoffender on (screening.FkShOffender = shoffender.FkShPerson and screening.fkshagencycreatedby=shoffender.fkshagencycreatedby)
@@ -125,12 +164,13 @@ select
   corfscaleset_name,
   cosyscale_name,
   dateofscreening,
-  RawScore,
+  CAST(RawScore as STRING) as RawScore,
   ScoreText,
   FkShUserScreener,
   FirstName,
   MiddleInitial,
-  LastName
+  LastName,
+  FKCoSyRecSupervisionLevel
 from (
   (select * from COMPAS)
   union all
@@ -143,7 +183,7 @@ inner join (select distinct offender_id from {ADH_OFFENDER_BOOKING}) book on off
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
     region="us_mi",
-    ingest_view_name="assessments_v2",
+    ingest_view_name="assessments_v3",
     view_query_template=VIEW_QUERY_TEMPLATE,
     materialize_raw_data_table_views=False,
     order_by_cols="offendernumber, source, RecId",
