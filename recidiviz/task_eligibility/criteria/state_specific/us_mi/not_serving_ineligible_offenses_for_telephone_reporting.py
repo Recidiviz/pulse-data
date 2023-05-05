@@ -57,7 +57,6 @@ _QUERY_TEMPLATE = f"""
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest` ref 
         ON sent.status_raw_text = ref.reference_code_id
     WHERE span.state_code = "US_MI"
-    #TODO(#20351) add subsections of excluded MCL codes for telephone reporting
     --offenses that are excluded for TR and offenses that requires SO registration 
     AND (sent.statute IN (SELECT statute_code 
                             FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`

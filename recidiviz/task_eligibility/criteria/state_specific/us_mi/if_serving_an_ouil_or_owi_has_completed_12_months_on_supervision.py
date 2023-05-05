@@ -50,7 +50,10 @@ SELECT DISTINCT
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
       USING (state_code, person_id, sentences_preprocessed_id)
     WHERE span.state_code = "US_MI"
-    AND sent.statute LIKE '%257.625%'
+    --exclude all subsections of 257.625 except for (2) and (10), and exclude all codes like 257.625M or 257.625B
+    --which are separate mcl codes and not subsections of 257.625
+    AND sent.statute LIKE '257.625%'
+    AND REGEXP_CONTAINS(REGEXP_REPLACE(sent.statute, r'257.625', ''), r'^[13456789][a-zA-Z]*([^0a-zA-Z]|$)|^$')
 ),
  owi_ouil_aggregated_spans AS (
  /* Sentence spans are aggregated here so that sub sessions later on can be identified as falling into owi/ouil
