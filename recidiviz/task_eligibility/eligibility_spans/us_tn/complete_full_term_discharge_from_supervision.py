@@ -26,7 +26,6 @@ from recidiviz.task_eligibility.criteria.general import (
     has_active_sentence,
     supervision_level_is_not_internal_unknown,
     supervision_level_is_not_interstate_compact,
-    supervision_level_is_not_unassigned,
     supervision_past_full_term_completion_date_or_upcoming_1_day,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
@@ -55,7 +54,6 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         has_active_sentence.VIEW_BUILDER,
         supervision_level_is_not_internal_unknown.VIEW_BUILDER,
         supervision_level_is_not_interstate_compact.VIEW_BUILDER,
-        supervision_level_is_not_unassigned.VIEW_BUILDER,
     ],
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
 )
