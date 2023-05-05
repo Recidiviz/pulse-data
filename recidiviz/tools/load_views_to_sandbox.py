@@ -134,6 +134,7 @@ def load_all_views_to_sandbox(
     prompt: bool,
     dataflow_dataset_override: Optional[str],
     filter_union_all: bool,
+    allow_slow_views: bool,
 ) -> None:
     """Loads ALL views to sandbox datasets with prefix |sandbox_dataset_prefix|. If
     |dataflow_dataset_override| is not set, excludes views in
@@ -151,6 +152,7 @@ def load_all_views_to_sandbox(
         collected_builders=collected_builders,
         dataflow_dataset_override=dataflow_dataset_override,
         filter_union_all=filter_union_all,
+        allow_slow_views=allow_slow_views,
     )
 
 
@@ -171,6 +173,7 @@ def _load_manually_filtered_views_to_sandbox(
     prompt: bool,
     dataflow_dataset_override: Optional[str],
     filter_union_all: bool,
+    allow_slow_views: bool,
     view_ids_to_load: Optional[List[str]],
     dataset_ids_to_load: Optional[List[str]],
     update_ancestors: bool,
@@ -247,6 +250,7 @@ def _load_manually_filtered_views_to_sandbox(
         dataflow_dataset_override=dataflow_dataset_override,
         filter_union_all=filter_union_all,
         collected_builders=collected_builders,
+        allow_slow_views=allow_slow_views,
     )
 
 
@@ -421,6 +425,7 @@ def _load_views_changed_on_branch_to_sandbox(
     prompt: bool,
     dataflow_dataset_override: Optional[str],
     filter_union_all: bool,
+    allow_slow_views: bool,
     changed_datasets_to_include: Optional[List[str]],
     changed_datasets_to_ignore: Optional[List[str]],
 ) -> None:
@@ -478,6 +483,7 @@ def _load_views_changed_on_branch_to_sandbox(
         prompt=prompt,
         dataflow_dataset_override=dataflow_dataset_override,
         filter_union_all=filter_union_all,
+        allow_slow_views=allow_slow_views,
         collected_builders=collected_builders,
     )
 
@@ -493,6 +499,7 @@ def _load_collected_views_to_sandbox(
     collected_builders: List[BigQueryViewBuilder],
     dataflow_dataset_override: Optional[str],
     filter_union_all: bool,
+    allow_slow_views: bool,
 ) -> None:
     """Loads the provided list of builders to a sandbox dataset."""
     logging.info(
@@ -524,6 +531,7 @@ def _load_collected_views_to_sandbox(
         address_overrides=sandbox_address_overrides,
         # Don't clean up datasets when running a sandbox script
         historically_managed_datasets_to_clean=None,
+        allow_slow_views=allow_slow_views,
     )
 
 
@@ -577,6 +585,15 @@ def parse_arguments() -> argparse.Namespace:
         "sandbox. Otherwise, the UnionAllBigQueryViewBuilder views will query "
         "ALL parent views like they do in production. This should generally be "
         "set to false to avoid unnecessarily expensive sandbox runs.",
+    )
+
+    parser.add_argument(
+        "--allow_slow_views",
+        dest="allow_slow_views",
+        action="store_true",
+        default=False,
+        help="If true, the the script will not fail when views take longer "
+        "than the allowed threshold to materialize.",
     )
 
     subparsers = parser.add_subparsers(
@@ -667,6 +684,7 @@ if __name__ == "__main__":
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
                 filter_union_all=args.filter_union_all,
+                allow_slow_views=args.allow_slow_views,
             )
         elif args.chosen_mode == "manual":
             _load_manually_filtered_views_to_sandbox(
@@ -674,6 +692,7 @@ if __name__ == "__main__":
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
                 filter_union_all=args.filter_union_all,
+                allow_slow_views=args.allow_slow_views,
                 view_ids_to_load=args.view_ids_to_load,
                 dataset_ids_to_load=args.dataset_ids_to_load,
                 update_ancestors=args.update_ancestors,
@@ -685,6 +704,7 @@ if __name__ == "__main__":
                 prompt=args.prompt,
                 dataflow_dataset_override=args.dataflow_dataset_override,
                 filter_union_all=args.filter_union_all,
+                allow_slow_views=args.allow_slow_views,
                 changed_datasets_to_include=args.changed_datasets_to_include,
                 changed_datasets_to_ignore=args.changed_datasets_to_ignore,
             )

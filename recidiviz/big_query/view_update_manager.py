@@ -132,6 +132,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
     force_materialize: bool = False,
     default_table_expiration_for_new_datasets: Optional[int] = None,
     views_might_exist: bool = True,
+    allow_slow_views: bool = False,
 ) -> None:
     """Creates or updates all the views in the provided list with the view query in the
     provided view builder list. If any materialized view has been updated (or if an
@@ -169,6 +170,7 @@ def create_managed_dataset_and_deploy_views_for_view_builders(
             historically_managed_datasets_to_clean=historically_managed_datasets_to_clean,
             default_table_expiration_for_new_datasets=default_table_expiration_for_new_datasets,
             views_might_exist=views_might_exist,
+            allow_slow_views=allow_slow_views,
         )
     except Exception as e:
         with monitoring.measurements() as measurements:
@@ -332,6 +334,7 @@ def _create_managed_dataset_and_deploy_views(
     historically_managed_datasets_to_clean: Optional[Set[str]] = None,
     default_table_expiration_for_new_datasets: Optional[int] = None,
     views_might_exist: bool = True,
+    allow_slow_views: bool = False,
 ) -> None:
     """Create and update the given views and their parent datasets. Cleans up unmanaged views and datasets
 
@@ -346,15 +349,17 @@ def _create_managed_dataset_and_deploy_views(
 
     Args:
         views_to_update: A list of view objects to be created or updated.
-        set_temp_dataset_table_expiration: If True, new datasets will be created with an expiration
-            of TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS.
+        default_table_expiration_for_new_datasets: If not None, new datasets will
+            be created with this default expiration length (in milliseconds).
         historically_managed_datasets_to_clean: Set of datasets that have
-            ever been managed if we should cleanup unmanaged views in this deploy
+            ever been managed if we should clean up unmanaged views in this deploy
             process. If null, does not perform the cleanup step. If provided,
             will error if any dataset required for the |views_to_update| is not
             included in this set.
         views_might_exist: If set then we will optimistically try to update
             them, and fallback to creating the views if they do not exist.
+        allow_slow_views: If set then we will not fail view update if a view
+            takes longer to update than is typically allowed.
     """
     bq_client = BigQueryClientImpl(region_override=bq_region_override)
     dag_walker = BigQueryViewDagWalker(views_to_update)
@@ -394,10 +399,13 @@ def _create_managed_dataset_and_deploy_views(
         except Exception as e:
             raise ValueError(f"Error creating or updating view [{v.address}]") from e
 
+    perf_config = (
+        None if allow_slow_views else get_deployed_view_dag_update_perf_config()
+    )
     results = dag_walker.process_dag(
         process_fn,
         synchronous=False,
-        perf_config=get_deployed_view_dag_update_perf_config(),
+        perf_config=perf_config,
     )
     results.log_processing_stats(n_slowest=NUM_SLOW_VIEWS_TO_LOG)
 

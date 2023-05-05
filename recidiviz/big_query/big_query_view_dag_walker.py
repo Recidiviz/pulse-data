@@ -667,7 +667,7 @@ class BigQueryViewDagWalker:
         self,
         view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT],
         synchronous: bool,
-        perf_config: ProcessDagPerfConfig = DEFAULT_PROCESS_DAG_PERF_CONFIG,
+        perf_config: Optional[ProcessDagPerfConfig] = DEFAULT_PROCESS_DAG_PERF_CONFIG,
         reverse: bool = False,
     ) -> ProcessDagResult[ViewResultT]:
         """
@@ -681,6 +681,9 @@ class BigQueryViewDagWalker:
         with synchronous execution.
 
         Will throw if a node execution time exceeds |max_node_process_time_sec|.
+
+        If a |perf_config| is provided, processing will fail if any node takes longer
+        to process than is allowed by the config.
         """
 
         top_level_set = set(self.leaves) if reverse else set(self.roots)
@@ -714,11 +717,12 @@ class BigQueryViewDagWalker:
                     results_fn=view_result_fn,
                     view=node.view,
                 )
-                self._check_processing_time(
-                    perf_config=perf_config,
-                    view=node.view,
-                    processing_time=execution_sec,
-                )
+                if perf_config:
+                    self._check_processing_time(
+                        perf_config=perf_config,
+                        view=node.view,
+                        processing_time=execution_sec,
+                    )
                 view_stats = self._view_processing_statistics(
                     view_processing_stats=view_processing_stats,
                     parent_results=parent_results,

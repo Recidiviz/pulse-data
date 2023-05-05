@@ -151,6 +151,12 @@ def deploy_views(
         historically_managed_datasets_to_clean=None,
         default_table_expiration_for_new_datasets=table_expiration,
         views_might_exist=not test_schema,
+        # If we are loading a test schema we expect each node in the view
+        # DAG to process quickly, but also don't care if a node takes longer
+        # than expected (we see this happen occasionally, perhaps because we
+        # are being rate-limited?), because it does not indicate that overall
+        # view materialization has gotten too expensive for that view.
+        allow_slow_views=test_schema,
     )
 
 
