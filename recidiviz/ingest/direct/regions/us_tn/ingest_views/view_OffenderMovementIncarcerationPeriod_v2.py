@@ -174,7 +174,9 @@ WITH
                 WHEN MovementReason='SEG_START' THEN 2
                 WHEN MovementReason='INCARCERATION' THEN 3
                 ELSE 4
-            END ASC) AS MovementSequenceNumber # We rank the ordering to end a seg period before an official movement to a new facility when they occur on the same day 
+            END ASC,
+            MovementType,
+            HousingUnit) AS MovementSequenceNumber # We rank the ordering to end a seg period before an official movement to a new facility when they occur on the same day 
     FROM filter_out_movements_after_death_date
     WHERE MovementDateTime is not null
     ),
