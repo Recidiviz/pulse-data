@@ -579,14 +579,14 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             SELECT person_id, conditions
             FROM `{project_id}.{normalized_state_dataset}.state_supervision_sentence`
             WHERE state_code ='US_TN'
-                AND completion_date >= CURRENT_DATE('US/Eastern')
+                AND COALESCE(completion_date, projected_completion_date) >= CURRENT_DATE('US/Eastern')
             
             UNION ALL
             
             SELECT person_id, conditions
             FROM `{project_id}.{normalized_state_dataset}.state_incarceration_sentence`
             WHERE state_code ='US_TN'
-                AND completion_date >= CURRENT_DATE('US/Eastern')
+                AND COALESCE(completion_date, projected_max_release_date) >= CURRENT_DATE('US/Eastern')
         )
         GROUP BY 1
     ),

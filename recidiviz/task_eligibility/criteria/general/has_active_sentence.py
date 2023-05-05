@@ -42,7 +42,7 @@ _QUERY_TEMPLATE = f"""
             sess.person_id,
             sess.start_date,
             sess.end_date_exclusive,
-        FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span
+        FROM `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` span
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
             ON span.state_code = sess.state_code
             AND span.person_id = sess.person_id
@@ -50,7 +50,7 @@ _QUERY_TEMPLATE = f"""
             AND sess.compartment_level_1 = "SUPERVISION"
             -- Use strictly less than for exclusive end_dates
             AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
-            AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
+            AND sess.start_date < {nonnull_end_date_clause('span.projected_completion_date_max')}
     )
     SELECT 
         state_code,

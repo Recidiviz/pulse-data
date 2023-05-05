@@ -135,7 +135,6 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             end_date_exclusive AS completion_date
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
         WHERE outflow_to_level_1 IN ("LIBERTY", "DEATH")
-            AND state_code NOT IN ('{special_states}')
     ),
     /*
     Use the next successful supervision termination date following the effective date

@@ -86,13 +86,13 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         */
         COALESCE(sis.effective_date, sis.date_imposed) AS effective_date,
         sis.date_imposed,
-        sis.completion_date,
+        CAST(NULL AS DATE) AS completion_date,
         sis.status,
         SPLIT(sis.status_raw_text,'-')[OFFSET(1)] AS status_raw_text,
         sis.parole_eligibility_date,
         --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
         sis.projected_min_release_date AS projected_completion_date_min,
-        sis.projected_max_release_date AS projected_completion_date_max,
+        COALESCE(sis.completion_date, sis.projected_max_release_date) AS projected_completion_date_max,
         sis.initial_time_served_days,
         COALESCE(sis.is_life, FALSE) AS life_sentence,
         sis.county_code,
@@ -145,13 +145,13 @@ US_TN_SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         */
         COALESCE(sss.effective_date, sss.date_imposed) AS effective_date,
         sss.date_imposed,
-        sss.completion_date,
+        CAST(NULL AS DATE) AS completion_date,
         sss.status,
         SPLIT(sss.status_raw_text,'-')[OFFSET(1)] AS status_raw_text,
         NULL AS parole_eligibility_date,
         --TODO(#13749): Update TN projected_max_release_date logic to actually reflect the max sentence length instead
         sss.projected_completion_date AS projected_completion_date_min,
-        sss.projected_completion_date AS projected_completion_date_max,
+        COALESCE(sss.completion_date, sss.projected_completion_date) AS projected_completion_date_max,
         CAST(NULL AS INT64) AS initial_time_served_days,
         COALESCE(sss.is_life, FALSE) AS life_sentence,
         sss.county_code,

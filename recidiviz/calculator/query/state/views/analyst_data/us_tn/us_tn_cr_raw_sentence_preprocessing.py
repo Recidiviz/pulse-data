@@ -56,7 +56,7 @@ US_TN_CR_RAW_SENTENCE_PREPROCESSING_QUERY_TEMPLATE = """
         SELECT
             person_id,
             UPPER(REGEXP_REPLACE(description, "  ", " ")) AS offense_description,
-            completion_date AS expiration_date,
+            projected_completion_date_max AS expiration_date,
             projected_completion_date_max AS full_expiration_date,
             effective_date AS sentence_effective_date,
             status_raw_text AS sentence_status,

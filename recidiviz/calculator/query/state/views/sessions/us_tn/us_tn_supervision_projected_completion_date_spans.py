@@ -43,7 +43,7 @@ WITH all_states_spans AS (
             /* Completion date comes from ExpirationDate which accounts for sentence credits. Projected completion date
             comes from FullExpirationDate which doesn't */
             -- TODO(#17246): use `state_task_deadline.eligibility_date` once ExpirationDate is ingested there
-            MAX(sent.completion_date) AS projected_completion_date_max,
+            MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
         FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
         UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
         INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
