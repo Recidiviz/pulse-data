@@ -10,10 +10,6 @@ columns:
     is_pii: True
     description: |-
       Employee ID number
-  - name: EMPSSN
-    is_pii: True
-    description: |-
-      Employee SSN
   - name: LNAME
     is_pii: True
     description: |-
