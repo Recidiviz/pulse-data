@@ -321,8 +321,8 @@ _SUPERVISION_LEVEL_SPAN_ATTRIBUTE_DICT = {
     "medium": ["MEDIUM"],
     "maximum": ["HIGH", "MAXIMUM"],
     "unknown": 'NOT IN ("LIMITED", "MINIMUM", "MEDIUM", "HIGH", "MAXIMUM", '
-    '"EXTERNAL_UNKNOWN", "INTERVAL_UNKNOWN")',
-    "other": ["EXTERNAL_UNKNOWN", "INTERVAL_UNKNOWN"],
+    '"EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN")',
+    "other": ["EXTERNAL_UNKNOWN", "INTERNAL_UNKNOWN"],
 }
 AVG_DAILY_POPULATION_SUPERVISION_LEVEL_METRICS = [
     DailyAvgSpanCountMetric(
@@ -374,9 +374,11 @@ COMMUNITY_CONFINEMENT_SUPERVISION_STARTS = EventCountMetric(
     display_name="Community Confinement Supervision Starts",
     description="Number of transitions to community confinement (supervision) from "
     "general incarceration",
-    event_types=["SUPERVISION-COMMUNITY_CONFINEMENT_START"],
+    event_types=["COMPARTMENT_LEVEL_2_START"],
     event_attribute_filters={
-        # filters here prevent counting CC (re)starts from temporary incarceration
+        "compartment_level_1": ["SUPERVISION"],
+        "compartment_level_2": ["COMMUNITY_CONFINEMENT"],
+        # filters below prevent counting CC (re)starts from temporary incarceration
         "inflow_from_level_1": ["INCARCERATION"],
         "inflow_from_level_2": ["GENERAL"],
     },

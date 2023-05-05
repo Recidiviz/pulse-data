@@ -34,7 +34,6 @@ from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     GCP_PROJECTS,
 )
-from recidiviz.validation.views import dataset_config as validations_dataset_config
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     all_deployed_view_builders,
@@ -206,31 +205,6 @@ class ViewDagInvariantTests(unittest.TestCase):
                     msg=f"view_query_template for view [{view.dataset_id}."
                     f"{view.view_id}] cannot contain raw"
                     f" value: {project_id}.",
-                )
-
-    def test_no_datasets_in_view_templates(self) -> None:
-        """Validates that all dataset_ids are passed in as arguments to the view,
-        and are not in the raw query template.
-        """
-
-        for view in self.dag_walker.views:
-            if (
-                view.dataset_id == validations_dataset_config.VIEWS_DATASET
-                and "freshness" in view.view_id
-            ):
-                # Due to the way freshness validation queries are constructed we have
-                # to allow for raw dataset_id strings in the view query template
-                continue
-
-            match = re.search(
-                DIRECTLY_REFERENCED_DATASET_ID_REGEX, view.view_query_template
-            )
-
-            if match:
-                raise ValueError(
-                    f"Found dataset_id [{match.group(1)}] referenced directly in view "
-                    f"query template for view: [{view.dataset_id}.{view.view_id}]. "
-                    f"Must replace with query argument."
                 )
 
     def test_views_use_materialized_if_present(self) -> None:

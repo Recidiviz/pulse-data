@@ -30,6 +30,7 @@ from recidiviz.common.str_field_utils import (
     parse_int,
     roman_numeral_uppercase,
     safe_parse_date_from_date_pieces,
+    snake_to_title,
 )
 
 
@@ -269,3 +270,10 @@ class TestStrFieldUtils(TestCase):
         self.assertEqual(roman_numeral_uppercase("Jackson Iii"), "Jackson III")
         self.assertEqual(roman_numeral_uppercase("Tocqueville Vi"), "Tocqueville VI")
         self.assertEqual(roman_numeral_uppercase("circus ci"), "circus CI")
+
+    def test_snake_to_title(self) -> None:
+        self.assertEqual(snake_to_title("my_variable_1"), "My Variable 1")
+        self.assertEqual(snake_to_title("my name"), "My Name")
+        self.assertEqual(
+            snake_to_title("SUPERVISION_START_FIRST"), "Supervision Start First"
+        )

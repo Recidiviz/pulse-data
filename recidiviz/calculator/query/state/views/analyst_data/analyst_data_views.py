@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,6 +33,9 @@ from recidiviz.calculator.query.state.views.analyst_data.fines_fees_sessions imp
 from recidiviz.calculator.query.state.views.analyst_data.invoices_preprocessed import (
     INVOICES_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.analyst_data_view_collector import (
+    get_person_spans_and_events_view_builders,
+)
 from recidiviz.calculator.query.state.views.analyst_data.officer_events import (
     OFFICER_EVENTS_VIEW_BUILDER,
 )
@@ -41,12 +44,6 @@ from recidiviz.calculator.query.state.views.analyst_data.payments_preprocessed i
 )
 from recidiviz.calculator.query.state.views.analyst_data.permanent_exemptions_preprocessed import (
     PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.person_events import (
-    PERSON_EVENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.analyst_data.person_spans import (
-    PERSON_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.population_density_by_supervision_office import (
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
@@ -272,8 +269,6 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     EARLY_DISCHARGE_SESSIONS_VIEW_BUILDER,
     WORKFLOWS_OFFICER_EVENTS_VIEW_BUILDER,
     OFFICER_EVENTS_VIEW_BUILDER,
-    PERSON_EVENTS_VIEW_BUILDER,
-    PERSON_SPANS_VIEW_BUILDER,
     POPULATION_DENSITY_BY_SUPERVISION_OFFICE_VIEW_BUILDER,
     PROJECTED_DISCHARGES_VIEW_BUILDER,
     PSA_RISK_SCORES_VIEW_BUILDER,
@@ -352,4 +347,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
     US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
     RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
+    *get_person_spans_and_events_view_builders(),
 ]

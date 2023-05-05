@@ -388,6 +388,12 @@ def snake_to_camel(s: str, capitalize_first_letter: bool = False) -> str:
     return camel
 
 
+def snake_to_title(text: str) -> str:
+    """Converts a snake case string (e.g., "given_names") to a displayable string in title case with no underscores
+    (e.g., "Given Names")."""
+    return text.replace("_", " ").title()
+
+
 def capitalize_first(s: str) -> str:
     return s[0].upper() + s[1:]
 

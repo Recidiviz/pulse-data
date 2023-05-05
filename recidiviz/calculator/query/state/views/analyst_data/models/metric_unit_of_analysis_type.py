@@ -49,6 +49,7 @@ class MetricUnitOfAnalysisType(Enum):
     SUPERVISION_OFFICE = "OFFICE"
     SUPERVISION_OFFICER = "OFFICER"
     SUPERVISION_UNIT = "UNIT"
+    PERSON_ID = "PERSON"
 
 
 @attr.define(frozen=True, kw_only=True)
@@ -178,5 +179,12 @@ ON
             "reference_views_dataset": REFERENCE_VIEWS_DATASET,
             "sessions_dataset": SESSIONS_DATASET,
         },
+    ),
+    MetricUnitOfAnalysisType.PERSON_ID: MetricUnitOfAnalysis(
+        level_type=MetricUnitOfAnalysisType.PERSON_ID,
+        client_assignment_query="SELECT * FROM `{project_id}.{sessions_dataset}.system_sessions_materialized`",
+        primary_key_columns=["state_code", "person_id"],
+        attribute_columns=[],
+        dataset_kwargs={"sessions_dataset": SESSIONS_DATASET},
     ),
 }
