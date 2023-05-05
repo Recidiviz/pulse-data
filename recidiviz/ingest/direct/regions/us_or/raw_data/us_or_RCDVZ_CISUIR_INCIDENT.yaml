@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: RCDVZ_CISUIR_INCIDENT
+file_description: |-
+  TODO(#17148): Fill in with answer from OR
+data_classification: source
+primary_key_cols:
+  - INCIDENT_ID
+columns:
+  - name: INCIDENT_ID
+    description: |-
+      Incident number, unique to each incident.
+  - name: UIR_NUM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: FACILITY_CD
+    description: |-
+      Code for facility where incident took place.
+  - name: INCIDENT_LOCATION_CD
+    description: |-
+      Code for location within facility where incident took place.
+  - name: UNIT_NUMBER
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: INCIDENT_DATE
+    is_datetime: True
+    description: |-
+      Date the incident occured.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: SUMMARY
+    description: |-
+      Summary of incident that occured.
+    is_pii: True
+  - name: PREA_RELATED_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: REFERRED_TO_OSP_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: OSP_CASE_NUM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: REFERRED_TO_SIU_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: MEDICAL_CARE_REQ_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: MISCONDUCT_ISSUED_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: CREATE_DATE
+    is_datetime: True
+    description: |-
+      Date report was created.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: CREATEDBY
+    description: |-
+      User creating the report.
+    is_pii: True
+  - name: MODIFY_DATE
+    is_datetime: True
+    description: |-
+      Date record was modified.
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
+  - name: MODIFIEDBY
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_pii: True
+  - name: VERSION_NUM
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: CLASS_1_STAFF_ASSAULT_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: NMBR_STAFF_ASSAULTED_CL1
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: CLASS_2_STAFF_ASSAULT_FLAG
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: NMBR_STAFF_ASSAULTED_CL2
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+  - name: DELETE_DATE
+    is_datetime: True
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
