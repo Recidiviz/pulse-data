@@ -109,7 +109,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         # Delete excel file.
-        os.remove(TEST_EXCEL_FILE)
+        if os.path.isfile(TEST_EXCEL_FILE):
+            os.remove(TEST_EXCEL_FILE)
+        if os.path.isfile(TEST_CSV_FILE):
+            os.remove(TEST_CSV_FILE)
 
     def test_validation(self) -> None:
         """Test that errors are thrown on invalid inputs."""
