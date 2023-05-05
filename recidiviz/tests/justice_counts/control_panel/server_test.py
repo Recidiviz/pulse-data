@@ -72,6 +72,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 from recidiviz.tests.auth.utils import get_test_auth0_config
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
+    TEST_CONVERTED_CSV_EXCEL_FILE,
     TEST_EXCEL_FILE,
     create_excel_file,
 )
@@ -137,6 +138,8 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         # Delete excel file.
         if os.path.exists(TEST_EXCEL_FILE):
             os.remove(TEST_EXCEL_FILE)
+        if os.path.exists(TEST_CONVERTED_CSV_EXCEL_FILE):
+            os.remove(TEST_CONVERTED_CSV_EXCEL_FILE)
 
     def get_engine(self) -> Engine:
         return self.session.get_bind()
