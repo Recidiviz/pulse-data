@@ -8,7 +8,7 @@ input_columns:
   - end_reason
   - facility
   - custody_level
-  - period_seq_num
+  - sentence_order
 unused_columns: []
 output:
   StatePerson:
@@ -22,7 +22,7 @@ output:
             $concat:
               $values:
                 - doc_id
-                - period_seq_num
+                - sentence_order
           incarceration_type:
             $conditional:
               - $if:

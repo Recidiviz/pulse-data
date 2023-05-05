@@ -32,6 +32,7 @@ WITH sentences AS (
 -- This also updates end_dates when people died before their sentence end date.
   SELECT 
     sentences.CIDORNUM as doc_id,
+    -- Since this is based on sentence data, every row has both a start date and an end date.
     GIEFFDT as sentence_begin_date,
     CASE 
       WHEN PARBEGDT != '0001-01-01 00:00:00' THEN LEAST(PARBEGDT, CIRELDAT) 
@@ -111,13 +112,36 @@ sentences_with_reasons_split AS (
     END AS end_reason,
     facility,
     custody_level,
-    ROW_NUMBER() OVER (PARTITION BY doc_id, sentence_prefix ORDER BY sentence_begin_date) as period_seq_num
+    -- measure to remove sentences that are served concurrently and start on the same date
+    ROW_NUMBER() OVER (PARTITION BY doc_id, sentence_begin_date ORDER BY end_date DESC) as shared_start_chron_order,
 FROM new_revocation_periods
-WHERE ABS(DATE_DIFF(CAST(sentence_begin_date AS DATETIME), CAST(end_date AS DATETIME), DAY)) > 5
-AND sentence_begin_date < end_date)
+-- Because we match start/end reasons by movement date and call any movement date a "match" 
+-- that is within 5 days of the start or end date, periods that are shorter than 5 days 
+-- appear with identical start and end reasons unless we filter them out. (see PR #20262)
+-- We do this because many movement dates do not exactly match the start/end date of a sentence,
+-- despite corresponding to them in reality.
+WHERE DATE_DIFF(CAST(end_date AS DATETIME), CAST(sentence_begin_date AS DATETIME), DAY) > 5),
 
-SELECT * 
-FROM sentences_with_reasons_split
+remove_nested_periods AS ( 
+  SELECT *,
+    LAG(start_date) OVER (PARTITION BY doc_id ORDER BY start_date) as prev_start_date,
+    LAG(end_date) OVER (PARTITION BY doc_id ORDER BY start_date) as prev_end_date
+  FROM sentences_with_reasons_split
+  WHERE shared_start_chron_order = 1
+)
+
+SELECT  
+  doc_id,
+  start_date,
+  end_date,
+  start_reason,
+  end_reason,
+  facility,
+  custody_level,
+  ROW_NUMBER() OVER (PARTITION BY doc_id ORDER BY start_date) AS sentence_order,
+FROM remove_nested_periods
+WHERE ((prev_start_date IS NULL AND prev_end_date IS NULL)
+  OR (prev_start_date < start_date AND prev_end_date < end_date))
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
