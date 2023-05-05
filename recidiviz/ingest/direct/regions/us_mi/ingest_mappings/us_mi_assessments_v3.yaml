@@ -16,6 +16,7 @@ input_columns:
   - FirstName
   - MiddleInitial
   - LastName
+  - FKCoSyRecSupervisionLevel
 unused_columns: []
 output:
   StatePerson:
@@ -43,16 +44,12 @@ output:
                   - "56" # Static-99R
                   - "8193" # Static-99R 2016
                 StateAssessmentClass.RISK:
-                  - "8043" # MDOC VFO Risk (Conviction)
-                  - "8042" # MDOC Non-VFO Risk (Conviction)
-                  - "8138" # MDOC Non-VFO Risk (Conviction)
-                  - "8139" # MDOC VFO Risk (Conviction)
-                  - "8" # General Recidivism Risk
-                  - "72" # General Recidivism Risk (Conviction)
+                  - "8042/8043" # MDOC VFO Risk (Conviction)/MDOC Non-VFO Risk (Conviction)
+                  - "8138/8139" # MDOC Non-VFO Risk (Conviction)/MDOC VFO Risk (Conviction)
+                  - "7/8" # Violent Recidivism Risk/General Recidivism Risk
+                  - "72/73" # General Recidivism Risk (Conviction)/Violent Recidivism Risk (Conviction)
                   - "5002" # General Recidivism Risk
                   - "5001" # Violent Recidivism Risk
-                  - "7" # Violent Recidivism Risk
-                  - "73" # Violent Recidivism Risk (Conviction)
                   - "4050" # Recidivism Risk Scale V2
                   - "4047" # Recidivism Risk Sacle V1
                 StateAssessmentClass.SOCIAL:
@@ -225,7 +222,29 @@ output:
           assessment_score: RawScore
           assessment_level:
             $enum_mapping:
-              $raw_text: ScoreText
+              $raw_text:
+                # if ScoreText is inconclusive but we have a valued recommended supervision level, use the recommended supervision level to map
+                # otherwise, use ScoreText to map
+                $conditional:
+                  - $if:
+                      $and:
+                        - $in:
+                            $value: ScoreText
+                            $options:
+                              - $literal("N/A")
+                              - $literal("N/A/N/A")
+                              - $literal("N/A")
+                              - $literal("N/A/High")
+                              - $literal("N/A/Low")
+                              - $literal("N/A/Medium")
+                              - $literal("Low/N/A")
+                              - $literal("Medium/N/A")
+                              - $literal("High/N/A")
+                              - $literal("Potential Faking Concern")
+                              - $literal("No Potential Faking Concern")
+                        - $not_null: FKCoSyRecSupervisionLevel
+                    $then: FKCoSyRecSupervisionLevel
+                  - $else: ScoreText
               $mappings:
                 # QUESTION: Not sure if any of these should be categorized differently
                 StateAssessmentLevel.HIGH:
@@ -243,23 +262,38 @@ output:
                   - "Medium"
                   - "Level III - Average Risk"
                   - "Probable"
+                  - "Low/Medium"
+                  - "Medium/Low"
+                  - "Medium/Medium"
+                  - "2"
+                  - "3"
                 StateAssessmentLevel.MEDIUM_HIGH:
                   - "Moderate-High"
                   - "Medium-High"
+                  - "High/Low"
+                  - "High/Medium"
+                  - "Low/High"
+                  - "Medium/High"
                 StateAssessmentLevel.MINIMUM:
                   - "Level I - Very Low Risk"
+                  - "Low/Low"
+                  - "1"
                 StateAssessmentLevel.MODERATE:
                   - "Moderate"
                 StateAssessmentLevel.VERY_HIGH:
                   - "Level IVb - Well Above Average Risk"
+                StateAssessmentLevel.MAXIMUM:
+                  - "High/High"
+                  - "4"
                 StateAssessmentLevel.INTERNAL_UNKNOWN:
-                  - "N/A"
                   - "Potential Faking Concern"
                   - "No Potential Faking Concern"
+                  - "0"
           assessment_metadata:
             $json_dict:
               scale_set: corfscaleset_name
               scale: cosyscale_name
+              recommended_level: FKCoSyRecSupervisionLevel
           conducting_staff_external_id: FkShUserScreener
           conducting_staff_external_id_type:
             $conditional:
