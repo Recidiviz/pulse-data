@@ -57,6 +57,9 @@ from recidiviz.calculator.query.state.views.analyst_data.projected_discharges im
 from recidiviz.calculator.query.state.views.analyst_data.psa_risk_scores import (
     PSA_RISK_SCORES_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.recommended_custody_level_spans import (
+    RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.session_cohort_reincarceration import (
     SESSION_COHORT_REINCARCERATION_VIEW_BUILDER,
 )
@@ -168,6 +171,21 @@ from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_raw_require
 from recidiviz.calculator.query.state.views.analyst_data.us_pa.us_pa_specialized_agents_preprocessed import (
     US_PA_SPECIALIZED_AGENTS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q1 import (
+    US_TN_CAF_Q1_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q2 import (
+    US_TN_CAF_Q2_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q6 import (
+    US_TN_CAF_Q6_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q7 import (
+    US_TN_CAF_Q7_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_caf_q8 import (
+    US_TN_CAF_Q8_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_reporting_c4_isc_eligiblility_sessions import (
     US_TN_COMPLIANT_REPORTING_C4_ISC_ELIGIBILITY_SESSIONS_VIEW_BUILDER,
 )
@@ -216,6 +234,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_compliant_r
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_cr_raw_sentence_preprocessing import (
     US_TN_CR_RAW_SENTENCE_PREPROCESSING_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_disciplinaries_preprocessed import (
+    US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_exemptions_preprocessed import (
     US_TN_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
 )
@@ -233,6 +254,9 @@ from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_payments_pr
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_permanent_exemptions_preprocessed import (
     US_TN_PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_recommended_custody_level_spans import (
+    US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.analyst_data.us_tn.us_tn_sentence_logic import (
     US_TN_SENTENCE_LOGIC_VIEW_BUILDER,
@@ -320,4 +344,12 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
     PERMANENT_EXEMPTIONS_PREPROCESSED_VIEW_BUILDER,
     FINES_FEES_SESSIONS_VIEW_BUILDER,
+    US_TN_CAF_Q1_VIEW_BUILDER,
+    US_TN_CAF_Q2_VIEW_BUILDER,
+    US_TN_CAF_Q6_VIEW_BUILDER,
+    US_TN_CAF_Q7_VIEW_BUILDER,
+    US_TN_CAF_Q8_VIEW_BUILDER,
+    US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
+    US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
+    RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
 ]
