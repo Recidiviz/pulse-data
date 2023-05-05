@@ -35,6 +35,10 @@ TEST_CSV_FILE = os.path.join(
     os.path.dirname(__file__),
     "bulk_upload/bulk_upload_fixtures/bulk_upload_test.csv",
 )
+TEST_CONVERTED_CSV_EXCEL_FILE = os.path.join(
+    os.path.dirname(__file__),
+    "bulk_upload/bulk_upload_fixtures/law_enforcement/arrests.xlsx",
+)
 
 
 def _get_dimension_columns(

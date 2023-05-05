@@ -53,7 +53,8 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         # Delete excel file.
-        os.remove(TEST_EXCEL_FILE)
+        if os.path.isfile(TEST_EXCEL_FILE):
+            os.remove(TEST_EXCEL_FILE)
 
     def test_ingest_spreadsheet(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
