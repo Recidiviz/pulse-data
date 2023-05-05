@@ -24,11 +24,13 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 from recidiviz.task_eligibility.completion_events.state_specific.us_mi import (
     supervision_classification_review,
 )
+from recidiviz.task_eligibility.criteria.general import (
+    supervision_level_is_not_limited,
+)
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     not_already_on_lowest_eligible_supervision_level,
     not_on_electronic_monitoring,
     not_on_lifetime_electronic_monitoring,
-    not_on_telephone_reporting,
     past_initial_classification_review_date,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -49,7 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         not_already_on_lowest_eligible_supervision_level.VIEW_BUILDER,
         not_on_lifetime_electronic_monitoring.VIEW_BUILDER,
         not_on_electronic_monitoring.VIEW_BUILDER,
-        not_on_telephone_reporting.VIEW_BUILDER,
+        supervision_level_is_not_limited.VIEW_BUILDER,
     ],
     completion_event_builder=supervision_classification_review.VIEW_BUILDER,
 )
