@@ -26,13 +26,13 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = f"""
 WITH cases_with_terminating_officers AS (
   SELECT {{docstars_offendercasestable}}.*,
-       {{docstars_officers}}.OFFICER as terminating_officer_id,
+       CAST({{docstars_officers}}.OFFICER AS INT) as terminating_officer_id,
        {{docstars_officers}}.LNAME AS terminating_officer_lname, 
        {{docstars_officers}}.FNAME AS terminating_officer_fname, 
        {{docstars_officers}}.SITEID AS terminating_officer_siteid,
   FROM {{docstars_offendercasestable}}
   LEFT JOIN {{docstars_officers}}
-  ON (TERMINATING_OFFICER = OFFICER)
+  ON (CAST(TERMINATING_OFFICER AS INT) = CAST(OFFICER AS INT))
 ),
 ranked_term_dates AS (
   SELECT
@@ -55,7 +55,7 @@ most_recent_term_date_by_sid AS (
 ),
 offendercases_with_terminating_and_recent_pos AS (
   SELECT cases_with_terminating_officers.*,
-        {{docstars_officers}}.OFFICER AS recent_officer_id, 
+        CAST({{docstars_officers}}.OFFICER AS INT) AS recent_officer_id, 
         {{docstars_officers}}.LNAME AS recent_officer_lname, 
         {{docstars_officers}}.FNAME AS recent_officer_fname, 
         {{docstars_officers}}.SITEID AS recent_officer_siteid,
@@ -73,7 +73,7 @@ offendercases_with_terminating_and_recent_pos AS (
   LEFT JOIN {{docstars_offenders}}
   ON (cases_with_terminating_officers.SID = {{docstars_offenders}}.SID)
   LEFT JOIN {{docstars_officers}}
-  ON ({{docstars_offenders}}.AGENT = {{docstars_officers}}.OFFICER)
+  ON (CAST({{docstars_offenders}}.AGENT AS INT)= CAST({{docstars_officers}}.OFFICER AS INT))
   LEFT JOIN most_recent_term_date_by_sid
   ON (cases_with_terminating_officers.SID = most_recent_term_date_by_sid.SID)
 )

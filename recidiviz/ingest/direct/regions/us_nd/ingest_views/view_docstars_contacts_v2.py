@@ -17,7 +17,9 @@
 """Query containing contacts information.
 
    TODO(#5057): Update description once we ingest contact codes 2 - 6.
-   NOTE: This is only capturing contacts logged by the supervising officer."""
+   NOTE: This is only capturing contacts logged by the supervising officer,
+   and only does so if the supervisors name matches exactly between 
+   docstars_officers and docstars_contacts."""
 
 from recidiviz.ingest.direct.views.direct_ingest_view_query_builder import (
     DirectIngestViewQueryBuilder,
@@ -42,9 +44,9 @@ WITH contacts_with_split_supervisor_name AS (
     SPLIT(ORIGINATOR, ', ')[OFFSET(1)] FNAME,
   FROM {docstars_contacts}
   WHERE CONTACT_CODE IS NOT NULL
-  # Exclude system generated entries, as those don't represent contacts.
+  -- Exclude system generated entries, as those don't represent contacts.
   AND CONTACT_CODE != 'SG'
-  # ND includes supervision and FTR contacts. Only include supervision contacts
+  -- ND includes supervision and FTR contacts. Only include supervision contacts
   AND CATEGORY = 'Supervision'
  )
 SELECT 
@@ -60,7 +62,7 @@ SELECT
   CATEGORY,
   contacts_with_split_supervisor_name.LNAME,
   contacts_with_split_supervisor_name.FNAME,
-  OFFICER, 
+  CAST(OFFICER AS INT) AS OFFICER, 
   FROM contacts_with_split_supervisor_name LEFT JOIN
   {docstars_officers} officers
   ON (
