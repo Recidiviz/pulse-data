@@ -45,8 +45,7 @@ class UsTnController(BaseDirectIngestController):
 
         tags = [
             "OffenderName",
-            # "OffenderMovementIncarcerationPeriod",
-            # "OffenderMovementIncarcerationPeriod_v2",
+            "OffenderMovementIncarcerationPeriod_v2",
             "AssignedStaffSupervisionPeriod_v2",
             "VantagePointAssessments",
             "DisciplinaryIncarcerationIncident",
@@ -60,12 +59,10 @@ class UsTnController(BaseDirectIngestController):
 
         return tags + (
             [
-                "OffenderMovementIncarcerationPeriod_v2",
                 "SentencesChargesAndCourtCases_v3",
             ]
             if not environment.in_gcp_production()
             else [
-                "OffenderMovementIncarcerationPeriod",
                 "SentencesChargesAndCourtCases_v2",
             ]
         )
