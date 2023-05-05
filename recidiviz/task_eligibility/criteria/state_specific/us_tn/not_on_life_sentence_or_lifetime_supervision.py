@@ -41,10 +41,10 @@ _QUERY_TEMPLATE = f"""
         state_code, 
         person_id,
         date_imposed AS start_date,
-        DATE_ADD(completion_date, INTERVAL 1 DAY) AS end_date,
+        DATE_ADD(projected_completion_date_max, INTERVAL 1 DAY) AS end_date,
         life_sentence AS lifetime_flag,
       FROM `{{project_id}}.{{sessions_dataset}}.us_tn_sentences_preprocessed_materialized`
-      WHERE completion_date > date_imposed
+      WHERE {nonnull_end_date_exclusive_clause('projected_completion_date_max')} > date_imposed
     ),
     {create_sub_sessions_with_attributes('sentences')}
     , 

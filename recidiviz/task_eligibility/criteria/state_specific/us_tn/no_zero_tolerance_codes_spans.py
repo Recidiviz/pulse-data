@@ -59,10 +59,10 @@ _QUERY_TEMPLATE = f"""
                 latest sentence start, we're still flagging that as critical date has passed since it signals
                 potentially missing sentencing data */
             IF(
-                MAX({nonnull_end_date_exclusive_clause('sentences.completion_date')}) 
-                    OVER(PARTITION BY sentences.person_id) = {nonnull_end_date_exclusive_clause('sentences.completion_date')},
+                MAX({nonnull_end_date_exclusive_clause('sentences.projected_completion_date_max')}) 
+                    OVER(PARTITION BY sentences.person_id) = {nonnull_end_date_exclusive_clause('sentences.projected_completion_date_max')},
                 NULL,
-                sentences.completion_date
+                sentences.projected_completion_date_max
             ) end_datetime,
             contact_date AS critical_date,
         FROM `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
@@ -70,7 +70,7 @@ _QUERY_TEMPLATE = f"""
           ON sentences.person_id = contact.person_id
           AND contact_date > sentences.date_imposed
         WHERE sentences.state_code = 'US_TN'
-          AND completion_date > date_imposed
+          AND {nonnull_end_date_exclusive_clause('projected_completion_date_max')} > date_imposed
     ),
     /* The critical_date_has_passed_spans_cte() method creates spans of time when the critical date
     (zero tolerance contact code date) has passed. The output has overlapping and non-collapsed adjacent spans.
