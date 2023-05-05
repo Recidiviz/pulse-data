@@ -60,7 +60,7 @@ sentences AS (
       ARRAY_AGG(DISTINCT statute IGNORE NULLS) AS statutes_being_served,
       LOGICAL_OR(sent.life_sentence) AS any_life_sentence,
       --checks for whether 750.110 and 750.110a are accompanied by a 15 year term 
-      LOGICAL_OR(IF((statute IN ("750.110", "750.110A") AND CAST(DATE_DIFF(projected_completion_date_max,effective_date,YEAR) AS INT64) >= 15),
+      LOGICAL_OR(IF(((statute LIKE "750.110" OR statute LIKE "750.110A%") AND CAST(DATE_DIFF(projected_completion_date_max,effective_date,YEAR) AS INT64) >= 15),
                   true, false)) AS any_qualifying_statute_term
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
   UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
@@ -72,12 +72,28 @@ sentences AS (
 sentence_statutes_preprocessed AS (
  SELECT 
     * EXCEPT (statutes_being_served),
-    EXISTS(SELECT * FROM UNNEST(statutes_being_served) AS x WHERE x IN 
-            ("750.317", "750.520B", "750.520C", "750.520D", "750.520F", "750.529", "750.349", "750.350", "750.213")) AS any_qualifying_statute,
+    EXISTS(SELECT * FROM UNNEST(statutes_being_served) AS x  
+                WHERE (x LIKE  "750.317" OR 
+                        x LIKE "750.520B%" OR 
+                        x LIKE "750.520C%" OR
+                        x LIKE "750.520D%" OR
+                        x LIKE "750.520F%" OR
+                        x LIKE "750.529" OR
+                        x LIKE "750.349" OR 
+                        x LIKE "750.3491%" OR 
+                        x LIKE "750.213" )) AS any_qualifying_statute,
  FROM sentences
  --only select parole sessions where life sentences or qualifying statutes are being served
- WHERE EXISTS(SELECT * FROM UNNEST(statutes_being_served) AS x WHERE x IN 
-            ("750.317", "750.520B", "750.520C", "750.520D", "750.520F", "750.529", "750.349", "750.350", "750.213"))
+ WHERE EXISTS(SELECT * FROM UNNEST(statutes_being_served) AS x  
+                WHERE (x LIKE  "750.317" OR 
+                        x LIKE "750.520B%" OR 
+                        x LIKE "750.520C%" OR
+                        x LIKE "750.520D%" OR
+                        x LIKE "750.520F%" OR
+                        x LIKE "750.529" OR
+                        x LIKE "750.349" OR 
+                        x LIKE "750.3491%" OR 
+                        x LIKE "750.213" ))
     OR any_life_sentence
     OR any_qualifying_statute_term
  ),

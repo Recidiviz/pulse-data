@@ -73,7 +73,8 @@ sentences_and_violations AS (
     USING (state_code, person_id, sentences_preprocessed_id)
   WHERE state_code = "US_MI"
   AND (sent.statute IN (SELECT statute_code FROM `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.RECIDIVIZ_REFERENCE_offense_exclusion_list_latest`
-            WHERE CAST(requires_so_registration AS BOOL))
+            WHERE (CAST(requires_so_registration AS BOOL)
+            OR CAST(is_assaultive_misdemeanor AS BOOL)))
     OR sent.classification_type = "FELONY")
   GROUP BY 1, 2, 3
   UNION ALL 

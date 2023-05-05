@@ -56,9 +56,9 @@ _QUERY_TEMPLATE = f"""
         --failure to register for sex offense
         OR sent.statute LIKE '28.729%'
         --aggravated stalking
-        OR sent.statute = '750.411I'
+        OR sent.statute LIKE '750.411I%'
         --Domestic Violence 3rd 
-        OR sent.statute = '750.815'
+        OR sent.statute LIKE '750.814%'
         OR sent.status = 'COMMUTED'
         OR sent.life_sentence
         )

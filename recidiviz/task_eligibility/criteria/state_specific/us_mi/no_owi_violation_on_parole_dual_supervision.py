@@ -57,12 +57,15 @@ sentences AS (
       span.state_code,
       span.person_id,
       sent.date_imposed,
-      LOGICAL_OR(sent.statute = "257.625") AS is_owi,
+      --exclude all subsections of 257.625 except for (2) and (10), and exclude all codes like 257.625M or 257.625B
+      --which are separate mcl codes and not subsections of 257.625
+      LOGICAL_OR(REGEXP_CONTAINS(REGEXP_REPLACE(statute, r'257.625', ''), r'^[13456789][a-zA-Z]*([^0a-zA-Z]|$)|^$')) AS is_owi,
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
   UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
   INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
     USING (state_code, person_id, sentences_preprocessed_id)
   WHERE state_code = "US_MI"
+  AND sent.statute LIKE '257.625%'
   GROUP BY 1, 2, 3
 ),
 critical_date_spans AS (

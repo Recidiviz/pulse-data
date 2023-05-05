@@ -48,7 +48,12 @@ _QUERY_TEMPLATE = f"""
     WHERE span.state_code = "US_MI"
         AND sent.sentence_sub_type = "PROBATION" 
         --only include spans with ineligible offenses 
-        AND sent.statute IN ("750.81", "750.84", "750.411H", "750.411I", "750.136B")
+        --include all statutes that have 750.81 followed by a digit (but not by a letter) since those are not substatutes
+        AND ((sent.statute LIKE '750.81%' AND REGEXP_CONTAINS(statute, r'750\\.81(\\d+)*$'))
+        OR sent.statute LIKE '750.84%'
+        OR sent.statute LIKE '750.411H%'
+        OR sent.statute LIKE '750.411I%'
+        OR sent.statute LIKE '750.136B%')
     GROUP BY 1, 2, 3, 4,5
     """
 

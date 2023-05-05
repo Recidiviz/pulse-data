@@ -82,7 +82,7 @@ qualifying statutes and sex offenses for determining priority */
     -- since both statutes ("750.520B" "750.520C") are considered sex offenses, there will never be a case where
     -- qualifying_statute is TRUE and is_sex_offense is not true. However, is_sex_offense might be true and
     -- qualifying statute my be false. 
-    LOGICAL_OR(statute IN ("750.520B", "750.520C")) AS qualifying_statute,
+    LOGICAL_OR(statute LIKE '750.520B%' OR statute LIKE '750.520C%') AS qualifying_statute,
     LOGICAL_OR(is_sex_offense) AS is_sex_offense,
   FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
   UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
