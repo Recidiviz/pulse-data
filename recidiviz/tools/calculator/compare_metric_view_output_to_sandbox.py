@@ -152,6 +152,7 @@ def compare_metric_view_output_to_sandbox(
             prompt=False,
             filter_union_all=True,
             dataflow_dataset_override=None,
+            allow_slow_views=False,
         )
 
     bq_client = BigQueryClientImpl()

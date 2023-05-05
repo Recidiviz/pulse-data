@@ -1260,6 +1260,14 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
 
         self.assertEqual(set(walker.views), set(result.view_results))
 
+        # Now process with a NULL perf config to see that no perf thresholds are
+        # enforced.
+        result = walker.process_dag(
+            process_simple, synchronous=self.synchronous, perf_config=None
+        )
+
+        self.assertEqual(set(walker.views), set(result.view_results))
+
     @patch("recidiviz.utils.environment.in_gcp", MagicMock(return_value=True))
     def test_dag_perf_config_in_gcp_no_crash(self) -> None:
         walker = BigQueryViewDagWalker(self.diamond_shaped_dag_views_list)
