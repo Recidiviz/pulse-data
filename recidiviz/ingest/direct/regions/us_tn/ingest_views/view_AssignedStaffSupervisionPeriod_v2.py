@@ -243,7 +243,7 @@ SELECT
     *,
     ROW_NUMBER() OVER person_window AS SupervisionPeriodSequenceNumber
     FROM all_supervision_periods 
-    WINDOW person_window AS (PARTITION BY OffenderID ORDER BY StartDate ASC, EndDate ASC)
+    WINDOW person_window AS (PARTITION BY OffenderID ORDER BY StartDate ASC, EndDate ASC, SupervisionType, AssignmentType, SupervisionLevel, SupervisionOfficerID, AdmissionReason, TerminationReason)
 """
 
 
