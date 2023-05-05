@@ -149,16 +149,21 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             cases_disposed_errors: List[
                 JusticeCountsBulkUploadException
             ] = metric_key_to_errors.get(prosecution.cases_disposed.key, [])
-            self.assertEqual(len(cases_disposed_errors), 1)
-            cases_disposed_by_type_error = cases_disposed_errors[0]
+            self.assertEqual(len(cases_disposed_errors), 2)
+            cases_disposed_by_type_month_error = cases_disposed_errors[0]
+            cases_disposed_by_type_sum_error = cases_disposed_errors[1]
 
             self.assertTrue(
                 (
-                    "The valid values for this column are January, February, March, "
-                    "April, May, June, July, August, September, October, "
-                    "November, December."
+                    "The valid values for this column are January, February, March, April, May, June, July, August, September, October, November, December."
                 )
-                in cases_disposed_by_type_error.description
+                in cases_disposed_by_type_month_error.description,
+            )
+            self.assertEqual(
+                (
+                    "The sum of all values (0.0) in the cases_disposed_by_type sheet for 01/01/2021-02/01/2021 does not equal the total value provided in the aggregate sheet (10.0)."
+                ),
+                cases_disposed_by_type_sum_error.description,
             )
 
     def test_prison(self) -> None:

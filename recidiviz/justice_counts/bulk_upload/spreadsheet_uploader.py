@@ -319,6 +319,8 @@ class SpreadsheetUploader:
             rows=rows,
             reporting_frequency=reporting_frequency,
             custom_starting_month=custom_starting_month,
+            metric_key_to_errors=metric_key_to_errors,
+            metric_key=metricfile.definition.key,
         )
         # Step 3: For each time range represented in the file, convert the
         # reported data into a MetricInterface object. If a report already
@@ -356,6 +358,8 @@ class SpreadsheetUploader:
                     time_range_to_year_month=time_range_to_year_month,
                     existing_report=existing_report,
                     reporting_frequency=reporting_frequency,
+                    metric_key_to_errors=metric_key_to_errors,
+                    metric_key=metricfile.definition.key,
                 )  # TODO(#15499) Infer aggregate value only if total sheet was not provided
                 self.agency_id_to_time_range_to_reports[curr_agency_id][time_range] = [
                     report
@@ -512,6 +516,10 @@ class SpreadsheetUploader:
         rows: List[Dict[str, Any]],
         reporting_frequency: ReportingFrequency,
         custom_starting_month: Optional[int],
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        metric_key: str,
     ) -> Tuple[
         Dict[Tuple[datetime.date, datetime.date], List[Dict[str, Any]]],
         Dict[Tuple[datetime.date, datetime.date], Tuple[int, int]],
@@ -528,6 +536,8 @@ class SpreadsheetUploader:
                 column_name="year",
                 column_type=int,
                 analyzer=self.text_analyzer,
+                metric_key_to_errors=metric_key_to_errors,
+                metric_key=metric_key,
             )
             if (
                 reporting_frequency == ReportingFrequency.MONTHLY
@@ -544,6 +554,8 @@ class SpreadsheetUploader:
                     column_name="month",
                     column_type=int,
                     analyzer=self.text_analyzer,
+                    metric_key_to_errors=metric_key_to_errors,
+                    metric_key=metric_key,
                 )
             elif (
                 reporting_frequency == ReportingFrequency.ANNUAL
@@ -556,6 +568,8 @@ class SpreadsheetUploader:
                     row=row,
                     column_name="month",
                     column_type=int,
+                    metric_key_to_errors=metric_key_to_errors,
+                    metric_key=metric_key,
                 )
             elif reporting_frequency == ReportingFrequency.ANNUAL:
                 month = (
