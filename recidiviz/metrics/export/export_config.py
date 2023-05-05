@@ -373,9 +373,8 @@ _VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name="OUTLIERS",
         export_override_state_codes=EXPORT_ATLAS_TO_ID,
         export_output_formats_and_validations={
-            ExportOutputFormatType.HEADERLESS_CSV: [
-                ExportValidationType.EXISTS,
-            ]
+            # TODO(#20729): Validate that the export is non-empty
+            ExportOutputFormatType.HEADERLESS_CSV: []
         },
     ),
 ]
