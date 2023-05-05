@@ -60,6 +60,8 @@ def fuzzy_match_against_options(
     text: str,
     options: List[str],
     category_name: str,
+    metric_key_to_errors: Dict[Optional[str], List[JusticeCountsBulkUploadException]],
+    metric_key: Optional[str] = None,
     time_range: Optional[Tuple[date, date]] = None,
 ) -> str:
     """Given a piece of input text and a list of options, uses
@@ -77,12 +79,13 @@ def fuzzy_match_against_options(
 
     best_option = max(option_to_score, key=option_to_score.get)  # type: ignore[arg-type]
     if option_to_score[best_option] < FUZZY_MATCHING_SCORE_CUTOFF:
-        raise JusticeCountsBulkUploadException(
+        category_not_recognized_warning = JusticeCountsBulkUploadException(
             title=f"{category_name} Not Recognized",
             description=f"\"{text}\" is not a valid value for {category_name}. The valid values for this column are {', '.join(filter(None, options))}.",
-            message_type=BulkUploadMessageType.ERROR,
+            message_type=BulkUploadMessageType.WARNING,
             time_range=time_range,
         )
+        metric_key_to_errors[metric_key].append(category_not_recognized_warning)
 
     return best_option
 
@@ -92,6 +95,8 @@ def get_column_value(
     column_name: str,
     column_type: Type,
     analyzer: TextAnalyzer,
+    metric_key_to_errors: Dict[Optional[str], List[JusticeCountsBulkUploadException]],
+    metric_key: Optional[str] = None,
 ) -> Any:
     """Given a row, a column name, and a column type, attempts to
     extract a value of the given type from the row."""
@@ -111,7 +116,10 @@ def get_column_value(
         if column_name == "month":
             # Allow "month" column to be either numbers or month names
             column_value = get_month_value_from_string(
-                text_analyzer=analyzer, month=column_value
+                text_analyzer=analyzer,
+                month=column_value,
+                metric_key_to_errors=metric_key_to_errors,
+                metric_key=metric_key,
             )
             value = column_type(column_value)
         elif column_name == "year" and "-" in str(column_value):
@@ -135,7 +143,12 @@ def get_column_value(
     return value
 
 
-def get_month_value_from_string(month: str, text_analyzer: TextAnalyzer) -> int:
+def get_month_value_from_string(
+    month: str,
+    text_analyzer: TextAnalyzer,
+    metric_key_to_errors: Dict[Optional[str], List[JusticeCountsBulkUploadException]],
+    metric_key: Optional[str] = None,
+) -> int:
     """Takes as input a string and attempts to find the corresponding month
     index using the calendar module's month_names enum. For instance,
     March -> 3. Uses fuzzy matching to handle typos, such as `Febuary`."""
@@ -146,5 +159,7 @@ def get_month_value_from_string(month: str, text_analyzer: TextAnalyzer) -> int:
             category_name="Month",
             text=column_value,
             options=MONTH_NAMES,
+            metric_key_to_errors=metric_key_to_errors,
+            metric_key=metric_key,
         )
     return MONTH_NAMES.index(column_value)

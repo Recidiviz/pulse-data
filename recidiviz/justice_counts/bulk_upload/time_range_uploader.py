@@ -76,6 +76,10 @@ class TimeRangeUploader:
             Tuple[datetime.date, datetime.date], Tuple[int, int]
         ],
         reporting_frequency: schema.ReportingFrequency,
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        metric_key: str,
         existing_report: Optional[List[schema.Report]] = None,
     ) -> Tuple[schema.Report, List[DatapointJson]]:
         """Uploads rows for a certain time period and saves them in the JC database."""
@@ -98,7 +102,10 @@ class TimeRangeUploader:
                 else None,
             )
 
-        report_metric = self._get_report_metric_for_time_range()
+        report_metric = self._get_report_metric_for_time_range(
+            metric_key_to_errors=metric_key_to_errors,
+            metric_key=metric_key,
+        )
 
         datapoint_json_list = ReportInterface.add_or_update_metric(
             session=session,
@@ -113,6 +120,10 @@ class TimeRangeUploader:
 
     def _get_report_metric_for_time_range(
         self,
+        metric_key_to_errors: Dict[
+            Optional[str], List[JusticeCountsBulkUploadException]
+        ],
+        metric_key: str,
     ) -> MetricInterface:
         """Given a a set of rows from the CSV that all correspond to a single
         time period, convert the data in these rows to a MetricInterface object.
@@ -148,6 +159,8 @@ class TimeRangeUploader:
                 column_name="value",
                 column_type=float,
                 analyzer=self.text_analyzer,
+                metric_key_to_errors=metric_key_to_errors,
+                metric_key=metric_key,
             )
             self.metric_key_to_timerange_to_total_value[self.metricfile.definition.key][
                 self.time_range
@@ -168,6 +181,8 @@ class TimeRangeUploader:
                     column_name="value",
                     column_type=float,
                     analyzer=self.text_analyzer,
+                    metric_key_to_errors=metric_key_to_errors,
+                    metric_key=metric_key,
                 )
 
                 # disaggregation_value is either "All" or an enum member,
@@ -177,6 +192,8 @@ class TimeRangeUploader:
                     column_name=self.metricfile.disaggregation_column_name,
                     column_type=str,
                     analyzer=self.text_analyzer,
+                    metric_key_to_errors=metric_key_to_errors,
+                    metric_key=metric_key,
                 )
 
                 try:
@@ -195,6 +212,8 @@ class TimeRangeUploader:
                         category_name=self.metricfile.disaggregation_column_name.replace(
                             "_", " "
                         ).title(),
+                        metric_key_to_errors=metric_key_to_errors,
+                        metric_key=metric_key,
                     )
                     matching_disaggregation_member = self.metricfile.disaggregation(
                         disaggregation_value
