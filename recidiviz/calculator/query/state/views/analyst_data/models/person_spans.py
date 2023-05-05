@@ -1,0 +1,168 @@
+# Recidiviz - a data platform for criminal justice reform
+# Copyright (C) 2023 Recidiviz, Inc.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# =============================================================================
+"""Configures span query builder objects at the person-level."""
+
+from typing import List
+
+from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
+    PersonSpanType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.span_query_builder import (
+    SpanQueryBuilder,
+)
+from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
+    COMPARTMENT_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.person_demographics import (
+    PERSON_DEMOGRAPHICS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
+    SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
+)
+
+PERSON_SPANS: List[SpanQueryBuilder] = [
+    SpanQueryBuilder(
+        span_type=PersonSpanType.ASSESSMENT_SCORE_SESSION,
+        description="Spans of time between assessment scores of the same type",
+        sql_source="""
+SELECT *
+FROM
+    `{project_id}.sessions.assessment_score_sessions_materialized`
+WHERE
+    assessment_date IS NOT NULL
+    AND assessment_type IS NOT NULL
+    AND assessment_score IS NOT NULL
+""",
+        attribute_cols=["assessment_type", "assessment_score", "assessment_level"],
+        span_start_date_col="assessment_date",
+        span_end_date_col="score_end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.COMPARTMENT_SESSION,
+        description="Compartment sessions unique on compartment level 1 & 2 types",
+        sql_source=COMPARTMENT_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=[
+            "compartment_level_1",
+            "compartment_level_2",
+            "case_type_start",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.COMPLETED_CONTACT_SESSION,
+        description="Spans between completed contact dates and the subsequent contact date to help "
+        "identify the most recent completed contact",
+        sql_source="""SELECT DISTINCT
+    state_code,
+    person_id,
+    contact_date,
+FROM
+    `{project_id}.normalized_state.state_supervision_contact`
+WHERE
+    status = "COMPLETED"
+""",
+        attribute_cols=[],
+        span_start_date_col="contact_date",
+        span_end_date_col="LEAD(contact_date) OVER (PARTITION BY person_id ORDER BY contact_date)",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.EMPLOYMENT_PERIOD,
+        description="Employment periods -- can be overlapping",
+        sql_source="""SELECT *
+FROM
+    `{project_id}.normalized_state.state_employment_period`
+WHERE
+    start_date IS NOT NULL
+    AND employment_status != "UNEMPLOYED"
+""",
+        attribute_cols=["employer_name"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.EMPLOYMENT_STATUS_SESSION,
+        description="Non-overlapping spans of time over which a person has a certain employment status",
+        sql_source="""SELECT *
+FROM
+    `{project_id}.sessions.supervision_employment_status_sessions_materialized`
+WHERE
+    employment_status_start_date IS NOT NULL """,
+        attribute_cols=["is_employed"],
+        span_start_date_col="employment_status_start_date",
+        span_end_date_col="employment_status_end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.PERSON_DEMOGRAPHICS,
+        description="Demographics over the span from a person's birth to the present",
+        sql_source=PERSON_DEMOGRAPHICS_VIEW_BUILDER.table_for_query,
+        attribute_cols=["birthdate", "gender", "prioritized_race_or_ethnicity"],
+        span_start_date_col="birthdate",
+        span_end_date_col="DATE_ADD(CURRENT_DATE('US/Eastern'), INTERVAL 1 DAY)",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.SUPERVISION_LEVEL_DOWNGRADE_ELIGIBLE,
+        description="Open supervision mismatch (downgrades only), ends when mismatch corrected or supervision period ends",
+        sql_source="""SELECT *, "SUPERVISION_DOWNGRADE" AS task_name,
+FROM
+    `{project_id}.sessions.supervision_downgrade_sessions_materialized`
+WHERE
+    recommended_supervision_downgrade_level IS NOT NULL""",
+        attribute_cols=[
+            "task_name",
+            "mismatch_corrected",
+            "recommended_supervision_downgrade_level",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="DATE_ADD(end_date, INTERVAL 1 DAY)",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.SUPERVISION_LEVEL_SESSION,
+        description="Spans of time over which a client is at a given supervision level",
+        sql_source="""SELECT * EXCEPT(supervision_level),
+    COALESCE(supervision_level, "INTERNAL_UNKNOWN") AS supervision_level,
+FROM `{project_id}.sessions.supervision_level_sessions_materialized`""",
+        attribute_cols=["supervision_level"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.SUPERVISION_OFFICER_SESSION,
+        description="Spans of time over which a client is supervised by a given officer",
+        sql_source=SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=["supervising_officer_external_id"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.TASK_ELIGIBILITY_SESSION,
+        description="Task eligibility spans",
+        sql_source="""SELECT
+    * EXCEPT (ineligible_criteria),
+    completion_event_type AS task_type,
+    ARRAY_TO_STRING(ineligible_criteria, ",") AS ineligible_criteria,
+FROM
+    `{project_id}.task_eligibility.all_tasks_materialized`
+INNER JOIN
+    `{project_id}.reference_views.task_to_completion_event`
+USING
+    (task_name)""",
+        attribute_cols=["task_name", "task_type", "is_eligible", "ineligible_criteria"],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date",
+    ),
+]
