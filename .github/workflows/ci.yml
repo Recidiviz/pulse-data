@@ -251,13 +251,19 @@ jobs:
       - uses: actions/checkout@v2
       - name: Python Setup
         uses: ./.github/actions/python-setup
+      # TODO(#20786): This step can be removed when moving back to the upstream bigquery emulator.
+      - name: Docker auth with ghcr
+        run: |
+          echo ${{ secrets.github_token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Pull emulator Docker image
         run: pipenv run pull-bq-emulator
+      # TODO(#20786): Replace ghcr.io/recidiviz with ghcr.io/goccy to move back to the
+      # upstream bigquery emulator.
       - name: Start emulator
         run: |
           docker run -d -p 9050:9050 \
             --name=recidiviz-bq-emulator \
-            ghcr.io/goccy/bigquery-emulator:latest \
+            ghcr.io/recidiviz/bigquery-emulator:latest \
             /bin/bigquery-emulator \
             --project=recidiviz-bq-emulator-project \
             --log-level=info
