@@ -42,19 +42,36 @@ SELECT
     tes.state_code,
     IF(tes.task_name = "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST", "Probation", "Parole") 
                 AS metadata_supervision_type,
+    CASE
+    -- 1719: Interstate Compact Parole, 1720: Interstate Compact Probation
+    -- Currently clients can meet both criteria, and in these cases the clients mistakenly have `OTHER_STATE` periods
+    -- when in reality they are `IC-IN` so we default here to `IC-IN`.
+    -- Additionally, IC-OUT cases are not added yet, and will be in #TODO(#20293) 
+        WHEN ('1719' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)], ","))
+                OR '1720' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)],","))) THEN 'IC-IN'
+        WHEN ssp.custodial_authority = 'OTHER_STATE' THEN 'IC-OUT'
+        ELSE NULL 
+        END AS metadata_interstate_flag,
     reasons,
 FROM `{{project_id}}.{{task_eligibility_dataset}}.all_tasks_materialized` tes
 INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-ON tes.state_code = pei.state_code 
-    AND tes.person_id = pei.person_id
-    AND pei.id_type = "US_MI_DOC"
-    AND task_name IN ( 
-                "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
-                "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
-                )
+    ON tes.state_code = pei.state_code 
+        AND tes.person_id = pei.person_id
+        AND pei.id_type = "US_MI_DOC"
+        AND task_name IN ( 
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
+                    "COMPLETE_DISCHARGE_EARLY_FROM_PAROLE_DUAL_SUPERVISION_REQUEST"
+                    )
+INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_supervision_period` ssp
+    ON ssp.state_code = tes.state_code
+    AND ssp.person_id = tes.person_id 
+    AND   CURRENT_DATE('US/Pacific') BETWEEN ssp.start_date 
+            AND {nonnull_end_date_exclusive_clause('ssp.termination_date')}    
 WHERE CURRENT_DATE('US/Pacific') BETWEEN tes.start_date AND {nonnull_end_date_exclusive_clause('tes.end_date')}
     AND tes.is_eligible
     AND tes.state_code = 'US_MI'
+--in the rare case where there are two open supervision periods, dedup so that there is only one record per client
+QUALIFY ROW_NUMBER() OVER(PARTITION BY pei.external_id, tes.state_code ORDER BY metadata_interstate_flag DESC)=1
 """
 
 US_MI_COMPLETE_DISCHARGE_EARLY_FROM_SUPERVISION_REQUEST_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
