@@ -31,7 +31,6 @@ compliant reporting. These means not being on probation in Judicial District 17.
 """
 
 _QUERY_TEMPLATE = f"""
-    --TODO(#20497) Investigate discrepancies because of non-probation sentence types or probation sentence types with non-probation supervision types
     WITH cte AS 
     (
     /*
@@ -50,7 +49,7 @@ _QUERY_TEMPLATE = f"""
         USING (state_code, person_id, sentences_preprocessed_id)
       WHERE span.state_code = 'US_TN'
         AND sent.judicial_district = '17'
-        AND sent.sentence_sub_type = 'PROBATION'
+        AND sent.sentence_sub_type IN ('PROBATION','DIVERSION')
     )
     ,
     sessionized_cte AS 
