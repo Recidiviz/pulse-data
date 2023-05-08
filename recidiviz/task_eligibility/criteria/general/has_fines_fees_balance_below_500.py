@@ -28,7 +28,6 @@ from recidiviz.utils.metadata import local_project_id_override
 _CRITERIA_NAME = "HAS_FINES_FEES_BALANCE_BELOW_500"
 
 _DESCRIPTION = """Describes the spans of time when a client has a fines/fees balance below 500.
-    TODO(#19396): Use query fragment
     """
 
 _REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS current_balance))"""

@@ -15,11 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a client has had at least 12 months since the most recent positive drug test."""
+
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+    at_least_X_time_since_positive_drug_screen,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -28,18 +30,24 @@ _CRITERIA_NAME = "AT_LEAST_12_MONTHS_SINCE_MOST_RECENT_POSITIVE_DRUG_TEST"
 
 _DESCRIPTION = """Describes the spans of time when a client has had at least 12 months since the most recent positive
 drug test.
-TODO(#19396): Use query fragment
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS most_recent_positive_test_date))"""
+_QUERY_TEMPLATE = f"""
+   {at_least_X_time_since_positive_drug_screen(date_interval=12,
+                                                 date_part="MONTH")
+    }
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
     )
 )
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

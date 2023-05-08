@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a client's latest drug screen is negative."""
+
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,13 +30,43 @@ _DESCRIPTION = (
     """Describes the spans of time when a client's latest drug screen is negative."""
 )
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS latest_drug_screen_result))"""
+
+_QUERY_TEMPLATE = f"""
+    WITH screens AS (
+        SELECT
+            state_code,
+            person_id,
+            drug_screen_date AS start_date,
+            LEAD(drug_screen_date) OVER(PARTITION BY person_id ORDER BY drug_screen_date ASC) AS end_date,
+            NOT is_positive_result AS meets_criteria,
+            result_raw_text_primary AS latest_drug_screen_result,
+            drug_screen_date AS latest_drug_screen_date,
+        FROM
+            `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
+    ),
+    sessionized_cte AS (
+    {aggregate_adjacent_spans(table_name='screens',
+                       attribute=['latest_drug_screen_result','latest_drug_screen_date','meets_criteria'],
+                       end_date_field_name='end_date')}
+    )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        meets_criteria,
+        TO_JSON(STRUCT(latest_drug_screen_result AS latest_drug_screen_result,
+                        latest_drug_screen_date AS latest_drug_screen_date
+        )) AS reason
+    FROM sessionized_cte
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        sessions_dataset=SESSIONS_DATASET,
     )
 )
 
