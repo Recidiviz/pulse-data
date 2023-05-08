@@ -233,7 +233,6 @@ output:
                             $options:
                               - $literal("N/A")
                               - $literal("N/A/N/A")
-                              - $literal("N/A")
                               - $literal("N/A/High")
                               - $literal("N/A/Low")
                               - $literal("N/A/Medium")
@@ -286,6 +285,14 @@ output:
                   - "High/High"
                   - "4"
                 StateAssessmentLevel.INTERNAL_UNKNOWN:
+                  - "N/A"
+                  - "N/A/N/A"
+                  - "N/A/High"
+                  - "N/A/Low"
+                  - "N/A/Medium"
+                  - "Low/N/A"
+                  - "Medium/N/A"
+                  - "High/N/A"
                   - "Potential Faking Concern"
                   - "No Potential Faking Concern"
                   - "0"
