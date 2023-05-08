@@ -50,7 +50,9 @@ class DirectIngestRawFileMetadataManager:
         metadata row for this path with the appropriate file discovery time."""
 
     @abc.abstractmethod
-    def get_unprocessed_raw_files(self) -> List[DirectIngestRawFileMetadata]:
+    def get_unprocessed_raw_files_eligible_for_import(
+        self,
+    ) -> List[DirectIngestRawFileMetadata]:
         """Returns metadata for the unprocessed raw files in the operations table for
         this region.
         """

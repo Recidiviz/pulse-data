@@ -17,7 +17,8 @@
 """Tests for classes in postgres_direct_ingest_file_metadata_manager.py."""
 import datetime
 import unittest
-from typing import Optional, Type
+from datetime import timedelta
+from typing import Dict, List, Optional, Type
 
 import pytest
 import pytz
@@ -447,9 +448,12 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
     @freeze_time("2015-01-02T03:04:06")
-    def test_get_unprocessed_raw_files_when_no_files(self) -> None:
+    def test_get_unprocessed_raw_files_eligible_for_import_when_no_files(self) -> None:
         # Assert
-        self.assertEqual([], self.raw_metadata_manager.get_unprocessed_raw_files())
+        self.assertEqual(
+            [],
+            self.raw_metadata_manager.get_unprocessed_raw_files_eligible_for_import(),
+        )
 
     def test_get_non_invalidated_raw_files_when_no_files(self) -> None:
         # Assert
@@ -668,7 +672,9 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         self.raw_metadata_manager.mark_instance_data_invalidated()
         self.assertEqual(0, len(self.raw_metadata_manager.get_non_invalidated_files()))
 
-    def test_get_unprocessed_raw_files_when_secondary_db(self) -> None:
+    def test_get_unprocessed_raw_files_eligible_for_import_when_secondary_db(
+        self,
+    ) -> None:
         enabled_secondary_import_manager = PostgresDirectIngestRawFileMetadataManager(
             region_code="us_va", raw_data_instance=DirectIngestInstance.SECONDARY
         )
@@ -683,5 +689,86 @@ class PostgresDirectIngestRawFileMetadataManagerTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            1, len(enabled_secondary_import_manager.get_unprocessed_raw_files())
+            1,
+            len(
+                enabled_secondary_import_manager.get_unprocessed_raw_files_eligible_for_import()
+            ),
         )
+
+    def test_get_unprocessed_raw_files_eligible_for_import_multiple_pending_files_with_same_file_tag(
+        self,
+    ) -> None:
+        fixed_datetime = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=pytz.UTC)
+
+        # Generate four files of the same file_tag and mark each as discovered
+        file_id_to_path: Dict[int, GcsfsFilePath] = {}
+        for i in range(1, 5):
+            file_id_to_path[i] = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag.csv",
+                dt=fixed_datetime + timedelta(hours=i),
+            )
+            # Discover every file
+            self.raw_metadata_manager.mark_raw_file_as_discovered(file_id_to_path[i])
+
+        # Mark file 1 (i.e. the oldest unprocessed file) as processed
+        self.raw_metadata_manager.mark_raw_file_as_processed(file_id_to_path[1])
+
+        results: List[
+            DirectIngestRawFileMetadata
+        ] = self.raw_metadata_manager.get_unprocessed_raw_files_eligible_for_import()
+
+        self.assertEqual(1, len(results))
+        # Assert that file 2's update_datetime is now the least recent update_datetime pending for processing
+        self.assertEqual(
+            fixed_datetime + timedelta(hours=2), results[0].update_datetime
+        )
+
+        # Now mark file 2 as already processed
+        self.raw_metadata_manager.mark_raw_file_as_processed(file_id_to_path[2])
+
+        new_results: List[
+            DirectIngestRawFileMetadata
+        ] = self.raw_metadata_manager.get_unprocessed_raw_files_eligible_for_import()
+
+        self.assertEqual(1, len(new_results))
+        # Assert that now file 3's update_datetime is the least recent update_datetime pending for processing
+        self.assertEqual(
+            fixed_datetime + timedelta(hours=3), new_results[0].update_datetime
+        )
+
+    def test_get_unprocessed_raw_files_eligible_for_import_multiple_pending_files_with_multiple_file_tags(
+        self,
+    ) -> None:
+        fixed_datetime = datetime.datetime(2022, 10, 1, 0, 0, 0, tzinfo=pytz.UTC)
+
+        # Generate a number of files for two different file_tags at different steps of discovery and processing
+        for i in range(1, 5):
+            file_tag_1_path = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_1.csv",
+                dt=fixed_datetime + timedelta(hours=i),
+            )
+
+            file_tag_2_path = _make_unprocessed_raw_data_path(
+                path_str="bucket/file_tag_2.csv",
+                dt=fixed_datetime + timedelta(hours=i),
+            )
+
+            # Discover every file
+            self.raw_metadata_manager.mark_raw_file_as_discovered(file_tag_1_path)
+            self.raw_metadata_manager.mark_raw_file_as_discovered(file_tag_2_path)
+
+            # Mark only the first file (of each file_tag) as already processed
+            if i == 1:
+                self.raw_metadata_manager.mark_raw_file_as_processed(file_tag_1_path)
+                self.raw_metadata_manager.mark_raw_file_as_processed(file_tag_2_path)
+
+        results: List[
+            DirectIngestRawFileMetadata
+        ] = self.raw_metadata_manager.get_unprocessed_raw_files_eligible_for_import()
+
+        self.assertEqual(2, len(results))
+        # Assert that the update_datetime for both file_tags is that second files of each
+        for result in results:
+            self.assertEqual(
+                fixed_datetime + timedelta(hours=2), result.update_datetime
+            )

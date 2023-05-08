@@ -21,6 +21,7 @@ import datetime
 from typing import List, Optional
 
 import pytz
+import sqlalchemy
 from sqlalchemy import and_
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -159,29 +160,47 @@ class PostgresDirectIngestRawFileMetadataManager(DirectIngestRawFileMetadataMana
 
         return entity_metadata
 
-    def get_unprocessed_raw_files(self) -> List[DirectIngestRawFileMetadata]:
-        """Returns metadata for the unprocessed raw files in the operations table for
-        this region.
+    def get_unprocessed_raw_files_eligible_for_import(
+        self,
+    ) -> List[DirectIngestRawFileMetadata]:
+        """Returns the metadata in the operations table for unprocessed raw files that are eligible for import for
+        this region. In order to be eligible for processing, a given file has to have a null `file_processed_time`
+        and the lowest `update_datetime` relative to other files with the same file_tag that are queued to process.
         """
         with SessionFactory.using_database(
             self.database_key, autocommit=False
         ) as session:
-            query = (
-                session.query(schema.DirectIngestRawFileMetadata)
-                .filter_by(
-                    region_code=self.region_code,
-                    is_invalidated=False,
-                    raw_data_instance=self.raw_data_instance.value,
-                )
-                .filter(
-                    schema.DirectIngestRawFileMetadata.file_processed_time.is_(None),
-                )
-            )
-            results = query.all()
-
+            # There is no `SELECT * EXCEPT recency_rank` syntax in postgresql, so select all of the columns in the
+            # table.
+            query = f"""
+              SELECT
+                file_id,
+                region_code,
+                file_tag,
+                normalized_file_name,
+                raw_data_instance,
+                is_invalidated,
+                file_discovery_time,
+                file_processed_time,
+                update_datetime
+              FROM (
+                SELECT
+                  *,
+                  ROW_NUMBER() OVER (PARTITION BY file_tag ORDER BY update_datetime) as recency_rank
+                FROM direct_ingest_raw_file_metadata
+                WHERE region_code = '{self.region_code}'
+                AND is_invalidated = False
+                AND raw_data_instance = '{self.raw_data_instance.value}'
+                AND file_processed_time is NULL
+              ) a
+              WHERE recency_rank = 1
+            """
+            results = session.execute(sqlalchemy.text(query))
             return [
-                self._raw_file_schema_metadata_as_entity(metadata)
-                for metadata in results
+                self._raw_file_schema_metadata_as_entity(
+                    schema.DirectIngestRawFileMetadata(**result)
+                )
+                for result in results
             ]
 
     def get_non_invalidated_files(self) -> List[DirectIngestRawFileMetadata]:
