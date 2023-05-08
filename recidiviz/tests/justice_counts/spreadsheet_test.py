@@ -16,7 +16,6 @@
 # =============================================================================
 """This class implements tests for the Justice Counts SpreadsheetInterface."""
 import datetime
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -30,10 +29,7 @@ from recidiviz.justice_counts.utils.constants import (
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.justice_counts.spreadsheet_helpers import (
-    TEST_EXCEL_FILE,
-    create_excel_file,
-)
+from recidiviz.tests.justice_counts.spreadsheet_helpers import create_excel_file
 from recidiviz.tests.justice_counts.utils.utils import (
     JusticeCountsDatabaseTestCase,
     JusticeCountsSchemaTestObjects,
@@ -49,12 +45,6 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
         self.bulk_upload_test_files = Path(
             "recidiviz/tests/justice_counts/bulk_upload/bulk_upload_fixtures"
         )
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        # Delete excel file.
-        if os.path.isfile(TEST_EXCEL_FILE):
-            os.remove(TEST_EXCEL_FILE)
 
     def test_ingest_spreadsheet(self) -> None:
         with SessionFactory.using_database(self.database_key) as session:
@@ -74,12 +64,13 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
             )
             with freeze_time(update_datetime):
-                create_excel_file(
+                file_path = create_excel_file(
                     system=schema.System.LAW_ENFORCEMENT,
+                    file_name="test_ingest_spreadsheet.xlsx",
                 )
                 SpreadsheetInterface.ingest_spreadsheet(
                     session=session,
-                    xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                    xls=pd.ExcelFile(file_path),
                     spreadsheet=spreadsheet,
                     auth0_user_id=user.auth0_user_id,
                     agency=agency,
@@ -109,12 +100,14 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
             )
             session.add(spreadsheet)
             # Excel workbook will have an invalid sheet.
-            create_excel_file(
-                system=schema.System.LAW_ENFORCEMENT, add_invalid_sheet_name=True
+            file_path = create_excel_file(
+                system=schema.System.LAW_ENFORCEMENT,
+                file_name="test_ingest_spreadsheet_failure.xlsx",
+                add_invalid_sheet_name=True,
             )
             SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,
@@ -185,7 +178,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 supervision.discharges.key: [setting_datapoint_disabled],
             }
             # Excel worbook will have an invalid sheet.
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
                     supervision.funding.key: [
@@ -193,6 +186,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                         schema.System.PROBATION,
                     ]
                 },
+                file_name="test_get_ingest_spreadsheet_json.xlsx",
             )
             (
                 metric_key_to_datapoint_jsons,
@@ -202,7 +196,7 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 _,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 spreadsheet=spreadsheet,
                 auth0_user_id=user.auth0_user_id,
                 agency=agency,

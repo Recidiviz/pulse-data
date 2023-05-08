@@ -72,8 +72,7 @@ from recidiviz.persistence.database.schema.justice_counts.schema import (
 )
 from recidiviz.tests.auth.utils import get_test_auth0_config
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
-    TEST_CONVERTED_CSV_EXCEL_FILE,
-    TEST_EXCEL_FILE,
+    create_csv_file,
     create_excel_file,
 )
 from recidiviz.tests.justice_counts.utils.utils import (
@@ -132,14 +131,6 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
         self.session = self.app.scoped_session  # type: ignore[attr-defined]
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         super().setUp()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        # Delete excel file.
-        if os.path.exists(TEST_EXCEL_FILE):
-            os.remove(TEST_EXCEL_FILE)
-        if os.path.exists(TEST_CONVERTED_CSV_EXCEL_FILE):
-            os.remove(TEST_CONVERTED_CSV_EXCEL_FILE)
 
     def get_engine(self) -> Engine:
         return self.session.get_bind()
@@ -1909,20 +1900,24 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
-
-            response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "file": (
-                        self.bulk_upload_test_files / "law_enforcement/arrests.csv"
-                    ).open("rb"),
-                },
+            file_name = "arrests.csv"
+            file_path = create_csv_file(
+                file_name=file_name,
+                system=schema.System.LAW_ENFORCEMENT,
+                metric=law_enforcement.arrests.key,
             )
+            with open(Path(file_path), "rb") as file:
+                response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": agency.id,
+                        "system": System.LAW_ENFORCEMENT.value,
+                        "file": file,
+                    },
+                )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
-            self.assertEqual(response_dict.get("name"), "arrests.csv")
+            self.assertEqual(response_dict.get("name"), file_name)
             self.assertEqual(
                 response_dict.get("uploaded_at"),
                 datetime.datetime.now(tz=datetime.timezone.utc).timestamp() * 1000,
@@ -1944,7 +1939,7 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 spreadsheet.ingested_at,
                 None,
             )
-            self.assertEqual(spreadsheet.original_name, "arrests.csv")
+            self.assertEqual(spreadsheet.original_name, file_name)
             standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
             self.assertEqual(
                 spreadsheet.standardized_name,
@@ -1973,21 +1968,20 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             g.user_context = UserContext(
                 auth0_user_id=self.test_schema_objects.test_user_A.auth0_user_id,
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
+                file_name="test_upload_and_ingest_spreadsheet.xlsx",
             )
-
-            response = self.client.post(
-                "/api/spreadsheets",
-                data={
-                    "agency_id": agency.id,
-                    "system": System.LAW_ENFORCEMENT.value,
-                    "ingest_on_upload": True,
-                    "file": (
-                        self.bulk_upload_test_files / "bulk_upload_test.xlsx"
-                    ).open("rb"),
-                },
-            )
+            with open(Path(file_path), "rb") as file:
+                response = self.client.post(
+                    "/api/spreadsheets",
+                    data={
+                        "agency_id": agency.id,
+                        "system": System.LAW_ENFORCEMENT.value,
+                        "ingest_on_upload": True,
+                        "file": file,
+                    },
+                )
             self.assertEqual(response.status_code, 200)
             response_dict = assert_type(response.json, dict)
             self.assertEqual(len(response_dict["metrics"]), 8)
@@ -2009,7 +2003,9 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
                 spreadsheet.ingested_at.timestamp(),
                 self.now_time.timestamp(),
             )
-            self.assertEqual(spreadsheet.original_name, "bulk_upload_test.xlsx")
+            self.assertEqual(
+                spreadsheet.original_name, "test_upload_and_ingest_spreadsheet.xlsx"
+            )
             standardized_name = f"{agency.id}:LAW_ENFORCEMENT:{datetime.datetime.now(tz=datetime.timezone.utc).timestamp()}.xlsx"
             self.assertEqual(
                 spreadsheet.standardized_name,

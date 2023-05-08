@@ -17,6 +17,7 @@
 """Implements helper methods for tests involving ingesting spreadsheets."""
 
 import os
+import tempfile
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
@@ -26,19 +27,6 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
     SYSTEM_TO_FILENAME_TO_METRICFILE,
 )
 from recidiviz.persistence.database.schema.justice_counts import schema
-
-TEST_EXCEL_FILE = os.path.join(
-    os.path.dirname(__file__),
-    "bulk_upload/bulk_upload_fixtures/bulk_upload_test.xlsx",
-)
-TEST_CSV_FILE = os.path.join(
-    os.path.dirname(__file__),
-    "bulk_upload/bulk_upload_fixtures/bulk_upload_test.csv",
-)
-TEST_CONVERTED_CSV_EXCEL_FILE = os.path.join(
-    os.path.dirname(__file__),
-    "bulk_upload/bulk_upload_fixtures/law_enforcement/arrests.xlsx",
-)
 
 
 def _get_dimension_columns(
@@ -196,7 +184,7 @@ def _create_dataframe_dict(
 
 def create_excel_file(
     system: schema.System,
-    file_name: str = TEST_EXCEL_FILE,
+    file_name: str,
     child_agencies: Optional[list] = None,
     metric_key_to_subsystems: Optional[Dict[str, List[schema.System]]] = None,
     invalid_month_sheet_name: Optional[str] = None,
@@ -211,11 +199,13 @@ def create_excel_file(
     unexpected_system_sheet_name: Optional[str] = None,
     unexpected_disaggregation_sheet_name: Optional[str] = None,
     sheetnames_with_null_data: Optional[Set[str]] = None,
-) -> None:
+) -> str:
     """Populates bulk_upload_test.xlsx with fake data to test functions that ingest spreadsheets"""
+    temp_dir = tempfile.mkdtemp()
+    file_path = os.path.join(temp_dir, file_name)
     filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
     with pd.ExcelWriter(  # pylint: disable=abstract-class-instantiated
-        file_name
+        file_path
     ) as writer:
         for filename, metricfile in filename_to_metricfile.items():
             if sheet_names_to_skip is not None and filename in sheet_names_to_skip:
@@ -290,18 +280,20 @@ def create_excel_file(
         if add_invalid_sheet_name:
             df = pd.DataFrame({})
             df.to_excel(writer, sheet_name="gender")
+        return file_path
 
 
 def create_csv_file(
     system: schema.System,
     metric: str,
-    file_name: str = TEST_CSV_FILE,
+    file_name: str,
     metric_key_to_subsystems: Optional[Dict[str, List[schema.System]]] = None,
     too_many_rows_filename: Optional[str] = None,
-) -> None:
+) -> str:
     """Populates bulk_upload_test.csv with fake data to test functions that ingest spreadsheets"""
     filename_to_metricfile = SYSTEM_TO_FILENAME_TO_METRICFILE[system.value]
-
+    temp_dir = tempfile.mkdtemp()
+    file_path = os.path.join(temp_dir, file_name)
     dataframe_dict = {}
     for filename, metricfile in filename_to_metricfile.items():
         if filename == metric:
@@ -337,4 +329,5 @@ def create_csv_file(
                         dataframe_dict.update(temp_dataframe_dict)
 
     df = pd.DataFrame(dataframe_dict)
-    df.to_csv(file_name)
+    df.to_csv(file_path)
+    return file_path

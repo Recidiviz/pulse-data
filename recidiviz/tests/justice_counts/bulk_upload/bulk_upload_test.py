@@ -17,7 +17,6 @@
 """Implements tests for Justice Counts Control Panel bulk upload functionality."""
 
 import itertools
-import os
 from typing import Dict, List
 
 import pandas as pd
@@ -54,8 +53,6 @@ from recidiviz.justice_counts.utils.constants import (
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.justice_counts.spreadsheet_helpers import (
-    TEST_CSV_FILE,
-    TEST_EXCEL_FILE,
     create_csv_file,
     create_excel_file,
 )
@@ -71,7 +68,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-
         self.test_schema_objects = JusticeCountsSchemaTestObjects()
         user_account = self.test_schema_objects.test_user_A
         law_enforcement_agency = self.test_schema_objects.test_agency_A
@@ -106,14 +102,6 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_affiliate_A.super_agency_id = self.prison_super_agency_id
             prison_affiliate_B.super_agency_id = self.prison_super_agency_id
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        # Delete excel file.
-        if os.path.isfile(TEST_EXCEL_FILE):
-            os.remove(TEST_EXCEL_FILE)
-        if os.path.isfile(TEST_CSV_FILE):
-            os.remove(TEST_CSV_FILE)
-
     def test_validation(self) -> None:
         """Test that errors are thrown on invalid inputs."""
         with SessionFactory.using_database(self.database_key) as session:
@@ -126,10 +114,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # Create an excel sheet that has an invalid month
             # in the month column of the cases_disposed metric and a
             # sheet with an invalid sheet name.
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PROSECUTION,
                 invalid_month_sheet_name="cases_disposed_by_type",
                 add_invalid_sheet_name=True,
+                file_name="test_validation.xlsx",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PROSECUTION,
@@ -139,7 +128,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
             )
 
@@ -178,8 +167,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            create_excel_file(
-                system=schema.System.PRISONS,
+            file_path = create_excel_file(
+                system=schema.System.PRISONS, file_name="test_prison.xlsx"
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -189,7 +178,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
 
@@ -229,7 +218,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            create_csv_file(system=schema.System.PRISONS, metric="admissions")
+            file_name = "test_prison_csv.csv"
+            file_path = create_csv_file(
+                system=schema.System.PRISONS, metric="admissions", file_name=file_name
+            )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
                 agency=prison_agency,
@@ -238,12 +230,13 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
 
             # Convert csv file to excel
-            csv_df = pd.read_csv(TEST_CSV_FILE)
-            csv_df.to_excel(TEST_EXCEL_FILE, sheet_name="admissions")
+            csv_df = pd.read_csv(file_path)
+            excel_file_path = file_path[0 : file_path.index(".csv")] + ".xlsx"
+            csv_df.to_excel(excel_file_path, sheet_name="admissions")
 
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(excel_file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
 
@@ -276,8 +269,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prosecution_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prosecution_agency_id
             )
-            create_excel_file(
-                system=schema.System.PROSECUTION,
+            file_path = create_excel_file(
+                system=schema.System.PROSECUTION, file_name="test_prosecution.xlsx"
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PROSECUTION,
@@ -287,7 +280,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PROSECUTION.value],
             )
 
@@ -309,8 +302,9 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
+                file_name="test_law_enforcement.xlsx",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.LAW_ENFORCEMENT,
@@ -320,7 +314,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
@@ -343,8 +337,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             supervision_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.supervision_agency_id
             )
-            create_excel_file(
-                system=schema.System.SUPERVISION,
+            file_path = create_excel_file(
+                system=schema.System.SUPERVISION, file_name="test_supervision.xlsx"
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.SUPERVISION,
@@ -354,7 +348,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -590,10 +584,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={"reported_crime"},
                 sheet_names_to_vary_values={"arrests"},
+                file_name="test_infer_aggregate_value_with_total.xlsx",
             )
 
             workbook_uploader = WorkbookUploader(
@@ -604,7 +599,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
@@ -670,7 +665,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             law_enforcement_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.law_enforcement_agency_id
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={
                     "arrests",
@@ -680,6 +675,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     "staff_by_biological_sex",
                     "staff_by_type",
                 },
+                file_name="test_missing_total_and_metric_validation.xlsx",
             )
 
             workbook_uploader = WorkbookUploader(
@@ -690,7 +686,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
@@ -788,13 +784,13 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     key=lambda d: d.metric_definition_key,
                 )
             }
-
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.LAW_ENFORCEMENT,
                 sheet_names_to_skip={
                     "calls_for_service",
                     "calls_for_service_by_type",
                 },
+                file_name="test_missing_metrics_disabled_metrics.xlsx",
             )
 
             workbook_uploader = WorkbookUploader(
@@ -805,7 +801,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[
                     schema.System.LAW_ENFORCEMENT.value
                 ],
@@ -835,8 +831,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             metric_key_to_agency_datapoints = {
                 supervision.funding.key: [disaggregation_datapoint]
             }
-
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.SUPERVISION,
                 metric_key_to_subsystems={
                     supervision.funding.key: [
@@ -844,6 +839,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                         schema.System.PROBATION,
                     ]
                 },
+                file_name="test_metrics_disaggregated_by_supervision.xlsx",
             )
 
             workbook_uploader = WorkbookUploader(
@@ -854,7 +850,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             metric_key_to_datapoint_jsons, _ = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.SUPERVISION.value],
             )
 
@@ -885,11 +881,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # 'month' when frequency is annual
             # 'system' when not a Supervision system
             # disaggregation with disaggregation_column_name is None
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 unexpected_month_sheet_name="staff",
                 unexpected_system_sheet_name="admissions",
                 unexpected_disaggregation_sheet_name="population_by_type",
+                file_name="test_unexpected_column_name.xlsx",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -899,7 +896,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             self.assertEqual(len(metric_key_to_errors), 3)
@@ -923,7 +920,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={
                     "funding_by_type",
@@ -937,6 +934,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                     "releases_by_type",
                     "grievances_upheld_by_type",
                 },
+                file_name="test_breakdown_sum_warning.xlsx",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -946,7 +944,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             )
             _, metric_key_to_errors = workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             self.assertEqual(len(metric_key_to_errors), 8)
@@ -985,10 +983,12 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            create_excel_file(
+            file_name = "test_update_report_status.xlsx"
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_skip={"funding", "funding_by_type"},
                 sheetnames_with_null_data={"use_of_force"},
+                file_name=file_name,
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -1003,7 +1003,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             self.assertEqual(reports, [])
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             # Make sure reports were created
@@ -1022,7 +1022,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # Case 1: Upload workbook with no changes to the datapoints
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             # Check that reports have not been set to draft (no changes were actually made)
@@ -1034,15 +1034,16 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 self.assertEqual(report.status.value, "PUBLISHED")
 
             # Case 2: Upload workbook with changes to the datapoints (admissions sheet)
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"admissions"},
                 sheet_names_to_skip={"funding", "funding_by_type"},
                 sheetnames_with_null_data={"use_of_force"},
+                file_name=file_name,
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1065,14 +1066,15 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # Case 3: Upload workbook with new/additional datapoints (funding and funding_by_type sheets)
             # In this case, the sheets did not exist at all previously
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"admissions"},
                 sheetnames_with_null_data={"use_of_force"},
+                file_name=file_name,
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1094,13 +1096,14 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
 
             # Case 4: Upload workbook with new/additional datapoints (use_of_force sheet)
             # In this case, the sheet previously existed but no data was provided
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"admissions"},
+                file_name=file_name,
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1126,10 +1129,11 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             prison_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_agency_id
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_skip={"funding"},
                 sheetnames_with_null_data={"use_of_force"},
+                file_name="test_update_report_status.xlsx",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -1141,7 +1145,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # Create 9 reports
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1165,20 +1169,21 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # Upload workbook with no changes to the datapoints
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             self.assertEqual(len(workbook_uploader.updated_report_ids), 0)
 
             # Upload workbook with changes to the datapoints that affect Report IDs 7 & 8
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 sheet_names_to_vary_values={"funding"},
                 sheetnames_with_null_data={"use_of_force"},
+                file_name="test_update_report_status.xlsx",
             )
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             reports = ReportInterface.get_reports_by_agency_id(
@@ -1213,9 +1218,10 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
                 session=session, agency_id=self.prison_super_agency_id
             )
-            create_excel_file(
+            file_path = create_excel_file(
                 system=schema.System.PRISONS,
                 child_agencies=child_agencies,
+                file_name="test_update_report_status.xlsx",
             )
             workbook_uploader = WorkbookUploader(
                 system=schema.System.PRISONS,
@@ -1230,7 +1236,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             # Create 18 reports, 9 reports for each child agency
             workbook_uploader.upload_workbook(
                 session=session,
-                xls=pd.ExcelFile(TEST_EXCEL_FILE),
+                xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
             super_agency_reports = ReportInterface.get_reports_by_agency_id(
