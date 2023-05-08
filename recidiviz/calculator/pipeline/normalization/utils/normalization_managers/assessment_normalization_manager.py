@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate imp
     StateSpecificDelegate,
 )
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state.entities import StateAssessment
 
@@ -71,12 +72,14 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
         self,
         assessments: List[StateAssessment],
         delegate: StateSpecificAssessmentNormalizationDelegate,
+        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
     ) -> None:
         self._assessments = deepcopy(assessments)
         self.delegate = delegate
         self._normalized_assessments_and_additional_attributes: Optional[
             Tuple[List[StateAssessment], AdditionalAttributesMap]
         ] = None
+        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
 
     @staticmethod
     def normalized_entity_classes() -> List[Type[Entity]]:
@@ -206,9 +209,8 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
 
         return DEFAULT_ASSESSMENT_SCORE_BUCKET
 
-    @classmethod
     def additional_attributes_map_for_normalized_assessments(
-        cls,
+        self,
         assessments: List[StateAssessment],
         assessment_id_to_score_bucket: Dict[int, Optional[str]],
     ) -> AdditionalAttributesMap:
@@ -231,15 +233,43 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                     f"at this point. Found {assessment}."
                 )
 
+            conducting_staff_id = None
+            if (
+                # TODO(#20552): remove can_hydrate_staff_ids check once StateStaff is fully ingested for all states
+                self._can_hydrate_staff_ids(StateCode(assessment.state_code))
+                and assessment.conducting_staff_external_id
+            ):
+                if not assessment.conducting_staff_external_id_type:
+                    # if conducting_staff_external_id is set, a conducting_staff_external_id_type must be set
+                    raise ValueError(
+                        f"Found no conducting_staff_external_id_type for conducting_staff_external_id "
+                        f"{assessment.conducting_staff_external_id} on person {assessment.person}"
+                    )
+                conducting_staff_id = self.staff_external_id_to_staff_id[
+                    (
+                        assessment.conducting_staff_external_id,
+                        assessment.conducting_staff_external_id_type,
+                    )
+                ]
+
             assessment_additional_attributes_map[StateAssessment.__name__][
                 assessment.assessment_id
             ] = {
                 "assessment_score_bucket": assessment_id_to_score_bucket[
                     assessment.assessment_id
                 ],
-                "conducting_staff_id": None,
+                "conducting_staff_id": conducting_staff_id,
             }
 
         return merge_additional_attributes_maps(
             [shared_additional_attributes_map, assessment_additional_attributes_map]
         )
+
+    @staticmethod
+    def _can_hydrate_staff_ids(state_code: StateCode) -> bool:
+        # TODO(#20552): delete this method once StateStaff is fully ingested for all states
+        return state_code not in {
+            StateCode.US_ME,
+            StateCode.US_MI,
+            StateCode.US_TN,
+        }

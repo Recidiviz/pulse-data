@@ -48,6 +48,7 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodTerminationReason,
 )
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     CoreEntityFieldIndex,
@@ -155,6 +156,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         incarceration_sentences: Optional[List[NormalizedStateIncarcerationSentence]],
         supervision_sentences: Optional[List[NormalizedStateSupervisionSentence]],
         incarceration_periods: Optional[List[StateIncarcerationPeriod]],
+        staff_external_id_to_staff_id: Dict[Tuple[str, str], int],
         earliest_death_date: Optional[datetime.date] = None,
     ):
         self._person_id = person_id
@@ -162,7 +164,7 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
         self._normalized_supervision_periods_and_additional_attributes: Optional[
             Tuple[List[StateSupervisionPeriod], AdditionalAttributesMap]
         ] = None
-
+        self.staff_external_id_to_staff_id = staff_external_id_to_staff_id
         self.delegate = delegate
 
         self._incarceration_sentences: Optional[
@@ -438,11 +440,11 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
             updated_periods.append(sp)
         return updated_periods
 
-    @classmethod
     def additional_attributes_map_for_normalized_sps(
-        cls,
+        self,
         supervision_periods: List[StateSupervisionPeriod],
     ) -> AdditionalAttributesMap:
+        """Get additional attributes for each StateSupervisionPeriod."""
         shared_additional_attributes_map = (
             get_shared_additional_attributes_map_for_entities(
                 entities=supervision_periods
@@ -459,10 +461,28 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                     "Expected non-null supervision_period_id values"
                     f"at this point. Found {supervision_period}."
                 )
+            supervising_officer_staff_id = None
+            if (
+                # TODO(#20552): remove can_hydrate_staff_ids check once StateStaff is fully ingested for all states
+                self._can_hydrate_staff_ids(StateCode(supervision_period.state_code))
+                and supervision_period.supervising_officer_staff_external_id
+            ):
+                if not supervision_period.supervising_officer_staff_external_id_type:
+                    raise ValueError(
+                        f"Found no supervising_officer_staff_external_id_type for supervising_officer_staff_external_id"
+                        f" {supervision_period.supervising_officer_staff_external_id} on person "
+                        f"{supervision_period.person}"
+                    )
+                supervising_officer_staff_id = self.staff_external_id_to_staff_id[
+                    (
+                        supervision_period.supervising_officer_staff_external_id,
+                        supervision_period.supervising_officer_staff_external_id_type,
+                    )
+                ]
             supervision_periods_additional_attributes_map[
                 StateSupervisionPeriod.__name__
             ][supervision_period.supervision_period_id] = {
-                "supervising_officer_staff_id": None,
+                "supervising_officer_staff_id": supervising_officer_staff_id,
             }
         return merge_additional_attributes_maps(
             [
@@ -470,3 +490,14 @@ class SupervisionPeriodNormalizationManager(EntityNormalizationManager):
                 supervision_periods_additional_attributes_map,
             ]
         )
+
+    @staticmethod
+    def _can_hydrate_staff_ids(state_code: StateCode) -> bool:
+        # TODO(#20552): delete this method once StateStaff is fully ingested for all states
+        return state_code not in {
+            StateCode.US_IX,
+            StateCode.US_ME,
+            StateCode.US_MI,
+            StateCode.US_TN,
+            StateCode.US_MO,
+        }

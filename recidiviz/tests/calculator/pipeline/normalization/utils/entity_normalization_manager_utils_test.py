@@ -40,6 +40,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.supervision_violation_responses_normalization_manager import (
     ViolationResponseNormalizationManager,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incarceration_period_normalization_delegate import (
     UsXxIncarcerationNormalizationDelegate,
 )
@@ -74,6 +77,27 @@ from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_con
     STATE_DELEGATES_FOR_TESTS,
 )
 from recidiviz.utils.types import assert_type
+
+STATE_PERSON_TO_STATE_STAFF_LIST = [
+    {
+        "person_id": 123,
+        "staff_id": 10000,
+        "staff_external_id": "EMP1",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+    {
+        "person_id": 123,
+        "staff_id": 20000,
+        "staff_external_id": "EMP2",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+    {
+        "person_id": 123,
+        "staff_id": 30000,
+        "staff_external_id": "EMP3",
+        "staff_external_id_type": "US_XX_STAFF_ID",
+    },
+]
 
 
 class TestIncarcerationNormalizationDelegate(UsXxIncarcerationNormalizationDelegate):
@@ -141,6 +165,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         self.assertEqual([incarceration_period], processed_ips)
@@ -169,6 +196,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         self.assertEqual([incarceration_period], processed_ips)
@@ -201,6 +231,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
+                staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                    STATE_PERSON_TO_STATE_STAFF_LIST
+                ),
             )
 
     def test_normalized_periods_for_calculations_no_violation_responses_state_requires(
@@ -230,6 +263,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
+                staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                    STATE_PERSON_TO_STATE_STAFF_LIST
+                ),
             )
 
     def test_normalized_periods_for_calculations_no_sentences_state_requires(
@@ -259,6 +295,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
                 field_index=self.field_index,
                 incarceration_sentences=None,
                 supervision_sentences=None,
+                staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                    STATE_PERSON_TO_STATE_STAFF_LIST
+                ),
             )
 
     def test_normalized_periods_for_calculations_no_ips(self) -> None:
@@ -282,6 +321,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         self.assertEqual([], processed_ips)
@@ -299,6 +341,9 @@ class TestNormalizedPeriodsForCalculations(unittest.TestCase):
             field_index=self.field_index,
             incarceration_sentences=None,
             supervision_sentences=None,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         self.assertEqual([], processed_ips)
