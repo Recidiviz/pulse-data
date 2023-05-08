@@ -907,6 +907,58 @@ class TestJusticeCountsControlPanelAPI(JusticeCountsDatabaseTestCase):
             disaggregation_display_name="Offense Type",
         )
 
+    def test_get_all_agencies_metadata(self) -> None:
+        user_A = self.test_schema_objects.test_user_A
+        agency_G = self.test_schema_objects.test_agency_G
+        report_published = self.test_schema_objects.test_report_monthly_prisons
+        report_published.status = schema.ReportStatus.PUBLISHED
+        report_2_published = self.test_schema_objects.test_report_monthly_prisons
+        report_2_published.status = schema.ReportStatus.PUBLISHED
+        report_2_published.date_range_start = datetime.date.fromisoformat("2022-07-01")
+        report_2_published.date_range_end = datetime.date.fromisoformat("2022-08-01")
+        self.session.add_all([report_published, report_2_published, user_A, agency_G])
+
+        reported_admissions_metric = self.test_schema_objects.reported_admissions_metric
+        arrests_metric = self.test_schema_objects.arrests_metric
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report_published,
+            report_metric=reported_admissions_metric,
+            user_account=user_A,
+        )
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report_published,
+            report_metric=arrests_metric,
+            user_account=user_A,
+        )
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report_2_published,
+            report_metric=reported_admissions_metric,
+            user_account=user_A,
+        )
+        ReportInterface.add_or_update_metric(
+            session=self.session,
+            report=report_2_published,
+            report_metric=arrests_metric,
+            user_account=user_A,
+        )
+        self.session.commit()
+
+        with self.app.test_request_context():
+            response = self.client.get("/api/agencies")
+
+        self.assertEqual(response.status_code, 200)
+        result = assert_type(response.json, dict)
+        agencies = result["agencies"]
+        agency_id = agencies[0]["id"]
+        agency_name = agencies[0]["name"]
+        number_of_published_metrics = agencies[0]["number_of_published_metrics"]
+        self.assertEqual(agency_id, agency_G.id)
+        self.assertEqual(agency_name, agency_G.name)
+        self.assertEqual(number_of_published_metrics, 2)
+
     def test_create_report_invalid_permissions(self) -> None:
         user = self.test_schema_objects.test_user_A
         agency = self.test_schema_objects.test_agency_A
