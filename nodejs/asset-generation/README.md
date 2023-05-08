@@ -18,3 +18,11 @@ See `package.json`, but some highlights:
 - `yarn dev`: run the local dev server
 - `yarn storybook`: inspect the available components in Storybook.
 - `yarn test`: run tests! Includes visual snapshot tests of the generated images.
+
+### Docker
+
+The service is built for production using the Dockerfile.asset-generation dockerfile in the pulse-data root.
+To build + run it locally, run (from pulse-data/):
+
+- `docker build . -f Dockerfile.asset-generation -t asset-gen`
+- `docker run -it -p 5174:5174 -v $(pwd)/nodejs/asset-generation:/app/ -v /app/node_modules --init asset-gen`

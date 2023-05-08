@@ -42,6 +42,12 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     }
     step {
       name     = "gcr.io/kaniko-project/executor:v1.8.1"
+      args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/asset-generation/asset-generation:latest", "--cache=true", "--dockerfile=Dockerfile.asset-generation"]
+      id       = "asset-generation"
+      wait_for = ["-"] # Run this step in parallel with the previous one
+    }
+    step {
+      name     = "gcr.io/kaniko-project/executor:v1.8.1"
       args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/case-triage-pathways/case-triage-pathways:latest", "--cache=true", "--dockerfile=Dockerfile.case-triage-pathways"]
       id       = "case-triage-pathways"
       wait_for = ["recidiviz-base"]
@@ -51,4 +57,6 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     }
     timeout = "3600s"
   }
+
+  depends_on = [google_artifact_registry_repository.asset_generation]
 }
