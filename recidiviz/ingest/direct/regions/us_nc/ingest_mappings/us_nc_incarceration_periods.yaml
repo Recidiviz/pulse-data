@@ -99,6 +99,7 @@ output:
                   - "NEW ADMISSION" # Will disappear as release reason once new PKs are deployed
                   - "TERMINATED PAROLE"
                   - "RECEIVED FROM"
+                  - "RE-ADMISSION"
                 StateIncarcerationPeriodReleaseReason.PARDONED:
                   - "PARDON"
                 StateIncarcerationPeriodReleaseReason.RELEASED_IN_ERROR:
