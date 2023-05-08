@@ -15,12 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a TN client has passed the drug screen check."""
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.criteria.general.at_least_6_months_since_most_recent_positive_drug_test import (
+    VIEW_BUILDER as at_least_6_months_since_most_recent_positive_drug_test_builder,
+)
+from recidiviz.task_eligibility.criteria.general.at_least_12_months_since_most_recent_positive_drug_test import (
+    VIEW_BUILDER as at_least_12_months_since_most_recent_positive_drug_test_builder,
+)
+from recidiviz.task_eligibility.criteria.general.has_at_least_1_negative_drug_test_past_year import (
+    VIEW_BUILDER as has_at_least_1_negative_drug_test_past_year_builder,
+)
+from recidiviz.task_eligibility.criteria.general.has_at_least_2_negative_drug_tests_past_year import (
+    VIEW_BUILDER as has_at_least_2_negative_drug_tests_past_year_builder,
+)
+from recidiviz.task_eligibility.criteria.general.latest_drug_test_is_negative import (
+    VIEW_BUILDER as latest_drug_test_is_negative_builder,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_specific_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -38,18 +54,196 @@ _DESCRIPTION = """Describes the spans of time when a TN client has the following
     - Latest test is negative
 """
 
-_REASON_QUERY = """TO_JSON(STRUCT(['9999-99-99','9999-99-99'] AS latest_drug_screen_results,
-                                  ['9999-99-99','9999-99-99'] AS latest_drug_screen_dates,
-                                  '9999-99-99' AS most_recent_positive_test_date,
-                                  '9999-99-99' AS most_recent_alcohol_drug_need_level
-                          ))"""
+_QUERY_TEMPLATE = f"""
+    WITH combine_views AS (
+        SELECT 
+            state_code,
+            person_id,
+            assessment_date AS start_date,
+            LEAD(assessment_date) OVER(PARTITION BY person_id ORDER BY assessment_date ASC) AS end_date,
+            COALESCE(ALC_DRUG_NEED_LEVEL, 'MISSING') IN ('LOW') AS meets_criteria_low,
+            COALESCE(ALC_DRUG_NEED_LEVEL, 'MISSING') IN ('MOD','HIGH') AS meets_criteria_high,
+            CAST(NULL AS BOOL) AS meets_criteria_low_1_negative_screen,
+            CAST(NULL AS BOOL) AS meets_criteria_low_6_months_since_positive,
+            CAST(NULL AS BOOL) AS meets_criteria_high_2_negative_screens,
+            CAST(NULL AS BOOL) AS meets_criteria_high_12_months_since_positive,
+            CAST(NULL AS BOOL) AS meets_criteria_latest_screen_negative,           
+            TO_JSON(STRUCT('LATEST_ALCOHOL_DRUG_NEED_LEVEL' AS criteria_name,
+                    COALESCE(alc_drug_need_level, 'MISSING') AS reason)) 
+                    AS reason,
+        FROM
+            (
+            SELECT *,
+                REPLACE(JSON_EXTRACT(assessment_metadata, "$.ALCOHOL_DRUG_NEED_LEVEL"), '"','') AS alc_drug_need_level,
+            FROM
+                `{{project_id}}.{{normalized_state_dataset}}.state_assessment`
+            WHERE
+                state_code = 'US_TN'
+            QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, assessment_date
+                ORDER BY CASE WHEN alc_drug_need_level = 'HIGH' THEN 0
+                    WHEN alc_drug_need_level = 'MOD' THEN 1
+                    WHEN alc_drug_need_level = 'LOW' THEN 2
+                    ELSE 3 END) = 1
+            )
+        
+        UNION ALL
+        
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS meets_criteria_low,
+            NULL AS meets_criteria_high,
+            meets_criteria AS meets_criteria_low_1_negative_screen,
+            NULL AS meets_criteria_low_6_months_since_positive,
+            NULL AS meets_criteria_high_2_negative_screens,
+            NULL AS meets_criteria_high_12_months_since_positive,
+            NULL AS meets_criteria_latest_screen_negative,
+            TO_JSON(STRUCT('{has_at_least_1_negative_drug_test_past_year_builder.criteria_name}' AS criteria_name, reason AS reason))
+            reason,
+        FROM
+            `{{project_id}}.{{criteria_dataset}}.{has_at_least_1_negative_drug_test_past_year_builder.view_id}_materialized`
+        WHERE
+            state_code = "US_TN"
+        
+        UNION ALL
+        
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS meets_criteria_low,
+            NULL AS meets_criteria_high,
+            NULL AS meets_criteria_low_1_negative_screen,
+            meets_criteria AS meets_criteria_low_6_months_since_positive,
+            NULL AS meets_criteria_high_2_negative_screens,
+            NULL AS meets_criteria_high_12_months_since_positive,
+            NULL AS meets_criteria_latest_screen_negative,
+            TO_JSON(STRUCT('{at_least_6_months_since_most_recent_positive_drug_test_builder.criteria_name}' AS criteria_name, reason AS reason))
+            reason,
+        FROM
+            `{{project_id}}.{{criteria_dataset}}.{at_least_6_months_since_most_recent_positive_drug_test_builder.view_id}_materialized`
+        WHERE
+            state_code = "US_TN"
+            
+        UNION ALL
+        
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS meets_criteria_low,
+            NULL AS meets_criteria_high,
+            NULL AS meets_criteria_low_1_negative_screen,
+            NULL AS meets_criteria_low_6_months_since_positive,
+            NULL AS meets_criteria_high_2_negative_screens,
+            NULL AS meets_criteria_high_12_months_since_positive,
+            meets_criteria AS meets_criteria_latest_negative,
+            TO_JSON(STRUCT('{latest_drug_test_is_negative_builder.criteria_name}' AS criteria_name, reason AS reason))
+            reason,
+        FROM
+            `{{project_id}}.{{criteria_dataset}}.{latest_drug_test_is_negative_builder.view_id}_materialized`
+        WHERE
+            state_code = "US_TN"
+            
+        UNION ALL
+        
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS meets_criteria_low,
+            NULL AS meets_criteria_high,
+            NULL AS meets_criteria_low_1_negative_screen,
+            NULL AS meets_criteria_low_6_months_since_positive,
+            meets_criteria AS meets_criteria_high_2_negative_screens,
+            NULL AS meets_criteria_high_12_months_since_positive,
+            NULL AS meets_criteria_latest_screen_negative,
+            TO_JSON(STRUCT('{has_at_least_2_negative_drug_tests_past_year_builder.criteria_name}' AS criteria_name, reason AS reason))
+            reason,
+        FROM
+            `{{project_id}}.{{criteria_dataset}}.{has_at_least_2_negative_drug_tests_past_year_builder.view_id}_materialized`
+        WHERE
+            state_code = "US_TN"
+        
+        UNION ALL
+        
+        SELECT 
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            NULL AS meets_criteria_low,
+            NULL AS meets_criteria_high,
+            NULL AS meets_criteria_low_1_negative_screen,
+            NULL AS meets_criteria_low_6_months_since_positive,
+            NULL AS meets_criteria_high_2_negative_screens,
+            meets_criteria AS meets_criteria_high_12_months_since_positive,
+            NULL AS meets_criteria_latest_screen_negative,
+            TO_JSON(STRUCT('{at_least_12_months_since_most_recent_positive_drug_test_builder.criteria_name}' AS criteria_name, reason AS reason))
+            reason,
+        FROM
+            `{{project_id}}.{{criteria_dataset}}.{at_least_12_months_since_most_recent_positive_drug_test_builder.view_id}_materialized`
+        WHERE
+            state_code = "US_TN"
+    ),
+    {create_sub_sessions_with_attributes('combine_views')},
+    grouped AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            -- If someone is missing assessment info, we assume they are not mod/high risk for alcohol/drug
+            COALESCE(LOGICAL_OR(meets_criteria_low),TRUE) AS meets_criteria_low,
+            COALESCE(LOGICAL_OR(meets_criteria_high),FALSE) AS meets_criteria_high,
+            -- Setting each of these to the `meets_criteria_default` since a person may not have a span at all and would
+            -- get null for a criteria if that were true
+            COALESCE(LOGICAL_OR(meets_criteria_low_1_negative_screen),FALSE) AS meets_criteria_low_1_negative_screen,
+            COALESCE(LOGICAL_OR(meets_criteria_low_6_months_since_positive),TRUE) AS meets_criteria_low_6_months_since_positive,
+            COALESCE(LOGICAL_OR(meets_criteria_high_2_negative_screens),FALSE) AS meets_criteria_high_2_negative_screens,
+            COALESCE(LOGICAL_OR(meets_criteria_high_12_months_since_positive),TRUE) AS meets_criteria_high_12_months_since_positive,
+            LOGICAL_OR(meets_criteria_latest_screen_negative) AS meets_criteria_latest_screen_negative,            
+            TO_JSON(ARRAY_AGG(
+                reason
+            )) AS reason,
+        FROM sub_sessions_with_attributes
+        GROUP BY
+            1,2,3,4
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        CASE
+            WHEN meets_criteria_low
+                AND meets_criteria_low_1_negative_screen
+                AND meets_criteria_low_6_months_since_positive
+                AND meets_criteria_latest_screen_negative THEN TRUE
+            WHEN meets_criteria_high
+                AND meets_criteria_high_2_negative_screens
+                AND meets_criteria_high_12_months_since_positive
+                AND meets_criteria_latest_screen_negative THEN TRUE
+            ELSE FALSE
+            END AS meets_criteria,
+        reason
+    FROM grouped
+"""
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
-    state_specific_placeholder_criteria_view_builder(
-        criteria_name=_CRITERIA_NAME,
-        description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         state_code=StateCode.US_TN,
+        criteria_name=_CRITERIA_NAME,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        description=_DESCRIPTION,
+        criteria_dataset=has_at_least_1_negative_drug_test_past_year_builder.dataset_id,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=False,
     )
 )
 

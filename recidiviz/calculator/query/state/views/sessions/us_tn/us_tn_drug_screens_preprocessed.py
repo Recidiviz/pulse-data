@@ -327,40 +327,33 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
         "contacts" AS source_table
         FROM contacts_no_drugtest
     )
-    SELECT 
-        person_id,
-        state_code,
-        
-        -- Prioritize the Contacts-based test date over the DrugTestDrugClass-based date
-        IFNULL(contacts_date, drugtest_date) AS drug_screen_date,
-        sample_type,
-        (
-            (
-                IFNULL(contacts_positive, FALSE) 
-                OR 
-                IFNULL(drugtest_positive, FALSE)
-            )
-            AND
-            (
-                -- Where the Contact Note Type is either DRUX ("DRUG SCREEN NEGATIVE DUE TO VALID PRESCRIPTION"),
-                -- or DRUM ("DRUG SCREEN UNAVAILABLE DUE TO MEDICAL CONDITION"), 
-                -- positive lab results do not indicate a "positive" screen in the sense of a rules violation.
-                -- If this screen comes from DrugTestDrugClass alone, then we don't have information on these exceptions
-                -- and assume a positive lab test indicates a positive result.
-                (source_table = "drugtest") 
-                OR 
-                (result_raw_text_primary NOT IN ("DRUX", "DRUM"))
-            )
-        ) AS is_positive_result,
-        result_raw_text_primary,
-        result_raw_text,
-        IF (
+    /*
+        Logic for the final is_positive_result flag:
+        1) If they tested positive in either data source, then TRUE, except if it was a DRUX/DRUM contact note
+        2) If they didnt test positive in either data source AND they tested negative (DRUN, DRUM, DRUX) then FALSE
+        3) Else, null. Which means if they didnt test positive but also didnt have the relevant contact note, 
+        then we aren't sure/aren't counting it as a negative. This is a more conservative definition of a negative test.
+        This is true for approx 2% of tests that have is_positive_result_temp = FALSE but no relevant negative contact note
+    */
+    SELECT * EXCEPT(is_positive_result_temp),
+        CASE WHEN is_positive_result_temp THEN TRUE
+             WHEN result_raw_text_primary IN ('DRUN','DRUM','DRUX') 
+                AND NOT is_positive_result_temp THEN FALSE
+             END AS is_positive_result,
+    FROM (
+        SELECT 
+            person_id,
+            state_code,
+            
+            -- Prioritize the Contacts-based test date over the DrugTestDrugClass-based date
+            IFNULL(contacts_date, drugtest_date) AS drug_screen_date,
+            sample_type,
             (
                 (
-                    IFNULL(contacts_meth_positive, FALSE) 
+                    IFNULL(contacts_positive, FALSE) 
                     OR 
-                    IFNULL(drugtest_meth_positive, FALSE)
-                ) 
+                    IFNULL(drugtest_positive, FALSE)
+                )
                 AND
                 (
                     -- Where the Contact Note Type is either DRUX ("DRUG SCREEN NEGATIVE DUE TO VALID PRESCRIPTION"),
@@ -372,22 +365,44 @@ US_TN_DRUG_SCREENS_PREPROCESSED_QUERY_TEMPLATE = """
                     OR 
                     (result_raw_text_primary NOT IN ("DRUX", "DRUM"))
                 )
-            ), 
-            "METH", 
-            NULL
-        ) AS substance_detected,
-        is_inferred,
-        contacts_date,
-        drugtest_date,
-        contacts_meth_positive,
-        drugtest_meth_positive,
-        contacts_positive,
-        drugtest_positive,
-        contacts_contactnote,
-        lag_days,
-        source_table,
-        CAST(NULL AS STRING) AS med_invalidate_flg
-    FROM combined
+            ) AS is_positive_result_temp,
+            result_raw_text_primary,
+            result_raw_text,
+            IF (
+                (
+                    (
+                        IFNULL(contacts_meth_positive, FALSE) 
+                        OR 
+                        IFNULL(drugtest_meth_positive, FALSE)
+                    ) 
+                    AND
+                    (
+                        -- Where the Contact Note Type is either DRUX ("DRUG SCREEN NEGATIVE DUE TO VALID PRESCRIPTION"),
+                        -- or DRUM ("DRUG SCREEN UNAVAILABLE DUE TO MEDICAL CONDITION"), 
+                        -- positive lab results do not indicate a "positive" screen in the sense of a rules violation.
+                        -- If this screen comes from DrugTestDrugClass alone, then we don't have information on these exceptions
+                        -- and assume a positive lab test indicates a positive result.
+                        (source_table = "drugtest") 
+                        OR 
+                        (result_raw_text_primary NOT IN ("DRUX", "DRUM"))
+                    )
+                ), 
+                "METH", 
+                NULL
+            ) AS substance_detected,
+            is_inferred,
+            contacts_date,
+            drugtest_date,
+            contacts_meth_positive,
+            drugtest_meth_positive,
+            contacts_positive,
+            drugtest_positive,
+            contacts_contactnote,
+            lag_days,
+            source_table,
+            CAST(NULL AS STRING) AS med_invalidate_flg
+        FROM combined
+    )
 """
 
 US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(

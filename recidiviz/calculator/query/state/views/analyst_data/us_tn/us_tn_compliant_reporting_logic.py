@@ -278,7 +278,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
             drug_screen_date AS contact_date,
             result_raw_text_primary AS ContactNoteType,
             -- Count only negative screens from Contacts, not DrugTestDrugClass
-            CASE WHEN result_raw_text_primary IN ('DRUN','DRUM','DRUX') AND NOT is_positive_result THEN 1 ELSE 0 END AS negative_drug_test,
+            CASE WHEN NOT is_positive_result THEN 1 ELSE 0 END AS negative_drug_test,
             is_positive_result,
             -- Count positive screens from both Contacts and DrugTestDrugClass
             CASE WHEN is_positive_result = true THEN drug_screen_date END AS positive_drug_test_date,
