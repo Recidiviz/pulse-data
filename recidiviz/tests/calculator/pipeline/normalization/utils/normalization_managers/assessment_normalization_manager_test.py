@@ -28,6 +28,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.as
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     AdditionalAttributesMap,
 )
+from recidiviz.calculator.pipeline.utils.execution_utils import (
+    build_staff_external_id_to_staff_id_map,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_assessment_normalization_delegate import (
     UsXxAssessmentNormalizationDelegate,
 )
@@ -36,6 +39,9 @@ from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentType,
 )
 from recidiviz.persistence.entity.state.entities import StateAssessment
+from recidiviz.tests.calculator.pipeline.normalization.utils.entity_normalization_manager_utils_test import (
+    STATE_PERSON_TO_STATE_STAFF_LIST,
+)
 
 
 class TestPrepareAssessmentsForCalculations(unittest.TestCase):
@@ -50,7 +56,11 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
         self, assessments: List[StateAssessment]
     ) -> Tuple[List[StateAssessment], AdditionalAttributesMap]:
         entity_normalization_manager = AssessmentNormalizationManager(
-            assessments=assessments, delegate=self.delegate
+            assessments=assessments,
+            delegate=self.delegate,
+            staff_external_id_to_staff_id=build_staff_external_id_to_staff_id_map(
+                STATE_PERSON_TO_STATE_STAFF_LIST
+            ),
         )
 
         (
@@ -110,12 +120,16 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
             assessment_type=StateAssessmentType.LSIR,
             assessment_score=10,
             assessment_id=1,
+            conducting_staff_external_id="EMP3",
+            conducting_staff_external_id_type="US_XX_STAFF_ID",
         )
         assessment_2 = StateAssessment.new_with_defaults(
             state_code=self.state_code,
             assessment_date=datetime.date(2000, 1, 1),
             assessment_type=StateAssessmentType.LSIR,
             assessment_id=2,
+            conducting_staff_external_id="EMP3",
+            conducting_staff_external_id_type="US_XX_STAFF_ID",
         )
 
         assessments = [assessment_1, assessment_2]
@@ -128,12 +142,12 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
             StateAssessment.__name__: {
                 1: {
                     "assessment_score_bucket": "0-23",
-                    "conducting_staff_id": None,
+                    "conducting_staff_id": 30000,
                     "sequence_num": 0,
                 },
                 2: {
                     "assessment_score_bucket": "NOT_ASSESSED",
-                    "conducting_staff_id": None,
+                    "conducting_staff_id": 30000,
                     "sequence_num": 1,
                 },
             }
@@ -217,6 +231,8 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
                     assessment_type=assessment_type,
                     assessment_level=assessment_level,
                     assessment_id=1,
+                    conducting_staff_external_id="EMP3",
+                    conducting_staff_external_id_type="US_XX_STAFF_ID",
                 )
             ]
         )
@@ -225,7 +241,7 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
             StateAssessment.__name__: {
                 1: {
                     "assessment_score_bucket": bucket,
-                    "conducting_staff_id": None,
+                    "conducting_staff_id": 30000,
                     "sequence_num": 0,
                 }
             }
