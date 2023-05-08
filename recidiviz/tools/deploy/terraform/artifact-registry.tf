@@ -33,3 +33,15 @@ resource "google_artifact_registry_repository" "case_triage_pathways" {
     google_project_service.artifact_registry_api
   ]
 }
+
+resource "google_artifact_registry_repository" "asset_generation" {
+  provider      = google-beta
+  location      = "us"
+  repository_id = "asset-generation"
+  description   = "Repository for docker images for the Asset Generation service"
+  format        = "DOCKER"
+
+  depends_on = [
+    google_project_service.artifact_registry_api
+  ]
+}

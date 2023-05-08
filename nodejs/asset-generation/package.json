@@ -6,6 +6,7 @@
   "author": "Recidiviz <team@recidiviz.org>",
   "license": "GNU General Public License v3",
   "scripts": {
+    "start": "vite-node -m production src/server.tsx",
     "dev": "vite-node -w src/server.tsx",
     "storybook": "storybook dev -p 6006",
     "lint": "tsc && eslint src/",
@@ -14,6 +15,7 @@
   "dependencies": {
     "@recidiviz/design-system": "^5.0.0",
     "@visx/text": "^3.0.0",
+    "@vitejs/plugin-react-swc": "^3.3.0",
     "d3-array": "^3.2.3",
     "d3-format": "^3.1.0",
     "d3-scale": "^4.0.2",
@@ -25,6 +27,8 @@
     "react-dom": "^18.2.0",
     "sharp": "^0.32.0",
     "styled-components": "^6.0.0-beta.15",
+    "vite": "^4.3.5",
+    "vite-node": "^0.31.0",
     "zod": "^3.21.4",
     "zod-validation-error": "^1.3.0"
   },
@@ -45,15 +49,12 @@
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "@types/supertest": "^2.0.12",
-    "@vitejs/plugin-react-swc": "^3.0.0",
     "jest-image-snapshot": "^6.1.0",
     "prop-types": "^15.8.1",
     "storybook": "^7.0.6",
     "supertest": "^6.3.3",
     "timekeeper": "^2.2.0",
     "typescript": "^4.9.3",
-    "vite": "^4.3.3",
-    "vite-node": "^0.30.1",
     "vitest": "^0.30.1"
   }
 }
