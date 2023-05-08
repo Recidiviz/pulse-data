@@ -637,7 +637,7 @@ class DatapointInterface:
                         )
 
         for aggregated_dimension in agency_metric.aggregated_dimensions:
-            for (dimension, contexts_lst) in (
+            for dimension, contexts_lst in (
                 aggregated_dimension.dimension_to_contexts or {}
             ).items():
                 for context in contexts_lst:

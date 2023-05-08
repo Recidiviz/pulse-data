@@ -1384,7 +1384,6 @@ def get_api_blueprint(
                 report_ids=list(report_id_to_status.keys()),
                 include_contexts=False,
             )
-
             # Serialize datapoints into json format.
             # group aggregate datapoints by metric.
             metric_key_to_aggregate_datapoints_json: DefaultDict[
@@ -1435,6 +1434,65 @@ def get_api_blueprint(
                 {
                     "agency": agency.to_public_json(),
                     "metrics": metrics_json,
+                }
+            )
+
+        except Exception as e:
+            raise _get_error(error=e) from e
+
+    @api_blueprint.route("/agencies", methods=["GET"])
+    def get_agencies_metadata() -> Response:
+        """Gets a list of all agencies and their metadata (agency ID, agency name and number of metrics published)
+        to display in the Agency Dashboard's home page.
+        """
+        try:
+            all_agencies = AgencyInterface.get_agencies(session=current_session)
+            all_agencies_metadata = [
+                {"name": agency.name, "id": agency.id} for agency in all_agencies
+            ]
+            all_agencies_ids = [agency["id"] for agency in all_agencies_metadata]
+
+            reports = ReportInterface.get_reports_by_agency_ids(
+                session=current_session,
+                agency_ids=all_agencies_ids,
+                include_datapoints=False,
+                published_only=True,
+            )
+            report_ids_to_agency_id = {
+                report.id: report.source_id for report in reports
+            }
+
+            datapoints = DatapointInterface.get_datapoints_by_report_ids(
+                session=current_session,
+                report_ids=list(report_ids_to_agency_id.keys()),
+                include_contexts=False,
+            )
+            agency_id_to_datapoints: dict[str, set[str]] = {
+                id: set() for id in all_agencies_ids
+            }
+
+            for datapoint in datapoints:
+                if (
+                    datapoint.dimension_identifier_to_member is None
+                    and datapoint.value is not None
+                ):
+                    current_dp_agency_id = report_ids_to_agency_id[datapoint.report_id]
+                    agency_id_to_datapoints[current_dp_agency_id].add(
+                        datapoint.metric_definition_key
+                    )
+
+            agency_id_to_published_metrics = {
+                key: len(val) for (key, val) in agency_id_to_datapoints.items()
+            }
+
+            for agency in all_agencies_metadata:
+                agency["number_of_published_metrics"] = agency_id_to_published_metrics[
+                    agency["id"]
+                ]
+
+            return jsonify(
+                {
+                    "agencies": all_agencies_metadata,
                 }
             )
 
