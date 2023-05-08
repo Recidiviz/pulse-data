@@ -509,7 +509,7 @@ class BaseDirectIngestController(DirectIngestInstanceStatusChangeListener):
         )
 
         raw_files_pending_import = (
-            self.raw_file_metadata_manager.get_unprocessed_raw_files()
+            self.raw_file_metadata_manager.get_unprocessed_raw_files_eligible_for_import()
         )
 
         did_schedule = False
