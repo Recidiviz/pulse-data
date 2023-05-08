@@ -191,7 +191,6 @@ ViolationHistory = NamedTuple(
     "ViolationHistory",
     [
         ("most_severe_violation_type", Optional[StateSupervisionViolationType]),
-        ("most_severe_violation_type_raw_text", Optional[str]),
         ("most_severe_violation_type_subtype", Optional[str]),
         (
             "most_severe_response_decision",
@@ -223,7 +222,6 @@ def get_violation_and_response_history(
     if not violation_responses_for_history and incarceration_period is None:
         return ViolationHistory(
             most_severe_violation_type=None,
-            most_severe_violation_type_raw_text=None,
             most_severe_violation_type_subtype=None,
             most_severe_response_decision=None,
             response_count=0,
@@ -268,7 +266,7 @@ def get_violation_and_response_history(
     # Find the most severe violation type info of all of the entries in the window
     (
         most_severe_violation_type,
-        most_severe_violation_type_raw_text,
+        _,
         most_severe_violation_type_subtype,
     ) = _identify_most_severe_violation_type_and_subtype(
         violations_in_window, violation_delegate
@@ -295,7 +293,6 @@ def get_violation_and_response_history(
 
     violation_history_result = ViolationHistory(
         most_severe_violation_type,
-        most_severe_violation_type_raw_text,
         most_severe_violation_type_subtype,
         most_severe_response_decision,
         response_count,
