@@ -77,9 +77,6 @@ class ViolationHistoryMixin(BuildableAttr):
         default=None
     )
 
-    # The raw text that determines the violation type and sometimes subtype
-    most_severe_violation_type_raw_text: Optional[str] = attr.ib(default=None)
-
     # A string subtype that provides further insight into the
     # most_severe_violation_type above.
     most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)

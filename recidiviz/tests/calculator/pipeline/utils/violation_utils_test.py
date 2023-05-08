@@ -70,7 +70,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 
         (
             most_severe_violation_type,
-            most_severe_violation_type_raw_text,
+            _,
             most_severe_violation_type_subtype,
         ) = violation_utils._identify_most_severe_violation_type_and_subtype(
             [violation], UsXxViolationDelegate()
@@ -79,7 +79,6 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(
             most_severe_violation_type, StateSupervisionViolationType.FELONY
         )
-        self.assertIsNone(most_severe_violation_type_raw_text)
         self.assertEqual(
             most_severe_violation_type_subtype,
             StateSupervisionViolationType.FELONY.value,
@@ -97,14 +96,13 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             )
             (
                 most_severe_violation_type,
-                most_severe_violation_type_raw_text,
+                _,
                 most_severe_violation_type_subtype,
             ) = violation_utils._identify_most_severe_violation_type_and_subtype(
                 [violation], UsXxViolationDelegate()
             )
 
             self.assertEqual(most_severe_violation_type, violation_type)
-            self.assertIsNone(most_severe_violation_type_raw_text)
             self.assertEqual(violation_type.value, most_severe_violation_type_subtype)
 
 
@@ -398,7 +396,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
-            most_severe_violation_type_raw_text=None,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -470,7 +467,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
-            most_severe_violation_type_raw_text=None,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -528,7 +524,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-            most_severe_violation_type_raw_text="DRG",
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -583,7 +578,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-            most_severe_violation_type_raw_text="H08",
             most_severe_violation_type_subtype="HIGH_TECH",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -633,7 +627,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-            most_severe_violation_type_raw_text="L08",
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -685,7 +678,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-            most_severe_violation_type_raw_text="M16",
             most_severe_violation_type_subtype="ELEC_MONITORING",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -788,7 +780,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
-            most_severe_violation_type_raw_text="M14",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=3,
             violation_history_description="1subs;2med_tech",
@@ -834,7 +825,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=None,
             most_severe_violation_type_subtype=None,
-            most_severe_violation_type_raw_text=None,
             most_severe_response_decision=None,
             response_count=0,
             violation_history_description=None,
@@ -885,7 +875,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-            most_severe_violation_type_raw_text=None,
             most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
@@ -945,7 +934,6 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-            most_severe_violation_type_raw_text=None,
             most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,

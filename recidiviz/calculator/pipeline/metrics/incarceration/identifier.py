@@ -471,7 +471,6 @@ class IncarcerationIdentifier(BaseIdentifier[List[IncarcerationEvent]]):
             assessment_type=assessment_type,
             assessment_score_bucket=assessment_score_bucket,
             most_severe_violation_type=violation_history.most_severe_violation_type,
-            most_severe_violation_type_raw_text=violation_history.most_severe_violation_type_raw_text,
             most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
             most_severe_response_decision=violation_history.most_severe_response_decision,
             most_recent_response_decision=most_recent_response_decision,
