@@ -634,3 +634,19 @@ FROM UNNEST([
             query,
             expected_result=[{"a": datetime.date(2022, 1, 1)}],
         )
+
+    def test_cast_datetime_as_string(self) -> None:
+        """Tests resolution of https://github.com/goccy/bigquery-emulator/issues/175."""
+        # TODO(goccy/bigquery-emulator#175): Change expected result to "1987-01-25 00:00:00" when fixed.
+        self.run_query_test(
+            """SELECT CAST(DATETIME(1987, 1, 25, 0, 0, 0) AS STRING)""",
+            expected_result=[{"$col1": "1987-01-25T00:00:00"}],
+        )
+
+    def test_cast_datetime_as_string_with_format(self) -> None:
+        """Tests resolution of https://github.com/goccy/bigquery-emulator/issues/175."""
+        # TODO(goccy/bigquery-emulator#175): Change expected result to "SUNDAY, JANUARY 25 1987 AT 12:00:00" when fixed.
+        self.run_query_test(
+            """SELECT CAST(DATETIME(1987, 1, 25, 0, 0, 0) AS STRING FORMAT 'DAY"," MONTH DD YYYY "AT" HH":"MI":"SS')""",
+            expected_result=[{"$col1": "1987-01-25T00:00:00"}],
+        )
