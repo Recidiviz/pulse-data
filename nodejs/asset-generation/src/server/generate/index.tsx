@@ -15,8 +15,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { json, Router } from "express";
+import { json, Request, Response, Router } from "express";
 
+import { authMiddleware } from "./authMiddleware";
 import { outliersMetricChartRoute } from "./outliersMetricChart/route";
 import { outliersMetricChartInputSchema } from "./outliersMetricChart/types";
 import { schemaMiddleware } from "./schemaMiddleware";
@@ -29,4 +30,12 @@ routes.post(
   "/outliers-metric-chart",
   schemaMiddleware(outliersMetricChartInputSchema),
   outliersMetricChartRoute
+);
+
+routes.post(
+  "/test-auth",
+  authMiddleware,
+  async (_req: Request, resp: Response) => {
+    resp.sendStatus(200);
+  }
 );
