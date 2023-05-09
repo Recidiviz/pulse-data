@@ -62,6 +62,7 @@ SUPERVISION_STATE_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "metric_value",
         "period",
         "end_date",
+        "avg_daily_population",
     ],
 )
 
