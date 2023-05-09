@@ -17,6 +17,7 @@
 """Reference code for more detailed offense descriptions for charges."""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -46,7 +47,7 @@ STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_QUERY_TEMPLATE = f"""
 WITH offense_desc_labels_dedup AS (
     SELECT * EXCEPT(ncic_code), 
         LPAD(CAST(ncic_code AS STRING), 4,'0') AS ncic_code
-    FROM `{{project_id}}.{{static_reference_dataset}}.offense_description_to_labels_materialized`
+    FROM `{{project_id}}.{{external_reference_dataset}}.offense_description_to_labels`
     QUALIFY ROW_NUMBER() OVER(PARTITION BY offense_description ORDER BY probability DESC) = 1
 )
 SELECT
@@ -80,7 +81,7 @@ STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_BUILDER = SimpleBigQueryViewBuilder
     view_id=STATE_CHARGE_OFFENSE_DESCRIPTION_TO_LABELS_VIEW_NAME,
     view_query_template=STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_QUERY_TEMPLATE,
     description=STATE_CHARGE_OFFENSE_DESCRIPTION_LABELS_VIEW_DESCRIPTION,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    external_reference_dataset=EXTERNAL_REFERENCE_DATASET,
     base_dataset=dataset_config.STATE_BASE_DATASET,
 )
 
