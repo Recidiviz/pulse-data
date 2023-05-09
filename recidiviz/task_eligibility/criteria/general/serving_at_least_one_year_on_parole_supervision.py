@@ -19,7 +19,7 @@ a parole term of one year or more. This query is only relevant for states who ha
 parole sentencing data stored separately in supervision sentences.
 """
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -42,7 +42,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date,
         CAST(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY) AS INT64) >= 365 AS meets_criteria,
         TO_JSON(STRUCT(MAX(sent.projected_completion_date_max) AS projected_completion_date_max)) AS reason,
-    {join_sentence_spans_to_compartment_1_sessions()}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE sent.sentence_sub_type = "PAROLE" 
     GROUP BY 1, 2, 3, 4
 """

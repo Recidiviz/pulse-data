@@ -25,7 +25,8 @@ from recidiviz.task_eligibility.completion_events.general import release_to_paro
 from recidiviz.task_eligibility.criteria.general import (
     age_64_years_or_older,
     incarcerated_at_least_20_years,
-    incarceration_past_parole_eligibility_date,
+    not_serving_for_sexual_offense,
+    not_serving_for_violent_offense,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -43,11 +44,10 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     description=_DESCRIPTION,
     candidate_population_view_builder=incarceration_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
-        incarceration_past_parole_eligibility_date.VIEW_BUILDER,
         age_64_years_or_older.VIEW_BUILDER,
         incarcerated_at_least_20_years.VIEW_BUILDER,
-        # TODO(#20180) add once this criteria is created
-        # not_serving_violent_or_sexual_offense.VIEW_BUILDER,
+        not_serving_for_sexual_offense.VIEW_BUILDER,
+        not_serving_for_violent_offense.VIEW_BUILDER,
     ],
     completion_event_builder=release_to_parole.VIEW_BUILDER,
 )

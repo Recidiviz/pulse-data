@@ -19,7 +19,7 @@ as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -46,7 +46,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date_exclusive,
         span.end_date_exclusive AS end_date,
         MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
-    {join_sentence_spans_to_compartment_1_sessions()}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)

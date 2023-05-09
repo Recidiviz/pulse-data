@@ -19,7 +19,7 @@ for supervision level downgrade
 """
 
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -50,7 +50,7 @@ _QUERY_TEMPLATE = f"""
                         ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY status) AS sentence_status,
                          LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
                          LOGICAL_OR(sent.is_sex_offense) AS is_sex_offense )) AS reason,
-    {join_sentence_spans_to_compartment_1_sessions()}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE span.state_code = "US_MI"
     AND (sent.is_sex_offense
         --failure to register for sex offense
