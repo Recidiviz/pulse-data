@@ -181,3 +181,5 @@ USING
         span_end_date_col="end_date",
     ),
 ]
+
+PERSON_SPANS_BY_TYPE = {s.span_type: s for s in PERSON_SPANS}

@@ -645,3 +645,5 @@ WHERE
         event_date_col="response_date",
     ),
 ]
+
+PERSON_EVENTS_BY_TYPE = {e.event_type: e for e in PERSON_EVENTS}
