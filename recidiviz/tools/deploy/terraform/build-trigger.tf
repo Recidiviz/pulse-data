@@ -42,7 +42,7 @@ resource "google_cloudbuild_trigger" "staging_release_build_trigger" {
     }
     step {
       name     = "gcr.io/kaniko-project/executor:v1.8.1"
-      args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/asset-generation/asset-generation:latest", "--cache=true", "--dockerfile=Dockerfile.asset-generation"]
+      args     = ["--destination=us-docker.pkg.dev/$PROJECT_ID/asset-generation/build:$COMMIT_SHA", "--cache=true", "--dockerfile=Dockerfile.asset-generation"]
       id       = "asset-generation"
       wait_for = ["-"] # Run this step in parallel with the previous one
     }
