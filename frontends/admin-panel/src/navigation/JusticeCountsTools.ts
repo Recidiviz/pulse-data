@@ -17,4 +17,5 @@
 export const JUSTICE_COUNTS_TOOLS_BASE = "/admin/justice_counts_tools";
 export const AGENCY_PROVISIONING_ROUTE = `${JUSTICE_COUNTS_TOOLS_BASE}/agency_provisioning`;
 export const AGENCY_DETAILS_ROUTE = `${JUSTICE_COUNTS_TOOLS_BASE}/agency/:agencyId/users`;
+export const SUPER_AGENCY_DETAILS_ROUTE = `${JUSTICE_COUNTS_TOOLS_BASE}/super_agency_provisioning`;
 export const USER_PROVISIONING_ROUTE = `${JUSTICE_COUNTS_TOOLS_BASE}/user_provisioning`;

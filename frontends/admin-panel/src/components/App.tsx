@@ -40,6 +40,7 @@ import FlashDatabaseChecklist from "./FlashDatabaseChecklist";
 import IngestOperationsView from "./IngestOperationsView";
 import AgencyDetailsView from "./JusticeCountsTools/AgencyDetailsView";
 import AgencyProvisioningView from "./JusticeCountsTools/AgencyProvisioningView";
+import SuperAgencyProvisioningView from "./JusticeCountsTools/SuperAgencyProvisioningView";
 import UserProvisioningView from "./JusticeCountsTools/UserProvisioningView";
 import POEmailsView from "./POEmailsView";
 import StateRoleDefaultPermissionsView from "./StateUserPermissions/StateRolePermissionsView";
@@ -145,6 +146,10 @@ const items: MenuProps["items"] = [
       JusticeCountsTools.AGENCY_PROVISIONING_ROUTE
     ),
     getItem("User Provisioning", JusticeCountsTools.USER_PROVISIONING_ROUTE),
+    getItem(
+      "Super Agency Provisioning",
+      JusticeCountsTools.SUPER_AGENCY_DETAILS_ROUTE
+    ),
   ]),
 ];
 
@@ -280,6 +285,10 @@ const App = (): JSX.Element => {
           <Route
             path={JusticeCountsTools.AGENCY_DETAILS_ROUTE}
             component={AgencyDetailsView}
+          />
+          <Route
+            path={JusticeCountsTools.SUPER_AGENCY_DETAILS_ROUTE}
+            component={SuperAgencyProvisioningView}
           />
           <Route
             path={JusticeCountsTools.USER_PROVISIONING_ROUTE}

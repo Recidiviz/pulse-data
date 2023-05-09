@@ -193,6 +193,35 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 HTTPStatus.OK,
             )
 
+    @bp.route("/api/justice_counts_tools/agency/<super_agency_id>", methods=["DELETE"])
+    @requires_gae_auth
+    def remove_child_agencies_from_super_agency(
+        super_agency_id: int,
+    ) -> Tuple[Response, HTTPStatus]:
+        """Removes a child agency from a super agency."""
+        with SessionFactory.using_database(
+            SQLAlchemyDatabaseKey.for_schema(SchemaType.JUSTICE_COUNTS)
+        ) as session:
+            request_json = assert_type(request.json, dict)
+            child_agency_ids = request_json.get("child_agency_ids")
+
+            if child_agency_ids is None:
+                raise ValueError("List of child agency ids is required.")
+
+            child_agencies = AgencyInterface.get_agencies_by_id(
+                session=session, agency_ids=child_agency_ids
+            )
+            AgencyUserAccountAssociationInterface.remove_child_agencies_from_super_agency(
+                session=session,
+                child_agencies=child_agencies,
+                super_agency_id=super_agency_id,
+            )
+            session.commit()
+            return (
+                jsonify({"agencies": [agency.to_json() for agency in child_agencies]}),
+                HTTPStatus.OK,
+            )
+
     @bp.route("/api/justice_counts_tools/users", methods=["GET"])
     @requires_gae_auth
     def get_all_users() -> Tuple[Response, HTTPStatus]:
@@ -334,6 +363,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             request_json = assert_type(request.json, dict)
             name = request_json.get("name")
             systems = request_json.get("systems")
+            child_agency_id = request_json.get("child_agency_id")
 
             if systems is not None:
                 AgencyInterface.update_agency_systems(
@@ -343,6 +373,20 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             if name is not None:
                 AgencyInterface.update_agency_name(
                     session=session, agency_id=agency_id, name=name
+                )
+
+            if child_agency_id is not None:
+                AgencyUserAccountAssociationInterface.add_child_agency_to_super_agency(
+                    session=session,
+                    super_agency_id=agency_id,
+                    child_agency_id=child_agency_id,
+                )
+                updated_child_agency = AgencyInterface.get_agency_by_id(
+                    session=session, agency_id=child_agency_id
+                )
+                return (
+                    jsonify({"agency": updated_child_agency.to_json()}),
+                    HTTPStatus.OK,
                 )
 
             return (

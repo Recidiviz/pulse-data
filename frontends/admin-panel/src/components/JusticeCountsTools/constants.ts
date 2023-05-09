@@ -6,6 +6,7 @@ export type Agency = {
   state_code: string;
   fips_county_code?: string;
   team: AgencyTeamMember[];
+  super_agency_id: number;
 };
 
 export type AgencyTeamMember = {

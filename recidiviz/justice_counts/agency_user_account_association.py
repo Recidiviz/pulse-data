@@ -308,3 +308,67 @@ class AgencyUserAccountAssociationInterface:
             }
 
         return editor_json
+
+    @staticmethod
+    def remove_child_agencies_from_super_agency(
+        session: Session, child_agencies: List[schema.Agency], super_agency_id: int
+    ) -> None:
+        for child_agency in child_agencies:
+            child_agency.super_agency_id = None
+
+        super_agency_user_assocs = (
+            AgencyUserAccountAssociationInterface.get_users_by_agency_id(
+                session=session, agency_id=super_agency_id
+            )
+        )
+        super_agency_user_ids = [
+            assoc.user_account_id for assoc in super_agency_user_assocs
+        ]
+        child_agency_ids = [a.id for a in child_agencies]
+        super_agency_user_assocs_in_child_agencies = (
+            session.query(schema.AgencyUserAccountAssociation)
+            .filter(
+                schema.AgencyUserAccountAssociation.user_account_id.in_(
+                    super_agency_user_ids
+                ),
+                schema.AgencyUserAccountAssociation.agency_id.in_(child_agency_ids),
+            )
+            .all()
+        )
+        # Remove super agency users from child agencies
+        for assoc in super_agency_user_assocs_in_child_agencies:
+            session.delete(assoc)
+
+    @staticmethod
+    def add_child_agency_to_super_agency(
+        session: Session, child_agency_id: int, super_agency_id: int
+    ) -> None:
+        child_agency = AgencyInterface.get_agency_by_id(
+            session=session, agency_id=child_agency_id
+        )
+        child_agency.super_agency_id = super_agency_id
+        super_agency_users = (
+            AgencyUserAccountAssociationInterface.get_users_by_agency_id(
+                session=session, agency_id=super_agency_id
+            )
+        )
+        for user_assoc in super_agency_users:
+            # Add all super agency users as admins to the new child agency
+            new_assoc = schema.AgencyUserAccountAssociation(
+                agency_id=child_agency_id,
+                user_account_id=user_assoc.user_account_id,
+                role=schema.UserAccountRole.AGENCY_ADMIN,
+            )
+            session.merge(new_assoc)
+
+    @staticmethod
+    def get_users_by_agency_id(
+        session: Session, agency_id: int
+    ) -> List[schema.AgencyUserAccountAssociation]:
+        return (
+            session.query(schema.AgencyUserAccountAssociation)
+            .filter(
+                schema.AgencyUserAccountAssociation.agency_id == agency_id,
+            )
+            .all()
+        )

@@ -110,3 +110,27 @@ export const updateAgency = async (
     systems,
   });
 };
+
+export const removeChildAgenciesFromSuperAgency = async (
+  superAgencyId: number,
+  childAgencyIds: number[]
+): Promise<Response> => {
+  return deleteWithUrlAndBody(
+    `/api/justice_counts_tools/agency/${superAgencyId}`,
+    {
+      child_agency_ids: childAgencyIds,
+    }
+  );
+};
+
+export const addChildAgencyToSuperAgency = async (
+  superAgencyId: number,
+  childAgencyId: number
+): Promise<Response> => {
+  return putWithURLAndBody(
+    `/api/justice_counts_tools/agency/${superAgencyId}`,
+    {
+      child_agency_id: childAgencyId,
+    }
+  );
+};
