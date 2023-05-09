@@ -17,7 +17,8 @@
 """Define the ORM schema objects that map directly to the database, for Outliers related entities."""
 import enum
 
-from sqlalchemy import Column, Date, Enum, ForeignKeyConstraint, Integer, String
+from sqlalchemy import Column, Date, ForeignKeyConstraint, Integer, String
+from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -147,7 +148,11 @@ class MetricBase:
     # The value of the given metric
     metric_value = Column(Integer, nullable=False)
     # The period that this metric applies to
-    period = Column(Enum(Period), primary_key=True, nullable=False)
+    period = Column(
+        ENUM(Period, create_type=False),
+        primary_key=True,
+        nullable=False,
+    )
     # The end date for the period
     end_date = Column(Date, primary_key=True, nullable=False)
 
