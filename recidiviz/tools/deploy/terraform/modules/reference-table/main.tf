@@ -15,8 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+locals {
+  gcs_file_name = "${var.table_name}.csv"
+}
+
 resource "google_storage_bucket_object" "table_data" {
-  name   = "${var.table_name}.csv"
+  # If this is a code file-backed reference table, we must first upload
+  # the local file to GCS.
+  count  = var.read_from_local ? 1 : 0
+  name   = local.gcs_file_name
   bucket = var.bucket_name
   source = "${var.recidiviz_root}/datasets/static_data/${var.table_name}.csv"
 }
@@ -36,7 +43,7 @@ resource "google_bigquery_table" "table" {
       skip_leading_rows = 1
     }
     source_uris = [
-      "gs://${var.bucket_name}/${google_storage_bucket_object.table_data.output_name}"
+      "gs://${var.bucket_name}/${local.gcs_file_name}"
     ]
   }
 
