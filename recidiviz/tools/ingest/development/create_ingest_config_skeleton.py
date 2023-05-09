@@ -99,10 +99,15 @@ def write_skeleton_config(
         logging.info("Skipping hidden file: %s", table_name)
         return
 
+    # TODO(#20684): We should just try to rely on some of the import code for handling
+    # encoding and delimiters here. Of course we can't use all of it since we don't
+    # know the columns yet, but we should be able to use the actual CSV reading #
+    # functionality so that it behaves the same here as well.
     df = read_csv(
         raw_table_path,
         delimiter=delimiter,
         encoding=encoding,
+        dtype=str,
     )
 
     fields = [
