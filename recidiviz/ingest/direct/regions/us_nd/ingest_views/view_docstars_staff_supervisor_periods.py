@@ -24,9 +24,9 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 WITH critical_dates AS (
-    SELECT * FROM (
-        SELECT
-        OFFICER,
+SELECT * FROM (
+    SELECT
+        CAST(OFFICER AS INT) AS OFFICER,
         FNAME,
         LNAME,
         SUPERVISOR,
@@ -34,8 +34,8 @@ WITH critical_dates AS (
         STATUS,
         RecDate,
         LAG(SUPERVISOR_ID) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_supervisor, 
-        FROM {docstars_officers@ALL}) cd
-    WHERE 
+    FROM {docstars_officers@ALL}) cd
+WHERE 
     -- officer just started working
     (cd.prev_supervisor IS NULL AND cd.SUPERVISOR_ID IS NOT NULL) 
     -- officer changed supervisors
@@ -53,8 +53,8 @@ SELECT
     -- if status is 0, RecDate is previous period's end date, there should not be a period with that as start date
     RecDate AS start_date,
     LEAD(RecDate) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS end_date
-    FROM critical_dates
-    WHERE SUPERVISOR_ID IS NOT NULL
+FROM critical_dates
+WHERE SUPERVISOR_ID IS NOT NULL
 )
 SELECT 
     OFFICER,
@@ -66,7 +66,8 @@ SELECT
     ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
     start_date,
     end_date
-    FROM all_periods WHERE STATUS != '0'
+FROM all_periods 
+WHERE STATUS != '0'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

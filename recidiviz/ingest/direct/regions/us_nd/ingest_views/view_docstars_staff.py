@@ -24,8 +24,22 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT LNAME,FNAME,OFFICER
+WITH officers_with_recency_rank AS (
+SELECT 
+    CAST(OFFICER AS INT) AS OFFICER,
+    LNAME,
+    FNAME,
+    ROW_NUMBER() OVER (
+        PARTITION BY CAST(OFFICER AS INT)
+        ORDER BY CAST(RecDate AS DATETIME) DESC) AS recency_rank
 FROM {docstars_officers}
+)
+SELECT 
+    OFFICER,
+    LNAME,
+    FNAME
+FROM officers_with_recency_rank
+WHERE recency_rank = 1
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(

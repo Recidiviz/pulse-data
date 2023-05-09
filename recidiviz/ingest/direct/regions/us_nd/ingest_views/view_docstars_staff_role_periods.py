@@ -23,22 +23,23 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    WITH critical_dates AS (
-        SELECT * FROM (
-            SELECT
-            OFFICER,
-            FNAME,
-            LNAME,
-            RecDate,
-            STATUS,
-            LAG(STATUS) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_status, 
-        FROM {docstars_officers@ALL}) cd
-    WHERE 
+WITH critical_dates AS (
+SELECT *
+FROM (
+    SELECT
+    CAST(OFFICER AS INT) AS OFFICER,
+    FNAME,
+    LNAME,
+    RecDate,
+    STATUS,
+    LAG(STATUS) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_status, 
+FROM {docstars_officers@ALL}) cd
+WHERE 
     -- officer just started working
     (cd.prev_status IS NULL AND cd.STATUS IS NOT NULL) 
     -- officer changed locations
     OR cd.prev_status != STATUS
-    ), all_periods AS (
+), all_periods AS (
 SELECT 
     OFFICER,
     FNAME,
@@ -46,16 +47,16 @@ SELECT
     STATUS,
     RecDate AS start_date,
     LEAD(RecDate) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS end_date
-    FROM critical_dates
-    WHERE STATUS IS NOT NULL)
+FROM critical_dates
+WHERE STATUS IS NOT NULL)
 SELECT 
-OFFICER,
-FNAME,
-LNAME,
-STATUS,
-ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
-start_date,
-end_date
+    OFFICER,
+    FNAME,
+    LNAME,
+    STATUS,
+    ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
+    start_date,
+    end_date
 FROM all_periods 
 WHERE STATUS != '0' -- exclude periods that start with employment termination
 """

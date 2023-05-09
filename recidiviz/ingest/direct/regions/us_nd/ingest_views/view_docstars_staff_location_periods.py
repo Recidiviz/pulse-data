@@ -23,25 +23,25 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    WITH critical_dates AS (
-        SELECT * FROM (
-            SELECT
-            OFFICER,
-            FNAME,
-            LNAME,
-            SITEID,
-            STATUS,
-            RecDate,
-            LAG(SITEID) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_location, 
-        FROM {docstars_officers@ALL}) cd
-    WHERE 
-    -- officer just started working
+WITH critical_dates AS (
+SELECT * FROM (
+    SELECT
+        CAST(OFFICER AS INT) AS OFFICER,
+        FNAME,
+        LNAME,
+        SITEID,
+        STATUS,
+        RecDate,
+        LAG(SITEID) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS prev_location, 
+    FROM {docstars_officers@ALL}) cd
+WHERE 
+    -- officer just started working 
     (cd.prev_location IS NULL AND cd.SITEID IS NOT NULL) 
     -- officer changed locations
     OR cd.prev_location != SITEID
     -- officer's employment was terminated (RecDate in these rows is officers' termination date)
-    OR cd.STATUS='0'
-    ), all_periods AS (
+    OR cd.STATUS='0'    
+), all_periods AS (
 SELECT 
     OFFICER,
     FNAME,
@@ -51,19 +51,20 @@ SELECT
     -- if status is 0, RecDate is previous period's end date, there should not be a period with that as start date
     RecDate AS start_date,
     LEAD(RecDate) OVER (PARTITION BY OFFICER ORDER BY RecDate) AS end_date
-    FROM critical_dates
-    WHERE SITEID IS NOT NULL)
+FROM critical_dates
+WHERE SITEID IS NOT NULL)
 SELECT 
-OFFICER,
-FNAME,
-LNAME,
-SITEID,
-STATUS,
--- reset period_seq_num after excluding periods start dates of inactive periods
-ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
-start_date,
-end_date
-FROM all_periods WHERE STATUS != '0'
+    OFFICER,
+    FNAME,
+    LNAME,
+    SITEID,
+    STATUS,
+    -- reset period_seq_num after excluding periods start dates of inactive periods
+    ROW_NUMBER() OVER (PARTITION BY OFFICER ORDER BY start_date) AS period_seq_num,
+    start_date,
+    end_date
+FROM all_periods 
+WHERE STATUS != '0'
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
