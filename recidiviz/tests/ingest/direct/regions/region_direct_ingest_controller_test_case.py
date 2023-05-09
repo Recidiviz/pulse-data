@@ -89,10 +89,6 @@ from recidiviz.utils.types import assert_type
 FULL_INTEGRATION_TEST_NAME = "test_run_full_ingest_all_files_specific_order"
 
 
-# TODO(#20196) @freeze_time breaks the timestamps we put on log files. I tried telling
-# freezegun to avoid freezing timestamps on our logfiles by adding
-# 'ignore=["recidiviz.tools.ingest.operations"]' to the annotation, but for some reason
-# this isn't working.
 @pytest.mark.uses_db
 @freeze_time("2019-09-27")
 class RegionDirectIngestControllerTestCase(unittest.TestCase):
