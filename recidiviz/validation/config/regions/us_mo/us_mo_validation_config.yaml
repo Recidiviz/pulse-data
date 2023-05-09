@@ -18,6 +18,13 @@ max_allowed_error_overrides:
   - validation_name: most_recent_assessment_score_by_person_by_state_comparison
     hard_max_allowed_error_override: 1.0
     override_reason: Needs investigation.
+  - validation_name: client_and_resident_record_percent_change_in_eligibility_exceeded
+    hard_max_allowed_error_override: 0.40
+    override_reason:
+      Since we get data from MO once per week, the percent change for opportunities tends to aggregate
+      over the data in a week and then spike once it's all processed on Mondays. We expect most opportunities to fluctuate
+      between 20-30% when new data comes in, so we bump this threshold to 40% in order to capture when the percent change
+      is significantly larger than that which likely indicates something unusual is happening and should be investigated.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
     hard_num_allowed_rows_override: 100000
