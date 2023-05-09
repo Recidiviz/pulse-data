@@ -19,6 +19,7 @@ import datetime
 import itertools
 import logging
 import os
+from io import StringIO
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pandas as pd
@@ -471,11 +472,15 @@ class SpreadsheetInterface:
             system=system, agency=agency
         )
         file_bytes = gcs_file_system.download_as_bytes(path=source_path)
+        xls = SpreadsheetInterface.convert_file_to_excel(
+            file=file_bytes, filename=filename
+        )
+
         return SpreadsheetInterface.ingest_spreadsheet(
             session=session,
             spreadsheet=spreadsheet,
             auth0_user_id=None,
-            xls=pd.ExcelFile(file_bytes),
+            xls=xls,
             agency=agency,
             metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
             metric_definitions=metric_definitions,
@@ -499,3 +504,22 @@ class SpreadsheetInterface:
             # and PROBATION
             else {system},
         )
+
+    @staticmethod
+    def convert_file_to_excel(file: Any, filename: str) -> pd.ExcelFile:
+        # source: https://stackoverflow.com/questions/47379476/how-to-convert-bytes-data-into-a-python-pandas-dataframe
+        # Note that invalid metrics will be caught in workbook_uploader._add_invalid_sheet_name_error()
+        # new_file_name is the path of the new xlsx file that we create in line 520
+        if filename.rsplit(".", 1)[1].lower() == "csv":
+            new_file_name = filename.rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
+            metric = new_file_name.rsplit(".", 1)[0].split("/")[-1]
+            if isinstance(file, bytes):
+                s = str(file, "utf-8")
+                file = StringIO(s)
+            csv_df = pd.read_csv(file)
+            csv_df.to_excel(new_file_name, sheet_name=metric, index=False)
+            xls = pd.ExcelFile(new_file_name)
+        else:
+            xls = pd.ExcelFile(file)
+
+        return xls

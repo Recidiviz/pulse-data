@@ -21,7 +21,6 @@ from collections import defaultdict
 from http import HTTPStatus
 from typing import Callable, DefaultDict, Dict, List, Optional
 
-import pandas as pd
 from flask import Blueprint, Response, jsonify, make_response, request, send_file
 from flask_sqlalchemy_session import current_session
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -980,83 +979,86 @@ def get_api_blueprint(
     @csrf.exempt  # type: ignore[arg-type]
     @api_blueprint.route("/ingest-spreadsheet", methods=["POST"])
     def ingest_workbook_from_gcs() -> response.Response:
-        bearer_token = request.headers.get("Authorization")
-        if bearer_token is None:
-            raise JusticeCountsServerError(
-                code="justice_counts_no_bearer_token",
-                description="No Bearer Token was sent in Authorization header of the request.",
-            )
-
-        token = bearer_token.split(" ")[1]
-        # Verify and decode the JWT. `verify_oauth2_token` verifies
-        # the JWT signature, the `aud` claim, and the `exp` claim.
-        claim = id_token.verify_oauth2_token(token, requests.Request())
-        if (
-            claim["email"] != service_account_email
-            or claim["email_verified"] is not True
-        ):
-            raise JusticeCountsServerError(
-                code="request_not_authenticated",
-                description="This request could not be authenticated",
-            )
-
         try:
-            message = extract_pubsub_message_from_json(request.get_json())
+            bearer_token = request.headers.get("Authorization")
+            if bearer_token is None:
+                raise JusticeCountsServerError(
+                    code="justice_counts_no_bearer_token",
+                    description="No Bearer Token was sent in Authorization header of the request.",
+                )
+
+            token = bearer_token.split(" ")[1]
+            # Verify and decode the JWT. `verify_oauth2_token` verifies
+            # the JWT signature, the `aud` claim, and the `exp` claim.
+            claim = id_token.verify_oauth2_token(token, requests.Request())
+            if (
+                claim["email"] != service_account_email
+                or claim["email_verified"] is not True
+            ):
+                raise JusticeCountsServerError(
+                    code="request_not_authenticated",
+                    description="This request could not be authenticated",
+                )
+
+            try:
+                message = extract_pubsub_message_from_json(request.get_json())
+            except Exception as e:
+                raise _get_error(error=e) from e
+
+            if (
+                not message.attributes
+                or OBJECT_ID not in message.attributes
+                or BUCKET_ID not in message.attributes
+            ):
+                raise JusticeCountsServerError(
+                    code="justice_counts_bad_pub_sub",
+                    description="Invalid Pub/Sub message.",
+                )
+
+            attributes = message.attributes
+
+            filename = attributes[OBJECT_ID]
+            bucket_id = attributes[BUCKET_ID]
+            agency_id = BUCKET_ID_TO_AGENCY_ID.get(bucket_id, None)
+            if agency_id is None:
+                raise JusticeCountsServerError(
+                    code="no_bucket_for_agency",
+                    description=f"No agency or system associated with GCS bucket with id {bucket_id}",
+                )
+
+            agency = AgencyInterface.get_agency_by_id(
+                session=current_session, agency_id=agency_id
+            )
+            if filename is None:
+                raise JusticeCountsServerError(
+                    code="justice_counts_missing_file_name_sub",
+                    description="Missing Filename",
+                )
+
+            if not allowed_file(filename):
+                raise JusticeCountsServerError(
+                    code="file_type_error",
+                    description="Invalid file type: All files must be of type .xlsx or .csv.",
+                )
+
+            system = schema.System[agency.systems[0]]
+            if len(agency.systems) > 1:
+                system_str, _ = os.path.split(attributes[OBJECT_ID])
+                system = schema.System[system_str]
+
+            SpreadsheetInterface.ingest_workbook_from_gcs(
+                session=current_session,
+                bucket_name=bucket_id,
+                system=system,
+                agency=agency,
+                filename=filename,
+            )
+
+            current_session.commit()
+
+            return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
         except Exception as e:
             raise _get_error(error=e) from e
-
-        if (
-            not message.attributes
-            or OBJECT_ID not in message.attributes
-            or BUCKET_ID not in message.attributes
-        ):
-            raise JusticeCountsServerError(
-                code="justice_counts_bad_pub_sub",
-                description="Invalid Pub/Sub message.",
-            )
-
-        attributes = message.attributes
-
-        filename = attributes[OBJECT_ID]
-        bucket_id = attributes[BUCKET_ID]
-        agency_id = BUCKET_ID_TO_AGENCY_ID.get(bucket_id, None)
-        if agency_id is None:
-            raise JusticeCountsServerError(
-                code="no_bucket_for_agency",
-                description=f"No agency or system associated with GCS bucket with id {bucket_id}",
-            )
-
-        agency = AgencyInterface.get_agency_by_id(
-            session=current_session, agency_id=agency_id
-        )
-        if filename is None:
-            raise JusticeCountsServerError(
-                code="justice_counts_missing_file_name_sub",
-                description="Missing Filename",
-            )
-
-        if not allowed_file(filename):
-            raise JusticeCountsServerError(
-                code="file_type_error",
-                description="Invalid file type: All files must be of type .xlsx.",
-            )
-
-        system = schema.System[agency.systems[0]]
-        if len(agency.systems) > 1:
-            system_str, _ = os.path.split(attributes[OBJECT_ID])
-            system = schema.System[system_str]
-
-        SpreadsheetInterface.ingest_workbook_from_gcs(
-            session=current_session,
-            bucket_name=bucket_id,
-            system=system,
-            agency=agency,
-            filename=filename,
-        )
-
-        current_session.commit()
-
-        return jsonify({"status": "ok", "status_code": HTTPStatus.OK})
 
     @api_blueprint.route("agencies/<agency_id>/spreadsheets", methods=["GET"])
     @auth_decorator
@@ -1132,17 +1134,10 @@ def get_api_blueprint(
                 "file_type_error",
                 "Invalid file type: All files must be of type .xlsx or .csv.",
             )
-        if file.filename.rsplit(".", 1)[1].lower() == "csv":  # type: ignore[union-attr]
-            # convert csv to xlsx
-            # Note that invalid metrics will be caught in workbook_uploader._add_invalid_sheet_name_error()
-            # new_file_name is the path of the new xlsx file that we create in line 1142
-            new_file_name = file.filename.rsplit(".", 1)[0] + ".xlsx"  # type: ignore[union-attr]
-            metric = new_file_name.rsplit(".", 1)[0].split("/")[-1]
-            csv_df = pd.read_csv(file)
-            csv_df.to_excel(new_file_name, sheet_name=metric, index=False)
-            xls = pd.ExcelFile(new_file_name)
-        else:
-            xls = pd.ExcelFile(file)
+
+        xls = SpreadsheetInterface.convert_file_to_excel(
+            file=file, filename=file.filename  # type: ignore[arg-type]
+        )
 
         # Upload spreadsheet to GCS
         spreadsheet = SpreadsheetInterface.upload_spreadsheet(
