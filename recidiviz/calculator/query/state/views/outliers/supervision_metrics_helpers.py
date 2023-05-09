@@ -60,6 +60,7 @@ SELECT
     end_date,
     "{metric}" AS metric_id,
     {metric} AS metric_value,
+    avg_daily_population,
 FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized` 
 WHERE state_code IN ({list_to_query_string(states, quoted=True)})
             """
