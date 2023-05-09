@@ -37,6 +37,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
+    PersonSpanType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -916,6 +919,16 @@ PENDING_CUSTODY_STARTS = EventCountMetric(
     description="Number of transitions to pending custody status",
     event_types=["PENDING_CUSTODY_START"],
     event_attribute_filters={},
+)
+
+PERSON_DAYS_WEIGHTED_JUSTICE_IMPACT = SumSpanDaysMetric(
+    name="person_days_weighted_justice_impact",
+    display_name="Person-Days: Weighted Justice Impact",
+    description="Total number of person-days impacted by the justice system, weighted by "
+    "compartment type",
+    span_types=[PersonSpanType.JUSTICE_IMPACT_SESSION.value],
+    span_attribute_filters={},
+    weight_col="justice_impact_weight",
 )
 
 # get days in eligibility span metrics for all task types

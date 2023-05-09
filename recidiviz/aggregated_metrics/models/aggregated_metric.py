@@ -286,7 +286,7 @@ class DailyAvgSpanValueMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMi
     """
 
     # Name of the field in span_attributes JSON containing the numeric attribute of the span.
-    span_value_numeric: str = attr.field(validator=attr_validators.is_str)
+    span_value_numeric: str = attr.field(validator=attr_validators.is_non_empty_str)
 
     def generate_aggregation_query_fragment(
         self,
@@ -400,6 +400,10 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
 
     span_types: List[str] = attr.field(validator=attr_validators.is_list)
 
+    # optional column by which to weight person-days, e.g. for
+    # person_days_weighted_justice_impact
+    weight_col: Optional[str] = None
+
     def generate_aggregation_query_fragment(
         self,
         span_start_date_col: str,
@@ -411,7 +415,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
         return f"""
             SUM(
             (
-                DATE_DIFF(
+                {self.weight_col + " * " if self.weight_col else ""}DATE_DIFF(
                     LEAST({period_end_date_col}, {nonnull_current_date_exclusive_clause(span_end_date_col)}),
                     GREATEST({period_start_date_col}, {span_start_date_col}),
                     DAY)
@@ -506,7 +510,7 @@ class AssignmentSpanValueAtStartMetric(
     """
 
     # Name of the field in span_attributes JSON containing the numeric attribute of the span.
-    span_value_numeric: str
+    span_value_numeric: str = attr.field(validator=attr_validators.is_str)
 
     # Metric counting the number of assignments satisfying the span condition
     span_count_metric: AssignmentSpanDaysMetric
