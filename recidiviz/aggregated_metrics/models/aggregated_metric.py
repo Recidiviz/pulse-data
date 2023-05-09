@@ -31,6 +31,12 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
     MetricUnitOfAnalysisType,
 )
+from recidiviz.calculator.query.state.views.analyst_data.models.person_event_type import (
+    PersonEventType,
+)
+from recidiviz.calculator.query.state.views.analyst_data.models.person_span_type import (
+    PersonSpanType,
+)
 from recidiviz.common import attr_validators
 
 
@@ -170,8 +176,7 @@ class SpanMetricConditionsMixin(MetricConditionsMixin):
     """Attributes and functions to derive query snippets applied to `person_spans`"""
 
     # The list of strings corresponding with the `span` field in `person_spans` specifying the type of span.
-    # TODO(#16785): Replace List[str] with List[SpanType] or List[EventType], and add tests for attributes
-    span_types: List[str] = attr.field(validator=attr_validators.is_list)
+    span_types: List[PersonSpanType] = attr.field(validator=attr_validators.is_list)
 
     # A dictionary mapping fields from the JSON object `span_attributes` in `person_spans` to either
     # a list of accepted values or a query string for a custom condition.
@@ -180,8 +185,9 @@ class SpanMetricConditionsMixin(MetricConditionsMixin):
     )
 
     def get_metric_conditions(self) -> List[str]:
+        span_type_strings = [s.value for s in self.span_types]
         condition_strings = [
-            f"span IN ({list_to_query_string(self.span_types, quoted=True)})"
+            f"span IN ({list_to_query_string(span_type_strings, quoted=True)})"
         ]
 
         for attribute in self.span_attribute_filters.keys():
@@ -209,7 +215,7 @@ class EventMetricConditionsMixin(MetricConditionsMixin):
     """Attributes and functions to derive query snippets applied to `person_events`"""
 
     # The list of strings corresponding with the `event` field in `person_events` specifying the type of event.
-    event_types: List[str] = attr.field(validator=attr_validators.is_list)
+    event_types: List[PersonEventType] = attr.field(validator=attr_validators.is_list)
 
     # A dictionary mapping fields from the JSON object `event_attributes` in `person_events` to either
     # a list of accepted values or a query string for a custom condition.
@@ -218,8 +224,9 @@ class EventMetricConditionsMixin(MetricConditionsMixin):
     )
 
     def get_metric_conditions(self) -> List[str]:
+        event_type_strings = [s.value for s in self.event_types]
         condition_strings = [
-            f"event IN ({list_to_query_string(self.event_types, quoted=True)})"
+            f"event IN ({list_to_query_string(event_type_strings, quoted=True)})"
         ]
         for attribute in self.event_attribute_filters.keys():
             conditions = self.event_attribute_filters[attribute]
@@ -398,7 +405,7 @@ class SumSpanDaysMetric(PeriodSpanAggregatedMetric, SpanMetricConditionsMixin):
     Example metrics: Person days eligible for early discharge opportunity.
     """
 
-    span_types: List[str] = attr.field(validator=attr_validators.is_list)
+    span_types: List[PersonSpanType] = attr.field(validator=attr_validators.is_list)
 
     # optional column by which to weight person-days, e.g. for
     # person_days_weighted_justice_impact
