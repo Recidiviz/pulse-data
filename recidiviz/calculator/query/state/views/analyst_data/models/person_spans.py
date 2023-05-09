@@ -27,6 +27,9 @@ from recidiviz.calculator.query.state.views.analyst_data.models.span_query_build
 from recidiviz.calculator.query.state.views.sessions.compartment_sessions import (
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions import (
+    JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.person_demographics import (
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
 )
@@ -105,6 +108,18 @@ WHERE
         attribute_cols=["is_employed"],
         span_start_date_col="employment_status_start_date",
         span_end_date_col="employment_status_end_date_exclusive",
+    ),
+    SpanQueryBuilder(
+        span_type=PersonSpanType.JUSTICE_IMPACT_SESSION,
+        description="Person days of justice involvement weighted by type",
+        sql_source=JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER.table_for_query,
+        attribute_cols=[
+            "justice_impact_weight",
+            "unweighted_days_justice_impacted",
+            "weighted_days_justice_impacted",
+        ],
+        span_start_date_col="start_date",
+        span_end_date_col="end_date_exclusive",
     ),
     SpanQueryBuilder(
         span_type=PersonSpanType.PERSON_DEMOGRAPHICS,
