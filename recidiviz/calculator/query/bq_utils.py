@@ -290,13 +290,13 @@ def nonnull_current_date_exclusive_clause(column_name: str) -> str:
 
 def nonnull_end_date_clause(column_name: str) -> str:
     """Convert NULL end dates to dates far in the future to help with the date logic"""
-    return f'COALESCE({column_name}, "{MAGIC_END_DATE}")'
+    return f'IFNULL({column_name}, "{MAGIC_END_DATE}")'
 
 
 def nonnull_end_date_exclusive_clause(column_name: str) -> str:
     """Convert NULL end dates to dates far in the future to help with the date logic. For use in
     views that use exclusive end dates, like task eligibility."""
-    return f'COALESCE(DATE_SUB({column_name}, INTERVAL 1 DAY), "{MAGIC_END_DATE}")'
+    return f'IFNULL(DATE_SUB({column_name}, INTERVAL 1 DAY), "{MAGIC_END_DATE}")'
 
 
 def today_between_start_date_and_nullable_end_date_clause(

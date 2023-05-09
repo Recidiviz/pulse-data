@@ -150,6 +150,9 @@ from recidiviz.calculator.query.state.views.sessions.supervision_level_sessions 
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_attribute_sessions import (
     SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.supervision_officer_inferred_location_sessions import (
+    SUPERVISION_OFFICER_INFERRED_LOCATION_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.supervision_officer_sessions import (
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
 )
@@ -297,6 +300,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_DOWNGRADE_SESSIONS_VIEW_BUILDER,
     SUPERVISION_LEVEL_DEDUP_PRIORITY_VIEW_BUILDER,
     SUPERVISION_LEVEL_SESSIONS_VIEW_BUILDER,
+    SUPERVISION_OFFICER_INFERRED_LOCATION_SESSIONS_VIEW_BUILDER,
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
     SUPERVISION_OFFICER_ATTRIBUTE_SESSIONS_VIEW_BUILDER,
     SUPERVISION_UNIT_SESSIONS_VIEW_BUILDER,
