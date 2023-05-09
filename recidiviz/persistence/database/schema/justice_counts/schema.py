@@ -384,6 +384,7 @@ class Agency(Source):
                 for assoc in self.user_account_assocs
             ],
             "settings": [setting.to_json() for setting in self.agency_settings],
+            "super_agency_id": self.super_agency_id,
         }
 
     def to_public_json(self) -> Dict[str, Any]:
