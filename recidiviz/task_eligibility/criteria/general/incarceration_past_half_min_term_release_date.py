@@ -18,7 +18,7 @@
 has completed half their minimum term incarceration sentence.
 """
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -44,7 +44,7 @@ WITH critical_date_spans AS (
         span.end_date AS end_datetime,
         (DATE_ADD(MAX(sent.effective_date),INTERVAL
             CAST(CEILING(DATE_DIFF(MAX(sent.projected_completion_date_min),MAX(sent.effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
-    {join_sentence_spans_to_compartment_1_sessions("('INCARCERATION')")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="INCARCERATION")}
     WHERE
         sent.sentence_type = 'INCARCERATION'
     GROUP BY 1, 2, 3, 4

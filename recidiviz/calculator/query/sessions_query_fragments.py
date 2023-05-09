@@ -260,12 +260,33 @@ def aggregate_adjacent_spans(
 """
 
 
-def join_sentence_spans_to_compartment_1_sessions(
-    compartment_level_1_to_overlap: str = "('SUPERVISION')",
+def _compartment_where_clause(
+    compartment_types_to_overlap: Optional[Union[str, List[str]]] = None,
+    level: Optional[int] = 1,
+) -> str:
+    """Returns a WHERE clause specifying a compartment level that matches some value or list of values"""
+    if compartment_types_to_overlap:
+        if isinstance(compartment_types_to_overlap, str):
+            compartment_types_to_overlap = [compartment_types_to_overlap]
+
+        return f"AND compartment_level_{level} in ({list_to_query_string(compartment_types_to_overlap, quoted=True)})"
+    return ""
+
+
+def join_sentence_spans_to_compartment_sessions(
+    compartment_level_1_to_overlap: Optional[Union[str, List[str]]] = None,
+    compartment_level_2_to_overlap: Optional[Union[str, List[str]]] = None,
 ) -> str:
     """Returns a query fragment to join sentence_spans with all the sentence attributes from
-    sentences_preprocessed to compartment_sessions where sentence_spans overlap with supervision sessions
+    sentences_preprocessed to compartment_sessions where sentence_spans overlap with particular
+    kinds of sessions.
     """
+    compartment_level_1_clause = _compartment_where_clause(
+        compartment_types_to_overlap=compartment_level_1_to_overlap, level=1
+    )
+    compartment_level_2_clause = _compartment_where_clause(
+        compartment_types_to_overlap=compartment_level_2_to_overlap, level=2
+    )
     return f"""
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
@@ -274,34 +295,9 @@ def join_sentence_spans_to_compartment_1_sessions(
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
         ON span.state_code = sess.state_code
         AND span.person_id = sess.person_id
-        -- Restrict to spans that overlap with supervision/incarceration sessions
-        AND sess.compartment_level_1 IN ({compartment_level_1_to_overlap})
-        -- Use strictly less than for exclusive end_dates
-        AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
-        AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}
-"""
-
-
-def join_sentence_spans_to_compartment_2_sessions(
-    compartment_level_2_to_overlap: str = "('PAROLE', 'DUAL', 'PROBATION')",
-) -> str:
-    """Returns a query fragment to join sentence_spans with all the sentence attributes from
-    sentences_preprocessed to compartment_sessions where sentence_spans overlap with specific
-    compartment_level_2 supervision sessions
-    Args:
-        compartment_level_2_to_overlap (str): Default set to Parole, Dual, and Probation. Specifies which
-        supervision sessions to overlap sentence spans with.
-    """
-    return f"""
-    FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
-    UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
-      USING (state_code, person_id, sentences_preprocessed_id)
-    INNER JOIN `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized` sess
-        ON span.state_code = sess.state_code
-        AND span.person_id = sess.person_id
-        -- Restrict to spans that overlap with supervision sessions
-        AND sess.compartment_level_2 IN ({compartment_level_2_to_overlap})
+        -- Restrict to spans that overlap with particular compartment levels
+        {compartment_level_1_clause}
+        {compartment_level_2_clause}
         -- Use strictly less than for exclusive end_dates
         AND span.start_date < {nonnull_end_date_clause('sess.end_date_exclusive')}
         AND sess.start_date < {nonnull_end_date_clause('span.end_date_exclusive')}

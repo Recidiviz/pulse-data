@@ -18,7 +18,7 @@
 someone is not serving ineligible offenses on supervision for downgrade to minimum telephone reporting
 """
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -53,7 +53,7 @@ _QUERY_TEMPLATE = f"""
                         ARRAY_AGG(DISTINCT sent.status IGNORE NULLS ORDER BY sent.status) AS sentence_status,
                          LOGICAL_OR(sent.life_sentence) AS is_life_sentence,
                          ARRAY_AGG(DISTINCT ref.description IGNORE NULLS ORDER BY ref.description) AS sentence_status_raw_text)) AS reason,
-    {join_sentence_spans_to_compartment_1_sessions()}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.ADH_REFERENCE_CODE_latest` ref 
         ON sent.status_raw_text = ref.reference_code_id
     WHERE span.state_code = "US_MI"

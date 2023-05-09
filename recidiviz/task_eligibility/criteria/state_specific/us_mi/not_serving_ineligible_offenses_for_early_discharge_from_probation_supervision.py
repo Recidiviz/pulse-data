@@ -18,7 +18,7 @@
 ineligible offenses on probation supervision
 """
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_2_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -44,7 +44,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date,
         FALSE AS meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
-    {join_sentence_spans_to_compartment_2_sessions("'PROBATION'")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_2_to_overlap="PROBATION")}
     WHERE span.state_code = "US_MI"
         AND sent.sentence_sub_type = "PROBATION" 
         --only include spans with ineligible offenses 

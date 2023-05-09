@@ -19,6 +19,9 @@ can be parameterized.
 """
 from typing import List, Optional
 
+from recidiviz.calculator.query.sessions_query_fragments import (
+    join_sentence_spans_to_compartment_sessions,
+)
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
@@ -26,6 +29,37 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
     critical_date_has_passed_spans_cte,
 )
+
+
+def get_ineligible_offense_type_criteria(
+    criteria_name: str,
+    compartment_level_1: str,
+    description: str,
+    where_clause: str = "",
+) -> StateAgnosticTaskCriteriaBigQueryViewBuilder:
+    """Returns a state-agnostic criteria view builder indicating the spans of time when a person is
+    serving a sentence of a particular type.
+    """
+    criteria_query = f"""
+    SELECT
+        span.state_code,
+        span.person_id,
+        span.start_date,
+        span.end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=compartment_level_1)}
+    {where_clause}
+    GROUP BY 1,2,3,4,5
+    """
+
+    return StateAgnosticTaskCriteriaBigQueryViewBuilder(
+        criteria_name=criteria_name,
+        criteria_spans_query_template=criteria_query,
+        description=description,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
+    )
 
 
 def get_minimum_age_criteria(

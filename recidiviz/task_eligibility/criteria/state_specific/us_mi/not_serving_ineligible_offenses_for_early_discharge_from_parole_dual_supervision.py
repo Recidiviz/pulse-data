@@ -18,7 +18,7 @@
 ineligible offenses on parole/dual supervision
 """
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_2_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
@@ -45,7 +45,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date,
         FALSE as meets_criteria,
         TO_JSON(STRUCT(ARRAY_AGG(DISTINCT statute) AS ineligible_offenses)) AS reason,
-    {join_sentence_spans_to_compartment_2_sessions(compartment_level_2_to_overlap="'PAROLE', 'DUAL'")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_2_to_overlap=['PAROLE', 'DUAL'])}
     WHERE span.state_code = "US_MI"
     --exclude probation sentences for DUAL clients
     AND sent.sentence_type = "INCARCERATION" 

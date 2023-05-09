@@ -17,7 +17,7 @@
 """Describes the spans of time when a client has past their parole eligibility date."""
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
@@ -41,7 +41,7 @@ WITH critical_date_spans AS (
         span.start_date AS start_datetime,
         span.end_date AS end_datetime,
         MAX(sent.parole_eligibility_date) AS critical_date,
-    {join_sentence_spans_to_compartment_1_sessions("('INCARCERATION')")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap='INCARCERATION')}
     WHERE
         sent.effective_date < {nonnull_end_date_clause('sent.projected_completion_date_max')}
         AND sent.sentence_type = 'INCARCERATION'

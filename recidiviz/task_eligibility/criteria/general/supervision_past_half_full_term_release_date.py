@@ -19,7 +19,7 @@ has completed half their full term supervision sentence.
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
-    join_sentence_spans_to_compartment_1_sessions,
+    join_sentence_spans_to_compartment_sessions,
 )
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
@@ -54,7 +54,7 @@ WITH critical_date_spans AS (
         span.end_date AS end_datetime,
         (DATE_ADD(MAX(sent.effective_date),INTERVAL
             CAST(CEILING(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
-    {join_sentence_spans_to_compartment_1_sessions()}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
     WHERE
     -- due to sentence data quality issues, we exclude sentences where the effective date comes before the projected completion date max
     -- validation errors and information can be found in this epic (https://app.zenhub.com/workspaces/analysis-5f8f1c625afb1c0011c7222a/issues/gh/recidiviz/pulse-data/16206) 
