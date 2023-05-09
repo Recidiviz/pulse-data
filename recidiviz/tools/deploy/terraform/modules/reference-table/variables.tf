@@ -31,8 +31,8 @@ variable "bucket_name" {
 }
 
 # The name of the table to load (ex: "county_resident_populations")
-# This is used to find the table as `recidiviz/calculator/query/external/static_data/{table_name}.csv` and
-# is also used as the name in BigQuery.
+# This is used to find the table as (either locally or in GCS, see the
+# |read_from_local| variable) and is also used as the name in BigQuery.
 variable "table_name" {
   type = string
 }
@@ -45,4 +45,12 @@ variable "schema" {
 # Path to the root of the recidiviz repo
 variable "recidiviz_root" {
   type = string
+}
+
+# If true, upload the data to GCS from local file
+# `recidiviz/calculator/query/external/static_data/{table_name}.csv`. Otherwise,
+# the module will expect a file is already present in GCS at
+# gs://{bucket_name}/{table_name}.csv".
+variable "read_from_local" {
+  type = bool
 }

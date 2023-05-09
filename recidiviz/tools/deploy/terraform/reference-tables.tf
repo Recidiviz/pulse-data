@@ -31,10 +31,11 @@ module "external_reference_dataset" {
 module "county_resident_adult_populations_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "county_resident_adult_populations"
   schema     = <<EOF
@@ -61,10 +62,11 @@ EOF
 module "county_resident_populations_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "county_resident_populations"
   schema     = <<EOF
@@ -91,10 +93,11 @@ EOF
 module "county_fips_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "county_fips"
   schema     = <<EOF
@@ -126,10 +129,11 @@ EOF
 module "us_nd_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_nd_incarceration_facility_names"
   schema     = <<EOF
@@ -151,10 +155,11 @@ EOF
 module "us_me_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_me_incarceration_facility_names"
   schema     = <<EOF
@@ -176,10 +181,11 @@ EOF
 module "us_tn_supervision_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_tn_supervision_facility_names"
   schema     = <<EOF
@@ -217,10 +223,11 @@ EOF
 module "us_tn_supervision_locations_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_tn_supervision_locations"
   schema     = <<EOF
@@ -257,10 +264,11 @@ EOF
 module "us_id_supervision_unit_to_district_map_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_id_supervision_unit_to_district_map"
   schema     = <<EOF
@@ -282,10 +290,11 @@ EOF
 module "us_id_supervision_district_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_id_supervision_district_names"
   schema     = <<EOF
@@ -307,10 +316,11 @@ EOF
 module "us_id_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_id_incarceration_facility_names"
   schema     = <<EOF
@@ -332,10 +342,11 @@ EOF
 module "us_id_incarceration_facility_map_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_id_incarceration_facility_map"
   schema     = <<EOF
@@ -357,10 +368,11 @@ EOF
 module "us_tn_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_tn_incarceration_facility_names"
   schema     = <<EOF
@@ -382,10 +394,11 @@ EOF
 module "us_tn_incarceration_facility_map_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_tn_incarceration_facility_map"
   schema     = <<EOF
@@ -407,10 +420,11 @@ EOF
 module "us_mi_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_mi_incarceration_facility_names"
   schema     = <<EOF
@@ -432,10 +446,11 @@ EOF
 module "us_co_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_co_incarceration_facility_names"
   schema     = <<EOF
@@ -457,10 +472,11 @@ EOF
 module "us_co_incarceration_facility_map_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_co_incarceration_facility_map"
   schema     = <<EOF
@@ -487,10 +503,11 @@ EOF
 module "us_mo_incarceration_facility_names_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "us_mo_incarceration_facility_names"
   schema     = <<EOF
@@ -512,10 +529,11 @@ EOF
 module "state_resident_populations_table" {
   source = "./modules/reference-table"
 
-  project_id     = var.project_id
-  bucket_name    = module.external_reference_tables_bucket.name
-  dataset_id     = module.external_reference_dataset.dataset_id
-  recidiviz_root = local.recidiviz_root
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = true
 
   table_name = "state_resident_populations"
   schema     = <<EOF
@@ -551,5 +569,108 @@ module "state_resident_populations_table" {
     "mode": "NULLABLE"
   }
 ]
+EOF
+}
+
+
+module "offense_description_to_labels_table" {
+  source = "./modules/reference-table"
+
+  project_id      = var.project_id
+  bucket_name     = module.external_reference_tables_bucket.name
+  dataset_id      = module.external_reference_dataset.dataset_id
+  recidiviz_root  = local.recidiviz_root
+  read_from_local = false
+
+  table_name = "offense_description_to_labels"
+  schema     = <<EOF
+[
+      {
+        "mode": "NULLABLE",
+        "name": "offense_description",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "probability",
+        "type": "FLOAT"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "uccs_code",
+        "type": "INTEGER"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "uccs_description",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "uccs_category",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "ncic_code",
+        "type": "INTEGER"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "ncic_description",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "ncic_category",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "nibrs_code",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "nibrs_description",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "nibrs_category",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "crime_against",
+        "type": "STRING"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "is_drug",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "is_violent",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "offense_completed",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "offense_attempted",
+        "type": "BOOLEAN"
+      },
+      {
+        "mode": "NULLABLE",
+        "name": "offense_conspired",
+        "type": "BOOLEAN"
+      }
+    ]
+
 EOF
 }
