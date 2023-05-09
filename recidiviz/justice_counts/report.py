@@ -229,7 +229,7 @@ class ReportInterface:
             monthly_metric_defs = None
 
         # Create monthly report if does not exist
-        if monthly_metric_defs is not None:
+        if monthly_metric_defs is not None and len(monthly_metric_defs) > 0:
             monthly_report = ReportInterface.create_report_if_not_exists(
                 session,
                 agency_id,
@@ -251,7 +251,7 @@ class ReportInterface:
             annual_metric_defs = None
 
         # Create yearly report if report does not exist
-        if annual_metric_defs is not None:
+        if annual_metric_defs is not None and len(annual_metric_defs) > 0:
             yearly_report = ReportInterface.create_report_if_not_exists(
                 session,
                 agency_id,
