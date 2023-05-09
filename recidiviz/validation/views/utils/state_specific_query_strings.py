@@ -39,7 +39,7 @@ def state_specific_dataflow_facility_name_transformation() -> str:
                 WHEN state_code = 'US_MO' 
                     THEN 'EXTERNAL_UNKNOWN'
                     # TODO(#16114) - Remove hacky logic once we have non-facility level aggregate validation
-                WHEN state_code = 'US_IX' AND facility like '%JAIL%' then REPLACE(facility, "JAIL", "COUNTY SHERIFF DEPARTMENT")
+                WHEN state_code = 'US_IX' AND facility like '%COUNTY JAIL%' then REPLACE(facility, "COUNTY JAIL", "COUNTY SHERIFF DEPARTMENT")
                 WHEN state_code = 'US_IX' AND facility="IDAHO STATE CORRECTIONAL CENTER" THEN "IDAHO CORRECTIONAL CENTER - BOISE"
                 WHEN state_code = 'US_IX' AND facility="IDAHO STATE CORRECTIONAL INSTITUTION" THEN "IDAHO STATE CORRECTIONAL INSTITUTION, BOISE"
                 WHEN state_code = 'US_IX' AND facility="SOUTH IDAHO CORRECTIONAL INSTITUTION" THEN "SOUTH IDAHO CORRECTIONAL INSTITUTION, BOISE"
