@@ -17,6 +17,7 @@
 """Functionality for bulk upload of a spreadsheet into the Justice Counts database."""
 
 import datetime
+import math
 from collections import defaultdict
 from itertools import groupby
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -104,7 +105,6 @@ class SpreadsheetUploader:
             agency_id_to_rows = self._get_agency_id_to_rows(
                 rows=rows,
                 metric_key_to_errors=metric_key_to_errors,
-                super_agency=self.agency,
             )
             self._upload_super_agency_sheet(
                 session=session,
@@ -589,37 +589,102 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        super_agency: schema.Agency,
     ) -> Dict[int, List[Dict[str, Any]]]:
         """Groups the rows in the file by the value of the `agency` column.
         Returns a dictionary mapping each agency to its list of rows."""
         agency_id_to_rows = {}
-        agency_name_to_rows = {
-            k: list(v)
-            for k, v in groupby(
-                sorted(rows, key=lambda x: x.get("agency", super_agency.name)),
-                lambda x: x.get("agency", super_agency.name),
+
+        def get_agency_name(row: Dict[str, Any]) -> str:
+            agency_name = row.get("agency")
+            system = row.get("system")
+            metric_file = get_metricfile_by_sheet_name(
+                sheet_name=self.sheet_name,
+                system=system if system is not None else self.system,
             )
-        }
-        for agency_name, agency_rows in agency_name_to_rows.items():
+            if agency_name is None:
+                actual_columns = {
+                    col.lower() for col in self.column_names if col != "Unnamed: 0"
+                }
+                description = (
+                    f'We expected to see a column named "agency". '
+                    f"Only the following columns were found in the sheet: "
+                    f"{', '.join(actual_columns)}."
+                )
+                raise JusticeCountsBulkUploadException(
+                    title="Missing Agency Column",
+                    description=description,
+                    message_type=BulkUploadMessageType.ERROR,
+                )
+            if isinstance(agency_name, float) and math.isnan(agency_name):
+                # When there is an agency column but there is a missing
+                # agency value for the row, then the agency_name in the row is nan
+                if metric_file is not None and "Missing Agency Data" not in {
+                    e.title for e in metric_key_to_errors[metric_file.definition.key]
+                }:
+                    # Don't stop ingest if only a row is missing an agency name
+                    metric_key_to_errors[metric_file.definition.key].append(
+                        JusticeCountsBulkUploadException(
+                            title="Missing Agency Data",
+                            description="We expected to see an agency name provided in the agency column for all rows.",
+                            message_type=BulkUploadMessageType.ERROR,
+                        )
+                    )
+                return ""
             normalized_agency_name = agency_name.strip().lower()
             if (
                 normalized_agency_name not in self.child_agency_name_to_id
-                and normalized_agency_name != super_agency.name.lower()
+                and normalized_agency_name != self.agency.name.lower()
             ):
-                metric_key_to_errors[None].append(
-                    JusticeCountsBulkUploadException(
-                        title="Agency Not Recognized",
-                        description=(
-                            f"Failed to upload data for {agency_name}. Either this agency does not exist in our database, or your agency does not have permission to upload for this agency."
-                        ),
-                        message_type=BulkUploadMessageType.WARNING,
+                description = f"Failed to upload data for {agency_name}. Either this agency does not exist in our database, or your agency does not have permission to upload for this agency."
+                if metric_file is not None and description not in {
+                    e.description
+                    for e in metric_key_to_errors[metric_file.definition.key]
+                }:
+                    # Don't stop ingest if the agency name is not recognized
+                    metric_key_to_errors[metric_file.definition.key].append(
+                        JusticeCountsBulkUploadException(
+                            title="Agency Not Recognized",
+                            description=description,
+                            message_type=BulkUploadMessageType.ERROR,
+                        )
+                    )
+                return ""
+
+            return normalized_agency_name
+
+        agency_name_to_rows = {}
+        try:
+            # This try/except block is meant to catch errors thrown in the get_agency_name method.
+            agency_name_to_rows = {
+                k: list(v)
+                for k, v in groupby(
+                    sorted(
+                        rows,
+                        key=get_agency_name,
+                    ),
+                    get_agency_name,
+                )
+            }
+        except Exception as e:
+            metric_file = get_metricfile_by_sheet_name(
+                sheet_name=self.sheet_name,
+                system=self.system,
+            )
+            if metric_file:
+                metric_key_to_errors[metric_file.definition.key].append(
+                    self._handle_error(
+                        e=e,
                         sheet_name=self.sheet_name,
                     )
                 )
-            else:
-                agency_id = self.child_agency_name_to_id[normalized_agency_name]
+
+        for agency_name, agency_rows in agency_name_to_rows.items():
+            if len(agency_name) > 0:
+                # Agency Name will be "" if the row is missing an agency.
+                # The rows associated with no agency name will not be ingested.
+                agency_id = self.child_agency_name_to_id[agency_name]
                 agency_id_to_rows[agency_id] = agency_rows
+
         return agency_id_to_rows
 
     def _get_system_to_rows(
