@@ -17,7 +17,10 @@
 """Defines a criteria span view that shows spans of time during which someone
 has completed half their full term supervision sentence.
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
 )
@@ -25,7 +28,9 @@ from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
 )
-from recidiviz.common.constants.states import StateCode
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
@@ -34,11 +39,6 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION = [
-    StateCode.US_ND,
-    StateCode.US_MI,
-]
 
 _CRITERIA_NAME = "SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE"
 
@@ -62,7 +62,7 @@ WITH critical_date_spans AS (
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
         -- separately in supervision sentences
-        AND (sent.state_code NOT IN ("{{excluded_incarceration_states}}") OR sent.sentence_type = "SUPERVISION")
+        AND (sent.state_code NOT IN ({{excluded_incarceration_states}}) OR sent.sentence_type = "SUPERVISION")
     GROUP BY 1, 2, 3, 4
 ),
 {critical_date_has_passed_spans_cte()}
@@ -98,11 +98,9 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         sessions_dataset=SESSIONS_DATASET,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
-        excluded_incarceration_states='", "'.join(
-            [
-                state.name
-                for state in STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION
-            ]
+        excluded_incarceration_states=list_to_query_string(
+            string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
+            quoted=True,
         ),
     )
 )

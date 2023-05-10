@@ -14,55 +14,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Spans of time with the projected max completion date for clients under supervision
+"""Spans of time with the projected max completion date for incarcerated clients
 as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.bq_utils import (
-    list_to_query_string,
-    nonnull_end_date_clause,
-)
+from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_intersection_spans,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
-from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
-    STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
-    STATES_WITH_NO_INFERRED_OPEN_SPANS,
-    STATES_WITH_SEPARATE_SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS,
-)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_VIEW_NAME = "supervision_projected_completion_date_spans"
+_VIEW_NAME = "incarceration_projected_completion_date_spans"
 
 _VIEW_DESCRIPTION = """
-Spans of time with the projected max completion date for clients under supervision as
+Spans of time with the projected max completion date for incarcerated clients as
 indicated by the sentences that were active during that span.
 """
 
 _QUERY_TEMPLATE = f"""
 WITH projected_completion_date_spans AS (
--- Use `sentence_spans` to pull the supervision completion dates from `sentences_preprocessed` and
--- `sentence_deadline_spans`, with a higher priority given to the `sentence_deadline_spans` when available within
--- each sentence span
     SELECT
         span.state_code,
         span.person_id,
         span.start_date,
         span.end_date_exclusive,
         MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
+        MAX(sent.parole_eligibility_date) AS parole_eligibility_date,
         1 AS priority,
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
-    WHERE
-        -- Exclude incarceration sentences for states that store all supervision sentence data (including parole)
-        -- separately in supervision sentences
-        (sent.state_code NOT IN ({{excluded_incarceration_states}}) OR sent.sentence_type = "SUPERVISION")
-        AND sent.state_code NOT IN ({{states_with_separate_query}})
     GROUP BY 1, 2, 3, 4
 
     UNION ALL
@@ -72,25 +57,17 @@ WITH projected_completion_date_spans AS (
         span.person_id,
         span.start_date,
         span.end_date_exclusive,
-        MAX(
-            -- Exclude incarceration projected release dates for states that store all supervision sentence data
-            -- separately in supervision sentences
-            IF(
-                span.state_code IN ({{excluded_incarceration_states}}),
-                sent.projected_supervision_release_date,
-                COALESCE(sent.projected_supervision_release_date, sent.projected_incarceration_release_date)
-            )
-        ) AS projected_completion_date_max,
+        MAX(sent.projected_incarceration_release_date) AS projected_completion_date_max,
+        MAX(sent.parole_eligibility_date) AS parole_eligibility_date,
         0 as priority
     FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
     UNNEST (sentence_deadline_id_array) AS sentence_deadline_id
     INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentence_deadline_spans_materialized` sent
         USING (state_code, person_id, sentence_deadline_id)
-    WHERE sent.state_code NOT IN ({{states_with_separate_query}})
     GROUP BY 1, 2, 3, 4
 ),
 prioritized_projected_completion_dates AS (
--- Prioritize the projected completion dates from deadline spans over sentences preprocessed when hydrated
+    -- Prioritize the projected completion dates from deadline spans over sentences preprocessed when hydrated
     SELECT
       state_code,
       person_id,
@@ -100,13 +77,13 @@ prioritized_projected_completion_dates AS (
       -- currently on supervision then the sentence span will get clipped to the supervision session end date when
       -- taking the intersection with supervision sessions below.
       IF(
-        state_code NOT IN ({{no_inferred_open_span_states}})
-          AND start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id, priority)
-          AND {nonnull_end_date_clause("end_date_exclusive")} <= CURRENT_DATE("US/Eastern"),
+        start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id, priority)
+        AND {nonnull_end_date_clause("end_date_exclusive")} <= CURRENT_DATE("US/Eastern"),
         NULL,
         end_date_exclusive
       ) AS end_date_exclusive,
       projected_completion_date_max,
+      parole_eligibility_date,
     FROM projected_completion_date_spans
     QUALIFY ROW_NUMBER() OVER (
       PARTITION BY state_code, person_id, start_date
@@ -114,34 +91,29 @@ prioritized_projected_completion_dates AS (
     ) = 1
 ),
 collapsed_adjacent_spans AS (
--- Collapse any adjacent spans with the same `projected_completion_date_max`
 {aggregate_adjacent_spans(
     table_name="prioritized_projected_completion_dates",
     index_columns=["state_code", "person_id"],
-    attribute=["projected_completion_date_max"],
+    attribute=["projected_completion_date_max", "parole_eligibility_date"],
     end_date_field_name="end_date_exclusive",
 )}),
-supervision_sessions AS (
+incarceration_sessions AS (
     SELECT
         state_code,
         person_id,
         start_date,
         end_date_exclusive,
-        end_date_exclusive IS NULL AS open_supervision_session,
+        end_date_exclusive IS NULL AS open_incarceration_session,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
-    WHERE compartment_level_1 = "SUPERVISION"
-        AND state_code NOT IN ({{states_with_separate_query}})
+    WHERE compartment_level_1 = "INCARCERATION"
 ),
-overlapping_supervision_sessions AS (
--- Left join the supervision projected completion date spans onto the supervision sessions so that every supervision
--- session is maintained, but split into parts if the `projected_completion_date_max` changes. If no sentence is
--- available the `projected_completion_date_max` will be NULL.
+overlapping_incarceration_sessions AS (
 {create_intersection_spans(
-    table_1_name="supervision_sessions",
+    table_1_name="incarceration_sessions",
     table_2_name="collapsed_adjacent_spans",
     index_columns=["state_code", "person_id"],
-    table_1_columns=["open_supervision_session"],
-    table_2_columns=["projected_completion_date_max"],
+    table_1_columns=["open_incarceration_session"],
+    table_2_columns=["projected_completion_date_max", "parole_eligibility_date"],
     use_left_join=True,
 )})
 SELECT
@@ -151,35 +123,20 @@ SELECT
     end_date_exclusive,
     end_date_exclusive AS end_date,
     projected_completion_date_max,
-FROM overlapping_supervision_sessions
-
-UNION ALL
-
-SELECT * FROM `{{project_id}}.{{sessions_dataset}}.us_tn_supervision_projected_completion_date_spans_materialized`
+    parole_eligibility_date,
+FROM overlapping_incarceration_sessions
 """
 
-SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=SESSIONS_DATASET,
     view_id=_VIEW_NAME,
     view_query_template=_QUERY_TEMPLATE,
     description=_VIEW_DESCRIPTION,
     sessions_dataset=SESSIONS_DATASET,
-    excluded_incarceration_states=list_to_query_string(
-        string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
-        quoted=True,
-    ),
-    states_with_separate_query=list_to_query_string(
-        string_list=STATES_WITH_SEPARATE_SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS,
-        quoted=True,
-    ),
-    no_inferred_open_span_states=list_to_query_string(
-        string_list=STATES_WITH_NO_INFERRED_OPEN_SPANS,
-        quoted=True,
-    ),
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],
 )
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
-        SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.build_and_print()
+        INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER.build_and_print()
