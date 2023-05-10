@@ -6513,6 +6513,7 @@ def expected_population_events(
                 most_severe_response_decision=most_severe_response_decision,
                 response_count=response_count,
                 supervising_officer_external_id=supervising_officer_external_id,
+                supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                 supervising_district_external_id=(
                     level_2_supervision_location_external_id
                     or level_1_supervision_location_external_id
@@ -6970,6 +6971,7 @@ def create_start_event_from_period(
         supervision_type=period.supervision_type,
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_officer_external_id=supervising_officer_external_id,
+        supervising_officer_staff_id=period.supervising_officer_staff_id,
         supervising_district_external_id=deprecated_supervising_district_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
@@ -7027,6 +7029,7 @@ def create_termination_event_from_period(
         supervision_level_raw_text=period.supervision_level_raw_text,
         supervising_district_external_id=deprecated_supervising_district_external_id,
         supervising_officer_external_id=supervising_officer_external_id,
+        supervising_officer_staff_id=period.supervising_officer_staff_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         case_type=StateSupervisionCaseType.GENERAL,

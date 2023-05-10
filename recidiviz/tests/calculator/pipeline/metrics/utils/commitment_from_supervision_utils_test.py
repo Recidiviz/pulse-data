@@ -170,6 +170,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="DISTRICT 999",
+            supervising_officer_staff_id=12345,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -197,6 +198,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -227,6 +229,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 termination_date=date(2018, 8, 20),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervision_site="DISTRICT X",
+                supervising_officer_staff_id=12345,
             )
         )
 
@@ -274,6 +277,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=overlapping_supervision_period.supervision_level,
                 supervision_level_raw_text=overlapping_supervision_period.supervision_level_raw_text,
@@ -294,6 +298,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 termination_date=date(2018, 5, 19),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_site="DISTRICT 999",
+                supervising_officer_staff_id=12345,
             )
         )
 
@@ -340,6 +345,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=terminated_supervision_period.supervision_level,
                 supervision_level_raw_text=terminated_supervision_period.supervision_level_raw_text,
@@ -383,6 +389,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 level_1_supervision_location_external_id=None,
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id=None,
+                supervising_officer_staff_id=None,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -399,6 +406,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_site="X",
+            supervising_officer_staff_id=12345,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -426,6 +434,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -457,6 +466,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 level_1_supervision_location_external_id=None,
                 level_2_supervision_location_external_id=None,
                 supervising_officer_external_id=None,
+                supervising_officer_staff_id=None,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=None,
                 supervision_level_raw_text=None,
@@ -484,6 +494,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
+            supervising_officer_staff_id=12345,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -530,6 +541,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -558,6 +570,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=incarceration_period.admission_date,
+            supervising_officer_staff_id=12345,
         )
 
         supervision_period_while_in_prison = (
@@ -586,6 +599,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,
                 supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,
@@ -604,6 +618,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             termination_date=date(2016, 5, 19),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_site="DISTRICT 999",
+            supervising_officer_staff_id=12345,
         )
 
         bh_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -662,6 +677,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,
                 supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,

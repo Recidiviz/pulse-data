@@ -322,6 +322,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 supervising_officer_external_id="143",
+                supervising_officer_staff_id=10000,
                 supervising_district_external_id="DISTRICT X",
                 projected_end_date=None,
             ),
@@ -335,6 +336,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.VERY_HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
                 supervising_officer_external_id="143",
+                supervising_officer_staff_id=10000,
                 supervising_district_external_id="DISTRICT X",
                 projected_end_date=None,
             ),
@@ -389,6 +391,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 incarcerated_during_sentence=False,
                 sentence_days_served=998,
                 supervising_officer_external_id="officer45",
+                supervising_officer_staff_id=10000,
                 supervising_district_external_id="district5",
             ),
             SupervisionPopulationEvent(
@@ -464,6 +467,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=False,
                 incarcerated_during_sentence=True,
                 supervising_officer_external_id="officer45",
+                supervising_officer_staff_id=10000,
                 supervising_district_external_id="district5",
             ),
             SupervisionPopulationEvent(
@@ -544,6 +548,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 incarcerated_during_sentence=True,
                 supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
             ),
             ProjectedSupervisionCompletionEvent(
                 state_code="US_ND",
@@ -556,6 +561,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 sentence_days_served=199,
                 supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
             ),
             SupervisionPopulationEvent(
                 state_code="US_ND",
@@ -652,6 +658,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=False,
                 supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
             ),
             ProjectedSupervisionCompletionEvent(
                 state_code="US_XX",
@@ -1273,6 +1280,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 sentence_days_served=398,
                 supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
             ),
             termination_event,
             SupervisionPopulationEvent(
@@ -1367,6 +1375,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=True,
                 supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
             ),
             termination_event,
             SupervisionPopulationEvent(
@@ -1459,6 +1468,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
                 successful_completion=True,
                 supervising_officer_external_id="officer45",
                 supervising_district_external_id="district5",
+                supervising_officer_staff_id=10000,
             ),
             termination_event,
             SupervisionPopulationEvent(

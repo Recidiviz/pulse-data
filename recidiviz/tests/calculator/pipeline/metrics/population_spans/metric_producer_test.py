@@ -370,6 +370,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
+            supervising_officer_staff_id=10000,
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -397,6 +398,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2000, 7, 12),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
@@ -423,6 +425,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
+            supervising_officer_staff_id=10000,
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -450,6 +453,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2000, 8, 31),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -471,6 +475,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2001, 8, 31),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -492,6 +497,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2002, 1, 2),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -520,6 +526,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
+            supervising_officer_staff_id=10000,
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -546,6 +553,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2002, 7, 2),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -572,6 +580,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
+            supervising_officer_staff_id=10000,
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -599,6 +608,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2019, 8, 31),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -620,6 +630,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=None,
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -655,6 +666,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
             case_type=StateSupervisionCaseType.GENERAL,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
             supervising_officer_external_id="OFFICER 1",
+            supervising_officer_staff_id=10000,
         )
 
         metrics = self.metric_producer.produce_metrics(
@@ -733,6 +745,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2017, 8, 31),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -754,6 +767,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2018, 8, 31),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -775,6 +789,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=date(2019, 8, 31),
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -796,6 +811,7 @@ class TestProducePopulationSpanMetrics(unittest.TestCase):
                     end_date_exclusive=None,
                     included_in_state_population=True,
                     supervising_officer_external_id="OFFICER 1",
+                    supervising_officer_staff_id=10000,
                     supervising_district_external_id="site",
                     level_1_supervision_location_external_id="site",
                     supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,

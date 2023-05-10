@@ -382,6 +382,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 supervising_district_external_id="X",
                 level_1_supervision_location_external_id="X",
                 supervising_officer_external_id="XXX",
+                supervising_officer_staff_id=None,
                 case_type=StateSupervisionCaseType.GENERAL,
                 assessment_score_bucket=DEFAULT_ASSESSMENT_SCORE_BUCKET,
             ),
@@ -422,7 +423,6 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 commitment_from_supervision_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             ),
         ]
-
         self.assertCountEqual(expected_events, incarceration_events)
 
     def test_find_incarceration_events_multiple_sentences(self) -> None:

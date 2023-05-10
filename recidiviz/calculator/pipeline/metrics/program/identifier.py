@@ -353,6 +353,7 @@ class ProgramIdentifier(BaseIdentifier[List[ProgramEvent]]):
                         assessment_score_bucket=assessment_score_bucket,
                         supervision_type=supervision_period.supervision_type,
                         supervising_officer_external_id=supervising_officer_external_id,
+                        supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
                         supervising_district_external_id=deprecated_supervising_district_external_id,
                         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
                         level_2_supervision_location_external_id=level_2_supervision_location_external_id,

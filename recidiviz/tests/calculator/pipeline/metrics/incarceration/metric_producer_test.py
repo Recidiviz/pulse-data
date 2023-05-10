@@ -645,6 +645,65 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
             if isinstance(metric, IncarcerationCommitmentFromSupervisionMetric):
                 self.assertEqual("SID9889", metric.secondary_person_external_id)
 
+    def test_produce_incarceration_metrics_supervising_officer_staff_id(self) -> None:
+        person = StatePerson.new_with_defaults(
+            state_code="US_XX",
+            person_id=12345,
+            birthdate=date(1984, 8, 31),
+            gender=StateGender.FEMALE,
+            races=[
+                StatePersonRace.new_with_defaults(
+                    state_code="US_XX", race=StateRace.WHITE
+                )
+            ],
+            ethnicities=[
+                StatePersonEthnicity.new_with_defaults(
+                    state_code="US_XX", ethnicity=StateEthnicity.NOT_HISPANIC
+                )
+            ],
+            external_ids=[
+                StatePersonExternalId.new_with_defaults(
+                    external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
+                ),
+                StatePersonExternalId.new_with_defaults(
+                    external_id="SID9889", id_type="US_XX_SID", state_code="US_XX"
+                ),
+            ],
+        )
+
+        incarceration_events = [
+            IncarcerationCommitmentFromSupervisionAdmissionEvent(
+                state_code="US_XX",
+                event_date=date(2000, 3, 12),
+                facility="FACILITY X",
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                admission_reason=AdmissionReason.REVOCATION,
+                admission_reason_raw_text="REVOCATION",
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                supervising_officer_staff_id=10000,
+            ),
+        ]
+
+        metrics = self.metric_producer.produce_metrics(
+            person=person,
+            identifier_results=incarceration_events,
+            metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA,
+            pipeline_job_id=PIPELINE_JOB_ID,
+            metrics_producer_delegates={
+                StateSpecificIncarcerationMetricsProducerDelegate.__name__: UsXxIncarcerationMetricsProducerDelegate()
+            },
+        )
+
+        expected_count = self.expected_metrics_count(incarceration_events)
+
+        self.assertEqual(expected_count, len(metrics))
+        for metric in metrics:
+            if isinstance(metric, IncarcerationCommitmentFromSupervisionMetric):
+                self.assertEqual(10000, metric.supervising_officer_staff_id)
+
     def expected_metrics_count(
         self, incarceration_events: Sequence[IncarcerationEvent]
     ) -> int:
