@@ -22,6 +22,9 @@ from recidiviz.calculator.query.sessions_query_fragments import (
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.criteria.state_specific.us_tn.on_eligible_level_for_sufficient_time import (
+    EXCLUDED_MEDIUM_RAW_TEXT,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
@@ -100,7 +103,7 @@ _QUERY_TEMPLATE = f"""
                        determined by courts/judges and thus people in that unit are not eligible for a downgrade 
                        regardless of their assessment score
                     */
-                    AND supervision_level_raw_text != '6P3' 
+                    AND supervision_level_raw_text NOT IN ('{{exclude_medium}}') 
                     THEN TRUE
                 WHEN assessment_level = 'MODERATE' 
                     AND supervision_level NOT IN ('MEDIUM', 'MINIMUM', 'LIMITED', 'UNSUPERVISED') 
@@ -139,6 +142,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         description=_DESCRIPTION,
         sessions_dataset=SESSIONS_DATASET,
+        exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
     )
 )
 

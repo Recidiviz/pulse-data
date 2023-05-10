@@ -28,6 +28,9 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.criteria.state_specific.us_tn.on_eligible_level_for_sufficient_time import (
+    EXCLUDED_MEDIUM_RAW_TEXT,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -137,7 +140,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                 CASE WHEN sup_levels.supervision_level = 'MINIMUM'
                             OR 
                           ( sup_levels.supervision_level = 'MEDIUM'
-                            AND supervision_level_raw_text != '6P3'
+                            AND supervision_level_raw_text NOT IN  ('{exclude_medium}')
                             )  
                     THEN 1 
                     ELSE 0 END AS eligible_supervision_level,
@@ -164,14 +167,14 @@ US_TN_COMPLIANT_REPORTING_LOGIC_QUERY_TEMPLATE = """
                             CASE 
                                 WHEN DATE_DIFF(current_date('US/Eastern'),sup_levels.start_date,MONTH)>=12 THEN 'minimum'
                                 WHEN ( previous_supervision_level IN ('MEDIUM') 
-                                        AND previous_supervision_level_raw_text != '6P3'
+                                        AND previous_supervision_level_raw_text NOT IN  ('{exclude_medium}')
                                     )
                                 AND DATE_ADD(sup_levels.previous_start_date, INTERVAL 18 MONTH) < DATE_ADD(sup_levels.start_date, INTERVAL 12 MONTH) THEN 'medium_or_less'
                             ELSE 'minimum'
                             END
                             )
                     WHEN ( sup_levels.supervision_level = 'MEDIUM'
-                            AND supervision_level_raw_text != '6P3' 
+                            AND supervision_level_raw_text NOT IN  ('{exclude_medium}') 
                             ) 
                     THEN (
                             CASE 
@@ -903,6 +906,7 @@ US_TN_COMPLIANT_REPORTING_LOGIC_VIEW_BUILDER = SimpleBigQueryViewBuilder(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
+    exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
 )
 
 if __name__ == "__main__":
