@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,39 +30,58 @@ SENTENCE_SPANS_VIEW_NAME = "sentence_spans"
 SENTENCE_SPANS_VIEW_DESCRIPTION = """Spans of time when a collection of sentences were being served or pending served and already imposed"""
 
 SENTENCE_SPANS_QUERY_TEMPLATE = f"""
-    WITH
-    /*
-    Combine the sentence imposed groups with the individual sentences with columns for
-    the session start and end in order to create the spans when each sentence and group
-    were being served.
-    */
-    sentences AS (
-        SELECT
-            sent.state_code,
-            sent.person_id,
-            attr.date_imposed AS start_date,
-            attr.completion_date AS end_date_exclusive,
-            sent.sentence_imposed_group_id,
-            attr.sentences_preprocessed_id,
-        FROM `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent,
-        UNNEST(offense_attributes) AS attr
-        WHERE attr.date_imposed != {nonnull_end_date_clause('attr.completion_date')}
-    ),
-    {create_sub_sessions_with_attributes("sentences", end_date_field_name='end_date_exclusive')}
+WITH
+/*
+Combine the sentence imposed groups with the individual sentences with columns for
+the session start and end in order to create the spans when each sentence and group
+were being served.
+*/
+sentences AS (
+    SELECT
+        sent.state_code,
+        sent.person_id,
+        attr.date_imposed AS start_date,
+        attr.completion_date AS end_date_exclusive,
+        sent.sentence_imposed_group_id,
+        attr.sentences_preprocessed_id,
+        CAST(NULL AS INTEGER) AS sentence_deadline_id,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentence_imposed_group_summary_materialized` sent,
+    UNNEST(offense_attributes) AS attr
+    WHERE attr.date_imposed != {nonnull_end_date_clause('attr.completion_date')}
+
+    UNION ALL
+
     SELECT
         state_code,
         person_id,
         start_date,
         end_date_exclusive,
-        end_date_exclusive AS end_date,
-        ARRAY_AGG(
-            DISTINCT sentence_imposed_group_id IGNORE NULLS ORDER BY sentence_imposed_group_id
-        ) AS sentence_imposed_group_id_array,
-        ARRAY_AGG(
-            DISTINCT sentences_preprocessed_id IGNORE NULLS ORDER BY sentences_preprocessed_id
-        ) AS sentences_preprocessed_id_array,
-    FROM sub_sessions_with_attributes
-    GROUP BY 1,2,3,4,5
+        CAST(NULL AS INTEGER) AS sentence_imposed_group_id,
+        CAST(NULL AS INTEGER) AS sentences_preprocessed_id,
+        sentence_deadline_id,
+    FROM `{{project_id}}.{{sessions_dataset}}.sentence_deadline_spans_materialized`
+),
+{create_sub_sessions_with_attributes(
+    table_name="sentences",
+    end_date_field_name='end_date_exclusive'
+)}
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date_exclusive,
+    end_date_exclusive AS end_date,
+    ARRAY_AGG(
+        DISTINCT sentence_imposed_group_id IGNORE NULLS ORDER BY sentence_imposed_group_id
+    ) AS sentence_imposed_group_id_array,
+    ARRAY_AGG(
+        DISTINCT sentences_preprocessed_id IGNORE NULLS ORDER BY sentences_preprocessed_id
+    ) AS sentences_preprocessed_id_array,
+    ARRAY_AGG(
+        DISTINCT sentence_deadline_id IGNORE NULLS ORDER BY sentence_deadline_id
+    ) AS sentence_deadline_id_array,
+FROM sub_sessions_with_attributes
+GROUP BY 1,2,3,4,5
 """
 
 SENTENCE_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -33,6 +33,7 @@ Spans of time with the projected max completion date for clients under supervisi
 indicated by the sentences that were active during that span.
 """
 
+# TODO(#20650): deprecate this view once `Sentence.ExpirationDate` is not mapped to `sentences_preprocessed.completion_date`
 _QUERY_TEMPLATE = f"""
 WITH all_states_spans AS (
         SELECT
@@ -40,9 +41,6 @@ WITH all_states_spans AS (
             span.person_id,
             span.start_date,
             span.end_date_exclusive,
-            /* Completion date comes from ExpirationDate which accounts for sentence credits. Projected completion date
-            comes from FullExpirationDate which doesn't */
-            -- TODO(#17246): use `state_task_deadline.eligibility_date` once ExpirationDate is ingested there
             MAX(sent.projected_completion_date_max) AS projected_completion_date_max,
         FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized` span,
         UNNEST (sentences_preprocessed_id_array) AS sentences_preprocessed_id

@@ -18,7 +18,10 @@
 their probation supervision early discharge date, computed from the supervision
 sentence minimum length days.
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
+from recidiviz.calculator.query.bq_utils import (
+    list_to_query_string,
+    nonnull_end_date_clause,
+)
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
@@ -63,7 +66,7 @@ WITH critical_date_spans AS (
         -- Exclude incarceration sentences for states that store all supervision
         -- sentence data (including parole)
         -- separately in supervision sentences
-        (sent.state_code NOT IN ("{{excluded_incarceration_states}}") OR sent.sentence_type = "SUPERVISION")
+        (sent.state_code NOT IN ({{excluded_incarceration_states}}) OR sent.sentence_type = "SUPERVISION")
     GROUP BY 1, 2, 3, 4
 ),
 {critical_date_has_passed_spans_cte()}
@@ -99,11 +102,9 @@ VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
         criteria_spans_query_template=_QUERY_TEMPLATE,
         normalized_state_dataset=NORMALIZED_STATE_DATASET,
         sessions_dataset=SESSIONS_DATASET,
-        excluded_incarceration_states='", "'.join(
-            [
-                state.name
-                for state in STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION
-            ]
+        excluded_incarceration_states=list_to_query_string(
+            string_list=STATES_WITH_NO_INCARCERATION_SENTENCES_ON_SUPERVISION,
+            quoted=True,
         ),
     )
 )

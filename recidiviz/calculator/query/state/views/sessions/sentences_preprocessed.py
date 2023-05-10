@@ -17,9 +17,15 @@
 """Processed Sentencing Data"""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state.dataset_config import (
     NORMALIZED_STATE_DATASET,
     SESSIONS_DATASET,
+)
+from recidiviz.calculator.query.state.views.sessions.state_sentence_configurations import (
+    STATES_WITH_SEPARATE_INCARCERATION_SENTENCES_PREPROCESSED,
+    STATES_WITH_SEPARATE_SENTENCES_PREPROCESSED,
+    STATES_WITHOUT_INFERRED_SENTENCE_COMPLETION_DATE,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -27,10 +33,6 @@ from recidiviz.utils.metadata import local_project_id_override
 SENTENCES_PREPROCESSED_VIEW_NAME = "sentences_preprocessed"
 
 SENTENCES_PREPROCESSED_VIEW_DESCRIPTION = """Processed Sentencing Data"""
-
-# List of states that have separate sentence preprocessed views
-SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_TN"]
-INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES = ["US_ND", "US_CO"]
 
 # TODO(#13746): Investigate whether completion_date in state agnostic sentences preprocessed should allow for a date in the future
 SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
@@ -76,7 +78,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sis.external_id IS NOT NULL
-        AND sis.state_code NOT IN ('{special_states}', '{incarceration_special_states}')
+        AND sis.state_code NOT IN ({special_states}, {incarceration_special_states})
 
     UNION ALL
 
@@ -123,7 +125,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         ON charge.state_code = assoc.state_code
         AND charge.charge_id = assoc.charge_id
     WHERE sss.external_id IS NOT NULL
-        AND sss.state_code NOT IN ('{special_states}')
+        AND sss.state_code NOT IN ({special_states})
     ),
     /*
     Collect all discharge/release dates to liberty as inferred sentence completion dates
@@ -135,6 +137,10 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             end_date_exclusive AS completion_date
         FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
         WHERE outflow_to_level_1 IN ("LIBERTY", "DEATH")
+            -- Do not infer sentence completion dates for temporary releases to liberty
+            AND COALESCE(end_reason, "EXTERNAL_UNKNOWN") != "TEMPORARY_RELEASE"
+            -- Don't infer sentence completion dates for some states
+            AND state_code NOT IN ({states_without_inferred_completion_date})
     ),
     /*
     Use the next successful supervision termination date following the effective date
@@ -267,9 +273,17 @@ SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=SENTENCES_PREPROCESSED_VIEW_DESCRIPTION,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
     sessions_dataset=SESSIONS_DATASET,
-    special_states="', '".join(SENTENCES_PREPROCESSED_SPECIAL_STATES),
-    incarceration_special_states="', '".join(
-        INCARCERATION_SENTENCES_PREPROCESSED_SPECIAL_STATES
+    special_states=list_to_query_string(
+        string_list=STATES_WITH_SEPARATE_SENTENCES_PREPROCESSED,
+        quoted=True,
+    ),
+    incarceration_special_states=list_to_query_string(
+        string_list=STATES_WITH_SEPARATE_INCARCERATION_SENTENCES_PREPROCESSED,
+        quoted=True,
+    ),
+    states_without_inferred_completion_date=list_to_query_string(
+        string_list=STATES_WITHOUT_INFERRED_SENTENCE_COMPLETION_DATE,
+        quoted=True,
     ),
     should_materialize=True,
     clustering_fields=["state_code", "person_id"],

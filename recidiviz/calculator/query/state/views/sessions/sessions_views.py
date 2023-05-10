@@ -93,6 +93,9 @@ from recidiviz.calculator.query.state.views.sessions.drug_screens_preprocessed i
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_sessions import (
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.incarceration_projected_completion_date_spans import (
+    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.incarceration_super_sessions import (
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
 )
@@ -122,6 +125,9 @@ from recidiviz.calculator.query.state.views.sessions.release_termination_reason_
 )
 from recidiviz.calculator.query.state.views.sessions.revocation_sessions import (
     REVOCATION_SESSIONS_VIEW_BUILDER,
+)
+from recidiviz.calculator.query.state.views.sessions.sentence_deadline_spans import (
+    SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.sentence_imposed_group_summary import (
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
@@ -163,7 +169,7 @@ from recidiviz.calculator.query.state.views.sessions.supervision_officer_session
     SUPERVISION_OFFICER_SESSIONS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_projected_completion_date_spans import (
-    SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
+    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.supervision_super_sessions import (
     SUPERVISION_SUPER_SESSIONS_VIEW_BUILDER,
@@ -192,9 +198,6 @@ from recidiviz.calculator.query.state.views.sessions.us_id.us_id_incarceration_p
 from recidiviz.calculator.query.state.views.sessions.us_id.us_id_raw_lsir_assessments import (
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
 )
-from recidiviz.calculator.query.state.views.sessions.us_id.us_id_supervision_projected_completion_date_spans import (
-    US_ID_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
-)
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_consecutive_sentences_preprocessed import (
     US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
 )
@@ -203,9 +206,6 @@ from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_drug_screens_pr
 )
 from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_raw_lsir_assessments import (
     US_IX_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
-)
-from recidiviz.calculator.query.state.views.sessions.us_ix.us_ix_supervision_projected_completion_date_spans import (
-    US_IX_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
 )
 from recidiviz.calculator.query.state.views.sessions.us_me.us_me_consecutive_sentences_preprocessed import (
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
@@ -297,6 +297,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     DISTRICT_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
+    INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
     LOCATION_SESSIONS_VIEW_BUILDER,
@@ -321,12 +322,10 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SUPERVISION_EMPLOYMENT_STATUS_SESSIONS_VIEW_BUILDER,
     US_ID_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_ID_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
-    US_ID_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
     US_ID_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
     US_IX_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_IX_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_IX_RAW_LSIR_ASSESSMENTS_VIEW_BUILDER,
-    US_IX_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
     US_ME_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_MI_STATE_ASSESSMENT_PREPROCESSED_VIEW_BUILDER,
     US_MO_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
@@ -353,7 +352,8 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_SENTENCE_SUMMARY_VIEW_BUILDER,
     US_CO_INCARCERATION_POPULATION_METRICS_PREPROCESSED_VIEW_BUILDER,
     US_CO_INCARCERATION_SENTENCES_PREPROCESSED_VIEW_BUILDER,
+    SENTENCE_DEADLINE_SPANS_VIEW_BUILDER,
     SENTENCE_SPANS_VIEW_BUILDER,
-    SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
+    SUPERVISION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
     US_TN_SUPERVISION_LATEST_PROJECTED_COMPLETION_DATE_VIEW_BUILDER,
 ]
