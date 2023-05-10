@@ -27,7 +27,6 @@ from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import StateSupervisionCaseTypeEntry
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -87,11 +86,7 @@ class TestStateEntities(TestCase):
                 continue
             field_info_dict = attribute_field_type_reference_for_class(cls)
 
-            if "external_id" in field_info_dict and cls not in {
-                # TODO(#20691): Remove this exemption when we remove the external_id
-                #  field.
-                StateSupervisionCaseTypeEntry
-            }:
+            if "external_id" in field_info_dict:
                 raise ValueError(
                     f"Found EnumEntity [{cls.__name__}] with an external_id field. "
                     f"EnumEntity entities should not have an external_id."

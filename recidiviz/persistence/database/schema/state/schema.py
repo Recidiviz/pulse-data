@@ -1882,13 +1882,6 @@ class StateSupervisionCaseTypeEntry(StateBase, _ReferencesStatePersonSharedColum
 
     __tablename__ = "state_supervision_case_type_entry"
     __table_args__ = (
-        UniqueConstraint(
-            "state_code",
-            "external_id",
-            name="supervision_case_type_entry_external_ids_unique_within_state",
-            deferrable=True,
-            initially="DEFERRED",
-        ),
         {
             "comment": "The StateSupervisionCaseTypeEntry object represents a particular case type that applies to this "
             "period of supervision. A case type implies certain conditions of supervision that may apply, or "
@@ -1935,14 +1928,6 @@ class StateSupervisionCaseTypeEntry(StateBase, _ReferencesStatePersonSharedColum
         )
 
     person = relationship("StatePerson", uselist=False)
-
-    external_id = Column(
-        String(255),
-        index=True,
-        comment=StrictStringFormatter().format(
-            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateSupervisionCaseTypeEntry"
-        ),
-    )
 
 
 class StateIncarcerationIncident(StateBase, _ReferencesStatePersonSharedColumns):

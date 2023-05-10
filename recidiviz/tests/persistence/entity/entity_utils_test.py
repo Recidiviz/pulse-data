@@ -429,11 +429,7 @@ REFERENCE_ENTITY_EXAMPLES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] = {
         # StateStaffSupervisorPeriod cannot be reference entities - must always have a
         # start_date.
     ],
-    schema.StateSupervisionCaseTypeEntry: [
-        schema.StateSupervisionCaseTypeEntry(
-            state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
-        )
-    ],
+    schema.StateSupervisionCaseTypeEntry: [],
     schema.StateSupervisionContact: [
         schema.StateSupervisionContact(
             state_code=StateCode.US_XX.value, external_id=_EXTERNAL_ID
@@ -743,7 +739,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
     schema.StateSupervisionCaseTypeEntry: [
         schema.StateSupervisionCaseTypeEntry(
             state_code=StateCode.US_XX.value,
-            external_id=_EXTERNAL_ID,
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
         ),
         schema.StateSupervisionCaseTypeEntry(
