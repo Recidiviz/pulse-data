@@ -128,42 +128,6 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
         AND sss.state_code NOT IN ({special_states})
     ),
     /*
-    Collect all discharge/release dates to liberty as inferred sentence completion dates
-    */
-    inferred_completion_dates AS (
-        SELECT
-            state_code,
-            person_id,
-            end_date_exclusive AS completion_date
-        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
-        WHERE outflow_to_level_1 IN ("LIBERTY", "DEATH")
-            -- Do not infer sentence completion dates for temporary releases to liberty
-            AND COALESCE(end_reason, "EXTERNAL_UNKNOWN") != "TEMPORARY_RELEASE"
-            -- Don't infer sentence completion dates for some states
-            AND state_code NOT IN ({states_without_inferred_completion_date})
-    ),
-    /*
-    Use the next successful supervision termination date following the effective date
-    as the sentence completion date in order to bypass sentence completion date
-    hydration issues
-    */
-    sentences_with_inferred_completion_date AS (
-        SELECT
-            sen.* EXCEPT (completion_date),
-            COALESCE(sen.completion_date, comp.completion_date) AS completion_date,
-            sen.completion_date IS NULL AND comp.completion_date IS NOT NULL AS is_completion_date_inferred,
-        FROM sentences_cte sen
-        LEFT JOIN inferred_completion_dates comp
-            ON sen.state_code = comp.state_code
-            AND sen.person_id = comp.person_id
-            AND sen.effective_date < comp.completion_date
-            AND COALESCE(sen.date_imposed, sen.effective_date) < comp.completion_date
-        QUALIFY ROW_NUMBER() OVER (
-            PARTITION BY sen.state_code, sen.person_id, sen.sentence_id, sen.charge_id
-            ORDER BY comp.completion_date ASC
-        ) = 1
-    ),
-    /*
     Joins back to sessions to create a "session_id_imposed" field as well as to the consecutive id preprocessed file
     sentence internal id.
     */
@@ -179,7 +143,6 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             sen.effective_date,
             sen.date_imposed,
             sen.completion_date,
-            sen.is_completion_date_inferred,
             sen.status,
             sen.status_raw_text,
             sen.parole_eligibility_date,
@@ -228,7 +191,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             IF(ses.start_date = sen.date_imposed, ses.session_id, NULL) AS session_id_imposed,
             ses.session_id AS session_id_closest,
             DATE_DIFF(ses.start_date, sen.date_imposed, DAY) AS sentence_to_session_offset_days
-        FROM sentences_with_inferred_completion_date sen
+        FROM sentences_cte sen
         LEFT JOIN `{project_id}.{sessions_dataset}.consecutive_sentences_preprocessed_materialized` cs
             USING (person_id, state_code, sentence_id, sentence_type)
         -- TODO(#13012): Revisit join logic condition to see if we can improve hydration of imposed session id
@@ -256,6 +219,42 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
                 total_treatment_credits
                 )
         FROM `{project_id}.{sessions_dataset}.us_tn_sentences_preprocessed_materialized`
+    ),
+    /*
+    Collect all discharge/release dates to liberty as inferred sentence completion dates
+    */
+    inferred_completion_dates AS (
+        SELECT
+            state_code,
+            person_id,
+            end_date_exclusive AS completion_date
+        FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
+        WHERE outflow_to_level_1 IN ("LIBERTY", "DEATH")
+            -- Do not infer sentence completion dates for temporary releases to liberty
+            AND COALESCE(end_reason, "EXTERNAL_UNKNOWN") != "TEMPORARY_RELEASE"
+            -- Don't infer sentence completion dates for some states
+            AND state_code NOT IN ({states_without_inferred_completion_date})
+    ),
+    /*
+    Use the next successful supervision termination date following the effective date
+    as the sentence completion date in order to bypass sentence completion date
+    hydration issues
+    */
+    sentences_with_inferred_completion_date AS (
+        SELECT
+            sen.* EXCEPT (completion_date),
+            COALESCE(sen.completion_date, comp.completion_date) AS completion_date,
+            sen.completion_date IS NULL AND comp.completion_date IS NOT NULL AS is_completion_date_inferred,
+        FROM sentences_with_session_id_imposed sen
+        LEFT JOIN inferred_completion_dates comp
+            ON sen.state_code = comp.state_code
+            AND sen.person_id = comp.person_id
+            AND sen.effective_date < comp.completion_date
+            AND COALESCE(sen.date_imposed, sen.effective_date) < comp.completion_date
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY sen.state_code, sen.person_id, sen.sentence_id, sen.charge_id
+            ORDER BY comp.completion_date ASC
+        ) = 1
     )
     SELECT
         ROW_NUMBER() OVER (
@@ -263,7 +262,7 @@ SENTENCES_PREPROCESSED_QUERY_TEMPLATE = """
             ORDER BY date_imposed, effective_date, external_id, sentence_id, charge_id
         ) AS sentences_preprocessed_id,
         *,
-    FROM sentences_with_session_id_imposed
+    FROM sentences_with_inferred_completion_date
 """
 
 SENTENCES_PREPROCESSED_VIEW_BUILDER = SimpleBigQueryViewBuilder(
