@@ -356,9 +356,10 @@ resource "google_cloud_run_service" "asset-generation" {
     metadata {
       annotations = {
         # Keep one instance running at all times so we can load images in emails quickly at any time 
-        "autoscaling.knative.dev/minScale"     = 1
-        "autoscaling.knative.dev/maxScale"     = var.max_asset_generation_instances
-        "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
+        "autoscaling.knative.dev/minScale"        = 1
+        "autoscaling.knative.dev/maxScale"        = var.max_asset_generation_instances
+        "run.googleapis.com/vpc-access-connector" = google_vpc_access_connector.us_central_redis_vpc_connector.name
+        "run.googleapis.com/vpc-access-egress"    = "private-ranges-only"
       }
 
       # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
