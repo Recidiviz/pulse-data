@@ -42,7 +42,15 @@ _QUERY_TEMPLATE = f"""
             result_raw_text_primary AS latest_drug_screen_result,
             drug_screen_date AS latest_drug_screen_date,
         FROM
-            `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
+            (
+                SELECT *
+                FROM `{{project_id}}.{{sessions_dataset}}.drug_screens_preprocessed_materialized`
+                -- The preprocessed view can have multiple tests per person-day if there are different sample types.
+                -- For the purposes of this criteria we just want to keep 1 test per person-day and prioritize positive
+                -- results
+                QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id, drug_screen_date ORDER BY is_positive_result DESC,
+                                                                                             sample_type) = 1
+            )
     ),
     sessionized_cte AS (
     {aggregate_adjacent_spans(table_name='screens',
