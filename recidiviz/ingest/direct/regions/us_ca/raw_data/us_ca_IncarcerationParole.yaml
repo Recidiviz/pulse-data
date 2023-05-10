@@ -3,30 +3,224 @@ file_tag: IncarcerationParole
 file_description: |-
   Information on the incarceration periods for people who are currently on parole in California
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
+  - ORTGID
 columns:
   - name: OffenderId
     is_pii: True
     description: |-
       An ID to reference a specific individual in who is in custody or under supervision of CDCR.
   - name: ORTGID
-    description: |-
-      ORTGID identifies the Incarceration period associated with the case/offense.
+    description: >-
+      I think this the same as TGID, which is Term Group ID. This is updated every time
+      someone enters prison for any amount of time (for example, if revoked). It differs
+      from TCID, which only updates for new commitments (IE if they recieve a new
+      charge).
   - name: tcid
-    description: |-
-      TODO(#15297). Started being sent on 12/7/2022.
+    description: >-
+      Term Commitment ID. This will be equal to or less than ORTGID, and will only be
+      updated the individual recieves a new commitment. There may be gaps -- when this
+      updated, it is incremented up to whatever ORTGID is at the time.
   - name: In_Date
     is_datetime: True
   - name: In_Move
   - name: In_Reason
   - name: Intake_Date
   - name: out_date
-    description: |-
-      OUT_DATE will be filled with the date a person was paroled or discharged.
+    description: >-
+      out_date will be filled with the date a person was paroled or discharged.
     is_datetime: True
   - name: Out_Move
+    known_values:
+      - value: Admitted Interstate Compact Offender
+      - value: Discharge County Contract boarder
+      - value: Discharged (from Parole)
+      - value: Discharged by Court
+      - value: Discharged from Sentence
+      - value: Jurisdictional Discharge - PRCS
+      - value: Paroled
+      - value: Received from another Facility (30)
+      - value: Released after Erroneous Admission
+      - value: Released by Court
+      - value: Returned to Parole
+      - value: Status Change
   - name: Out_Reason
+    known_values:
+      - value: "Civil Addict- Felon Comm. Same Case # as Civil Addict Commit"
+      - value: "Discharge of SafeKeepers, YA, OSP, or FEDC"
+      - value: 90-day County Diagnostic Case - Returned to Court
+      - value: Adult Offender
+      - value: Adult Offender - PC3000.1 Lifer
+      - value: Adult Offender - PC3000(b)(4)
+      - value: Adult Released via Direct Discharge
+      - value: Approved for ACP (CE)
+      - value: Approved for CCTRP (CJ)
+      - value: Approved for MCRP (BN)
+      - value: Approved for Medical Parole (CP)
+      - value: Approved for MRP (CV)
+      - value: BPH 50 percent NVSS Release
+      - value: BPH Non-Violent Offender Release
+      - value: CDC# Issued in Error
+      - value: CDCR Lost Jurisdiction
+      - value: Civil Addict- Discharge
+      - value: Civil Addict- Expiration of Commitment
+      - value: Civil Addict- Not Amenable to Treatment
+      - value: Continue on Parole - No Revocation
+      - value: Conv gen to synch disch status
+      - value: Court Ordered Discharge
+      - value: Court Ordered Release
+      - value: Court Recalls per PC 1170(d)
+      - value: Discharge a Parolee to Another Agency's Jurisdiction
+      - value: Discharge at statutory maximum
+      - value: Discharge Non-violent Offn During 13th Mon of Succ. Parole
+      - value: Discharge per Court Decision
+      - value: Discharge prior to Statutory Maximum
+      - value: Discharge Upon Revoc. Release Date or due to Medical Cond.
+      - value: Discharged per PC 1170(h)
+      - value: Enroute to Another Institution (5M)
+      - value: Interstate Compact Case
+      - value: Juvenile boarder released to Parole
+      - value: Not Specified
+      - value: Out_Reason
+      - value: Parole Waived - Discharged Directly from Institution
+      - value: Permanent Transfer (38)
+      - value: Person Received by CDCR in Error
+      - value: Pre-Confine. Credit exceeds Prsn. Term + Parole Pd.
+      - value: Pre-confinement credits exceed the prison term and parole pe
+      - value: Prison Term Completed
+      - value: Reduced to Misdemeanor per Prop 47
+      - value: Released Civil Addict - Parole / Outpatient
+      - value: Released Early per PC 3060.7
+      - value: Released Early to ICE Detainer
+      - value: Released Early to LEA Detainer per PC 4755
+      - value: Released Late per PC 3060.7
+      - value: Released Late to LEA Detainer per PC 4755
+      - value: Released per Prop 47
+      - value: Released to DMH/OMHD
+      - value: Released to DMH/SVP
+      - value: Released to Law Enforcement Detainer
+      - value: Released to Post Release Comm. Supv.
+      - value: Return to Parole Following Psych Treatment
+      - value: Returned to County of Commitment
+      - value: Returned to Parole - Revocation Period Complete
+      - value: Safekeeper Released to Parole
+      - value: TO DIS
   - name: ParoleEndDate
     is_datetime: True
+    description: >-
+      The date this parole period ended. Right now, it's sometimes null and there is an
+      open question with OOR as to what is happening when these are null.
   - name: ParoleEndMove
+    known_values:
+      - value: Admitted Central Office
+      - value: Admitted Civil Narcotics Addict
+      - value: Admitted Diagnostic Commitment
+      - value: Admitted DMH Boarder
+      - value: Admitted Juvenile Boarder
+      - value: Admitted Offender with New AOJ
+      - value: Admitted SACCO
+      - value: Admitted Safekeeper
+      - value: Discharge County Contract boarder
+      - value: Discharge Interstate Cooperative Case
+      - value: Discharged (from Parole)
+      - value: Discharged by Court
+      - value: Discharged from Sentence
+      - value: Jurisdictional Discharge - PRCS
+      - value: ParoleEndMove
+      - value: Released after Erroneous Admission
+      - value: Released by Court
+      - value: Returned from Outpatient Supervision
+      - value: Returned from Parole
+      - value: Returned from Parole as County Boarder
   - name: ParoleEndReason
+    known_values:
+      - value: "Civil Addict- Felon Comm. Same Case # as Civil Addict Commit"
+      - value: "Discharge of SafeKeepers, YA, OSP, or FEDC"
+      - value: "Other (Boarder, Safe Keeper/Other)"
+      - value: 6 Month Discharges/DAPO
+      - value: 90-day County Diagnostic Case - Returned to Court
+      - value: Admin Discharge of Active Prior Term When PWNT
+      - value: Adult Released via Direct Discharge
+      - value: BPH 50 percent NVSS Release
+      - value: BPH Disch Life Parolee-PC187/1st 85th mo PC187/2nd 61st mo
+      - value: BPH Non-Violent Offender Release
+      - value: CDC# Issued in Error
+      - value: CDCR Commitment Housed in Co. Jail
+      - value: CDCR Lost Jurisdiction
+      - value: Civil Addict Returned to CDCR
+      - value: Civil Addict- Discharge
+      - value: Civil Addict- Discharge while Released at Large 1+ yrs
+      - value: Civil Addict- Expiration of Commitment
+      - value: Civil Addict- Not Amenable to Treatment
+      - value: Civil Addict- Not Available for Treatment
+      - value: Civil Addict- Successful Period of Time While on CAP
+      - value: Civil Addict- Successful While on Outpatient Status
+      - value: Conv gen to synch disch status
+      - value: Conversion Generated Admission
+      - value: Court Ordered Discharge
+      - value: Court Ordered Release
+      - value: Court Recalls per PC 1170(d)
+      - value: Diagnostic Commitment (Z Suffix)
+      - value: Discharge a Parolee to Another Agency's Jurisdiction
+      - value: Discharge at statutory maximum
+      - value: Discharge from drug treatment program per PC 2933.4(b)
+      - value: Discharge interstate cooperative case
+      - value: Discharge Non-violent Offn During 13th Mon of Succ. Parole
+      - value: Discharge parolee on PAL Status
+      - value: Discharge per Court Decision
+      - value: Discharge prior to Statutory Maximum
+      - value: Discharge Upon Revoc. Release Date or due to Medical Cond.
+      - value: Discharge Violent Offn During 25th Mon of Successful Parole
+      - value: Discharged By BPH - Deported
+      - value: Discharged per PC 1170(h)
+      - value: Dischg Parolee w/5-yr Parole During 37th Mon of Succ. Parole
+      - value: Early Discharge per BPH Order
+      - value: Earned Discharges (PC 3000 (B)(9)(b)
+      - value: Female Offenders in Family Foundation Program
+      - value: For Diagnostic Evaluation
+      - value: Housed by CDCR for Local Law Enforce. Agency
+      - value: ICOOP Absconds Supervision
+      - value: ICOOP Receives New California Committment
+      - value: Inprison Drug Treatment and Mandatory Aftercare (SB1453)
+      - value: Jurisdictional Discharge - PRCS
+      - value: Jurisdictional Discharge -County Jail
+      - value: Juvenile Housed in CDCR per W&I 1732.8
+      - value: Mandatory Aftercare (SB1453)
+      - value: New Civil Addict Commitment
+      - value: New Felony Commitment
+      - value: Non-Revocable Parole (NRP)
+      - value: Not Specified
+      - value: Offender Who Has Been Deported
+      - value: Paper Commit Direct to Parole
+      - value: Parole Waived - Discharged Directly from Institution
+      - value: PC3000.1 Parolee - Revoked
+      - value: PC3000.1 Parolee - With New Term
+      - value: PC3000(b)(4)  Parolee - With New Term
+      - value: PC3000(b)(4) Parolee - Revoked
+      - value: Pending Revocation
+      - value: Permanent Transfer
+      - value: Person Received by CDCR in Error
+      - value: Pre-Confine. Credit exceeds Prsn. Term + Parole Pd.
+      - value: Pre-confinement credits exceed the prison term and parole pe
+      - value: Psychiatric Treatment
+      - value: Reduced to Misdemeanor per Prop 47
+      - value: Released Early per PC 3060.7
+      - value: Released Early to ICE Detainer
+      - value: Released Early to LEA Detainer per PC 4755
+      - value: Released Late per PC 3060.7
+      - value: Released Late to LEA Detainer per PC 4755
+      - value: Released per Prop 47
+      - value: Released to Law Enforcement Detainer
+      - value: Released to Post Release Comm. Supv.
+      - value: Return Offender to Committing State
+      - value: Returned as County Contract Boarder
+      - value: Returned Civil Addict - Parole / Outpatient
+      - value: Returned to County of Commitment
+      - value: Returned to Custody (Revoked)
+      - value: Returned to Parole - Revocation Period Complete
+      - value: Serving CA Term in other Jurisdiction CC
+      - value: Substance Abuse Treatment Control Unit
+      - value: TO DIS
+      - value: W&I 7301
+      - value: With New Term
