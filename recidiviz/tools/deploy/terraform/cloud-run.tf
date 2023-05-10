@@ -334,7 +334,7 @@ resource "google_cloud_run_service" "asset-generation" {
   template {
     spec {
       containers {
-        image = "us-docker.pkg.dev/${var.registry_project_id}/asset-generation/asset-generation:${var.docker_image_tag}"
+        image = "us-docker.pkg.dev/${var.registry_project_id}/asset-generation/default:${var.docker_image_tag}"
         # Leave command/args empty to use the default CMD from the docker image
 
         env {
