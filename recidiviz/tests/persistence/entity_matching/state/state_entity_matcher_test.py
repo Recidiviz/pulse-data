@@ -33,6 +33,9 @@ from recidiviz.common.constants.state.state_person import (
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -1509,11 +1512,10 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         entity_supervision_violation_type = self.to_entity(
             db_supervision_violation_type
         )
-        db_supervision_violated_condition = (
-            generate_supervision_violated_condition_entry(
-                person=db_person,
-                condition_raw_text="COND",
-            )
+        db_supervision_violated_condition = generate_supervision_violated_condition_entry(
+            person=db_person,
+            condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS.value,
+            condition_raw_text="COND",
         )
         entity_supervision_violated_condition = self.to_entity(
             db_supervision_violated_condition

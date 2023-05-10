@@ -31,6 +31,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_dele
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP,
     UsMoViolationDelegate,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -278,7 +281,9 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code=_STATE_CODE, condition_raw_text="DRG"
+                    state_code=_STATE_CODE,
+                    condition=StateSupervisionViolatedConditionType.SUBSTANCE,
+                    condition_raw_text="DRG",
                 )
             ],
         )
@@ -307,6 +312,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=_STATE_CODE,
+                    condition=StateSupervisionViolatedConditionType.LAW,
                     condition_raw_text="LAW_CITATION",
                 )
             ],
@@ -336,6 +342,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=_STATE_CODE,
+                    condition=StateSupervisionViolatedConditionType.EMPLOYMENT,
                     condition_raw_text="EMP",
                 )
             ],

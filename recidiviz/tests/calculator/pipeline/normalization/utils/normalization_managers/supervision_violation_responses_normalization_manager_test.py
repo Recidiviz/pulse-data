@@ -27,6 +27,9 @@ from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.su
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violation_response_normalization_delegate import (
     UsXxViolationResponseNormalizationDelegate,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -211,6 +214,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
+                    condition=StateSupervisionViolatedConditionType.LAW,
                     condition_raw_text="LAW",
                 ),
             ],

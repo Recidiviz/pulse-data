@@ -52,6 +52,9 @@ from recidiviz.common.constants.state.state_supervision_contact import (
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodSupervisionType,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -646,9 +649,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
         schema.StatePersonEthnicity(
             state_code=StateCode.US_XX.value, ethnicity=StateEthnicity.NOT_HISPANIC
         ),
-        schema.StatePersonEthnicity(
-            state_code=StateCode.US_XX.value, ethnicity_raw_text="X"
-        ),
     ],
     schema.StatePersonExternalId: [
         schema.StatePersonExternalId(
@@ -799,6 +799,7 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
     schema.StateSupervisionViolatedConditionEntry: [
         schema.StateSupervisionViolatedConditionEntry(
             state_code=StateCode.US_XX.value,
+            condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
             condition_raw_text="DRG",
         )
     ],

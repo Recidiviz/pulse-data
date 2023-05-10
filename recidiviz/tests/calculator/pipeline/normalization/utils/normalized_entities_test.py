@@ -39,6 +39,7 @@ from recidiviz.calculator.pipeline.utils.execution_utils import (
 )
 from recidiviz.common.attr_mixins import attr_field_referenced_cls_name_for_field_name
 from recidiviz.common.attr_utils import is_flat_field
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import (
     get_all_entity_classes_in_module,
@@ -120,7 +121,10 @@ class TestNormalizedEntities(unittest.TestCase):
                 state_code=STATE_CODE,
                 sequence_num=1,
                 case_type_entries=[
-                    state_entities.StateSupervisionCaseTypeEntry(state_code=STATE_CODE)
+                    state_entities.StateSupervisionCaseTypeEntry(
+                        state_code=STATE_CODE,
+                        case_type=StateSupervisionCaseType.DRUG_COURT,
+                    )
                 ],
             )
 
@@ -135,12 +139,16 @@ class TestNormalizedEntities(unittest.TestCase):
     def test_not_list_in_list_ref(self) -> None:
         """Tests that the original validators are also kept on the attributes,
         so that this raises an error for case_type_entries not being a list."""
-        with self.assertRaises(TypeError):
+        with self.assertRaisesRegex(
+            TypeError,
+            r"'NormalizedStateSupervisionCaseTypeEntry' object is not iterable",
+        ):
             _ = NormalizedStateSupervisionPeriod(
                 state_code=STATE_CODE,
                 sequence_num=1,
                 case_type_entries=NormalizedStateSupervisionCaseTypeEntry(  # type: ignore[arg-type]
-                    state_code=STATE_CODE
+                    state_code=STATE_CODE,
+                    case_type=StateSupervisionCaseType.DRUG_COURT,
                 ),
             )
 
