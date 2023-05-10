@@ -19,14 +19,13 @@
 Defines a criteria view that shows spans of time for which clients don't have
 any remaining balance in their restitution payments.
 """
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
-from recidiviz.calculator.query.sessions_query_fragments import (
-    create_sub_sessions_with_attributes,
-)
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+    has_unpaid_fines_fees_balance,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -39,47 +38,10 @@ any remaining balance in their restitution payments.
 """
 
 _QUERY_TEMPLATE = f"""
-WITH fines_fees AS (
-    SELECT
-        state_code,
-        person_id,
-        external_id,
-        fee_type,
-        transaction_type,
-        start_date,
-        end_date,
-        unpaid_balance,
-    FROM
-        `{{project_id}}.{{analyst_dataset}}.fines_fees_sessions_materialized`
-    WHERE
-        state_code = 'US_ME'
-     
-),
-
-{create_sub_sessions_with_attributes('fines_fees')},
-
-aggregated_fines_fees_per_client AS (
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        fee_type, 
-        SUM(unpaid_balance) AS unpaid_balance
-    FROM sub_sessions_with_attributes
-    WHERE start_date != {nonnull_end_date_clause('end_date')}
-    GROUP BY 1,2,3,4,5
-)
-
-SELECT 
-    state_code,
-    person_id,
-    start_date,
-    end_date,
-    unpaid_balance=0 AS meets_criteria,
-    TO_JSON(STRUCT(unpaid_balance AS amount_owed)) AS reason,
-FROM aggregated_fines_fees_per_client
-WHERE fee_type = 'RESTITUTION'
+    {has_unpaid_fines_fees_balance(
+        fee_type = "'RESTITUTION'",
+        unpaid_balance_criteria = "unpaid_balance = 0",
+        unpaid_balance_field= "unpaid_balance")}
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
