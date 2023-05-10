@@ -81,8 +81,11 @@ class ViolationHistoryMixin(BuildableAttr):
     # most_severe_violation_type above.
     most_severe_violation_type_subtype: Optional[str] = attr.ib(default=None)
 
-    # id of violation attached to most_severe_violation_type
+    # Id of violation attached to most_severe_violation_type
     most_severe_violation_id: Optional[int] = attr.ib(default=None)
+
+    # Comma-separated list of violation ids considered when calculating any of these violation history fields
+    violation_history_id_array: Optional[str] = attr.ib(default=None)
 
     # The number of responses that were included in determining the most severe
     # type/subtype

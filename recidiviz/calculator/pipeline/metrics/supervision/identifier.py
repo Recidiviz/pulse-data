@@ -456,6 +456,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                     most_severe_violation_type=violation_history.most_severe_violation_type,
                     most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                     most_severe_violation_id=violation_history.most_severe_violation_id,
+                    violation_history_id_array=violation_history.violation_history_id_array,
                     most_severe_response_decision=violation_history.most_severe_response_decision,
                     response_count=violation_history.response_count,
                     supervising_officer_external_id=supervising_officer_external_id,
@@ -793,6 +794,7 @@ class SupervisionIdentifier(BaseIdentifier[List[SupervisionEvent]]):
                 most_severe_violation_type=violation_history.most_severe_violation_type,
                 most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                 most_severe_violation_id=violation_history.most_severe_violation_id,
+                violation_history_id_array=violation_history.violation_history_id_array,
             )
 
         return None

@@ -183,6 +183,20 @@ def most_severe_violation_subtype(
     return None
 
 
+def _get_violation_history_ids_array_str(
+    violations: List[NormalizedStateSupervisionViolation],
+) -> Optional[str]:
+    violation_ids = [v.supervision_violation_id for v in violations]
+
+    if not violation_ids:
+        return None
+
+    # sort ids in ascending order so the result of this field is deterministic
+    violation_ids.sort()
+
+    return ",".join(str(vid) for vid in violation_ids)
+
+
 def _get_violation_type_frequency_counter(
     violations: List[NormalizedStateSupervisionViolation],
     violation_delegate: StateSpecificViolationDelegate,
@@ -218,6 +232,7 @@ ViolationHistory = NamedTuple(
         ("most_severe_violation_type", Optional[StateSupervisionViolationType]),
         ("most_severe_violation_type_subtype", Optional[str]),
         ("most_severe_violation_id", Optional[int]),
+        ("violation_history_id_array", Optional[str]),
         (
             "most_severe_response_decision",
             Optional[StateSupervisionViolationResponseDecision],
@@ -285,6 +300,10 @@ def get_violation_and_response_history(
         violations_in_window, violation_delegate
     )
 
+    violation_history_id_array = _get_violation_history_ids_array_str(
+        violations_in_window
+    )
+
     violation_type_entries = []
     for violation in violations_in_window:
         violation_type_entries.extend(violation.supervision_violation_types)
@@ -323,6 +342,7 @@ def get_violation_and_response_history(
         most_severe_violation_type,
         most_severe_violation_type_subtype,
         most_severe_violation_id,
+        violation_history_id_array,
         most_severe_response_decision,
         response_count,
         violation_history_description,
