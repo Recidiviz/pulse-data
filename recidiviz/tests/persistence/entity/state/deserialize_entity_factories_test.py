@@ -335,7 +335,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
 
     def test_deserialize_StateSupervisionCaseTypeEntry(self) -> None:
         result = deserialize_entity_factories.StateSupervisionCaseTypeEntryFactory.deserialize(
-            external_id="entry_id",
             state_code="us_xx",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DV",
@@ -346,7 +345,6 @@ class TestDeserializeEntityFactories(unittest.TestCase):
             state_code="US_XX",
             case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
             case_type_raw_text="DV",
-            external_id="ENTRY_ID",
         )
 
         self.assertEqual(expected_result, result)

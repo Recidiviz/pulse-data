@@ -1005,7 +1005,6 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional["StatePerson"] = attr.ib(default=None)
     supervision_period: Optional["StateSupervisionPeriod"] = attr.ib(default=None)
-    external_id: str = attr.ib(default=None)
 
 
 @attr.s(eq=False, kw_only=True)

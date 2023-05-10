@@ -187,7 +187,6 @@ output:
       - StateSupervisionPeriod:
           case_type_entries:
             - StateSupervisionCaseTypeEntry:
-                external_id: SID
                 case_type:
                   $enum_mapping:
                     $raw_text: SEXOFF
