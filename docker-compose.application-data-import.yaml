@@ -8,6 +8,10 @@ services:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
+      - "~/.config:/root/.config" # use user's credentials to access GCP APIs
+      - outliers_db_socket:/cloudsql/outliers
+    depends_on:
+      - outliers_db
     ports:
       - "5000:5000"
     command: pipenv run flask run -h 0.0.0.0
@@ -15,3 +19,4 @@ services:
       - FLASK_APP=/app/recidiviz/application_data_import/server.py
       - FLASK_ENV=development
       - IS_DEV=true
+      - GOOGLE_CLOUD_PROJECT=recidiviz-staging

@@ -1,0 +1,15 @@
+state_code,metric_id,metric_value,period,end_date,officer_id,avg_daily_population
+US_PA,incarceration_starts_and_inferred,20,YEAR,2023-04-01,01,62.62
+US_PA,incarceration_starts_and_inferred,10,YEAR,2023-04-01,02,77.77
+US_PA,incarceration_starts_and_inferred,8,YEAR,2023-04-01,03,43.23
+US_PA,incarceration_starts_and_inferred,0,YEAR,2023-04-01,04,3.21
+US_PA,incarceration_starts_and_inferred,4,YEAR,2023-04-01,05,52.52
+US_PA,incarceration_starts_and_inferred,12,YEAR,2023-04-01,06,99.99
+US_PA,incarceration_starts_and_inferred,3,YEAR,2023-04-01,07,22.22
+US_PA,incarceration_starts_and_inferred,16,YEAR,2023-05-01,01,59.95
+US_PA,incarceration_starts_and_inferred,9,YEAR,2023-05-01,02,71.17
+US_PA,incarceration_starts_and_inferred,10,YEAR,2023-05-01,03,54.321
+US_PA,incarceration_starts_and_inferred,1,YEAR,2023-05-01,04,3.45
+US_PA,incarceration_starts_and_inferred,2,YEAR,2023-05-01,05,50.05
+US_PA,incarceration_starts_and_inferred,10,YEAR,2023-05-01,06,90.09
+US_PA,incarceration_starts_and_inferred,4,YEAR,2023-05-01,07,23.456

@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema.justice_counts import (
     schema as justice_counts_schema,
 )
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.schema.outliers import schema as outliers_schema
 from recidiviz.persistence.database.schema.outliers.schema import OutliersBase
 from recidiviz.persistence.database.schema.pathways import schema as pathways_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
@@ -53,6 +54,7 @@ _SCHEMA_MODULES: List[ModuleType] = [
     pathways_schema,
     state_schema,
     operations_schema,
+    outliers_schema,
 ]
 
 BQ_TYPES = {
@@ -151,6 +153,14 @@ def get_pathways_table_classes() -> Iterator[Table]:
 
 def get_pathways_database_entities() -> List[Type[DatabaseEntity]]:
     return list(get_all_database_entities_in_module(pathways_schema))
+
+
+def get_outliers_database_entities() -> List[Type[DatabaseEntity]]:
+    return list(get_all_database_entities_in_module(outliers_schema))
+
+
+def get_outliers_table_classes() -> Iterator[Table]:
+    yield from get_all_table_classes_in_module(outliers_schema)
 
 
 def get_state_database_entities() -> List[Type[DatabaseEntity]]:

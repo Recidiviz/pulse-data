@@ -17,7 +17,7 @@
 """Define the ORM schema objects that map directly to the database, for Outliers related entities."""
 import enum
 
-from sqlalchemy import Column, Date, ForeignKeyConstraint, Integer, String
+from sqlalchemy import Column, Date, Float, ForeignKeyConstraint, Integer, String
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
@@ -155,6 +155,8 @@ class MetricBase:
     )
     # The end date for the period
     end_date = Column(Date, primary_key=True, nullable=False)
+    # The average daily population for the unit of analysis in this period with this end date
+    avg_daily_population = Column(Float, nullable=False)
 
 
 class SupervisionOfficerMetric(MetricBase, OutliersBase):
