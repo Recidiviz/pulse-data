@@ -111,10 +111,20 @@ num_allowed_rows_overrides:
       board hold periods (of different lengths) that preceed them, which can cause
       different dates to be used for identifying SPs associated with an admission.
   - validation_name: sentence_end_dates_before_start_dates
-    hard_num_allowed_rows_override: 45000
+    hard_num_allowed_rows_override: 50000
     override_reason:
-      Issue exists in the raw data. Bumping until a plan exists to handle it.
-      Current failing level as of 4/24 is 45,866 rows, doubled from 10/13 after PED
+      min_expir_date in dbo_Senrec populates projected_min_release date, and effective_date
+      in the same table populates start_date. effective_date is always the date that the
+      sentence was imposed (e.g. at sentencing after a trial), and min_expir_date is
+      calculated starting from the date the person was first incarcerated on this charge
+      (pre-trial).
+      If a person could serve their entire imposed sentence before the date that sentence
+      was imposed (because of pre-trial incarceration), then the min_expir_date will be
+      before the effective_date of the sentence. This is true even if a person makes bail
+      before their trial; min_expir_date is always calculated from the date of arrest.
+      Bumping threshold until we can come up with a better way to find minimum
+      expiration dates based on time a person has actually spent incarcerated.
+      Current failing level as of 4/24 is 46,052 rows, doubled from 10/13 after PED
       hydrated from failing rows in database migration. #TODO(#16189)
   - validation_name: session_new_admissions_with_no_sentence_date_imposed
     hard_num_allowed_rows_override: 415000
