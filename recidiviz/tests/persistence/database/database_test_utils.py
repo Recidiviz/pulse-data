@@ -21,6 +21,9 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactStatus,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -120,6 +123,7 @@ def generate_test_supervision_violation(
             state_schema.StateSupervisionViolatedConditionEntry(
                 supervision_violated_condition_entry_id=765,
                 state_code="US_XX",
+                condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
                 condition_raw_text="CURFEW",
                 person_id=person_id,
                 supervision_violation_id=supervision_violation_id,

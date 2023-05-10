@@ -35,6 +35,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_respo
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violations_delegate import (
     LAW_CITATION_SUBTYPE_STR,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -97,6 +100,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
+                    condition=StateSupervisionViolatedConditionType.LAW,
                     condition_raw_text="LAW_CITATION",
                 ),
             ],
@@ -126,6 +130,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
                         state_code=self.state_code,
+                        condition=StateSupervisionViolatedConditionType.LAW,
                         condition_raw_text=LAW_CITATION_SUBTYPE_STR,
                     ),
                 ],
@@ -191,6 +196,7 @@ class TestPrepareViolationResponsesForCalculations(unittest.TestCase):
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
                     state_code=self.state_code,
+                    condition=StateSupervisionViolatedConditionType.LAW,
                     condition_raw_text="LAW",
                 ),
             ],

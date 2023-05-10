@@ -64,6 +64,9 @@ from recidiviz.common.constants.state.state_supervision_period import (
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -322,6 +325,7 @@ def generate_full_graph_state_person(
         supervision_violated_conditions=[
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code="US_XX",
+                condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
                 condition_raw_text="MISSED CURFEW",
             )
         ],

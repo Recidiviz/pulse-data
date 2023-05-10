@@ -27,13 +27,7 @@ from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.entities import (
-    StatePersonEthnicity,
-    StateSupervisionCaseTypeEntry,
-    StateSupervisionViolatedConditionEntry,
-    StateSupervisionViolationResponseDecisionEntry,
-    StateSupervisionViolationTypeEntry,
-)
+from recidiviz.persistence.entity.state.entities import StateSupervisionCaseTypeEntry
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -114,16 +108,6 @@ class TestStateEntities(TestCase):
                 )
             enum_field_name = one(enum_fields)
             attribute = attr.fields_dict(cls)[enum_field_name]
-            if cls in {
-                # TODO(#20697): Remove this exemption when we update the enum field
-                #  types to be nonnull.
-                StatePersonEthnicity,
-                StateSupervisionCaseTypeEntry,
-                StateSupervisionViolatedConditionEntry,
-                StateSupervisionViolationResponseDecisionEntry,
-                StateSupervisionViolationTypeEntry,
-            }:
-                continue
             self.assertTrue(
                 is_non_optional_enum(attribute),
                 f"Enum field [{enum_field_name}] on class [{cls.__name__}] should be "

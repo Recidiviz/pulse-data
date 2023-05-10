@@ -225,8 +225,8 @@ class StatePersonEthnicity(EnumEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    ethnicity: Optional[StateEthnicity] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateEthnicity)
+    ethnicity: StateEthnicity = attr.ib(
+        validator=attr.validators.instance_of(StateEthnicity)
     )
     ethnicity_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -989,8 +989,8 @@ class StateSupervisionCaseTypeEntry(EnumEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - What
-    case_type: Optional[StateSupervisionCaseType] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateSupervisionCaseType)
+    case_type: StateSupervisionCaseType = attr.ib(
+        validator=attr.validators.instance_of(StateSupervisionCaseType)
     )
     case_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -1128,8 +1128,8 @@ class StateSupervisionViolationTypeEntry(EnumEntity, BuildableAttr, DefaultableA
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    violation_type: Optional[StateSupervisionViolationType] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateSupervisionViolationType)
+    violation_type: StateSupervisionViolationType = attr.ib(
+        validator=attr.validators.instance_of(StateSupervisionViolationType)
     )
     violation_type_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
@@ -1159,9 +1159,8 @@ class StateSupervisionViolatedConditionEntry(
 
     # Attributes
     # An enum corresponding to the condition
-    condition: Optional[StateSupervisionViolatedConditionType] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateSupervisionViolatedConditionType),
+    condition: StateSupervisionViolatedConditionType = attr.ib(
+        validator=attr.validators.instance_of(StateSupervisionViolatedConditionType),
     )
 
     # The most granular information from the state about the specific supervision condition that was violated
@@ -1243,9 +1242,8 @@ class StateSupervisionViolationResponseDecisionEntry(
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(
-        default=None,
-        validator=attr_validators.is_opt(StateSupervisionViolationResponseDecision),
+    decision: StateSupervisionViolationResponseDecision = attr.ib(
+        validator=attr.validators.instance_of(StateSupervisionViolationResponseDecision)
     )
     decision_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str

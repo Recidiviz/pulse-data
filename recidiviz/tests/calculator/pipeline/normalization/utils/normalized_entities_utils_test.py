@@ -45,6 +45,12 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
+from recidiviz.common.constants.state.state_supervision_violation_response import (
+    StateSupervisionViolationResponseDecision,
+)
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
@@ -283,6 +289,7 @@ def get_violation_tree(
             entities.StateSupervisionViolatedConditionEntry.new_with_defaults(
                 supervision_violated_condition_entry_id=starting_id_value + 2,
                 state_code="US_XX",
+                condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
                 condition_raw_text="MISSED CURFEW",
             )
         ],
@@ -299,6 +306,7 @@ def get_violation_tree(
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 supervision_violation_response_decision_entry_id=starting_id_value + 4,
+                decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
                 decision_raw_text="X",
             )
         ],
@@ -315,6 +323,7 @@ def get_violation_tree(
             entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 supervision_violation_response_decision_entry_id=starting_id_value + 6,
+                decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
                 decision_raw_text="Y",
             )
         ],
@@ -361,6 +370,7 @@ def get_normalized_violation_tree(
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 supervision_violated_condition_entry_id=starting_id_value + 2,
                 state_code="US_XX",
+                condition=StateSupervisionViolatedConditionType.SPECIAL_CONDITIONS,
                 condition_raw_text="MISSED CURFEW",
             )
         ],
@@ -378,6 +388,7 @@ def get_normalized_violation_tree(
             NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 supervision_violation_response_decision_entry_id=starting_id_value + 4,
+                decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
                 decision_raw_text="X",
             )
         ],
@@ -395,6 +406,7 @@ def get_normalized_violation_tree(
             NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code="US_XX",
                 supervision_violation_response_decision_entry_id=starting_id_value + 6,
+                decision=StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
                 decision_raw_text="Y",
             )
         ],

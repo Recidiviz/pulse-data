@@ -530,6 +530,7 @@ class TestNormalizedIncarcerationPeriodsForCalculations(unittest.TestCase):
         parole_board_decision_entry = (
             NormalizedStateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                 state_code=STATE_CODE,
+                decision=StateSupervisionViolationResponseDecision.EXTERNAL_UNKNOWN,
                 decision_raw_text="XXX",
             )
         )

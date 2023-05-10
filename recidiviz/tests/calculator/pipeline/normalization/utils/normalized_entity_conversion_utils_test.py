@@ -430,7 +430,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             (
                 StateSupervisionViolatedConditionEntry.__name__,
                 {
-                    "condition": None,
+                    "condition": "SPECIAL_CONDITIONS",
                     "condition_raw_text": "MISSED CURFEW",
                     "person_id": 123,
                     "state_code": "US_XX",
@@ -441,7 +441,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             (
                 StateSupervisionViolationResponseDecisionEntry.__name__,
                 {
-                    "decision": None,
+                    "decision": "EXTERNAL_UNKNOWN",
                     "decision_raw_text": "X",
                     "person_id": 123,
                     "state_code": "US_XX",
@@ -469,7 +469,7 @@ class TestConvertEntitiesToNormalizedDicts(unittest.TestCase):
             (
                 StateSupervisionViolationResponseDecisionEntry.__name__,
                 {
-                    "decision": None,
+                    "decision": "PRIVILEGES_REVOKED",
                     "decision_raw_text": "Y",
                     "person_id": 123,
                     "state_code": "US_XX",

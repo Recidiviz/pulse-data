@@ -47,6 +47,9 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_d
 from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_violations_delegate import (
     UsXxViolationDelegate,
 )
+from recidiviz.common.constants.state.state_supervision_violated_condition import (
+    StateSupervisionViolatedConditionType,
+)
 from recidiviz.common.constants.state.state_supervision_violation import (
     StateSupervisionViolationType,
 )
@@ -759,12 +762,14 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_condition_law = (
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
+                condition=StateSupervisionViolatedConditionType.LAW,
                 condition_raw_text="law_citation",
             )
         )
         violation_condition_sub = (
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
+                condition=StateSupervisionViolatedConditionType.SUBSTANCE,
                 condition_raw_text="substance_abuse",
             )
         )
@@ -919,12 +924,14 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         violation_condition_unk = (
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
+                condition=StateSupervisionViolatedConditionType.EXTERNAL_UNKNOWN,
                 condition_raw_text="UNK",
             )
         )
         violation_condition_sub = (
             NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
                 state_code=state_code,
+                condition=StateSupervisionViolatedConditionType.SUBSTANCE,
                 condition_raw_text="substance_abuse",
             )
         )

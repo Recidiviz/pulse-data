@@ -960,10 +960,14 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             ],
             supervision_violated_conditions=[
                 NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_MO", condition_raw_text="DRG"
+                    state_code="US_MO",
+                    condition=StateSupervisionViolatedConditionType.SUBSTANCE,
+                    condition_raw_text="DRG",
                 ),
                 NormalizedStateSupervisionViolatedConditionEntry.new_with_defaults(
-                    state_code="US_MO", condition_raw_text="OTHER"
+                    state_code="US_MO",
+                    condition=StateSupervisionViolatedConditionType.INTERNAL_UNKNOWN,
+                    condition_raw_text="OTHER",
                 ),
             ],
         )

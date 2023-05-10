@@ -84,7 +84,6 @@ from recidiviz.tests.persistence.database.schema.state.schema_test_utils import 
     generate_person,
     generate_person_external_id,
     generate_program_assignment,
-    generate_supervision_case_type_entry,
     generate_supervision_contact,
     generate_supervision_period,
     generate_supervision_violation,
@@ -397,7 +396,6 @@ class TestStateSchemaUniqueConstraints(unittest.TestCase):
 
     generate_functions = [
         (generate_supervision_violation,),
-        (generate_supervision_case_type_entry,),
         (generate_incarceration_period,),
         (generate_supervision_violation_response,),
         (generate_early_discharge,),

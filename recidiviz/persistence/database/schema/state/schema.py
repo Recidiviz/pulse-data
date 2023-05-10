@@ -989,7 +989,9 @@ class StatePersonEthnicity(StateBase, _ReferencesStatePersonSharedColumns):
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    ethnicity = Column(state_ethnicity, comment="A person’s reported ethnicity.")
+    ethnicity = Column(
+        state_ethnicity, nullable=False, comment="A person’s reported ethnicity."
+    )
     ethnicity_raw_text = Column(
         String(255), comment="The raw text value of the ethnicity."
     )
@@ -1907,6 +1909,7 @@ class StateSupervisionCaseTypeEntry(StateBase, _ReferencesStatePersonSharedColum
 
     case_type = Column(
         state_supervision_case_type,
+        nullable=False,
         comment="The type of case that describes the associated period of supervision.",
     )
     case_type_raw_text = Column(
@@ -2119,7 +2122,9 @@ class StateSupervisionViolationTypeEntry(
         String(255), nullable=False, index=True, comment=STATE_CODE_COMMENT
     )
     violation_type = Column(
-        state_supervision_violation_type, comment="The type of violation."
+        state_supervision_violation_type,
+        nullable=False,
+        comment="The type of violation.",
     )
     violation_type_raw_text = Column(
         String(255), comment="The raw text value of the violation type."
@@ -2171,6 +2176,7 @@ class StateSupervisionViolatedConditionEntry(
 
     condition = Column(
         state_supervision_violated_condition_type,
+        nullable=True,
         comment="The specific condition of supervision which was violated.",
     )
 
@@ -2289,6 +2295,7 @@ class StateSupervisionViolationResponseDecisionEntry(
     )
     decision = Column(
         state_supervision_violation_response_decision,
+        nullable=True,
         comment="A specific decision that was made in response, if applicable.",
     )
     decision_raw_text = Column(
