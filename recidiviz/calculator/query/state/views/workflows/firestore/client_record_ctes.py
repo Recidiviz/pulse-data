@@ -47,7 +47,7 @@ _CLIENT_RECORD_SUPERVISION_CTE = f"""
         INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON sessions.person_id = pei.person_id
             AND sessions.state_code = pei.state_code
-        INNER JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_projected_completion_date_spans_materialized` projected_end
             ON sessions.state_code = projected_end.state_code
             AND sessions.person_id = projected_end.person_id
             AND CURRENT_DATE('US/Eastern')
