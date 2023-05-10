@@ -129,7 +129,7 @@ supervision_sessions AS (
         end_date_exclusive,
         end_date_exclusive IS NULL AS open_supervision_session,
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_level_1_super_sessions_materialized`
-    WHERE compartment_level_1 = "SUPERVISION"
+    WHERE compartment_level_1 IN ("SUPERVISION", "SUPERVISION_OUT_OF_STATE")
         AND state_code NOT IN ({{states_with_separate_query}})
 ),
 overlapping_supervision_sessions AS (
