@@ -17,6 +17,9 @@
 """Historical total population by compartment, outflow compartment, and compartment duration (months)"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.population_projection.long_lasting_compartment_transitions import (
+    LONG_LASTING_COMPARTMENT_LIST,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -48,16 +51,19 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
           state_code
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
-        ON sessions.start_date < run_dates.run_date
-      WHERE compartment NOT IN ('LIBERTY - LIBERTY_REPEAT_IN_SYSTEM', 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN')
-          -- Only take data from the 10 years prior to the run date to match short-term behavior better
-          AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 10
+          ON sessions.start_date < run_dates.run_date
+          -- Only take data from the 15 years prior to the run date to match short-term behavior better
+          AND DATE_DIFF(run_dates.run_date, sessions.start_date, YEAR) <= 15
+          -- Only keep records that ended within 3 years before the run date
+          # AND DATE_DIFF(run_dates.run_date, COALESCE(sessions.end_date, run_dates.run_date), YEAR) <= 5
+      WHERE compartment NOT IN ('LIBERTY - LIBERTY_REPEAT_IN_SYSTEM', 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN',
+          '{long_lasting_compartments}')
           -- Drop sessions that are on the cusp of the session-start boundary
           AND DATE_DIFF(CURRENT_DATE, sessions.start_date, YEAR) < 20
-          -- Union the rider transitions at the end
-          AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
-          -- Do not include outflows that actually look like dropped data
-          AND outflow_to NOT LIKE '%INTERNAL_UNKNOWN%'
+          # AND DATE_SUB(CURRENT_DATE, INTERVAL 20 YEAR) < sessions.start_date
+          -- Union other compartment transitions at the end for US_ID
+          AND (compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
+            OR state_code != "US_ID")
     ),
     cohort_sizes_cte AS (
       -- Collect total cohort size for the outflow fraction denominator
@@ -70,7 +76,6 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
           COUNT(*) as total_population
       FROM cohorts_per_run_date
       GROUP BY 1,2,3,4,5
-      ORDER BY 1,2,3,4,5
     ),
     outflow_population_cte AS (
       -- Calculate the total population per cohort that outflows to each compartment at each duration
@@ -121,7 +126,6 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
     WHERE gender in ('MALE', 'FEMALE')
       -- wasn't sure how to handle this better, so for now 'null' are discarded and reinserted in the model
       AND outflow_to IS NOT NULL
-      AND state_code IN ('US_ID', 'US_ND')
     GROUP BY compartment, gender, state_code, outflow_to, compartment_duration, run_date, cohort_counts.cohort_count
 
     UNION ALL
@@ -136,7 +140,17 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       total_population
     FROM `{project_id}.{population_projection_dataset}.us_id_non_bias_full_transitions_materialized`
 
-    ORDER BY compartment, gender, state_code, outflow_to, compartment_duration, run_date
+    UNION ALL
+
+    SELECT
+      compartment,
+      gender,
+      state_code,
+      outflow_to,
+      compartment_duration,
+      run_date,
+      total_population
+    FROM `{project_id}.{population_projection_dataset}.long_lasting_compartment_transitions_materialized`
     """
 
 POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -145,6 +159,8 @@ POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=POPULATION_TRANSITIONS_QUERY_TEMPLATE,
     description=POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
+    long_lasting_compartments="', '".join(LONG_LASTING_COMPARTMENT_LIST),
+    clustering_fields=["state_code", "compartment", "gender", "run_date"],
     should_materialize=True,
 )
 

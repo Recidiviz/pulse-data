@@ -18,7 +18,7 @@
 import logging
 from functools import partial
 from time import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import pandas as pd
 
@@ -165,14 +165,23 @@ class PopulationSimulationFactory:
         during validation.
         """
         sub_group_ids_dict = {}
-        for simulation_group_name, _ in transitions_data.groupby(disaggregation_axes):
+        # Convert the list to a single string if there's only 1 element to silence Pandas warnings
+        if len(disaggregation_axes) == 1:
+            disaggregation_grouper: Union[List[str], str] = disaggregation_axes[0]
+        else:
+            disaggregation_grouper = disaggregation_axes
+        for (simulation_group_name), _ in transitions_data.groupby(
+            disaggregation_grouper
+        ):
             sub_group_id = str(simulation_group_name)
 
             if len(disaggregation_axes) == 1:
+                # If `simulation_group_name` is a single string then add one key: value pair to sub_group_ids_dict
                 sub_group_ids_dict[sub_group_id] = {
                     disaggregation_axes[0]: simulation_group_name
                 }
             else:
+                # Else, `simulation_group_name` is a list so add multiple key: value pairs to the sub_group_ids_dict
                 sub_group_ids_dict[sub_group_id] = {
                     disaggregation_axes[i]: simulation_group_name[i]
                     for i in range(len(disaggregation_axes))

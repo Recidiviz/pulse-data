@@ -36,7 +36,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
       compartment_duration,
       gender,
       total_population
-    FROM `{project_id}.{population_projection_dataset}.supervision_remaining_sentences`
+    FROM `{project_id}.{population_projection_dataset}.supervision_remaining_sentences_materialized`
     
     UNION ALL
     
@@ -48,7 +48,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
         compartment_duration,
         gender,
         total_population
-    FROM `{project_id}.{population_projection_dataset}.incarceration_remaining_sentences`
+    FROM `{project_id}.{population_projection_dataset}.incarceration_remaining_sentences_materialized`
 
     UNION ALL
 
@@ -60,7 +60,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
         compartment_duration,
         gender,
         SUM(total_population) AS total_population
-    FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences`
+    FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences_materialized`
     GROUP BY state_code, run_date, compartment, outflow_to, compartment_duration, gender
     """
 
@@ -71,6 +71,7 @@ REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
     should_materialize=True,
+    clustering_fields=["state_code"],
 )
 
 if __name__ == "__main__":

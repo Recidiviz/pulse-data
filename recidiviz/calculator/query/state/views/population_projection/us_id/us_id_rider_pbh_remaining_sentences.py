@@ -51,8 +51,8 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
         compartment,
         person_id,
         gender,
-        FLOOR(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) AS months_served,
-        transitions.compartment_duration - FLOOR(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) AS remaining_compartment_duration,
+        CEIL(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) AS months_served,
+        transitions.compartment_duration - CEIL(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) AS remaining_compartment_duration,
         transitions.outflow_to,
         transitions.total_population,
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
@@ -65,7 +65,7 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
         AND compartment IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
         AND gender IN ('MALE', 'FEMALE')
         -- Select the tail of the duration distribution starting from the time served in the compartment on the run date
-        AND FLOOR(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) <= transitions.compartment_duration
+        AND CEIL(DATE_DIFF(run_dates.run_date, start_date, DAY)/30) <= transitions.compartment_duration
         -- TODO(#4868): filter invalid transitions
     )
     SELECT
@@ -76,8 +76,10 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = """
       months_served,
       remaining_compartment_duration AS compartment_duration,
       outflow_to,
-      total_population,
+      # total_population,
+      SUM(total_population) AS total_population,
     FROM cohorts_per_run_date
+    GROUP BY 1, 2, 3, 4, 5, 6, 7
     """
 
 US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -86,7 +88,7 @@ US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE,
     description=US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

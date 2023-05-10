@@ -27,39 +27,21 @@ TOTAL_POPULATION_VIEW_DESCRIPTION = (
 )
 
 TOTAL_POPULATION_QUERY_TEMPLATE = """
-    WITH cte AS
-    (
-        SELECT
-          state_code,
-          CASE WHEN compartment = 'INCARCERATION - GENERAL' AND (previously_incarcerated OR inflow_from LIKE '%PAROLE%')
-            THEN 'INCARCERATION - RE-INCARCERATION'
-            ELSE compartment
-          END AS compartment,
-          gender,
-          start_date,
-          end_date,
-          run_date,
-          COUNT(1) as total_population,
-        FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
-        JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates`
-          ON start_date < run_date
-        WHERE
-          state_code IN ('US_ID', 'US_ND')
-        GROUP BY state_code, compartment, gender, start_date, end_date, run_date
-    )
     SELECT
-      cte.compartment,
-      cte.state_code,
-      cte.gender,
-      cte.run_date,
+      CASE WHEN compartment = 'INCARCERATION - GENERAL' AND (previously_incarcerated OR inflow_from LIKE '%PAROLE%')
+        THEN 'INCARCERATION - RE-INCARCERATION'
+        ELSE compartment
+      END AS compartment,
+      state_code,
+      gender,
+      DATE_TRUNC(CURRENT_DATE, MONTH) AS run_date,
       time_step.run_date AS time_step,
-      SUM(cte.total_population) as total_population
-    FROM cte
+      COUNT(*) as total_population
+    FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
     JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` AS time_step
-        ON time_step.run_date BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
+        ON time_step.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
     WHERE gender IN ('FEMALE', 'MALE')
     GROUP BY compartment, state_code, gender, run_date, time_step
-    ORDER BY compartment, state_code, gender, run_date, time_step
     """
 
 TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

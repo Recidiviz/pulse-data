@@ -254,7 +254,7 @@ class TestPopulationSimulation(unittest.TestCase):
         projection = population_simulation.simulate_policies()
 
         assert_index_equal(
-            projection.index.unique().sort_values(), pd.Int64Index(range(10))
+            projection.index.unique().sort_values(), pd.Index(range(10), dtype=int)
         )
 
     def test_dropping_data_raises_warning(self) -> None:

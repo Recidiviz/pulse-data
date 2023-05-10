@@ -191,17 +191,17 @@ def upload_spark_model_inputs(
         {
             "table": OUTFLOWS_DATA_TABLE_NAME,
             "schema": OUTFLOWS_SCHEMA,
-            "data_df": outflows_data_df,
+            "data_df": outflows_data_df.copy(),
         },
         {
             "table": TRANSITIONS_DATA_TABLE_NAME,
             "schema": TRANSITIONS_SCHEMA,
-            "data_df": transitions_data_df,
+            "data_df": transitions_data_df.copy(),
         },
         {
             "table": TOTAL_POPULATION_DATA_TABLE_NAME,
             "schema": TOTAL_POPULATION_SCHEMA,
-            "data_df": total_population_data_df,
+            "data_df": total_population_data_df.copy(),
         },
     ]
     # Validate that the dataframe data won't cause errors when running simulation

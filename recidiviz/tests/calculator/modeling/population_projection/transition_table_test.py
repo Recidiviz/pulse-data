@@ -103,6 +103,35 @@ class TestInitialization(TestTransitionTable):
 
         self.assertEqual(transition_table_default, transition_table_shuffled)
 
+    def test_unnormalize_table(self) -> None:
+        test_data = pd.DataFrame(
+            {
+                "compartment_duration": [1, 3, 1, 2],
+                "total_population": [1, 4, 2, 3],
+                "outflow_to": [
+                    "mars",
+                    "mars",
+                    "moon",
+                    "moon",
+                ],
+            }
+        )
+        transition_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        transition_table.generate_transition_tables([MIN_POSSIBLE_POLICY_TS], test_data)
+        transition_table.normalize_transitions()
+        unnormalized_table = TransitionTable.unnormalized_table(
+            transition_table.tables[MIN_POSSIBLE_POLICY_TS]
+        )
+        expected_cdf = pd.DataFrame(
+            {
+                "mars": [0.1, 0, 0.4],
+                "moon": [0.2, 0.3, 0],
+            },
+            columns=pd.Index(["mars", "moon"], name="outflow_to"),
+            index=pd.Index(range(1, 4), name="compartment_duration"),
+        )
+        assert_frame_equal(unnormalized_table, expected_cdf)
+
 
 class TestPolicyFunctions(TestTransitionTable):
     """Test the policy functions used for Spark modeling"""
@@ -515,3 +544,120 @@ class TestPolicyFunctions(TestTransitionTable):
             weights=transition_table.tables[5].release.values,
         )
         self.assertEqual(np.round(expected_mean, 1), np.round(calculated_mean, 1))
+
+    def test_apply_reductions_one_outflow(self) -> None:
+        one_outflow_df = pd.DataFrame(
+            {
+                "compartment_duration": range(1, 11),
+                "total_population": [1] * 10,
+                "outflow_to": "outflow",
+            }
+        )
+
+        normal_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        normal_prev_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TS], one_outflow_df
+        )
+        policy_ts = 5
+        compartment_policies = [
+            SparkPolicy(
+                policy_fn=partial(
+                    TransitionTable.apply_reductions,
+                    reduction_df=pd.DataFrame(
+                        {
+                            "outflow": ["outflow"],
+                            "affected_fraction": [0.5],
+                            "reduction_size": [1],
+                        }
+                    ),
+                    reduction_type="+",
+                    retroactive=False,
+                ),
+                sub_population={"sub_group": "test_population"},
+                spark_compartment="test_compartment",
+                policy_ts=policy_ts,
+                apply_retroactive=False,
+            )
+        ]
+
+        transition_table = TransitionTable(
+            policy_ts,
+            compartment_policies,
+            {MIN_POSSIBLE_POLICY_TS: normal_prev_table.get_after_table()},
+        )
+
+        expected_policy_table = pd.DataFrame(
+            {"outflow": [1.5] + [1] * 8 + [0.5]},
+            index=pd.RangeIndex(range(1, 11), name="compartment_duration"),
+        )
+        expected_policy_table.columns = pd.Index(
+            expected_policy_table.columns, name="outflow_to"
+        )
+        assert_frame_equal(transition_table.tables[policy_ts], expected_policy_table)
+
+    def test_apply_reductions_two_outflows(self) -> None:
+        """
+        Ensure that the `apply_reductions` method only modifies the one policy-impacted outflow even if two arepresent
+        """
+        two_outflows_df = pd.concat(
+            [
+                pd.DataFrame(
+                    {
+                        "compartment_duration": range(1, 11),
+                        "total_population": [1] * 10,
+                        "outflow_to": "outflow",
+                    }
+                ),
+                pd.DataFrame(
+                    {
+                        "compartment_duration": range(1, 11),
+                        "total_population": [0.5] * 10,
+                        "outflow_to": "other_outflow",
+                    }
+                ),
+            ]
+        )
+
+        normal_prev_table = TransitionTable(MIN_POSSIBLE_POLICY_TS, [])
+        normal_prev_table.generate_transition_tables(
+            [MIN_POSSIBLE_POLICY_TS], two_outflows_df
+        )
+        policy_ts = 5
+        compartment_policies = [
+            SparkPolicy(
+                policy_fn=partial(
+                    TransitionTable.apply_reductions,
+                    reduction_df=pd.DataFrame(
+                        {
+                            "outflow": ["outflow"],
+                            "affected_fraction": [0.5],
+                            "reduction_size": [1],
+                        }
+                    ),
+                    reduction_type="+",
+                    retroactive=False,
+                ),
+                sub_population={"sub_group": "test_population"},
+                spark_compartment="test_compartment",
+                policy_ts=policy_ts,
+                apply_retroactive=False,
+            )
+        ]
+
+        transition_table = TransitionTable(
+            policy_ts,
+            compartment_policies,
+            {MIN_POSSIBLE_POLICY_TS: normal_prev_table.get_after_table()},
+        )
+
+        expected_policy_table = pd.DataFrame(
+            {
+                "other_outflow": [0.5] * 10,
+                "outflow": [1.5] + [1] * 8 + [0.5],
+            },
+            index=pd.RangeIndex(range(1, 11), name="compartment_duration"),
+        )
+        expected_policy_table.columns = pd.Index(
+            expected_policy_table.columns, name="outflow_to"
+        )
+        assert_frame_equal(transition_table.tables[policy_ts], expected_policy_table)

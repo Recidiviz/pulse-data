@@ -94,7 +94,7 @@ class SuperSimulation:
             self.simulator.get_population_simulations(),
             {"policy_simulation": simulation_output},
         )
-        return simulation_output
+        return simulation_output.copy()
 
     def microsim_baseline_over_time(
         self,
@@ -191,7 +191,7 @@ class SuperSimulation:
         simulation_tag: Optional[str] = None,
         cost_multipliers: Optional[pd.DataFrame] = None,
     ) -> Optional[Dict[str, pd.DataFrame]]:
-        output_data = self.validator.get_output_data_for_upload()
+        output_data = self.validator.get_output_data_for_upload(macrosim_override=True)
         sub_group_ids_dict = self.simulator.get_sub_group_ids_dict()
         data_inputs = self.initializer.get_data_inputs()
         disaggregation_axes = data_inputs.disaggregation_axes

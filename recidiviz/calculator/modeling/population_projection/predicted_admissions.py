@@ -113,7 +113,10 @@ class PredictedAdmissions:
         historical_data: pd.DataFrame, constant_admissions: bool
     ) -> Tuple[pd.DataFrame, bool]:
         """Fill in historical data so all outflows cover the same time steps of data"""
-        historical_data = historical_data.sort_index(axis=1)
+
+        # Convert different forms of NA into "None" to make processing the missing values easier
+        historical_data.replace({np.nan: None}, inplace=True)
+        historical_data = historical_data.astype(float).sort_index(axis=1)
 
         for outflow, row in historical_data.iterrows():
             missing_data = historical_data.columns[row.isnull()]
@@ -132,7 +135,11 @@ class PredictedAdmissions:
                     ] = historical_data.loc[outflow, min_data_ts]
                 else:
                     model_backcast = (
-                        ARIMA(row.iloc[::-1].dropna().values, order=ORDER, trend="t")
+                        ARIMA(
+                            row.iloc[::-1].dropna().values.astype(float),
+                            order=ORDER,
+                            trend="t",
+                        )
                         .fit()
                         .forecast(steps=len(missing_data_backward))
                     )
@@ -150,7 +157,7 @@ class PredictedAdmissions:
                     ] = historical_data.loc[outflow, max_data_ts]
                 else:
                     model_forecast = (
-                        ARIMA(row.dropna().values, order=ORDER, trend="t")
+                        ARIMA(row.dropna().values.astype(float), order=ORDER, trend="t")
                         .fit()
                         .forecast(steps=len(missing_data_forward))
                     )
@@ -240,21 +247,26 @@ class PredictedAdmissions:
                     start_period:end_period
                 ]
 
-            # If using the constant rate assumption, just take the last value
+            # If using the constant rate assumption, just take the average of the last 12 values
+            # TODO(#10033): update constant admissions logic to be more accurate
             else:
                 predictions_df_sub = pd.DataFrame(
                     index=range(start_period, end_period + 1),
                     columns=["predictions"],
                 )
                 predictions_df_sub.sort_index(inplace=True)
+                # Take the average of all rows if there are less than 12
+                number_of_rows = min(len(row), 12)
+                avg_forward_value = np.mean(row.iloc[:number_of_rows])
                 predictions_df_sub.loc[
                     predictions_df_sub.index < int(self.historical_data.columns.min()),
                     "predictions",
-                ] = row.iloc[0]
+                ] = avg_forward_value
+                avg_backwards_value = np.mean(row.iloc[-number_of_rows:])
                 predictions_df_sub.loc[
                     predictions_df_sub.index > int(self.historical_data.columns.max()),
                     "predictions",
-                ] = row.iloc[-1]
+                ] = avg_backwards_value
                 predictions_df_sub = predictions_df_sub[
                     ~predictions_df_sub.index.isin(self.historical_data.columns)
                 ]
@@ -265,15 +277,16 @@ class PredictedAdmissions:
                 {outflow_compartment: predictions_df_sub}, names=["outflow_to"]
             )
 
-            # Clip negative values at 0, throw warning if lower bound hit
-            predictions_df_sub.loc[
-                predictions_df_sub.predictions < 0, "predictions"
-            ] = 0
+            # Throw warning if the lower bound has been hit
             warn_text = "Warning: lower bound hit when predicting admissions."
-            if any(predictions_df_sub.predictions == 0) and (
+            if any(predictions_df_sub.predictions < 0) and (
                 warn_text not in self.warnings
             ):
                 self.warnings.append(warn_text)
+            # Clip negative values at 0
+            predictions_df_sub["predictions"] = predictions_df_sub["predictions"].clip(
+                lower=0
+            )
 
             # append df_sub to df
             max_allowable_pred = predictions_df_sub["predictions"].max()

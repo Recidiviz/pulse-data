@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The run dates to use for the simulation validation"""
+"""The run dates to use for the simulation validation going back 5 calendar years"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -28,9 +28,11 @@ SIMULATION_RUN_DATES_VIEW_DESCRIPTION = (
 
 SIMULATION_RUN_DATES_QUERY_TEMPLATE = """
     SELECT *
-    FROM
-    UNNEST(GENERATE_DATE_ARRAY('2016-01-01',
-           DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS run_date
+    FROM UNNEST(GENERATE_DATE_ARRAY(
+        DATE_SUB(DATE_TRUNC(CURRENT_DATE("US/Eastern"), YEAR), INTERVAL 5 YEAR),
+        DATE_TRUNC(CURRENT_DATE("US/Eastern"), MONTH),
+        INTERVAL 1 MONTH
+    )) AS run_date
     """
 
 SIMULATION_RUN_DATES_VIEW_BUILDER = SimpleBigQueryViewBuilder(

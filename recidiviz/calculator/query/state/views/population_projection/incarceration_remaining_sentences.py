@@ -66,29 +66,51 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
             sessions.end_date AS sessions_end_date,
             sentences.effective_date AS sentence_start_date,
             sentences.completion_date AS sentence_completion_date,
-            sentences.projected_completion_date_max,
+            COALESCE(sentences.projected_completion_date_max, sentences.projected_completion_date_min) AS projected_max_release_date,
             sentences.parole_eligibility_date,
             run_date_array.run_date,
             CASE
-                WHEN (parole_eligibility_date is null) or (not run_date_array.run_date < parole_eligibility_date)
-                    THEN FLOOR(DATE_DIFF(projected_completion_date_max, run_date_array.run_date, DAY)/30)
+                WHEN (parole_eligibility_date is null) or (parole_eligibility_date <= run_date_array.run_date)
+                    THEN FLOOR(
+                        -- Estimate the amount of time between the parole eligibility date and the min/max projected
+                        -- release date that each client will be released. This logic could be improved and use more
+                        -- historical state-specific info
+                        DATE_DIFF(run_date_array.run_date,
+                        DATE_ADD(
+                          sentences.parole_eligibility_date,
+                          INTERVAL CAST(FLOOR(0.33 * DATE_DIFF(
+                            COALESCE(sentences.projected_completion_date_max, sentences.projected_completion_date_min),
+                            sentences.parole_eligibility_date,
+                            DAY
+                          )) AS INT64) DAY
+                        ),
+                        DAY) / 30
+                    )
                 WHEN (parole_eligibility_date is not null) and (run_date_array.run_date < parole_eligibility_date)
                     THEN FLOOR(DATE_DIFF(parole_eligibility_date, run_date_array.run_date, DAY)/30)
-            END AS compartment_duration
+            END AS compartment_duration,
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
-        LEFT JOIN 
-            `{project_id}.{sessions_dataset}.compartment_sessions_closest_sentence_imposed_group` cs
-        USING 
-            (person_id, state_code, session_id)
-        LEFT JOIN 
-            `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sentences
-        USING 
-            (state_code, sentence_imposed_group_id, person_id)
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
-          ON run_date_array.run_date BETWEEN sessions.start_date AND coalesce(end_date, '9999-01-01')
+            ON run_date_array.run_date BETWEEN sessions.start_date AND COALESCE(end_date, '9999-01-01')
+        LEFT JOIN
+            `{project_id}.{sessions_dataset}.sentence_spans_materialized` ss
+            ON ss.person_id = sessions.person_id
+            AND ss.state_code = sessions.state_code
+            AND run_date_array.run_date BETWEEN ss.start_date
+                AND COALESCE(DATE_SUB(ss.end_date, INTERVAL 1 DAY), '9999-01-01'),
+        UNNEST(sentence_imposed_group_id_array) AS sentence_imposed_group_id
+        LEFT JOIN
+            `{project_id}.{sessions_dataset}.sentence_imposed_group_summary_materialized` sentences
+            ON sentences.person_id = ss.person_id
+            AND sentences.state_code = ss.state_code
+            AND sentences.sentence_imposed_group_id = sentence_imposed_group_id
         WHERE sessions.compartment LIKE 'INCARCERATION%'
-          -- Union the rider transitions at the end
+          -- Union these short-term incarceration transitions at the end
           AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
+        QUALIFY ROW_NUMBER() OVER (
+            PARTITION BY sessions.person_id, sessions.state_code, sessions.session_id, run_date_array.run_date
+            ORDER BY COALESCE(sentences.projected_completion_date_max, sentences.projected_completion_date_min) DESC
+        ) = 1
     )
 
     SELECT
@@ -102,11 +124,10 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
     FROM incarceration_cte
     JOIN incarceration_distribution_cte
       USING (state_code, compartment, run_date)
-    WHERE state_code = 'US_ID'
-        AND incarceration_cte.gender IN ('FEMALE', 'MALE')
+    WHERE
+        incarceration_cte.gender IN ('FEMALE', 'MALE')
         AND incarceration_cte.compartment_duration >= 0
     GROUP BY 1,2,3,4,5,6
-    ORDER BY 1,2,3,4,5,6
     """
 
 INCARCERATION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -114,9 +135,9 @@ INCARCERATION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=REMAINING_SENTENCES_VIEW_NAME,
     view_query_template=REMAINING_SENTENCES_QUERY_TEMPLATE,
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
-    sessions_dataset=SESSIONS_DATASET,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
-    should_materialize=False,
+    sessions_dataset=SESSIONS_DATASET,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":

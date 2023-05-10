@@ -1,40 +1,108 @@
--- Prison to Supervision - Policy
-with prison_to_supervision_policy_duration as (
-    select *,
-        CASE WHEN age_current<=55 THEN GREATEST(55*12 - age_current*12,time_till_eligibility)
-             WHEN age_current>55 and time_till_eligibility <= 0 then 0
-             WHEN age_current>55 then time_till_eligibility
-             END as compartment_duration_prison_to_supervision,
-    --   count(*) as total_population
-    from `recidiviz-staging.analyst_data_scratch_space.pa_geriatric_parole_base_query`
-    where (age_at_elig_date > 55 or (age_at_elig_date*12 + min_expected_los_after_eligibility > 55*12))
-    and minimum_elig_date < DATE_ADD(CURRENT_DATE('US/Eastern'), interval 10 year)
-    and sentence_completion_date is null
-    -- group by 1,2,3
-    -- order by 4 desc
-), prison_to_supervision_policy as (
-    select 'prison' as compartment,
-        'parole' as outflow_to,
-        compartment_duration_prison_to_supervision as compartment_duration,
-        count(*) as total_population
-    from prison_to_supervision_policy_duration
-    group by 1,2,3
-),
-    supervision_to_release_policy as (
-    -- Supervision to Release - Policy
-    select  'parole' as compartment,
-            'release' as outflow_to,
-            FLOOR(min_expected_los_adj - compartment_duration_prison_to_supervision) as compartment_duration,
-            -- *
-        count(*) as total_population
-    from prison_to_supervision_policy_duration
-    where min_expected_los_adj is not null
-    -- where (age_at_elig_date > 55 or (age_at_elig_date*12 + min_expected_los_after_eligibility > 55*12))
-    -- and minimum_elig_date < DATE_ADD(CURRENT_DATE('US/Eastern'), interval 10 year)
-    -- and sentence_completion_date is null
-    group by 1,2,3
-    order by 4 desc
-)
--- select * from supervision_to_release_policy
+WITH cohort AS
+(
+SELECT
+    person_id,
+    state_code,
+    session_id AS cohort_session_id,
+    start_date AS cohort_start_date,
+    last_day_of_data,
+FROM
+  (
+  SELECT
+    c.*,
+    ss.person_id IS NOT NULL AS supervision_super_session_start,
+  FROM `sessions.compartment_sessions_materialized` c
+  LEFT JOIN `sessions.supervision_super_sessions_materialized` ss
+    ON c.person_id = ss.person_id
+    AND c.session_id = ss.session_id_start
+  )
+WHERE compartment_level_2 in ('PAROLE','DUAL')
+and inflow_from_level_1 !='SUPERVISION'
+and age_start > 55
+and start_date BETWEEN '2011-11-01' AND '2014-11-01'
 
-select * from prison_to_supervision_policy union all select * from supervision_to_release_policy ;
+)
+,
+event AS
+(
+SELECT
+    person_id,
+    state_code,
+    session_id AS event_session_id,
+    end_date AS event_end_date,
+
+FROM
+  (
+  SELECT
+    c.*,
+    IF(compartment_level_1 LIKE 'INCARCERATION%', LAG(ss.person_id IS NOT NULL) OVER(PARTITION BY c.person_id ORDER BY c.session_id), FALSE) AS incarceration_from_supervision_super_session,
+    c.start_reason LIKE '%REVOCATION' OR c.start_reason = 'SANCTION_ADMISSION' AS is_commitment,
+    FROM `sessions.compartment_sessions_materialized` c
+    LEFT JOIN `sessions.supervision_super_sessions_materialized` ss
+        ON c.person_id = ss.person_id
+        AND c.session_id = ss.session_id_end
+  )
+WHERE outflow_to_level_1 = 'DEATH'
+)
+,
+cohort_x_event AS
+(
+SELECT
+    cohort.person_id,
+    cohort_session_id,
+    cohort_start_date,
+    event_session_id,
+    event_end_date,
+    1 AS event,
+    ROW_NUMBER() OVER(PARTITION BY cohort.person_id, cohort_session_id ORDER BY event_session_id) AS rank_of_event,
+    ROW_NUMBER() OVER(PARTITION BY cohort.person_id, event_session_id ORDER BY cohort_session_id DESC) AS rank_of_cohort,
+FROM cohort
+JOIN event
+    ON cohort.person_id = event.person_id
+    AND event_end_date>cohort_start_date
+ORDER BY cohort_start_date, event_end_date
+)
+,
+cte AS
+(
+SELECT
+    cohort.person_id,
+    cohort.cohort_start_date,
+    cohort.cohort_session_id,
+    cohort.state_code,
+    COALESCE(cohort_x_event.event,0) AS event,
+    cohort_x_event.event_session_id,
+    cohort_x_event.event_end_date,
+    DATE_DIFF(last_day_of_data, cohort.cohort_start_date, MONTH)
+                - IF(EXTRACT(DAY FROM cohort.cohort_start_date)>EXTRACT(DAY FROM last_day_of_data), 1, 0) cohort_months_to_mature,
+    DATE_DIFF(cohort_x_event.event_end_date, cohort.cohort_start_date, MONTH)
+            - IF(EXTRACT(DAY FROM cohort.cohort_start_date)>=EXTRACT(DAY FROM cohort_x_event.event_end_date), 1, 0) + 1 AS cohort_start_to_event_months,
+FROM cohort
+LEFT JOIN cohort_x_event
+    ON cohort.person_id = cohort_x_event.person_id
+    AND cohort.cohort_session_id = cohort_x_event.cohort_session_id
+    AND rank_of_event = 1
+    AND rank_of_cohort = 1
+), final as (
+        SELECT
+    cte.person_id,
+    cte.state_code,
+    cte.cohort_start_date,
+    cte.cohort_session_id,
+    i.cohort_months,
+    cte.cohort_months_to_mature,
+    cte.event_end_date,
+    cte.event_session_id,
+    cte.cohort_start_to_event_months,
+    CASE WHEN cte.cohort_start_to_event_months <= i.cohort_months THEN 1 ELSE 0 END AS event,
+    MAX(i.cohort_months) OVER(PARTITION BY cte.person_id, cte.cohort_start_date) AS cohort_months_fully_mature,
+FROM cte
+JOIN `sessions.cohort_month_index` i
+    ON cte.cohort_months_to_mature>=i.cohort_months
+ORDER BY person_id, cohort_start_date, cohort_months
+
+)
+select cohort_months, sum(event)/count(*) percent_death
+from final
+group by 1
+order by 1

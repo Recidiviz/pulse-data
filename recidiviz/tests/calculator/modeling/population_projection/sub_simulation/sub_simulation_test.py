@@ -125,11 +125,8 @@ class TestSubSimulation(unittest.TestCase):
             {"A": FakeCompartment(), "B": FakeCompartment()}
         )
 
-    def test_dropping_data_raises_warning_or_error(self) -> None:
-        """Assert that SubSimulation throws an error when some input data goes unused"""
-        typo_transitions = self.test_transitions_data.copy()
-        typo_transitions.loc[typo_transitions.index == 0, "compartment"] = "prison "
-
+    def test_unused_outflows_raises_error(self) -> None:
+        """Assert that SubSimulation throws an error when some outflows data goes unused"""
         typo_outflows = self.test_outflow_data.copy()
         typo_outflows.loc[typo_outflows.index == 4, "compartment"] = "pre-trial"
 
@@ -144,6 +141,11 @@ class TestSubSimulation(unittest.TestCase):
                 True,
                 self.starting_cohort_sizes,
             )
+
+    def test_unused_transition_data_raises_warning(self) -> None:
+        """Assert that SubSimulation logs a warning when some transitions data goes unused"""
+        typo_transitions = self.test_transitions_data.copy()
+        typo_transitions.loc[typo_transitions.index == 0, "compartment"] = "prison "
 
         with patch("logging.Logger.warning") as mock:
             _ = SubSimulationFactory.build_sub_simulation(

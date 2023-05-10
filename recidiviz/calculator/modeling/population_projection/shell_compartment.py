@@ -97,8 +97,8 @@ class ShellCompartment(SparkCompartment):
         edge_tags = [i.tag for i in edges]
         if not set(self.outflows_data.index).issubset(edge_tags):
             raise ValueError(
-                f"Some edges are not supported in the outflows data"
-                f"Expected:{self.outflows_data.index}, Actual: {edge_tags}"
+                f"Some outflow compartments are not included in the compartment architecture:\n"
+                f"{set(self.outflows_data.index).difference(edge_tags)}"
             )
         super().initialize_edges(edges)
 
@@ -120,7 +120,7 @@ class ShellCompartment(SparkCompartment):
         ].get_time_step_estimate(self.current_ts)
 
         # Store the outflows
-        self.outflows.loc[:, self.current_ts] = pd.Series(outflow_dict, dtype=float)
+        self.outflows.loc[:, self.current_ts] = outflow_dict
 
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)

@@ -26,9 +26,8 @@ def load_ignite_table_from_big_query(
 ) -> pd.DataFrame:
     """Pull all data from a table for a specific state and run date"""
 
-    query = (
-        f"""SELECT * FROM {dataset}.{table_name} WHERE state_code = '{state_code}'"""
-    )
+    query = f"""SELECT * FROM {dataset}.{table_name} WHERE state_code = '{state_code}'
+        """
 
     table_results = pandas_gbq.read_gbq(query, project_id=project_id)
     return table_results
@@ -37,7 +36,9 @@ def load_ignite_table_from_big_query(
 def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
     """Add rows for the terminal compartment transitions (LIBERTY and DEATH)"""
     complete_transitions = transition_data.copy()
-    for run_date in transition_data.run_date.unique():
+
+    # In order to handle any disaggreation axes for the microsim this function would need to take that as an argument
+    for run_date, run_date_transitions in transition_data.groupby("run_date"):
         terminal_compartment_transitions = []
         for terminal_compartment in [
             "LIBERTY - LIBERTY_REPEAT_IN_SYSTEM",
@@ -58,10 +59,9 @@ def add_transition_rows(transition_data: pd.DataFrame) -> pd.DataFrame:
             terminal_compartment_transitions
         )
         long_sentences = 1 - np.round(
-            transition_data[transition_data.run_date == run_date]
-            .groupby(["compartment", "gender"])
-            .sum()
-            .total_population,
+            run_date_transitions.groupby(["compartment", "gender"])[
+                "total_population"
+            ].sum(),
             6,
         )
         broken_data = long_sentences[long_sentences < 0]
@@ -106,15 +106,21 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame) -> pd.Dat
         complete_remaining = pd.concat([complete_remaining, pd.DataFrame(extra_rows)])
 
         # Add a row to the `remaining_sentence_data` if it does not exist for the
-        # infrequent compartment so that the sub-sim initialization does not fail
+        # infrequent compartment so that the sub-sim initialization does not fail.
+        # If there are no remaining transitions then there are no open sessions for this
+        # run_date, and so the remaining sentence length does actually not matter.
         for infrequent_compartment in [
             "PENDING_CUSTODY - PENDING_CUSTODY",
-            "SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION",
+            # "SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION",
+            "INCARCERATION - TEMPORARY_CUSTODY",
+            "SUPERVISION_OUT_OF_STATE - PROBATION",
+            "SUPERVISION_OUT_OF_STATE - INTERNAL_UNKNOWN",
+            "ERRONEOUS_RELEASE - ERRONEOUS_RELEASE",
+            "INCARCERATION - WEEKEND_CONFINEMENT",
         ]:
             infrequent_sentences = complete_remaining[
                 (complete_remaining["run_date"] == run_date)
-                & complete_remaining["compartment"]
-                == infrequent_compartment
+                & (complete_remaining["compartment"] == infrequent_compartment)
             ]
             # Only add rows for the unrepresented simulation groups
             if infrequent_sentences["gender"].nunique() < 2:

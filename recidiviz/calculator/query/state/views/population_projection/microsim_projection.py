@@ -22,7 +22,6 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_supervision_period import (
-    StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -38,12 +37,13 @@ MICROSIM_PROJECTION_VIEW_INCLUDED_TYPES = [
     StateSupervisionPeriodSupervisionType.DUAL,
     StateSupervisionPeriodSupervisionType.PAROLE,
     StateSupervisionPeriodSupervisionType.PROBATION,
+    StateSupervisionPeriodSupervisionType.COMMUNITY_CONFINEMENT,
     StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+    StateSupervisionPeriodSupervisionType.ABSCONSION,
     StateSupervisionPeriodSupervisionType.BENCH_WARRANT,
     StateSpecializedPurposeForIncarceration.GENERAL,
     StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
     StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
-    StateSupervisionPeriodAdmissionReason.ABSCONSION,
 ]
 
 MICROSIM_PROJECTION_QUERY_TEMPLATE = """
@@ -66,10 +66,10 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         ON historical_dates.date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01'),
       UNNEST(['ALL', IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2)]) AS legal_status,
       UNNEST(['ALL', gender]) AS simulation_group
-      WHERE sessions.state_code IN ('US_ID', 'US_ND')
-        AND gender IN ('FEMALE', 'MALE')
+      WHERE gender IN ('FEMALE', 'MALE')
         AND (compartment_level_1 = 'SUPERVISION'
-            OR (compartment_level_1 = 'INCARCERATION' AND sessions.state_code = 'US_ND')
+            -- Exclude incarceration populations for US_ID as they are included in the next CTE
+            OR (compartment_level_1 = 'INCARCERATION' AND sessions.state_code != 'US_ID')
         )
         AND compartment_level_2 IN ('{included_types}')
       GROUP BY state_code, date, compartment, legal_status, simulation_group
@@ -116,7 +116,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
     FROM `{project_id}.{population_projection_output_dataset}.microsim_projection_raw`
     INNER JOIN most_recent_results
     USING (simulation_tag, date_created)
-    WHERE compartment NOT LIKE 'RELEASE%'
+    WHERE compartment NOT LIKE 'LIBERTY%'
       AND simulation_date > DATE_TRUNC(CURRENT_DATE, MONTH)
 
     UNION ALL
@@ -152,8 +152,6 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         total_population AS total_population_min,
         total_population AS total_population_max
     FROM historical_incarceration_population_output
-
-    ORDER BY state_code, compartment, legal_status, simulation_group, simulation_date
     """
 
 MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

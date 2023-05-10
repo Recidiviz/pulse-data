@@ -26,17 +26,12 @@ from recidiviz.calculator.modeling.population_projection.utils.transitions_utils
 class CohortTable:
     """Store population counts for one cohort of people that enter one category in the same year"""
 
-    def __init__(self) -> None:
-        self.cohort_df = pd.DataFrame(dtype=float)
+    def __init__(self, starting_ts: int) -> None:
+        self.cohort_df = pd.DataFrame({starting_ts - 1: 0.0}, index=[starting_ts - 1])
         self.cohort_df.index.name = "start_ts"
         self.cohort_df.columns.name = "simulation_ts"
 
     def get_latest_population(self) -> pd.Series:
-        if self.cohort_df.empty:
-            return pd.Series(
-                {start_ts: 0 for start_ts in self.cohort_df.index}, dtype=float
-            )
-
         return self.cohort_df.iloc[:, -1]
 
     def get_per_ts_population(self) -> pd.Series:
@@ -45,6 +40,11 @@ class CohortTable:
     def append_ts_end_count(self, cohort_sizes: pd.Series, projection_ts: int) -> None:
         """Append the cohort sizes for the end of the projection ts"""
         latest_population = self.get_latest_population()
+        for ts in latest_population.index:
+            if ts not in cohort_sizes:
+                cohort_sizes.loc[ts] = 0
+                cohort_sizes.sort_index(inplace=True)
+
         if (round(cohort_sizes, SIG_FIGS) > round(latest_population, SIG_FIGS)).any():
             raise ValueError(
                 "Cannot append cohort data that is larger than the latest population\n"
@@ -55,7 +55,7 @@ class CohortTable:
         if projection_ts in self.cohort_df.columns:
             raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
 
-        self.cohort_df[projection_ts] = cohort_sizes
+        self.cohort_df.loc[:, projection_ts] = cohort_sizes
 
     def append_cohort(self, cohort_size: float, projection_ts: int) -> None:
         """Add a new cohort to the bottom of the cohort table"""

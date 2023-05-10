@@ -86,29 +86,25 @@ class TransitionTable:
             if policy.apply_retroactive:
                 policy.policy_fn(self)
 
-        before_table_invariance_under_non_retroactive_policies_checker = {
+        # Store a copy of the transition tables before non-retroactive policies are applied in order to validate
+        # afterward that the non-retroactive policy did not modify the transition data before the policy ts
+        transition_table_no_policy_copy = {
             ts: t.copy() for ts, t in self.tables.items()
         }
 
         self.tables[self.policy_ts] = self.tables[max(self.tables)].copy()
-        # Add on the retroactive policy functions to the 'after' table
+        # Add the non-retroactive policy functions to the 'after' table
         for policy in self.policy_list:
             if not policy.apply_retroactive:
                 policy.policy_fn(self)
 
-        # make sure policy affects correct transition table
+        # Assert that the non-retroactive policies did not change pre-policy ts transition tables
         if any(
-            list(before_table_invariance_under_non_retroactive_policies_checker[ts][i])
-            != list(t[i])[
-                : len(
-                    before_table_invariance_under_non_retroactive_policies_checker[ts][
-                        i
-                    ]
-                )
-            ]
-            for ts, t in self.tables.items()
+            not transition_table_no_policy_copy[ts].equals(
+                transition_df.iloc[: len(transition_table_no_policy_copy[ts])]
+            )
+            for ts, transition_df in self.tables.items()
             if ts != self.policy_ts
-            for i in t
         ):
             raise ValueError(
                 "Policy function was applied to the wrong transition time_step."
@@ -359,16 +355,18 @@ class TransitionTable:
         self.max_sentence = new_max_sentence
 
     @staticmethod
-    def _unnormalized_table(table: pd.DataFrame) -> pd.DataFrame:
-        """revert a normalized table back to an un-normalized df. sum of all total populations will be 1"""
+    def unnormalized_table(table: pd.DataFrame) -> pd.DataFrame:
+        """Revert a normalized table back to an un-normalized df. The sum of all total populations will be 1"""
         if "remaining" not in table:
-            raise ValueError("trying to unnormalize a table that isn't normalized")
+            raise ValueError("Trying to un-normalize a table that isn't normalized")
 
         for sentence_length in table.index.sort_values(ascending=False):
-            for shorter_sentence in range(1, sentence_length):
-                table.loc[sentence_length] *= (
-                    1 - table.loc[shorter_sentence].drop("remaining").sum()
-                )
+            table.loc[sentence_length] *= np.product(
+                1
+                - table.loc[range(1, sentence_length)]
+                .drop("remaining", axis=1)
+                .sum(axis=1)
+            )
 
         return table.drop("remaining", axis=1)
 
@@ -377,12 +375,12 @@ class TransitionTable:
         if not self.previous_tables:
             raise ValueError("There are no previous_tables to unnormalize!")
         for ts, table in self.previous_tables.items():
-            self.previous_tables[ts] = TransitionTable._unnormalized_table(table)
+            self.previous_tables[ts] = TransitionTable.unnormalized_table(table)
 
     def unnormalize_table(self, ts: int) -> None:
         """revert a normalized table back to an un-normalized df. sum of all total populations will be 1"""
         self._check_table_exists(ts)
-        self.tables[ts] = TransitionTable._unnormalized_table(self.tables[ts])
+        self.tables[ts] = TransitionTable.unnormalized_table(self.tables[ts])
 
     def use_alternate_transitions_data(
         self, alternate_historical_transitions: pd.DataFrame, retroactive: bool

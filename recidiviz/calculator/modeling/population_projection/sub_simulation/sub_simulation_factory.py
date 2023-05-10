@@ -89,24 +89,33 @@ class SubSimulationFactory:
         policy_list: List[SparkPolicy],
     ) -> Tuple[Dict[str, CompartmentTransitions], Dict[str, List[SparkPolicy]]]:
         """Create and initialize all transition tables and store shell policies."""
+
+        # Warn the user if there are transitions for compartments that are not in the compartment architecture
+        unused_transitions_data = transitions_data[
+            ~transitions_data["compartment"].isin(compartments_architecture.keys())
+        ]
+        if len(unused_transitions_data) > 0:
+            logging.warning(
+                "Some transitions data not fed to a compartment:\n%s",
+                unused_transitions_data.groupby("compartment")[
+                    "total_population"
+                ].sum(),
+            )
+
         # Initialize a default transition class for each compartment to represent the no-policy scenario
         transitions_per_compartment = {}
-        unused_transitions_data = transitions_data
         for compartment in compartments_architecture:
             compartment_type = compartments_architecture[compartment]
             compartment_duration_data = transitions_data[
                 transitions_data["compartment"] == compartment
             ]
-            unused_transitions_data = unused_transitions_data.drop(
-                compartment_duration_data.index
-            )
 
             if compartment_duration_data.empty:
                 # Do not throw an error if this compartment has no current transitions
                 # but does have an applied policy
                 if compartment_type != "shell":
                     raise ValueError(
-                        f"Transition data missing for compartment {compartment}. Data is required for all "
+                        f"Transition data missing for compartment '{compartment}'. Data is required for all "
                         "disaggregation axes. Even the 'release' compartment needs transition data even if "
                         "it's just outflow to 'release'."
                     )
@@ -124,14 +133,6 @@ class SubSimulationFactory:
                     )
 
                 transitions_per_compartment[compartment] = transition_class
-
-        if len(unused_transitions_data) > 0:
-            logging.warning(
-                "Some transitions data not fed to a compartment:\n%s",
-                unused_transitions_data.groupby("compartment").sum()[
-                    "total_population"
-                ],
-            )
 
         # Create a transition object for each compartment and year with policies applied and store shell policies
         shell_policies = {}

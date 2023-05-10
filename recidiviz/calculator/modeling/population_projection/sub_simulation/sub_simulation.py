@@ -142,7 +142,6 @@ class SubSimulation:
                         "total_population": compartment.get_current_population(),
                     },
                 )
-
         return pd.DataFrame(
             columns=["compartment", "total_population"], data=compartment_populations
         )

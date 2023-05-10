@@ -53,8 +53,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
             FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
         ) prev_session
         USING (state_code, person_id, session_id)
-        WHERE state_code = 'US_ID'
-            AND start_date BETWEEN '{transitions_start_date}' AND LAST_DAY(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
+        WHERE start_date BETWEEN '{transitions_start_date}' AND LAST_DAY(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH))
             AND gender IN ('FEMALE', 'MALE')
         GROUP BY state_code, simulation_date, gender, compartment, outflow_to
     ),
@@ -94,7 +93,6 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = """
         gender,
         total_population
     FROM historical_transitions
-    ORDER BY state_code, gender, compartment, compartment_legal_status, simulation_date
     """
 
 MICROSIM_PROJECTED_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

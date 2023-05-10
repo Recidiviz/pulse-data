@@ -25,12 +25,14 @@ HIGHEST PRIORITY MISSING DATA: specific HB_2376 history
 REFERENCE_DATE: 2020
 TIME_STEP: year
 """
-import pandas as pd
+from typing import Any, List
+
 import numpy as np
+import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.utils.spark_bq_utils import (
     upload_spark_model_inputs,
 )
-from typing import Any, List
 
 historical_data_2019 = pd.read_csv("AZ_data/HB_2376/2019.csv", sep=";", thousands=",")
 historical_data_2018 = pd.read_csv("AZ_data/HB_2376/2018.csv", sep=";", thousands=",")

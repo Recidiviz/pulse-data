@@ -45,9 +45,13 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       WHERE state_code = 'US_ID'
         AND gender IN ('MALE', 'FEMALE')
         -- Only take data from the 3 years prior to the run date to match short-term behavior better
-        AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 3
+        # AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 3
+        AND DATE_DIFF(run_dates.run_date, sessions.end_date, year) <= 3
+        # AND DATE_DIFF(sessions.end_date, sessions.start_date, year) < 3
         -- Only include outflows that are supported by the IDOC
         AND compartment = 'INCARCERATION - PAROLE_BOARD_HOLD'
+        AND outflow_to IN ('SUPERVISION - PAROLE', 'INCARCERATION - GENERAL',
+        'INCARCERATION - TREATMENT_IN_PRISON')
     ),
     fully_connected_graph AS (
       -- Create rows for every compartment duration and outflow
@@ -74,7 +78,7 @@ US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       ),
       UNNEST(GENERATE_ARRAY(1, max_duration)) AS compartment_duration,
       UNNEST(['SUPERVISION - PAROLE', 'INCARCERATION - GENERAL',
-        'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION_OUT_OF_STATE - PAROLE']) AS outflow_to
+        'INCARCERATION - TREATMENT_IN_PRISON']) AS outflow_to
     )
     SELECT
       state_code,

@@ -71,6 +71,18 @@ class Simulator:
         `output_compartment` should be the primary compartment to be graphed at the end (doesn't affect calculation)
         `cost_multipliers` should be a df with one column per disaggregation axis and a column `multiplier`
         """
+        if output_compartment not in data_inputs.compartments_architecture.keys():
+            raise ValueError(
+                f"Output compartment '{output_compartment}' not in compartment architecture {data_inputs.compartments_architecture.keys()}"
+            )
+
+        for policy in policy_list:
+            for sub_group in policy.sub_population.keys():
+                if sub_group not in data_inputs.disaggregation_axes:
+                    raise ValueError(
+                        f"Subgroup '{sub_group}' in policy function not found in simulation disaggregations {data_inputs.disaggregation_axes}"
+                    )
+
         self._reset_pop_simulations()
 
         self.pop_simulations["policy"] = self._build_population_simulation(
@@ -137,7 +149,7 @@ class Simulator:
             simulation_results = self._format_simulation_results(
                 user_inputs, collapse_compartments=True
             )
-            display_results = pd.DataFrame(index=simulation_results.year.unique())
+            display_results = pd.DataFrame(index=simulation_results.index.unique())
             for comp in display_compartments:
                 if comp not in simulation_results.compartment.unique():
                     logging.warning(
@@ -147,7 +159,7 @@ class Simulator:
                 else:
                     relevant_results = simulation_results[
                         (simulation_results.compartment == comp)
-                        & (user_inputs.start_time_step <= simulation_results.year)
+                        & (user_inputs.start_time_step <= simulation_results.index)
                     ]
                     display_results[comp] = relevant_results[
                         "baseline_projections_total_population"
@@ -236,11 +248,10 @@ class Simulator:
             for simulation_name in simulations.keys()
         ]
         display_results.plot(
-            x="year",
             y=y_columns,
         )
-        plt.title(f"Policy Impact on {output_compartment} Population")
-        plt.ylabel(f"Estimated\n{output_compartment} Population")
+        plt.title(f"Policy Impact on {output_compartment.title()} Population")
+        plt.ylabel(f"Estimated\n{output_compartment.title()} Population")
         plt.legend(loc="lower left")
 
         y_max = 1.1 * display_results[y_columns].max().max()
@@ -274,11 +285,16 @@ class Simulator:
                 )
 
         if collapse_compartments:
+            results_columns = [
+                col
+                for col in simulation_results.select_dtypes(include=[float]).columns
+                if col != "year"
+            ]
             simulation_results = simulation_results.groupby(
                 ["compartment", "year"], as_index=False
-            ).sum()
+            )[results_columns].sum()
 
-        simulation_results.index = simulation_results.year
+        simulation_results = simulation_results.set_index("year")
 
         return simulation_results
 
@@ -303,8 +319,9 @@ class Simulator:
                 for admissions_predictor in compartment.admissions_predictors.values():
                     while admissions_predictor.warnings:
                         w = admissions_predictor.warnings.pop()
-                        if w not in warnings:
-                            warnings.append(w)
+                        compartment_warning = f"{compartment.tag} {w}"
+                        if compartment_warning not in warnings:
+                            warnings.append(compartment_warning)
         # now log unique warnings
         while warnings:
             w = warnings.pop()

@@ -98,8 +98,10 @@ class Exporter:
         )
         aggregate_output_data = (
             output_data["policy_simulation"]
-            .reset_index(drop=True)
-            .groupby(["year", "compartment"])
+            .reset_index(drop=False)
+            .groupby(["year", "compartment"])[
+                ["policy_total_population", "control_total_population"]
+            ]
             .sum()
             .reset_index()
         )
@@ -271,18 +273,21 @@ class Exporter:
             ]
 
             subgroup_life_years_diff = pd.DataFrame(
-                index=subgroup_data.year.unique(),
+                index=subgroup_data.index.get_level_values("year").unique(),
                 columns=subgroup_data.compartment.unique(),
             )
 
             for compartment_name, compartment_data in subgroup_data.groupby(
                 "compartment"
             ):
+                # Compute the total population difference with integer values
+                # so compartments with fractional population differences (less than 1)
+                # do not indicate any cost changes
                 subgroup_life_years_diff.loc[
-                    compartment_data.year, compartment_name
+                    compartment_data.index.get_level_values("year"), compartment_name
                 ] = (
-                    compartment_data["control_total_population"]
-                    - compartment_data["policy_total_population"]
+                    compartment_data["control_total_population"].astype(int)
+                    - compartment_data["policy_total_population"].astype(int)
                 ) * self.time_converter.get_time_step()
 
             subgroup_spending_diff_non_cumulative = (
@@ -344,14 +349,15 @@ class Exporter:
             )
 
         # fill in missing subgroups with identity multiplier = 1
+        additional_multipliers = []
         for subgroup_dict in sub_group_ids_dict.values():
             if cost_multipliers[
                 (cost_multipliers[disaggregation_axes] == pd.Series(subgroup_dict)).all(
                     axis=1
                 )
             ].empty:
-                cost_multipliers = cost_multipliers.append(
-                    {**subgroup_dict, **{"multiplier": 1}}, ignore_index=True
+                additional_multipliers.append(
+                    pd.DataFrame({**subgroup_dict, **{"multiplier": 1}}, index=[0])
                 )
-
+        cost_multipliers = pd.concat([cost_multipliers] + additional_multipliers)
         return cost_multipliers

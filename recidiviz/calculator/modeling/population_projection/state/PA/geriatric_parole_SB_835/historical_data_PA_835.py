@@ -22,6 +22,9 @@ from recidiviz.calculator.modeling.population_projection.utils.spark_preprocessi
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 
+# python -m recidiviz.calculator.modeling.population_projection.state.PA.geriatric_parole_SB_835.historical_data_PA_835.py
+
+# Downloaded from https://docs.google.com/spreadsheets/d/1ZPIp3Q4GzU_DErXX7uxKmKGxTn9El12ZTSv4u6HmZP0/edit?usp=sharingans
 DATA_PATH = "recidiviz/calculator/modeling/population_projection/state/PA/geriatric_parole_SB_835/"
 
 # Load the data into pandas
@@ -42,17 +45,16 @@ prison_transition_data = (
     .reset_index()
 )
 
-# Manually add transitions to release (18%) and death (9%) from the 72% of transitions that go to parole
-prison_to_release = prison_transition_data.copy()
-prison_to_release["outflow_to"] = "release"
-prison_to_release["total_population"] *= 0.18 / 0.72
-
 prison_to_death = prison_transition_data.copy()
 prison_to_death["outflow_to"] = "death"
-prison_to_death["total_population"] *= 0.09 / 0.72
+prison_to_death["total_population"] *= 0.09 / 0.56
 
 prison_transition_data = pd.concat(
-    [prison_transition_data, prison_to_release, prison_to_death]
+    [
+        prison_transition_data,
+        # prison_to_release,
+        prison_to_death,
+    ]
 )
 
 # Combine pre-policy parole transitions with the prison transitions

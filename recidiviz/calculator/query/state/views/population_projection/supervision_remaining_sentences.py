@@ -31,59 +31,70 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = """
       SELECT
         sessions.state_code,
         run_date,
-        CASE
-              WHEN sessions.compartment = 'INCARCERATION - GENERAL' AND sessions.previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
-              ELSE sessions.compartment
-            END AS compartment,
         gender,
-        sessions.person_id,
-        -- Handle sentences that are really long (4+ years) and are unlikely to end soon
-        -- Otherwise this will predict a large chunk of people will have 0 remaining duration
-        CASE WHEN FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 120
-                THEN 150 - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
-             WHEN FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 100
-                THEN 120 - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
-             WHEN FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 50
-                THEN 100 - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
-             ELSE transitions.compartment_duration - FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30)
-         END AS remaining_compartment_duration,
+        -- Re-categorize repeat incarceration sessions as re-incarceration
+        CASE
+            WHEN sessions.compartment = 'INCARCERATION - GENERAL' AND sessions.previously_incarcerated
+                THEN 'INCARCERATION - RE-INCARCERATION'
+            ELSE sessions.compartment
+        END AS compartment,
         transitions.outflow_to,
-        transitions.total_population
+        CASE
+            -- Use the projected release date for the outflow to liberty for this person_id/run_date if available.
+            -- Would be helpful to include the likelihood of early release (similar to parole vs liberty in
+            -- incarceration remaining sentences)
+            WHEN sentences.projected_release_date IS NOT NULL
+                 AND transitions.outflow_to = 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM'
+                THEN CEIL(DATE_DIFF(sentences.projected_release_date, run_dates.run_date, DAY)/30)
+            -- Handle sentences that are really long (4+ years) and are unlikely to end soon
+            -- Otherwise this will predict a large chunk of people will have 0 remaining duration
+            WHEN CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 180
+                THEN 120
+            WHEN CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 150
+                THEN 180 - CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+            WHEN CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 120
+                THEN 150 - CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+            WHEN CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 100
+                THEN 120 - CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+            WHEN CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1 >= 50
+                THEN 100 - CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) + 1
+            ELSE transitions.compartment_duration - CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30)
+         END AS remaining_compartment_duration,
+
+        -- Normalize the transition "total_population" sum at the person-level so that each individual only counts
+        -- towards 1 total transition per run-date (likely split across multiple outflows and compartment durations)
+        transitions.total_population / SUM(transitions.total_population) OVER (
+            PARTITION BY state_code, run_date, person_id
+        ) AS total_population,
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
-        -- Use sessions that were open on the run date
+        -- Only include sessions that were open on the run date
         ON run_dates.run_date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
-      JOIN  `{project_id}.{population_projection_dataset}.population_transitions_materialized` transitions
-        USING (state_code, run_date, compartment, gender)
-      WHERE sessions.state_code IN ('US_ID', 'US_ND')
-        -- Only use this logic for incarceration remaining compartment LOS in US_ND
-        AND (compartment NOT LIKE 'INCARCERATION%' OR state_code = 'US_ND')
-        AND gender in ('MALE', 'FEMALE')
-        AND FLOOR(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) <= transitions.compartment_duration
-    ),
-    supervision_normalization_cte AS (
-      SELECT
-        state_code,
-        run_date,
-        person_id,
-        SUM(total_population) AS person_level_normalization_constant
-      FROM supervision_cte 
-      GROUP BY 1,2,3
+      JOIN `{project_id}.{population_projection_dataset}.population_transitions_materialized` transitions
+        USING (state_code, compartment, gender, run_date)
+      LEFT JOIN `{project_id}.{population_projection_dataset}.supervision_projected_release_dates_materialized` sentences
+        USING (state_code, person_id, run_date)
+      WHERE
+        gender in ('MALE', 'FEMALE')
+        -- Only include transition durations that are longer than the time already served on supervision
+        AND CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) <= transitions.compartment_duration
+        -- Drop sessions in long lasting compartments that are over 10 years old to limit the amount
+        -- of sessions projected with 0 remaining sentence length
+        AND (
+            NOT sessions.long_lasting_compartment
+            OR CEIL(DATE_DIFF(run_dates.run_date, sessions.start_date, DAY)/30) <= 120
+        )
     )
-    
     SELECT
       state_code,
       run_date,
       compartment,
       gender,
-      remaining_compartment_duration as compartment_duration,
+      remaining_compartment_duration AS compartment_duration,
       outflow_to,
-      SUM(total_population/person_level_normalization_constant) AS total_population
+      SUM(total_population) AS total_population
     FROM supervision_cte
-    JOIN supervision_normalization_cte
-      USING (state_code, run_date, person_id)
     GROUP BY 1,2,3,4,5,6
-    ORDER BY 1,2,3,4,5,6
     """
 
 SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -92,7 +103,7 @@ SUPERVISION_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=REMAINING_SENTENCES_QUERY_TEMPLATE,
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
-    should_materialize=False,
+    should_materialize=True,
 )
 
 if __name__ == "__main__":
