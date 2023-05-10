@@ -268,6 +268,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text="LOW",
+            supervising_officer_staff_id=12345,
         )
 
         incarceration_period = NormalizedStateIncarcerationPeriod.new_with_defaults(
@@ -311,6 +312,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -361,6 +363,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2019, 8, 3),
             termination_date=shock_period.admission_date,
+            supervising_officer_staff_id=12345,
         )
 
         supervision_period_while_in_prison = (
@@ -400,6 +403,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_commitment_sp.supervision_level,
                 supervision_level_raw_text=pre_commitment_sp.supervision_level_raw_text,
@@ -442,6 +446,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             start_date=date(2010, 12, 1),
             termination_date=board_hold.admission_date,
+            supervising_officer_staff_id=12345,
         )
 
         board_hold_sp = NormalizedStateSupervisionPeriod.new_with_defaults(
@@ -490,6 +495,7 @@ class TestGetCommitmentDetails(unittest.TestCase):
                 ).get(
                     "agent_external_id"
                 ),
+                supervising_officer_staff_id=12345,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=pre_board_hold_sp.supervision_level,
                 supervision_level_raw_text=pre_board_hold_sp.supervision_level_raw_text,

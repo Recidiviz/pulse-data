@@ -1100,6 +1100,7 @@ def expected_supervision_span(
         case_type=case_type,
         custodial_authority=supervision_period.custodial_authority,
         supervising_officer_external_id=supervising_officer_external_id,
+        supervising_officer_staff_id=supervision_period.supervising_officer_staff_id,
         supervising_district_external_id=level_2_supervision_location_external_id,
         level_1_supervision_location_external_id=level_1_supervision_location_external_id,
         level_2_supervision_location_external_id=level_2_supervision_location_external_id,

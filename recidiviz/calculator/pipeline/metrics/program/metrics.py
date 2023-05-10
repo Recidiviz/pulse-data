@@ -125,8 +125,12 @@ If a person was referred to a program while they were on supervision, then this 
         default=None
     )
 
+    # TODO(#20891): delete supervising_officer_external_id
     # External ID of the officer who was supervising the person described by this metric
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
+
+    # StateStaff id of officer who was supervising the person described by this metric
+    supervising_officer_staff_id: Optional[int] = attr.ib(default=None)
 
 
 @attr.s

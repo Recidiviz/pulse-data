@@ -140,6 +140,7 @@ class TestProduceProgramMetrics(unittest.TestCase):
                 assessment_score=22,
                 assessment_type=StateAssessmentType.LSIR,
                 supervising_officer_external_id="OFFICERZ",
+                supervising_officer_staff_id=10000,
                 supervising_district_external_id="135",
             ),
             ProgramParticipationEvent(
