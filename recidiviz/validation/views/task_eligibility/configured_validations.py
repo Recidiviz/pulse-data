@@ -22,6 +22,9 @@ from recidiviz.validation.validation_models import (
     DataValidationCheck,
     ValidationCategory,
 )
+from recidiviz.validation.views.task_eligibility.us_mi_ineligible_clients_surfaced_for_telephone_reporting import (
+    US_MI_INELIGIBLE_CLIENTS_SURFACED_FOR_TELEPHONE_REPORTING_VIEW_BUILDER,
+)
 from recidiviz.validation.views.task_eligibility.magic_end_date_task_eligibility_spans import (
     MAGIC_END_DATE_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
 )
@@ -144,6 +147,10 @@ def get_all_task_eligibility_validations() -> List[DataValidationCheck]:
         ),
         ExistenceDataValidationCheck(
             view_builder=ZERO_ELIGIBLE_CURRENT_TASK_ELIGIBILITY_SPANS_VIEW_BUILDER,
+            validation_category=ValidationCategory.INVARIANT,
+        ),
+        ExistenceDataValidationCheck(
+            view_builder=US_MI_INELIGIBLE_CLIENTS_SURFACED_FOR_TELEPHONE_REPORTING_VIEW_BUILDER,
             validation_category=ValidationCategory.INVARIANT,
         ),
     ]
