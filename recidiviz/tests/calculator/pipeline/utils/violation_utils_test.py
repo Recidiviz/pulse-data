@@ -445,6 +445,134 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation, violation_2)
 
 
+class TestViolationHistoryIdArray(unittest.TestCase):
+    """Tests code that identifies the list of violation ids in the violation history."""
+
+    def test_identify_violation_history_id_array_simple(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=1000,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=2000,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+            ],
+        )
+
+        violation_id_array = violation_utils._get_violation_history_ids_array_str(
+            [violation_1, violation_2]
+        )
+        expected_violation_id_array = "1000,2000"
+        self.assertEqual(expected_violation_id_array, violation_id_array)
+
+    def test_identify_violation_history_id_array_single(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=1000,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_id_array = violation_utils._get_violation_history_ids_array_str(
+            [violation_1]
+        )
+        expected_violation_id_array = "1000"
+        self.assertEqual(expected_violation_id_array, violation_id_array)
+
+    def test_identify_violation_history_id_array_empty(self) -> None:
+        violation_id_array = violation_utils._get_violation_history_ids_array_str([])
+        expected_violation_id_array = None
+        self.assertEqual(expected_violation_id_array, violation_id_array)
+
+    def test_identify_violation_history_id_array_some_none(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=4321,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=1234,
+            supervision_violation_types=[],
+        )
+
+        violation_id_array = violation_utils._get_violation_history_ids_array_str(
+            [violation_1, violation_2]
+        )
+        expected_violation_id_array = "1234,4321"
+        self.assertEqual(expected_violation_id_array, violation_id_array)
+
+    def test_identify_violation_history_id_array_multiple(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=3000,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=2000,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            state_code="US_XX",
+            supervision_violation_id=1000,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        violation_id_array = violation_utils._get_violation_history_ids_array_str(
+            [violation_1, violation_2, violation_3]
+        )
+        expected_violation_id_array = "1000,2000,3000"
+        self.assertEqual(expected_violation_id_array, violation_id_array)
+
+
 class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     """Tests the _get_violation_type_frequency_counter function."""
 
@@ -737,6 +865,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1felony",
@@ -809,6 +938,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1felony",
@@ -867,6 +997,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1subs",
@@ -922,6 +1053,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="HIGH_TECH",
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1high_tech",
@@ -972,6 +1104,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1subs",
@@ -1024,6 +1157,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="ELEC_MONITORING",
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1em",
@@ -1126,6 +1260,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
             most_severe_violation_id=1234567,
+            violation_history_id_array="12345,123456,1234567",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=3,
             violation_history_description="1subs;2med_tech",
@@ -1172,6 +1307,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=None,
             most_severe_violation_type_subtype=None,
             most_severe_violation_id=None,
+            violation_history_id_array=None,
             most_severe_response_decision=None,
             response_count=0,
             violation_history_description=None,
@@ -1224,6 +1360,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
             most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1misdemeanor",
@@ -1284,6 +1421,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
             most_severe_violation_id=123455,
+            violation_history_id_array="123455",
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1tech",
