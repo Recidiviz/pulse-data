@@ -23,7 +23,7 @@ import { routes as retrieveRoutes } from "./server/retrieve";
 
 async function createServer() {
   const app = express();
-  const port = 5174; // default vite port + 1
+  const port = process.env.PORT || 5174; // default vite port + 1
 
   app.use("/generate", generateRoutes);
   app.use(RETRIEVE_PATH, retrieveRoutes);

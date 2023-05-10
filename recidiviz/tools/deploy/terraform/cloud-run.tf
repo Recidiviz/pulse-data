@@ -34,6 +34,15 @@ The account and its IAM policies are managed in Terraform (see #13024).
 EOT
 }
 
+resource "google_service_account" "asset_generation_cloud_run" {
+  account_id   = "asset-generation-cr"
+  display_name = "Asset Generation Cloud Run Service Account"
+  description  = <<EOT
+Service Account that acts as the identity for the Asset Generation Cloud Run service.
+The account and its IAM policies are managed in Terraform.
+EOT
+}
+
 locals {
   cloud_run_common_roles = [
     "roles/run.admin",
@@ -86,6 +95,13 @@ resource "google_project_iam_member" "application_data_import_iam" {
   project  = var.project_id
   role     = each.key
   member   = "serviceAccount:${google_service_account.application_data_import_cloud_run.email}"
+}
+
+resource "google_project_iam_member" "asset_generation_iam" {
+  for_each = toset(["roles/run.admin", "roles/logging.logWriter"])
+  project  = var.project_id
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.asset_generation_cloud_run.email}"
 }
 
 resource "google_service_account_iam_member" "application_data_import_iam" {
@@ -310,6 +326,58 @@ resource "google_cloud_run_service" "application-data-import" {
   autogenerate_revision_name = false
 }
 
+# Initializes Asset Generation Cloud Run service
+resource "google_cloud_run_service" "asset-generation" {
+  name     = "asset-generation"
+  location = var.region
+
+  template {
+    spec {
+      containers {
+        image = "us-docker.pkg.dev/${var.registry_project_id}/asset-generation/asset-generation:${var.docker_image_tag}"
+        # Leave command/args empty to use the default CMD from the docker image
+
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "1024Mi"
+          }
+        }
+      }
+
+      service_account_name = google_service_account.asset_generation_cloud_run.email
+    }
+
+    metadata {
+      annotations = {
+        # Keep one instance running at all times so we can load images in emails quickly at any time 
+        "autoscaling.knative.dev/minScale"     = 1
+        "autoscaling.knative.dev/maxScale"     = var.max_asset_generation_instances
+        "run.googleapis.com/vpc-access-egress" = "private-ranges-only"
+      }
+
+      # If a terraform apply fails for a given deploy, we may retry again some time later after a fix has landed. When
+      # we reattempt, the docker image tag (version number) will remain the same. If we only include the image tag but
+      # not the hash in the name and the cloud run deploy succeeded during the first attempt, Terraform will not
+      # recognize that we need to re-deploy the Cloud Run service on the second attempt, even if changes have landed
+      # between attempts #1 and #2. For this reason, we instead include the git hash in the service name.
+      name = "asset-generation-${local.git_short_hash}"
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+
+  autogenerate_revision_name = false
+}
+
 # By default, Cloud Run services are private and secured by IAM. 
 # The blocks below set up public access so that anyone (e.g. our frontends)
 # can invoke the services through an HTTP endpoint.
@@ -325,6 +393,14 @@ resource "google_cloud_run_service_iam_member" "justice-counts-public-access" {
   location = google_cloud_run_service.justice-counts.location
   project  = google_cloud_run_service.justice-counts.project
   service  = google_cloud_run_service.justice-counts.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+resource "google_cloud_run_service_iam_member" "asset-generation-public-access" {
+  location = google_cloud_run_service.asset-generation.location
+  project  = google_cloud_run_service.asset-generation.project
+  service  = google_cloud_run_service.asset-generation.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
