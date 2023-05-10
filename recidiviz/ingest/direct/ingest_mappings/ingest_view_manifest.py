@@ -45,6 +45,7 @@ from recidiviz.common.attr_mixins import (
     attr_field_attribute_for_field_name,
     attr_field_enum_cls_for_field_name,
     attr_field_type_for_field_name,
+    attribute_field_type_reference_for_class,
 )
 from recidiviz.common.attr_utils import get_non_flat_attribute_class_name
 from recidiviz.common.constants.enum_parser import EnumParser, EnumT
@@ -162,13 +163,13 @@ class EntityTreeManifest(ManifestNode[EntityT]):
     # A map of arguments that should be applied to all parsed entities.
     common_args: Dict[str, DeserializableEntityFieldValue] = attr.ib()
 
-    # Optional predicate for filtering out hydrated entities. If returns True,
-    # build_for_row() will return null instead of this entity (and any children
-    # entities) will be excluded entirely from the result.
+    # If any of the fields in this set has a null value, build_for_row() will return
+    # null instead of this entity, and this entity (and any children entities) will
+    # be excluded entirely from the result.
     #
-    # Currently this is primarily used for enum entities. If the enum value is null or
+    # Currently, this is primarily used for enum entities. If the enum value is null or
     # ignored by the mappings, the entire enum entity will be filtered out.
-    filter_predicate: Optional[Callable[[EntityT], bool]] = attr.ib(default=None)
+    filter_if_null_field: Optional[str] = attr.ib(default=None)
 
     def __attrs_post_init__(self) -> None:
         common_args_defined_in_manifest = set(self.common_args).intersection(
@@ -193,6 +194,10 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
         for field_name, field_manifest in self.field_manifests.items():
             field_value = field_manifest.build_from_row(row)
+            if field_value is None and field_name == self.filter_if_null_field:
+                # If there is a null value in this field, filter out the whole entity.
+                return None
+
             if field_value is not None:
                 args[field_name] = field_value
 
@@ -200,9 +205,6 @@ class EntityTreeManifest(ManifestNode[EntityT]):
 
         if not isinstance(entity, self.entity_cls):
             raise ValueError(f"Unexpected type for entity: [{type(entity)}]")
-
-        if self.filter_predicate and self.filter_predicate(entity):
-            return None
 
         return entity
 
@@ -380,26 +382,46 @@ class EntityTreeManifestFactory:
                 f"Found unused keys in fields manifest: {raw_fields_manifest.keys()}"
             )
 
-        primary_filter_predicate = cls._get_filter_predicate(
-            entity_cls, field_manifests
-        )
-        delegate_filter_predicate = delegate.get_filter_predicate(entity_cls)
-
-        def union_filter_predicate(e: EntityT) -> bool:
-            return (
-                primary_filter_predicate is not None and primary_filter_predicate(e)
-            ) or (
-                delegate_filter_predicate is not None and delegate_filter_predicate(e)
-            )
-
         entity_factory_cls = delegate.get_entity_factory_class(entity_cls.__name__)
         return EntityTreeManifest(
             entity_cls=entity_cls,
             entity_factory_cls=entity_factory_cls,
             common_args=delegate.get_common_args(),
             field_manifests=field_manifests,
-            filter_predicate=union_filter_predicate,
+            filter_if_null_field=cls._get_filter_if_null_field(
+                entity_cls=entity_cls, delegate=delegate
+            ),
         )
+
+    @staticmethod
+    def _get_filter_if_null_field(
+        *,
+        entity_cls: Type[EntityT],
+        delegate: IngestViewResultsParserDelegate,
+    ) -> Optional[str]:
+        filter_if_null_field = None
+        if issubclass(entity_cls, EnumEntity):
+            field_info_dict = attribute_field_type_reference_for_class(entity_cls)
+            enum_fields = {
+                field for field, info in field_info_dict.items() if info.enum_cls
+            }
+            if len(enum_fields) != 1:
+                raise ValueError(
+                    f"Expected exactly one enum field on EnumEntity "
+                    f"[{entity_cls.__name__}]. Found: {enum_fields}."
+                )
+            filter_if_null_field = one(enum_fields)
+
+        if delegate_filter_field := delegate.get_filter_if_null_field(entity_cls):
+            if filter_if_null_field:
+                raise ValueError(
+                    f"Found filter_if_null_field [{delegate_filter_field}] defined in "
+                    f"delegate for entity [{entity_cls.__name__}] with default "
+                    f"filter_if_null_field [{filter_if_null_field}] already defined."
+                )
+            return delegate_filter_field
+
+        return filter_if_null_field
 
     @staticmethod
     def _validate_additional_field_manifest(
@@ -436,26 +458,6 @@ class EntityTreeManifestFactory:
                 f"Unexpected result type for enum manifest: "
                 f"[{additional_manifest.result_type}]. Expected: [{expected_result_type}]"
             )
-
-    @staticmethod
-    def _get_filter_predicate(
-        entity_cls: Type[EntityT], field_manifests: Dict[str, ManifestNode]
-    ) -> Optional[Callable[[EntityT], bool]]:
-        """Returns a predicate function which can be used to fully filter the evaluated
-        EntityTreeManifest from the result.
-        """
-        if issubclass(entity_cls, EnumEntity):
-            enum_field_name = one(
-                field_name
-                for field_name, manifest in field_manifests.items()
-                if issubclass(manifest.result_type, Enum)
-            )
-
-            def enum_entity_filter_predicate(e: EntityT) -> bool:
-                return getattr(e, enum_field_name) is None
-
-            return enum_entity_filter_predicate
-        return None
 
 
 @attr.s(kw_only=True)

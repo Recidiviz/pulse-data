@@ -15,23 +15,25 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/entities.py"""
-from typing import Optional
-
-# ForwardRef not defined in python 3.6 and mypy will complain if we don't
-# surround with try-catch.
-try:
-    from typing import ForwardRef  # type: ignore
-except ImportError as e:
-    raise ImportError(e) from e
-
+from typing import ForwardRef, Optional
 from unittest import TestCase
 
 import attr
+from more_itertools import one
 
-from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.common.attr_mixins import attribute_field_type_reference_for_class
+from recidiviz.common.attr_utils import is_non_optional_enum
+from recidiviz.persistence.entity.base_entity import Entity, EnumEntity
 from recidiviz.persistence.entity.core_entity import primary_key_name_from_cls
 from recidiviz.persistence.entity.entity_utils import get_all_entity_classes_in_module
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.entities import (
+    StatePersonEthnicity,
+    StateSupervisionCaseTypeEntry,
+    StateSupervisionViolatedConditionEntry,
+    StateSupervisionViolationResponseDecisionEntry,
+    StateSupervisionViolationTypeEntry,
+)
 from recidiviz.tests.persistence.entity.state.entities_test_utils import (
     generate_full_graph_state_person,
 )
@@ -83,6 +85,49 @@ class TestStateEntities(TestCase):
                 str,
                 f"Unexpected type [{attribute.type}] for "
                 f"|state_code| field of class [{cls}].",
+            )
+
+    def test_all_enum_entity_class_structure(self):
+        for cls in get_all_entity_classes_in_module(entities):
+            if not issubclass(cls, EnumEntity):
+                continue
+            field_info_dict = attribute_field_type_reference_for_class(cls)
+
+            if "external_id" in field_info_dict and cls not in {
+                # TODO(#20691): Remove this exemption when we remove the external_id
+                #  field.
+                StateSupervisionCaseTypeEntry
+            }:
+                raise ValueError(
+                    f"Found EnumEntity [{cls.__name__}] with an external_id field. "
+                    f"EnumEntity entities should not have an external_id."
+                )
+
+            enum_fields = {
+                field_name
+                for field_name, info in field_info_dict.items()
+                if info.enum_cls
+            }
+            if len(enum_fields) > 1:
+                raise ValueError(
+                    f"Found more than one enum field on EnumEntity [{cls.__name__}]."
+                )
+            enum_field_name = one(enum_fields)
+            attribute = attr.fields_dict(cls)[enum_field_name]
+            if cls in {
+                # TODO(#20697): Remove this exemption when we update the enum field
+                #  types to be nonnull.
+                StatePersonEthnicity,
+                StateSupervisionCaseTypeEntry,
+                StateSupervisionViolatedConditionEntry,
+                StateSupervisionViolationResponseDecisionEntry,
+                StateSupervisionViolationTypeEntry,
+            }:
+                continue
+            self.assertTrue(
+                is_non_optional_enum(attribute),
+                f"Enum field [{enum_field_name}] on class [{cls.__name__}] should be "
+                f"nonnull.",
             )
 
     def test_all_classes_have_person_or_staff_reference(self):

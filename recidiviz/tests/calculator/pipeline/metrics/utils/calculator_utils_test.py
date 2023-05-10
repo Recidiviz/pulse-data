@@ -45,9 +45,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.templates.us_xx.us_xx_incar
 from recidiviz.common.constants.state.state_person import StateGender
 from recidiviz.persistence.entity.state.entities import (
     StatePerson,
-    StatePersonEthnicity,
     StatePersonExternalId,
-    StatePersonRace,
 )
 
 
@@ -302,16 +300,8 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_XX",
-                )
-            ],
-            ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_XX",
-                )
-            ],
+            races=[],
+            ethnicities=[],
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
                     external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"
@@ -348,16 +338,8 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=StateGender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code="US_XX",
-                )
-            ],
-            ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code="US_XX",
-                )
-            ],
+            races=[],
+            ethnicities=[],
             external_ids=[
                 StatePersonExternalId.new_with_defaults(
                     external_id="DOC1341", id_type="US_XX_DOC", state_code="US_XX"

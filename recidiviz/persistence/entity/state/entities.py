@@ -202,9 +202,7 @@ class StatePersonRace(EnumEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    race: Optional[StateRace] = attr.ib(
-        default=None, validator=attr_validators.is_opt(StateRace)
-    )
+    race: StateRace = attr.ib(validator=attr.validators.instance_of(StateRace))
     race_raw_text: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )

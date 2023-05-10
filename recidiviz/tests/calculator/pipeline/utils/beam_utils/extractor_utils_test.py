@@ -1501,7 +1501,7 @@ class TestConnectHydratedRelatedEntities(unittest.TestCase):
         )
 
         person_race = entities.StatePersonRace.new_with_defaults(
-            state_code=state_code,
+            state_code=state_code, race=StateRace.WHITE
         )
 
         assessment = entities.StateAssessment.new_with_defaults(state_code=state_code)
