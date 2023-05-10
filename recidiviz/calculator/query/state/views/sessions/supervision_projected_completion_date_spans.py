@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Spans of time with the projected max completion date for clients under supervision
+"""Spans of time with the projected max completion date for clients under supervision or supervision out of state
 as indicated by the sentences that were active during that span."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -38,7 +38,7 @@ from recidiviz.utils.metadata import local_project_id_override
 _VIEW_NAME = "supervision_projected_completion_date_spans"
 
 _VIEW_DESCRIPTION = """
-Spans of time with the projected max completion date for clients under supervision as
+Spans of time with the projected max completion date for clients under supervision or supervision out of state as
 indicated by the sentences that were active during that span.
 """
 
@@ -134,8 +134,8 @@ supervision_sessions AS (
 ),
 overlapping_supervision_sessions AS (
 -- Left join the supervision projected completion date spans onto the supervision sessions so that every supervision
--- session is maintained, but split into parts if the `projected_completion_date_max` changes. If no sentence is
--- available the `projected_completion_date_max` will be NULL.
+-- and supervision out of state session is maintained, but split if the `projected_completion_date_max` changes. 
+-- If no sentence is available the `projected_completion_date_max` will be NULL.
 {create_intersection_spans(
     table_1_name="supervision_sessions",
     table_2_name="collapsed_adjacent_spans",

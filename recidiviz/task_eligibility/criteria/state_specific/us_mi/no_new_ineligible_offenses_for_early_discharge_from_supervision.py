@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Defines a criteria span view that shows spans of time during which someone has no new
-ineligible offenses on parole/dual supervision
+ineligible offenses on parole/dual or probation supervision
 """
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
@@ -48,7 +48,7 @@ someone has no new ineligible offenses (below) on supervision
         - No new felony during parole/probation period
 """
 _QUERY_TEMPLATE = f"""
-WITH parole_starts AS (
+WITH supervision_starts AS (
 /* This CTE creates spans of parole or dual supervision sessions */
   SELECT
     state_code,
@@ -57,9 +57,10 @@ WITH parole_starts AS (
     end_date,
   FROM `{{project_id}}.{{sessions_dataset}}.compartment_sessions_materialized`
   WHERE state_code = "US_MI"
-    AND compartment_level_2 IN ("PAROLE", "DUAL")
+    AND 
     --ignore transitions from PAROLE to DUAL as parole starts
-    AND inflow_from_level_2 NOT IN ("PAROLE", "DUAL")
+    ((compartment_level_2 IN ("PAROLE", "DUAL")  AND inflow_from_level_2 NOT IN ("PAROLE", "DUAL"))
+   OR compartment_level_2 = 'PROBATION') 
 ),
 sentences_and_violations AS (
 /* This CTE groups by person and date imposed where ineligible offenses were sentenced */
@@ -98,11 +99,11 @@ critical_date_spans AS (
     p.start_date AS start_datetime,
     p.end_date AS end_datetime,
     s.critical_date,
-  FROM parole_starts p
+  FROM supervision_starts p
   INNER JOIN sentences_and_violations s
     ON p.state_code = s.state_code
     AND p.person_id = s.person_id
-    --only join parole spans that have an ineligible offense date imposed during a parole session
+    --only join supervision spans that have an ineligible offense date imposed during a supervision session
     AND s.critical_date > p.start_date 
     AND s.critical_date <= {nonnull_end_date_clause('p.end_date')}
 ),
