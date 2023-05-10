@@ -1,0 +1,3 @@
+state_code,metric_id,metric_value,period,end_date,avg_daily_population
+US_PA,incarceration_starts_and_inferred,2425,YEAR,2023-04-01,36666.66
+US_PA,incarceration_starts_and_inferred,2525,YEAR,2023-05-01,35555.55

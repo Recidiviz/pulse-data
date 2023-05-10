@@ -196,6 +196,17 @@ class TestSchemaUtils(unittest.TestCase):
             "direct_ingest_raw_file_metadata",
             "direct_ingest_instance_status",
         ]
+        outliers_table_names = [
+            "supervision_districts",
+            "supervision_units",
+            "supervision_officers",
+            "supervision_officer_supervisors",
+            "supervision_district_managers",
+            "supervision_officer_metrics",
+            "supervision_unit_metrics",
+            "supervision_district_metrics",
+            "supervision_state_metrics",
+        ]
 
         expected_table_class_names = (
             case_triage_table_names
@@ -203,6 +214,7 @@ class TestSchemaUtils(unittest.TestCase):
             + operations_table_names
             + pathways_table_names
             + state_table_names
+            + outliers_table_names
         )
 
         all_table_classes = get_all_table_classes()
