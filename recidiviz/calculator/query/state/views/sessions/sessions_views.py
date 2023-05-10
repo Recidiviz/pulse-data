@@ -102,6 +102,9 @@ from recidiviz.calculator.query.state.views.sessions.justice_impact_sessions imp
 from recidiviz.calculator.query.state.views.sessions.location_sessions import (
     LOCATION_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_decisions import (
+    PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.parole_board_hearing_sessions import (
     PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
@@ -246,6 +249,9 @@ from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_drug_screens_pr
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_judicial_district_sessions import (
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_decisions import (
+    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.us_tn.us_tn_parole_board_hearing_sessions import (
     US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
 )
@@ -294,6 +300,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
     JUSTICE_IMPACT_SESSIONS_VIEW_BUILDER,
     LOCATION_SESSIONS_VIEW_BUILDER,
+    PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
     PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     PERSON_AGE_SESSIONS_VIEW_BUILDER,
     PERSON_DEMOGRAPHICS_VIEW_BUILDER,
@@ -334,6 +341,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_CONSECUTIVE_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     US_TN_DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     US_TN_JUDICIAL_DISTRICT_SESSIONS_VIEW_BUILDER,
+    US_TN_PAROLE_BOARD_HEARING_DECISIONS_VIEW_BUILDER,
     US_TN_PAROLE_BOARD_HEARING_SESSIONS_VIEW_BUILDER,
     US_TN_SENTENCES_PREPROCESSED_VIEW_BUILDER,
     SENTENCE_IMPOSED_GROUP_SUMMARY_VIEW_BUILDER,
