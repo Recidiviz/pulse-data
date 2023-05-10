@@ -1,7 +1,8 @@
 # yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
 file_tag: IncarcerationParole
-file_description: |-
-  Information on the incarceration periods for people who are currently on parole in California
+file_description: >-
+  Information on the incarceration periods for people who are currently on parole in
+  California
 data_classification: source
 primary_key_cols:
   - OffenderId
@@ -9,8 +10,9 @@ primary_key_cols:
 columns:
   - name: OffenderId
     is_pii: True
-    description: |-
-      An ID to reference a specific individual in who is in custody or under supervision of CDCR.
+    description: >-
+      An ID to reference a specific individual in who is in custody or under supervision
+      of CDCR.
   - name: ORTGID
     description: >-
       I think this the same as TGID, which is Term Group ID. This is updated every time
@@ -24,14 +26,75 @@ columns:
       updated, it is incremented up to whatever ORTGID is at the time.
   - name: In_Date
     is_datetime: True
+    description: >-
+      When someone re-entered DOC supervision. This may only be a techincality -- IE
+      it's possible that due to certain circumstances, the person never actually sets
+      foot in prison.
   - name: In_Move
+    description: >-
+      The type of transition that led to someone being readmitted to a facility. Can
+      help answer the question of where this person came from.
+    known_values:
+      - value: Admitted Central Office
+      - value: Admitted Civil Narcotics Addict
+      - value: Admitted County Contract Boarder
+      - value: Admitted Diagnostic Commitment
+      - value: Admitted DMH Boarder
+      - value: Admitted Juvenile Boarder
+      - value: Admitted Offender with New AOJ
+      - value: Admitted Other State Boarder
+      - value: Admitted SACCO
+      - value: Admitted Safekeeper
+      - value: Returned from Outpatient Supervision
+      - value: Returned from Parole
+      - value: Returned from Parole as County Boarder
   - name: In_Reason
+    description: >-
+      The reason someone was returned to facility -- for example, if someone was
+      revoked, or committed a new crime.
+    known_values:
+      - value: "Other (Boarder, Safe Keeper/Other)"
+      - value: CDCR Commitment Housed in Co. Jail
+      - value: Civil Addict Returned to CDCR
+      - value: Conversion Generated Admission
+      - value: Corrections Compact Boarder (Other St/Fed)
+      - value: County Contract Boarder
+      - value: Diagnostic Commitment (Z Suffix)
+      - value: Direct Report to Parole per Prop 47
+      - value: For Diagnostic Evaluation
+      - value: Housed by CDCR for Local Law Enforce. Agency
+      - value: Juvenile Housed in CDCR per W&I 1732.8
+      - value: LPU 18 Youth Committed as Adult per W&I 1731.5c
+      - value: LPU Family Foundation Program
+      - value: New Civil Addict Commitment
+      - value: New Felony Commitment
+      - value: Paper Commit Direct to Parole
+      - value: PC3000.1 Parolee - Revoked
+      - value: PC3000.1 Parolee - With New Term
+      - value: PC3000(b)(4)  Parolee - With New Term
+      - value: PC3000(b)(4) Parolee - Revoked
+      - value: Pending Revocation
+      - value: Psychiatric Treatment
+      - value: Returned as County Contract Boarder
+      - value: Returned Civil Addict - Parole / Outpatient
+      - value: Returned to Custody (Revoked)
+      - value: Serving CA Term in other Jurisdiction CC
+      - value: Serving CA Term in other Jurisdiction CS
+      - value: Substance Abuse Treatment Control Unit
+      - value: W&I 7301
+      - value: With New Term
   - name: Intake_Date
+    description: >-
+      Identifies the date someone actually re-enters a facility. If this is null, it
+      means there were circumstances that meant this person never actually had to enter
+      prison -- for example, they may have gone directly to parole.
   - name: out_date
     description: >-
       out_date will be filled with the date a person was paroled or discharged.
     is_datetime: True
   - name: Out_Move
+    description: >-
+      The type of transition that results in someones release from incarceration.
     known_values:
       - value: Admitted Interstate Compact Offender
       - value: Discharge County Contract boarder
@@ -46,6 +109,10 @@ columns:
       - value: Returned to Parole
       - value: Status Change
   - name: Out_Reason
+    description: >-
+      Why someone was released from incarceration. Often helps understand the mecahnism
+      that led to someones release, or can help identify any special conditions that may
+      follow them after release.
     known_values:
       - value: "Civil Addict- Felon Comm. Same Case # as Civil Addict Commit"
       - value: "Discharge of SafeKeepers, YA, OSP, or FEDC"
@@ -112,6 +179,8 @@ columns:
       The date this parole period ended. Right now, it's sometimes null and there is an
       open question with OOR as to what is happening when these are null.
   - name: ParoleEndMove
+    description: >-
+      The type of transition that removed someone from parole.
     known_values:
       - value: Admitted Central Office
       - value: Admitted Civil Narcotics Addict
@@ -134,6 +203,8 @@ columns:
       - value: Returned from Parole
       - value: Returned from Parole as County Boarder
   - name: ParoleEndReason
+    description: >-
+      The reason someone was removed from parole.
     known_values:
       - value: "Civil Addict- Felon Comm. Same Case # as Civil Addict Commit"
       - value: "Discharge of SafeKeepers, YA, OSP, or FEDC"
