@@ -119,7 +119,6 @@ class CompartmentTransitions:
     def get_per_ts_transition_table(self, current_ts: int) -> pd.DataFrame:
         """function used by SparkCompartment to determine which of the state transition tables to pull from"""
 
-        policy_time_steps = [ts for ts in self.transition_tables if ts <= current_ts]
-        policy_time_steps.sort(reverse=True)
         # take transitions from the most recent table whose policy ts has already passed
-        return self.transition_tables[policy_time_steps[0]].get_per_ts_table(current_ts)
+        policy_time_step = max(ts for ts in self.transition_tables if ts <= current_ts)
+        return self.transition_tables[policy_time_step].get_per_ts_table(current_ts)

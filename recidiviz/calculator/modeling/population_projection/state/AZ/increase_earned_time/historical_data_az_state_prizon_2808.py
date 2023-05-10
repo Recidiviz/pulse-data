@@ -25,9 +25,10 @@ HIGHEST PRIORITY MISSING DATA: violent history
 REFERENCE_DATE: 2020
 TIME_STEP: year
 """
-import pandas as pd
-import numpy as np
 from typing import List
+
+import numpy as np
+import pandas as pd
 
 historical_data_2019 = pd.read_csv(
     "recidiviz/calculator/modeling/population_projection/state/AZ/AZ_data/HB_2808/2019.csv",

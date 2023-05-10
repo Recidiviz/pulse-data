@@ -16,7 +16,12 @@
 # =============================================================================
 """A sessions view specifically altered for the population projection simulation"""
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.bq_utils import list_to_query_string
 from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state.views.population_projection.long_lasting_compartment_transitions import (
+    LONG_LASTING_COMPARTMENT_LIST,
+)
+from recidiviz.common.constants.states import StateCode
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -26,10 +31,18 @@ POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION = (
     """"Compartment sessions view altered for the population projection simulation"""
 )
 
+POPULATION_PROJECTION_SUPPORTED_STATES = [
+    StateCode.US_ID,
+    StateCode.US_ME,
+    StateCode.US_MO,
+    StateCode.US_ND,
+    StateCode.US_TN,
+]
+
 POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
     WITH previously_incarcerated_cte AS (
       -- Create a flag to indicate if the person was incarcerated prior to this session
-      -- Only count a session as "previously incarcerated" if there was a release/supervision session post-incarceration
+      -- Only count a session as "previously incarcerated" if there was a liberty/supervision session post-incarceration
       SELECT
         session.state_code, session.person_id, session.session_id,
         LOGICAL_OR(prev_rel_session.session_id IS NOT NULL) AS previously_incarcerated
@@ -54,12 +67,11 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
       -- Reclassify some compartment values
       CASE WHEN compartment_level_1 LIKE 'SUPERVISION%' THEN
            CASE WHEN compartment_level_2 = 'DUAL' THEN CONCAT(compartment_level_1, ' - PAROLE')
-                WHEN compartment_level_2 = 'INTERNAL_UNKNOWN' THEN CONCAT(compartment_level_1, ' - PROBATION')
-                -- TODO(#9554): Reclassify out of state BW to in-state
-                WHEN compartment_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
                 ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
            END
            WHEN compartment_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
+           -- TODO(#7385): Update sessions to handle same day transitions from incarceration -> supervision -> liberty
+           WHEN compartment_level_1 = 'PENDING_SUPERVISION' AND state_code = "US_ID" THEN 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM'
         ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
       END AS compartment,
       start_date,
@@ -73,26 +85,21 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
       -- Reclassify some inflow values
       CASE WHEN inflow_from_level_1 LIKE 'SUPERVISION%' THEN
            CASE WHEN inflow_from_level_2 = 'DUAL' THEN CONCAT(inflow_from_level_1, ' - PAROLE')
-                WHEN inflow_from_level_2 = 'INTERNAL_UNKNOWN' THEN CONCAT(inflow_from_level_1, ' - PROBATION')
-                -- TODO(#9554): Reclassify out of state BW to in-state
-                WHEN inflow_from_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
                 ELSE CONCAT(inflow_from_level_1, ' - ', COALESCE(inflow_from_level_2, ''))
            END
         WHEN inflow_from_level_2 = 'LIBERTY_FIRST_TIME_IN_SYSTEM' THEN 'PRETRIAL'
         WHEN inflow_from_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
+        WHEN inflow_from_level_1 = 'PENDING_SUPERVISION' THEN 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM'
         ELSE CONCAT(inflow_from_level_1, ' - ', COALESCE(inflow_from_level_2, ''))
       END AS inflow_from,
       -- Reclassify some outflow values
       CASE WHEN outflow_to_level_1 LIKE 'SUPERVISION%' THEN
            CASE WHEN outflow_to_level_2 = 'DUAL' THEN CONCAT(outflow_to_level_1, ' - PAROLE')
-                WHEN outflow_to_level_2 = 'INTERNAL_UNKNOWN' THEN CONCAT(outflow_to_level_1, ' - PROBATION')
-                -- TODO(#9554): Reclassify out of state BW to in-state
-                WHEN outflow_to_level_2 = 'BENCH_WARRANT' THEN 'SUPERVISION - BENCH_WARRANT'
                 ELSE CONCAT(outflow_to_level_1, ' - ', COALESCE(outflow_to_level_2, ''))
            END
            WHEN outflow_to_level_1 = 'INCARCERATION_OUT_OF_STATE' THEN 'INCARCERATION_OUT_OF_STATE'
            -- TODO(#7385): handle incarceration to 0 day supervision period as release to liberty
-           WHEN outflow_to_level_1 = 'PENDING_SUPERVISION' THEN 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM'
+           WHEN outflow_to_level_1 = 'PENDING_SUPERVISION' AND state_code = 'US_ID' THEN 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM'
         ELSE CONCAT(outflow_to_level_1, ' - ', COALESCE(outflow_to_level_2, ''))
       END AS outflow_to,
       session_length_days,
@@ -100,6 +107,7 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
     FROM `{project_id}.{sessions_dataset}.compartment_sessions_materialized`
     INNER JOIN previously_incarcerated_cte
       USING (state_code, person_id, session_id)
+    WHERE state_code IN ({supported_states})
     ),
     dedup_sessions AS (
         -- Collapse adjacent sessions with the same compartment to merge some supervision sessions
@@ -123,7 +131,10 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = """
         last.end_date,
         last.end_reason,
         last.outflow_to,
-        last.session_length_days
+        last.session_length_days,
+        -- Indicate if the compartment type is considered a "long-lasting" compartment (like bench warrant) where a
+        -- session can last 5-10+ years with no accompanying sentence
+        first.compartment IN ({long_lasting_compartments}) AS long_lasting_compartment,
     FROM dedup_sessions first
     LEFT JOIN dedup_sessions last
         ON first.state_code = last.state_code
@@ -141,6 +152,14 @@ POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE,
     description=POPULATION_PROJECTION_SESSIONS_VIEW_DESCRIPTION,
     sessions_dataset=dataset_config.SESSIONS_DATASET,
+    supported_states=list_to_query_string(
+        string_list=[state.name for state in POPULATION_PROJECTION_SUPPORTED_STATES],
+        quoted=True,
+    ),
+    long_lasting_compartments=list_to_query_string(
+        string_list=LONG_LASTING_COMPARTMENT_LIST, quoted=True
+    ),
+    clustering_fields=["state_code", "person_id", "compartment", "gender"],
     should_materialize=True,
 )
 

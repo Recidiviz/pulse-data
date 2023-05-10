@@ -37,6 +37,7 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         person_id,
         gender,
         FLOOR(DATE_DIFF(end_date, start_date, DAY)/30) AS compartment_duration,
+        POW(0.1, DATE_DIFF(run_dates.run_date, sessions.end_date, MONTH))/(1-0.1) AS session_weight,
       FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
       JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
         -- Use sessions that were completed before the run date
@@ -47,12 +48,10 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
         AND gender IN ('MALE', 'FEMALE')
         -- Only include valid outflows
         -- TODO(#4868): filter invalid transitions in a scalable way
-        AND COALESCE(outflow_to, 'SUPERVISION - PROBATION') 
-          IN ('SUPERVISION - PROBATION',
-              'INCARCERATION - GENERAL',
-              'PENDING_SUPERVISION - PENDING_SUPERVISION')
+        AND outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - GENERAL')
         -- Only take data from the 3 years prior to the run date to match short-term behavior better
-        AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 3
+        AND DATE_DIFF(run_dates.run_date, sessions.end_date, year) < 3
+        AND DATE_DIFF(sessions.end_date, sessions.start_date, year) < 3
     ),
     fully_connected_graph AS (
       -- Create rows for every compartment duration and outflow
@@ -74,6 +73,7 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
           MAX(compartment_duration) AS max_duration,
           -- Calculate the cohort size for each run date to use as the transition denominator below
           COUNT(*) AS cohort_size
+          # SUM(session_weight) AS cohort_size
         FROM rider_cohorts_per_run_date
         GROUP BY state_code, run_date, compartment, gender
       ),
@@ -88,7 +88,9 @@ US_ID_RIDER_POPULATION_TRANSITIONS_QUERY_TEMPLATE = """
       compartment,
       outflow_to,
       compartment_duration,
-      -- Sum up the non-NULL entries per compartment/outflow/duration, will be 0 if they are all NULL
+      -- Sum up the non-NULL entries per compartment/outflow/duration
+      # COALESCE(SUM(rider_cohorts_per_run_date.session_weight)/cohort_size, 0) AS total_population
+      # COALESCE(SUM(rider_cohorts_per_run_date.session_weight), 0) AS total_population
       COUNT(rider_cohorts_per_run_date.person_id)/cohort_size AS total_population
     FROM fully_connected_graph
     LEFT JOIN rider_cohorts_per_run_date

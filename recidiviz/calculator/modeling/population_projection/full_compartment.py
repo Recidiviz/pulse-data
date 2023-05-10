@@ -47,7 +47,7 @@ class FullCompartment(SparkCompartment):
         super().__init__(outflow_data, starting_ts, tag)
 
         # store all population cohorts with their population counts per ts
-        self.cohorts: CohortTable = CohortTable()
+        self.cohorts: CohortTable = CohortTable(starting_ts)
 
         # separate incoming cohorts that should be processed after .step_forward()
         self.incoming_cohorts: float = 0
@@ -80,7 +80,7 @@ class FullCompartment(SparkCompartment):
         latest_ts_pop.index = self.current_ts - latest_ts_pop.index
 
         # no cohort should start in cohort after current_ts
-        if any(latest_ts_pop.index <= 0):
+        if any(latest_ts_pop.index < 0):
             raise ValueError(
                 "Cohort cannot start after current time step\n"
                 f"Current time step: {self.current_ts}\n"
@@ -93,7 +93,7 @@ class FullCompartment(SparkCompartment):
         latest_ts_pop_long = latest_ts_pop[
             latest_ts_pop.index > len(per_ts_transitions)
         ]
-        if not np.isclose(latest_ts_pop_long, 0, SIG_FIGS).all():
+        if not np.isclose(latest_ts_pop_long.fillna(0), 0, SIG_FIGS).all():
             raise ValueError(
                 f"cohorts not empty after max sentence: {latest_ts_pop_long}"
             )
@@ -149,10 +149,6 @@ class FullCompartment(SparkCompartment):
             )
             self.outflows = pd.concat([self.outflows, new_rows]).sort_index()
 
-        # Store the outflows with the previous time step since transitions from the last
-        # time step get us the total population for this time step
-        self.outflows.loc[:, self.current_ts - 1] = pd.Series(outflow_dict, dtype=float)
-
         # if historical data available, use that instead
         if self.current_ts in self.outflows_data.columns:
             model_outflow = pd.Series(outflow_dict, dtype=float)
@@ -173,6 +169,10 @@ class FullCompartment(SparkCompartment):
         # if no outflow, don't ingest to edges
         if not bool(outflow_dict):
             return
+
+        # Store the outflows with the previous time step since transitions from the last
+        # time step get us the total population for this time step
+        self.outflows.loc[:, self.current_ts - 1] = outflow_dict
 
         for edge in self.edges:
             edge.ingest_incoming_cohort(outflow_dict)

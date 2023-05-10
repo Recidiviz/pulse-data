@@ -186,11 +186,9 @@ class PopulationSimulation:
         ts_population_data = self.total_population_data[
             self.total_population_data.time_step == self.current_ts
         ]
-        ts_population_data = (
-            ts_population_data.groupby(population_df_sort_indices)
-            .sum()
-            .total_population
-        )
+        ts_population_data = ts_population_data.groupby(
+            population_df_sort_indices
+        ).total_population.sum()
 
         subgroup_populations = self._collect_subsimulation_populations()
         subgroup_populations = (
@@ -280,6 +278,7 @@ class PopulationSimulation:
                 # simulation group information
                 sub_group_id_dict = self.sub_group_ids_dict[sub_group_id]
                 compartment_outflows = compartment.outflows.copy()
+                compartment_outflows.index.name = "outflow_to"
                 compartment_outflows.columns.name = "time_step"
                 compartment_outflows = pd.DataFrame(
                     compartment_outflows.stack("time_step"),

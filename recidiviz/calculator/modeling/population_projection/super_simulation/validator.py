@@ -220,8 +220,11 @@ class Validator:
 
     def get_output_data_for_upload(
         self,
+        macrosim_override: bool = False,
     ) -> Dict[str, Union[PopulationSimulation, pd.DataFrame]]:
-        if self.microsim:
+        """Produce the output dictionary to upload to BigQuery. Set `macrosim_override` to True in cases where the
+        microsim projection should be output to the macrosim tables, likely for a microsim policy simulation."""
+        if self.microsim and not macrosim_override:
             return {
                 simulation_title: self.pop_simulations[simulation_title]
                 .get_population_projections()

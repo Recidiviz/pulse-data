@@ -43,9 +43,12 @@ EXCLUDED_COMPARTMENTS = [
     "SUPERVISION_OUT_OF_STATE - ABSCONSION",
     "SUPERVISION_OUT_OF_STATE - BENCH_WARRANT",
     "SUPERVISION_OUT_OF_STATE - INFORMAL_PROBATION",
+    "SUPERVISION_OUT_OF_STATE - INTERNAL_UNKNOWN",
     "SUPERVISION_OUT_OF_STATE - PAROLE",
     "SUPERVISION_OUT_OF_STATE - PROBATION",
     "LIBERTY - LIBERTY_REPEAT_IN_SYSTEM",
+    "SUSPENSION - SUSPENSION",
+    "ERRONEOUS_RELEASE - ERRONEOUS_RELEASE",
 ]
 
 
@@ -74,12 +77,13 @@ class PopulationProjector:
         end_month = last_validation_date.month
 
         # Run the validation projections
-        # freq options = QS - quarter start, YS - year start, MS - month start
+        # freq options = QS - quarter start, YS - year start, MS - month start,
+        # 6MS - half-year start
         # TODO(#9955): use longer forecasts to compute 5 year prediction intervals
         run_dates = pd.date_range(
             date(end_year - NUM_VALIDATION_YEARS, end_month, 1),
             date(end_year, end_month, 1),
-            freq="MS",
+            freq="6MS",
         )
         logging.info("Running %s simulations", (len(run_dates) + 1))
         # Run one validation simulation for each run date
@@ -103,19 +107,20 @@ class PopulationProjector:
         """Return the prediction error over all the validation models for a
         particular number of `time_steps` following the projection start. Default
         value is 1 for the one month error."""
-        # Get 1-month pop projections for error calculation by group/compartment
         validation_error = pd.DataFrame()
         population_simulation_dict = self.simulation.get_population_simulations()
 
-        for _, population_simulation in population_simulation_dict.items():
+        for run_date, population_simulation in population_simulation_dict.items():
             # Get population projection
             projection_df = population_simulation.get_population_projections()
 
             # Only keep the prediction that is `time_steps` after the projection start
             projection_start = projection_df.time_step.min()
             projection_df = projection_df.loc[
-                projection_df.time_step == projection_start + time_steps
+                (projection_df.time_step <= projection_start + time_steps)
+                & (projection_start < projection_df.time_step)
             ].copy()
+            projection_df["run_date"] = run_date.split("_")[1]
             validation_error = pd.concat([validation_error, projection_df])
 
         # Reformat the data to match the backend expectations
@@ -131,7 +136,9 @@ class PopulationProjector:
         validation_error["error"] = (
             validation_error.total_population - validation_error.total_population_actual
         )
-        self.convert_time_step(validation_error)
+        validation_error["percent_error"] = (
+            100 * validation_error["error"] / validation_error.total_population_actual
+        )
         return validation_error
 
     def get_historical_population_data(self) -> pd.DataFrame:
@@ -298,25 +305,31 @@ class PopulationProjector:
             index=list(range(num_samples + 1)),
         )
 
-        # Resample the error array `num_samples` times
+        # Resample the error array `num_samples` times to create a dataframe of size `iterations` x `num_samples`
         for t in range(0, num_samples):
-            sampled_error.loc[:, t] = np.random.choice(
-                error, size=iterations, replace=True, p=probs
+            # Add a new column to the dataframe for the sampled error
+            sampled_error = pd.concat(
+                [
+                    sampled_error,
+                    pd.Series(
+                        np.random.choice(error, size=iterations, replace=True, p=probs),
+                        name=t,
+                        index=range(iterations),
+                    ),
+                ],
+                axis=1,
+                ignore_index=True,
             )
-            # Compute the cumulative sum
-            if t > 0:
-                sampled_error.loc[:, t] += sampled_error.loc[:, t - 1]
+        # Compute the cumulative sum
+        sampled_error = sampled_error.cumsum(axis=1)
 
-            # Get percentiles
-            prediction_intervals.loc[t + 1, "lower_bound"] = float(
-                np.percentile(sampled_error[t], 100 * alpha / 2)
-            )
-            prediction_intervals.loc[t + 1, "upper_bound"] = float(
-                np.percentile(sampled_error[t], 100 * (1 - alpha / 2))
-            )
-
-        # Set the first 'observation' to zero error
-        prediction_intervals.loc[0, ["lower_bound", "upper_bound"]] = [0, 0]
+        # Get percentiles for the lower and upper bounds set from 1 to `num_samples` + 1, and 0 for time step 0
+        prediction_intervals.loc[1 : num_samples + 1, "lower_bound"] = np.percentile(
+            a=sampled_error, q=100 * alpha / 2, axis=0
+        )
+        prediction_intervals.loc[1 : num_samples + 1, "upper_bound"] = np.percentile(
+            a=sampled_error, q=100 * (1 - alpha / 2), axis=0
+        )
 
         return prediction_intervals
 
@@ -327,7 +340,7 @@ class PopulationProjector:
         )
 
         self.simulation.upload_validation_projection_results_to_bq(
-            validation_projections_data=self.validation_projections
+            validation_projections_data=self.validation_projections.copy()
         )
 
     def convert_time_step(
@@ -359,8 +372,16 @@ class PopulationProjector:
             return compartment_name
 
         df["compartment"] = df["compartment"].apply(convert_compartment_name)
+        total_population_col = [col for col in df.columns if "total_population" in col]
+        if len(total_population_col) == 0:
+            raise ValueError(
+                f"Cannot determine total population column out of [{', '.join(df.columns)}]"
+            )
+        all_other_columns = [
+            col for col in df.columns if col not in total_population_col
+        ]
         df = (
-            df.groupby(["compartment", "simulation_group", "time_step"])
+            df.groupby(all_other_columns)[total_population_col]
             .sum()
             .reset_index("time_step", drop=False)
         )
@@ -371,13 +392,27 @@ class PopulationProjector:
         df: pd.DataFrame, total_pop_col: str = "total_population"
     ) -> pd.DataFrame:
         """Add aggregate rows for simulation group 'ALL' and legal status 'ALL'"""
+        if df.empty:
+            raise ValueError("Cannot add aggregate rows to empty dataframe")
 
+        if total_pop_col not in df.columns:
+            raise ValueError(
+                f"'{total_pop_col}' total population column not available in dataframe: [{', '.join(df.columns)}]"
+            )
+
+        df = df.reset_index(drop=False)
+        # Preserve any other columns (like `run_date`) in the group by output
+        all_other_columns = [
+            col
+            for col in df.columns
+            if col not in [total_pop_col, "compartment", "simulation_group"]
+        ]
         # Append rows for the "ALL" simulation_group
         simulation_group_all = pd.DataFrame(
-            df.groupby(["compartment", "time_step"]).sum()[total_pop_col]
+            df.groupby(["compartment"] + all_other_columns)[total_pop_col].sum()
         ).reset_index(drop=False)
         simulation_group_all.loc[:, "simulation_group"] = "ALL"
-        df = pd.concat([df.reset_index(drop=False), simulation_group_all])
+        df = pd.concat([df, simulation_group_all])
 
         # Append rows for the "ALL" legal status
         # Add a temp column to store the `compartment_level_1` (incarceration vs supervision)
@@ -386,19 +421,19 @@ class PopulationProjector:
         ]
         # Sum the total population per sector
         legal_status_all = pd.DataFrame(
-            df.groupby(["compartment_level_1", "simulation_group", "time_step"]).sum()[
+            df.groupby(["compartment_level_1", "simulation_group"] + all_other_columns)[
                 total_pop_col
-            ]
+            ].sum()
         ).reset_index(drop=False)
         # Reformat the legal status "ALL" df and combine with the original df
         legal_status_all.loc[:, "compartment"] = (
             legal_status_all.loc[:, "compartment_level_1"] + " - ALL"
         )
-        # Drop the temp `compartment_level_1` column
-        legal_status_all = legal_status_all.drop("compartment_level_1", axis=1)
         df = (
             pd.concat([df, legal_status_all])
             .set_index(["compartment", "simulation_group"])
             .sort_index()
         )
+        # Drop the temp `compartment_level_1` column
+        df.drop("compartment_level_1", axis=1, inplace=True)
         return df

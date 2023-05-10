@@ -145,7 +145,6 @@ US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_QUERY_TEMPLATE = """
     FROM paid_status_on_compartment_sessions
     -- Only use the pay_flag for the county jails
     WHERE pay_flag OR (facility NOT IN ('COUNTY JAIL', '{disaggregated_county_jails}'))
-    ORDER BY state_code, person_id, report_month
     """
 
 US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -24,7 +24,7 @@ WITH prison_pop AS (
                 count(*) as total_population
         from (
                 select *
-                FROM `recidiviz-staging.analyst_data.compartment_sessions_materialized`,
+                FROM `recidiviz-staging.sessions.compartment_sessions_materialized`,
                 UNNEST(GENERATE_DATE_ARRAY(DATE_SUB(CURRENT_DATE, INTERVAL 10 YEAR), CURRENT_DATE, INTERVAL 1 DAY)) AS population_date
                 WHERE population_date BETWEEN start_date AND COALESCE(end_date, '9999-01-01')
                 AND state_code = 'US_PA'

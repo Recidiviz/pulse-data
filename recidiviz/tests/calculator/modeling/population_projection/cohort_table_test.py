@@ -17,6 +17,7 @@
 """Test the CohortTable object"""
 
 import unittest
+
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.cohort_table import CohortTable
@@ -27,7 +28,7 @@ class TestCohortTable(unittest.TestCase):
 
     def test_monotonic_decreasing_size(self) -> None:
         """Tests that cohort size can only decrease over time"""
-        cohort = CohortTable()
+        cohort = CohortTable(starting_ts=2000)
         cohort.append_ts_end_count(cohort.get_latest_population(), 2000)
         cohort.append_cohort(1, 2000)
 
@@ -39,7 +40,7 @@ class TestCohortTable(unittest.TestCase):
 
     def test_duplicate_year_data_rejected(self) -> None:
         """Tests that yearly data added to cohort must be in a new year"""
-        cohort = CohortTable()
+        cohort = CohortTable(starting_ts=2000)
         cohort.append_ts_end_count(cohort.get_latest_population(), 2000)
         cohort.append_cohort(1, 2000)
         with self.assertRaises(ValueError):
@@ -53,7 +54,7 @@ class TestCohortTable(unittest.TestCase):
 
         start_time = 2000
         cohort_size_list = [-10, -20, -30, -40, -50]
-        cohort = CohortTable()
+        cohort = CohortTable(starting_ts=start_time)
         cohort.append_ts_end_count(cohort.get_latest_population(), start_time)
         cohort.append_cohort(cohort_size_list[0], start_time)
 
@@ -65,5 +66,5 @@ class TestCohortTable(unittest.TestCase):
 
         for index, cohort_size in enumerate(cohort_size_list):
             self.assertEqual(
-                cohort_size, cohort.get_cohort_timeline(start_time).iloc[index]
+                cohort_size, cohort.get_cohort_timeline(start_time).iloc[index + 1]
             )

@@ -30,9 +30,11 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             run_date,
             state_code,
             DATE_TRUNC(start_date, MONTH) AS time_step,
-            -- distinguish shell release compartment from full release compartment
+            -- distinguish shell liberty compartment from full liberty compartment
             CASE
                 WHEN inflow_from = 'LIBERTY - LIBERTY_REPEAT_IN_SYSTEM' THEN 'LIBERTY'
+                -- Count session starts from `INTERNAL_UKNOWN` as admissions from liberty
+                WHEN inflow_from = 'INTERNAL_UNKNOWN - INTERNAL_UNKNOWN' THEN 'LIBERTY'
                 -- Count all admissions from "PRETRIAL" -> "PAROLE" in ND as coming from "LIBERTY" instead of "PRETRIAL"
                 WHEN state_code = 'US_ND' AND compartment = 'SUPERVISION - PAROLE' AND inflow_from = 'PRETRIAL' THEN 'LIBERTY'
                 ELSE inflow_from
@@ -48,21 +50,23 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = """
             ON start_date < run_date
             -- Cap the historical outflows (admissions) data at 10 years before the run date
             AND DATE_DIFF(run_date, start_date, YEAR) < 10
-        WHERE state_code IN ('US_ID', 'US_ND')
-            AND gender IN ('FEMALE', 'MALE')
+        WHERE gender IN ('FEMALE', 'MALE')
         GROUP BY 1,2,3,4,5,6
     )
     SELECT
     *
     FROM cte
+    -- TODO(#4755): This logic is pretty specific to US_ID/US_ND and should be handled by a config or a table
+    -- if scaled to more states
     WHERE CASE
           WHEN compartment = 'PRETRIAL'
             THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION',
               'INCARCERATION - TREATMENT_IN_PRISON', 'SUPERVISION_OUT_OF_STATE - PROBATION', 
-              'SUPERVISION - INFORMAL_PROBATION')
+              'SUPERVISION - INFORMAL_PROBATION', 'INVESTIGATION - INVESTIGATION')
           WHEN compartment = 'LIBERTY'
             THEN outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON',
-              'INCARCERATION - GENERAL', 'INCARCERATION - RE-INCARCERATION')
+              'INCARCERATION - GENERAL', 'INCARCERATION - RE-INCARCERATION',
+              'INVESTIGATION - INVESTIGATION')
           ELSE FALSE
         END
     """

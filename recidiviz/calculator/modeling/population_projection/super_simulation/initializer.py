@@ -280,15 +280,25 @@ class Initializer:
         time_range_per_compartment["time_step"] = time_range_per_compartment.apply(
             lambda row: range(row["min"], row["max"] + 1), axis=1
         )
+        # Collect the total compartment & outflow combinations
+        # unique_compartment_outflows = outflows_data.groupby(fully_hydrated_columns + ["outflow_to"],
+        #                                                     as_index=False).size()
+        # unique_compartment_outflows.drop("size", axis=1, inplace=True)
+
+        # Merge the compartment/outflows to get the entire set of compartments, outflows, and time steps
+        # time_range_per_compartment = unique_compartment_outflows.merge(time_range_per_compartment,
+        #                                  on=fully_hydrated_columns,
+        #                                  how="left")
         time_range_per_compartment = time_range_per_compartment.explode("time_step")[
             ["time_step"]
-        ].astype(dtype="int64")
+        ].astype(int)
 
         fully_hydrated_data = time_range_per_compartment.merge(
             outflows_data[fully_hydrated_columns + ["time_step", "total_population"]],
-            on=["time_step"] + fully_hydrated_columns,
+            on=["time_step", "outflow_to"] + fully_hydrated_columns,
             how="left",
         )
+        fully_hydrated_data.fillna(0, inplace=True)
 
         # Raise a warning if there are disaggregations without outflow records for more
         # than the MISSING_EVENT_THRESHOLD percent of outflows per compartment
@@ -319,9 +329,11 @@ class Initializer:
         # Fill the total population with 0 and remove the `missing_outflow` column
         fully_hydrated_data.drop("missing_outflow", axis=1, inplace=True)
         fully_hydrated_data.fillna(0, inplace=True)
-        fully_hydrated_data.reset_index(drop=True, inplace=True)
 
-        return fully_hydrated_data
+        # Return the fully hydrated outflows data with a standard column ordering
+        return fully_hydrated_data[
+            ["time_step"] + fully_hydrated_columns + ["total_population"]
+        ]
 
     def _raw_data_inputs_from_data_inputs(
         self,
@@ -363,6 +375,8 @@ class Initializer:
                 table_data["time_step"] = table_data["time_step"].apply(
                     self.time_converter.convert_timestamp_to_time_step
                 )
+            if "run_date" in table_data.columns:
+                table_data["run_date"] = pd.to_datetime(table_data["run_date"])
             return table_data
 
         if big_query_params.excluded_population_data is None:
