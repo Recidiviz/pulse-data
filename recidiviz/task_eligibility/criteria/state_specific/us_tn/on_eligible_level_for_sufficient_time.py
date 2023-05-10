@@ -33,6 +33,9 @@ _CRITERIA_NAME = "US_TN_ON_ELIGIBLE_LEVEL_FOR_SUFFICIENT_TIME"
 _DESCRIPTION = """Describes the spans of time when a TN client has been on an eligible supervision level for a
 sufficient amount of time"""
 
+# TODO(#20870) - Deprecate this in favor of better long term solution to excluding these levels
+EXCLUDED_MEDIUM_RAW_TEXT = ["6P1", "6P2", "6P3", "3D3"]
+
 _QUERY_TEMPLATE = f"""
     WITH supervision_level_cte AS
     (
@@ -48,7 +51,7 @@ _QUERY_TEMPLATE = f"""
     FROM `{{project_id}}.{{sessions_dataset}}.supervision_level_raw_text_sessions_materialized`
     WHERE state_code = 'US_TN'
         AND supervision_level IN ('MINIMUM','MEDIUM')
-        AND supervision_level_raw_text NOT IN ('6P1','6P2','6P3')
+        AND supervision_level_raw_text NOT IN ('{{exclude_medium}}')
     )
     ,
     /*
@@ -116,6 +119,7 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         meets_criteria_default=False,
         sessions_dataset=SESSIONS_DATASET,
+        exclude_medium="', '".join(EXCLUDED_MEDIUM_RAW_TEXT),
     )
 )
 
