@@ -16,6 +16,7 @@
 # =============================================================================
 """Utils for working with StateSupervisionViolations and their related entities in
 metric pipelines."""
+import datetime
 import sys
 from collections import OrderedDict, defaultdict
 from datetime import date
@@ -42,7 +43,6 @@ from recidiviz.common.constants.state.state_supervision_violation import (
 from recidiviz.common.constants.state.state_supervision_violation_response import (
     StateSupervisionViolationResponseDecision,
 )
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = "SUBSTANCE_ABUSE"
 
@@ -88,54 +88,79 @@ def _shorthand_description_for_ranked_violation_counts(
     return None
 
 
-def _identify_most_severe_violation_type_and_subtype(
+def most_severe_type_and_subtype_for_violation(
+    violation: NormalizedStateSupervisionViolation,
+    violation_delegate: StateSpecificViolationDelegate,
+) -> Tuple[Optional[StateSupervisionViolationType], Optional[str]]:
+    if not violation.supervision_violation_types:
+        return None, None
+    subtypes = violation_delegate.get_violation_type_subtype_strings_for_violation(
+        violation
+    ).keys()
+    most_severe_subtype = most_severe_violation_subtype(subtypes, violation_delegate)
+    if not most_severe_subtype:
+        raise ValueError(f"Found no most_severe_subtype for violation {violation}")
+    most_severe_type = violation_type_from_subtype(
+        violation_delegate, most_severe_subtype
+    )
+    return most_severe_type, most_severe_subtype
+
+
+def _sort_violations_from_oldest_to_most_recent(
+    violations: List[NormalizedStateSupervisionViolation],
+) -> List[NormalizedStateSupervisionViolation]:
+    # if violation_date is None, consider it oldest
+    return sorted(
+        violations,
+        key=lambda violation: (
+            violation.violation_date or datetime.date.min,
+            violation.supervision_violation_id,
+        ),
+    )
+
+
+def _identify_most_severe_violation(
     violations: List[NormalizedStateSupervisionViolation],
     violation_delegate: StateSpecificViolationDelegate,
-) -> Tuple[Optional[StateSupervisionViolationType], Optional[str], Optional[str]]:
-    """Identifies the most severe violation type on the provided |violations|, and,
-    if relevant, the subtype of that most severe violation type. Returns both as a
-    tuple, as well as the raw text associated with the most severe type.
+) -> Optional[NormalizedStateSupervisionViolation]:
     """
-    violation_subtypes: List[str] = []
-    violation_subtypes_to_raw_text_list: Dict[str, List[Optional[str]]] = defaultdict(
-        list
-    )
-
+    Takes in a list of violations and a violation_delegate, and using delegate specific logic, determine
+    which one of the violations is the most severe.
+    """
     if not violations:
-        return None, None, None
+        return None
 
-    for violation in violations:
-        for (
-            violation_subtype,
-            subtype_strings,
-        ) in violation_delegate.get_violation_type_subtype_strings_for_violation(
-            violation
-        ).items():
-            violation_subtypes_to_raw_text_list[violation_subtype] += subtype_strings
-            violation_subtypes.append(violation_subtype)
+    # sort violations from oldest to most recent so that most_severe_violation selected is the most recent
+    sorted_violations = _sort_violations_from_oldest_to_most_recent(violations)
 
-    if not violation_subtypes:
-        return None, None, None
+    most_severe_violation = None
+    for violation in sorted_violations:
+        if not violation.supervision_violation_types:
+            # if the violation has no subtypes, it shouldn't be included in calculating most severe subtype
+            continue
+        if not most_severe_violation:
+            most_severe_violation = violation
+            continue
 
-    most_severe_subtype = most_severe_violation_subtype(
-        violation_subtypes, violation_delegate
-    )
-
-    most_severe_type = None
-    most_severe_type_raw_text = None
-
-    if most_severe_subtype:
-        most_severe_type = violation_type_from_subtype(
-            violation_delegate, most_severe_subtype
+        (_, new_most_severe_subtype) = most_severe_type_and_subtype_for_violation(
+            violation, violation_delegate
         )
-        raw_texts = [
-            raw_text
-            for raw_text in violation_subtypes_to_raw_text_list[most_severe_subtype]
-            if raw_text
-        ]
-        most_severe_type_raw_text = ",".join(raw_texts) if raw_texts else None
 
-    return most_severe_type, most_severe_type_raw_text, most_severe_subtype
+        (_, old_most_severe_subtype) = most_severe_type_and_subtype_for_violation(
+            most_severe_violation, violation_delegate
+        )
+
+        if new_most_severe_subtype == old_most_severe_subtype:
+            most_severe_violation = violation
+            continue
+
+        most_severe_subtype = most_severe_violation_subtype(
+            [new_most_severe_subtype, old_most_severe_subtype], violation_delegate
+        )
+        if most_severe_subtype == new_most_severe_subtype:
+            most_severe_violation = violation
+
+    return most_severe_violation
 
 
 def most_severe_violation_subtype(
@@ -192,6 +217,7 @@ ViolationHistory = NamedTuple(
     [
         ("most_severe_violation_type", Optional[StateSupervisionViolationType]),
         ("most_severe_violation_type_subtype", Optional[str]),
+        ("most_severe_violation_id", Optional[int]),
         (
             "most_severe_response_decision",
             Optional[StateSupervisionViolationResponseDecision],
@@ -207,7 +233,6 @@ def get_violation_and_response_history(
     upper_bound_exclusive_date: date,
     violation_responses_for_history: List[NormalizedStateSupervisionViolationResponse],
     violation_delegate: StateSpecificViolationDelegate,
-    incarceration_period: Optional[StateIncarcerationPeriod] = None,
     lower_bound_inclusive_date_override: Optional[date] = None,
 ) -> ViolationHistory:
     """Identifies and returns various details of the violation history on the responses
@@ -219,15 +244,6 @@ def get_violation_and_response_history(
     If lower_bound_inclusive_date_override is null, uses the period of time
     VIOLATION_HISTORY_WINDOW_MONTHS preceding the |end_date|.
     """
-    if not violation_responses_for_history and incarceration_period is None:
-        return ViolationHistory(
-            most_severe_violation_type=None,
-            most_severe_violation_type_subtype=None,
-            most_severe_response_decision=None,
-            response_count=0,
-            violation_history_description=None,
-            violation_type_frequency_counter=None,
-        )
 
     lower_bound_inclusive_date = (
         lower_bound_inclusive_date_override
@@ -264,11 +280,8 @@ def get_violation_and_response_history(
             violation_ids_in_window.add(violation.supervision_violation_id)
 
     # Find the most severe violation type info of all of the entries in the window
-    (
-        most_severe_violation_type,
-        _,
-        most_severe_violation_type_subtype,
-    ) = _identify_most_severe_violation_type_and_subtype(
+
+    most_severe_violation = _identify_most_severe_violation(
         violations_in_window, violation_delegate
     )
 
@@ -291,9 +304,25 @@ def get_violation_and_response_history(
         responses_in_window
     )
 
+    if most_severe_violation:
+        most_severe_violation_id = most_severe_violation.supervision_violation_id
+        most_severe_type_and_subtype = most_severe_type_and_subtype_for_violation(
+            most_severe_violation, violation_delegate
+        )
+        most_severe_violation_type, most_severe_violation_type_subtype = (
+            most_severe_type_and_subtype
+            if most_severe_type_and_subtype
+            else (None, None)
+        )
+    else:
+        most_severe_violation_type = None
+        most_severe_violation_type_subtype = None
+        most_severe_violation_id = None
+
     violation_history_result = ViolationHistory(
         most_severe_violation_type,
         most_severe_violation_type_subtype,
+        most_severe_violation_id,
         most_severe_response_decision,
         response_count,
         violation_history_description,
@@ -323,13 +352,11 @@ def _get_violation_history_description(
     # Count all violation types and subtypes
     for violation in violations:
         most_severe_violation_type_and_subtype = (
-            _identify_most_severe_violation_type_and_subtype(
-                [violation], violation_delegate
-            )
+            most_severe_type_and_subtype_for_violation(violation, violation_delegate)
         )
         if not most_severe_violation_type_and_subtype:
             continue
-        _, _, most_severe_subtype = most_severe_violation_type_and_subtype
+        _, most_severe_subtype = most_severe_violation_type_and_subtype
 
         if most_severe_subtype:
             subtype_counts[most_severe_subtype] += 1

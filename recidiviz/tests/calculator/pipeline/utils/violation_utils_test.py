@@ -53,7 +53,7 @@ _DEFAULT_SSVR_ID = 999
 class TestIdentifyMostSevereViolationType(unittest.TestCase):
     """Tests code that identifies the most severe violation type."""
 
-    def test_identify_most_severe_violation_type(self) -> None:
+    def test_identify_most_severe_violation_simple(self) -> None:
         violation = NormalizedStateSupervisionViolation.new_with_defaults(
             state_code="US_XX",
             supervision_violation_types=[
@@ -68,42 +68,381 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             ],
         )
 
-        (
-            most_severe_violation_type,
-            _,
-            most_severe_violation_type_subtype,
-        ) = violation_utils._identify_most_severe_violation_type_and_subtype(
+        most_severe_violation = violation_utils._identify_most_severe_violation(
             [violation], UsXxViolationDelegate()
         )
 
-        self.assertEqual(
-            most_severe_violation_type, StateSupervisionViolationType.FELONY
-        )
-        self.assertEqual(
-            most_severe_violation_type_subtype,
-            StateSupervisionViolationType.FELONY.value,
+        self.assertEqual(most_severe_violation, violation)
+
+    def test_identify_most_severe_violation_multiple(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+            ],
         )
 
-    def test_identify_most_severe_violation_type_test_all_types(self) -> None:
-        for violation_type in StateSupervisionViolationType:
-            violation = NormalizedStateSupervisionViolation.new_with_defaults(
-                state_code="US_XX",
-                supervision_violation_types=[
-                    NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
-                        state_code="US_XX", violation_type=violation_type
-                    )
-                ],
-            )
-            (
-                most_severe_violation_type,
-                _,
-                most_severe_violation_type_subtype,
-            ) = violation_utils._identify_most_severe_violation_type_and_subtype(
-                [violation], UsXxViolationDelegate()
-            )
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.ABSCONDED,
+                ),
+            ],
+        )
 
-            self.assertEqual(most_severe_violation_type, violation_type)
-            self.assertEqual(violation_type.value, most_severe_violation_type_subtype)
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.TECHNICAL,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_3)
+
+    def test_identify_most_severe_violation_first(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.ESCAPED,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_1)
+
+    def test_identify_most_severe_violation_most_recent(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=datetime.date(2010, 1, 1),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 6, 6),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 5, 20),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_2)
+
+    def test_identify_most_severe_violation_most_recent_ensure_sorted(self) -> None:
+
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 6, 6),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 5, 20),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=datetime.date(2010, 1, 1),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_1)
+
+    def test_identify_most_severe_violation_most_recent_none(self) -> None:
+
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            violation_date=None,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 5, 20),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=datetime.date(2010, 1, 1),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_3)
+
+    def test_identify_most_severe_violation_empty(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=datetime.date(2010, 1, 1),
+            supervision_violation_types=[],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 6, 6),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 5, 20),
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_2)
+
+    def test_identify_most_severe_violation_all_empty(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=datetime.date(2010, 1, 1),
+            supervision_violation_types=[],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 6, 6),
+            supervision_violation_types=[],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            violation_date=datetime.date(2012, 5, 20),
+            supervision_violation_types=[],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+        self.assertIsNone(most_severe_violation)
+
+    def test_identify_most_severe_violation_single_empty(self) -> None:
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=datetime.date(2010, 1, 1),
+            supervision_violation_types=[],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1], UsXxViolationDelegate()
+        )
+
+        self.assertIsNone(most_severe_violation)
+
+    def test_identify_most_severe_violation_fallback(self) -> None:
+
+        violation_1 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123456,
+            state_code="US_XX",
+            violation_date=None,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.LAW,
+                ),
+            ],
+        )
+
+        violation_2 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123457,
+            state_code="US_XX",
+            violation_date=None,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        violation_3 = NormalizedStateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code="US_XX",
+            violation_date=None,
+            supervision_violation_types=[
+                NormalizedStateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code="US_XX",
+                    violation_type=StateSupervisionViolationType.FELONY,
+                ),
+            ],
+        )
+
+        most_severe_violation = violation_utils._identify_most_severe_violation(
+            [violation_1, violation_2, violation_3], UsXxViolationDelegate()
+        )
+
+        self.assertEqual(most_severe_violation, violation_2)
 
 
 class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
@@ -397,6 +736,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1felony",
@@ -468,6 +808,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1felony",
@@ -525,6 +866,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1subs",
@@ -579,6 +921,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="HIGH_TECH",
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1high_tech",
@@ -628,6 +971,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1subs",
@@ -679,6 +1023,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="ELEC_MONITORING",
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1em",
@@ -780,6 +1125,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype="SUBSTANCE_ABUSE",
+            most_severe_violation_id=1234567,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=3,
             violation_history_description="1subs;2med_tech",
@@ -825,6 +1171,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=None,
             most_severe_violation_type_subtype=None,
+            most_severe_violation_id=None,
             most_severe_response_decision=None,
             response_count=0,
             violation_history_description=None,
@@ -876,6 +1223,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
             most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1misdemeanor",
@@ -935,6 +1283,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         expected_output = violation_utils.ViolationHistory(
             most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
             most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
+            most_severe_violation_id=123455,
             most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
             response_count=1,
             violation_history_description="1tech",
