@@ -433,3 +433,17 @@ module "outliers-etl-data" {
   project_id  = var.project_id
   name_suffix = "outliers-etl-data"
 }
+
+module "generated-assets" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "generated-assets"
+}
+
+resource "google_storage_bucket_iam_member" "asset-generation-generated-assets-bucket-member" {
+  for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
+  bucket   = module.generated-assets.name
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.asset_generation_cloud_run.email}"
+}
