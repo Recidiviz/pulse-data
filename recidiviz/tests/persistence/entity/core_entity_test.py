@@ -18,6 +18,7 @@
 
 import unittest
 
+from recidiviz.common.constants.state.state_person import StateRace
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -41,7 +42,8 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             "state_person_race",
             entities.StatePersonRace.new_with_defaults(
-                state_code="US_XX"
+                state_code="US_XX",
+                race=StateRace.WHITE,
             ).get_entity_name(),
         )
         self.assertEqual(
@@ -61,7 +63,9 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             456,
             entities.StatePersonRace.new_with_defaults(
-                person_race_id=456, state_code="US_XX"
+                person_race_id=456,
+                state_code="US_XX",
+                race=StateRace.WHITE,
             ).get_id(),
         )
         self.assertEqual(

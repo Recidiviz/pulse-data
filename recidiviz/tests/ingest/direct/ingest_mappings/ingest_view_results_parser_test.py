@@ -20,7 +20,7 @@ import datetime
 import os
 import unittest
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 from recidiviz.common.constants.enum_parser import EnumParsingError
 from recidiviz.common.constants.states import StateCode
@@ -213,15 +213,9 @@ class FakeSchemaIngestViewResultsParserDelegate(IngestViewResultsParserDelegate)
 
         raise ValueError(f"Unexpected test env property: {property_name}")
 
-    def get_filter_predicate(
-        self, entity_cls: Type[EntityT]
-    ) -> Optional[Callable[[EntityT], bool]]:
+    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
         if issubclass(entity_cls, FakePersonAlias):
-
-            def fake_person_alias_filter_predicate(e: EntityT) -> bool:
-                return getattr(e, "full_name") is None
-
-            return fake_person_alias_filter_predicate
+            return "full_name"
         return None
 
     def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
@@ -2220,7 +2214,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         # Assert
         self.assertEqual(expected_output, parsed_output)
 
-    def test_filter_predicate(self) -> None:
+    def test_filter_if_null_field(self) -> None:
         # Arrange
         expected_output = [
             FakePerson(
@@ -2263,7 +2257,7 @@ class IngestViewFileParserTest(unittest.TestCase):
         ]
 
         # Act
-        parsed_output = self._run_parse_for_ingest_view("filter_predicate")
+        parsed_output = self._run_parse_for_ingest_view("filter_if_null_field")
 
         # Assert
         self.assertEqual(expected_output, parsed_output)

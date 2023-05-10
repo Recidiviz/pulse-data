@@ -660,7 +660,6 @@ HAS_MEANINGFUL_DATA_ENTITIES: Dict[Type[DatabaseEntity], List[DatabaseEntity]] =
             state_code=StateCode.US_XX.value, race=StateRace.WHITE, race_raw_text="W"
         ),
         schema.StatePersonRace(state_code=StateCode.US_XX.value, race=StateRace.WHITE),
-        schema.StatePersonRace(state_code=StateCode.US_XX.value, race_raw_text="X"),
     ],
     schema.StateProgramAssignment: [
         schema.StateProgramAssignment(

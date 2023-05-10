@@ -959,7 +959,7 @@ class StatePersonRace(StateBase, _ReferencesStatePersonSharedColumns):
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    race = Column(state_race, comment="A person’s reported race.")
+    race = Column(state_race, nullable=False, comment="A person’s reported race.")
     race_raw_text = Column(
         String(255), comment="The raw text value of the person's race."
     )

@@ -83,6 +83,20 @@ def is_enum(attribute: attr.Attribute) -> bool:
     return _is_enum_cls(attr_type)
 
 
+def is_non_optional_enum(attribute: attr.Attribute) -> bool:
+    """Returns true if the attribute is a non-optional Enum type (e.g. MyEnum but not
+    Optional[MyEnum]).
+    """
+    if not isinstance(attribute, attr.Attribute):
+        raise TypeError(f"Unexpected type [{type(attribute)}]")
+
+    attr_type = attribute.type
+    if not attr_type:
+        return False
+
+    return _is_enum_cls(attr_type)
+
+
 def is_datetime(attribute: attr.Attribute) -> bool:
     """Returns true if the attribute is a datetime type."""
 

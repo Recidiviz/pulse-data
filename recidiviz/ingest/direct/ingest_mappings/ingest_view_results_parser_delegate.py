@@ -23,7 +23,7 @@ import datetime
 import os
 from enum import Enum
 from types import ModuleType
-from typing import Callable, Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 from recidiviz.common.constants import state as state_constants
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
@@ -93,11 +93,9 @@ class IngestViewResultsParserDelegate:
         """
 
     @abc.abstractmethod
-    def get_filter_predicate(
-        self, entity_cls: Type[EntityT]
-    ) -> Optional[Callable[[EntityT], bool]]:
-        """Returns a predicate function which can be used to fully filter the evaluated
-        EntityTreeManifest from the result.
+    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
+        """Returns a field (if there is one) where, if for any entity this field's value
+        evaluates to None, that entity should be filtered out of the result.
         """
 
     @abc.abstractmethod
@@ -250,15 +248,9 @@ class IngestViewResultsParserDelegateImpl(
 
         raise ValueError(f"Unexpected environment property: [{property_name}]")
 
-    def get_filter_predicate(
-        self, entity_cls: Type[EntityT]
-    ) -> Optional[Callable[[EntityT], bool]]:
+    def get_filter_if_null_field(self, entity_cls: Type[EntityT]) -> Optional[str]:
         if issubclass(entity_cls, state_entities.StatePersonAlias):
-
-            def state_person_alias_filter_predicate(e: EntityT) -> bool:
-                return getattr(e, "full_name") is None
-
-            return state_person_alias_filter_predicate
+            return "full_name"
         return None
 
     def is_json_field(self, entity_cls: Type[EntityT], field_name: str) -> bool:
