@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Inmate_Program_Referrals__No_Date_Exclusions
+file_description: |-
+  This is a temporary AR data file that reflects a query over source tables and we hope not to keep permanently. TODO(#20906): Fill in the file description.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PID_coded
+  - name: Intake_Study_Group_Date
+  - name: Referral_Source
+  - name: Referral_Source_Code
+  - name: Job_Program_Assignment_Code
+  - name: Program_Referral_Status
+  - name: Voluntary_Program_Participation_Flag
+  - name: Type_of_Inmate_Program_Referral
+  - name: Type_of_Inmate_Program_Referral_Code
+  - name: Program_Application_Date

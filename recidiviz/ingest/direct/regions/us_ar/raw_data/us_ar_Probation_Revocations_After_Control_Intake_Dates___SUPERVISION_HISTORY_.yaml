@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Probation_Revocations_After_Control_Intake_Dates___SUPERVISION_HISTORY_
+file_description: |-
+  This is a temporary AR data file that reflects a query over source tables and we hope not to keep permanently. TODO(#20906): Fill in the file description.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PID_Coded
+  - name: Intake_Study_Date
+  - name: Office_at_time_of_Revocation
+  - name: Area_at_time_of_Revocation
+  - name: Supervision_Type
+  - name: Supervision_Type_Category
+  - name: Revocation_Date
+  - name: Violation_Types
+  - name: Supv_Event_Reason
+  - name: Supv_Event
+  - name: Report
+  - name: Weapons
+  - name: Special_Conditions
+  - name: Laws
+  - name: Residence_Travel
+  - name: Alcohol_Controlled_Substance
+  - name: Employment_Education
+  - name: Supv_Fees
+  - name: Association
+  - name: Other_Misc_
+  - name: Cooperation
+  - name: Search_Seizure
+  - name: Waiver_Extradition

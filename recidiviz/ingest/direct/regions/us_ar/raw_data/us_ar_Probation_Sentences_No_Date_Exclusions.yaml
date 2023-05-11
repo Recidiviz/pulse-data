@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Probation_Sentences_No_Date_Exclusions
+file_description: |-
+  This is a temporary AR data file that reflects a query over source tables and we hope not to keep permanently. TODO(#20906): Fill in the file description.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PID_Coded
+  - name: Intake_Study_Date
+  - name: Commitment_Prefix
+  - name: Sentence_Component_Number
+  - name: Sentence_Imposed_Date
+  - name: Sentence_Begin_Date
+  - name: State_Statute_Code
+  - name: State_Statute
+  - name: State_Statute_Code_2
+  - name: State_Statute_2
+  - name: State_Statute_Code_3
+  - name: State_Statute_3
+  - name: Crime_Seriousness_Level_Code
+  - name: Crime_Seriousness_Level
+  - name: Sentence_Type
+  - name: Sentence_Type_Code
+  - name: Probation_Term__Years_
+  - name: Probation_Term__Months_
+  - name: Probation_Term__Days_
+  - name: Extended_Term__Years_
+  - name: Extended_Term__Months_
+  - name: Extended_Term__Days_
+  - name: Prob_Felony_Misdemeanor_Class_Code
+  - name: Sentence_Chaining_Type
+  - name: Sentence_Chanining_Type
+  - name: Prob_Felony_Misdemeanor_Class
