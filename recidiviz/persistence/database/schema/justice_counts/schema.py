@@ -641,6 +641,9 @@ class Datapoint(JusticeCountsBase):
     # Agency datapoints will have a non-null source_id.
     source_id = Column(Integer, nullable=True)
 
+    # Indicates if a datapoint is a Report datapoint (True) or an Agency datapoint (False)
+    is_report_datapoint = Column(Boolean)
+
     metric_definition_key = Column(String, nullable=False)
 
     # Datapoints that are not contexts will not have a context key.
