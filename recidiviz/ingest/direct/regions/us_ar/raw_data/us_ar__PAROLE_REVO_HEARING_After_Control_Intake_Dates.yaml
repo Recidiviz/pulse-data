@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: _PAROLE_REVO_HEARING_After_Control_Intake_Dates
+file_description: |-
+  This is a temporary AR data file that reflects a query over source tables and we hope not to keep permanently. TODO(#20906): Fill in the file description.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PID_Coded
+  - name: Intake_Date_Study_Group
+  - name: Parole_Board_Hearing_Type
+  - name: Parole_Board_Event_Type
+  - name: Proposed_Parole_Board_Action_1
+  - name: Parole_Board_Final_Action_1
+  - name: Parole_Board_Final_Action_2
+  - name: Parole_Board_Final_Action_3
+  - name: Parole_Board_Final_Action_4
+  - name: Parole_Event_Date
+  - name: VR_Reason_1
+  - name: VR_Reason_2
+  - name: VR_Reason_3
+  - name: VR_Reason_4
+  - name: VR_Reason_5
+  - name: VR_Reason_6
+  - name: VR_Reason_7
+  - name: VR_Reason_8
+  - name: VR_Reason_9
+  - name: VR_Reason_10
+  - name: VR_Reason_11
+  - name: VR_Reason_12
+  - name: Board_Hearing_Comment
+  - name: __Violations
+  - name: Violations_Types

@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=./../../../raw_data/yaml_schema/schema.json
+file_tag: Program_Referrals_Post_Intake
+file_description: |-
+  This is a temporary AR data file that reflects a query over source tables and we hope not to keep permanently. TODO(#20906): Fill in the file description.
+data_classification: source
+primary_key_cols: []
+columns:
+  - name: PID_Coded
+  - name: Intake_Study_Date__First_Intake_Date__bw_2015_2022_
+  - name: Referral_Date
+  - name: Comm_Ref_Directed_Begin_Date
+  - name: Comm_Ref_Directed_End_Date
+  - name: Referral_Status_Code
+  - name: Referral_Status
+  - name: Referral_Status_Date
+  - name: Referral_Office
+  - name: Community_Program_Type_Code
+  - name: Community_Program_Type
+  - name: Community_Service_Type_Code
+  - name: Community_Service_Type
