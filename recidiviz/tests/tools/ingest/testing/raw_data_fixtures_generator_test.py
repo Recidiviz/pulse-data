@@ -21,6 +21,7 @@ from typing import List
 from unittest import mock
 
 import attr
+from mock import Mock
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -36,6 +37,7 @@ from recidiviz.tools.ingest.testing.generate_raw_data_fixtures_from_bq import (
 )
 
 
+@mock.patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-test"))
 class RawDataFixturesGeneratorTest(unittest.TestCase):
     """Tests for raw_data_fixtures_generator.py"""
 

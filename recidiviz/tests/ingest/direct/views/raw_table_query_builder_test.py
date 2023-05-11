@@ -21,7 +21,7 @@ import unittest
 
 import attr
 import mock
-from mock import patch
+from mock import Mock, patch
 
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
@@ -32,6 +32,7 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.ingest.direct.views.raw_table_query_builder import RawTableQueryBuilder
 
 
+@mock.patch("recidiviz.utils.metadata.project_id", Mock(return_value="recidiviz-456"))
 class RawTableQueryBuilderTest(unittest.TestCase):
     """Tests for RawTableQueryBuilder"""
 
