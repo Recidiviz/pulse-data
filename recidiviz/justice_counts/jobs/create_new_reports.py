@@ -27,6 +27,7 @@ import logging
 
 from sqlalchemy.engine import Engine
 
+from recidiviz.justice_counts.agency import AgencyInterface
 from recidiviz.justice_counts.datapoint import DatapointInterface
 from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -63,6 +64,12 @@ def main(engine: Engine) -> None:
 
     logger.info("Generating new Reports in database %s", engine.url)
     for agency in session.query(schema.Agency).all():
+        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
+            session=session, agency_id=agency.id
+        )
+        if len(child_agencies) > 0:
+            continue
+
         logger.info("Generating Reports for Agency %s", agency.name)
 
         agency_datapoints = DatapointInterface.get_agency_datapoints(
