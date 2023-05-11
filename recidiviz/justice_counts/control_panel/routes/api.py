@@ -53,6 +53,7 @@ from recidiviz.justice_counts.spreadsheet import SpreadsheetInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.user_account import UserAccountInterface
 from recidiviz.justice_counts.utils.constants import BUCKET_ID_TO_AGENCY_ID
+from recidiviz.justice_counts.utils.datapoint_utils import filter_deprecated_datapoints
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.utils.environment import in_development, in_gcp, in_gcp_staging
 from recidiviz.utils.flask_exception import FlaskException
@@ -622,7 +623,8 @@ def get_api_blueprint(
                     report.status == schema.ReportStatus.PUBLISHED
                 )
 
-            for datapoint in datapoints:
+            non_deprecated_datapoints = filter_deprecated_datapoints(datapoints)
+            for datapoint in non_deprecated_datapoints:
                 report_id = datapoint.report_id
                 report_frequency = report_id_to_frequency[report_id]
                 is_report_published = report_id_to_published_status[report_id]
