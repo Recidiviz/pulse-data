@@ -174,13 +174,11 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
+    full_name: str = attr.ib(validator=attr_validators.is_str)
     alias_type: Optional[StatePersonAliasType] = attr.ib(
         default=None, validator=attr_validators.is_opt(StatePersonAliasType)
     )
     alias_type_raw_text: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
-    )
-    full_name: Optional[str] = attr.ib(
         default=None, validator=attr_validators.is_opt_str
     )
 
