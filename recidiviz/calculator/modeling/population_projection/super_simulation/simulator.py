@@ -37,6 +37,9 @@ from recidiviz.calculator.modeling.population_projection.super_simulation.initia
     SimulationInputData,
     UserInputs,
 )
+from recidiviz.calculator.modeling.population_projection.super_simulation.super_simulation_results import (
+    SuperSimulationResults,
+)
 from recidiviz.calculator.modeling.population_projection.super_simulation.time_converter import (
     TimeConverter,
 )
@@ -49,6 +52,7 @@ class Simulator:
         self.pop_simulations: Dict[str, PopulationSimulation] = {}
         self.microsim = microsim
         self.time_converter = time_converter
+        self.results: Optional[SuperSimulationResults] = None
 
     def get_population_simulations(self) -> Dict[str, PopulationSimulation]:
         if not self.pop_simulations:
@@ -85,15 +89,18 @@ class Simulator:
 
         self._reset_pop_simulations()
 
-        self.pop_simulations["policy"] = self._build_population_simulation(
-            user_inputs, data_inputs, policy_list, first_relevant_ts
-        )
         self.pop_simulations["control"] = self._build_population_simulation(
             user_inputs, data_inputs, [], first_relevant_ts
         )
 
+        self.pop_simulations["policy"] = self._build_population_simulation(
+            user_inputs, data_inputs, policy_list, first_relevant_ts
+        )
+
         self.pop_simulations["policy"].simulate_policies()
         self.pop_simulations["control"].simulate_policies()
+
+        self.super_sim_results = SuperSimulationResults()
 
         results = {
             scenario: simulation.get_population_projections()
@@ -108,6 +115,7 @@ class Simulator:
         self._log_predicted_admissions_warnings()
 
         self._graph_results(user_inputs, results, output_compartment)
+        # self.graph_outflow_results()
         return self._format_simulation_results(user_inputs, collapse_compartments=False)
 
     def simulate_baseline(
@@ -229,6 +237,27 @@ class Simulator:
 
     def get_sub_group_ids_dict(self) -> Dict[str, Dict[str, Any]]:
         return list(self.pop_simulations.values())[0].sub_group_ids_dict
+
+    def graph_outflow_results(self) -> None:
+        outflow_sims = {
+            scenario: simulation.get_outflows(collapse_compartments=True).reset_index()
+            for scenario, simulation in self.pop_simulations.items()
+        }
+        outflows = pd.concat(outflow_sims.values(), ignore_index=False)
+        outflows = outflows.pivot(
+            index="time_step",
+            columns=["compartment", "simulation", "outflow_to"],
+            values="total_population",
+        )
+        outflows.plot()
+
+        for comp in ["parole", "pretrial", "prison", "prisonrev"]:
+            comp_outflows = (
+                outflows.xs(comp, level="compartment", axis=1).fillna(0).loc[-24:]
+            )
+            comp_outflows = comp_outflows.loc[(comp_outflows != 0).any(axis=1)]
+            comp_outflows.plot()
+            plt.title(comp)
 
     def _graph_results(
         self,

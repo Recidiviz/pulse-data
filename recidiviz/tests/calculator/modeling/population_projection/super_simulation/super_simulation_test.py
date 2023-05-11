@@ -575,3 +575,39 @@ class TestSuperSimulation(unittest.TestCase):
         assert_frame_equal(
             data_inputs.outflows_data.reset_index(drop=True), expected_outflows_data
         )
+
+    @patch(
+        "recidiviz.calculator.modeling.population_projection.utils.ignite_bq_utils.load_ignite_table_from_big_query",
+        mock_load_table_from_big_query_micro,
+    )
+    def test_g_microsim_access_inputs(self) -> None:
+        """Tests SuperSimulation's get_transitions_data_input fn returns correct value, compartments case-insensitive"""
+        assert isinstance(self.microsim, SuperSimulation)
+        print(self.microsim.initializer.get_data_inputs().transitions_data)
+        expected_transitions_data = (
+            self.microsim.initializer.get_data_inputs().transitions_data[
+                ["compartment", "outflow_to"]
+                + self.microsim.initializer.get_data_inputs().disaggregation_axes
+                + ["compartment_duration", "total_population"]
+            ]
+        )
+        transitions_returned = self.microsim.get_transitions_data_input()
+        assert_frame_equal(transitions_returned, expected_transitions_data)
+
+        prison_transitions_returned = self.microsim.get_transitions_data_input("prison")
+        assert_frame_equal(
+            prison_transitions_returned,
+            expected_transitions_data[
+                expected_transitions_data.compartment == "PRISON"
+            ],
+        )
+
+        prison_and_liberty_transitions_returned = (
+            self.microsim.get_transitions_data_input("prIsOn", "LiBErty")
+        )
+        assert_frame_equal(
+            prison_and_liberty_transitions_returned,
+            expected_transitions_data[
+                expected_transitions_data.compartment.isin(["PRISON", "LIBERTY"])
+            ],
+        )

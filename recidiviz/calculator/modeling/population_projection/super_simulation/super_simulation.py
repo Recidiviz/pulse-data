@@ -23,8 +23,14 @@ from typing import Callable, Dict, List, Optional, Tuple
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from recidiviz.calculator.modeling.population_projection.full_compartment import (
+    FullCompartment,
+)
 from recidiviz.calculator.modeling.population_projection.population_simulation.population_simulation import (
     PopulationSimulation,
+)
+from recidiviz.calculator.modeling.population_projection.spark_compartment import (
+    SparkCompartment,
 )
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.super_simulation.exporter import (
@@ -94,6 +100,7 @@ class SuperSimulation:
             self.simulator.get_population_simulations(),
             {"policy_simulation": simulation_output},
         )
+
         return simulation_output.copy()
 
     def microsim_baseline_over_time(
@@ -291,3 +298,127 @@ class SuperSimulation:
         `cross_flow_function` should be a callable that accepts a df as an input
         """
         self.initializer.set_override_cross_flow_function(cross_flow_function)
+
+    def get_transitions_data_input(self, *compartments_input: str) -> pd.DataFrame:
+        """
+        Return user-inputted transitions data, supply 1 or more compartment string names (case-insensitive)
+        for specific compartment data (includes all outflow_to values), otherwise returns full transitions df
+        """
+        inputs = self.initializer.get_data_inputs()
+        columns_to_return = (
+            ["compartment", "outflow_to"]
+            + inputs.disaggregation_axes
+            + ["compartment_duration", "total_population"]
+        )
+        if not compartments_input:
+            return inputs.transitions_data[columns_to_return]
+        compartments = [c.lower() for c in compartments_input]
+        transition_compartments = [
+            c.lower() for c in inputs.compartments_architecture.keys()
+        ]
+        if any(c not in transition_compartments for c in compartments):
+            raise ValueError(
+                f"At least 1 requested compartment ('{compartments}') not in simulation architechture, available compartments are {transition_compartments}"
+            )
+        return inputs.transitions_data[
+            inputs.transitions_data.compartment.str.lower().isin(compartments)
+        ][columns_to_return]
+
+    def get_outflows_data_input(self, *compartments_input: str) -> pd.DataFrame:
+        """
+        Return user-inputted outflows data, supply 1 or more compartment string names (case-insensitive)
+        for specific compartment data, otherwise returns full transitions df
+        """
+        inputs = self.initializer.get_data_inputs()
+        columns_to_return = (
+            ["compartment", "outflow_to"]
+            + inputs.disaggregation_axes
+            + ["time_step", "total_population"]
+        )
+        if not compartments_input:
+            return inputs.outflows_data[columns_to_return]
+        compartments = [c.lower() for c in compartments_input]
+        transition_compartments = [
+            c.lower() for c in inputs.compartments_architecture.keys()
+        ]
+        if any(c not in transition_compartments for c in compartments):
+            raise ValueError(
+                f"At least 1 requested compartment ('{compartments}') not in simulation architechture, available compartments are {transition_compartments}"
+            )
+        return inputs.transitions_data[
+            inputs.transitions_data.compartment.str.lower().isin(compartments)
+        ][columns_to_return]
+
+    def get_all_outflows_tables(
+        self,
+        population_simulations: Optional[List[str]] = None,
+        sub_simulations: Optional[List[str]] = None,
+        compartments: Optional[List[str]] = None,
+    ) -> pd.DataFrame:
+        """
+        Returns all outflow data from simulation, including historical/user-input data and future projected outflows,
+        for all policy/sub simulations and compartments
+        """
+        all_compartments = self._get_all_compartments(
+            population_simulations=population_simulations,
+            sub_simulations=sub_simulations,
+            compartments=compartments,
+        )
+
+        all_outflows_tables = {tag: c.outflows.T for tag, c in all_compartments.items()}
+        outflows = pd.concat(all_outflows_tables)
+
+        outflows_raw = (
+            outflows.melt(
+                value_vars=list(outflows.columns),
+                var_name="outflow_to",
+                value_name="counts",
+                ignore_index=False,
+            )
+            .reset_index()
+            .dropna(subset="counts")
+        )
+
+        outflows_raw.columns = [
+            "policy_sim",
+            "sub_sim",
+            "compartment",
+            "compartment_type",
+            "time_step",
+            "outflow_to",
+            "outflows",
+        ]
+        return outflows_raw.drop(columns=["compartment_type"])
+
+    def get_all_sub_simulation_tags(self) -> List[str]:
+        for _, pop_sim in self.get_population_simulations().items():
+            return list(pop_sim.sub_group_ids_dict.keys())
+        return []
+
+    def _get_all_compartments(
+        self,
+        population_simulations: Optional[List[str]] = None,
+        sub_simulations: Optional[List[str]] = None,
+        compartments: Optional[List[str]] = None,
+    ) -> Dict[Tuple[str, str, str, str], SparkCompartment]:
+        flattened_compartments = {}
+        for pop_sim_tag, pop_sim in self.get_population_simulations().items():
+            if population_simulations and pop_sim_tag not in population_simulations:
+                continue
+            for sub_sim_tag, sub_sim in pop_sim.sub_simulations.items():
+                if sub_simulations and sub_sim_tag not in sub_simulations:
+                    continue
+                for (
+                    compartment_tag,
+                    compartment,
+                ) in sub_sim.simulation_compartments.items():
+                    if compartments and compartment_tag not in compartments:
+                        continue
+                    tag = (
+                        pop_sim_tag,
+                        sub_sim_tag,
+                        compartment_tag,
+                        "full" if isinstance(compartment, FullCompartment) else "shell",
+                    )
+                    flattened_compartments[tag] = compartment
+        return flattened_compartments

@@ -134,6 +134,7 @@ class TransitionTable:
         before_table: Optional[pd.DataFrame] = None,
     ) -> pd.DataFrame:
         """Convert the per-ts population counts into normalized probabilities"""
+        # before_table_input = None if before_table is None else before_table.copy()
         if table.empty:
             raise ValueError(
                 "Cannot normalize transition tables before they are initialized"
@@ -164,7 +165,7 @@ class TransitionTable:
         # (after_counteds at time t+1), so we start by stepping forward after_counteds to t+1
         before_counteds = before_table.shift(1, fill_value=0.0).cumsum()
         after_counteds = table.cumsum()
-
+        # check that last acounted value = after_totals
         # calculate the fraction of each outflow remaining for each time step
         after_remaining = 1 - after_counteds / after_totals
         after_remaining.clip(0, 1, inplace=True)
@@ -190,7 +191,50 @@ class TransitionTable:
 
         # Check that the transition table is valid
         full_release_times = np.isclose(normalized_df["remaining"], 0, SIG_FIGS)
+
         if full_release_times.sum() == 0:
+
+            # KNOWN ISSUE: presumed rounding error for valid transitions table
+            # use this commented hack below if happening
+
+            # before_table_input.to_csv('~/Desktop/debug/before_table_input.csv')
+            # normalized_df.to_csv('~/Desktop/debug/normalized_df.csv')
+            # outflow_scaled_releases.to_csv('~/Desktop/debug/outflow_scaled_releases.csv')
+            # table.to_csv('~/Desktop/debug/table.csv')
+            # outflow_scaled_remaining.to_csv('~/Desktop/debug/outflow_scaled_remaining.csv')
+            # after_remaining.to_csv('~/Desktop/debug/after_remaining.csv')
+            # before_remaining.to_csv('~/Desktop/debug/before_remaining.csv')
+            # before_table.to_csv('~/Desktop/debug/before_table.csv')
+
+            # normalized_df = outflow_scaled_releases.div(
+            #     outflow_scaled_remaining, axis=0
+            # )
+
+            # normalized_df.liberty = normalized_df.liberty.replace(
+            #     [np.inf, -np.inf], np.NaN
+            # ).fillna(1)
+
+            # normalized_df.fillna(0.0, inplace=True)
+            # normalized_df.clip(0, 1, inplace=True)
+            # normalized_df = normalized_df.apply(lambda x: round(x, SIG_FIGS))
+
+            # # Assign the residual probability as the proportion that remains in the current compartment per month
+            # normalized_df["remaining"] = 1 - round(
+            #     normalized_df.sum(axis=1), SIG_FIGS - 1
+            # )
+
+            # # Check that the transition table is valid
+            # full_release_times = np.isclose(normalized_df["remaining"], 0, SIG_FIGS)
+
+            # if full_release_times.sum() == 0:
+            #     import pdb
+
+            #     pdb.set_trace()
+            #     raise ValueError(
+            #         f"Transition table doesn't release everyone: "
+            #         f"{normalized_df.iloc[-1]}"
+            #     )
+
             raise ValueError(
                 f"Transition table doesn't release everyone: "
                 f"{normalized_df.iloc[-1]}"
@@ -386,7 +430,6 @@ class TransitionTable:
         self, alternate_historical_transitions: pd.DataFrame, retroactive: bool
     ) -> None:
         """Replace the historical admission data for this specific group with another data from a different set"""
-
         self.extend_tables(
             int(alternate_historical_transitions.compartment_duration.max())
         )
