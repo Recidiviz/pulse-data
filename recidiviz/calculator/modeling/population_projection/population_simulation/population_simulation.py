@@ -191,11 +191,9 @@ class PopulationSimulation:
         ).total_population.sum()
 
         subgroup_populations = self._collect_subsimulation_populations()
-        subgroup_populations = (
-            subgroup_populations.groupby(population_df_sort_indices)
-            .sum()
-            .total_population
-        )
+        subgroup_populations = subgroup_populations.groupby(
+            population_df_sort_indices
+        ).total_population.sum()
 
         # reorder simulation df and drop compartments to match total_population_data indices
         subgroup_populations = subgroup_populations.loc[ts_population_data.index]
@@ -264,7 +262,7 @@ class PopulationSimulation:
                         ] += compartment.outflows[ts][outflow]
         return aggregated_results
 
-    def get_outflows(self) -> pd.DataFrame:
+    def get_outflows(self, collapse_compartments: bool = False) -> pd.DataFrame:
         """Return the projected outflows (transitions)"""
 
         # Generate the outflows df by looping through each sub-simulation & compartment
@@ -300,7 +298,14 @@ class PopulationSimulation:
 
                 # Append the outflows for this simulation group/compartment
                 outflows_df = pd.concat([outflows_df, compartment_outflows])
-
+        if collapse_compartments:
+            return (
+                outflows_df.reset_index()
+                .groupby(["compartment", "outflow_to", "time_step"])[
+                    ["total_population"]
+                ]
+                .sum()
+            )
         return outflows_df
 
     def gen_arima_output_df(self) -> pd.DataFrame:

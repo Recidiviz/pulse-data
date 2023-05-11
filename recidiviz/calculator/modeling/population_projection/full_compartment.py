@@ -87,6 +87,9 @@ class FullCompartment(SparkCompartment):
                 f"Cohort start times: {self.current_ts - latest_ts_pop.index}"
             )
 
+        # Handle long/life-sentences separately from shorter sentences, assume the people on longer
+        # sentences will never outflow from the compartment during the simulation and only compute
+        # the outflows for the people on (relatively) shorter sentences
         latest_ts_pop_short = latest_ts_pop[
             latest_ts_pop.index <= len(per_ts_transitions)
         ]

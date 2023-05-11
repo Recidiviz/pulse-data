@@ -71,6 +71,13 @@ class CompartmentTransitions:
             )
 
         for column in ["total_population", "compartment_duration"]:
+            if historical_outflows[
+                historical_outflows["compartment_duration"] > 0
+            ].empty:
+                raise ValueError(
+                    "Cannot create a transition table with only compartment_duration == 0 for compartment "
+                    f"'{historical_outflows['compartment'].unique()[0]}'"
+                )
             if any(historical_outflows[column] < 0):
                 negative_rows = historical_outflows[historical_outflows[column] < 0]
                 raise ValueError(
@@ -113,7 +120,7 @@ class CompartmentTransitions:
             )
 
         # normalize all tables
-        for transition_table in self.transition_tables.values():
+        for _, transition_table in self.transition_tables.items():
             transition_table.normalize_transitions()
 
     def get_per_ts_transition_table(self, current_ts: int) -> pd.DataFrame:
