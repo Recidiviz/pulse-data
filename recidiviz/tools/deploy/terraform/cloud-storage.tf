@@ -275,6 +275,24 @@ module "practices-etl-data-archive" {
   ]
 }
 
+module "dashboard-firestore-backups" {
+  source = "./modules/cloud-storage-bucket"
+
+  project_id  = var.project_id
+  name_suffix = "dashboard-firestore-backups"
+
+  lifecycle_rules = [
+    {
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        num_newer_versions = 7
+      }
+    }
+  ]
+}
+
 # TODO(#13703): Figure out what we want to do with this data and whether we still want
 #  to manage this bucket, which contains data from deprecated state aggregate scrapers,
 #  via TF.
