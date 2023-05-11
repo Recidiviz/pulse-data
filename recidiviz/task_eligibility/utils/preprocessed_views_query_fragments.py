@@ -16,9 +16,6 @@
 # =============================================================================
 """Helper SQL fragments that do standard queries against pre-processed views.
 """
-
-
-from recidiviz.calculator.query.bq_utils import nonnull_end_date_clause
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
@@ -155,65 +152,4 @@ def has_at_least_x_negative_tests_in_time_interval(
         reason
     FROM
         grouped
-    """
-
-
-def has_unpaid_fines_fees_balance(
-    fee_type: str,
-    unpaid_balance_criteria: str,
-    unpaid_balance_field: str,
-) -> str:
-    """
-    Args:
-        fee_type (str, optional): Specifies the fee-type (e.g. Restitution, Supervision Fees) since there might be multiple within
-         a state.
-        unpaid_balance_criteria (str, optional): Specifies the criteria on unpaid balance.
-        unpaid_balance_field (str, optional): Specifies which field should be used to track unpaid balance.
-
-    Returns:
-        f-string: Spans of time where the unpaid balance condition was met
-    """
-
-    return f"""
-    WITH fines_fees AS (
-        SELECT
-            state_code,
-            person_id,
-            external_id,
-            fee_type,
-            transaction_type,
-            start_date,
-            end_date,
-            unpaid_balance,
-            compartment_level_0_unpaid_balance,
-        FROM
-            `{{project_id}}.{{analyst_dataset}}.fines_fees_sessions_materialized`
-
-    ),
-
-    {create_sub_sessions_with_attributes('fines_fees')},
-
-    aggregated_fines_fees_per_client AS (
-        SELECT 
-            state_code,
-            person_id,
-            start_date,
-            end_date,
-            fee_type, 
-            SUM(unpaid_balance) AS unpaid_balance,
-            SUM(compartment_level_0_unpaid_balance) AS compartment_level_0_unpaid_balance
-        FROM sub_sessions_with_attributes
-        WHERE start_date != {nonnull_end_date_clause('end_date')}
-        GROUP BY 1,2,3,4,5
-    )
-
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        {unpaid_balance_field} {unpaid_balance_criteria} AS meets_criteria,
-        TO_JSON(STRUCT({unpaid_balance_field} AS amount_owed)) AS reason,
-    FROM aggregated_fines_fees_per_client
-    WHERE fee_type = "{fee_type}"
     """
