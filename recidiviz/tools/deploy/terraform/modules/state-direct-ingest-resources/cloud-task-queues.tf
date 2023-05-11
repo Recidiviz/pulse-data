@@ -29,12 +29,19 @@ module "scheduler-queue" {
   max_dispatches_per_second = 100
 }
 
+# TODO(#20925): remove gating for `US_OZ`.
 module "scheduler-queue-secondary" {
   source = "../base-task-queue"
 
   queue_name                = "${local.direct_ingest_formatted_str}-scheduler-secondary"
   region                    = var.region
   max_dispatches_per_second = 100
+  count                     = var.state_code == "US_OZ" ? 0 : 1
+}
+
+moved {
+  from = module.scheduler-queue-secondary
+  to   = module.scheduler-queue-secondary[0]
 }
 
 module "raw-data-import-queue" {
