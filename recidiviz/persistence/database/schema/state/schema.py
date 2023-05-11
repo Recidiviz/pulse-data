@@ -928,7 +928,7 @@ class StatePersonAlias(StateBase, _ReferencesStatePersonSharedColumns):
         index=True,
         comment=STATE_CODE_COMMENT,
     )
-    full_name = Column(String(255), comment="A person’s name.")
+    full_name = Column(String(255), nullable=False, comment="A person’s name.")
     alias_type = Column(state_person_alias_type, comment="The type of the name alias.")
     alias_type_raw_text = Column(
         String(255), comment="The raw text value for the alias type."
