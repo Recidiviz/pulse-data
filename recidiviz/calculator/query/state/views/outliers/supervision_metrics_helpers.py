@@ -62,8 +62,24 @@ OUTLIERS_CONFIGS_BY_STATE: Dict[StateCode, OutliersConfig] = {
 def supervision_metric_query_template(
     unit_of_analysis: MetricUnitOfAnalysis,
 ) -> str:
+    """
+    Helper for querying supervision_<unit_of_analysis>_aggregated_metrics views
+    """
     subqueries = []
     for state_code, config in OUTLIERS_CONFIGS_BY_STATE.items():
+        subqueries.append(
+            f"""
+SELECT
+    {list_to_query_string(unit_of_analysis.primary_key_columns)},
+    period,
+    end_date,
+    "avg_daily_population" AS metric_id,
+    avg_daily_population AS metric_value,
+FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`
+WHERE state_code = '{state_code.value}'
+        """
+        )
+
         for metric in config.metrics:
             subqueries.append(
                 f"""
@@ -73,7 +89,6 @@ SELECT
     end_date,
     "{metric}" AS metric_id,
     {metric} AS metric_value,
-    avg_daily_population,
 FROM `{{project_id}}.{{aggregated_metrics_dataset}}.supervision_{unit_of_analysis.level_name_short}_aggregated_metrics_materialized`
 WHERE state_code = '{state_code.value}'
 """

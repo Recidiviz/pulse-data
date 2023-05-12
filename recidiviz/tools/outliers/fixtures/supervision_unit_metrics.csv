@@ -1,7 +1,7 @@
-state_code,metric_id,metric_value,period,end_date,district,unit,avg_daily_population
-US_PA,incarceration_starts_and_inferred,10,YEAR,2023-04-01,1,A,111.111
-US_PA,incarceration_starts_and_inferred,11,YEAR,2023-04-01,1,B,222.2222
-US_PA,incarceration_starts_and_inferred,12,YEAR,2023-04-01,2,A,121.121
-US_PA,incarceration_starts_and_inferred,3,YEAR,2023-05-01,1,A,122.122
-US_PA,incarceration_starts_and_inferred,4,YEAR,2023-05-01,1,B,210.210
-US_PA,incarceration_starts_and_inferred,5,YEAR,2023-05-01,2,A,109.901
+state_code,metric_id,metric_value,period,end_date,district,unit
+US_PA,incarceration_starts_and_inferred,10,YEAR,2023-04-01,1,A
+US_PA,incarceration_starts_and_inferred,11,YEAR,2023-04-01,1,B
+US_PA,incarceration_starts_and_inferred,12,YEAR,2023-04-01,2,A
+US_PA,incarceration_starts_and_inferred,3,YEAR,2023-05-01,1,A
+US_PA,incarceration_starts_and_inferred,4,YEAR,2023-05-01,1,B
+US_PA,incarceration_starts_and_inferred,5,YEAR,2023-05-01,2,A
