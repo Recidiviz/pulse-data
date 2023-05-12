@@ -79,12 +79,14 @@ export const createUser = async (
 export const updateUser = async (
   user: User,
   name: string | null,
-  agencyIds: number[] | null
+  agencyIds: number[] | null,
+  role: string | null
 ): Promise<Response> => {
   return putWithURLAndBody(`/api/justice_counts_tools/users`, {
     name,
     auth0_user_id: user.auth0_user_id,
     agency_ids: agencyIds,
+    role,
   });
 };
 

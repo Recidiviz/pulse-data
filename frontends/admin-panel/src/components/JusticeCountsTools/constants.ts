@@ -72,6 +72,13 @@ export type UsersResponse = {
   users: User[];
 };
 
+export const getRoleFromEmail = (email: string): string => {
+  if (email.includes("recidiviz.org") || email.includes("csg.org")) {
+    return "JUSTICE_COUNTS_ADMIN";
+  }
+  return "AGENCY_ADMIN";
+};
+
 export enum System {
   LAW_ENFORCEMENT = "LAW_ENFORCEMENT",
   PROSECUTION = "PROSECUTION",

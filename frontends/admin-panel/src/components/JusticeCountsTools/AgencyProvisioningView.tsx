@@ -54,6 +54,7 @@ import {
   StateCodeKey,
   System,
   UsersResponse,
+  getRoleFromEmail,
 } from "./constants";
 
 const AgencyProvisioningView = (): JSX.Element => {
@@ -190,13 +191,6 @@ const AgencyProvisioningView = (): JSX.Element => {
     } catch (err) {
       message.error(`An error occured: ${err}`);
     }
-  };
-
-  const getRoleFromEmail = (email: string) => {
-    if (email.includes("recidiviz.org") || email.includes("csg.org")) {
-      return "JUSTICE_COUNTS_ADMIN";
-    }
-    return "AGENCY_ADMIN";
   };
 
   const onUpdateTeamMember = async (

@@ -328,6 +328,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             name = request_json.get("name")
             auth0_user_id = request_json.get("auth0_user_id")
             agency_ids = request_json.get("agency_ids")
+            role = request_json.get("role")
 
             if auth0_user_id is None:
                 raise ValueError("auth0_user_id is required")
@@ -341,9 +342,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
                 auth0_user_id=auth0_user_id,
             )
             UserAccountInterface.add_or_update_user_agency_association(
-                session=session,
-                user=user,
-                agencies=agencies,
+                session=session, user=user, agencies=agencies, role=role
             )
 
             return (
