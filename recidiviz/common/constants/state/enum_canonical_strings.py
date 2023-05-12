@@ -553,3 +553,17 @@ state_task_type_transfer_to_supervision_from_incarceration = (
 )
 state_task_type_treatment_referral = "TREATMENT_REFERRAL"
 state_task_type_treatment_verification = "TREATMENT_VERIFICATION"
+
+state_staff_specialized_caseload_type_sex_offense = "SEX_OFFENSE"
+state_staff_specialized_caseload_type_administrative_supervision = (
+    "ADMINISTRATIVE_SUPERVISION"
+)
+state_staff_specialized_caseload_type_alcohol_and_drug = "ALCOHOL_AND_DRUG"
+state_staff_specialized_caseload_type_intensive = "INTENSIVE"
+state_staff_specialized_caseload_type_mental_health = "MENTAL_HEALTH"
+state_staff_specialized_caseload_type_electronic_monitoring = "ELECTRONIC_MONITORING"
+state_staff_specialized_caseload_type_other_court = "OTHER_COURT"
+state_staff_specialized_caseload_type_drug_court = "DRUG_COURT"
+state_staff_specialized_caseload_type_veterans_court = "VETERANS_COURT"
+state_staff_specialized_caseload_type_community_facility = "COMMUNITY_FACILITY"
+state_staff_specialized_caseload_type_other = "OTHER"
