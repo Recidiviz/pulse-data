@@ -362,6 +362,7 @@ def create_calculation_dag() -> None:
         trigger_rule=TriggerRule.ALL_DONE,
         # this endpoint fails ephemerally sometimes and we want to retry and not fail the entire dag when this happens
         retries=3,
+        # TODO(#20503): Update to use POST when passing data to endpoint
     )
 
     view_materialize_task_group = TaskGroup("view_materialization")

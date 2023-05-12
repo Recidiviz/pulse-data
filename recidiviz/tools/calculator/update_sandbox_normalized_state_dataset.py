@@ -46,40 +46,14 @@ python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
 
 import argparse
 import logging
-from typing import FrozenSet
 
-from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.calculator.calculation_data_storage_manager import (
+    build_address_overrides_for_update,
     update_normalized_state_dataset,
-)
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import (
-    normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants import states
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-
-
-def build_address_overrides_for_update(
-    dataset_override_prefix: str, states_to_override: FrozenSet[states.StateCode]
-) -> BigQueryAddressOverrides:
-
-    overrides_builder = BigQueryAddressOverrides.Builder(
-        sandbox_prefix=dataset_override_prefix
-    )
-    overrides_builder.register_sandbox_override_for_entire_dataset(
-        dataset_config.STATE_BASE_DATASET
-    )
-    for state_code in states_to_override:
-        overrides_builder.register_sandbox_override_for_entire_dataset(
-            normalized_state_dataset_for_state_code(state_code)
-        )
-    overrides_builder.register_sandbox_override_for_entire_dataset(
-        dataset_config.NORMALIZED_STATE_DATASET
-    )
-
-    return overrides_builder.build()
 
 
 def create_parser() -> argparse.ArgumentParser:

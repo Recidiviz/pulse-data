@@ -61,6 +61,7 @@ from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_r
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database import schema_utils
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.endpoint_helpers import get_value_from_request
 from recidiviz.utils.string import StrictStringFormatter
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -92,11 +93,51 @@ def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
     return "", HTTPStatus.OK
 
 
-@calculation_data_storage_manager_blueprint.route("/update_normalized_state_dataset")
+@calculation_data_storage_manager_blueprint.route(
+    "/update_normalized_state_dataset", methods=["POST", "GET"]
+)
 @requires_gae_auth
 def update_normalized_state_dataset_endpoint() -> Tuple[str, HTTPStatus]:
     """Calls the _update_normalized_state_dataset function."""
-    update_normalized_state_dataset()
+
+    state_codes_filter: Optional[List[str]] = get_value_from_request(
+        "state_codes_filter"
+    )
+
+    sandbox_dataset_prefix: Optional[str] = get_value_from_request(
+        "sandbox_dataset_prefix"
+    )
+
+    if state_codes_filter and not sandbox_dataset_prefix:
+        return (
+            "Must provide sandbox_dataset_prefix when providing state_codes_filter",
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    if sandbox_dataset_prefix and not state_codes_filter:
+        state_codes_filter_set: Optional[FrozenSet[StateCode]] = frozenset(
+            get_normalization_pipeline_enabled_states()
+        )
+    else:
+        state_codes_filter_set = (
+            frozenset({StateCode(state_code) for state_code in state_codes_filter})
+            if state_codes_filter
+            else None
+        )
+
+    address_overrides = (
+        build_address_overrides_for_update(
+            dataset_override_prefix=sandbox_dataset_prefix,
+            states_to_override=state_codes_filter_set,
+        )
+        if sandbox_dataset_prefix and state_codes_filter_set
+        else None
+    )
+
+    update_normalized_state_dataset(
+        state_codes_filter=state_codes_filter_set,
+        address_overrides=address_overrides,
+    )
 
     return "", HTTPStatus.OK
 
@@ -595,6 +636,27 @@ def update_normalized_state_dataset(
 
     logging.info("Releasing lock on CloudSQL to BQ state refresh.")
     lock_manager.release_lock()
+
+
+def build_address_overrides_for_update(
+    dataset_override_prefix: str, states_to_override: FrozenSet[StateCode]
+) -> BigQueryAddressOverrides:
+
+    overrides_builder = BigQueryAddressOverrides.Builder(
+        sandbox_prefix=dataset_override_prefix
+    )
+    overrides_builder.register_sandbox_override_for_entire_dataset(
+        dataset_config.STATE_BASE_DATASET
+    )
+    for state_code in states_to_override:
+        overrides_builder.register_sandbox_override_for_entire_dataset(
+            normalized_state_dataset_for_state_code(state_code)
+        )
+    overrides_builder.register_sandbox_override_for_entire_dataset(
+        dataset_config.NORMALIZED_STATE_DATASET
+    )
+
+    return overrides_builder.build()
 
 
 def _decommission_dataflow_metric_table(
