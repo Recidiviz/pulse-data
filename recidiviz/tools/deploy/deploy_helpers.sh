@@ -449,6 +449,9 @@ function deploy_migrations {
   local PROJECT=$1
   local COMMIT_HASH=$2
 
+  ORIGINAL_ACCEPTABLE_RETURN_CODES=("${ACCEPTABLE_RETURN_CODES[@]}")
+  ACCEPTABLE_RETURN_CODES=(0 1)
+
   while true
   do
     echo "Running migrations using Cloud SQL Proxy"
@@ -465,15 +468,14 @@ function deploy_migrations {
     RETURN_CODE=$?
 
     if [[ $RETURN_CODE -eq $CLOUDSQL_PROXY_NETWORK_ERROR_EXIT_CODE ]]; then
-      deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "⛈ An intermittent network error occurred while applying migrations."
       script_prompt "There was an intermittent network error while applying migrations. Would you like to retry?"
-      continue
     else
-      deployment_bot_message "${PROJECT}" "${SLACK_CHANNEL_DEPLOYMENT_BOT}" "🚨 There was an error while applying migrations"
-      echo "There was an error running migrations, likely due to application code and not the deploy scripts."
-      exit 1
+      echo "There was an error running migrations, due to incorrect application logic or an intermittent network error."
+      echo "Please review the source of the error."
+      script_prompt "Would you like to retry applying migrations?"
     fi
   done
+  ACCEPTABLE_RETURN_CODES=("${ORIGINAL_ACCEPTABLE_RETURN_CODES[@]}")
 }
 
 function post_deploy_triggers {

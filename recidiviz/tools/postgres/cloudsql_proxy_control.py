@@ -80,8 +80,8 @@ class CloudSQLProxyControl:
     def connection(
         self, *, schema_type: SchemaType, prompt: Optional[bool] = None
     ) -> Generator[None, None, None]:
-        self._start_proxy(schema_type=schema_type, prompt=prompt)
         atexit.register(self._quit_proxy)
+        self._start_proxy(schema_type=schema_type, prompt=prompt)
 
         try:
             yield
