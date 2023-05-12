@@ -14,11 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains logic for US_XX specific entity matching overrides.
-
-TODO(#20930): Delete this file once we have shipped ingest in Dataflow and deleted the
-legacy implementation of entity matching.
-"""
+"""Contains logic for US_ME specific entity matching overrides."""
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_matching_delegate import (
@@ -26,8 +22,8 @@ from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_ma
 )
 
 
-class UsXxMatchingDelegate(StateSpecificEntityMatchingDelegate):
-    """Class that contains matching logic specific to US_XX."""
+class UsMeMatchingDelegate(StateSpecificEntityMatchingDelegate):
+    """Class that contains matching logic specific to US_ME."""
 
     def __init__(self, ingest_metadata: IngestMetadata):
-        super().__init__(StateCode.US_XX.value.lower(), ingest_metadata)
+        super().__init__(StateCode.US_ME.value.lower(), ingest_metadata)

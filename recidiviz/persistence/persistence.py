@@ -14,7 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Contains logic for communicating with the persistence layer."""
+"""Contains logic for communicating with the persistence layer.
+
+TODO(#20930): This file will become unused and should be deleted once ingest in Dataflow
+has been shipped to all states.
+"""
 # pylint: disable=no-name-in-module
 import logging
 from typing import Callable, Dict, Optional, Union
@@ -31,7 +35,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database_invariant_validator import (
     database_invariant_validator,
 )
-from recidiviz.persistence.entity_matching import entity_matching
+from recidiviz.persistence.entity_matching.legacy import entity_matching
 from recidiviz.persistence.persistence_utils import (
     EntityDeserializationResult,
     RootEntityT,

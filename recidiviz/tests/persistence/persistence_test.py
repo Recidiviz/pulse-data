@@ -63,7 +63,7 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaffRolePeriod,
     StateStaffSupervisorPeriod,
 )
-from recidiviz.persistence.entity_matching.state.state_specific_entity_matching_delegate import (
+from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
 )
 from recidiviz.persistence.persistence_utils import (
@@ -705,7 +705,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.matching_delegate_patcher = patch(
-            "recidiviz.persistence.entity_matching.state."
+            "recidiviz.persistence.entity_matching.legacy.state."
             "state_specific_entity_matching_delegate_factory.StateSpecificEntityMatchingDelegateFactory.build",
             mock_build_matching_delegate,
         )
@@ -898,7 +898,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
         local_postgres_helpers.use_on_disk_postgresql_database(self.database_key)
 
         self.matching_delegate_patcher = patch(
-            "recidiviz.persistence.entity_matching.state."
+            "recidiviz.persistence.entity_matching.legacy.state."
             "state_specific_entity_matching_delegate_factory.StateSpecificEntityMatchingDelegateFactory.build",
             mock_build_matching_delegate,
         )

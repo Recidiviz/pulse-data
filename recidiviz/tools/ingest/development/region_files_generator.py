@@ -40,10 +40,10 @@ from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct import templates as ingest_templates_module
-from recidiviz.persistence.entity_matching import state as state_module
 from recidiviz.persistence.entity_matching import (
     templates as persistence_templates_module,
 )
+from recidiviz.persistence.entity_matching.legacy import state as state_module
 from recidiviz.tests.calculator.pipeline.utils import (
     state_utils as state_specific_calculation_tests_module,
 )
