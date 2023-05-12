@@ -39,6 +39,7 @@ import {
   CreateUserRequest,
   CreateUserResponse,
   ErrorResponse,
+  getRoleFromEmail,
   User,
   UsersResponse,
 } from "./constants";
@@ -76,7 +77,8 @@ const UserProvisioningView = (): JSX.Element => {
 
   const onAgencyChange = async (user: User, agencyIds: number[]) => {
     try {
-      const response = await updateUser(user, null, agencyIds);
+      const role = getRoleFromEmail(user.email);
+      const response = await updateUser(user, null, agencyIds, role);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
@@ -94,7 +96,7 @@ const UserProvisioningView = (): JSX.Element => {
 
   const onNameChange = async (user: User, name: string) => {
     try {
-      const response = await updateUser(user, name, null);
+      const response = await updateUser(user, name, null, null);
       if (!response.ok) {
         const { error } = (await response.json()) as ErrorResponse;
         message.error(`An error occured: ${error}`);
