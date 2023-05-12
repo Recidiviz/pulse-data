@@ -15,11 +15,19 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """End-date exclusive time ranges at month, quarter, and year intervals, starting on the provided date."""
+import enum
 
 from recidiviz.aggregated_metrics.dataset_config import AGGREGATED_METRICS_DATASET_ID
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+
+
+class MetricTimePeriod(enum.Enum):
+    MONTH = "MONTH"
+    QUARTER = "QUARTER"
+    YEAR = "YEAR"
+
 
 _VIEW_NAME = "metric_time_periods"
 _METRICS_YEARS_TRACKED = "7"
