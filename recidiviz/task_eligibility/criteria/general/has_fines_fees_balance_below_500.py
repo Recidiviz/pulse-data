@@ -16,11 +16,12 @@
 # ============================================================================
 """Describes the spans of time when a client has a fines/fees balance below 500"""
 
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.task_eligibility.utils.preprocessed_views_query_fragments import (
+    has_unpaid_fines_fees_balance,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -30,13 +31,19 @@ _CRITERIA_NAME = "HAS_FINES_FEES_BALANCE_BELOW_500"
 _DESCRIPTION = """Describes the spans of time when a client has a fines/fees balance below 500.
     """
 
-_REASON_QUERY = """TO_JSON(STRUCT('9999-99-99' AS current_balance))"""
+_QUERY_TEMPLATE = f"""
+    {has_unpaid_fines_fees_balance(
+        fee_type = "SUPERVISION_FEES",
+        unpaid_balance_criteria = "<= 500",
+        unpaid_balance_field= "compartment_level_0_unpaid_balance")}
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
     )
 )
 

@@ -16,11 +16,9 @@
 # ============================================================================
 """Describes the spans of time when a client has a permanent exemption from paying fines/fees"""
 
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -29,18 +27,27 @@ _CRITERIA_NAME = "HAS_PERMANENT_FINES_FEES_EXEMPTION"
 
 _DESCRIPTION = """Describes the spans of time when a client has a permanent exemption from paying fines/fees"""
 
-_REASON_QUERY = (
-    """TO_JSON(STRUCT(['9999-99-99','9999-99-99'] AS permanent_exemption))"""
-)
+_QUERY_TEMPLATE = """
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date_exclusive AS end_date,
+        has_permanent_exemption AS meets_criteria,
+        TO_JSON(STRUCT(permanent_exemption_reasons AS current_exemptions)) AS reason
+    FROM
+        `{project_id}.{analyst_dataset}.permanent_exemptions_preprocessed_materialized`
+
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        analyst_dataset=ANALYST_VIEWS_DATASET,
     )
 )
-
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):
