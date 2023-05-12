@@ -731,6 +731,23 @@ state_staff_role_subtype = Enum(
     name="state_staff_role_subtype",
 )
 
+state_staff_specialized_caseload_type = Enum(
+    state_enum_strings.state_staff_specialized_caseload_type_sex_offense,
+    state_enum_strings.state_staff_specialized_caseload_type_administrative_supervision,
+    state_enum_strings.state_staff_specialized_caseload_type_alcohol_and_drug,
+    state_enum_strings.state_staff_specialized_caseload_type_intensive,
+    state_enum_strings.state_staff_specialized_caseload_type_mental_health,
+    state_enum_strings.state_staff_specialized_caseload_type_electronic_monitoring,
+    state_enum_strings.state_staff_specialized_caseload_type_other_court,
+    state_enum_strings.state_staff_specialized_caseload_type_drug_court,
+    state_enum_strings.state_staff_specialized_caseload_type_veterans_court,
+    state_enum_strings.state_staff_specialized_caseload_type_community_facility,
+    state_enum_strings.state_staff_specialized_caseload_type_other,
+    state_enum_strings.internal_unknown,
+    state_enum_strings.external_unknown,
+    name="state_staff_specialized_caseload_type",
+)
+
 # Join tables
 state_charge_incarceration_sentence_association_table = Table(
     "state_charge_incarceration_sentence_association",
@@ -3131,6 +3148,9 @@ class StateStaff(StateBase):
     location_periods = relationship(
         "StateStaffLocationPeriod", backref="staff", lazy="selectin"
     )
+    caseload_type_periods = relationship(
+        "StateStaffCaseloadTypePeriod", backref="staff", lazy="selectin"
+    )
 
 
 # Shared mixin columns
@@ -3429,4 +3449,71 @@ class StateStaffLocationPeriod(StateBase, _ReferencesStateStaffSharedColumns):
         String(255),
         nullable=False,
         comment="The state-issued stable id associated with this location.",
+    )
+
+
+class StateStaffCaseloadTypePeriod(StateBase, _ReferencesStateStaffSharedColumns):
+    """Represents a StateStaffCaseloadTypePeriod in the SQL schema"""
+
+    __tablename__ = "state_staff_caseload_type_period"
+    __table_args__ = (
+        {
+            "comment": (
+                "This table will have one row for each period in which one officer "
+                "had a particular type of specialized caseload. If the nature of their "
+                "specialization changes over time, they will have more than one period "
+                "reflecting the dates of those changes and what specialization corresponded "
+                "to each period of their employment. Eventually, correctional officers who "
+                "work in facilities and have specialized caseloads will also be included in this table."
+            )
+        },
+    )
+
+    staff_caseload_type_period_id = Column(
+        Integer,
+        primary_key=True,
+        comment=StrictStringFormatter().format(
+            PRIMARY_KEY_COMMENT_TEMPLATE,
+            object_name="staff member caseload type period",
+        ),
+    )
+
+    external_id = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=StrictStringFormatter().format(
+            EXTERNAL_ID_COMMENT_TEMPLATE, object_name="StateStaffLocationPeriod"
+        ),
+    )
+
+    state_code = Column(
+        String(255),
+        nullable=False,
+        index=True,
+        comment=STATE_CODE_COMMENT,
+    )
+
+    state_staff_specialized_caseload_type = Column(
+        state_staff_specialized_caseload_type,
+        nullable=False,
+        comment="Indicates the specialized type of the caseload an officer supervises",
+    )
+
+    state_staff_specialized_caseload_type_raw_text = Column(
+        String(255), comment="Raw text for the specialized caseload type field."
+    )
+
+    start_date = Column(
+        Date,
+        nullable=False,
+        comment=(
+            "The beginning of the period where this officer had this type of specialized caseload."
+        ),
+    )
+    end_date = Column(
+        Date,
+        comment=(
+            "The end of the period where this officer had this type of specialized caseload."
+        ),
     )

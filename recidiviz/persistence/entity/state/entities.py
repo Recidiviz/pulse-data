@@ -85,6 +85,9 @@ from recidiviz.common.constants.state.state_staff_role_period import (
     StateStaffRoleSubtype,
     StateStaffRoleType,
 )
+from recidiviz.common.constants.state.state_staff_specialized_caseload_type import (
+    StateStaffSpecializedCaseloadType,
+)
 from recidiviz.common.constants.state.state_supervision_contact import (
     StateSupervisionContactLocation,
     StateSupervisionContactMethod,
@@ -1888,6 +1891,43 @@ class StateStaffLocationPeriod(HasExternalIdEntity, BuildableAttr, DefaultableAt
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     staff_location_period_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int
+    )
+
+    # Cross-entity relationships
+    staff: Optional["StateStaff"] = attr.ib(default=None)
+
+
+@attr.s(eq=False, kw_only=True)
+class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, DefaultableAttr):
+    """Represents information about a staff member’s specialized caseload type over a period."""
+
+    # State Code
+    # State providing the external id
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+
+    # Unique ID of staff
+    external_id: str = attr.ib(validator=attr_validators.is_str)
+
+    # The specialized case type that the officer supervises
+    state_staff_specialized_caseload_type: StateStaffSpecializedCaseloadType = attr.ib(
+        validator=attr_validators.is_opt(StateStaffSpecializedCaseloadType),
+    )
+    state_staff_specialized_caseload_type_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
+
+    # Attributes
+    #   - When
+    # The beginning of the period where this officer had this type of specialized caseload
+    start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
+
+    # The end of the period where this officer had this type of specialized caseload
+    end_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
+
+    # Primary key - Only optional when hydrated in the parsing layer, before we have
+    # written this entity to the persistence layer
+    staff_caseload_type_period_id: Optional[int] = attr.ib(
         default=None, validator=attr_validators.is_opt_int
     )
 
