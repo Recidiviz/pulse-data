@@ -83,6 +83,10 @@ class MiscAggregatedMetric(AggregatedMetric):
     def generate_aggregate_time_periods_query_fragment(self) -> str:
         return f"ARRAY_AGG({self.name}) AS {self.name}"
 
+    @classmethod
+    def pretty_name(cls) -> str:
+        return "Misc. Metric"
+
 
 @attr.define(frozen=True, kw_only=True)
 class PeriodSpanAggregatedMetric(AggregatedMetric):

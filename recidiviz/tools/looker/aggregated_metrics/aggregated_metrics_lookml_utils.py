@@ -30,6 +30,7 @@ from recidiviz.aggregated_metrics.models.aggregated_metric import (
     DailyAvgTimeSinceSpanStartMetric,
     EventCountMetric,
     EventValueMetric,
+    MiscAggregatedMetric,
     SumSpanDaysMetric,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
@@ -65,7 +66,14 @@ def _generate_lookml_measure_fragment(
         ),
     ):
         return f"SUM(${{TABLE}}.{metric.name})"
-    if isinstance(metric, (DailyAvgSpanValueMetric, DailyAvgTimeSinceSpanStartMetric)):
+    if isinstance(
+        metric,
+        (
+            DailyAvgSpanValueMetric,
+            DailyAvgTimeSinceSpanStartMetric,
+            MiscAggregatedMetric,
+        ),
+    ):
         return (
             f"SUM(${{TABLE}}.{metric.name} * ${{TABLE}}.avg_daily_population * {days_in_period_clause}) / "
             f"SUM(IF(${{TABLE}}.{metric.name} IS NULL, 0, 1) * ${{TABLE}}.avg_daily_population * {days_in_period_clause})"
@@ -102,7 +110,7 @@ def _generate_lookml_measure_fragment_normalized(
         return f"SUM(${{TABLE}}.{metric.name}) / SUM(${{TABLE}}.assignments)"
     if isinstance(metric, (DailyAvgSpanCountMetric, EventCountMetric)):
         return (
-            f"(SUM(${{TABLE}}.{metric.name} * {days_in_period_clause}) / SUM(${{TABLE}}.avg_daily_population)) / "
+            f"SUM(${{TABLE}}.{metric.name} * {days_in_period_clause} / ${{TABLE}}.avg_daily_population) / "
             f"SUM({days_in_period_clause})"
         )
     if isinstance(metric, SumSpanDaysMetric):
@@ -114,11 +122,14 @@ def _generate_lookml_measure_fragment_normalized(
 
 
 def measure_for_metric(
-    metric: AggregatedMetric, days_in_period_source: LookMLSqlReferenceType
+    metric: AggregatedMetric,
+    days_in_period_source: LookMLSqlReferenceType,
+    param_source_view: Optional[str] = None,
 ) -> MeasureLookMLViewField:
     """
     Returns a LookML measure for the specified metric, with SQL required to aggregate the metric
-    using the selected `measure_type` parameter.
+    using the selected `measure_type` parameter. If `param_source_view` is specified, reference the metric
+    from that source view.
     """
     if days_in_period_source == LookMLSqlReferenceType.TABLE_COLUMN:
         days_in_period_clause = "${TABLE}.days_in_period"
@@ -130,7 +141,8 @@ def measure_for_metric(
         )
 
     # TODO(#18172): Add the option to take a unit-level average.
-    sql = f"""{{% if measure_type._parameter_value == "normalized" %}}
+    param_source_view_str = f"{param_source_view}." if param_source_view else ""
+    sql = f"""{{% if {param_source_view_str}measure_type._parameter_value == "normalized" %}}
         {_generate_lookml_measure_fragment_normalized(metric, days_in_period_clause)}
         {{% else %}}
         {_generate_lookml_measure_fragment(metric, days_in_period_clause)}
@@ -150,6 +162,7 @@ def measure_for_metric(
 def get_metric_filter_parameter(
     metrics: List[AggregatedMetric],
     aggregation_level: Optional[MetricUnitOfAnalysis] = None,
+    default_metric: Optional[AggregatedMetric] = None,
 ) -> ParameterLookMLViewField:
     """
     Returns a LookML parameter for metric selection, with allowed values for all supported metrics.
@@ -159,6 +172,8 @@ def get_metric_filter_parameter(
         if aggregation_level
         else []
     )
+    default_value = metrics[0].name if default_metric is None else default_metric.name
+
     return ParameterLookMLViewField(
         field_name="metric_filter",
         parameters=[
@@ -172,7 +187,7 @@ def get_metric_filter_parameter(
                 LookMLFieldParameter.allowed_value(metric.display_name, metric.name)
                 for metric in metrics
             ],
-            LookMLFieldParameter.default_value(metrics[0].name),
+            LookMLFieldParameter.default_value(default_value),
         ],
     )
 
