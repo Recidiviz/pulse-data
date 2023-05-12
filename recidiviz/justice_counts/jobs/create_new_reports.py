@@ -103,14 +103,14 @@ def main(engine: Engine) -> None:
                 previous_month,
                 previous_year if previous_month == 12 else current_year,
             )
-        elif monthly_report is None and monthly_metric_defs is not None:
+        elif monthly_report is None and len(monthly_metric_defs) > 0:
             logger.info(
                 "Monthly Report for Agency %s, Month %s, Year %s already exists.",
                 agency.name,
                 previous_month,
                 previous_year if previous_month == 12 else current_year,
             )
-        elif monthly_report is None and monthly_metric_defs is None:
+        elif monthly_report is None and len(monthly_metric_defs) == 0:
             logger.info(
                 "No metrics are included in Monthly Report for Agency %s, Month %s, Year %s.",
                 agency.name,
@@ -125,14 +125,14 @@ def main(engine: Engine) -> None:
                 current_month,
                 previous_year,
             )
-        elif yearly_report is None and annual_metric_defs is not None:
+        elif yearly_report is None and len(annual_metric_defs) > 0:
             logger.info(
                 "Annual Report for Agency %s, Month %s, Year %s already exists.",
                 agency.name,
                 current_month,
                 previous_year,
             )
-        elif yearly_report is None and annual_metric_defs is None:
+        elif yearly_report is None and len(annual_metric_defs) == 0:
             logger.info(
                 "No metrics are included in Annual Report for Agency %s, Month %s, Year %s.",
                 agency.name,
