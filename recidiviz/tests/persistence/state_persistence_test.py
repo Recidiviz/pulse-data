@@ -35,11 +35,11 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.entity.state.entities import StatePersonExternalId
-from recidiviz.persistence.entity_matching.entity_matching_types import (
+from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
     EntityTree,
     IndividualMatchResult,
 )
-from recidiviz.persistence.entity_matching.state.state_entity_matcher import (
+from recidiviz.persistence.entity_matching.legacy.state.state_entity_matcher import (
     StateEntityMatcher,
 )
 from recidiviz.persistence.entity_matching.templates.us_xx.us_xx_matching_delegate import (
@@ -197,7 +197,7 @@ class TestStatePersistence(TestCase):
         "recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD",
         STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS,
     )
-    @patch("recidiviz.persistence.entity_matching.entity_matching._get_matcher")
+    @patch("recidiviz.persistence.entity_matching.legacy.entity_matching._get_matcher")
     def test_state_threeIncarcerationPeriods_dontPersistAboveThreshold(
         self, mock_get_matcher
     ):
@@ -331,7 +331,7 @@ class TestStatePersistence(TestCase):
         "recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE",
         STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT,
     )
-    @patch("recidiviz.persistence.entity_matching.entity_matching._get_matcher")
+    @patch("recidiviz.persistence.entity_matching.legacy.entity_matching._get_matcher")
     def test_state_threeIncarcerationPeriods_persistsTwoBelowThreshold(
         self, mock_get_matcher
     ):
