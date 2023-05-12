@@ -522,6 +522,12 @@ output:
                         - "110" # Out of State Case Activated in Michigan for Parole Suprvn
                         - "130" # Out of State Case Activated in Michigan for Probation Suprv.
                         - "4" # Transfer Out State
+                      StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+                        - "5" # Transfer Between Offices in Michigan
+                        - "1" # Report to Office
+                      StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN:
+                        # Not sure exactly how Other Movement is used but it's often from a sherriffs department to a supervision office
+                        - "3" # Other Movement
           termination_reason:
             $conditional:
               # if movement reason is intake and order type id list is currently null but the next period it's not null, then end this as investigation
@@ -601,6 +607,30 @@ output:
                           - $literal("90") # Reparoled While on Same Term
                           - $literal("151") # Reinstated on Parole from Absconder Status
                 $then: $literal_enum(StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION)
+              # else if the movement is "Other Movement" and the destination location is out of state of outside of MDOC jurisdiction, map to TRANSFER_TO_OTHER_JURISDICTION
+              - $else_if:
+                  $and:
+                    - $equal:
+                        - next_movement_reason_id
+                        - $literal("3")
+                    - $in:
+                        $value: dest_location_type_id
+                        $options:
+                          - $literal("2155")
+                          - $literal("5772")
+                $then:
+                  $enum_mapping:
+                    $raw_text:
+                      $concat:
+                        $values:
+                          - $literal("next_movement_reason_id")
+                          - next_movement_reason_id
+                          - $literal("destination_type")
+                          - dest_location_type_id
+                    $mappings:
+                      StateSupervisionPeriodTerminationReason.TRANSFER_TO_OTHER_JURISDICTION:
+                        - "next_movement_reason_id-3-destination_type-2155"
+                        - "next_movement_reason_id-3-destination_type-5772"
               # else map based on next_movement_reason_id
               - $else:
                   $enum_mapping:
@@ -683,6 +713,8 @@ output:
                         - "4" # Transfer Out State
                       StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE:
                         - "118" # Client Number Reassignment
+                        - "5" # Transfer Between Offices in Michigan
+                        - "1" # Report to Office
                       StateSupervisionPeriodTerminationReason.VACATED:
                         - "148" # Charge(s) Dismissed by Court
                         - "25" # Conviction Reversed by Court
@@ -717,6 +749,9 @@ output:
                         - "19" # Out of State Parolee Sentenced in Michigan
                         - "133" # Interstate Compact Case Rejected for Supervision
                         - "137" # Interstate Compact Transfer Request Rescinded
+                        # If we've reached this part of the logic, then the only type of "Other Movement" transfer that's left are those that involve a supervision office
+                        # but otherwise we don't have much information
+                        - "3" # Other Movement
           supervision_level:
             $enum_mapping:
               $raw_text:
