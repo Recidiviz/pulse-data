@@ -56,14 +56,18 @@ WITH state_assessment AS (
             sequence_num
         FROM
             `{project_id}.{normalized_state_dataset}.state_assessment`
-        WHERE
-            state_code NOT IN ("US_MI")   
+         WHERE
+            -- for US_MI, identify COMPAS scales that determine risk level
+            (state_code = "US_MI" AND assessment_class_raw_text IN ("7/8", "72/73", "8042/8043", "8138/8139"))
             -- keep only relevant assessment types
-            AND (
-                assessment_type IN ("LSIR", "STRONG_R", "CAF")
-                 OR assessment_type LIKE "ORAS%"
+            OR (
+                state_code != "US_MI"
+                AND (
+                    assessment_type IN ("LSIR", "STRONG_R", "CAF")
+                    OR assessment_type LIKE "ORAS%"
+                )
             )
-        
+        # TODO(#20530) deprecate this view in favor of moving this logic further upstream in ingest process
         UNION ALL
         
         -- For Michigan, COMPAS data is preprocessed to combine VFO/NVFO scales to create 
