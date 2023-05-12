@@ -208,8 +208,8 @@ class ReportInterface:
     ) -> Tuple[
         Optional[schema.Report],
         Optional[schema.Report],
-        Optional[List[MetricDefinition]],
-        Optional[List[MetricDefinition]],
+        List[MetricDefinition],
+        List[MetricDefinition],
     ]:
         """Creates a new monthly report (for the most recent previous month/year) and annual report
         (for the most recent previous month/year) for the agency if those reports do not already
@@ -226,10 +226,10 @@ class ReportInterface:
                 starting_month=previous_month,
             )
         except JusticeCountsServerError:
-            monthly_metric_defs = None
+            monthly_metric_defs = []
 
         # Create monthly report if does not exist
-        if monthly_metric_defs is not None and len(monthly_metric_defs) > 0:
+        if len(monthly_metric_defs) > 0:
             monthly_report = ReportInterface.create_report_if_not_exists(
                 session,
                 agency_id,
@@ -248,10 +248,10 @@ class ReportInterface:
                 starting_month=current_month,
             )
         except JusticeCountsServerError:
-            annual_metric_defs = None
+            annual_metric_defs = []
 
         # Create yearly report if report does not exist
-        if annual_metric_defs is not None and len(annual_metric_defs) > 0:
+        if len(annual_metric_defs) > 0:
             yearly_report = ReportInterface.create_report_if_not_exists(
                 session,
                 agency_id,
