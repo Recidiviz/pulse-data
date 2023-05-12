@@ -35,6 +35,13 @@ class TestJusticeCountsMetricRegistry(unittest.TestCase):
 
         metrics_dict = {}
         for module in metrics_modules:
+            if "metric_registry" in module.__name__:
+                # We only care about the files like defense.py, prison.py,
+                # etc, which is where the real metric definitions live.
+                # Other files are safe to skip over, and in fact need to be
+                # skipped if they include any variables of type MetricDefinition
+                # (like `new_metric` in metric_registry.py)
+                continue
             for _, obj in getmembers(module):
                 if isinstance(obj, MetricDefinition):
                     metrics_dict[obj.key] = obj

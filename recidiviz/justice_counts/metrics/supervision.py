@@ -27,6 +27,12 @@ from recidiviz.justice_counts.dimensions.supervision import (
     StaffType,
     ViolationType,
 )
+from recidiviz.justice_counts.includes_excludes.common import (
+    OtherCommunityDefinitionIncludesExcludes,
+    ParoleDefinitionIncludesExcludes,
+    PretrialDefinitionIncludesExcludes,
+    ProbationDefinitionIncludesExcludes,
+)
 from recidiviz.justice_counts.includes_excludes.offense import (
     DrugOffenseIncludesExcludes,
     PersonOffenseIncludesExcludes,
@@ -417,6 +423,41 @@ new_cases = MetricDefinition(
     ],
 )
 
+probation_includes_excludes = IncludesExcludesSet(
+    members=ProbationDefinitionIncludesExcludes,
+    description="Probation Definition",
+    excluded_set={
+        ProbationDefinitionIncludesExcludes.PROBATION_ANOTHER_JURISTICTION,
+        ProbationDefinitionIncludesExcludes.PROBATION_IN_COMMUNITY,
+        ProbationDefinitionIncludesExcludes.PROBATION_ANOTHER_FORM_SUPERVISION,
+        ProbationDefinitionIncludesExcludes.PROBATION_PRE_ADJUCTATION_PROGRAM,
+    },
+)
+
+parole_includes_excludes = IncludesExcludesSet(
+    members=ParoleDefinitionIncludesExcludes,
+    description="Parole Definition",
+    excluded_set={
+        ParoleDefinitionIncludesExcludes.PAROLE_ANOTHER_FORM_SUPERVISION,
+        ParoleDefinitionIncludesExcludes.PAROLE_ANOTHER_JURISTICTION,
+    },
+)
+
+pretrial_includes_excludes = IncludesExcludesSet(
+    members=PretrialDefinitionIncludesExcludes,
+    description="Pretrial Supervision Definition",
+    excluded_set={PretrialDefinitionIncludesExcludes.PRETRIAL_ANOTHER_FORM_SUPERVISION},
+)
+
+other_community_includes_excludes = IncludesExcludesSet(
+    members=OtherCommunityDefinitionIncludesExcludes,
+    description="Other Community Supervision Definition",
+    excluded_set={
+        OtherCommunityDefinitionIncludesExcludes.OTHER_COURT_PROGRAM,
+        OtherCommunityDefinitionIncludesExcludes.OTHER_PRIOR_TO_RESOLUTION,
+    },
+)
+
 daily_population = MetricDefinition(
     system=System.SUPERVISION,
     metric_type=MetricType.POPULATION,
@@ -425,6 +466,12 @@ daily_population = MetricDefinition(
     description="A single day count of the number of people who are supervised under the jurisdiction of the agency.",
     measurement_type=MeasurementType.INSTANT,
     reporting_frequencies=[ReportingFrequency.MONTHLY],
+    includes_excludes=[
+        probation_includes_excludes,
+        parole_includes_excludes,
+        pretrial_includes_excludes,
+        other_community_includes_excludes,
+    ],
     aggregated_dimensions=[
         AggregatedDimension(
             dimension=DailyPopulationType,
