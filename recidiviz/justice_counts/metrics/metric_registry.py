@@ -110,17 +110,40 @@ for k, g in itertools.groupby(
 ):
     METRICS_BY_SYSTEM[k] = list(g)
 
+supervision_subsystem_to_includes_excludes = {
+    schema.System.PROBATION: supervision.probation_includes_excludes,
+    schema.System.PAROLE: supervision.parole_includes_excludes,
+    schema.System.PRETRIAL_SUPERVISION: supervision.pretrial_includes_excludes,
+    schema.System.OTHER_SUPERVISION: supervision.other_community_includes_excludes,
+}
+
 # For each Supervision subsystem, add a copy of the Supervision MetricDefinitions
 for supervision_subsystem in schema.System.supervision_subsystems():
-    METRICS_BY_SYSTEM[supervision_subsystem.value] = [
-        attr.evolve(
-            metric,
-            # the display name will look like "Supervision Violations (Parole)"
-            display_name=f"{metric.display_name} ({supervision_subsystem.value.title().replace('_', ' ')})",
-            system=supervision_subsystem,
-        )
-        for metric in METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]
-    ]
+    METRICS_BY_SYSTEM[supervision_subsystem.value] = []
+    for metric in METRICS_BY_SYSTEM[schema.System.SUPERVISION.value]:
+        # the display name will look like "Supervision Violations (Parole)"
+        new_display_name = f"{metric.display_name} ({supervision_subsystem.value.title().replace('_', ' ')})"
+        if metric.display_name == "Daily Population":
+            new_metric = attr.evolve(
+                metric,
+                display_name=new_display_name,
+                system=supervision_subsystem,
+                # For Daily Population, update the includes/excludes so that we only include the
+                # set that's specific to this subsystem. i.e. instead of showing all probation, parole,
+                # # pretrial, and other includes/excludes sets -- which we do for the Supervision (combined)
+                # system -- just show the probation set if we're in the Probation system, etc
+                includes_excludes=[
+                    supervision_subsystem_to_includes_excludes[supervision_subsystem]
+                ],
+            )
+        else:
+            new_metric = attr.evolve(
+                metric,
+                display_name=new_display_name,
+                system=supervision_subsystem,
+            )
+        METRICS_BY_SYSTEM[supervision_subsystem.value].append(new_metric)
+
 
 # The `test_metric_keys_are_unique` unit test ensures that metric.key
 # is unique across all metrics
