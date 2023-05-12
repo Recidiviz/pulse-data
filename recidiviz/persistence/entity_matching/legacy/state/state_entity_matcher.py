@@ -42,6 +42,9 @@ from recidiviz.persistence.entity.entity_utils import (
     is_placeholder,
     is_standalone_entity,
 )
+from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
+    IngestViewTreeMerger,
+)
 from recidiviz.persistence.entity_matching.legacy import entity_matching_utils
 from recidiviz.persistence.entity_matching.legacy.entity_matching_types import (
     EntityTree,
@@ -65,9 +68,6 @@ from recidiviz.persistence.entity_matching.legacy.state.state_matching_utils imp
 )
 from recidiviz.persistence.entity_matching.legacy.state.state_specific_entity_matching_delegate import (
     StateSpecificEntityMatchingDelegate,
-)
-from recidiviz.persistence.entity_matching.state_ingested_tree_merger import (
-    StateIngestedTreeMerger,
 )
 from recidiviz.persistence.errors import (
     EntityMatchingError,
@@ -136,7 +136,7 @@ class StateEntityMatcher(Generic[RootEntityT, SchemaRootEntityT]):
         self.session: Optional[Session] = None
 
         self.field_index = CoreEntityFieldIndex()
-        self.tree_merger = StateIngestedTreeMerger(self.field_index)
+        self.tree_merger = IngestViewTreeMerger(self.field_index)
 
     def set_session(self, session: Session) -> None:
         if self.session:
