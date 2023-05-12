@@ -15,10 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Define the ORM schema objects that map directly to the database, for Outliers related entities."""
-import enum
-
 from sqlalchemy import Column, Date, Float, ForeignKeyConstraint, Integer, String
-from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import DeclarativeMeta, declarative_base
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
@@ -27,12 +24,6 @@ from recidiviz.persistence.database.database_entity import DatabaseEntity
 OutliersBase: DeclarativeMeta = declarative_base(
     cls=DatabaseEntity, name="OutliersBase"
 )
-
-
-class Period(enum.Enum):
-    MONTH = "MONTH"
-    QUARTER = "QUARTER"
-    YEAR = "YEAR"
 
 
 class SupervisionDistrict(OutliersBase):
@@ -147,14 +138,14 @@ class MetricBase:
     metric_id = Column(String, primary_key=True, nullable=False)
     # The value of the given metric
     metric_value = Column(Float, nullable=False)
-    # The period that this metric applies to
+    # The end date for the period
+    end_date = Column(Date, primary_key=True, nullable=False)
+    # The period that this metric applies to (see recidiviz.aggregated_metrics.metric_time_periods.py)
     period = Column(
-        ENUM(Period, create_type=False),
+        String,
         primary_key=True,
         nullable=False,
     )
-    # The end date for the period
-    end_date = Column(Date, primary_key=True, nullable=False)
 
 
 class SupervisionOfficerMetric(MetricBase, OutliersBase):
@@ -211,6 +202,7 @@ class SupervisionDistrictMetric(MetricBase, OutliersBase):
         primary_key=True,
         nullable=False,
     )
+
     __tableargs__ = (
         ForeignKeyConstraint(
             ["state_code", "district"],
