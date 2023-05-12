@@ -16,13 +16,11 @@
 # =============================================================================
 """Endpoints and control logic for the CloudSQL -> BigQuery refresh."""
 import datetime
-import json
 import logging
 from http import HTTPStatus
 from typing import Optional, Tuple
 
 import flask
-from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
@@ -39,6 +37,7 @@ from recidiviz.persistence.database.bq_refresh.federated_cloud_sql_to_bq_refresh
 )
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.endpoint_helpers import get_value_from_request
 
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
@@ -62,7 +61,7 @@ def acquire_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
             HTTPStatus.BAD_REQUEST,
         )
 
-    lock_id = get_value_from_request("lock_id")
+    lock_id: Optional[str] = get_value_from_request("lock_id")
     if not lock_id:
         raise ValueError("Need to provide lock_id in request.")
     logging.info("Request lock id: %s", lock_id)
@@ -202,15 +201,3 @@ def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
     logging.info("Finished saving success record to database.")
 
     return "", HTTPStatus.OK
-
-
-def get_value_from_request(
-    key: str, default_value: Optional[str] = None
-) -> Optional[str]:
-    json_data_text = request.get_data(as_text=True)
-    try:
-        json_data = json.loads(json_data_text)
-    except (TypeError, json.decoder.JSONDecodeError):
-        json_data = {}
-
-    return json_data.get(key, default_value)

@@ -695,6 +695,58 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         mock_update.assert_called()
 
+    @patch(
+        "recidiviz.calculator.calculation_data_storage_manager.update_normalized_state_dataset"
+    )
+    def test_update_normalized_state_dataset_endpoint_with_state_codes_and_sandbox_dataset_prefix(
+        self, mock_update: mock.MagicMock
+    ) -> None:
+        """Tests that the _update_normalized_state_dataset function is called when the
+        /update_normalized_state_dataset endpoint is hit."""
+        headers = {"X-Appengine-Cron": "test-cron"}
+        body = {"state_codes_filter": ["US_XX"], "sandbox_dataset_prefix": "test"}
+        response = self.client.post(
+            "/update_normalized_state_dataset", headers=headers, json=body
+        )
+
+        self.assertEqual(200, response.status_code)
+        mock_update.assert_called()
+
+    @patch(
+        "recidiviz.calculator.calculation_data_storage_manager.update_normalized_state_dataset"
+    )
+    def test_update_normalized_state_dataset_endpoint_with_only_state_codes(
+        self, mock_update: mock.MagicMock
+    ) -> None:
+        """Tests that the _update_normalized_state_dataset function is not called when the
+        /update_normalized_state_dataset endpoint is hit with only state_codes_filter. Endpoint requires both
+        state_codes_filter and sandbox_dataset_prefix."""
+        headers = {"X-Appengine-Cron": "test-cron"}
+        body = {"state_codes_filter": ["US_XX"]}
+        response = self.client.post(
+            "/update_normalized_state_dataset", headers=headers, json=body
+        )
+
+        self.assertEqual(400, response.status_code)
+        mock_update.assert_not_called()
+
+    @patch(
+        "recidiviz.calculator.calculation_data_storage_manager.update_normalized_state_dataset"
+    )
+    def test_update_normalized_state_dataset_endpoint_with_only_sandbox_dataset_prefix(
+        self, mock_update: mock.MagicMock
+    ) -> None:
+        """Tests that the _update_normalized_state_dataset function is called when the
+        /update_normalized_state_dataset endpoint is hit with only sandbox_dataset_prefix."""
+        headers = {"X-Appengine-Cron": "test-cron"}
+        body = {"sandbox_dataset_prefix": "test"}
+        response = self.client.post(
+            "/update_normalized_state_dataset", headers=headers, json=body
+        )
+
+        self.assertEqual(200, response.status_code)
+        mock_update.assert_called()
+
 
 class CalculationDataStorageManagerTestRealConfig(unittest.TestCase):
     """Tests for calculation_data_storage_manager.py that use the real pipeline config"""
