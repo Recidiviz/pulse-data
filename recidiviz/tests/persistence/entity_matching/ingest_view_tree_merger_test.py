@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the StateIngestedTreeMerger class."""
+"""Tests for the IngestViewTreeMerger class."""
 import datetime
 import unittest
 from copy import deepcopy
@@ -43,8 +43,8 @@ from recidiviz.persistence.entity.state.entities import (
     StateStaffExternalId,
     StateStaffRolePeriod,
 )
-from recidiviz.persistence.entity_matching.state_ingested_tree_merger import (
-    StateIngestedTreeMerger,
+from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
+    IngestViewTreeMerger,
 )
 
 _STATE_CODE = StateCode.US_XX.value
@@ -106,8 +106,8 @@ def make_incarceration_incident_outcome(
     )
 
 
-class TestStateIngestedTreeMerger(unittest.TestCase):
-    """Tests for the StateIngestedTreeMerger class."""
+class TestIngestViewTreeMerger(unittest.TestCase):
+    """Tests for the IngestViewTreeMerger class."""
 
     def setUp(self) -> None:
         self.field_index = CoreEntityFieldIndex()
@@ -128,7 +128,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_persons[0])
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -149,7 +149,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_staff[0])
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_staff)
 
@@ -176,7 +176,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         ]
         expected_person = attr.evolve(ingested_persons[0])
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -211,7 +211,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         ]
         expected_staff = attr.evolve(ingested_staff[0])
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_staff)
 
@@ -248,7 +248,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -301,7 +301,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -353,7 +353,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -404,7 +404,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
             )
         ]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -450,7 +450,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -489,7 +489,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
         ]
         expected_people = [deepcopy(ingested_persons[0])]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -543,7 +543,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
             ),
         ]
 
-        tree_merger = StateIngestedTreeMerger(field_index=self.field_index)
+        tree_merger = IngestViewTreeMerger(field_index=self.field_index)
 
         merge_result = tree_merger.merge(ingested_persons)
 
@@ -551,7 +551,7 @@ class TestStateIngestedTreeMerger(unittest.TestCase):
 
 
 class TestBucketIngestedRootEntities(unittest.TestCase):
-    """Tests for bucket_ingested_root_entities() in StateIngestedTreeMerger."""
+    """Tests for bucket_ingested_root_entities() in IngestViewTreeMerger."""
 
     def test_bucket_single_ingested_person(self) -> None:
         ingested_persons = [
@@ -561,9 +561,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             )
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
-            ingested_persons
-        )
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
         self.assertCountEqual(buckets, [ingested_persons])
 
     def test_bucket_single_ingested_staff(self) -> None:
@@ -574,7 +572,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             )
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_staff)
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_staff)
         self.assertCountEqual(buckets, [ingested_staff])
 
     def test_bucket_two_people_different_id_types(self) -> None:
@@ -590,9 +588,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
-            ingested_persons
-        )
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
         self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
 
     def test_bucket_two_staff_different_id_types(self) -> None:
@@ -608,7 +604,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_staff)
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_staff)
         self.assertCountEqual(buckets, [[ingested_staff[0]], [ingested_staff[1]]])
 
     def test_bucket_two_people_different_ids(self) -> None:
@@ -624,9 +620,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
-            ingested_persons
-        )
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
         self.assertCountEqual(buckets, [[ingested_persons[0]], [ingested_persons[1]]])
 
     def test_bucket_two_people_single_matching_id(self) -> None:
@@ -642,9 +636,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
-            ingested_persons
-        )
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
         self.assertCountEqual(one(buckets), ingested_persons)
 
     def test_bucket_three_people_joined_by_one(self) -> None:
@@ -668,7 +660,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
         ]
 
         for ingested_persons_permutation in permutations(ingested_persons):
-            buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            buckets = IngestViewTreeMerger.bucket_ingested_root_entities(
                 list(ingested_persons_permutation)
             )
             self.assertCountEqual(one(buckets), ingested_persons)
@@ -700,7 +692,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
         ]
 
         for ingested_persons_permutation in permutations(ingested_persons):
-            buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            buckets = IngestViewTreeMerger.bucket_ingested_root_entities(
                 list(ingested_persons_permutation)
             )
 
@@ -723,7 +715,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
             ValueError,
             "Ingested root entity objects must have one or more assigned external ids.",
         ):
-            _ = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_persons)
+            _ = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
 
     def test_bucket_two_placeholder_people(self) -> None:
         ingested_persons = [
@@ -742,7 +734,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
             ValueError,
             "Ingested root entity objects must have one or more assigned external ids.",
         ):
-            _ = StateIngestedTreeMerger.bucket_ingested_root_entities(ingested_persons)
+            _ = IngestViewTreeMerger.bucket_ingested_root_entities(ingested_persons)
 
     def test_two_buckets(self) -> None:
         ingested_persons = [
@@ -771,7 +763,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
         ]
 
         for ingested_persons_permutation in permutations(ingested_persons):
-            buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(
+            buckets = IngestViewTreeMerger.bucket_ingested_root_entities(
                 list(ingested_persons_permutation)
             )
 
@@ -805,7 +797,7 @@ class TestBucketIngestedRootEntities(unittest.TestCase):
                 ],
             ),
         ]
-        buckets = StateIngestedTreeMerger.bucket_ingested_root_entities(  # type: ignore
+        buckets = IngestViewTreeMerger.bucket_ingested_root_entities(  # type: ignore
             ingested_root_entities
         )
         self.assertCountEqual(

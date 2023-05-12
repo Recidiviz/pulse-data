@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class responsible for merging ingested entity trees into as few trees with as
-few placeholder nodes as possible.
+"""Class responsible for merging hydrated entity trees from a *single ingest view
+on a single day* into as few trees as possible.
 """
 
 from collections import defaultdict
@@ -33,9 +33,9 @@ from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence_utils import RootEntityT
 
 
-class StateIngestedTreeMerger:
-    """Class responsible for merging ingested entity trees into as few trees with as
-    few placeholder nodes as possible.
+class IngestViewTreeMerger:
+    """Class responsible for merging hydrated entity trees from a *single ingest view
+    on a single day* into as few trees as possible.
     """
 
     def __init__(self, field_index: CoreEntityFieldIndex) -> None:
@@ -45,6 +45,8 @@ class StateIngestedTreeMerger:
         """Merges all ingested root entity trees that can be connected via external_id.
 
         Returns the list of unique root entities after this merging.
+
+        Throws if two merged trees provide conflicting information on the same entity.
         """
 
         buckets = self.bucket_ingested_root_entities(ingested_root_entities)
