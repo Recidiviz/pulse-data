@@ -17,7 +17,7 @@
 """Creates a LookMLView object and associated functions"""
 import os
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 import attr
 
@@ -45,7 +45,7 @@ class LookMLView:
     """
 
     view_name: str
-    table: LookMLViewSourceTable
+    table: Optional[LookMLViewSourceTable] = None
     fields: List[LookMLViewField] = attr.ib(factory=list)
     included_paths: List[str] = attr.ib(factory=list)
     extended_views: List[str] = attr.ib(factory=list)
@@ -76,7 +76,7 @@ class LookMLView:
             include_clause=include_clause,
             extends_clause=extends_clause,
             view_name=self.view_name,
-            table_clause=self.table.build(),
+            table_clause=self.table.build() if self.table else "",
             field_declarations=field_declarations,
         )
 

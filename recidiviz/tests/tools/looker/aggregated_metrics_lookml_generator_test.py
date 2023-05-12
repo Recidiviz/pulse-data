@@ -25,24 +25,17 @@ from recidiviz.calculator.query.state.views.analyst_data.models.metric_populatio
     METRIC_POPULATIONS_BY_TYPE,
     MetricPopulationType,
 )
-from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysisType,
-)
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_generator import (
-    get_lookml_view_for_metrics,
+    get_lookml_views_for_metrics,
 )
 
 
 class LookMLViewTest(unittest.TestCase):
     """Tests function for lookml generation"""
 
-    def test_get_lookml_view_for_metrics(self) -> None:
+    def test_get_lookml_views_for_metrics(self) -> None:
         # Test passes if this doesn't crash
-        _ = get_lookml_view_for_metrics(
+        _ = get_lookml_views_for_metrics(
             population=METRIC_POPULATIONS_BY_TYPE[MetricPopulationType.SUPERVISION],
-            aggregation_level=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[
-                MetricUnitOfAnalysisType.SUPERVISION_DISTRICT
-            ],
             metrics=METRICS_BY_POPULATION_TYPE[MetricPopulationType.SUPERVISION],
         )

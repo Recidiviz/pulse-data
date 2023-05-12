@@ -103,6 +103,10 @@ class LookMLFieldParameter:
         return FieldParameterDatatype(datatype)
 
     @classmethod
+    def hidden(cls, is_hidden: bool) -> "LookMLFieldParameter":
+        return FieldParameterHidden(is_hidden)
+
+    @classmethod
     def precision(cls, precision: int) -> "LookMLFieldParameter":
         return FieldParameterPrecision(precision)
 
@@ -292,6 +296,26 @@ class FieldParameterPrecision(LookMLFieldParameter):
 
 
 # VALUE AND FORMATTING PARAMETERS
+@attr.define
+class FieldParameterHidden(LookMLFieldParameter):
+    """Generates a `hidden` field parameter
+    (see https://cloud.google.com/looker/docs/reference/param-field-hidden).
+    """
+
+    is_hidden: bool
+
+    @property
+    def key(self) -> str:
+        return "hidden"
+
+    @property
+    def value_text(self) -> str:
+        return "yes" if self.is_hidden else "no"
+
+    def allowed_for_category(self, field_category: LookMLFieldCategory) -> bool:
+        return True
+
+
 @attr.define
 class FieldParameterSql(LookMLFieldParameter):
     """Generates a `sql` field parameter

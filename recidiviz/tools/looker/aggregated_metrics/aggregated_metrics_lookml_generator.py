@@ -19,32 +19,29 @@ all configured metrics associated with the specified population and aggregation 
 
 To print the contents of a lookml view file for the desired population and aggregation level, run:
     python -m recidiviz.tools.looker.aggregated_metrics_lookml_generator \
-       --population [POPULATION] --aggregation_level [AGGREGATION_LEVEL]
-
-To print the view contents in the console, add parameter:
-    --print_view True
-
-To save view file to a directory, add parameter:
-    --save_view_to_dir [PATH]
+       --population [POPULATION] --save_views_to_dir [PATH]
 """
 import argparse
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.aggregated_metrics.aggregated_metric_view_collector import (
     METRICS_BY_POPULATION_TYPE,
 )
-from recidiviz.aggregated_metrics.aggregated_metrics import (
-    generate_aggregated_metrics_view_builder,
-)
 from recidiviz.aggregated_metrics.models.aggregated_metric import AggregatedMetric
+from recidiviz.aggregated_metrics.models.aggregated_metric_configurations import (
+    INCARCERATION_STARTS,
+    SUPERVISION_DISTRICT,
+    SUPERVISION_DISTRICT_INFERRED,
+    SUPERVISION_OFFICE,
+    SUPERVISION_OFFICE_INFERRED,
+    SUPERVISION_UNIT,
+)
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_population_type import (
     METRIC_POPULATIONS_BY_TYPE,
     MetricPopulation,
     MetricPopulationType,
 )
 from recidiviz.calculator.query.state.views.analyst_data.models.metric_unit_of_analysis_type import (
-    METRIC_UNITS_OF_ANALYSIS_BY_TYPE,
-    MetricUnitOfAnalysis,
     MetricUnitOfAnalysisType,
 )
 from recidiviz.looker.lookml_view import LookMLView
@@ -58,29 +55,31 @@ from recidiviz.looker.lookml_view_field_parameter import (
     LookMLFieldType,
     LookMLSqlReferenceType,
 )
-from recidiviz.looker.lookml_view_source_table import LookMLViewSourceTable
 from recidiviz.tools.looker.aggregated_metrics.aggregated_metrics_lookml_utils import (
     get_metric_filter_parameter,
     get_metric_value_measure,
     measure_for_metric,
 )
-from recidiviz.utils.params import str_to_bool
+
+_EXCLUDED_MEASURES = [
+    SUPERVISION_DISTRICT,
+    SUPERVISION_DISTRICT_INFERRED,
+    SUPERVISION_OFFICE,
+    SUPERVISION_OFFICE_INFERRED,
+    SUPERVISION_UNIT,
+]
 
 
-def get_lookml_view_for_metrics(
+def get_lookml_views_for_metrics(
     population: MetricPopulation,
-    aggregation_level: MetricUnitOfAnalysis,
     metrics: List[AggregatedMetric],
-) -> LookMLView:
-    """Generates LookML view string for the specified population, aggregation level, and metrics"""
-    bq_view_builder = generate_aggregated_metrics_view_builder(
-        aggregation_level, population, metrics
-    )
-    view_name = bq_view_builder.view_id
-
-    primary_key_col_dimensions = [
-        DimensionLookMLViewField.for_column(col)
-        for col in aggregation_level.index_columns
+    parent_unit_of_analysis: Optional[MetricUnitOfAnalysisType] = None,
+) -> Tuple[LookMLView, LookMLView]:
+    """Generates extendable LookML views for the specified population and metrics.
+    Optional param `parent_unit_of_analysis` to specify the unit of analysis that forms the root of the explore
+    and any relevant shared filters and parameters."""
+    metrics_included = [
+        metric for metric in metrics if metric not in _EXCLUDED_MEASURES
     ]
     time_dimensions_view_label = "Time"
     date_dimensions = [
@@ -93,7 +92,8 @@ def get_lookml_view_for_metrics(
         )
         for date_field in ["start_date", "end_date"]
     ]
-    time_dimensions = [
+    index_dimensions = [
+        DimensionLookMLViewField.for_column("state_code"),
         *date_dimensions,
         DimensionLookMLViewField.for_column("period").extend(
             additional_parameters=[
@@ -114,6 +114,13 @@ def get_lookml_view_for_metrics(
         ),
     ]
 
+    index_dimensions_hidden = [
+        dimension.extend(
+            additional_parameters=[LookMLFieldParameter.hidden(is_hidden=True)]
+        )
+        for dimension in index_dimensions
+    ]
+
     measure_type_parameter = ParameterLookMLViewField(
         field_name="measure_type",
         parameters=[
@@ -122,35 +129,48 @@ def get_lookml_view_for_metrics(
                 "Used to select whether metric should be presented as a raw value or a normalized rate"
             ),
             LookMLFieldParameter.view_label("Metric Menu"),
-            LookMLFieldParameter.group_label(aggregation_level.pretty_name),
             LookMLFieldParameter.allowed_value("Normalized", "normalized"),
             LookMLFieldParameter.allowed_value("Value", "value"),
             LookMLFieldParameter.default_value("value"),
         ],
     )
+    # If no parent unit of analysis is specified, default to state.
+    parent_name = (
+        parent_unit_of_analysis.value.lower()
+        if parent_unit_of_analysis
+        else MetricUnitOfAnalysisType.STATE_CODE.value.lower()
+    )
     metric_measures = [
         measure_for_metric(
-            metric, days_in_period_source=LookMLSqlReferenceType.DIMENSION
+            metric,
+            days_in_period_source=LookMLSqlReferenceType.DIMENSION,
+            param_source_view=f"{population.population_name_short}_{parent_name}_aggregated_metrics",
         )
-        for metric in metrics
+        for metric in metrics_included
     ]
-    metric_filter_parameter = get_metric_filter_parameter(metrics, aggregation_level)
-    metric_value_measure = get_metric_value_measure(
-        view_name, metric_filter_parameter, aggregation_level
+    metric_filter_parameter = get_metric_filter_parameter(
+        metrics_included, default_metric=INCARCERATION_STARTS
     )
-    return LookMLView(
-        view_name=view_name,
-        # `table_for_query` returns materialized table address by default
-        table=LookMLViewSourceTable.sql_table_address(bq_view_builder.table_for_query),
+    metric_value_measure = get_metric_value_measure(
+        f"{population.population_name_short}_{parent_name}_aggregated_metrics",
+        metric_filter_parameter,
+    )
+    aggregated_metrics_view = LookMLView(
+        view_name=f"{population.population_name_short}_aggregated_metrics_template",
         fields=[
-            *primary_key_col_dimensions,
-            *time_dimensions,
-            measure_type_parameter,
+            *index_dimensions_hidden,
             *metric_measures,
-            metric_filter_parameter,
             metric_value_measure,
         ],
     )
+    aggregated_metrics_menu_view = LookMLView(
+        view_name=f"{population.population_name_short}_aggregated_metrics_menu",
+        fields=[
+            measure_type_parameter,
+            metric_filter_parameter,
+        ],
+    )
+    return aggregated_metrics_view, aggregated_metrics_menu_view
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -168,30 +188,11 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "--aggregation_level",
-        dest="aggregation_level",
-        help="Name of the aggregation level enum used to generate aggregated metrics.",
-        type=MetricUnitOfAnalysisType,
-        choices=list(MetricUnitOfAnalysisType),
-        default=MetricUnitOfAnalysisType.STATE_CODE,
-        required=True,
-    )
-
-    parser.add_argument(
-        "--print_view",
-        dest="print_view",
-        help="Indicates whether to print view contents in terminal",
-        type=str_to_bool,
-        default=False,
-        required=False,
-    )
-
-    parser.add_argument(
-        "--save_view_to_dir",
+        "--save_views_to_dir",
         dest="save_dir",
         help="Specifies name of directory where to save view file",
         type=str,
-        required=False,
+        required=True,
     )
 
     return parser.parse_args()
@@ -199,22 +200,17 @@ def parse_arguments() -> argparse.Namespace:
 
 def main(
     population_type: MetricPopulationType,
-    aggregation_level_type: MetricUnitOfAnalysisType,
-    print_view: bool,
-    output_directory: Optional[str],
+    save_dir: str,
 ) -> None:
-    lookml_view = get_lookml_view_for_metrics(
+    metrics_view, menu_view = get_lookml_views_for_metrics(
         population=METRIC_POPULATIONS_BY_TYPE[population_type],
-        aggregation_level=METRIC_UNITS_OF_ANALYSIS_BY_TYPE[aggregation_level_type],
         metrics=METRICS_BY_POPULATION_TYPE[population_type],
     )
 
-    if print_view:
-        print(lookml_view.build())
-    if output_directory:
-        lookml_view.write(output_directory, source_script_path=__file__)
+    metrics_view.write(save_dir, source_script_path=__file__)
+    menu_view.write(save_dir, source_script_path=__file__)
 
 
 if __name__ == "__main__":
     args = parse_arguments()
-    main(args.population, args.aggregation_level, args.print_view, args.save_dir)
+    main(args.population, args.save_dir)
