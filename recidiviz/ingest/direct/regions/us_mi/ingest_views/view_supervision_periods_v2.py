@@ -40,10 +40,10 @@ from recidiviz.utils.metadata import local_project_id_override
 
 # movement reason ids associated with supervision period starts
 # 9/20: remove 27, 28 as movement start reasons since these are releases from SAI where they're released from MDOC jurisdiction
-start_movement_reason_ids = "'112', '119', '77', '141', '145', '86', '2', '110', '130', '88', '120', '157', '89', '151', '150', '152', '87', '127', '90'"
+start_movement_reason_ids = "'112', '119', '77', '141', '145', '86', '2', '110', '130', '88', '120', '157', '89', '151', '150', '152', '87', '127', '90', '5'"
 
 # movement reason ids associated with supervision period ends
-end_movement_reason_ids = "'112', '119', '29', '122', '21', '148', '118', '25', '22', '38', '78', '39', '31', '126', '40', '146', '143', '134', '147', '124', '123', '115', '23', '42', '32', '121', '129', '142', '41', '36', '30', '125', '140', '106', '103', '102', '105', '128', '104', '133', '137', '136', '91', '13', '11', '159', '158', '12', '15', '14', '10', '16', '111', '19', '92', '138', '156', '89', '151', '37', '108', '18', '17', '79', '24', '139', '154', '131', '149', '144', '114', '153', '113', '95'"
+end_movement_reason_ids = "'112', '119', '29', '122', '21', '148', '118', '25', '22', '38', '78', '39', '31', '126', '40', '146', '143', '134', '147', '124', '123', '115', '23', '42', '32', '121', '129', '142', '41', '36', '30', '125', '140', '106', '103', '102', '105', '128', '104', '133', '137', '136', '91', '13', '11', '159', '158', '12', '15', '14', '10', '16', '111', '19', '92', '138', '156', '89', '151', '37', '108', '18', '17', '79', '24', '139', '154', '131', '149', '144', '114', '153', '113', '95', '5'"
 
 # held in custody movement reasons
 held_in_custody_movement_reason_ids = "'105', '128', '104', '106', '103', '102', '156'"
@@ -77,22 +77,23 @@ all_movements as (
             movement_reason_id, 
             loc1.location_type_id as source_location_type_id,
             loc2.location_type_id as dest_location_type_id,
+            loc1.name as source_name,
             loc2.name as dest_name,
             offender_external_movement_id,
             LAG(movement_reason_id) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_movement_reason_id,
-            LAG(loc1.location_type_id) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_source_location_type_id ,
-            LAG(loc2.location_type_id) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_dest_location_type_id ,
+            LAG(loc1.name) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_source_name ,
+            LAG(loc2.name) OVER(PARTITION BY offender_id ORDER BY cast(movement_date as datetime), offender_external_movement_id) as prev_dest_name ,
         FROM {ADH_OFFENDER_EXTERNAL_MOVEMENT} super
             LEFT JOIN {ADH_LOCATION} loc1 on super.source_location_id = loc1.location_id
             LEFT JOIN {ADH_LOCATION} loc2 on super.destination_location_id = loc2.location_id
             INNER JOIN {ADH_OFFENDER_BOOKING} book on super.offender_booking_id = book.offender_booking_id
         ) sub
-    WHERE 
-        -- remove duplicate movements from the same source to the same location, keeping the earliest one
+    WHERE
+        -- remove duplicate movements from the same exact source location to the same exact destination location, keeping the earliest one
         not (prev_movement_reason_id is not null
                 and movement_reason_id = prev_movement_reason_id
-                and source_location_type_id = prev_source_location_type_id 
-                and dest_location_type_id = prev_dest_location_type_id 
+                and source_name = prev_source_name 
+                and dest_name = prev_dest_name 
                 )
 )
 """
@@ -113,6 +114,9 @@ supervision_period_starts as (
         -- movement reason is TRANSFER OUT STATE and source location type is STATE or Outside of MDOC Jurisdiction and destination location type is a supervision office
         -- 9/20: add Outside of MDOC Jurisdiction (5772) and supervision_locs restraint
         (movement_reason_id in ('4') and source_location_type_id in ('2155', '5772') and dest_location_type_id in ({supervision_locs}))
+        or 
+        -- movement reason is Other Movement or Report to Office and destination location type is a supervision office
+        (movement_reason_id in ('3', '1') and dest_location_type_id in ({supervision_locs}))
 ),
 
 -- Identify all movements that indicate the end of a supervision period
@@ -125,9 +129,9 @@ supervision_period_ends as (
     where 
         movement_reason_id in ({end_movement_reason_ids})
         or 
-        -- movement reason is TRANSFER OUT STATE and destination location type is STATE or Outside of MDOC Jurisdiction
+        -- movement reason is Other Movement or TRANSFER OUT STATE and destination location type is STATE or Outside of MDOC Jurisdiction
         -- 9/20: add Outside of MDOC Jurisdiction (5772)
-        (movement_reason_id in ('4') and dest_location_type_id in ('2155', '5772'))
+        (movement_reason_id in ('3', '4') and dest_location_type_id in ('2155', '5772'))
 ),
 
 -- Create supervision periods by stacking all start movements and end movements, creating intervals, and taking all intervals that starts with a supervision start movement
@@ -246,6 +250,8 @@ offender_booking_assignment as (
             ass.employee_id <> '0'
             -- ignore cases where someone is assigned and closed on the same day (cause I see that some in the data and I think those are errors)
             and ((date(assignment_date)) <> (date(closure_date)) or (date(closure_date)) is null)
+            -- only include employee assignments with assignment_type_id = '1305' (aka Intake).  The other assignment type is 912 (aka Report Investigation) but those are only temporary assignments
+            and assignment_type_id = '1305'
     ) sub
 )
 """
