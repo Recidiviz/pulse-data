@@ -62,7 +62,6 @@ SUPERVISION_DISTRICT_METRICS_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         "period",
         "end_date",
         "district",
-        "avg_daily_population",
     ],
 )
 

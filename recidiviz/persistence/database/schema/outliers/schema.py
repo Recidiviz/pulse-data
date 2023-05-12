@@ -146,7 +146,7 @@ class MetricBase:
     # The name of the metric, which corresponds to a column in the supervision_x_aggregated_metrics_materialized table
     metric_id = Column(String, primary_key=True, nullable=False)
     # The value of the given metric
-    metric_value = Column(Integer, nullable=False)
+    metric_value = Column(Float, nullable=False)
     # The period that this metric applies to
     period = Column(
         ENUM(Period, create_type=False),
@@ -155,8 +155,6 @@ class MetricBase:
     )
     # The end date for the period
     end_date = Column(Date, primary_key=True, nullable=False)
-    # The average daily population for the unit of analysis in this period with this end date
-    avg_daily_population = Column(Float, nullable=False)
 
 
 class SupervisionOfficerMetric(MetricBase, OutliersBase):
