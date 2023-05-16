@@ -68,27 +68,14 @@ _QUERY_TEMPLATE = f"""
                 person_id, 
                 state_code, 
                 start_date, 
-                end_date, 
-                --for sessions with different assessment or supervision levels, 
-                --sort from HIGH --> LOW assessments and choose the highest level and date
-                FIRST_VALUE(assessment_level) OVER (assessment_window) AS assessment_level,
-                FIRST_VALUE(assessment_date) OVER (assessment_window) AS assessment_date,
-                -- sort from HIGH --> LOW supervision levels and choose the highest 
-                FIRST_VALUE(supervision_level) OVER (supervision_level_window) AS supervision_level,
+                end_date,  
+                -- since assessment and supervision levels are non-overlapping, MAX() choose the non null 
+                -- value for each span
+                MAX(assessment_level) AS assessment_level,
+                MAX(assessment_date) AS assessment_date,
+                MAX(supervision_level) AS supervision_level
         FROM sub_sessions_with_attributes
-         #TODO(#20588) Potentially simplify to remove priority level dedups and just choose non null value
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority`
-            ON supervision_level = correctional_level
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_level_dedup_priority`
-            USING(assessment_level)
-        WINDOW assessment_window AS (
-            PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY COALESCE(assessment_level_priority, 999)
-        ),
-        supervision_level_window AS (
-            PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY COALESCE(correctional_level_priority, 999)        
-        )
+        GROUP BY 1,2,3,4
     ),
     state_specific_mapping AS (
         SELECT *,

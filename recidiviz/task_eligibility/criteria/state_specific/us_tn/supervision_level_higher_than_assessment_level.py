@@ -73,25 +73,15 @@ _QUERY_TEMPLATE = f"""
                 state_code, 
                 start_date, 
                 end_date, 
-                FIRST_VALUE(assessment_level) OVER (assessment_window) AS assessment_level,
-                FIRST_VALUE(assessment_level_raw_text) OVER (assessment_window) AS assessment_level_raw_text,
-                FIRST_VALUE(assessment_date) OVER (assessment_window) AS assessment_date,
-                FIRST_VALUE(supervision_level) OVER (supervision_level_window) AS supervision_level,
-                FIRST_VALUE(supervision_level_raw_text) OVER (supervision_level_window) AS supervision_level_raw_text,
-        #TODO(#20588) Potentially simplify to remove priority level dedups and just choose non null value
+                -- since assessment and supervision levels are non-overlapping, MAX() choose the non null 
+                -- value for each span
+                MAX(assessment_level) AS assessment_level,
+                MAX(assessment_level_raw_text) AS assessment_level_raw_text,
+                MAX(assessment_date) AS assessment_date,
+                MAX(supervision_level) AS supervision_level,
+                MAX(supervision_level_raw_text) AS supervision_level_raw_text
         FROM sub_sessions_with_attributes
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.supervision_level_dedup_priority`
-            ON supervision_level = correctional_level
-        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.assessment_level_dedup_priority`
-            USING(assessment_level)
-        WINDOW assessment_window AS (
-            PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY COALESCE(assessment_level_priority, 999)
-        ),
-        supervision_level_window AS (
-            PARTITION BY state_code, person_id, start_date, end_date
-            ORDER BY COALESCE(correctional_level_priority, 999)        
-        )
+        GROUP BY 1,2,3,4
     ),
     state_specific_mapping AS (
         SELECT *,
