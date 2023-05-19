@@ -15,20 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { json, Router } from "express";
+export class HttpError extends Error {
+  code: number;
 
-import { authMiddleware } from "../authMiddleware";
-import { outliersMetricChartRoute } from "./outliersMetricChart/route";
-import { outliersMetricChartInputSchema } from "./outliersMetricChart/types";
-import { schemaMiddleware } from "./schemaMiddleware";
+  static UNAUTHORIZED = 401;
 
-export const routes = Router();
+  static FORBIDDEN = 403;
 
-routes.use(json());
+  static INTERNAL_SERVER_ERROR = 500;
 
-routes.post(
-  "/outliers-metric-chart",
-  authMiddleware,
-  schemaMiddleware(outliersMetricChartInputSchema),
-  outliersMetricChartRoute
-);
+  constructor(code: number, message: string) {
+    super(message);
+    this.name = "HttpError";
+    this.code = code;
+  }
+}

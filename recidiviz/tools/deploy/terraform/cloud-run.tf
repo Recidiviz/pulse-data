@@ -342,6 +342,11 @@ resource "google_cloud_run_service" "asset-generation" {
           value = var.project_id == "recidiviz-123" ? "production" : "staging"
         }
 
+        env {
+          name  = "GAE_SERVICE_ACCOUNT"
+          value = data.google_app_engine_default_service_account.default.email
+        }
+
         resources {
           limits = {
             cpu    = "1000m"

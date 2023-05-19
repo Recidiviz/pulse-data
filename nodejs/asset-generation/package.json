@@ -13,6 +13,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@google-cloud/run": "^0.5.0",
     "@recidiviz/design-system": "^5.0.0",
     "@visx/text": "^3.0.0",
     "@vitejs/plugin-react-swc": "^3.3.0",
