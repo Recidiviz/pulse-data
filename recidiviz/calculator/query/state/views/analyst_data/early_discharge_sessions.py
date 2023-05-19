@@ -30,7 +30,7 @@ from recidiviz.utils.metadata import local_project_id_override
 # in order for the discharge to be considered a valid early discharge
 
 # States currently supported
-SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME", "US_MI")
+SUPPORTED_STATES = ("US_ID", "US_ND", "US_TN", "US_ME", "US_MI", "US_IX")
 
 EARLY_DISCHARGE_SESSIONS_VIEW_NAME = "early_discharge_sessions"
 
@@ -47,6 +47,8 @@ EARLY_DISCHARGE_SESSIONS_QUERY_TEMPLATE = """
     SELECT * FROM `{project_id}.{analyst_dataset}.us_me_early_discharge_sessions_preprocessing`
     UNION ALL 
     SELECT * FROM `{project_id}.{analyst_dataset}.us_mi_early_discharge_sessions_preprocessing`
+    UNION ALL 
+    SELECT * FROM `{project_id}.{analyst_dataset}.us_ix_early_discharge_sessions_preprocessing`
     )
     SELECT
         sessions.person_id,
