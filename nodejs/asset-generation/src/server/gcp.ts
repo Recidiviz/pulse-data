@@ -15,20 +15,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-import { json, Router } from "express";
+import { ServicesClient } from "@google-cloud/run";
 
-import { authMiddleware } from "../authMiddleware";
-import { outliersMetricChartRoute } from "./outliersMetricChart/route";
-import { outliersMetricChartInputSchema } from "./outliersMetricChart/types";
-import { schemaMiddleware } from "./schemaMiddleware";
+import { isDevMode, isTestMode } from "../utils";
 
-export const routes = Router();
-
-routes.use(json());
-
-routes.post(
-  "/outliers-metric-chart",
-  authMiddleware,
-  schemaMiddleware(outliersMetricChartInputSchema),
-  outliersMetricChartRoute
-);
+export async function getCloudRunUrl(
+  localPort: string | number = 5174
+): Promise<string> {
+  if (isDevMode() || isTestMode()) {
+    return `https://localhost:${localPort}`;
+  }
+  const runClient = new ServicesClient();
+  const projectId = await runClient.getProjectId();
+  const [service] = await runClient.getService({
+    name: runClient.servicePath(projectId, "us-central1", "asset-generation"),
+  });
+  const url = service.uri;
+  if (!url) {
+    throw new Error("Could not read Cloud Run URL");
+  }
+  return url;
+}

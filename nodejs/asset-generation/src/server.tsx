@@ -18,12 +18,15 @@
 import express from "express";
 
 import { RETRIEVE_PATH } from "./server/constants";
+import { getCloudRunUrl } from "./server/gcp";
 import { routes as generateRoutes } from "./server/generate";
 import { routes as retrieveRoutes } from "./server/retrieve";
 
 async function createServer() {
   const app = express();
   const port = process.env.PORT || 5174; // default vite port + 1
+
+  app.locals.cloudRunUrl = await getCloudRunUrl(port);
 
   app.use("/generate", generateRoutes);
   app.use(RETRIEVE_PATH, retrieveRoutes);
