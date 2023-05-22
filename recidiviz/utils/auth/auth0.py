@@ -76,7 +76,9 @@ class Auth0Config:
         # If presented with a token that was not issued by this value, we will raise an `AuthorizationError` exception
         self.issuer: str = f"https://{self.domain}/"
 
-        self.jwks: Dict[str, RSAPublicKey] = {jwk.key_id: jwk.key for jwk in jwks.keys}
+        self.jwks: Dict[Optional[str], RSAPublicKey] = {
+            jwk.key_id: jwk.key for jwk in jwks.keys
+        }
 
         # Validate `algorithms` input value
         if "RS256" not in self.algorithms or len(self.algorithms) > 1:
