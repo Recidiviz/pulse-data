@@ -35,6 +35,14 @@ module "scheduler-queue-secondary" {
   queue_name                = "${local.direct_ingest_formatted_str}-scheduler-secondary"
   region                    = var.region
   max_dispatches_per_second = 100
+  # TODO(#20925): Remove this count and update the moved block to reverse once
+  # this has shipped to prod.
+  count                     = 1
+}
+
+moved {
+  from = module.scheduler-queue-secondary
+  to   = module.scheduler-queue-secondary[0]
 }
 
 module "raw-data-import-queue" {
