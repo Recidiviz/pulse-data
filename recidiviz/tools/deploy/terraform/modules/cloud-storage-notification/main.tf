@@ -79,8 +79,10 @@ resource "google_pubsub_subscription" "subscription" {
 
   ack_deadline_seconds = var.ack_deadline_seconds
 
-}
-moved {
-  from = google_pubsub_subscription.example
-  to   = google_pubsub_subscription.subscription
+  # See: https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/pubsub_subscription#ttl
+  expiration_policy {
+    # When ttl is the empty string, the subscription never expires.
+    ttl = ""
+  }
+
 }
