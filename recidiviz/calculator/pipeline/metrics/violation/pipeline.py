@@ -17,7 +17,7 @@
 """The violations metric calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineRunDelegate,

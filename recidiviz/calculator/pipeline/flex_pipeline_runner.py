@@ -22,7 +22,7 @@ import logging
 import sys
 from typing import List, Type
 
-from recidiviz.calculator.pipeline.base_pipeline import (
+from recidiviz.calculator.pipeline.legacy_base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
 )

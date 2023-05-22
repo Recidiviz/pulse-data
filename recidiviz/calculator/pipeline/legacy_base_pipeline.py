@@ -38,6 +38,7 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 
 
+# TODO(#20929) Remove this file once everything is converted to new BasePipeline
 @attr.s(frozen=True)
 class PipelineConfig:
     """Configuration needed for a calculation pipeline. This configuration is unique

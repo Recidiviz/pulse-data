@@ -20,7 +20,7 @@ for details on how to launch a local run.
 
 from __future__ import absolute_import
 
-from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineRunDelegate,

@@ -24,7 +24,7 @@ from typing import Any, Dict, Iterable, List, Tuple, Type
 import apache_beam as beam
 from apache_beam.pvalue import PBegin
 
-from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipelineRunDelegate,
 )

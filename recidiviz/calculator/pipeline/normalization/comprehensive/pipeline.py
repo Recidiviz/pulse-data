@@ -20,7 +20,7 @@ local run.
 """
 from typing import List, Type
 
-from recidiviz.calculator.pipeline.base_pipeline import PipelineConfig
+from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
 from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
     BaseEntityNormalizer,
 )

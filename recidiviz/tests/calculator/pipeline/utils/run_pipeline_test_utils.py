@@ -22,7 +22,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
-from recidiviz.calculator.pipeline.base_pipeline import (
+from recidiviz.calculator.pipeline.legacy_base_pipeline import (
     BasePipeline,
     PipelineRunDelegate,
 )
@@ -123,7 +123,7 @@ def run_test_pipeline(
                             write_to_bq_constructor,
                         ):
                             with patch(
-                                "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
+                                "recidiviz.calculator.pipeline.legacy_base_pipeline.beam.Pipeline",
                                 pipeline_constructor,
                             ):
                                 with patch(

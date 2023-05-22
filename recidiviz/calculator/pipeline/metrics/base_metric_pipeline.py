@@ -38,7 +38,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
-from recidiviz.calculator.pipeline.base_pipeline import (
+from recidiviz.calculator.pipeline.legacy_base_pipeline import (
     PipelineConfig,
     PipelineRunDelegate,
 )
