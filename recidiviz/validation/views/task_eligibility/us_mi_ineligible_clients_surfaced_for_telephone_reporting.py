@@ -48,7 +48,8 @@ WITH
   LEFT JOIN
     `{{project_id}}.analyst_data.us_mi_supervision_level_raw_text_mappings` sls
   ON
-    c.correctional_level_raw_text = sls.supervision_level_raw_text
+    REGEXP_EXTRACT(c.correctional_level_raw_text, r'(\\d+)') = \
+    sls.supervision_level_raw_text
   WHERE
     state_code = 'US_MI'
     AND compartment_level_1 = 'SUPERVISION'

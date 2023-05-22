@@ -47,8 +47,10 @@ includes electronic monitoring */
         COALESCE(map.is_em, FALSE) AS is_electronic_monitoring
     #TODO(#20035) replace with supervision level raw text sessions once views agree
     FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
+    /* Using regex to match digits in sls.correctional_level_raw_text so imputed values with the form 
+    d*##IMPUTED are correctly joined */
     LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-        ON sls.correctional_level_raw_text = map.supervision_level_raw_text
+        ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') = map.supervision_level_raw_text
     WHERE state_code = "US_MI"
     AND compartment_level_1 = 'SUPERVISION' 
 ),
@@ -56,7 +58,7 @@ includes electronic monitoring */
 supervision levels */
 sessionized_cte AS (
     {aggregate_adjacent_spans(table_name='em_spans',
-                       attribute=['is_electronic_monitoring'])}
+                              attribute=['is_electronic_monitoring'])}
 )
     SELECT
         state_code,
