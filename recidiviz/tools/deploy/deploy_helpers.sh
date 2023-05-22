@@ -224,14 +224,14 @@ function check_python_version {
   PYTHON_VERSION=$(python -V | grep "Python " | cut -d ' ' -f 2)
   # Fetch the required Python version from the Pipfile
   PYTHON_SCRIPT=$(cat << EOM
-import toml
+import tomli
 with open("Pipfile", "r", encoding="utf-8") as f:
-  config = toml.loads(f.read())
+  config = tomli.loads(f.read())
   print(config['requires']['python_version'])
 EOM
 )
-  MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python)
-  PYTHON_MAJOR_MINOR_VERSION=${PYTHON_VERSION:0:${#MIN_REQUIRED_PYTHON_VERSION}}
+  MIN_REQUIRED_PYTHON_VERSION=$(echo -e "$PYTHON_SCRIPT" | python) || exit_on_fail
+  PYTHON_MAJOR_MINOR_VERSION=${PYTHON_VERSION:0:${#MIN_REQUIRED_PYTHON_VERSION}}  || exit_on_fail
 
   if [[ "${MIN_REQUIRED_PYTHON_VERSION}" != "${PYTHON_MAJOR_MINOR_VERSION}" ]]; then
     echo_error "Installed Python version [v${PYTHON_VERSION}] must be at least [v${MIN_REQUIRED_PYTHON_VERSION}]."
