@@ -36,7 +36,6 @@ from recidiviz.justice_counts.includes_excludes.common import (
 )
 from recidiviz.justice_counts.includes_excludes.courts import (
     CasesDisposedIncludesExcludes,
-    CasesOverturnedOnAppealIncludesExcludes,
     CommunitySupervisionOnlySentencesIncludesExcludes,
     CriminalCaseFilingsIncludesExcludes,
     ExpensesFacilitiesAndEquipmentIncludesExcludes,
@@ -566,24 +565,6 @@ new_offenses_while_on_pretrial_release = MetricDefinition(
             excluded_set={
                 NewOffensesWhileOnPretrialReleaseIncludesExcludes.AWAITING_DISPOSITION,
                 NewOffensesWhileOnPretrialReleaseIncludesExcludes.TRANSFERRED,
-            },
-        ),
-    ],
-)
-
-cases_overturned = MetricDefinition(
-    system=System.COURTS_AND_PRETRIAL,
-    metric_type=MetricType.CASES_OVERTURNED_ON_APPEAL,
-    category=MetricCategory.FAIRNESS,
-    display_name="Cases Overturned on Appeal",
-    description="The number of criminal cases that were overturned on appeal.",
-    measurement_type=MeasurementType.DELTA,
-    reporting_frequencies=[ReportingFrequency.ANNUAL],
-    includes_excludes=[
-        IncludesExcludesSet(
-            members=CasesOverturnedOnAppealIncludesExcludes,
-            excluded_set={
-                CasesOverturnedOnAppealIncludesExcludes.INTERLOCUTORY_APPEAL,
             },
         ),
     ],

@@ -115,8 +115,4 @@ COURTS_METRIC_FILES = [
         canonical_filename="offenses_on_release",
         definition=courts.new_offenses_while_on_pretrial_release,
     ),
-    MetricFile(
-        canonical_filename="cases_overturned",
-        definition=courts.cases_overturned,
-    ),
 ]
