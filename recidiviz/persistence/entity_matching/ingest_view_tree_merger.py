@@ -29,6 +29,9 @@ from recidiviz.persistence.entity.entity_utils import (
     get_flat_fields_json_str,
     is_placeholder,
 )
+from recidiviz.persistence.entity_matching.entity_merger_utils import (
+    root_entity_external_id_keys,
+)
 from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence_utils import RootEntityT
 
@@ -79,7 +82,7 @@ class IngestViewTreeMerger:
         bucketed_root_entities_dict: Dict[str, List[RootEntityT]] = defaultdict(list)
         external_id_key_to_primary: Dict[str, str] = {}
         for root_entity in ingested_root_entities:
-            external_id_keys = cls._root_entity_external_id_keys(root_entity)
+            external_id_keys = root_entity_external_id_keys(root_entity)
             if len(external_id_keys) == 0:
                 raise ValueError(
                     "Ingested root entity objects must have one or more assigned external ids."
@@ -106,9 +109,7 @@ class IngestViewTreeMerger:
             primary_id = min(all_primary_id_candidates)
 
             for bucket_root_entity in merged_bucket:
-                for external_id_key in cls._root_entity_external_id_keys(
-                    bucket_root_entity
-                ):
+                for external_id_key in root_entity_external_id_keys(bucket_root_entity):
                     external_id_key_to_primary[external_id_key] = primary_id
 
             bucketed_root_entities_dict[primary_id] = merged_bucket
@@ -273,13 +274,6 @@ class IngestViewTreeMerger:
             ):
                 children_by_field[field].extend(entity.get_field_as_list(field))
         return children_by_field
-
-    @staticmethod
-    def _root_entity_external_id_keys(root_entity: RootEntityT) -> Set[str]:
-        """Generates a set of unique string keys for a root entity's external id objects."""
-        return {
-            f"{type(e)}#{e.external_id}|{e.id_type}" for e in root_entity.external_ids
-        }
 
     def _get_non_placeholder_ingested_entity_key(self, entity: Entity) -> str:
         """Returns a string key that can be used to bucket this non-placeholder entity."""

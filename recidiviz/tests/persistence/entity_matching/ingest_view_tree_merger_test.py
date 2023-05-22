@@ -19,91 +19,30 @@ import datetime
 import unittest
 from copy import deepcopy
 from itertools import permutations
-from typing import Any, List, Union
+from typing import List, Union
 
 import attr
 from more_itertools import one
 
-from recidiviz.common.constants.state.state_charge import StateChargeStatus
 from recidiviz.common.constants.state.state_person import StateRace
-from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
-from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
-from recidiviz.persistence.entity.state.entities import (
-    StateAgent,
-    StateCharge,
-    StateIncarcerationIncident,
-    StateIncarcerationIncidentOutcome,
-    StateIncarcerationSentence,
-    StatePerson,
-    StatePersonExternalId,
-    StatePersonRace,
-    StateStaff,
-    StateStaffExternalId,
-    StateStaffRolePeriod,
-)
+from recidiviz.persistence.entity.state.entities import StatePerson, StateStaff
 from recidiviz.persistence.entity_matching.ingest_view_tree_merger import (
     IngestViewTreeMerger,
 )
-
-_STATE_CODE = StateCode.US_XX.value
-
-
-def make_person(**kwargs: Any) -> StatePerson:
-    return StatePerson.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_staff(**kwargs: Any) -> StateStaff:
-    return StateStaff.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_person_external_id(**kwargs: Any) -> StatePersonExternalId:
-    return StatePersonExternalId.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_staff_external_id(**kwargs: Any) -> StateStaffExternalId:
-    return StateStaffExternalId.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_person_race(**kwargs: Any) -> StatePersonRace:
-    return StatePersonRace.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_incarceration_incident(**kwargs: Any) -> StateIncarcerationIncident:
-    return StateIncarcerationIncident.new_with_defaults(
-        state_code=_STATE_CODE, **kwargs
-    )
-
-
-def make_staff_role_period(**kwargs: Any) -> StateStaffRolePeriod:
-    return StateStaffRolePeriod.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_incarceration_sentence(**kwargs: Any) -> StateIncarcerationSentence:
-    return StateIncarcerationSentence.new_with_defaults(
-        state_code=_STATE_CODE,
-        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-        **kwargs,
-    )
-
-
-def make_state_charge(**kwargs: Any) -> StateCharge:
-    return StateCharge.new_with_defaults(
-        state_code=_STATE_CODE, status=StateChargeStatus.PRESENT_WITHOUT_INFO, **kwargs
-    )
-
-
-def make_agent(**kwargs: Any) -> StateAgent:
-    return StateAgent.new_with_defaults(state_code=_STATE_CODE, **kwargs)
-
-
-def make_incarceration_incident_outcome(
-    **kwargs: Any,
-) -> StateIncarcerationIncidentOutcome:
-    return StateIncarcerationIncidentOutcome.new_with_defaults(
-        state_code=_STATE_CODE, **kwargs
-    )
+from recidiviz.tests.persistence.entity_matching.us_xx_entity_builders import (
+    make_incarceration_incident,
+    make_incarceration_incident_outcome,
+    make_incarceration_sentence,
+    make_person,
+    make_person_external_id,
+    make_person_race,
+    make_staff,
+    make_staff_external_id,
+    make_staff_role_period,
+    make_state_charge,
+)
 
 
 class TestIngestViewTreeMerger(unittest.TestCase):
