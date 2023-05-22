@@ -8,9 +8,31 @@ primary_key_cols:
   - MISCONDUCT_SEV_LEVEL
 columns:
   - name: RULE_ALLEGED
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: EFFECTIVE_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MISCONDUCT_SEV_LEVEL
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: SHORT_DESCRIPTION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: LONG_DESCRIPTION
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: RULE_DISPLAYED
+    description: |-
+      TODO(#17148): Fill in with answer from OR
   - name: DISCONTINUED_DATE
+    description: |-
+      TODO(#17148): Fill in with answer from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
