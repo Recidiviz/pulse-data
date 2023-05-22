@@ -21,7 +21,7 @@ from typing import Dict, List, Type
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_type
-from recidiviz.calculator.pipeline.base_pipeline import (
+from recidiviz.calculator.pipeline.legacy_base_pipeline import (
     PipelineConfig,
     PipelineRunDelegate,
 )

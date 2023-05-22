@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline import (
 from recidiviz.calculator.pipeline import (
     supplemental as supplemental_pipeline_top_level,
 )
-from recidiviz.calculator.pipeline.base_pipeline import PipelineRunDelegate
+from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineRunDelegate
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 

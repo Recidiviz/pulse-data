@@ -34,7 +34,7 @@ from apache_beam.io.gcp.internal.clients import bigquery as beam_bigquery
 from apache_beam.pvalue import PBegin
 from apache_beam.typehints import with_input_types, with_output_types
 
-from recidiviz.calculator.pipeline.base_pipeline import (
+from recidiviz.calculator.pipeline.legacy_base_pipeline import (
     PipelineConfig,
     PipelineRunDelegate,
 )
