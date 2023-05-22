@@ -30,6 +30,7 @@ from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     no_active_ppo,
     no_new_ineligible_offenses_for_early_discharge_from_supervision,
     not_serving_ineligible_offenses_for_early_discharge_from_probation_supervision,
+    supervision_is_not_ic_in,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
     SingleTaskEligibilitySpansBigQueryViewBuilder,
@@ -52,6 +53,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         no_new_ineligible_offenses_for_early_discharge_from_supervision.VIEW_BUILDER,
         supervision_past_half_full_term_release_date.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
+        supervision_is_not_ic_in.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )
