@@ -37,7 +37,7 @@ US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_DESCRIPTION = """Supervision leve
 
 US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_QUERY_TEMPLATE = """
 SELECT
-    DISTINCT sp.supervision_level_raw_text, 
+    DISTINCT REGEXP_EXTRACT(sp.supervision_level_raw_text, r'(\\d+)') AS supervision_level_raw_text,
     description,
     IF(LOWER(ref.description) LIKE '%sai%',TRUE, NULL) AS is_sai,
     IF(((LOWER(ref.description) LIKE '%ems%' OR LOWER(ref.description) LIKE '%gps%')
@@ -48,8 +48,9 @@ SELECT
     IF(LOWER(ref.description) LIKE '%low%',TRUE, NULL) AS is_minimum_low,
 FROM `{project_id}.{normalized_state_dataset}.state_supervision_period` sp
 LEFT JOIN `{project_id}.{raw_data_up_to_date_views_dataset}.ADH_REFERENCE_CODE_latest` ref 
-    ON sp.supervision_level_raw_text = ref.reference_code_id
+    ON REGEXP_EXTRACT(sp.supervision_level_raw_text, r'(\\d+)') = ref.reference_code_id
 WHERE state_code = 'US_MI'
+AND sp.supervision_level_raw_text IS NOT NULL
 """
 
 US_MI_SUPERVISION_LEVEL_RAW_TEXT_MAPPINGS_VIEW_BUILDER = SimpleBigQueryViewBuilder(

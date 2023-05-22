@@ -74,8 +74,11 @@ eligible combination of supervision and initial assessment level */
     map.description,
     initial_assessment_level_raw_text
   FROM supervision_level_sessions_with_assessments
+  /* Using regex to match digits in supervision_level_sessions_with_assessments.supervision_level_raw_text
+   so imputed values with the form d*##IMPUTED are correctly joined */
   LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-    USING(supervision_level_raw_text)
+  ON REGEXP_EXTRACT(supervision_level_sessions_with_assessments.supervision_level_raw_text, r'(\\d+)') = \
+  map.supervision_level_raw_text
 )
 SELECT * EXCEPT (description, initial_assessment_level_raw_text),
     TO_JSON(STRUCT(description AS supervision_level_raw_text, 
