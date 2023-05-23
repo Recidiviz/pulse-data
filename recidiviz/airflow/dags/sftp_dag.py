@@ -102,7 +102,7 @@ QUEUE_LOCATION = "us-east1"
 
 # This is the maximum number of tasks to run in parallel when they are dynamically
 # generated. This prevents the scheduler and all workers from being overloaded.
-MAX_TASKS_TO_RUN_IN_PARALLEL = 8
+MAX_TASKS_TO_RUN_IN_PARALLEL = 15
 
 
 def sftp_enabled_states() -> List[str]:
