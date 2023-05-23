@@ -20,9 +20,9 @@ telephone reporting.
 """
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.task_eligibility import dataset_config as tes_dataset_config
-from recidiviz.common.constants.states import StateCode
 from recidiviz.calculator.query.bq_utils import nonnull_end_date_exclusive_clause
+from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility import dataset_config as tes_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
@@ -41,8 +41,7 @@ US_MI_INELIGIBLE_CLIENTS_SURFACED_FOR_TELEPHONE_REPORTING_QUERY_TEMPLATE = f"""
 WITH
   ineligible_clients AS (
   SELECT
-    state_code as region_code,
-    person_id,
+    person_id
   FROM
     `{{project_id}}.sessions.compartment_sub_sessions_materialized`c
   LEFT JOIN
@@ -60,6 +59,7 @@ WITH
     AND {nonnull_end_date_exclusive_clause('end_date_exclusive')}
     )
 SELECT
+  tr.state_code as region_code,
   tr.person_id,
 FROM
   `{{project_id}}.{{task_eligibility_dataset}}.complete_transfer_to_telephone_reporting_request_materialized` tr
