@@ -727,6 +727,9 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
                 dataset_id=self.results_dataset()
             ),
             delete_contents=True,
+            # It's possible we're attempting to do cleanup when the dataset hasn't even
+            # been created yet - don't crash in this scenario.
+            not_found_ok=True,
         )
 
 
