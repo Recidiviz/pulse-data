@@ -66,10 +66,10 @@ def randomize_value(
     elif "name" in column_info.name.lower():
         first_middle_name_strs = {"first", "f", "middle", "m"}
         if any(x in column_info.name for x in first_middle_name_strs):
-            randomized_value = FAKE.first_name_nonbinary()
+            randomized_value = FAKE.first_name_nonbinary() + str(FAKE.random_number(2))
         surname_strs = {"surname", "last", "l", "sur"}
         if any(x in column_info.name for x in surname_strs):
-            randomized_value = FAKE.last_name()
+            randomized_value = FAKE.last_name() + str(FAKE.random_number(2))
     else:
         randomized_value = ""
         for character in value:
