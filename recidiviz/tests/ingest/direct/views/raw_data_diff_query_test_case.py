@@ -15,8 +15,10 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #  =============================================================================
 """An implementation of BigQueryEmulatorTestCase with functionality specific to raw data diff queries."""
+import datetime
 import os
 from enum import Enum
+from typing import Optional
 
 import pandas as pd
 import pytest
@@ -90,12 +92,15 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         fixture_directory_name: str,
         file_tag: str,
         fixture_type: RawDataDiffFixtureType,
+        new_file_id: Optional[int] = None,
     ) -> None:
-        """Create a mock raw data bigquery table from a raw data fixture."""
+        """Create a mock raw data BigQuery table from a raw data fixture."""
         raw_data_df = self._get_raw_data_from_fixture(
             fixture_directory_name, fixture_type
         )
-        self._load_mock_raw_table_to_bq(file_tag, fixture_type, raw_data_df)
+        self._load_mock_raw_table_to_bq(
+            file_tag, fixture_type, raw_data_df, new_file_id
+        )
 
     def _get_raw_data_from_fixture(
         self, fixture_directory_name: str, fixture_type: RawDataDiffFixtureType
@@ -114,6 +119,7 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         file_tag: str,
         fixture_type: RawDataDiffFixtureType,
         mock_data: pd.DataFrame,
+        new_file_id: Optional[int] = None,
     ) -> None:
         """Load mock raw table to associated dataset on BQ."""
         dataset_id = (
@@ -126,11 +132,16 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             )
         )
 
+        if fixture_type == RawDataDiffFixtureType.NEW and not new_file_id:
+            raise ValueError(
+                f"Expected an associated new_file_id for fixture_type={fixture_type}"
+            )
+
         address = BigQueryAddress(
             dataset_id=dataset_id,
             table_id=file_tag
             if fixture_type == RawDataDiffFixtureType.EXISTING
-            else file_tag + "__1",
+            else file_tag + f"__{new_file_id}",
         )
         self.create_mock_table(
             address=address,
@@ -141,22 +152,31 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
         self.load_rows_into_table(address, mock_data.to_dict("records"))
 
     def _load_existing_and_temporary_fixtures_to_bq(
-        self, fixture_directory_name: str, file_tag: str
+        self,
+        fixture_directory_name: str,
+        file_tag: str,
+        new_file_id: int,
     ) -> None:
         """Load existing and temporary raw data fixtures to BigQuery."""
         self._create_mock_raw_bq_table_from_fixture(
-            fixture_directory_name, file_tag, RawDataDiffFixtureType.EXISTING
+            fixture_directory_name,
+            file_tag,
+            RawDataDiffFixtureType.EXISTING,
         )
         self._create_mock_raw_bq_table_from_fixture(
-            fixture_directory_name, file_tag, RawDataDiffFixtureType.NEW
+            fixture_directory_name, file_tag, RawDataDiffFixtureType.NEW, new_file_id
         )
 
     def run_diff_query_and_validate_output(
-        self, file_tag: str, fixture_directory_name: str
+        self,
+        file_tag: str,
+        fixture_directory_name: str,
+        new_file_id: int,
+        new_update_datetime: datetime.datetime,
     ) -> None:
         """For a given fixture file tag, run a raw data diff query and validate output matches expected output."""
         self._load_existing_and_temporary_fixtures_to_bq(
-            fixture_directory_name, file_tag
+            fixture_directory_name, file_tag, new_file_id
         )
 
         raw_file_config = get_region_raw_file_config(
@@ -167,7 +187,9 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             project_id=self.project_id,
             state_code=self.state_code,
             raw_data_instance=self.raw_data_instance,
-            new_raw_data_table_id=file_tag + "__1",
+            file_id=new_file_id,
+            update_datetime=new_update_datetime,
+            new_raw_data_table_id=file_tag + f"__{new_file_id}",
             raw_file_config=raw_file_config,
             new_raw_data_dataset=raw_data_pruning_new_raw_data_dataset(
                 self.state_code, self.raw_data_instance

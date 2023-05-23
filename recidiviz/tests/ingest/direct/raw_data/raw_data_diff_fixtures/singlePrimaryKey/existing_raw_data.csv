@@ -1,3 +1,3 @@
 primary_key,value,file_id,update_datetime,is_deleted
-id1,blue,1,2023-01-01,false
-id2,grey,1,2023-01-01,false
+id1,blue,1,2023-01-01T00:00:00.000000,false
+id2,grey,1,2023-01-01T00:00:00.000000,false

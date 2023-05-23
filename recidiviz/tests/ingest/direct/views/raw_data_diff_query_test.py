@@ -19,6 +19,8 @@
 To run, you must first run:
   pipenv run start-bq-emulator
 """
+import datetime
+
 import mock
 from mock import patch
 
@@ -43,11 +45,16 @@ class RawDataDiffQueryTest(RawDataDiffEmulatorQueryTestCase):
 
     def test_raw_data_diff_query_simple(self) -> None:
         self.run_diff_query_and_validate_output(
-            file_tag="singlePrimaryKey", fixture_directory_name="singlePrimaryKey"
+            file_tag="singlePrimaryKey",
+            fixture_directory_name="singlePrimaryKey",
+            new_file_id=2,
+            new_update_datetime=datetime.datetime(2023, 5, 5),
         )
 
     def test_raw_data_diff_query_multiple_col_primary_key_historical(self) -> None:
         self.run_diff_query_and_validate_output(
             file_tag="multipleColPrimaryKeyHistorical",
             fixture_directory_name="multipleColPrimaryKeyHistoricalManyIsDeleted",
+            new_file_id=5,
+            new_update_datetime=datetime.datetime(2023, 5, 5),
         )
