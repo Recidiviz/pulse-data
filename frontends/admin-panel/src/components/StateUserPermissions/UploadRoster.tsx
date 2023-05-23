@@ -121,7 +121,7 @@ const UploadRoster = ({
             } else if (info.file.status === "error") {
               setUploading(false);
               setErrorMessage(
-                `Response status: ${info.file.error?.status}. Message: ${info.file.response}`
+                `Response status: ${info.file.error?.status}. Message: ${info.file.response.message}`
               );
               message.error("An error occurred.");
             } else if (info.file.status === "done") {
