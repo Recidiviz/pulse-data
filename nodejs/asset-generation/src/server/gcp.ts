@@ -16,8 +16,13 @@
 // =============================================================================
 
 import { ServicesClient } from "@google-cloud/run";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
+import { Storage } from "@google-cloud/storage";
 
 import { isDevMode, isTestMode } from "../utils";
+
+const secretmanagerClient = new SecretManagerServiceClient();
+export const gcsClient = new Storage();
 
 export async function getCloudRunUrl(
   localPort: string | number = 5174
@@ -35,4 +40,21 @@ export async function getCloudRunUrl(
     throw new Error("Could not read Cloud Run URL");
   }
   return url;
+}
+
+export async function getSecret(secretName: string) {
+  const projectId = await secretmanagerClient.getProjectId();
+  const path = secretmanagerClient.secretVersionPath(
+    projectId,
+    secretName,
+    "latest"
+  );
+  const [secret] = await secretmanagerClient.accessSecretVersion({
+    name: path,
+  });
+  const data = secret.payload?.data?.toString();
+  if (!data) {
+    throw new Error(`secret ${secretName} is empty`);
+  }
+  return data;
 }

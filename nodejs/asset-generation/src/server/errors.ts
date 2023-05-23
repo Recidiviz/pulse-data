@@ -22,6 +22,8 @@ export class HttpError extends Error {
 
   static FORBIDDEN = 403;
 
+  static NOT_FOUND = 404;
+
   static INTERNAL_SERVER_ERROR = 500;
 
   constructor(code: number, message: string) {

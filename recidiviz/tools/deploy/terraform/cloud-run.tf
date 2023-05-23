@@ -347,6 +347,11 @@ resource "google_cloud_run_service" "asset-generation" {
           value = data.google_app_engine_default_service_account.default.email
         }
 
+        env {
+          name  = "GCS_ASSET_BUCKET_NAME"
+          value = module.generated-assets.name
+        }
+
         resources {
           limits = {
             cpu    = "1000m"

@@ -18,20 +18,24 @@
 import jwt from "jsonwebtoken";
 
 import { isDevMode, isTestMode } from "../utils";
+import { SECRET_MANAGER_KEY_NAME } from "./constants";
+import { getSecret } from "./gcp";
 
-function getSecret() {
+async function getTokenSecret() {
   if (isDevMode() || isTestMode()) {
     return "not-a-real-secret";
   }
-  throw new Error("not implemented");
+  return getSecret(SECRET_MANAGER_KEY_NAME);
 }
 
-export function getAssetToken(url: string) {
-  return jwt.sign({ sub: url, iat: Date.now() }, getSecret());
+export async function getAssetToken(url: string) {
+  const secret = await getTokenSecret();
+  return jwt.sign({ sub: url, iat: Date.now() }, secret);
 }
 
-export function getUrlFromAssetToken(token: string) {
-  const { sub } = jwt.verify(token, getSecret());
+export async function getUrlFromAssetToken(token: string) {
+  const secret = await getTokenSecret();
+  const { sub } = jwt.verify(token, secret);
   if (typeof sub === "string") return sub;
   throw new Error("invalid payload; object expected");
 }

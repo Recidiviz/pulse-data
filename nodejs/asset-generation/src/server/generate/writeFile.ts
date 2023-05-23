@@ -18,8 +18,9 @@
 import { mkdir, writeFile as fsWriteFile } from "fs/promises";
 import { dirname, join } from "path";
 
-import { isDevMode } from "../../utils";
+import { isDevMode, isProductionMode, isTestMode } from "../../utils";
 import { LOCAL_FILE_DIR } from "../constants";
+import { gcsClient } from "../gcp";
 
 type WriteFunction = (filename: string, filedata: Buffer) => Promise<void>;
 
@@ -29,11 +30,20 @@ const writeLocalFile: WriteFunction = async (filename, filedata) => {
   await fsWriteFile(filepath, filedata);
 };
 
+const writeToGcs: WriteFunction = async (filename, filedata) => {
+  const bucket = process.env.GCS_ASSET_BUCKET_NAME;
+  if (!bucket) {
+    throw new Error("Missing GCS_ASSET_BUCKET_NAME environment variable");
+  }
+  await gcsClient.bucket(bucket).file(filename).save(filedata);
+};
+
 export const writeFile: WriteFunction = async (...args) => {
-  if (isDevMode()) {
+  if (isDevMode() || isTestMode()) {
     await writeLocalFile(...args);
+  } else if (isProductionMode()) {
+    await writeToGcs(...args);
   } else {
-    // TODO(Recidiviz/recidiviz-dashboards#3298): support write to GCS
-    throw new Error("not implemented");
+    throw new Error("unsupported mode");
   }
 };

@@ -20,3 +20,5 @@ import { join } from "path";
 export const LOCAL_FILE_DIR = join(__dirname, "../../local/gcs/");
 
 export const RETRIEVE_PATH = "/asset";
+
+export const SECRET_MANAGER_KEY_NAME = "asset_generation_secret_key";

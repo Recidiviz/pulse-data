@@ -20,14 +20,14 @@ import { expect, test } from "vitest";
 import { getTamperedTestToken, getTestToken } from "./testUtils";
 import { getUrlFromAssetToken } from "./token";
 
-test("token for URL", () => {
+test("token for URL", async () => {
   const url = "/test/url.png";
-  const token = getTestToken(url);
-  expect(getUrlFromAssetToken(token)).toBe(url);
+  const token = await getTestToken(url);
+  expect(await getUrlFromAssetToken(token)).toBe(url);
 });
 
-test("doctored token is rejected", () => {
-  const doctoredToken = getTamperedTestToken();
+test("doctored token is rejected", async () => {
+  const doctoredToken = await getTamperedTestToken();
 
-  expect(() => getUrlFromAssetToken(doctoredToken)).toThrow();
+  expect(() => getUrlFromAssetToken(doctoredToken)).rejects.toThrow();
 });

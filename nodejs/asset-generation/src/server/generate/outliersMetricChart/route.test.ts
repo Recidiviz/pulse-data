@@ -45,6 +45,7 @@ test("valid input", async () => {
   const response = await supertest(testApp)
     .post("/outliers-metric-chart")
     .send({
+      stateCode: "US_XX",
       width: 570,
       id: "test-officer-metric",
       entityLabel: "Officers",
@@ -54,7 +55,7 @@ test("valid input", async () => {
 
   expect(writeFile).toHaveBeenCalledWith(
     expect.stringMatching(
-      /^outliers-metric-chart\/test-officer-metric-\d+\.png$/
+      /^outliers-metric-chart\/US_XX\/2023-05-03\/test-officer-metric\.png$/
     ),
     expect.any(Buffer)
   );
@@ -62,7 +63,7 @@ test("valid input", async () => {
   expect(response.body).toMatchInlineSnapshot(`
     {
       "height": 263,
-      "url": "/asset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdXRsaWVycy1tZXRyaWMtY2hhcnQvdGVzdC1vZmZpY2VyLW1ldHJpYy0xNjgzMDcyMDAwMDAwLnBuZyIsImlhdCI6MTY4MzA3MjAwMDAwMH0.nqb6os1P5H0wyhGgo2tcWyYwxRbFxewXrMAq6mpqYcw",
+      "url": "/asset/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdXRsaWVycy1tZXRyaWMtY2hhcnQvVVNfWFgvMjAyMy0wNS0wMy90ZXN0LW9mZmljZXItbWV0cmljLnBuZyIsImlhdCI6MTY4MzA3MjAwMDAwMH0.7kNqjEnuOyy3DS6fqWRl9m2qn_toB-iXoPR6UYnatzE",
     }
   `);
 });

@@ -16,15 +16,24 @@
 // =============================================================================
 
 import { readFile as fsReadFile } from "fs/promises";
+import { MockStorage } from "mock-gcs";
 import { join } from "path";
 import { expect, Mock, test, vi } from "vitest";
 
-import { isDevMode } from "../../utils";
+import { isDevMode, isProductionMode } from "../../utils";
 import { LOCAL_FILE_DIR } from "../constants";
+import { gcsClient } from "../gcp";
 import { readFile } from "./readFile";
 
 vi.mock("../../utils");
 vi.mock("fs/promises");
+vi.mock("../gcp", async () => {
+  const mod = await vi.importActual<typeof import("../gcp")>("../gcp");
+  return {
+    ...mod,
+    gcsClient: new MockStorage(),
+  };
+});
 
 test("local dev", async () => {
   (isDevMode as Mock).mockReturnValue(true);
@@ -37,4 +46,14 @@ test("local dev", async () => {
 
 test("unsupported mode", async () => {
   expect(async () => readFile("whatever")).rejects.toThrow();
+});
+
+test("production", async () => {
+  (isProductionMode as Mock).mockReturnValue(true);
+  const bucket = "test";
+  vi.stubEnv("GCS_ASSET_BUCKET_NAME", bucket);
+  const fn = "/path/to/file";
+  const contents = "contents";
+  gcsClient.bucket(bucket).file(fn).save(contents);
+  expect(await readFile(fn)).toEqual(Buffer.from(contents));
 });

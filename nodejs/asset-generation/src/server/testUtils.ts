@@ -30,8 +30,8 @@ export function getTestToken(url = "test/path/to/image") {
  * generates an asset token using a dummy URL
  * and then injects a different dummy URL into the payload
  */
-export function getTamperedTestToken() {
-  const token = getTestToken();
+export async function getTamperedTestToken() {
+  const token = await getTestToken();
   // inject a different URL this token
   const payload = jwt.decode(token) as jwt.JwtPayload;
   payload.sub = "test/path/to/another/image";

@@ -55,7 +55,7 @@ beforeEach(() => {
 
 test("valid token", async () => {
   const url = "test/path/to/file";
-  const token = getTestToken(url);
+  const token = await getTestToken(url);
 
   (readFile as Mock).mockResolvedValue(mockImageData);
 
@@ -68,18 +68,18 @@ test("valid token", async () => {
 });
 
 test("invalid token", async () => {
-  const token = getTamperedTestToken();
+  const token = await getTamperedTestToken();
   await supertest(testApp).get(`/${token}`).expect(404);
 });
 
 test("missing file", async () => {
-  const token = getTestToken();
+  const token = await getTestToken();
   (readFile as Mock).mockRejectedValue(new Error("file not found"));
   await supertest(testApp).get(`/${token}`).expect(404);
 });
 
 test("unknown file type", async () => {
-  const token = getTestToken();
+  const token = await getTestToken();
   const mockNonbinaryData = Buffer.from("some random text file");
   (readFile as Mock).mockResolvedValue(mockNonbinaryData);
 
