@@ -52,7 +52,9 @@ export function updatePermissionsObject(
     },
     existing
   );
-  return Object.keys(newPermission).length > 0 ? newPermission : undefined;
+  return newPermission && Object.keys(newPermission).length > 0
+    ? newPermission
+    : undefined;
 }
 
 export const checkResponse = async (response: Response): Promise<void> => {
