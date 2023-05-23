@@ -73,7 +73,7 @@ export type UsersResponse = {
 };
 
 export const getRoleFromEmail = (email: string): string => {
-  if (email.includes("recidiviz.org") || email.includes("csg.org")) {
+  if (email.includes("@recidiviz.org") || email.includes("@csg.org")) {
     return "JUSTICE_COUNTS_ADMIN";
   }
   return "AGENCY_ADMIN";
