@@ -17,34 +17,53 @@ columns:
       Cycle Number
   - name: BL_CNO
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Classification Number
   - name: BL_CAT
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Classification Type
+    known_values:
+      - value: "D"
+        description: DORS Classification Update
+      - value: "I"
+        description: Initial
+      - value: "R"
+        description: Reclass
   - name: BL_CAV
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Classification Version
   - name: BL_ICA
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Class Custody Level
+    known_values:
+      - value: "C-1"
+        description: Community Release
+      - value: "C-2"
+        description: Minimum
+      - value: "C-3"
+        description: Medium Low
+      - value: "C-4"
+        description: Medium High
+      - value: "C-5"
+        description: Maximum
   - name: BL_IC
+    is_datetime: True
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Classification Analysis Date
   - name: BL_ICO
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Cus Ovr
   - name: BL_OD
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Classification Override Date
   - name: BL_PON
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Employee Id Card No
   - name: BL_NH
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Re-Classification Date
   - name: BL_CSQ
     description: |-
-      # TODO(#13474) Fill in definition with more details.
+      Comment Sequence Number
   - name: BL_UID
     description: |-
       Created By User ID
