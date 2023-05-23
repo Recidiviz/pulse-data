@@ -289,7 +289,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            run_delegate=self.run_delegate_class,
+            pipeline_cls=self.run_delegate_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -704,7 +704,6 @@ class AssertMatchers:
 
             for key in expected_metric_counts:
                 if expected_metric_counts[key] != actual_combination_counts[key]:
-
                     raise BeamAssertException(
                         "Failed assert. Count does not match expected value."
                     )

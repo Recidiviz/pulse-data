@@ -20,18 +20,42 @@ from __future__ import absolute_import
 import argparse
 import logging
 import sys
-from typing import List, Type
+from typing import List, Optional, Type
 
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.calculator.pipeline.legacy_base_pipeline import (
-    BasePipeline,
-    PipelineRunDelegate,
+    BasePipeline as LegacyBasePipeline,
 )
+from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineRunDelegate
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
     collect_all_pipeline_run_delegate_classes,
 )
+from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
+    collect_all_pipeline_classes,
+)
 
 
-def delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelegate]:
+def pipeline_cls_for_pipeline_name(pipeline_name: str) -> Type[BasePipeline]:
+    """Finds the Pipeline class corresponding to the pipeline with the given |pipeline_name|."""
+    all_pipelines = collect_all_pipeline_classes()
+    pipeline_with_name = [
+        pipeline
+        for pipeline in all_pipelines
+        if pipeline.pipeline_name().lower() == pipeline_name
+    ]
+
+    if len(pipeline_with_name) != 1:
+        raise ValueError(
+            f"Expected exactly one Pipeline with the pipeline_name: {pipeline_name}. Found: {pipeline_with_name}"
+        )
+
+    return pipeline_with_name[0]
+
+
+# TODO(#20929) Remove this function when every pipeline is migrated over.
+def delegate_cls_for_pipeline_name(
+    pipeline_name: str,
+) -> Optional[Type[PipelineRunDelegate]]:
     """Finds the PipelineRunDelegate class corresponding to the pipeline with the
     given |pipeline_name|."""
     all_run_delegates = collect_all_pipeline_run_delegate_classes()
@@ -41,20 +65,26 @@ def delegate_cls_for_pipeline_name(pipeline_name: str) -> Type[PipelineRunDelega
         if delegate.pipeline_config().pipeline_name.lower() == pipeline_name
     ]
 
-    if len(delegates_with_pipeline_name) != 1:
+    if len(delegates_with_pipeline_name) > 1:
         raise ValueError(
             "Expected exactly one PipelineRunDelegate with the "
             f"pipeline_name: {pipeline_name}. Found: {delegates_with_pipeline_name}."
         )
 
-    return delegates_with_pipeline_name[0]
+    return delegates_with_pipeline_name[0] if delegates_with_pipeline_name else None
 
 
 def run_flex_pipeline(pipeline_name: str, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
     delegate_cls = delegate_cls_for_pipeline_name(pipeline_name)
-    pipeline = BasePipeline(pipeline_run_delegate=delegate_cls.build_from_args(argv))
-    pipeline.run()
+    if delegate_cls:
+        pipeline = LegacyBasePipeline(
+            pipeline_run_delegate=delegate_cls.build_from_args(argv)
+        )
+        pipeline.run()
+    else:
+        pipeline_cls = pipeline_cls_for_pipeline_name(pipeline_name)
+        pipeline_cls.build_from_args(argv).run()
 
 
 # TODO(#18108): consider creating a main for each type of pipeline (metric, normalization, supplemental)

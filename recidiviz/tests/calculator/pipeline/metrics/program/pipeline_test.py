@@ -300,7 +300,7 @@ class TestProgramPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            run_delegate=self.run_delegate_class,
+            pipeline_cls=self.run_delegate_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,

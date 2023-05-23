@@ -47,9 +47,6 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(
             FakeWriteExactOutputToBigQuery
         )
-        self.run_delegate_class = (
-            pipeline.UsIdCaseNoteExtractedEntitiesPipelineRunDelegate
-        )
 
         self.test_person_id = 123
         self.test_person_external_id = "111"
@@ -133,7 +130,7 @@ class TestUsIdCaseNoteExtractedEntitiesPipeline(unittest.TestCase):
         )
 
         run_test_pipeline(
-            run_delegate=pipeline.UsIdCaseNoteExtractedEntitiesPipelineRunDelegate,
+            pipeline_cls=pipeline.UsIdCaseNoteExtractedEntitiesPipeline,
             state_code="US_ID",
             project_id=project,
             dataset_id=dataset,

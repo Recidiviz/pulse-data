@@ -21,18 +21,13 @@ from typing import Dict, List, Type
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_utils import schema_field_for_type
-from recidiviz.calculator.pipeline.legacy_base_pipeline import (
-    PipelineConfig,
-    PipelineRunDelegate,
-)
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.calculator.pipeline.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
 
 
-class SupplementalDatasetPipelineRunDelegate(
-    PipelineRunDelegate[SupplementalPipelineParameters]
-):
+class SupplementalDatasetPipeline(BasePipeline[SupplementalPipelineParameters]):
     """Delegate for running a supplemental dataset pipeline."""
 
     @classmethod
@@ -60,15 +55,3 @@ class SupplementalDatasetPipelineRunDelegate(
             schema_field_for_type(field_name=field_name, field_type=field_type)
             for field_name, field_type in cls.table_fields().items()
         ]
-
-    @classmethod
-    @abc.abstractmethod
-    def pipeline_config(cls) -> PipelineConfig:
-        pass
-
-    def _validate_pipeline_config(self) -> None:
-        if "SUPPLEMENTAL" not in self.pipeline_config().pipeline_name:
-            raise ValueError(
-                "Can only use SupplementalDatasetPipelineRunDelegate for a supplemental"
-                f"dataset pipeline. Trying to run a {self.pipeline_config().pipeline_name} pipeline."
-            )
