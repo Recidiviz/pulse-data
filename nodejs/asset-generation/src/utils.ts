@@ -22,3 +22,7 @@ export function isDevMode() {
 export function isTestMode() {
   return import.meta.env.MODE === "test";
 }
+
+export function isProductionMode() {
+  return import.meta.env.MODE === "production";
+}

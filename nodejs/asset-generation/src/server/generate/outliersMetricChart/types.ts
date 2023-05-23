@@ -20,6 +20,7 @@ import { z } from "zod";
 const goalStatusSchema = z.enum(["met", "near", "far"]);
 
 export const outliersMetricChartInputSchema = z.object({
+  stateCode: z.string(),
   id: z.string(),
   width: z.number(),
   entityLabel: z.string(),

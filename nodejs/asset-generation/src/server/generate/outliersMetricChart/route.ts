@@ -19,6 +19,7 @@ import { Request, Response } from "express";
 
 import { getRenderedChartSvg } from "../../../components/OutliersMetricChart/OutliersMetricChart";
 import { RETRIEVE_PATH } from "../../constants";
+import { HttpError } from "../../errors";
 import { getAssetToken } from "../../token";
 import { convertToImage } from "../convertToImage";
 import { AssetResponse, ValidatedInput } from "../types";
@@ -32,7 +33,7 @@ export const outliersMetricChartRoute = async (
     ValidatedInput<OutliersMetricChartInput>
   >
 ) => {
-  const { width, entityLabel, id, data } = res.locals.data;
+  const { width, entityLabel, stateCode, id, data } = res.locals.data;
 
   const { svg, height } = getRenderedChartSvg({
     width,
@@ -40,10 +41,18 @@ export const outliersMetricChartRoute = async (
     data,
   });
   const img = await convertToImage(svg);
-  const fileUrl = `outliers-metric-chart/${id}-${Date.now()}.png`;
-  await writeFile(fileUrl, img);
-  res.json({
-    url: `${RETRIEVE_PATH}/${getAssetToken(fileUrl)}`,
-    height,
-  });
+  const today = new Date().toISOString().split("T")[0];
+  const fileUrl = `outliers-metric-chart/${stateCode}/${today}/${id}.png`;
+  try {
+    await writeFile(fileUrl, img);
+    const token = await getAssetToken(fileUrl);
+    res.json({
+      url: `${RETRIEVE_PATH}/${token}`,
+      height,
+    });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error(e);
+    res.sendStatus(HttpError.INTERNAL_SERVER_ERROR);
+  }
 };

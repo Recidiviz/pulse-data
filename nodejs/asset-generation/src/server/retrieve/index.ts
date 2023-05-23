@@ -18,6 +18,7 @@
 import { Router } from "express";
 import { fileTypeFromBuffer } from "file-type";
 
+import { HttpError } from "../errors";
 import { getUrlFromAssetToken } from "../token";
 import { readFile } from "./readFile";
 
@@ -25,7 +26,7 @@ export const routes = Router();
 
 routes.get("/:token", async (req, res) => {
   try {
-    const url = getUrlFromAssetToken(req.params.token);
+    const url = await getUrlFromAssetToken(req.params.token);
     const file = await readFile(url);
 
     const { mime } = (await fileTypeFromBuffer(file)) ?? {};
@@ -36,6 +37,10 @@ routes.get("/:token", async (req, res) => {
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error(e);
-    res.sendStatus(404);
+    if (e instanceof HttpError) {
+      res.sendStatus(e.code);
+      return;
+    }
+    res.sendStatus(HttpError.NOT_FOUND);
   }
 });

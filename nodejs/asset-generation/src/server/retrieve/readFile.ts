@@ -18,17 +18,34 @@
 import { readFile as fsReadFile } from "fs/promises";
 import { join } from "path";
 
-import { isDevMode } from "../../utils";
+import { isDevMode, isProductionMode, isTestMode } from "../../utils";
 import { LOCAL_FILE_DIR } from "../constants";
+import { HttpError } from "../errors";
+import { gcsClient } from "../gcp";
 
 async function readLocalFile(filename: string) {
   const filepath = join(LOCAL_FILE_DIR, filename);
   return fsReadFile(filepath);
 }
 
+async function readGcsFile(filename: string) {
+  const bucket = process.env.GCS_ASSET_BUCKET_NAME;
+  if (!bucket) {
+    throw new HttpError(
+      HttpError.INTERNAL_SERVER_ERROR,
+      "Missing GCS_ASSET_BUCKET_NAME environment variable"
+    );
+  }
+  const [file] = await gcsClient.bucket(bucket).file(filename).download();
+  return file;
+}
+
 export async function readFile(filename: string) {
-  if (isDevMode()) {
+  if (isDevMode() || isTestMode()) {
     return readLocalFile(filename);
   }
-  throw new Error("not implemented");
+  if (isProductionMode()) {
+    return readGcsFile(filename);
+  }
+  throw new Error("unsupported mode");
 }
