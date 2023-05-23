@@ -294,8 +294,13 @@ class DirectIngestRawFileImportManager:
         logging.info("Beginning BigQuery upload of raw file [%s]", path.abs_path())
 
         self._delete_conflicting_contents_from_bigquery(path, file_metadata.file_id)
+        # If we are going to be pruning redundant raw data after we upload contents to GCS, we
+        # do not need to augment this data with the metadata columns to GCS now (as we will eventually augment the
+        # pruned raw data when we upload to BQ). Otherwise, if we are directly loading the file contents to BigQuery,
+        # we can augment with metadata columns.
+        augment_with_metadata_columns = not self._should_prune_new_data(parts.file_tag)
         temp_file_paths, columns = self._upload_contents_to_temp_gcs_paths(
-            path, file_metadata
+            path, file_metadata, augment_with_metadata_columns
         )
         if temp_file_paths:
             if not columns:
@@ -308,6 +313,7 @@ class DirectIngestRawFileImportManager:
                 self._load_pruned_contents_to_bigquery(
                     file_tag=parts.file_tag,
                     file_id=file_metadata.file_id,
+                    update_datetime=file_metadata.update_datetime,
                     temp_file_paths=temp_file_paths,
                     columns=columns,
                     final_destination_address=raw_data_destination_address,
@@ -347,6 +353,7 @@ class DirectIngestRawFileImportManager:
         self,
         path: GcsfsFilePath,
         file_metadata: DirectIngestRawFileMetadata,
+        augment_with_metadata_columns: bool,
     ) -> Tuple[List[GcsfsFilePath], Optional[List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
@@ -356,7 +363,11 @@ class DirectIngestRawFileImportManager:
         logging.info("Starting chunked upload of contents to GCS")
 
         delegate = DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
-            path, self.fs, file_metadata, self.temp_output_directory_path
+            path,
+            self.fs,
+            file_metadata,
+            self.temp_output_directory_path,
+            augment_with_metadata_columns,
         )
 
         self.raw_file_reader.read_raw_file_from_gcs(path, delegate)
@@ -461,13 +472,19 @@ class DirectIngestRawFileImportManager:
         return not is_exempt_from_raw_data_pruning
 
     def _build_raw_data_pruning_query(
-        self, temp_new_raw_data_address: BigQueryAddress, file_tag: str
+        self,
+        temp_new_raw_data_address: BigQueryAddress,
+        file_tag: str,
+        file_id: int,
+        update_datetime: datetime.datetime,
     ) -> str:
         """Build a raw data diff query for a particular raw file."""
         raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         return RawDataDiffQueryBuilder(
             project_id=metadata.project_id(),
             state_code=self.state_code,
+            file_id=file_id,
+            update_datetime=update_datetime,
             raw_data_instance=self.instance,
             raw_file_config=raw_file_config,
             new_raw_data_table_id=temp_new_raw_data_address.table_id,
@@ -478,6 +495,7 @@ class DirectIngestRawFileImportManager:
         self,
         file_tag: str,
         file_id: int,
+        update_datetime: datetime.datetime,
         temp_file_paths: List[GcsfsFilePath],
         columns: List[str],
         final_destination_address: BigQueryAddress,
@@ -509,7 +527,7 @@ class DirectIngestRawFileImportManager:
         # Create and run raw data diff query between contents of new temporary table on BQ and the latest version
         # of the raw data table on BQ, then save the results of diff query to a temporary table
         raw_data_diff_query = self._build_raw_data_pruning_query(
-            temp_new_raw_data_address, file_tag
+            temp_new_raw_data_address, file_tag, file_id, update_datetime
         )
         create_job = self.big_query_client.create_table_from_query_async(
             dataset_id=temp_raw_data_diff_table_address.dataset_id,
@@ -575,10 +593,12 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
         fs: DirectIngestGCSFileSystem,
         file_metadata: DirectIngestRawFileMetadata,
         temp_output_directory_path: GcsfsDirectoryPath,
+        augment_with_metadata_columns: bool,
     ):
         super().__init__(path, fs, include_header=False)
         self.file_metadata = file_metadata
         self.temp_output_directory_path = temp_output_directory_path
+        self.augment_with_metadata_columns = augment_with_metadata_columns
 
     def transform_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         # Stripping white space from all fields
@@ -597,10 +617,11 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(
                 num_rows_before_filter - num_rows_after_filter,
             )
 
-        augmented_df = self._augment_raw_data_with_metadata_columns(
-            path=self.path, file_metadata=self.file_metadata, raw_data_df=df
-        )
-        return augmented_df
+        if self.augment_with_metadata_columns:
+            return self._augment_raw_data_with_metadata_columns(
+                path=self.path, file_metadata=self.file_metadata, raw_data_df=df
+            )
+        return df
 
     def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
         name, _extension = os.path.splitext(self.path.file_name)

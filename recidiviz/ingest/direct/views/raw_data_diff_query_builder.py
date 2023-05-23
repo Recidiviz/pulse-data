@@ -16,6 +16,7 @@
 #  =============================================================================
 """Defines a class for building SQL queries to compute the diffs between existing data in a raw data table and
 updated data for that table."""
+import datetime
 from types import ModuleType
 
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
@@ -68,6 +69,8 @@ deleted_diff AS (
 ) 
 SELECT 
   *, 
+  '{file_id}' AS file_id,
+  '{update_datetime}' AS update_datetime,
   false AS is_deleted 
 FROM added_or_updated_diff 
 
@@ -75,6 +78,8 @@ UNION ALL
 
 SELECT 
   *, 
+  '{file_id}' AS file_id,
+  '{update_datetime}' AS update_datetime,
   true AS is_deleted 
 FROM deleted_diff
 """
@@ -88,6 +93,8 @@ class RawDataDiffQueryBuilder:
         self,
         project_id: str,
         state_code: StateCode,
+        file_id: int,
+        update_datetime: datetime.datetime,
         raw_data_instance: DirectIngestInstance,
         new_raw_data_table_id: str,
         raw_file_config: DirectIngestRawFileConfig,
@@ -99,6 +106,8 @@ class RawDataDiffQueryBuilder:
         self._query_builder = BigQueryQueryBuilder(address_overrides=None)
         self.project_id = project_id
         self.state_code = state_code
+        self.file_id = file_id
+        self.update_datetime = update_datetime
         self.raw_data_instance = raw_data_instance
         self.raw_file_config = raw_file_config
         self.new_raw_data_table_id = new_raw_data_table_id
@@ -127,8 +136,11 @@ class RawDataDiffQueryBuilder:
                 f"Raw data pruning is not yet enabled for state_code={self.state_code.value}, "
                 f"instance={self.raw_data_instance.value}"
             )
+
         query_kwargs = {
             "project_id": self.project_id,
+            "file_id": str(self.file_id),
+            "update_datetime": self.update_datetime.strftime("%Y-%m-%dT%H:%M:%S.%f"),
             "latest_current_raw_data_query": self.latest_current_raw_data_query,
             "new_raw_data_table_id": self.new_raw_data_table_id,
             "new_raw_data_dataset": self.new_raw_data_dataset,
