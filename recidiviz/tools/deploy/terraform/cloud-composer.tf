@@ -87,11 +87,11 @@ resource "google_composer_environment" "default_v2" {
         storage_gb = 10
       }
       worker {
-        cpu        = 4
-        memory_gb  = 15
+        cpu        = 8
+        memory_gb  = 20
         storage_gb = 10
-        min_count  = 8
-        max_count  = 20
+        min_count  = 15
+        max_count  = 30
       }
     }
 
