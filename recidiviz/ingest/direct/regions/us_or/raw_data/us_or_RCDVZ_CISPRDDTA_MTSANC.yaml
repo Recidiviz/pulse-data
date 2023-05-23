@@ -12,20 +12,76 @@ primary_key_cols:
   - SUBFILE_KEY
 columns:
   - name: RECORD_KEY
+    description: |-
+      Unique coded identifier for each AIC.
   - name: NEXT_NUMBER
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: RULE_ALLEGED
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: SEQUENCE_NO
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: DISCIPLINARY_SANCTION
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: SUBFILE_KEY
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: START_DATE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: STOP_DATE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: ACTUAL_DAYS
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: SANCTION_AMOUNT
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: SUSPENSE_DATE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: SANCTION_ACTUAL_END_DATE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: POSTED_DATE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%m/%d/%Y %I:%M:%S %p', {col_name})"
+      - "SAFE.PARSE_DATETIME('%m/%d/%Y', {col_name})"
   - name: MTA_APPLNID
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: SANCTION_TABLE
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: LAST_UPDATE_LOCATION
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: MISCONDUCT_SANCTION_ID
+    description: |-
+      TODO(#17148): Fill in with more context from OR
   - name: SANCTION_ADJUST_ID
+    description: |-
+      TODO(#17148): Fill in with more context from OR
