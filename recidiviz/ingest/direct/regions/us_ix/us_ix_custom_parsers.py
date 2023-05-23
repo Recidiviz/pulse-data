@@ -78,7 +78,9 @@ def max_and_min_lengths_days(
     days_str: str,
 ) -> Optional[str]:
     """Returns the duration in days from days, months, and years"""
-    result = safe_parse_days_from_duration_pieces(years_str, months_str, days_str)
+    result = safe_parse_days_from_duration_pieces(
+        years_str=years_str, months_str=months_str, days_str=days_str
+    )
     if result:
         if result == 0:
             return None

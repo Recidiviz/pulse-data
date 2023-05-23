@@ -109,7 +109,9 @@ def are_new_offenses_violent(
 
 
 def max_length_days_from_ymd(years: str, months: str, days: str) -> Optional[str]:
-    result = safe_parse_days_from_duration_pieces(years, months, days)
+    result = safe_parse_days_from_duration_pieces(
+        years_str=years, months_str=months, days_str=days
+    )
     if result is None:
         return None
     return str(result)

@@ -50,6 +50,9 @@ disc_outcome AS (
     IncidentID,
     SentenceType,
     SentenceDays,
+    SentenceMonths,
+    SentenceWeeks,
+    SentenceHours,
     SentenceDate,
   FROM {DisciplinarySentence}
 ), full_inc_and_out AS (
@@ -66,6 +69,9 @@ disc_outcome AS (
     DispositionDate,
     SentenceType,
     SentenceDays,
+    SentenceMonths,
+    SentenceWeeks,
+    SentenceHours,
     SentenceDate,
     InjuryLevel,
     ROW_NUMBER() OVER (PARTITION BY db.OffenderID, db.IncidentId ORDER BY IncidentDate, DispositionDate, SentenceDate, IncidentType, DisciplinaryClass, SentenceType, SentenceDays, OffenderAccount, Location) AS SentId
