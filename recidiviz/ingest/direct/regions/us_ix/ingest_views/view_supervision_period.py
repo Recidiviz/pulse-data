@@ -112,6 +112,41 @@ final_legal_status_periods_cte AS (
         OR LegalStatus_StartDate != LegalStatus_EndDate
 ),
 
+-- Adding in living unit information from legacy Idaho data since that's where we used to observe bench warrant status
+-- (lu_cd = 'BW')
+legacy_bw_info as (
+    select *
+    from (
+        select
+            docno as OffenderId,
+            start_date,
+            bw_status,
+            COALESCE(
+                LEAD(start_date) OVER(PARTITION BY docno, incrno ORDER BY start_date, move_srl),
+                DATE(2022,11,10)
+            ) as end_date
+        FROM (
+            select
+            *,
+            LAG(bw_status) OVER(PARTITION BY docno, incrno ORDER BY start_date, move_srl) as prev_bw_status
+            from (
+            SELECT
+                m.docno,
+                m.incrno,
+                m.move_srl,
+                (DATE(move_dtd)) AS start_date,
+                CASE WHEN lu_cd = 'BW' then lu_cd
+                ELSE 'NOT BW'
+                END AS bw_status
+            FROM
+                {{movement}} m
+            ) subquery1
+        ) subquery2
+        where (bw_status <> prev_bw_status or prev_bw_status is null)
+    ) subquery3
+    where bw_status = 'BW'
+),
+
 -- UNION together all relevant CTEs that indicate some type of status change
 transitions_union AS (
     -- Transfers
@@ -186,6 +221,20 @@ transitions_union AS (
         OffenderId,
         LocationChangeEndDate,
     FROM physical_location_periods_cte
+
+    UNION DISTINCT 
+    
+    SELECT DISTINCT
+        OffenderId,
+        start_date,
+    FROM legacy_bw_info
+
+    UNION DISTINCT 
+    
+    SELECT DISTINCT
+        OffenderId,
+        end_date,
+    FROM legacy_bw_info
 ),
 
 -- Create proto-periods by using LEAD
@@ -234,6 +283,8 @@ periods_with_attributes AS (
         pl.PhysicalLocationTypeDesc,
         pl.LocationName,
 
+        bw.bw_status
+
     FROM periods_cte p
 
     LEFT JOIN transfer_periods_supervision_cte t
@@ -260,10 +311,15 @@ periods_with_attributes AS (
         ON pl.OffenderId = p.OffenderId
         AND p.start_date >= pl.LocationChangeStartDate
         AND p.end_date <= pl.LocationChangeEndDate
+
+    LEFT JOIN legacy_bw_info bw
+        ON bw.OffenderId = p.OffenderId
+        AND p.start_date >= bw.start_date
+        AND p.end_date <= bw.end_date
 ),
 
 supervision_periods AS (
-    SELECT
+    SELECT 
         OffenderId,
         start_date,
         IF(end_date = '9999-12-31', NULL, end_date) AS end_date,
@@ -280,22 +336,29 @@ supervision_periods AS (
         RequestedSupervisionAssignmentLevel,
         PhysicalLocationTypeDesc,
         LocationName,
+        bw_status,
         ROW_NUMBER() OVER (
             PARTITION BY OffenderId
-            -- Include LegalStatusDesc and StaffId since there can be multiple
+            -- Include StaffId since there can be multiple
             -- values for these fields during a given period
             ORDER BY
                 start_date,
                 end_date,
-                LegalStatusDesc,
                 StaffId
         ) AS period_id
-    FROM periods_with_attributes
-    -- Use transfer data as the source of truth for when someone is actually on supervision
-    -- to prevent mistakenly open supervision periods. The one exception is for Investigation
-    -- periods, which we will include since they frequently occur before a transfer is recorded.
-    WHERE DOCLocationToName IS NOT NULL
-        OR LegalStatusDesc = 'Investigation'
+    FROM (
+        SELECT *,
+            MIN(CAST(Priority as INT64)) OVER(PARTITION BY OffenderId, start_date, end_date, StaffId) as lowest_priority
+        FROM periods_with_attributes
+        -- Use transfer data as the source of truth for when someone is actually on supervision
+        -- to prevent mistakenly open supervision periods. The one exception is for Investigation
+        -- periods, which we will include since they frequently occur before a transfer is recorded.
+        WHERE DOCLocationToName IS NOT NULL
+            OR LegalStatusDesc = 'Investigation'
+    ) subquery1
+    -- In cases where there are multiple legal statuses attached to the same period start - end, 
+    -- keep the legal status with the lowest priority as defined by Idaho
+    WHERE CAST(Priority as INT64) = lowest_priority or Priority is NULL
 )
 
 SELECT *

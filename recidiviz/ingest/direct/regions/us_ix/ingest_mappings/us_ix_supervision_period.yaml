@@ -20,6 +20,7 @@ input_columns:
   - PhysicalLocationTypeDesc
   - LocationName
   - period_id
+  - bw_status
 unused_columns:
   - EmployeeTypeName
   - LocationName
@@ -69,6 +70,11 @@ output:
                 $then: $literal_enum(StateSupervisionPeriodSupervisionType.ABSCONSION)
               - $else_if:
                   $equal:
+                    - bw_status
+                    - $literal("BW")
+                $then: $literal_enum(StateSupervisionPeriodSupervisionType.BENCH_WARRANT)
+              - $else_if:
+                  $equal:
                     - RequestedSupervisionAssignmentLevel
                     - $literal("Unsupv/Court Prob")
                 $then:
@@ -102,8 +108,6 @@ output:
                   $enum_mapping:
                     $raw_text: LegalStatusDesc
                     $mappings:
-                      StateSupervisionPeriodSupervisionType.BENCH_WARRANT:
-                        - Parole Violator
                       StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                         - Non Idaho Commitment
                       StateSupervisionPeriodSupervisionType.INVESTIGATION:
@@ -187,6 +191,7 @@ output:
                       StateSupervisionPeriodTerminationReason.DISCHARGE:
                         - Discharged from DOC
                         - Release Court Order
+                        - Release Clemency/Pardon
                       StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN:
                         - Administrative
                         - Administrative Transfer
@@ -197,7 +202,6 @@ output:
                         - Jail To Jail # TODO(#16848): transfer?
                         - Out To Court # TODO(#16848): transfer?
                         - Other Unspecified Release
-                        - Release Clemency/Pardon
                         - Release to Parole
                         - Release to Supervision
                         - Reinstate Parole
