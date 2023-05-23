@@ -47,7 +47,7 @@ WITH current_table_rows AS
 new_table_rows AS ( 
     SELECT 
       * 
-    FROM `{project_id}.{new_raw_data_dataset}.{table_name}`
+    FROM `{project_id}.{new_raw_data_dataset}.{new_raw_data_table_id}`
 ),
 added_or_updated_diff AS ( 
   SELECT * FROM new_table_rows 
@@ -89,6 +89,7 @@ class RawDataDiffQueryBuilder:
         project_id: str,
         state_code: StateCode,
         raw_data_instance: DirectIngestInstance,
+        new_raw_data_table_id: str,
         raw_file_config: DirectIngestRawFileConfig,
         new_raw_data_dataset: str,
         region_module: ModuleType = regions,
@@ -100,7 +101,7 @@ class RawDataDiffQueryBuilder:
         self.state_code = state_code
         self.raw_data_instance = raw_data_instance
         self.raw_file_config = raw_file_config
-        self.table_name = self.raw_file_config.file_tag
+        self.new_raw_data_table_id = new_raw_data_table_id
 
         self.latest_current_raw_data_query = RawTableQueryBuilder(
             project_id=self.project_id,
@@ -128,8 +129,8 @@ class RawDataDiffQueryBuilder:
             )
         query_kwargs = {
             "project_id": self.project_id,
-            "table_name": self.table_name,
             "latest_current_raw_data_query": self.latest_current_raw_data_query,
+            "new_raw_data_table_id": self.new_raw_data_table_id,
             "new_raw_data_dataset": self.new_raw_data_dataset,
             "deleted_diff_join_clause": self._build_is_deleted_join_clause(),
             "deleted_diff_where_clause": self._build_is_deleted_where_clause(),

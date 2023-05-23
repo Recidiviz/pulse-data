@@ -28,6 +28,7 @@ from google.api_core import retry
 from google.cloud import bigquery
 from more_itertools import one
 
+from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_utils import normalize_column_name_for_bq
 from recidiviz.cloud_storage.gcsfs_csv_reader import (
@@ -299,17 +300,21 @@ class DirectIngestRawFileImportManager:
         if temp_file_paths:
             if not columns:
                 raise ValueError("Found delegate output_columns is unexpectedly None.")
+            raw_data_destination_address = BigQueryAddress(
+                dataset_id=self.raw_tables_dataset,
+                table_id=parts.file_tag,
+            )
             if self._should_prune_new_data(parts.file_tag):
                 self._load_pruned_contents_to_bigquery(
                     file_tag=parts.file_tag,
                     file_id=file_metadata.file_id,
                     temp_file_paths=temp_file_paths,
                     columns=columns,
+                    final_destination_address=raw_data_destination_address,
                 )
             else:
                 self._load_file_contents_to_bigquery(
-                    destination_table_id=parts.file_tag,
-                    destination_dataset_id=self.raw_tables_dataset,
+                    destination_address=raw_data_destination_address,
                     file_paths=temp_file_paths,
                     columns=columns,
                 )
@@ -389,8 +394,7 @@ class DirectIngestRawFileImportManager:
     @retry.Retry(predicate=google_api_retry_predicate)
     def _load_file_contents_to_bigquery(
         self,
-        destination_table_id: str,
-        destination_dataset_id: str,
+        destination_address: BigQueryAddress,
         file_paths: List[GcsfsFilePath],
         columns: List[str],
     ) -> None:
@@ -401,9 +405,9 @@ class DirectIngestRawFileImportManager:
             load_job = self.big_query_client.load_table_from_cloud_storage_async(
                 source_uris=[p.uri() for p in file_paths],
                 destination_dataset_ref=self.big_query_client.dataset_ref_for_id(
-                    destination_dataset_id
+                    destination_address.dataset_id
                 ),
-                destination_table_id=destination_table_id,
+                destination_table_id=destination_address.table_id,
                 destination_table_schema=self.create_raw_table_schema_from_columns(
                     columns
                 ),
@@ -456,7 +460,9 @@ class DirectIngestRawFileImportManager:
         is_exempt_from_raw_data_pruning = file_config.is_exempt_from_raw_data_pruning()
         return not is_exempt_from_raw_data_pruning
 
-    def _build_raw_data_pruning_query(self, file_tag: str) -> str:
+    def _build_raw_data_pruning_query(
+        self, temp_new_raw_data_address: BigQueryAddress, file_tag: str
+    ) -> str:
         """Build a raw data diff query for a particular raw file."""
         raw_file_config = self.region_raw_file_config.raw_file_configs[file_tag]
         return RawDataDiffQueryBuilder(
@@ -464,9 +470,8 @@ class DirectIngestRawFileImportManager:
             state_code=self.state_code,
             raw_data_instance=self.instance,
             raw_file_config=raw_file_config,
-            new_raw_data_dataset=raw_data_pruning_new_raw_data_dataset(
-                self.state_code, self.instance
-            ),
+            new_raw_data_table_id=temp_new_raw_data_address.table_id,
+            new_raw_data_dataset=temp_new_raw_data_address.dataset_id,
         ).build_query()
 
     def _load_pruned_contents_to_bigquery(
@@ -475,34 +480,40 @@ class DirectIngestRawFileImportManager:
         file_id: int,
         temp_file_paths: List[GcsfsFilePath],
         columns: List[str],
+        final_destination_address: BigQueryAddress,
     ) -> None:
         """Conduct raw data pruning on a file by determining the diff between it and what is currently on BQ,
         and append the results to the original table on BQ."""
         # Fetch the temporary datasets on BQ used for raw data pruning
-        temp_raw_table_dataset_id = raw_data_pruning_new_raw_data_dataset(
-            self.state_code, self.instance
-        )
-        temp_raw_data_diff_results_dataset_id = (
-            raw_data_pruning_raw_data_diff_results_dataset(
+        temp_new_raw_data_address = BigQueryAddress(
+            dataset_id=raw_data_pruning_new_raw_data_dataset(
                 self.state_code, self.instance
-            )
+            ),
+            table_id=f"{file_tag}__{file_id}",
         )
 
-        temporary_table_id = f"{file_tag}__{file_id}"
+        temp_raw_data_diff_table_address = BigQueryAddress(
+            dataset_id=raw_data_pruning_raw_data_diff_results_dataset(
+                self.state_code, self.instance
+            ),
+            table_id=f"{file_tag}__{file_id}",
+        )
+
         # Load new GCS file into a temporary table in BQ
         self._load_file_contents_to_bigquery(
-            destination_table_id=temporary_table_id,
+            destination_address=temp_new_raw_data_address,
             file_paths=temp_file_paths,
             columns=columns,
-            destination_dataset_id=temp_raw_table_dataset_id,
         )
 
         # Create and run raw data diff query between contents of new temporary table on BQ and the latest version
         # of the raw data table on BQ, then save the results of diff query to a temporary table
-        raw_data_diff_query = self._build_raw_data_pruning_query(file_tag)
+        raw_data_diff_query = self._build_raw_data_pruning_query(
+            temp_new_raw_data_address, file_tag
+        )
         create_job = self.big_query_client.create_table_from_query_async(
-            dataset_id=temp_raw_data_diff_results_dataset_id,
-            table_id=temporary_table_id,
+            dataset_id=temp_raw_data_diff_table_address.dataset_id,
+            table_id=temp_raw_data_diff_table_address.table_id,
             query=raw_data_diff_query,
             overwrite=True,
             use_query_cache=False,
@@ -511,19 +522,20 @@ class DirectIngestRawFileImportManager:
 
         # Append the results of the raw data diff query to the original raw data table
         append_job = self.big_query_client.insert_into_table_from_table_async(
-            source_dataset_id=temp_raw_data_diff_results_dataset_id,
-            source_table_id=temporary_table_id,
-            destination_dataset_id=self.raw_tables_dataset,
-            destination_table_id=temporary_table_id,
+            source_dataset_id=temp_raw_data_diff_table_address.dataset_id,
+            source_table_id=temp_raw_data_diff_table_address.table_id,
+            destination_dataset_id=final_destination_address.dataset_id,
+            destination_table_id=final_destination_address.table_id,
             use_query_cache=False,
         )
         append_job.result()
 
         self.big_query_client.delete_table(
-            temp_raw_table_dataset_id, temporary_table_id
+            temp_new_raw_data_address.dataset_id, temp_new_raw_data_address.table_id
         )
         self.big_query_client.delete_table(
-            temp_raw_data_diff_results_dataset_id, temporary_table_id
+            temp_raw_data_diff_table_address.dataset_id,
+            temp_raw_data_diff_table_address.table_id,
         )
 
     @staticmethod
