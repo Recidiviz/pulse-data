@@ -16,6 +16,7 @@
 # =============================================================================
 """This file contains all of the relevant cloud functions"""
 import base64
+import json
 import os
 from http import HTTPStatus
 from typing import Any, Dict, Optional, Tuple, TypeVar
@@ -37,10 +38,6 @@ from cloud_function_utils import (  # type: ignore[import]
 
 # A stand-in type for google.cloud.functions.Context for which no apparent type is available
 ContextType = TypeVar("ContextType", bound=Any)
-
-TRIGGER_SOURCE_POST_DEPLOY = "POST_DEPLOY"
-TRIGGER_SOURCE_DAILY = "DAILY"
-TRIGGER_SOURCES = [TRIGGER_SOURCE_POST_DEPLOY, TRIGGER_SOURCE_DAILY]
 
 
 def _build_url(
@@ -75,24 +72,25 @@ def trigger_calculation_dag(
         return error_str, HTTPStatus.BAD_REQUEST
 
     if "data" in event:
-        trigger_source = base64.b64decode(event["data"]).decode("utf-8")
+        json_body = json.loads(base64.b64decode(event["data"]).decode("utf-8"))
     else:
         error_str = f"Could not find data needs in event parameter: {event}"
         cloud_functions_log(severity="ERROR", message=error_str)
         return error_str, HTTPStatus.BAD_REQUEST
 
-    if trigger_source not in TRIGGER_SOURCES:
-        error_str = (
-            f"data needs to pass in the trigger source, but received: {trigger_source}"
-        )
-        cloud_functions_log(severity="ERROR", message=error_str)
-        return error_str, HTTPStatus.BAD_REQUEST
+    state_code_filter = json_body.get("state_code_filter")
+    sandbox_dataset_prefix = json_body.get("sandbox_dataset_prefix")
 
     # The name of the DAG you wish to trigger
     dag_name = f"{project_id}_calculation_dag"
 
     monitor_response = trigger_dag(
-        airflow_uri, dag_name, {"TRIGGER_SOURCE": trigger_source}
+        airflow_uri,
+        dag_name,
+        {
+            "state_code_filter": state_code_filter,
+            "sandbox_dataset_prefix": sandbox_dataset_prefix,
+        },
     )
     cloud_functions_log(
         severity="INFO",
