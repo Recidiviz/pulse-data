@@ -24,6 +24,7 @@ import pytest
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_data_pruning_new_raw_data_dataset,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_file_import_manager import (
@@ -120,12 +121,16 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
                 state_code=self.state_code, instance=self.raw_data_instance
             )
             if fixture_type == RawDataDiffFixtureType.EXISTING
-            else fixture_type.value
+            else raw_data_pruning_new_raw_data_dataset(
+                self.state_code, self.raw_data_instance
+            )
         )
 
         address = BigQueryAddress(
             dataset_id=dataset_id,
-            table_id=file_tag,
+            table_id=file_tag
+            if fixture_type == RawDataDiffFixtureType.EXISTING
+            else file_tag + "__1",
         )
         self.create_mock_table(
             address=address,
@@ -162,8 +167,11 @@ class RawDataDiffEmulatorQueryTestCase(BigQueryEmulatorTestCase):
             project_id=self.project_id,
             state_code=self.state_code,
             raw_data_instance=self.raw_data_instance,
+            new_raw_data_table_id=file_tag + "__1",
             raw_file_config=raw_file_config,
-            new_raw_data_dataset=RawDataDiffFixtureType.NEW.value,
+            new_raw_data_dataset=raw_data_pruning_new_raw_data_dataset(
+                self.state_code, self.raw_data_instance
+            ),
             region_module=fake_regions,
         ).build_query()
 
