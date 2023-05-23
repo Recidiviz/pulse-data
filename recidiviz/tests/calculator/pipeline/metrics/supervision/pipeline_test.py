@@ -555,7 +555,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            run_delegate=self.run_delegate_class,
+            pipeline_cls=self.run_delegate_class,
             state_code=state_code,
             project_id=project,
             dataset_id=dataset,

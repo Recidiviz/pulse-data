@@ -117,7 +117,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         )
 
         run_test_pipeline(
-            run_delegate=pipeline.ComprehensiveNormalizationPipelineRunDelegate,
+            pipeline_cls=pipeline.ComprehensiveNormalizationPipelineRunDelegate,
             state_code=state_code,
             project_id=project,
             dataset_id=dataset,

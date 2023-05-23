@@ -18,9 +18,15 @@
 import unittest
 from typing import Set
 
+from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
+    SupplementalDatasetPipeline,
+)
 from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
     collect_all_pipeline_names,
     collect_all_pipeline_run_delegate_classes,
+)
+from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
+    collect_all_pipeline_classes,
 )
 from recidiviz.calculator.query.state.views.reference.reference_views import (
     REFERENCE_VIEW_BUILDERS,
@@ -70,3 +76,14 @@ class TestReferenceViews(unittest.TestCase):
             set(),
             all_required_reference_tables.difference(deployed_reference_view_names),
         )
+
+
+class TestPipelineValidations(unittest.TestCase):
+    """Tests that specific pipelines are set up correctly."""
+
+    def test_all_pipelines_are_validated(self) -> None:
+        pipeline_classes = collect_all_pipeline_classes()
+
+        for pipeline_class in pipeline_classes:
+            if issubclass(pipeline_class, SupplementalDatasetPipeline):
+                self.assertTrue("SUPPLEMENTAL" in pipeline_class.pipeline_name())

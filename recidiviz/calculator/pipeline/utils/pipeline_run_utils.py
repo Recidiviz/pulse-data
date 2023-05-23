@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2022 Recidiviz, Inc.
+# Copyright (C) 2023 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,57 +14,51 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utils for working with PipelineRunDelegates."""
+"""Utils for working with Pipelines"""
 from __future__ import absolute_import
 
 import inspect
 from types import ModuleType
 from typing import List, Type
 
-from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
 from recidiviz.calculator.pipeline import (
-    normalization as normalization_pipeline_top_level,
+    supplemental as supplemental_pipeline_top_level,
 )
-from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineRunDelegate
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
 
-# TODO(#20929) Remove this file when every pipeline is switched over accordingly.
 def collect_all_pipeline_names() -> List[str]:
-    """Collects all of the pipeline names from all of the implementations of the
-    PipelineRunDelegate. A PipelineRunDelegate must exist inside one of the modules
-    listed in the TOP_LEVEL_PIPELINE_MODULES for it to be included."""
-    run_delegates = collect_all_pipeline_run_delegate_classes()
+    """Collects all of the pipeline names from all of the implementations of the Pipeline.
+    A Pipeline must exist inside one of hte modules listed in the _TOP_LEVEL_PIPELINE_MODULES
+    for it to be included."""
+    pipelines = collect_all_pipeline_classes()
 
-    return [
-        run_delegate.pipeline_config().pipeline_name.lower()
-        for run_delegate in run_delegates
-    ]
+    return [pipeline.pipeline_name().lower() for pipeline in pipelines]
 
 
-def collect_all_pipeline_run_delegate_classes() -> List[Type[PipelineRunDelegate]]:
-    """Collects all of the versions of the PipelineRunDelegate."""
-
-    pipeline_modules = collect_all_pipeline_run_delegate_modules()
-    run_delegates: List[Type[PipelineRunDelegate]] = []
+def collect_all_pipeline_classes() -> List[Type[BasePipeline]]:
+    """Collects all of the versions of the BasePipeline."""
+    pipeline_modules = collect_all_pipeline_modules()
+    pipelines: List[Type[BasePipeline]] = []
 
     for pipeline_module in pipeline_modules:
         for attribute_name in dir(pipeline_module):
             attribute = getattr(pipeline_module, attribute_name)
             if inspect.isclass(attribute):
-                if issubclass(
-                    attribute, PipelineRunDelegate
-                ) and not inspect.isabstract(attribute):
-                    run_delegates.append(attribute)
+                if issubclass(attribute, BasePipeline) and not inspect.isabstract(
+                    attribute
+                ):
+                    pipelines.append(attribute)
 
-    return run_delegates
+    return pipelines
 
 
-def collect_all_pipeline_run_delegate_modules() -> List[ModuleType]:
-    """Collects all of the modules storing PipelineRunDelegate implementations."""
+def collect_all_pipeline_modules() -> List[ModuleType]:
+    """Collects all of the modules storing BasePipeline implementations."""
     pipeline_submodules: List[ModuleType] = []
 
-    for top_level_pipeline_module in TOP_LEVEL_PIPELINE_MODULES:
+    for top_level_pipeline_module in _TOP_LEVEL_PIPELINE_MODULES:
         pipeline_submodules.extend(
             ModuleCollectorMixin.get_submodules(
                 base_module=top_level_pipeline_module, submodule_name_prefix_filter=None
@@ -89,7 +83,6 @@ def collect_all_pipeline_run_delegate_modules() -> List[ModuleType]:
     return pipeline_file_modules
 
 
-TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
-    metrics_pipeline_top_level,
-    normalization_pipeline_top_level,
+_TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
+    supplemental_pipeline_top_level,
 ]

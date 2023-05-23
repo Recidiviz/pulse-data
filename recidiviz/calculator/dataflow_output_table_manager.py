@@ -40,13 +40,13 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_convers
     bq_schema_for_normalized_state_entity,
 )
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
-    SupplementalDatasetPipelineRunDelegate,
+    SupplementalDatasetPipeline,
 )
 from recidiviz.calculator.pipeline.supplemental.dataset_config import (
     SUPPLEMENTAL_DATA_DATASET,
 )
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
-    collect_all_pipeline_run_delegate_classes,
+from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
+    collect_all_pipeline_classes,
 )
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import (
@@ -156,7 +156,7 @@ def update_normalized_table_schemas_in_dataset(
             )
 
     for manager in NORMALIZATION_MANAGERS:
-        for (child_cls, parent_cls) in manager.normalized_entity_associations():
+        for child_cls, parent_cls in manager.normalized_entity_associations():
             association_table = schema_utils.get_state_database_association_with_names(
                 child_cls.__name__, parent_cls.__name__
             )
@@ -236,15 +236,15 @@ def update_supplemental_dataset_schemas(
     )
 
     bq_client.create_dataset_if_necessary(supplemental_metrics_dataset_ref)
-    supplemental_data_pipeline_delegates = [
-        pipeline_delegate
-        for pipeline_delegate in collect_all_pipeline_run_delegate_classes()
-        if issubclass(pipeline_delegate, SupplementalDatasetPipelineRunDelegate)
+    supplemental_data_pipelines = [
+        pipeline
+        for pipeline in collect_all_pipeline_classes()
+        if issubclass(pipeline, SupplementalDatasetPipeline)
     ]
 
-    for delegate in supplemental_data_pipeline_delegates:
-        schema_for_supplemental_dataset = delegate.bq_schema_for_table()
-        table_id = delegate.table_id()
+    for pipeline in supplemental_data_pipelines:
+        schema_for_supplemental_dataset = pipeline.bq_schema_for_table()
+        table_id = pipeline.table_id()
         if bq_client.table_exists(supplemental_metrics_dataset_ref, table_id):
             bq_client.update_schema(
                 supplemental_metrics_dataset_id,
