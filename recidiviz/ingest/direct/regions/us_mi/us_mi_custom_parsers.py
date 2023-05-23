@@ -42,7 +42,9 @@ def max_and_min_lengths_days(
     days_str: str,
 ) -> Optional[str]:
     """Returns the duration in days from days, months, and years"""
-    result = safe_parse_days_from_duration_pieces(years_str, months_str, days_str)
+    result = safe_parse_days_from_duration_pieces(
+        years_str=years_str, months_str=months_str, days_str=days_str
+    )
     if result:
         if result == 0:
             return None
@@ -60,11 +62,15 @@ def calc_parole_elibility_date(
     and days."""
 
     try:
-        parse_duration_pieces(years_str, months_str, days_str)
+        parse_duration_pieces(
+            years_str=years_str, months_str=months_str, days_str=days_str
+        )
     except ValueError:
         return None
 
-    years, months, days = parse_duration_pieces(years_str, months_str, days_str)
+    years, months, _, days, _ = parse_duration_pieces(
+        years_str=years_str, months_str=months_str, days_str=days_str
+    )
     start_dt = parse_datetime(start_date_str)
     if start_dt:
         end_dt = start_dt + relativedelta(years=years, months=months, days=days)

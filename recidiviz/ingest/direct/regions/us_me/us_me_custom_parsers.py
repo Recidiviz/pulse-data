@@ -53,7 +53,14 @@ def total_days_from_ymd(
         clean_start_date = None
     else:
         clean_start_date = start_date
-    return str(parse_days_from_duration_pieces(years, months, days, clean_start_date))
+    return str(
+        parse_days_from_duration_pieces(
+            years_str=years,
+            months_str=months,
+            days_str=days,
+            start_dt_str=clean_start_date,
+        )
+    )
 
 
 def compute_earned_time(

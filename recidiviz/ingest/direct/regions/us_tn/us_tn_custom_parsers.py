@@ -24,6 +24,8 @@ my_flat_field:
             arg_1: <expression>
             arg_2: <expression>
 """
+from typing import Optional
+
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodHousingUnitType,
@@ -34,6 +36,7 @@ from recidiviz.common.constants.state.state_shared_enums import StateCustodialAu
 from recidiviz.common.constants.state.state_supervision_sentence import (
     StateSupervisionSentenceSupervisionType,
 )
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 
 
 def parse_supervision_type(raw_text: str) -> StateSupervisionSentenceSupervisionType:
@@ -174,3 +177,20 @@ def parse_segregation_release_reason(
 
     # We should not return any INTERNAL_UNKNOWN since we are assigning all segregation stays to TRANSFER
     return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
+
+
+def get_punishment_days(
+    months: str, weeks: str, days: str, hours: str, effective_date: str
+) -> Optional[str]:
+    if months or days or weeks or hours:
+        return str(
+            parse_days_from_duration_pieces(
+                years_str=None,
+                months_str=months,
+                weeks_str=weeks,
+                days_str=days,
+                hours_str=hours,
+                start_dt_str=effective_date,
+            )
+        )
+    return None

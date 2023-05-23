@@ -114,7 +114,10 @@ def max_and_min_lengths_days_from_court_sentence_duration(
     """Returns the duration in days from a start date with given number of years, months
     and days."""
     result = parse_days_from_duration_pieces(
-        years_str, months_str, days_str, start_date_str
+        years_str=years_str,
+        months_str=months_str,
+        days_str=days_str,
+        start_dt_str=start_date_str,
     )
     if result == 0:
         return None

@@ -15,6 +15,9 @@ input_columns:
   - DispositionDate
   - SentenceType
   - SentenceDays
+  - SentenceHours
+  - SentenceWeeks
+  - SentenceMonths
   - SentenceDate
   - InjuryLevel
   - SentId
@@ -26,13 +29,14 @@ output:
           external_id: OffenderID
           id_type: $literal("US_TN_DOC")
     incarceration_incidents:
+      # View will show as many incidents as there are outcomes for each, but the mapping groups them so there will
+      # be one incident and however many incident outcomes branching off.
       - StateIncarcerationIncident:
           external_id:
             $concat:
               $values:
                 - OffenderID
                 - IncidentId
-                - SentId
           incident_date: IncidentDate
           facility: SiteId
           location_within_facility: Location
@@ -369,4 +373,12 @@ output:
                       StateIncarcerationIncidentOutcomeType.WARNING:
                         - VRE # VERBAL REPRIMAND
                         - WRE # WRITTEN REPRIMAND
-                punishment_length_days: SentenceDays
+                punishment_length_days:
+                  $custom:
+                    $function: us_tn_custom_parsers.get_punishment_days
+                    $args:
+                      months: SentenceMonths
+                      days: SentenceDays
+                      weeks: SentenceWeeks
+                      hours: SentenceHours
+                      effective_date: SentenceDate

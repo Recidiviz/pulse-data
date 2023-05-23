@@ -85,7 +85,9 @@ def parse_days(time_string: str, from_dt: Optional[datetime.datetime] = None) ->
 def safe_parse_days_from_duration_pieces(
     years_str: Optional[str] = None,
     months_str: Optional[str] = None,
+    weeks_str: Optional[str] = None,
     days_str: Optional[str] = None,
+    hours_str: Optional[str] = None,
     start_dt_str: Optional[str] = None,
 ) -> Optional[int]:
     """Same as parse_days_from_duration_pieces below, but returns None if a number of days cannot be parsed."""
@@ -93,7 +95,9 @@ def safe_parse_days_from_duration_pieces(
         return parse_days_from_duration_pieces(
             years_str=years_str,
             months_str=months_str,
+            weeks_str=weeks_str,
             days_str=days_str,
+            hours_str=hours_str,
             start_dt_str=start_dt_str,
         )
     except ValueError:
@@ -103,33 +107,45 @@ def safe_parse_days_from_duration_pieces(
 def parse_duration_pieces(
     years_str: Optional[str] = None,
     months_str: Optional[str] = None,
+    weeks_str: Optional[str] = None,
     days_str: Optional[str] = None,
-) -> Tuple[int, int, int]:
-    if not any((years_str, months_str, days_str)):
-        raise ValueError("One of (years_str, months_str, days_str) must be nonnull")
+    hours_str: Optional[str] = None,
+) -> Tuple[int, int, int, int, int]:
+    if not any((years_str, months_str, weeks_str, days_str, hours_str)):
+        raise ValueError(
+            "One of (years_str, months_str, weeks_str, days_str, hours_str) must be nonnull"
+        )
 
     years = parse_int(years_str) if years_str else 0
     months = parse_int(months_str) if months_str else 0
+    weeks = parse_int(weeks_str) if weeks_str else 0
     days = parse_int(days_str) if days_str else 0
+    hours = parse_int(hours_str) if hours_str else 0
 
-    return years, months, days
+    return years, months, weeks, days, hours
 
 
 def parse_days_from_duration_pieces(
+    *,
     years_str: Optional[str] = None,
     months_str: Optional[str] = None,
+    weeks_str: Optional[str] = None,
     days_str: Optional[str] = None,
+    hours_str: Optional[str] = None,
     start_dt_str: Optional[str] = None,
 ) -> int:
     """Returns a number of days specified by the given duration strings. If a
     start date is specified, will calculate the number of days after that date,
     otherwise, assumes that a month is 30 days long and a year is 365.25 days
-    long. All calculations are rounded to the nearest full day.
+    long. We truncate hours to the closest number of days. All calculations
+    are rounded to the nearest full day.
 
     Args:
         years_str: A string representation of an int number of years
         months_str: A string representation of an int number of months
+        weeks_str: A string representation of an int number of weeks
         days_str: A string representation of an int number of days
+        hours_str: A string representation of an int number of hours
         start_dt_str: A string representation of a date to start counting from.
 
     Returns:
@@ -147,18 +163,24 @@ def parse_days_from_duration_pieces(
 
     years_str = normalize_numerical_str(years_str)
     months_str = normalize_numerical_str(months_str)
+    weeks_str = normalize_numerical_str(weeks_str)
     days_str = normalize_numerical_str(days_str)
+    hours_str = normalize_numerical_str(hours_str)
 
-    years, months, days = parse_duration_pieces(years_str, months_str, days_str)
+    years, months, weeks, days, hours = parse_duration_pieces(
+        years_str, months_str, weeks_str, days_str, hours_str
+    )
 
     if start_dt_str:
         start_dt = parse_datetime(start_dt_str)
         if start_dt:
-            end_dt = start_dt + relativedelta(years=years, months=months, days=days)
+            end_dt = start_dt + relativedelta(
+                years=years, months=months, weeks=weeks, days=days, hours=hours
+            )
             if end_dt:
                 return (end_dt - start_dt).days
 
-    return int(years * 365.25) + (months * 30) + days
+    return int(years * 365.25) + (months * 30) + (weeks * 7) + days + (hours // 24)
 
 
 def safe_parse_date_from_date_pieces(
