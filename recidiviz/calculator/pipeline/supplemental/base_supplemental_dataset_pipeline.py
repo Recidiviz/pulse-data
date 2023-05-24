@@ -36,6 +36,11 @@ class SupplementalDatasetPipeline(BasePipeline[SupplementalPipelineParameters]):
 
     @classmethod
     @abc.abstractmethod
+    def required_reference_tables(cls) -> List[str]:
+        """Returns the list of required reference tables for the pipeline."""
+
+    @classmethod
+    @abc.abstractmethod
     def table_id(cls) -> str:
         """Table_id of the output table for the supplemental dataset. Must be overwritten
         by subclasses."""
