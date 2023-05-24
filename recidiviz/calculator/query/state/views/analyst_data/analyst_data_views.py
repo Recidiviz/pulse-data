@@ -78,6 +78,9 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
 from recidiviz.calculator.query.state.views.analyst_data.supervision_population_by_officer_daily_windows import (
     SUPERVISION_POPULATION_BY_OFFICER_DAILY_WINDOWS_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.analyst_data.us_ca.us_ca_sustainable_housing_status_periods import (
+    US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_behavior_responses import (
     US_ID_BEHAVIOR_RESPONSES_VIEW_BUILDER,
 )
@@ -356,4 +359,5 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_TN_DISCIPLINARIES_PREPROCESSED_VIEW_BUILDER,
     RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER,
     *get_person_spans_and_events_view_builders(),
+    US_CA_SUSTAINABLE_HOUSING_STATUS_PERIODS_VIEW_BUILDER,
 ]
