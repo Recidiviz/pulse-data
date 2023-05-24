@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline.metrics.violation.events import (
     ViolationWithResponseEvent,
 )
 from recidiviz.calculator.pipeline.metrics.violation.pipeline import (
-    ViolationMetricsPipelineRunDelegate,
+    ViolationMetricsPipeline,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateSupervisionViolatedConditionEntry,
@@ -95,7 +95,7 @@ class TestFindViolationEvents(unittest.TestCase):
 
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=ViolationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=ViolationMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 
@@ -214,7 +214,7 @@ class TestFindViolationWithResponseEvents(unittest.TestCase):
         else:
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=ViolationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=ViolationMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 

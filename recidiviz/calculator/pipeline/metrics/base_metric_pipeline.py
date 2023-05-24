@@ -38,10 +38,7 @@ from recidiviz.calculator.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
 )
-from recidiviz.calculator.pipeline.legacy_base_pipeline import (
-    PipelineConfig,
-    PipelineRunDelegate,
-)
+from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
@@ -55,11 +52,17 @@ from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
     RecidivizMetricType,
     json_serializable_list_value_handler,
 )
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.bigquery_io_utils import (
     WriteToBigQuery,
     json_serializable_dict,
 )
-from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import ImportTable
+from recidiviz.calculator.pipeline.utils.beam_utils.extractor_utils import (
+    ExtractDataForPipeline,
+    ImportTable,
+)
 from recidiviz.calculator.pipeline.utils.beam_utils.person_utils import (
     PERSON_EVENTS_KEY,
     PERSON_METADATA_KEY,
@@ -82,6 +85,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate imp
 from recidiviz.calculator.query.state.state_specific_query_strings import (
     STATE_RACE_ETHNICITY_POPULATION_TABLE_NAME,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 from recidiviz.utils import environment
@@ -105,7 +110,9 @@ def clear_job_id() -> None:
     _job_id = None
 
 
-class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
+class MetricPipeline(
+    BasePipeline[MetricsPipelineParameters],
+):
     """Delegate for running a metric pipeline."""
 
     @classmethod
@@ -114,8 +121,31 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
 
     @classmethod
     @abc.abstractmethod
-    def pipeline_config(cls) -> PipelineConfig:
-        pass
+    def required_entities(
+        cls,
+    ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
+        """Returns the required entities for this pipeline."""
+
+    @classmethod
+    @abc.abstractmethod
+    def required_reference_tables(cls) -> List[str]:
+        """Returns the list of reference tables required for the pipeline that are person-id based."""
+
+    @classmethod
+    @abc.abstractmethod
+    def required_state_based_reference_tables(cls) -> List[str]:
+        """Returns the list of reference tables required for the pipeline that are state-code based."""
+
+    @classmethod
+    @abc.abstractmethod
+    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
+        """Returns the required state-specific delegates needed for the pipeline."""
+
+    @classmethod
+    @abc.abstractmethod
+    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
+        """Returns a dictionary mapping state codes to the names of state-specific tables
+        required to run pipelines in the state."""
 
     @classmethod
     @abc.abstractmethod
@@ -133,37 +163,48 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
         """Whether or not to include the args relevant to limiting calculation metric
         output to a specific set of months. Should be overwritten by subclasses."""
 
-    def _validate_pipeline_config(self) -> None:
-        """Validates the contents of the PipelineConfig."""
-        # All of these entities are required for all metric calculation pipelines
-        default_entities: Set[Type[Entity]] = {
-            entities.StatePerson,
-            entities.StatePersonRace,
-            entities.StatePersonEthnicity,
-        }
+    def run_pipeline(self, p: PBegin) -> None:
+        # Workaround to load SQLAlchemy objects at start of pipeline. This is
+        # necessary because the BuildRootEntity function tries to access attributes
+        # of relationship properties on the SQLAlchemy room_schema_class before they
+        # have been loaded. However, if *any* SQLAlchemy objects have been instantiated,
+        # then the relationship properties are loaded and their attributes can be
+        # successfully accessed.
+        _ = schema.StatePerson()
 
-        if self.pipeline_config().required_entities:
-            missing_default_entities = default_entities.difference(
-                set(self.pipeline_config().required_entities)
+        pipeline_parameters = self.pipeline_parameters
+        state_code = pipeline_parameters.state_code
+        person_id_filter_set = (
+            {
+                int(person_id)
+                for person_id in pipeline_parameters.person_filter_ids.split(" ")
+            }
+            if pipeline_parameters.person_filter_ids
+            else None
+        )
+
+        required_reference_tables = (
+            self.required_reference_tables().copy()
+            + self.state_specific_required_reference_tables().get(
+                StateCode(state_code.upper()), []
             )
-            if missing_default_entities:
-                raise ValueError(
-                    "PipelineConfig.required_entities must include the "
-                    f"following default entity types: ["
-                    f"{default_entities}]. Missing: {missing_default_entities}"
-                )
+        )
 
-    def run_data_transforms(
-        self, p: PBegin, pipeline_data: beam.Pipeline
-    ) -> beam.Pipeline:
-        """Runs the data transforms of a metric calculation pipeline. First, classifies the
-        events relevant to the type of pipeline running. Then, converts those events
-        into metrics. Returns thee metrics to be written to BigQuery."""
-        person_events = pipeline_data | "Get Events" >> beam.ParDo(
-            ClassifyResults(),
-            state_code=self.pipeline_parameters.state_code,
-            identifier=self.identifier(),
-            pipeline_config=self.pipeline_config(),
+        required_state_based_reference_tables = (
+            self.required_state_based_reference_tables().copy()
+        )
+
+        pipeline_data = p | "Load required data" >> ExtractDataForPipeline(
+            state_code=state_code,
+            project_id=self.pipeline_parameters.project,
+            entities_dataset=self.pipeline_parameters.data_input,
+            normalized_entities_dataset=self.pipeline_parameters.normalized_input,
+            reference_dataset=self.pipeline_parameters.reference_view_input,
+            required_entity_classes=self.required_entities(),
+            required_reference_tables=required_reference_tables,
+            required_state_based_reference_tables=required_state_based_reference_tables,
+            unifying_class=entities.StatePerson,
+            unifying_id_field_filter_set=person_id_filter_set,
         )
 
         state_race_ethnicity_population_counts = (
@@ -177,6 +218,13 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
             )
         )
 
+        person_events = pipeline_data | "Get Events" >> beam.ParDo(
+            ClassifyResults(),
+            state_code=self.pipeline_parameters.state_code,
+            identifier=self.identifier(),
+            state_specific_required_delegates=self.state_specific_required_delegates(),
+        )
+
         person_metadata = (
             pipeline_data
             | "Build the person_metadata dictionary"
@@ -188,37 +236,22 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
             )
         )
 
-        person_events_with_metadata = (
+        metrics = (
             {PERSON_EVENTS_KEY: person_events, PERSON_METADATA_KEY: person_metadata}
             | "Group events with person-level metadata" >> beam.CoGroupByKey()
             | "Organize StatePerson, PersonMetadata and events for calculations"
             >> beam.ParDo(ExtractPersonEventsMetadata())
-        )
-
-        metrics = person_events_with_metadata | "Produce Metrics" >> beam.ParDo(
-            ProduceMetrics(),
-            project_id=self.pipeline_parameters.project,
-            region=self.pipeline_parameters.region,
-            job_name=self.pipeline_parameters.job_name,
-            state_code=self.pipeline_parameters.state_code,
-            metric_types_str=self.pipeline_parameters.metric_types,
-            calculation_month_count=self.pipeline_parameters.calculation_month_count,
-            metric_producer=self.metric_producer(),
-        )
-
-        # Return the metrics
-        return metrics
-
-    def write_output(self, pipeline: beam.Pipeline) -> None:
-        """Takes the output from the pipeline and writes it into a
-        beam.pvalue.TaggedOutput dictionary-like object. This is then written to
-        appropriate BigQuery tables under the appropriate Dataflow metrics table and
-        namespace.
-
-        Each metric type is a tag in the TaggedOutput and is accessed individually to
-        be written to a separate table in BigQuery."""
-        writable_metrics = (
-            pipeline
+            | "Produce Metrics"
+            >> beam.ParDo(
+                ProduceMetrics(),
+                project_id=self.pipeline_parameters.project,
+                region=self.pipeline_parameters.region,
+                job_name=self.pipeline_parameters.job_name,
+                state_code=self.pipeline_parameters.state_code,
+                metric_types_str=self.pipeline_parameters.metric_types,
+                calculation_month_count=self.pipeline_parameters.calculation_month_count,
+                metric_producer=self.metric_producer(),
+            )
             | "Convert to dict to be written to BQ"
             >> beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
                 *self._metric_type_values()
@@ -229,7 +262,7 @@ class MetricPipelineRunDelegate(PipelineRunDelegate[MetricsPipelineParameters]):
             table_id = DATAFLOW_METRICS_TO_TABLES[metric_subclass]
             metric_type = DATAFLOW_TABLES_TO_METRIC_TYPES[table_id]
             _ = getattr(
-                writable_metrics, metric_type.value
+                metrics, metric_type.value
             ) | f"Write {metric_type.value} metrics to BQ table: {table_id}" >> WriteToBigQuery(
                 output_table=table_id,
                 output_dataset=self.pipeline_parameters.output,
@@ -346,7 +379,7 @@ class ProduceMetrics(beam.DoFn):
     beam.typehints.Tuple[int, Dict[str, Iterable[Any]]],
     str,
     BaseIdentifier,
-    PipelineConfig,
+    List[Type[StateSpecificDelegate]],
 )
 @with_output_types(
     beam.typehints.Tuple[
@@ -366,7 +399,7 @@ class ClassifyResults(beam.DoFn):
         element: Tuple[int, Dict[str, Iterable[Any]]],
         state_code: str,
         identifier: BaseIdentifier,
-        pipeline_config: PipelineConfig,
+        state_specific_required_delegates: List[Type[StateSpecificDelegate]],
     ) -> Generator[
         Tuple[int, Tuple[entities.StatePerson, List[IdentifierResult]]],
         None,
@@ -379,7 +412,7 @@ class ClassifyResults(beam.DoFn):
 
         required_delegates = get_required_state_specific_delegates(
             state_code=state_code,
-            required_delegates=pipeline_config.state_specific_required_delegates,
+            required_delegates=state_specific_required_delegates,
             entity_kwargs=entity_kwargs,
         )
 

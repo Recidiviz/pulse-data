@@ -16,8 +16,9 @@
 # =============================================================================
 """Tests the pipeline names."""
 import unittest
-from typing import Set
+from typing import Set, Type
 
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.calculator.pipeline.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
 )
@@ -34,6 +35,8 @@ from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
 from recidiviz.calculator.query.state.views.reference.reference_views import (
     REFERENCE_VIEW_BUILDERS,
 )
+from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.state import entities
 
 
 class TestPipelineNames(unittest.TestCase):
@@ -92,3 +95,14 @@ class TestPipelineValidations(unittest.TestCase):
                 self.assertTrue("SUPPLEMENTAL" in pipeline_class.pipeline_name())
             elif issubclass(pipeline_class, ComprehensiveNormalizationPipeline):
                 self.assertTrue("NORMALIZATION" in pipeline_class.pipeline_name())
+            elif issubclass(pipeline_class, MetricPipeline):
+                default_entities: Set[Type[Entity]] = {
+                    entities.StatePerson,
+                    entities.StatePersonRace,
+                    entities.StatePersonEthnicity,
+                }
+                self.assertFalse(len(pipeline_class.required_entities()) == 0)
+                missing_default_entities = default_entities.difference(
+                    set(pipeline_class.required_entities())
+                )
+                self.assertTrue(len(missing_default_entities) == 0)

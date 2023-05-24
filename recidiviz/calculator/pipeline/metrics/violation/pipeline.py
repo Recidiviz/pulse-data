@@ -17,46 +17,68 @@
 """The violations metric calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
+from typing import Dict, List, Type, Union
+
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
-from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    MetricPipelineRunDelegate,
-)
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
 from recidiviz.calculator.pipeline.metrics.violation import identifier, metric_producer
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_violations_delegate import (
     StateSpecificViolationDelegate,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 
 
-class ViolationMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
+class ViolationMetricsPipeline(MetricPipeline):
     """Defines the violation metric calculation pipeline."""
 
     @classmethod
-    def pipeline_config(cls) -> PipelineConfig:
-        return PipelineConfig(
-            pipeline_name="VIOLATION_METRICS",
-            required_entities=[
-                entities.StatePerson,
-                entities.StatePersonRace,
-                entities.StatePersonEthnicity,
-                normalized_entities.NormalizedStateSupervisionViolation,
-                normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
-                normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
-                normalized_entities.NormalizedStateSupervisionViolationResponse,
-                normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
-            ],
-            required_reference_tables=[],
-            required_state_based_reference_tables=[],
-            state_specific_required_delegates=[
-                StateSpecificViolationDelegate,
-            ],
-            state_specific_required_reference_tables={},
-        )
+    def required_entities(
+        cls,
+    ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
+        return [
+            entities.StatePerson,
+            entities.StatePersonRace,
+            entities.StatePersonEthnicity,
+            normalized_entities.NormalizedStateSupervisionViolation,
+            normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
+            normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
+            normalized_entities.NormalizedStateSupervisionViolationResponse,
+            normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
+        ]
+
+    @classmethod
+    def required_reference_tables(cls) -> List[str]:
+        return []
+
+    @classmethod
+    def required_state_based_reference_tables(cls) -> List[str]:
+        return []
+
+    @classmethod
+    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
+        return {}
+
+    @classmethod
+    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
+        return [
+            StateSpecificViolationDelegate,
+        ]
+
+    @classmethod
+    def pipeline_name(cls) -> str:
+        return "VIOLATION_METRICS"
 
     @classmethod
     def identifier(cls) -> BaseIdentifier:

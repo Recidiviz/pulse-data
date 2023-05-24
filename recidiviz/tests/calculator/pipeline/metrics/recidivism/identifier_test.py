@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.metrics.recidivism.events import (
     ReleaseEvent,
 )
 from recidiviz.calculator.pipeline.metrics.recidivism.pipeline import (
-    RecidivismMetricsPipelineRunDelegate,
+    RecidivismMetricsPipeline,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateIncarcerationPeriod,
@@ -87,7 +87,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         else:
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=RecidivismMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=RecidivismMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 
@@ -526,7 +526,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def test_find_release_events_invalid_open_period(self) -> None:
         """Tests the find_release_events function where the person has an open IN_CUSTODY period that is
-        invalid because the person was released elsewhere after the admission to the period."""
+        invalid because the person was released elsewhere after the admission to the period.
+        """
         invalid_open_incarceration_period = (
             NormalizedStateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -572,7 +573,8 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
     def test_find_release_events_two_open_periods(self) -> None:
         """Tests the find_release_events function where the person has two open periods, caused by
-        data entry errors. We don't want to create any release events in this situation."""
+        data entry errors. We don't want to create any release events in this situation.
+        """
         incarceration_period_1 = NormalizedStateIncarcerationPeriod.new_with_defaults(
             external_id="1111",
             incarceration_period_id=1111,

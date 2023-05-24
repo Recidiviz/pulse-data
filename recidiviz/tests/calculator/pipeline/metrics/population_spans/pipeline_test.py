@@ -101,7 +101,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_run_delegate,
+    default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -138,7 +138,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
         self.mock_get_required_state_metrics_producer_delegate = (
             self.state_specific_metrics_producer_delegate_patcher.start()
         )
-        self.run_delegate_class = pipeline.PopulationSpanMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.PopulationSpanMetricsPipeline
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -248,7 +248,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -289,7 +289,7 @@ class TestPopulationSpanPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            pipeline_cls=self.run_delegate_class,
+            pipeline_cls=self.pipeline_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -358,7 +358,7 @@ class TestClassifyResults(unittest.TestCase):
             birthdate=date(1985, 2, 1),
         )
         self.identifier = PopulationSpanIdentifier()
-        self.run_delegate_class = pipeline.PopulationSpanMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.PopulationSpanMetricsPipeline
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
             return_value=STATE_DELEGATES_FOR_TESTS,
@@ -498,7 +498,7 @@ class TestClassifyResults(unittest.TestCase):
                 ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -524,7 +524,7 @@ class TestClassifyResults(unittest.TestCase):
                 ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 

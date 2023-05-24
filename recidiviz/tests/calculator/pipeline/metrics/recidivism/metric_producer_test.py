@@ -340,9 +340,7 @@ class TestProduceMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.RecidivismMetricProducer()
-        self.pipeline_config = (
-            pipeline.RecidivismMetricsPipelineRunDelegate.pipeline_config()
-        )
+        self.pipeline_class = pipeline.RecidivismMetricsPipeline
 
     @staticmethod
     def expected_metric_counts(
@@ -651,7 +649,6 @@ class TestProduceMetrics(unittest.TestCase):
         )
 
         for metric in metrics:
-
             if isinstance(metric, ReincarcerationRecidivismCountMetric):
                 self.assertEqual(days_at_liberty_1, metric.days_at_liberty)
             elif isinstance(metric, ReincarcerationRecidivismRateMetric):

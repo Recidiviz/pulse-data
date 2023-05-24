@@ -28,7 +28,7 @@ from recidiviz.calculator.pipeline.metrics.incarceration.events import (
     IncarcerationStandardAdmissionEvent,
 )
 from recidiviz.calculator.pipeline.metrics.incarceration.pipeline import (
-    IncarcerationMetricsPipelineRunDelegate,
+    IncarcerationMetricsPipeline,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -204,7 +204,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         else:
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=IncarcerationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=IncarcerationMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
             self.person.person_id = (
@@ -494,7 +494,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
         state_specific_delegates = (
             get_required_state_specific_delegates(
                 state_code=state_specific_override,
-                required_delegates=IncarcerationMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=IncarcerationMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
             if state_specific_override

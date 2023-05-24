@@ -17,16 +17,21 @@
 """The program metric calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
+from typing import Dict, List, Type, Union
+
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
-from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    MetricPipelineRunDelegate,
-)
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
 from recidiviz.calculator.pipeline.metrics.program import identifier, metric_producer
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_delegate import (
     StateSpecificSupervisionDelegate,
 )
@@ -36,35 +41,48 @@ from recidiviz.calculator.query.state.views.reference.supervision_location_ids_t
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import (
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
 )
+from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 
 
-class ProgramMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
+class ProgramMetricsPipeline(MetricPipeline):
     """Defines the program metric calculation pipeline."""
 
     @classmethod
-    def pipeline_config(cls) -> PipelineConfig:
-        return PipelineConfig(
-            pipeline_name="PROGRAM_METRICS",
-            required_entities=[
-                entities.StatePerson,
-                entities.StatePersonRace,
-                entities.StatePersonEthnicity,
-                normalized_entities.NormalizedStateAssessment,
-                normalized_entities.NormalizedStateProgramAssignment,
-                normalized_entities.NormalizedStateSupervisionPeriod,
-            ],
-            required_reference_tables=[
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
-            ],
-            required_state_based_reference_tables=[
-                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME
-            ],
-            state_specific_required_delegates=[
-                StateSpecificSupervisionDelegate,
-            ],
-            state_specific_required_reference_tables={},
-        )
+    def required_entities(
+        cls,
+    ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
+        return [
+            entities.StatePerson,
+            entities.StatePersonRace,
+            entities.StatePersonEthnicity,
+            normalized_entities.NormalizedStateAssessment,
+            normalized_entities.NormalizedStateProgramAssignment,
+            normalized_entities.NormalizedStateSupervisionPeriod,
+        ]
+
+    @classmethod
+    def required_reference_tables(cls) -> List[str]:
+        return [SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME]
+
+    @classmethod
+    def required_state_based_reference_tables(cls) -> List[str]:
+        return [SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME]
+
+    @classmethod
+    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
+        return [
+            StateSpecificSupervisionDelegate,
+        ]
+
+    @classmethod
+    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
+        return {}
+
+    @classmethod
+    def pipeline_name(cls) -> str:
+        return "PROGRAM_METRICS"
 
     @classmethod
     def identifier(cls) -> BaseIdentifier:

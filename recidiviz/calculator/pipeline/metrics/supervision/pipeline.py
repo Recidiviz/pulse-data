@@ -17,11 +17,10 @@
 """The supervision metric calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
-from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineConfig
+from typing import Dict, List, Type, Union
+
 from recidiviz.calculator.pipeline.metrics.base_identifier import BaseIdentifier
-from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    MetricPipelineRunDelegate,
-)
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.calculator.pipeline.metrics.base_metric_producer import (
     BaseMetricProducer,
 )
@@ -30,6 +29,12 @@ from recidiviz.calculator.pipeline.metrics.supervision import (
     metric_producer,
 )
 from recidiviz.calculator.pipeline.normalization.utils import normalized_entities
+from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
+from recidiviz.calculator.pipeline.utils.state_utils.state_specific_delegate import (
+    StateSpecificDelegate,
+)
 from recidiviz.calculator.pipeline.utils.state_utils.state_specific_incarceration_delegate import (
     StateSpecificIncarcerationDelegate,
 )
@@ -49,51 +54,65 @@ from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses im
     US_MO_SENTENCE_STATUSES_VIEW_NAME,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
 
 
-class SupervisionMetricsPipelineRunDelegate(MetricPipelineRunDelegate):
+class SupervisionMetricsPipeline(MetricPipeline):
     """Defines the supervision metric calculation pipeline."""
 
     @classmethod
-    def pipeline_config(cls) -> PipelineConfig:
-        return PipelineConfig(
-            pipeline_name="SUPERVISION_METRICS",
-            required_entities=[
-                entities.StatePerson,
-                entities.StatePersonRace,
-                entities.StatePersonEthnicity,
-                entities.StatePersonExternalId,
-                normalized_entities.NormalizedStateSupervisionContact,
-                normalized_entities.NormalizedStateSupervisionSentence,
-                normalized_entities.NormalizedStateIncarcerationSentence,
-                normalized_entities.NormalizedStateAssessment,
-                normalized_entities.NormalizedStateIncarcerationPeriod,
-                normalized_entities.NormalizedStateSupervisionPeriod,
-                normalized_entities.NormalizedStateSupervisionCaseTypeEntry,
-                normalized_entities.NormalizedStateSupervisionViolation,
-                normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
-                normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
-                normalized_entities.NormalizedStateSupervisionViolationResponse,
-                normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
-            ],
-            required_reference_tables=[
-                SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-            ],
-            required_state_based_reference_tables=[
-                SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME
-            ],
-            state_specific_required_delegates=[
-                StateSpecificIncarcerationDelegate,
-                StateSpecificSupervisionDelegate,
-                StateSpecificViolationDelegate,
-            ],
-            state_specific_required_reference_tables={
-                # We need to bring in the US_MO sentence status table to load
-                # state-specific versions of sentences
-                StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
-            },
-        )
+    def required_entities(
+        cls,
+    ) -> List[Union[Type[Entity], Type[NormalizedStateEntity]]]:
+        return [
+            entities.StatePerson,
+            entities.StatePersonRace,
+            entities.StatePersonEthnicity,
+            entities.StatePersonExternalId,
+            normalized_entities.NormalizedStateSupervisionContact,
+            normalized_entities.NormalizedStateSupervisionSentence,
+            normalized_entities.NormalizedStateIncarcerationSentence,
+            normalized_entities.NormalizedStateAssessment,
+            normalized_entities.NormalizedStateIncarcerationPeriod,
+            normalized_entities.NormalizedStateSupervisionPeriod,
+            normalized_entities.NormalizedStateSupervisionCaseTypeEntry,
+            normalized_entities.NormalizedStateSupervisionViolation,
+            normalized_entities.NormalizedStateSupervisionViolationTypeEntry,
+            normalized_entities.NormalizedStateSupervisionViolatedConditionEntry,
+            normalized_entities.NormalizedStateSupervisionViolationResponse,
+            normalized_entities.NormalizedStateSupervisionViolationResponseDecisionEntry,
+        ]
+
+    @classmethod
+    def required_reference_tables(cls) -> List[str]:
+        return [
+            SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+        ]
+
+    @classmethod
+    def required_state_based_reference_tables(cls) -> List[str]:
+        return [SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME]
+
+    @classmethod
+    def state_specific_required_delegates(cls) -> List[Type[StateSpecificDelegate]]:
+        return [
+            StateSpecificIncarcerationDelegate,
+            StateSpecificSupervisionDelegate,
+            StateSpecificViolationDelegate,
+        ]
+
+    @classmethod
+    def state_specific_required_reference_tables(cls) -> Dict[StateCode, List[str]]:
+        return {
+            # We need to bring in the US_MO sentence status table to load
+            # state-specific versions of sentences
+            StateCode.US_MO: [US_MO_SENTENCE_STATUSES_VIEW_NAME]
+        }
+
+    @classmethod
+    def pipeline_name(cls) -> str:
+        return "SUPERVISION_METRICS"
 
     @classmethod
     def identifier(cls) -> BaseIdentifier:

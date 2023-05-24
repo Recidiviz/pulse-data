@@ -94,9 +94,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def setUp(self) -> None:
         self.metric_producer = metric_producer.SupervisionMetricProducer()
         self.identifier = identifier.SupervisionIdentifier()
-        self.pipeline_config = (
-            pipeline.SupervisionMetricsPipelineRunDelegate.pipeline_config()
-        )
+        self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
     def test_produce_supervision_metrics(self) -> None:
         """Tests the produce_supervision_metrics function."""
@@ -1995,7 +1993,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
     def test_include_event_in_metric_not_out_of_state(self) -> None:
-
         event = SupervisionPopulationEvent(
             state_code="US_XX",
             year=2018,
@@ -2046,7 +2043,6 @@ class TestIncludeEventInMetric(unittest.TestCase):
         )
 
     def test_include_event_in_metric_not_in_state(self) -> None:
-
         event = SupervisionPopulationEvent(
             state_code="US_XX",
             year=2018,

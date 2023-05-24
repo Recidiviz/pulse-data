@@ -123,7 +123,7 @@ from recidiviz.tests.calculator.pipeline.metrics.supervision.identifier_test imp
     create_termination_event_from_period,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_run_delegate,
+    default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -173,7 +173,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         self.mock_metric_producer_supervision_delegate.return_value = (
             UsXxSupervisionDelegate([], [])
         )
-        self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -438,7 +438,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             },
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: person_race_data,
@@ -555,7 +555,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            pipeline_cls=self.run_delegate_class,
+            pipeline_cls=self.pipeline_class,
             state_code=state_code,
             project_id=project,
             dataset_id=dataset,
@@ -773,7 +773,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -1003,7 +1003,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -1043,7 +1043,7 @@ class TestClassifyEvents(unittest.TestCase):
             self.state_specific_delegate_patcher.start()
         )
         self.identifier = identifier.SupervisionIdentifier()
-        self.run_delegate_class = pipeline.SupervisionMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.SupervisionMetricsPipeline
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -1244,7 +1244,7 @@ class TestClassifyEvents(unittest.TestCase):
                 ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 

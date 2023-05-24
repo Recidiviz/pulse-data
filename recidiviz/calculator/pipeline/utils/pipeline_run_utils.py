@@ -21,6 +21,7 @@ import inspect
 from types import ModuleType
 from typing import List, Type
 
+from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
 from recidiviz.calculator.pipeline import (
     normalization as normalization_pipeline_top_level,
 )
@@ -89,4 +90,5 @@ def collect_all_pipeline_modules() -> List[ModuleType]:
 _TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     normalization_pipeline_top_level,
     supplemental_pipeline_top_level,
+    metrics_pipeline_top_level,
 ]

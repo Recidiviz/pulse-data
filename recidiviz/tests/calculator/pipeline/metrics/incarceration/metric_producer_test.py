@@ -89,9 +89,7 @@ class TestProduceIncarcerationMetrics(unittest.TestCase):
 
     def setUp(self) -> None:
         self.metric_producer = metric_producer.IncarcerationMetricProducer()
-        self.pipeline_config = (
-            pipeline.IncarcerationMetricsPipelineRunDelegate.pipeline_config()
-        )
+        self.pipeline_class = pipeline.IncarcerationMetricsPipeline
 
     @freeze_time("2000-03-01")
     def test_produce_incarceration_metrics(self) -> None:
