@@ -16,13 +16,8 @@
 # =============================================================================
 """Entity normalizer for normalizing all entities with configured normalization
 processes."""
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
-from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
-    BaseEntityNormalizer,
-    EntityNormalizerContext,
-    EntityNormalizerResult,
-)
 from recidiviz.calculator.pipeline.normalization.utils.entity_normalization_manager_utils import (
     normalized_periods_for_calculations,
     normalized_violation_responses_from_processed_versions,
@@ -57,6 +52,7 @@ from recidiviz.calculator.pipeline.normalization.utils.normalized_entities impor
     NormalizedStateSupervisionSentence,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
+    AdditionalAttributesMap,
     merge_additional_attributes_maps,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
@@ -71,6 +67,7 @@ from recidiviz.calculator.query.state.views.reference.state_charge_offense_descr
 from recidiviz.calculator.query.state.views.reference.state_person_to_state_staff import (
     STATE_PERSON_TO_STATE_STAFF_VIEW_NAME,
 )
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import CoreEntityFieldIndex
 from recidiviz.persistence.entity.state.entities import (
     StateAssessment,
@@ -84,8 +81,12 @@ from recidiviz.persistence.entity.state.entities import (
     StateSupervisionViolationResponse,
 )
 
+EntityNormalizerContext = Dict[str, Any]
 
-class ComprehensiveEntityNormalizer(BaseEntityNormalizer):
+EntityNormalizerResult = Tuple[Dict[str, Sequence[Entity]], AdditionalAttributesMap]
+
+
+class ComprehensiveEntityNormalizer:
     """Entity normalizer class for the normalization pipeline that normalizes all
     entities with configured normalization processes."""
 
