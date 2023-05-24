@@ -110,6 +110,7 @@ output:
                     $mappings:
                       StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN:
                         - Non Idaho Commitment
+                        - Parole Violator
                       StateSupervisionPeriodSupervisionType.INVESTIGATION:
                         - Investigation
                       StateSupervisionPeriodSupervisionType.PAROLE:
