@@ -1295,16 +1295,19 @@ class BigQueryClientImpl(BigQueryClient):
         """Loads data from a source table to a destination table, depending on the write_disposition passed in
         it can either append or overwrite the destination table. Defaults to WRITE_APPEND.
         """
-        dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
+        source_dataset_ref = self.dataset_ref_for_id(source_dataset_id)
+        destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
 
-        if not self.table_exists(dataset_ref, destination_table_id):
+        if not self.table_exists(destination_dataset_ref, destination_table_id):
             raise ValueError(
                 f"Destination table [{self.project_id}.{destination_dataset_id}.{destination_table_id}]"
                 f" does not exist!"
             )
 
-        source_table = self.get_table(dataset_ref, source_table_id)
-        destination_table = self.get_table(dataset_ref, destination_table_id)
+        source_table = self.get_table(source_dataset_ref, source_table_id)
+        destination_table = self.get_table(
+            destination_dataset_ref, destination_table_id
+        )
 
         select_columns = "*"
 

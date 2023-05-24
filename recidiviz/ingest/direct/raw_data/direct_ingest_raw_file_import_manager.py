@@ -549,7 +549,8 @@ class DirectIngestRawFileImportManager:
         append_job.result()
 
         self.big_query_client.delete_table(
-            temp_new_raw_data_address.dataset_id, temp_new_raw_data_address.table_id
+            temp_new_raw_data_address.dataset_id,
+            temp_new_raw_data_address.table_id,
         )
         self.big_query_client.delete_table(
             temp_raw_data_diff_table_address.dataset_id,
