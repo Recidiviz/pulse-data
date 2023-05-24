@@ -30,8 +30,8 @@ from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineRunDelega
 from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
     MetricPipelineRunDelegate,
 )
-from recidiviz.calculator.pipeline.normalization.base_normalization_pipeline import (
-    NormalizationPipelineRunDelegate,
+from recidiviz.calculator.pipeline.normalization.comprehensive.pipeline import (
+    ComprehensiveNormalizationPipeline,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
     state_base_entity_class_for_entity_class,
@@ -106,8 +106,7 @@ def run_test_pipeline(
                 write_to_bq_constructor,
             ):
                 with patch(
-                    "recidiviz.calculator.pipeline.normalization"
-                    ".base_normalization_pipeline"
+                    "recidiviz.calculator.pipeline.normalization.comprehensive.pipeline"
                     ".WriteToBigQuery",
                     write_to_bq_constructor,
                 ):
@@ -264,7 +263,7 @@ def default_arg_list_for_pipeline(
                 metric_types_filter=additional_pipeline_args.get("metric_types_filter"),
             )
         )
-    elif issubclass(pipeline, NormalizationPipelineRunDelegate):
+    elif issubclass(pipeline, ComprehensiveNormalizationPipeline):
         pass
     elif issubclass(pipeline, SupplementalDatasetPipeline):
         pass

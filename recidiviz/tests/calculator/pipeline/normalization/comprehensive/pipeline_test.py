@@ -74,7 +74,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         )
 
         self.required_state_specific_delegates_patcher = mock.patch(
-            "recidiviz.calculator.pipeline.normalization.base_normalization_pipeline"
+            "recidiviz.calculator.pipeline.normalization.comprehensive.pipeline"
             ".get_required_state_specific_delegates",
             return_value=STATE_DELEGATES_FOR_TESTS,
         )
@@ -82,7 +82,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         self.mock_get_required_state_delegates = (
             self.required_state_specific_delegates_patcher.start()
         )
-        self.run_delegate_class = pipeline.ComprehensiveNormalizationPipelineRunDelegate
+        self.pipeline_class = pipeline.ComprehensiveNormalizationPipeline
 
     def tearDown(self) -> None:
         self.required_state_specific_delegates_patcher.stop()
@@ -93,7 +93,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         data_dict: Dict[str, List[Dict]],
         unifying_id_field_filter_set: Optional[Set[int]] = None,
     ) -> None:
-        """Runs a test version of the supervision pipeline."""
+        """Runs a test version of the normalization pipeline."""
         project = "recidiviz-staging"
         dataset = "dataset"
 
@@ -106,18 +106,18 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             dataset,
             expected_output_tags=[
                 entity.__name__
-                for manager in pipeline.ComprehensiveNormalizationPipelineRunDelegate.required_entity_normalization_managers()
+                for manager in self.pipeline_class.required_entity_normalization_managers()
                 for entity in manager.normalized_entity_classes()
             ]
             + [
                 f"{child_entity.__name__}_{parent_entity.__name__}"
-                for manager in pipeline.ComprehensiveNormalizationPipelineRunDelegate.required_entity_normalization_managers()
+                for manager in self.pipeline_class.required_entity_normalization_managers()
                 for child_entity, parent_entity in manager.normalized_entity_associations()
             ],
         )
 
         run_test_pipeline(
-            pipeline_cls=pipeline.ComprehensiveNormalizationPipelineRunDelegate,
+            pipeline_cls=self.pipeline_class,
             state_code=state_code,
             project_id=project,
             dataset_id=dataset,
@@ -300,7 +300,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
         data_dict = default_data_dict_for_root_schema_classes(
             [
                 get_state_database_entity_with_name(entity_class.__name__)
-                for entity_class in self.run_delegate_class.pipeline_config().required_entities
+                for entity_class in self.pipeline_class.required_entities()
             ]
         )
         data_dict_overrides = {
@@ -349,9 +349,7 @@ class TestComprehensiveNormalizationPipeline(unittest.TestCase):
             all_normalized_entities.update(normalized_entities)
 
         missing_entities = all_normalized_entities.difference(
-            set(
-                pipeline.ComprehensiveNormalizationPipelineRunDelegate.pipeline_config().required_entities
-            )
+            set(self.pipeline_class.required_entities())
         )
 
         self.assertEqual(set(), missing_entities)

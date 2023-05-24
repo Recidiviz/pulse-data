@@ -18,6 +18,9 @@
 import unittest
 from typing import Set
 
+from recidiviz.calculator.pipeline.normalization.comprehensive.pipeline import (
+    ComprehensiveNormalizationPipeline,
+)
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
@@ -87,3 +90,5 @@ class TestPipelineValidations(unittest.TestCase):
         for pipeline_class in pipeline_classes:
             if issubclass(pipeline_class, SupplementalDatasetPipeline):
                 self.assertTrue("SUPPLEMENTAL" in pipeline_class.pipeline_name())
+            elif issubclass(pipeline_class, ComprehensiveNormalizationPipeline):
+                self.assertTrue("NORMALIZATION" in pipeline_class.pipeline_name())

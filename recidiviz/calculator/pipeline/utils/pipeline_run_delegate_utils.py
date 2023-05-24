@@ -22,9 +22,6 @@ from types import ModuleType
 from typing import List, Type
 
 from recidiviz.calculator.pipeline import metrics as metrics_pipeline_top_level
-from recidiviz.calculator.pipeline import (
-    normalization as normalization_pipeline_top_level,
-)
 from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineRunDelegate
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
 
@@ -91,5 +88,4 @@ def collect_all_pipeline_run_delegate_modules() -> List[ModuleType]:
 
 TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     metrics_pipeline_top_level,
-    normalization_pipeline_top_level,
 ]

@@ -21,12 +21,12 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 
 import attr
 
-from recidiviz.calculator.pipeline.normalization.base_entity_normalizer import (
-    EntityNormalizerResult,
-)
 from recidiviz.calculator.pipeline.normalization.comprehensive import (
     entity_normalizer,
     pipeline,
+)
+from recidiviz.calculator.pipeline.normalization.comprehensive.entity_normalizer import (
+    EntityNormalizerResult,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
     NormalizedStateEntity,
@@ -95,9 +95,7 @@ class TestNormalizeEntities(unittest.TestCase):
     """Tests the normalize_entities function on the ComprehensiveEntityNormalizer."""
 
     def setUp(self) -> None:
-        self.pipeline_config = (
-            pipeline.ComprehensiveNormalizationPipelineRunDelegate.pipeline_config()
-        )
+        self.pipeline = pipeline.ComprehensiveNormalizationPipeline
         self.entity_normalizer = entity_normalizer.ComprehensiveEntityNormalizer()
 
         self.full_graph_person = generate_full_graph_state_person(
@@ -144,7 +142,7 @@ class TestNormalizeEntities(unittest.TestCase):
         else:
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=self.pipeline_config.state_specific_required_delegates,
+                required_delegates=self.pipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 
@@ -469,9 +467,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.pipeline_config = (
-            pipeline.ComprehensiveNormalizationPipelineRunDelegate.pipeline_config()
-        )
+        self.pipeline = pipeline.ComprehensiveNormalizationPipeline
         self.entity_normalizer = entity_normalizer.ComprehensiveEntityNormalizer()
 
         self.full_graph_person = generate_full_graph_state_person(
@@ -520,7 +516,7 @@ class TestNormalizeEntitiesConvertedToNormalized(unittest.TestCase):
         else:
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=self.pipeline_config.state_specific_required_delegates,
+                required_delegates=self.pipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 
