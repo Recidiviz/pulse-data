@@ -24,7 +24,8 @@ resource "google_cloud_scheduler_job" "schedule_incremental_calculation_pipeline
   pubsub_target {
     # topic's full resource name.
     topic_name = "projects/${var.project_id}/topics/v1.calculator.trigger_calculation_pipelines"
-    data       = base64encode("DAILY")
+    # Run nightly DAG with no state_code or instance filter.
+    data = base64encode("{}")
   }
 }
 
