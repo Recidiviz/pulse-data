@@ -463,6 +463,27 @@ class BigQueryClientImplTest(unittest.TestCase):
         )
 
     @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
+    def test_insert_into_table_from_table_different_datasets_async(
+        self, mock_job_config: mock.MagicMock
+    ) -> None:
+        """Tests that the insert_into_table_from_table_async function runs a query with the correct source and
+        destination datasets."""
+        self.bq_client.insert_into_table_from_table_async(
+            source_dataset_id="mock-source-dataset",
+            source_table_id="mock_source_table",
+            destination_dataset_id="mock-destination-dataset",
+            destination_table_id="mock_destination_table",
+            use_query_cache=False,
+        )
+        expected_query = "SELECT * FROM `fake-recidiviz-project.mock-source-dataset.mock_source_table`"
+        self.mock_client.get_table.assert_called()
+        self.mock_client.query.assert_called_with(
+            query=expected_query,
+            location=BigQueryClient.DEFAULT_REGION,
+            job_config=mock_job_config(),
+        )
+
+    @mock.patch("google.cloud.bigquery.job.QueryJobConfig")
     def test_insert_into_table_from_table_async_hydrate_missing_columns(
         self, mock_job_config: mock.MagicMock
     ) -> None:
