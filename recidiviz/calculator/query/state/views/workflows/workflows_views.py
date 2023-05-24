@@ -39,6 +39,9 @@ from recidiviz.calculator.query.state.views.workflows.clients_referral_completed
 from recidiviz.calculator.query.state.views.workflows.clients_referral_form_copied import (
     CLIENTS_REFERRAL_FORM_COPIED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.workflows.clients_referral_form_downloaded import (
+    CLIENTS_REFERRAL_FORM_DOWNLOADED_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.workflows.clients_referral_form_edited import (
     CLIENTS_REFERRAL_FORM_EDITED_VIEW_BUILDER,
 )
@@ -104,6 +107,7 @@ WORKFLOWS_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REIDENTIFIED_DASHBOARD_USERS_VIEW_BUILDER,
     CLIENTS_PROFILE_VIEWED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_COPIED_VIEW_BUILDER,
+    CLIENTS_REFERRAL_FORM_DOWNLOADED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_FIRST_EDITED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_PRINTED_VIEW_BUILDER,
     CLIENTS_REFERRAL_FORM_SUBMITTED_VIEW_BUILDER,
