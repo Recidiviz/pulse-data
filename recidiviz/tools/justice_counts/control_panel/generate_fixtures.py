@@ -21,7 +21,7 @@
 import datetime
 import itertools
 import random
-from typing import Any, Iterable, List, cast
+from typing import Iterable, List, cast
 
 from sqlalchemy.orm import Session
 
@@ -31,7 +31,6 @@ from recidiviz.justice_counts.datapoints_for_metric import DatapointsForMetric
 from recidiviz.justice_counts.dimensions.base import DimensionBase
 from recidiviz.justice_counts.metrics.metric_definition import (
     AggregatedDimension,
-    Context,
     MetricDefinition,
 )
 from recidiviz.justice_counts.report import ReportInterface
@@ -60,6 +59,8 @@ def _create_aggregate_datapoint(
         end_date=report.date_range_end,
         dimension_identifier_to_member=None,
         report=report,
+        source_id=report.source_id,
+        is_report_datapoint=True,
     )
 
 
@@ -79,35 +80,11 @@ def _create_dimension_datapoints(
                 dimension.dimension_identifier(): d.dimension_name
             },
             report=report,
+            source_id=report.source_id,
+            is_report_datapoint=True,
         )
         for d in cast(Iterable[DimensionBase], dimension.dimension)
     ]
-
-
-def _create_context_datapoint(
-    report: schema.Report,
-    metric_definition: MetricDefinition,
-    context: Context,
-) -> schema.Datapoint:
-    value: Any
-    if context.value_type == ValueType.NUMBER:
-        value = random.randint(10000, 100000)
-    elif context.value_type == ValueType.MULTIPLE_CHOICE:
-        value = random.choice(["True", "False"])
-    elif context.value_type == ValueType.TEXT:
-        value = "foobar"
-    else:
-        raise ValueError("Invalid ValueType")
-    return schema.Datapoint(
-        value=value,
-        metric_definition_key=metric_definition.key,
-        context_key=context.key.value,
-        value_type=context.value_type,
-        start_date=report.date_range_start,
-        end_date=report.date_range_end,
-        dimension_identifier_to_member=None,
-        report=report,
-    )
 
 
 def _get_datapoints_for_report(
@@ -133,14 +110,6 @@ def _get_datapoints_for_report(
                         report=report,
                         metric_definition=metric_definition,
                     )
-                ]
-                + [
-                    _create_context_datapoint(
-                        report=report,
-                        metric_definition=metric_definition,
-                        context=context,
-                    )
-                    for context in metric_definition.contexts
                 ]
                 + list(
                     itertools.chain(
