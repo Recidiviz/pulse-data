@@ -95,6 +95,9 @@ US_TN_RAW_DATASET: str = "us_tn_raw_data_up_to_date_views"
 # Where US_PA raw data lives
 US_PA_RAW_DATASET: str = "us_pa_raw_data_up_to_date_views"
 
+# Where US_CA raw data lives
+US_CA_RAW_DATASET: str = "us_ca_raw_data_up_to_date_views"
+
 # Views that power the workflows part of the state dashboard
 WORKFLOWS_VIEWS_DATASET: str = "workflows_views"
 

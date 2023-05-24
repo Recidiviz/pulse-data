@@ -7,6 +7,8 @@ data_classification: source
 primary_key_cols:
   - OffenderId
   - ORTGID
+  - In_Date
+  - out_date
 columns:
   - name: OffenderId
     is_pii: True
