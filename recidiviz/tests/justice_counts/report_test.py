@@ -326,6 +326,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     source_id=agency_id_A,
                     context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
                     value=february_fiscal_frequency.to_json_str(),
+                    is_report_datapoint=False,
                 )
                 datapoints.append(datapoint)
                 session.add(datapoint)
@@ -1124,6 +1125,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     value=CustomReportingFrequency(
                         frequency=schema.ReportingFrequency.ANNUAL
                     ).to_json_str(),
+                    is_report_datapoint=False,
                 ),
             )
 
@@ -1155,6 +1157,7 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     value=CustomReportingFrequency(
                         frequency=schema.ReportingFrequency.MONTHLY
                     ).to_json_str(),
+                    is_report_datapoint=False,
                 ),
             )
 

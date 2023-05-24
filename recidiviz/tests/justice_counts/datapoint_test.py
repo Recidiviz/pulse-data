@@ -569,6 +569,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                     context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
                     dimension_identifier_to_member=None,
                     value=str(True),
+                    is_report_datapoint=False,
                 ),
             )
             session.flush()

@@ -143,18 +143,21 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 context_key=DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
                 dimension_identifier_to_member=None,
                 value=str(True),
+                is_report_datapoint=False,
             )
             # Set metrics to Enabled
             setting_datapoint_enabled = schema.Datapoint(
                 metric_definition_key=supervision.expenses.key,
                 source=agency,
                 enabled=True,
+                is_report_datapoint=False,
             )
             # Set metrics to Disabled
             setting_datapoint_disabled = schema.Datapoint(
                 metric_definition_key=supervision.discharges.key,
                 source=agency,
                 enabled=False,
+                is_report_datapoint=False,
             )
 
             spreadsheet = self.test_schema_objects.get_test_spreadsheet(

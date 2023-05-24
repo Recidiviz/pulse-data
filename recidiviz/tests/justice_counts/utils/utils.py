@@ -341,6 +341,7 @@ class JusticeCountsSchemaTestObjects:
             value=CustomReportingFrequency(
                 frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
             ).to_json_str(),
+            is_report_datapoint=False,
         )
 
     # Spreadsheets
@@ -644,6 +645,7 @@ class JusticeCountsSchemaTestObjects:
             metric_definition_key=prisons.funding.key,
             enabled=False,
             source_id=agency_id,
+            is_report_datapoint=False,
         )
         custom_reporting_frequency = schema.Datapoint(
             metric_definition_key=prisons.funding.key,
@@ -654,6 +656,7 @@ class JusticeCountsSchemaTestObjects:
                     frequency=schema.ReportingFrequency.ANNUAL, starting_month=2
                 ).to_json_str()
             ),
+            is_report_datapoint=False,
         )
         excluded_metric_settings_datapoints = [
             schema.Datapoint(
@@ -661,12 +664,14 @@ class JusticeCountsSchemaTestObjects:
                 includes_excludes_key="VOLUNTEER",
                 value="Yes",
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.staff.key,
                 includes_excludes_key="INTERN",
                 value="No",
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
         ]
         prefilled_context_datapoint = schema.Datapoint(
@@ -674,6 +679,7 @@ class JusticeCountsSchemaTestObjects:
             context_key=ContextKey.ADDITIONAL_CONTEXT.name,
             value="this additional context provides contexts",
             source_id=agency_id,
+            is_report_datapoint=False,
         )
 
         disaggregation_datapoints = [
@@ -685,6 +691,7 @@ class JusticeCountsSchemaTestObjects:
                 },
                 enabled=False,
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
@@ -693,6 +700,7 @@ class JusticeCountsSchemaTestObjects:
                 },
                 enabled=False,
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
@@ -701,6 +709,7 @@ class JusticeCountsSchemaTestObjects:
                 },
                 enabled=False,
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
@@ -709,6 +718,7 @@ class JusticeCountsSchemaTestObjects:
                 },
                 enabled=False,
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
@@ -717,6 +727,7 @@ class JusticeCountsSchemaTestObjects:
                 },
                 enabled=False,
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.admissions.key,
@@ -725,6 +736,7 @@ class JusticeCountsSchemaTestObjects:
                 },
                 enabled=False,
                 source_id=agency_id,
+                is_report_datapoint=False,
             ),
             # Excluded disaggregation settings
             schema.Datapoint(
@@ -735,6 +747,7 @@ class JusticeCountsSchemaTestObjects:
                 includes_excludes_key="AFTER_SANCTION",
                 source_id=agency_id,
                 value="No",
+                is_report_datapoint=False,
             ),
             schema.Datapoint(
                 metric_definition_key=prisons.releases.key,
@@ -744,6 +757,7 @@ class JusticeCountsSchemaTestObjects:
                 includes_excludes_key="ELIGIBLE",
                 source_id=agency_id,
                 value="No",
+                is_report_datapoint=False,
             ),
         ]
         return (

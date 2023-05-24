@@ -23,6 +23,7 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
+from sqlalchemy import and_, false, null, or_
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
@@ -108,7 +109,15 @@ class DatapointInterface:
         """
         datapoints = (
             session.query(schema.Datapoint)
-            .filter(schema.Datapoint.source_id == agency_id)
+            .filter(
+                and_(
+                    schema.Datapoint.source_id == agency_id,
+                    or_(
+                        schema.Datapoint.is_report_datapoint == false(),
+                        schema.Datapoint.is_report_datapoint == null(),
+                    ),
+                )
+            )
             .all()
         )
         return filter_deprecated_datapoints(datapoints=datapoints)
@@ -376,6 +385,8 @@ class DatapointInterface:
             }
             if dimension
             else None,
+            source_id=report.source_id,
+            is_report_datapoint=True,
         )
 
         # Store the new datapoint in this dict, so that it can be
@@ -530,6 +541,7 @@ class DatapointInterface:
                     source=agency,
                     enabled=agency_metric.is_metric_enabled,
                     dimension_identifier_to_member=None,
+                    is_report_datapoint=False,
                 ),
                 session=session,
             )
@@ -543,6 +555,7 @@ class DatapointInterface:
                     context_key=context.key.value,
                     value=context.value,
                     dimension_identifier_to_member=None,
+                    is_report_datapoint=False,
                 ),
                 session,
             )
@@ -578,6 +591,7 @@ class DatapointInterface:
                     context_key=REPORTING_FREQUENCY_CONTEXT_KEY,
                     value=agency_metric.custom_reporting_frequency.to_json_str(),
                     dimension_identifier_to_member=None,
+                    is_report_datapoint=False,
                 ),
                 session,
             )
@@ -606,6 +620,7 @@ class DatapointInterface:
                             value=str(
                                 agency_metric.disaggregated_by_supervision_subsystems
                             ),
+                            is_report_datapoint=False,
                         ),
                         session,
                     )
@@ -620,6 +635,7 @@ class DatapointInterface:
                                 source=agency,
                                 enabled=not agency_metric.disaggregated_by_supervision_subsystems,
                                 dimension_identifier_to_member=None,
+                                is_report_datapoint=False,
                             ),
                             session=session,
                         )
@@ -632,6 +648,7 @@ class DatapointInterface:
                                 source=agency,
                                 enabled=agency_metric.disaggregated_by_supervision_subsystems,
                                 dimension_identifier_to_member=None,
+                                is_report_datapoint=False,
                             ),
                             session=session,
                         )
@@ -650,6 +667,7 @@ class DatapointInterface:
                             dimension_identifier_to_member={
                                 dimension.dimension_identifier(): dimension.dimension_name
                             },
+                            is_report_datapoint=False,
                         ),
                         session=session,
                     )
@@ -673,6 +691,7 @@ class DatapointInterface:
                             source=agency,
                             dimension_identifier_to_member=dimension_identifier_to_member,
                             enabled=is_dimension_enabled,
+                            is_report_datapoint=False,
                         ),
                         session=session,
                     )
@@ -718,6 +737,7 @@ class DatapointInterface:
                 includes_excludes_key=member.name,
                 value=setting.value,
                 dimension_identifier_to_member=dimension_identifier_to_member,
+                is_report_datapoint=False,
             ),
             session=session,
         )
