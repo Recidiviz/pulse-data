@@ -19,7 +19,7 @@ recidiviz/tools/run_sandbox_calculation_pipeline.py for details on how to launch
 local run."""
 import datetime
 from copy import deepcopy
-from typing import Dict, Type
+from typing import Dict, List, Type
 
 import apache_beam as beam
 from apache_beam import Pipeline
@@ -51,6 +51,10 @@ class UsIdCaseNoteExtractedEntitiesPipeline(SupplementalDatasetPipeline):
     @classmethod
     def pipeline_name(cls) -> str:
         return "US_ID_CASE_NOTE_EXTRACTED_ENTITIES_SUPPLEMENTAL"
+
+    @classmethod
+    def required_reference_tables(cls) -> List[str]:
+        return [US_ID_CASE_UPDATE_INFO_VIEW_NAME]
 
     @classmethod
     def table_id(cls) -> str:

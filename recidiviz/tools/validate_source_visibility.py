@@ -32,8 +32,8 @@ from typing import Dict, Iterable, List, Optional, Set
 import attr
 import pygtrie
 
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
-    collect_all_pipeline_run_delegate_modules,
+from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
+    collect_all_pipeline_modules,
 )
 from recidiviz.vendor.modulefinder import modulefinder
 
@@ -226,7 +226,7 @@ def main() -> int:
     # TODO(#6861): Support enforcing which external packages can be used as well.
     success = True
 
-    for pipeline in collect_all_pipeline_run_delegate_modules():
+    for pipeline in collect_all_pipeline_modules():
         if pipeline.__file__ is None:
             raise ValueError(f"No file associated with {pipeline}.")
         valid_prefixes = {

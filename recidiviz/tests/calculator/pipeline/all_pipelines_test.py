@@ -25,12 +25,9 @@ from recidiviz.calculator.pipeline.normalization.comprehensive.pipeline import (
 from recidiviz.calculator.pipeline.supplemental.base_supplemental_dataset_pipeline import (
     SupplementalDatasetPipeline,
 )
-from recidiviz.calculator.pipeline.utils.pipeline_run_delegate_utils import (
-    collect_all_pipeline_names,
-    collect_all_pipeline_run_delegate_classes,
-)
 from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
     collect_all_pipeline_classes,
+    collect_all_pipeline_names,
 )
 from recidiviz.calculator.query.state.views.reference.reference_views import (
     REFERENCE_VIEW_BUILDERS,
@@ -57,22 +54,35 @@ class TestReferenceViews(unittest.TestCase):
     def test_all_reference_views_in_dataset(self) -> None:
         """Asserts that all the reference views required by the pipelines are in the
         reference_views dataset."""
-        run_delegates = collect_all_pipeline_run_delegate_classes()
+        pipelines = collect_all_pipeline_classes()
 
         all_required_reference_tables: Set[str] = set()
 
-        for delegate in run_delegates:
-            all_required_reference_tables.update(
-                set(delegate.pipeline_config().required_reference_tables)
+        for pipeline in pipelines:
+            self.assertTrue(
+                hasattr(pipeline, "required_reference_tables")
+                or hasattr(pipeline, "required_state_based_reference_tables")
+                or hasattr(pipeline, "state_specific_required_reference_tables")
             )
 
-            all_required_reference_tables.update(
-                {
-                    view
-                    for state_views in delegate.pipeline_config().state_specific_required_reference_tables.values()
-                    for view in state_views
-                }
-            )
+            if hasattr(pipeline, "required_reference_tables"):
+                all_required_reference_tables.update(
+                    set(pipeline.required_reference_tables())
+                )
+
+            if hasattr(pipeline, "required_state_based_reference_tables"):
+                all_required_reference_tables.update(
+                    set(pipeline.required_state_based_reference_tables())
+                )
+
+            if hasattr(pipeline, "state_specific_required_reference_tables"):
+                all_required_reference_tables.update(
+                    {
+                        view
+                        for state_views in pipeline.state_specific_required_reference_tables().values()
+                        for view in state_views
+                    }
+                )
 
         deployed_reference_view_names: Set[str] = {
             view_builder.view_id for view_builder in REFERENCE_VIEW_BUILDERS
