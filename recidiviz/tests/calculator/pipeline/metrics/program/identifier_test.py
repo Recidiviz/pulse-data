@@ -32,7 +32,7 @@ from recidiviz.calculator.pipeline.metrics.program.events import (
     ProgramReferralEvent,
 )
 from recidiviz.calculator.pipeline.metrics.program.pipeline import (
-    ProgramMetricsPipelineRunDelegate,
+    ProgramMetricsPipeline,
 )
 from recidiviz.calculator.pipeline.normalization.utils.normalization_managers.assessment_normalization_manager import (
     DEFAULT_ASSESSMENT_SCORE_BUCKET,
@@ -115,7 +115,7 @@ class TestFindProgramEvents(unittest.TestCase):
         else:
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=ProgramMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=ProgramMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 

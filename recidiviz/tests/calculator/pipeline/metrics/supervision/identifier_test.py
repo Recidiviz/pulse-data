@@ -42,7 +42,7 @@ from recidiviz.calculator.pipeline.metrics.supervision.metrics import (
     SupervisionMetricType,
 )
 from recidiviz.calculator.pipeline.metrics.supervision.pipeline import (
-    SupervisionMetricsPipelineRunDelegate,
+    SupervisionMetricsPipeline,
 )
 from recidiviz.calculator.pipeline.metrics.supervision.supervision_case_compliance import (
     SupervisionCaseCompliance,
@@ -216,7 +216,7 @@ class TestClassifySupervisionEvents(unittest.TestCase):
             )
             required_delegates = get_required_state_specific_delegates(
                 state_code=(state_code_override or _STATE_CODE),
-                required_delegates=SupervisionMetricsPipelineRunDelegate.pipeline_config().state_specific_required_delegates,
+                required_delegates=SupervisionMetricsPipeline.state_specific_required_delegates(),
                 entity_kwargs=entity_kwargs,
             )
 
@@ -2391,7 +2391,8 @@ class TestClassifySupervisionEvents(unittest.TestCase):
         self,
     ) -> None:
         """Tests the find_supervision_events function where a SupervisionPopulationEvent
-        will not be created if there is no supervising officer attached to the period."""
+        will not be created if there is no supervising officer attached to the period.
+        """
 
         supervision_period_start_date = date(2018, 3, 5)
         supervision_period_termination_date = date(2018, 5, 19)
@@ -3292,7 +3293,8 @@ class TestFindPopulationEventsForSupervisionPeriod(unittest.TestCase):
 
     def test_find_population_events_for_supervision_period_multiple_years(self) -> None:
         """Tests the find_population_events_for_supervision_period function when the supervision period overlaps
-        multiple years, and there is an incarceration period during this time that also overlaps multiple years."""
+        multiple years, and there is an incarceration period during this time that also overlaps multiple years.
+        """
 
         supervision_period = NormalizedStateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
@@ -5682,7 +5684,8 @@ class TestFindSupervisionTerminationEvent(unittest.TestCase):
         self,
     ) -> None:
         """Tests that the SupervisionTerminationEvent has in_supervision_population_on_date=False
-        if the supervision period is 0 full days and non-overlapping with other periods."""
+        if the supervision period is 0 full days and non-overlapping with other periods.
+        """
         self.run_overlapping_periods_test(
             date(2018, 3, 5), date(2019, 5, 20), False, False
         )
@@ -5883,7 +5886,8 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         """Tests that the SupervisionStartEvent has in_incarceration_population_on_date=False
         if the start date occurs before an incarceration period for that person,
         even if the supervision and incarceration periods are overlapping thereafter.
-        in_supervision_population_on_date=True because it's not a 0-day supervision period."""
+        in_supervision_population_on_date=True because it's not a 0-day supervision period.
+        """
         self.run_overlapping_periods_test(
             date(2018, 3, 5), date(2019, 5, 20), False, True, date(2018, 4, 1)
         )
@@ -5988,7 +5992,8 @@ class TestFindSupervisionStartEvent(unittest.TestCase):
         self,
     ) -> None:
         """Tests that the SupervisionStartEvent has in_supervision_population_on_date=False
-        if the supervision period is 0 full days and non-overlapping with other periods."""
+        if the supervision period is 0 full days and non-overlapping with other periods.
+        """
         self.run_overlapping_periods_test(
             date(2019, 5, 19), date(2019, 2, 20), False, False
         )
@@ -6678,7 +6683,6 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
     def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(
         self,
     ) -> None:
-
         assessment_1 = NormalizedStateAssessment.new_with_defaults(
             state_code="US_XX",
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -7051,7 +7055,6 @@ def create_projected_completion_event_from_period(
     event_date: date,
     **kwargs: Any,
 ) -> ProjectedSupervisionCompletionEvent:
-
     event = ProjectedSupervisionCompletionEvent(
         state_code=period.state_code,
         event_date=event_date,

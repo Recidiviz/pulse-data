@@ -83,7 +83,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_run_delegate,
+    default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -110,7 +110,7 @@ class TestProgramPipeline(unittest.TestCase):
         self.mock_get_required_state_delegates = (
             self.state_specific_delegate_patcher.start()
         )
-        self.run_delegate_class = pipeline.ProgramMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.ProgramMetricsPipeline
 
     def tearDown(self) -> None:
         self._stop_state_specific_delegate_patchers()
@@ -235,7 +235,7 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, List[Any]] = {
             schema.StatePerson.__tablename__: persons_data,
@@ -300,7 +300,7 @@ class TestProgramPipeline(unittest.TestCase):
             )
         )
         run_test_pipeline(
-            pipeline_cls=self.run_delegate_class,
+            pipeline_cls=self.pipeline_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -438,7 +438,7 @@ class TestProgramPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
 
         data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
@@ -464,7 +464,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_XX"
         self.identifier = identifier.ProgramIdentifier()
-        self.run_delegate_class = pipeline.ProgramMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.ProgramMetricsPipeline
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
             return_value=STATE_DELEGATES_FOR_TESTS,
@@ -585,7 +585,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 ClassifyResults(),
                 self.state_code,
                 self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -700,7 +700,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 ClassifyResults(),
                 state_code,
                 self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -775,7 +775,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 ClassifyResults(),
                 self.state_code,
                 self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -866,7 +866,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 ClassifyResults(),
                 self.state_code,
                 self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -946,7 +946,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 ClassifyResults(),
                 self.state_code,
                 self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helper that runs a test version of the pipeline in the provided module."""
-from typing import Any, Callable, Dict, List, Optional, Set, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Type
 
 import apache_beam
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -23,13 +23,7 @@ from apache_beam.testing.test_pipeline import TestPipeline
 from mock import patch
 
 from recidiviz.calculator.pipeline.base_pipeline import BasePipeline
-from recidiviz.calculator.pipeline.legacy_base_pipeline import (
-    BasePipeline as LegacyBasePipeline,
-)
-from recidiviz.calculator.pipeline.legacy_base_pipeline import PipelineRunDelegate
-from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import (
-    MetricPipelineRunDelegate,
-)
+from recidiviz.calculator.pipeline.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.calculator.pipeline.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
 )
@@ -51,7 +45,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
 
 
 def run_test_pipeline(
-    pipeline_cls: Union[Type[BasePipeline], Type[PipelineRunDelegate]],
+    pipeline_cls: Type[BasePipeline],
     state_code: str,
     project_id: str,
     dataset_id: str,
@@ -122,34 +116,15 @@ def run_test_pipeline(
                             ".WriteToBigQuery",
                             write_to_bq_constructor,
                         ):
-                            # TODO(#20929) Remove this section once everything is migrated to BasePipeline
-                            if issubclass(pipeline_cls, PipelineRunDelegate):
+                            with patch(
+                                "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
+                                pipeline_constructor,
+                            ):
                                 with patch(
-                                    "recidiviz.calculator.pipeline.legacy_base_pipeline.beam.Pipeline",
-                                    pipeline_constructor,
+                                    "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
+                                    get_job_id,
                                 ):
-                                    with patch(
-                                        "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
-                                        get_job_id,
-                                    ):
-                                        pipeline = LegacyBasePipeline(
-                                            pipeline_run_delegate=pipeline_cls.build_from_args(
-                                                pipeline_args
-                                            )
-                                        )
-                                        pipeline.run()
-                            else:
-                                with patch(
-                                    "recidiviz.calculator.pipeline.base_pipeline.beam.Pipeline",
-                                    pipeline_constructor,
-                                ):
-                                    with patch(
-                                        "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.job_id",
-                                        get_job_id,
-                                    ):
-                                        pipeline_cls.build_from_args(
-                                            pipeline_args
-                                        ).run()
+                                    pipeline_cls.build_from_args(pipeline_args).run()
 
 
 def default_data_dict_for_root_schema_classes(
@@ -192,8 +167,8 @@ def default_data_dict_for_root_schema_classes(
     }
 
 
-def default_data_dict_for_run_delegate(
-    run_delegate: Type[PipelineRunDelegate],
+def default_data_dict_for_pipeline_class(
+    pipeline_class: Type[MetricPipeline],
 ) -> Dict[str, List]:
     """Helper function for running test pipelines that determines the set of tables
     required for hydrating the list of entities required by the the run delegate.
@@ -203,7 +178,7 @@ def default_data_dict_for_run_delegate(
     """
     required_base_entities = [
         state_base_entity_class_for_entity_class(entity_class)
-        for entity_class in run_delegate.pipeline_config().required_entities
+        for entity_class in pipeline_class.required_entities()
     ]
 
     return default_data_dict_for_root_schema_classes(
@@ -215,7 +190,7 @@ def default_data_dict_for_run_delegate(
 
 
 def default_arg_list_for_pipeline(
-    pipeline: Union[Type[PipelineRunDelegate], Type[BasePipeline]],
+    pipeline: Type[BasePipeline],
     state_code: str,
     project_id: str,
     dataset_id: str,
@@ -253,7 +228,7 @@ def default_arg_list_for_pipeline(
             ]
         )
 
-    if issubclass(pipeline, MetricPipelineRunDelegate):
+    if issubclass(pipeline, MetricPipeline):
         pipeline_args.extend(
             _additional_default_args_for_metrics_pipeline(
                 dataset_id=dataset_id,

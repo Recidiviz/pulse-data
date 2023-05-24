@@ -96,7 +96,7 @@ from recidiviz.tests.calculator.pipeline.fake_bigquery import (
     FakeWriteToBigQueryFactory,
 )
 from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import (
-    default_data_dict_for_run_delegate,
+    default_data_dict_for_pipeline_class,
     run_test_pipeline,
 )
 from recidiviz.tests.calculator.pipeline.utils.state_utils.state_calculation_config_manager_test import (
@@ -136,7 +136,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         self.mock_get_required_state_metrics_producer_delegate = (
             self.state_specific_metrics_producer_delegate_patcher.start()
         )
-        self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.RecidivismMetricsPipeline
 
     def tearDown(self) -> None:
         self.state_specific_delegate_patcher.stop()
@@ -241,7 +241,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -409,7 +409,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             }
         ]
 
-        data_dict = default_data_dict_for_run_delegate(self.run_delegate_class)
+        data_dict = default_data_dict_for_pipeline_class(self.pipeline_class)
         data_dict_overrides: Dict[str, List[Dict[str, Any]]] = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -451,7 +451,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         )
 
         run_test_pipeline(
-            pipeline_cls=self.run_delegate_class,
+            pipeline_cls=self.pipeline_class,
             state_code="US_XX",
             project_id=project,
             dataset_id=dataset,
@@ -469,7 +469,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
     def setUp(self) -> None:
         self.state_code = "US_XX"
         self.identifier = identifier.RecidivismIdentifier()
-        self.run_delegate_class = pipeline.RecidivismMetricsPipelineRunDelegate
+        self.pipeline_class = pipeline.RecidivismMetricsPipeline
         self.state_specific_delegate_patcher = mock.patch(
             "recidiviz.calculator.pipeline.metrics.base_metric_pipeline.get_required_state_specific_delegates",
             return_value=STATE_DELEGATES_FOR_TESTS,
@@ -601,7 +601,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -682,7 +682,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
@@ -729,7 +729,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 ClassifyResults(),
                 state_code=self.state_code,
                 identifier=self.identifier,
-                pipeline_config=self.run_delegate_class.pipeline_config(),
+                state_specific_required_delegates=self.pipeline_class.state_specific_required_delegates(),
             )
         )
 
