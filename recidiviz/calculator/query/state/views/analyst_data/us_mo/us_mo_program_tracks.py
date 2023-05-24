@@ -73,14 +73,19 @@ mosop_completion_flags AS (
     LOGICAL_AND(sfl_flag) AS all_complete,
     LOGICAL_OR(uns_flag) AS has_uns,  
     LOGICAL_OR(nof_flag) AS has_nof,
-    LOGICAL_OR(any_exit_flag) AS has_any_exit  
+    LOGICAL_OR(any_exit_flag) AS has_any_exit,
+    MAX(failure_date) AS most_recent_failure,
+    SUM(CASE WHEN uns_flag THEN 1 ELSE 0 END) AS uns_ct,
+    LOGICAL_OR(p1_completed_flag) AS completed_p1
   FROM (
     SELECT 
       mosop_most_recent_cyc.DOC_ID,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'UNS' AND ACTUAL_EXIT_DT != '7799-12-31' THEN SAFE_CAST(ACTUAL_EXIT_DT AS DATE FORMAT "YYYY-MM-DD") ELSE NULL END AS failure_date, 
       CASE WHEN ACTUAL_EXIT_DT!='7799-12-31' THEN TRUE ELSE FALSE END AS any_exit_flag,
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'UNS' THEN TRUE ELSE FALSE END AS uns_flag,
       CASE WHEN mosop_general.EXIT_TYPE_CD = 'NOF' THEN TRUE ELSE FALSE END AS nof_flag,
-      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' THEN TRUE ELSE FALSE END AS sfl_flag
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' THEN TRUE ELSE FALSE END AS sfl_flag,
+      CASE WHEN mosop_general.EXIT_TYPE_CD = 'SFL' AND CLASS_TITLE = 'MOSOP PHASE I' THEN TRUE ELSE FALSE END AS p1_completed_flag
     FROM (
       SELECT 
         DOC_ID,
@@ -104,7 +109,10 @@ mosop_completed_or_ongoing AS (
       LOGICAL_OR(has_uns) AS has_uns,  
       LOGICAL_OR(has_nof) AS has_nof,
       LOGICAL_OR(has_any_exit) AS has_any_exit,
-      LOGICAL_OR(CASE WHEN ACTUAL_EXIT_DT = '7799-12-31' AND ACTUAL_START_DT != '7799-12-31' THEN TRUE ELSE FALSE END) AS ongoing_flag 
+      LOGICAL_OR(CASE WHEN ACTUAL_EXIT_DT = '7799-12-31' AND ACTUAL_START_DT != '7799-12-31' THEN TRUE ELSE FALSE END) AS ongoing_flag,
+      ANY_VALUE(most_recent_failure) AS most_recent_failure,
+      ANY_VALUE(uns_ct) AS uns_ct,
+      LOGICAL_OR(completed_p1) AS completed_p1
     FROM (
       SELECT * 
       FROM mosop_details 
@@ -397,7 +405,10 @@ SELECT
   COALESCE(mosop.completed_flag, FALSE) AS completed_flag,
   NOT COALESCE(mosop.has_any_exit, FALSE) AS has_no_exits,
   COALESCE(mosop.has_uns, FALSE) AS has_uns,
-  COALESCE(mosop.has_nof, FALSE) AS has_nof
+  COALESCE(mosop.has_nof, FALSE) AS has_nof,
+  mosop.most_recent_failure,
+  COALESCE(mosop.uns_ct, 0) AS uns_ct,
+  COALESCE(mosop.completed_p1, FALSE) AS completed_p1
 FROM unprioritized_program_tracks pt
 LEFT JOIN mosop_completed_or_ongoing mosop
 USING (person_id)
