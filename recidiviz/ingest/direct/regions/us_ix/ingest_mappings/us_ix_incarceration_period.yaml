@@ -81,6 +81,8 @@ output:
                   - Assigned To Jail
                   - Civil Commitment
                   - Civil Commitment Pending
+                  # TODO(#21085) Investigate why Release to Supervision is comming in as an admission reason for one person
+                  - Release to Supervision
                 StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION:
                   - Court Action
                   - Initial Facility Intake
