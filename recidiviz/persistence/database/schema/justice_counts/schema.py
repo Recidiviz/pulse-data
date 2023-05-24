@@ -79,6 +79,7 @@ class UserAccountRole(enum.Enum):
     AGENCY_ADMIN = "AGENCY_ADMIN"
     JUSTICE_COUNTS_ADMIN = "JUSTICE_COUNTS_ADMIN"
     CONTRIBUTOR = "CONTRIBUTOR"
+    READ_ONLY = "READ_ONLY"
 
 
 class AcquisitionMethod(enum.Enum):
@@ -137,7 +138,8 @@ class MetricType(enum.Enum):
     @classmethod
     def metric_type_to_unit(cls) -> Dict[str, str]:
         """Provides a mapping from metric type to unit. Not all metric types need to be included
-        in this dictionary because the type itself represent the unit (e.g ADMISSIONS)"""
+        in this dictionary because the type itself represent the unit (e.g ADMISSIONS)
+        """
 
         return {
             "BUDGET": "USD",
