@@ -51,11 +51,7 @@ US_TN_INVOICES_PREPROCESSED_QUERY_TEMPLATE = f"""
     )
     , 
     /*
-        There are some people with the same FeeItemID during overlapping spans of time (~15%). Often this is explained 
-        by having a different ReasonCode. It's not totally clear if this is expected behavior, but having these overlaps
-        means invoices may get erroneously duplicated in the next CTE (though invoice_amount_adjusted should be correct
-        if the invoice amount = exempt amount). We exclude ReasonCode and then use the 
-        create_sub_sessions_with_attributes method which outputs non overlapping spans. We keep distinct values of
+        us_tn_exemptions_preprocessed has non overlapping spans. We keep distinct values of
         person-span-FeeItemID. If there are different exempt amounts, we take the lower one to be more conservative
     */
     exemptions_dedup AS (
