@@ -32,7 +32,6 @@ from typing import cast
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.export.state.state_bq_table_export_utils import (
     state_table_export_query_str,
@@ -42,25 +41,32 @@ from recidiviz.utils.params import str_to_bool
 
 
 def gcs_export_directory(
-    bucket_name: str, today: datetime.date, state_code: str
+    bucket_name: str, today: datetime.date, state_code: str, input_dataset: str
 ) -> GcsfsDirectoryPath:
     """Returns a GCS directory to export files into, of the format:
     gs://{bucket_name}/ingested_state_data/{state_code}/{YYYY}/{MM}/{DD}
     """
+
+    big_query_client = BigQueryClientImpl()
+    dataset_ref = big_query_client.dataset_ref_for_id(input_dataset)
+
     path = GcsfsDirectoryPath.from_bucket_and_blob_name(
         bucket_name=bucket_name,
-        blob_name=f"ingested_state_data/{state_code}/{today.year:04}/{today.month:02}/{today.day:02}/",
+        blob_name=f"ingested_{dataset_ref.dataset_id}_data/{state_code}/{today.year:04}/{today.month:02}/{today.day:02}/",
     )
     return cast(GcsfsDirectoryPath, path)
 
 
-def run_export(dry_run: bool, state_code: str, target_bucket: str) -> None:
-    """Performs the export operation, exporting rows for the given state codes from the tables from the state dataset
-    in the given project to CSV files with the same names as the tables to the given GCS bucket."""
+def run_export(
+    dry_run: bool, state_code: str, target_bucket: str, input_dataset: str
+) -> None:
+    """Performs the export operation, exporting rows for the given state codes from the tables from the specified dataset
+    in the given project to CSV files with the same names as the tables to the given GCS bucket. Inputs for dataset can
+    be either STATE_BASE_DATASET or NORMALIZED_STATE_DATASET"""
     today = datetime.date.today()
 
     big_query_client = BigQueryClientImpl()
-    dataset_ref = big_query_client.dataset_ref_for_id(STATE_BASE_DATASET)
+    dataset_ref = big_query_client.dataset_ref_for_id(input_dataset)
     if not big_query_client.dataset_exists(dataset_ref):
         raise ValueError(f"Dataset {dataset_ref.dataset_id} does not exist")
 
@@ -75,10 +81,12 @@ def run_export(dry_run: bool, state_code: str, target_bucket: str) -> None:
         if not export_query:
             continue
 
-        export_dir = gcs_export_directory(target_bucket, today, state_code.lower())
+        export_dir = gcs_export_directory(
+            target_bucket, today, state_code.lower(), input_dataset
+        )
         export_file_name = f"{table.table_id}_{today.isoformat()}_export.csv"
         file = GcsfsFilePath.from_directory_and_file_name(export_dir, export_file_name)
-        output_uri = file.uri()
+        output_uri = file.uri_sharded()
 
         export_config = ExportQueryConfig(
             query=export_query,
@@ -138,6 +146,12 @@ if __name__ == "__main__":
         "--state-code", required=True, help="The state code to export data for"
     )
 
+    parser.add_argument(
+        "--input-dataset",
+        required=True,
+        help="The dataset to export data from, i.e. state or normalized_state",
+    )
+
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -146,4 +160,5 @@ if __name__ == "__main__":
             dry_run=args.dry_run,
             state_code=args.state_code,
             target_bucket=args.target_bucket,
+            input_dataset=args.input_dataset,
         )
