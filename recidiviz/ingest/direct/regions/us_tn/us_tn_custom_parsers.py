@@ -183,6 +183,8 @@ def get_punishment_days(
     months: str, weeks: str, days: str, hours: str, effective_date: str
 ) -> Optional[str]:
     if months or days or weeks or hours:
+        # TN sometimes uses 9999 as the year for dates, we cannot use these because they will not parse
+        start_dt_str = None if "9999" in effective_date else effective_date
         return str(
             parse_days_from_duration_pieces(
                 years_str=None,
@@ -190,7 +192,7 @@ def get_punishment_days(
                 weeks_str=weeks,
                 days_str=days,
                 hours_str=hours,
-                start_dt_str=effective_date,
+                start_dt_str=start_dt_str,
             )
         )
     return None
