@@ -15,12 +15,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { SearchOutlined } from "@ant-design/icons";
-import { Button, Input, PageHeader, Select, Space, Table, message } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  PageHeader,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Typography,
+  message,
+} from "antd";
 import { FilterDropdownProps } from "antd/lib/table/interface";
+import { useState } from "react";
 import { getAgencies } from "../../AdminPanelAPI";
 import {
   addChildAgencyToSuperAgency,
   removeChildAgenciesFromSuperAgency,
+  updateAgency,
 } from "../../AdminPanelAPI/JusticeCountsTools";
 import { useFetchedDataJSON } from "../../hooks";
 import {
@@ -33,6 +46,7 @@ import {
   StateCode,
   StateCodeKey,
 } from "./constants";
+import { formLayout, formTailLayout } from "../constants";
 
 type SuperAgencyRecord = {
   id: number;
@@ -44,6 +58,12 @@ type SuperAgencyRecord = {
 
 const SuperAgencyProvisioningView = (): JSX.Element => {
   const { data, setData } = useFetchedDataJSON<AgenciesResponse>(getAgencies);
+  const [form] = Form.useForm();
+  const [showSpinner, setShowSpinner] = useState(false);
+
+  const superagencies =
+    data?.agencies.filter((agency) => agency.is_superagency) || [];
+
   /* eslint-disable no-param-reassign */
   const agencyIdToChildAgencies =
     data?.agencies.reduce(function (obj, agency) {
@@ -192,6 +212,34 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
     }
   };
 
+  const onCreateSuperagency = async ({ agencyId }: { agencyId: number }) => {
+    setShowSpinner(true);
+    try {
+      const response = await updateAgency(null, null, agencyId, true);
+      if (!response.ok) {
+        const { error } = (await response.json()) as ErrorResponse;
+        message.error(`An error occured: ${error}`);
+        return;
+      }
+      const { agency } = (await response.json()) as AgencyResponse;
+      const agencyIndex = data?.agencies.map((a) => a.id).indexOf(agency.id);
+      if (agencyIndex !== undefined && data !== undefined) {
+        const updatedAgencies = data.agencies;
+        updatedAgencies[agencyIndex] = agency;
+        setData({
+          agencies: updatedAgencies,
+          systems: data?.systems || [],
+        });
+      }
+      form.resetFields();
+      setShowSpinner(false);
+      message.success(`"Superagency added!`);
+    } catch (err) {
+      setShowSpinner(false);
+      message.error(`An error occured: ${err}`);
+    }
+  };
+
   const columns = [
     {
       title: "ID",
@@ -264,7 +312,7 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
       <PageHeader title="Super Agency Provisioning" />
       <Table
         columns={columns}
-        dataSource={data?.agencies.map((agency) => ({
+        dataSource={superagencies.map((agency) => ({
           ...agency,
           state:
             StateCode[agency.state_code?.toLocaleLowerCase() as StateCodeKey],
@@ -278,6 +326,45 @@ const SuperAgencyProvisioningView = (): JSX.Element => {
         }}
         rowKey={(agency) => agency.id}
       />
+      <Form
+        {...formLayout}
+        form={form}
+        onFinish={onCreateSuperagency}
+        requiredMark={false}
+      >
+        <Typography.Title
+          level={4}
+          style={{ paddingTop: 16, paddingBottom: 8 }}
+        >
+          Add Superagency
+        </Typography.Title>
+        <Form.Item label="Name" name="agencyId" rules={[{ required: true }]}>
+          <Select
+            showSearch
+            optionFilterProp="children"
+            disabled={showSpinner}
+            filterOption={(input, option) =>
+              (option?.children as unknown as string)
+                .toLowerCase()
+                .indexOf(input.toLowerCase()) >= 0
+            }
+          >
+            {data?.agencies
+              .filter((agency) => !agency.is_superagency)
+              .map((agency) => (
+                <Select.Option key={agency.id} value={agency.id}>
+                  {agency.name}
+                </Select.Option>
+              ))}
+          </Select>
+        </Form.Item>
+        <Form.Item {...formTailLayout}>
+          <Button type="primary" htmlType="submit" disabled={showSpinner}>
+            Submit
+          </Button>
+          {showSpinner && <Spin style={{ marginLeft: 16 }} />}
+        </Form.Item>
+      </Form>
     </>
   );
 };

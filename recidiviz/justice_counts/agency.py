@@ -36,6 +36,7 @@ class AgencyInterface:
         state_code: str,
         fips_county_code: Optional[str],
         user_account_id: Optional[int] = None,
+        is_superagency: Optional[bool] = False,
         super_agency_id: Optional[int] = None,
     ) -> schema.Agency:
         agency = schema.Agency(
@@ -43,6 +44,7 @@ class AgencyInterface:
             systems=[system.value for system in systems],
             state_code=state_code,
             fips_county_code=fips_county_code,
+            is_superagency=is_superagency,
             super_agency_id=super_agency_id,
         )
         session.add(agency)
@@ -139,11 +141,23 @@ class AgencyInterface:
         session.add(agency)
 
     @staticmethod
-    def get_child_agencies_by_super_agency_id(
-        session: Session, agency_id: int
+    def update_is_superagency(
+        session: Session, agency_id: int, is_superagency: bool
+    ) -> schema.Agency:
+        agency = AgencyInterface.get_agency_by_id(session=session, agency_id=agency_id)
+        agency.is_superagency = is_superagency
+        session.add(agency)
+        return agency
+
+    @staticmethod
+    def get_child_agencies_for_agency(
+        session: Session, agency: schema.Agency
     ) -> List[schema.Agency]:
+        if agency.is_superagency is False:
+            return []
+
         return (
             session.query(schema.Agency)
-            .filter(schema.Agency.super_agency_id == agency_id)
+            .filter(schema.Agency.super_agency_id == agency.id)
             .all()
         )

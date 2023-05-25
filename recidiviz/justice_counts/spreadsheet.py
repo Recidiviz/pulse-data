@@ -249,8 +249,8 @@ class SpreadsheetInterface:
                 .filter(schema.UserAccount.auth0_user_id == auth0_user_id)
                 .one()
             )
-        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
-            session=session, agency_id=agency.id
+        child_agencies = AgencyInterface.get_child_agencies_for_agency(
+            session=session, agency=agency
         )
         uploader = WorkbookUploader(
             agency=agency,
