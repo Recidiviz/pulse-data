@@ -144,6 +144,7 @@ case_notes_cte AS (
 
     -- Supervision conditions
     SELECT
+        DISTINCT
         crt.Cis_400_Cis_100_Client_Id AS external_id,
         "Special Supervision Conditions" AS criteria,
         CONCAT(ct.E_Condition_Type_Desc, IF(c.Completed_Ind = 'Y', ' - Completed', '')) AS note_title,
