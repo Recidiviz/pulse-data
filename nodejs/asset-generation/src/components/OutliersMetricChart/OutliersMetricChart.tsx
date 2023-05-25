@@ -29,11 +29,11 @@ import {
   GOAL_COLORS,
   MARGIN,
   ROW_HEIGHT,
-  ROW_LABEL_WIDTH,
   ROWS_OFFSET,
   TICK_WIDTH,
 } from "./constants";
 import { RateMark } from "./RateMark";
+import { RowLabel } from "./RowLabel";
 
 const formatExtent = format(".0%");
 const formatGoal = format(".1%");
@@ -52,11 +52,6 @@ const GoalLine = styled.line`
   stroke: ${palette.slate60};
   stroke-width: ${TICK_WIDTH}px;
   stroke-dasharray: 4 4;
-`;
-
-const RowLabel = styled(Text)`
-  ${typography.Sans18}
-  fill: ${palette.pine1};
 `;
 
 type ChartProps = {
@@ -157,14 +152,7 @@ export function OutliersMetricChart({ data, width, entityLabel }: ChartProps) {
         return (
           // eslint-disable-next-line react/no-array-index-key
           <g key={i}>
-            <RowLabel
-              // width is only applied approximately, so we cheat it a little
-              // to err on the side of wrapping
-              width={ROW_LABEL_WIDTH * 0.9}
-              x={MARGIN.left}
-              y={yScale(i)}
-              verticalAnchor="middle"
-            >
+            <RowLabel x={MARGIN.left} y={yScale(i)}>
               {r.name}
             </RowLabel>
             <RateMark

@@ -18,7 +18,7 @@
 import styled from "styled-components";
 import { describe, expect, test } from "vitest";
 
-import { convertRemToPx, renderToStaticSvg } from "./utils";
+import { convertRemToPx, renderToStaticSvg, wrapText } from "./utils";
 
 describe("convertRemToPx", () => {
   test("converts a property value", () => {
@@ -90,5 +90,33 @@ describe("renderToStaticSvg", () => {
       // the s flag is necessary because that may include newlines
       /<defs><style.*?>.*{fill:blue;}.*<\/style><\/defs>/s
     );
+  });
+});
+
+describe("wrapText", () => {
+  test("fits on one line", () => {
+    expect(wrapText("Riley, Dennis F", 125, 16)).toEqual(["Riley, Dennis F"]);
+  });
+
+  test("wraps to two lines", () => {
+    expect(wrapText("Holmes-Briggs, Leonard", 125, 16)).toEqual([
+      "Holmes-Briggs,",
+      "Leonard",
+    ]);
+  });
+
+  test("wraps at hyphens", () => {
+    expect(wrapText("Leonard Holmes-Briggs", 130, 16)).toEqual([
+      "Leonard Holmes-",
+      "Briggs",
+    ]);
+  });
+
+  test("wraps to three lines", () => {
+    expect(wrapText("Holmes-Briggs, Caroline Cordelia", 125, 16)).toEqual([
+      "Holmes-Briggs,",
+      "Caroline",
+      "Cordelia",
+    ]);
   });
 });

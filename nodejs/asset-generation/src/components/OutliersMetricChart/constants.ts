@@ -37,7 +37,7 @@ export const ROW_LABEL_WIDTH = AXIS_OFFSET - MARGIN.left - DOT_RADIUS;
 
 export const TICK_WIDTH = 2;
 
-export const ROW_HEIGHT = 40;
+export const ROW_HEIGHT = 48;
 
 export const MARK_STROKE_WIDTH = 2;
 

@@ -36,7 +36,7 @@ function TestComponent() {
 }
 
 test("height", () => {
-  expect(calculateChartHeight(officerData)).toMatchInlineSnapshot("263");
+  expect(calculateChartHeight(officerData)).toMatchInlineSnapshot("311");
 });
 
 test("rendering", () => {
