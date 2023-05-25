@@ -34,6 +34,10 @@ from google.cloud.bigquery.enums import DestinationFormat
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.common.date import is_date_str
 from recidiviz.export.state import state_bq_table_export_to_csv
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -80,9 +84,17 @@ def export_csg_files(
         dry_run=dry_run,
         state_code=state_code,
         target_bucket=target_bucket,
+        input_dataset=STATE_BASE_DATASET,
+    )
+    # Second, export normalized_state tables
+    state_bq_table_export_to_csv.run_export(
+        dry_run=dry_run,
+        state_code=state_code,
+        target_bucket=target_bucket,
+        input_dataset=NORMALIZED_STATE_DATASET,
     )
 
-    # second, export individual queries
+    # Next, export individual queries
 
     # create a temp dataset for exports
     client = BigQueryClientImpl(project_id=project_id)

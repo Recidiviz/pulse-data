@@ -17,12 +17,14 @@
 
 """Exports data from the state dataset in BigQuery to another dataset in BigQuery."""
 
-import logging
 from typing import List, Optional
 
 from google.cloud import bigquery
 
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import (
+    NORMALIZED_STATE_DATASET,
+    STATE_BASE_DATASET,
+)
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import (
     BigQuerySchemaTableRegionFilteredQueryBuilder,
@@ -39,13 +41,9 @@ def state_table_export_query_str(
     source_dataset = table.dataset_id
     project_id = table.project
 
-    if source_table.endswith("_history"):
-        logging.info("Skipping export of table [%s]", source_table)
-        return None
-
-    if source_dataset != STATE_BASE_DATASET:
+    if source_dataset not in (STATE_BASE_DATASET, NORMALIZED_STATE_DATASET):
         raise ValueError(
-            "Received export request for a table not in the `state` dataset, which is required. "
+            "Received export request for a table not in the `state` or `normalized_state` dataset, which is required. "
             f"Was in dataset [{source_dataset}] instead"
         )
 
