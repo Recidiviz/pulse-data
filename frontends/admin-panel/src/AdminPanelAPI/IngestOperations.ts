@@ -447,3 +447,17 @@ export const purgeIngestQueues = async (
     stateCode,
   });
 };
+
+// Determine if ingest in dataflow is enabled
+export const isIngestInDataflowEnabled = async (
+  stateCode: string,
+  instance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/is_ingest_in_dataflow_enabled",
+    {
+      stateCode,
+      instance,
+    }
+  );
+};
