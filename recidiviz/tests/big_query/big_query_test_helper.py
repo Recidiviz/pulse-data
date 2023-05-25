@@ -154,6 +154,7 @@ class BigQueryTestHelper:
                 return pd.StringDtype()
             return bool
 
+        # TODO(#21124): pass in flag to conditionally compare datetimes as datetimes (and not strings).
         if python_type in (
             str,
             # Pandas doesn't support dates like 9999-12-31 which are often

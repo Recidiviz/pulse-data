@@ -69,8 +69,8 @@ deleted_diff AS (
 ) 
 SELECT 
   *, 
-  '{file_id}' AS file_id,
-  '{update_datetime}' AS update_datetime,
+  {file_id} AS file_id,
+  CAST('{update_datetime}' AS DATETIME) AS update_datetime,
   false AS is_deleted 
 FROM added_or_updated_diff 
 
@@ -78,8 +78,8 @@ UNION ALL
 
 SELECT 
   *, 
-  '{file_id}' AS file_id,
-  '{update_datetime}' AS update_datetime,
+  {file_id} AS file_id,
+  CAST('{update_datetime}' AS DATETIME) AS update_datetime,
   true AS is_deleted 
 FROM deleted_diff
 """
