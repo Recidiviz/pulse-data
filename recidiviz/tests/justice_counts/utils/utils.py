@@ -160,6 +160,7 @@ class JusticeCountsSchemaTestObjects:
             state_code="US_XX",
             fips_county_code="us_ca_san_francisco",
             systems=[schema.System.PRISONS.value],
+            is_superagency=True,
         )
         self.test_prison_affiliate_A = schema.Agency(
             name="Affiliate Agency Prison A",

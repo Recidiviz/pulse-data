@@ -105,11 +105,13 @@ export const removeUsersFromAgency = async (
 export const updateAgency = async (
   name: string | null,
   systems: string[] | null,
-  agencyId: number
+  agencyId: number,
+  isSuperagency?: boolean | null
 ): Promise<Response> => {
   return putWithURLAndBody(`/api/justice_counts_tools/agency/${agencyId}`, {
     name,
     systems,
+    is_superagency: isSuperagency,
   });
 };
 

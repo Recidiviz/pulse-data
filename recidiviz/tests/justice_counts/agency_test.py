@@ -163,6 +163,7 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
                 state_code="us_ca",
                 fips_county_code="us_ca_sacramento",
                 user_account_id=user.id,
+                is_superagency=True,
             )
             child_agency = AgencyInterface.create_agency(
                 session=session,
@@ -179,13 +180,13 @@ class TestAgencyInterface(JusticeCountsDatabaseTestCase):
         session.add_all([user, super_agency, child_agency])
         session.flush()
         # The super agency will have the child agency in its list of child agencies.
-        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
-            session=session, agency_id=super_agency.id
+        child_agencies = AgencyInterface.get_child_agencies_for_agency(
+            session=session, agency=super_agency
         )
         self.assertEqual(child_agencies, [child_agency])
 
         # The child agency will have no agencies in its list of child agencies.
-        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
-            session=session, agency_id=child_agency.id
+        child_agencies = AgencyInterface.get_child_agencies_for_agency(
+            session=session, agency=child_agency
         )
         self.assertEqual(child_agencies, [])

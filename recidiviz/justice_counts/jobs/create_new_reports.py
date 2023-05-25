@@ -64,8 +64,8 @@ def main(engine: Engine) -> None:
 
     logger.info("Generating new Reports in database %s", engine.url)
     for agency in session.query(schema.Agency).all():
-        child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
-            session=session, agency_id=agency.id
+        child_agencies = AgencyInterface.get_child_agencies_for_agency(
+            session=session, agency=agency
         )
         if len(child_agencies) > 0:
             continue

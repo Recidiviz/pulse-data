@@ -426,12 +426,23 @@ def get_api_blueprint(
                 role=role,
             )
 
-            agency_json = [agency.to_json() for agency in agencies or []]
+            agency_jsons = []
+            for agency in agencies:
+                agency_json = agency.to_json()
+                child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                    session=current_session, agency=agency
+                )
+                agency_json["child_agencies"] = [
+                    child_agency.to_json(core_attributes_only=True)
+                    for child_agency in child_agencies
+                ]
+                agency_jsons.append(agency_json)
+
             current_session.commit()
             return jsonify(
                 {
                     "id": user_id,
-                    "agencies": agency_json,
+                    "agencies": agency_jsons,
                 }
             )
         except Exception as e:

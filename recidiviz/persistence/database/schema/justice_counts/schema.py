@@ -296,9 +296,12 @@ class Source(JusticeCountsBase):
     # in this case, either "source" or "agency".
     type = Column(String(255))
 
-    # The super_agency_id column will hold the id of another agency that has the
-    # permissions to submit data for the current agency. Agencies that can
-    # upload data for multiple agencies are considered 'Super Agencies'.
+    # Indicates whether or not this agency is a "Superagency" (i.e. an agency that
+    # has permission to upload data for several child agencies)
+    is_superagency = Column(Boolean)
+
+    # If this agency is a child agency (i.e. belongs to a parent Superagency)
+    # then this column is populated with the ID of that parent agency.
     super_agency_id = Column(Integer, nullable=True)
 
     __table_args__ = tuple(
@@ -360,7 +363,7 @@ class Agency(Source):
         "polymorphic_identity": "agency",
     }
 
-    def to_json(self) -> Dict[str, Any]:
+    def to_json(self, core_attributes_only: bool = False) -> Dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -384,8 +387,13 @@ class Agency(Source):
                     "role": assoc.role.value if assoc.role is not None else None,
                 }
                 for assoc in self.user_account_assocs
-            ],
-            "settings": [setting.to_json() for setting in self.agency_settings],
+            ]
+            if core_attributes_only is False
+            else [],
+            "settings": [setting.to_json() for setting in self.agency_settings]
+            if core_attributes_only is False
+            else [],
+            "is_superagency": self.is_superagency,
             "super_agency_id": self.super_agency_id,
         }
 
@@ -460,7 +468,9 @@ class UserAccount(JusticeCountsBase):
             "auth0_user_id": self.auth0_user_id,
             "name": self.name,
             "email": self.email,
-            "agencies": [agency.to_json() for agency in agencies or []],
+            "agencies": [
+                agency.to_json(core_attributes_only=True) for agency in agencies or []
+            ],
         }
 
 

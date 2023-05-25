@@ -1216,8 +1216,8 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
             super_agency = AgencyInterface.get_agency_by_id(
                 session=session, agency_id=self.prison_super_agency_id
             )
-            child_agencies = AgencyInterface.get_child_agencies_by_super_agency_id(
-                session=session, agency_id=self.prison_super_agency_id
+            child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                session=session, agency=super_agency
             )
             file_path = create_excel_file(
                 system=schema.System.PRISONS,

@@ -363,6 +363,7 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             name = request_json.get("name")
             systems = request_json.get("systems")
             child_agency_id = request_json.get("child_agency_id")
+            is_superagency = request_json.get("is_superagency")
 
             if systems is not None:
                 AgencyInterface.update_agency_systems(
@@ -372,6 +373,15 @@ def add_justice_counts_tools_routes(bp: Blueprint) -> None:
             if name is not None:
                 AgencyInterface.update_agency_name(
                     session=session, agency_id=agency_id, name=name
+                )
+
+            if is_superagency is not None:
+                agency = AgencyInterface.update_is_superagency(
+                    session=session, agency_id=agency_id, is_superagency=is_superagency
+                )
+                return (
+                    jsonify({"agency": agency.to_json()}),
+                    HTTPStatus.OK,
                 )
 
             if child_agency_id is not None:
