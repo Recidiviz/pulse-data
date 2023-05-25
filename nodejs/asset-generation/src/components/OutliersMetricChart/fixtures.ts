@@ -30,7 +30,7 @@ export const officerData: ChartData = {
       previousGoalStatus: "far",
     },
     {
-      name: "Wayne Mills",
+      name: "Wayne Mills Caldwell Singleton Watts Burton",
       rate: 0.02347870834941464,
       goalStatus: "met",
       previousRate: 0.04547870834941464,
@@ -58,7 +58,7 @@ export const officerData: ChartData = {
       previousGoalStatus: "near",
     },
     {
-      name: "Billy Marshall",
+      name: "William Marshall-Doyle",
       rate: 0.1173935417470732,
       goalStatus: "near",
       previousRate: 0.1153935417470732,

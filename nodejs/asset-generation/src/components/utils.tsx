@@ -19,6 +19,12 @@ import { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ServerStyleSheet } from "styled-components";
 
+import {
+  letterMapKern,
+  letterMapSingle,
+  SIZE_BASIS,
+} from "./characterWidths/PublicSans-Medium";
+
 /**
  * Given a string containing CSS rules, identifies any rem units and converts them to px,
  * using 1rem=16px by default
@@ -62,4 +68,76 @@ export function renderToStaticSvg(Cmp: ComponentType): string {
   }</defs>`;
 
   return svgString.replace(openingTagPattern, newOpeningTag);
+}
+
+/**
+ * Calculates width of given text based on a lookup table of relative character widths
+ * Adapted from https://chrishewett.com/blog/calculating-text-width-programmatically/
+ */
+function computeTextWidth(text: string, fontSizePx: number) {
+  // this will get mutated as we process the string
+  let letterWidth = 0;
+  // this will store all the intermediate values for later reference
+  const cumulativeWidths = [];
+
+  // split the string up using the spread operator (to handle UTF-8)
+  const letterSplit = [...text];
+
+  // this syntax is fine, our node environment supports it
+  // eslint-disable-next-line no-restricted-syntax
+  for (const [key, letter] of letterSplit.entries()) {
+    // add on the width of this letter to the sum
+    letterWidth +=
+      letterMapSingle.get(letter) || letterMapSingle.get("_median") || 0;
+
+    if (key !== letterSplit.length - 1) {
+      // add/remove the kerning modifier of this letter and the next one
+      letterWidth += letterMapKern.get(`${letter}${letterSplit[key + 1]}`) || 0;
+    }
+    // sizes must be scaled from the reference value to the desired font size
+    cumulativeWidths.push(letterWidth * (fontSizePx / SIZE_BASIS));
+  }
+
+  const totalWidth = cumulativeWidths[cumulativeWidths.length - 1];
+  return { totalWidth, cumulativeWidths };
+}
+
+/**
+ * Regex to match the last occurrence of a word boundary in a string.
+ * word boundaries here defined as spaces or hyphens
+ */
+const lastWordBoundary = /[\s-](?!.*[\s-])/g;
+
+/**
+ * Wraps the provided string to the provided width, given the specified font size.
+ * Assumes Public Sans Medium as this is currently the only supported font!
+ * Returns an array of strings representing separate lines.
+ */
+export function wrapText(
+  text: string,
+  width: number,
+  fontSizePx: number
+): string[] {
+  const trimmed = text.trim();
+  const { totalWidth, cumulativeWidths } = computeTextWidth(
+    trimmed,
+    fontSizePx
+  );
+  if (totalWidth <= width) return [text];
+
+  // the point at which text overflows.
+  // add 1 in case the last character is a word boundary
+  const overflowIndex = cumulativeWidths.findIndex((v) => v > width);
+  // the last word break before overflow;
+  // add 1 to include the break character in the first group
+  // (important if it's a hyphen, and will be trimmed if it's a space)
+  const breakIndex =
+    trimmed.substring(0, overflowIndex).search(lastWordBoundary) + 1;
+
+  const firstLine = trimmed.substring(0, breakIndex).trim();
+
+  return [
+    firstLine,
+    ...wrapText(trimmed.substring(breakIndex), width, fontSizePx).flat(),
+  ];
 }
