@@ -18,16 +18,16 @@
 import unittest
 from typing import List, Type
 
-from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
-    IncarcerationAdmissionMetric,
-    IncarcerationCommitmentFromSupervisionMetric,
-    IncarcerationReleaseMetric,
-)
-from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodAdmissionReason,
     StateIncarcerationPeriodReleaseReason,
 )
+from recidiviz.pipelines.metrics.incarceration.metrics import (
+    IncarcerationAdmissionMetric,
+    IncarcerationCommitmentFromSupervisionMetric,
+    IncarcerationReleaseMetric,
+)
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.validation.views.utils.dataflow_metric_validation_utils import (
     _metrics_with_enum_field_of_type,
     validation_query_for_metric,

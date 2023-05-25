@@ -18,8 +18,6 @@
 from enum import Enum
 from typing import List, Set, Type
 
-from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.most_recent_dataflow_metrics import (
     generate_metric_view_names,
 )
@@ -27,6 +25,8 @@ from recidiviz.common.attr_mixins import (
     attr_field_enum_cls_for_field_name,
     attribute_field_type_reference_for_class,
 )
+from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.utils.string import StrictStringFormatter
 
 SELECT_FROM_METRICS_TEMPLATE = (

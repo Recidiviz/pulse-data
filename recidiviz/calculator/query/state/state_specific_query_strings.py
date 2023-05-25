@@ -20,14 +20,14 @@
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
-from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import (
+from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.utils.state_utils.state_calculation_config_manager import (
     get_required_state_specific_metrics_producer_delegates,
     get_supported_states,
 )
-from recidiviz.calculator.pipeline.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
+from recidiviz.pipelines.utils.state_utils.state_specific_supervision_metrics_producer_delegate import (
     StateSpecificSupervisionMetricsProducerDelegate,
 )
-from recidiviz.common.constants.states import StateCode
 
 # The states in the vitals reports that will be grouping by level 1 supervision locations.
 VITALS_LEVEL_1_SUPERVISION_LOCATION_STATES: List[str] = ['"US_ND"', '"US_PA"']

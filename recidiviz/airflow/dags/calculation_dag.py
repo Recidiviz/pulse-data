@@ -49,22 +49,20 @@ from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
 from recidiviz.airflow.dags.utils.export_tasks_config import PIPELINE_AGNOSTIC_EXPORTS
 from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_branching
-from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
-    MetricsPipelineParameters,
-)
-from recidiviz.calculator.pipeline.normalization.pipeline_parameters import (
-    NormalizationPipelineParameters,
-)
-from recidiviz.calculator.pipeline.pipeline_parameters import (
-    PipelineParameters,
-    PipelineParametersT,
-)
-from recidiviz.calculator.pipeline.supplemental.pipeline_parameters import (
-    SupplementalPipelineParameters,
-)
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
+)
+from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
+from recidiviz.pipelines.normalization.pipeline_parameters import (
+    NormalizationPipelineParameters,
+)
+from recidiviz.pipelines.pipeline_parameters import (
+    PipelineParameters,
+    PipelineParametersT,
+)
+from recidiviz.pipelines.supplemental.pipeline_parameters import (
+    SupplementalPipelineParameters,
 )
 from recidiviz.utils.yaml_dict import YAMLDict
 

@@ -36,22 +36,20 @@ import sys
 from typing import List, Optional
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_orchestration_utils import (
-    get_metric_pipeline_enabled_states,
-)
-from recidiviz.calculator.dataflow_output_table_manager import (
-    update_dataflow_metric_tables_schemas,
-    update_normalized_table_schemas_in_dataset,
-    update_supplemental_dataset_schemas,
-)
-from recidiviz.calculator.pipeline.supplemental.dataset_config import (
-    SUPPLEMENTAL_DATA_DATASET,
-)
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     normalized_state_dataset_for_state_code,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.dataflow_orchestration_utils import (
+    get_metric_pipeline_enabled_states,
+)
+from recidiviz.pipelines.dataflow_output_table_manager import (
+    update_dataflow_metric_tables_schemas,
+    update_normalized_table_schemas_in_dataset,
+    update_supplemental_dataset_schemas,
+)
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

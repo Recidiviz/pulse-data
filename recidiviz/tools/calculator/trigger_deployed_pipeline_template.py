@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Tuple
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
-from recidiviz.calculator.dataflow_config import PIPELINE_CONFIG_YAML_PATH
+from recidiviz.pipelines.dataflow_config import PIPELINE_CONFIG_YAML_PATH
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.yaml_dict import YAMLDict
 

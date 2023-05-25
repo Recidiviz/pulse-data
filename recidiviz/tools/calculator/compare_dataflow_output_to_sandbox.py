@@ -97,13 +97,13 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
-from recidiviz.calculator.dataflow_config import (
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_TO_TABLES,
     DATAFLOW_TABLES_TO_METRIC_TYPES,
     PIPELINE_CONFIG_YAML_PATH,
 )
-from recidiviz.calculator.pipeline.metrics.utils.metric_utils import RecidivizMetric
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.pipelines.metrics.utils.metric_utils import RecidivizMetric
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.string import StrictStringFormatter
@@ -336,7 +336,8 @@ def _get_dimension_columns_for_metric_class(
     metric_class: Type[RecidivizMetric],
 ) -> List[str]:
     """Returns the dimension columns that should be used to compare output between pipeline runs. Includes the
-    state_code, the person_id, and any date fields specific to the metric (e.g. date_of_supervision)."""
+    state_code, the person_id, and any date fields specific to the metric (e.g. date_of_supervision).
+    """
     dimension_columns: List[str] = ["state_code", "person_id"]
 
     attr_fields = attr.fields_dict(metric_class)  # type: ignore[arg-type]

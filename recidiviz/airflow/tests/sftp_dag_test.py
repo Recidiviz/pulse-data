@@ -23,14 +23,14 @@ from unittest.mock import patch
 from airflow.models import DagBag
 from google.cloud.tasks_v2.types.queue import Queue
 
+from recidiviz import pipelines
 from recidiviz.airflow.dags.sftp_dag import get_running_queue_instances
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
-from recidiviz.calculator import pipeline
 
 _PROJECT_ID = "recidiviz-staging"
 CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
     os.path.relpath(
-        os.path.dirname(pipeline.__file__),
+        os.path.dirname(pipelines.__file__),
         start=AIRFLOW_WORKING_DIRECTORY,
     ),
     "calculation_pipeline_templates.yaml",

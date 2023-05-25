@@ -79,15 +79,13 @@ import google.auth
 import google.auth.transport.requests
 import requests
 
-from recidiviz.calculator import pipeline
-from recidiviz.calculator.pipeline.metrics.pipeline_parameters import (
-    MetricsPipelineParameters,
-)
-from recidiviz.calculator.pipeline.normalization.pipeline_parameters import (
+from recidiviz import pipelines
+from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
+from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
 )
-from recidiviz.calculator.pipeline.pipeline_parameters import PipelineParameters
-from recidiviz.calculator.pipeline.supplemental.pipeline_parameters import (
+from recidiviz.pipelines.pipeline_parameters import PipelineParameters
+from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
 )
 from recidiviz.tools.utils.script_helpers import prompt_for_confirmation, run_command
@@ -148,14 +146,14 @@ def fetch_google_auth_token() -> str:
 
 
 def get_cloudbuild_path() -> str:
-    pipeline_root_path = os.path.dirname(pipeline.__file__)
+    pipeline_root_path = os.path.dirname(pipelines.__file__)
     cloudbuild_path = "cloudbuild.pipelines.dev.yaml"
 
     return os.path.join(pipeline_root_path, cloudbuild_path)
 
 
 def get_template_path(pipeline_type: str) -> str:
-    pipeline_root_path = os.path.dirname(pipeline.__file__)
+    pipeline_root_path = os.path.dirname(pipelines.__file__)
     template_path = f"{pipeline_type}/template_metadata.json"
     return os.path.join(pipeline_root_path, template_path)
 

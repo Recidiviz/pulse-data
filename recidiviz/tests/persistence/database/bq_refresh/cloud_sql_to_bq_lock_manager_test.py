@@ -19,9 +19,6 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from recidiviz.calculator.normalized_state_update_lock_manager import (
-    NormalizedStateUpdateLockManager,
-)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
@@ -37,6 +34,9 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager impo
     CloudSqlToBQLockManager,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.normalized_state_update_lock_manager import (
+    NormalizedStateUpdateLockManager,
+)
 
 
 class CloudSqlToBQLockManagerTest(unittest.TestCase):

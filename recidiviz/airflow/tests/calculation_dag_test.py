@@ -28,16 +28,16 @@ from airflow.providers.google.cloud.operators.tasks import CloudTasksTaskCreateO
 from airflow.utils.task_group import TaskGroup
 from more_itertools import one
 
+from recidiviz import pipelines
 from recidiviz.airflow.dags.operators.recidiviz_dataflow_operator import (
     RecidivizDataflowFlexTemplateOperator,
 )
 from recidiviz.airflow.tests.test_utils import AIRFLOW_WORKING_DIRECTORY, DAG_FOLDER
-from recidiviz.calculator import pipeline
 
 _PROJECT_ID = "recidiviz-testing"
 CALC_PIPELINE_CONFIG_FILE_RELATIVE_PATH = os.path.join(
     os.path.relpath(
-        os.path.dirname(pipeline.__file__),
+        os.path.dirname(pipelines.__file__),
         start=AIRFLOW_WORKING_DIRECTORY,
     ),
     "calculation_pipeline_templates.yaml",

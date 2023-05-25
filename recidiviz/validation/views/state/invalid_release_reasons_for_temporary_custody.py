@@ -23,14 +23,14 @@ Existence of any rows indicates a bug in IP normalization logic.
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateIncarcerationPeriod,
-)
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.common.constants.state.state_incarceration_period import (
     StateIncarcerationPeriodReleaseReason,
     StateSpecializedPurposeForIncarceration,
     release_reason_overrides_released_from_temporary_custody,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entities import (
+    NormalizedStateIncarcerationPeriod,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

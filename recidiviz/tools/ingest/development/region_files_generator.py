@@ -30,12 +30,6 @@ from shutil import copytree, ignore_patterns, rmtree
 from typing import Dict
 
 import recidiviz
-from recidiviz.calculator.pipeline.utils import (
-    state_utils as state_specific_calculation_module,
-)
-from recidiviz.calculator.pipeline.utils.state_utils import (
-    templates as state_specific_calculation_templates_module,
-)
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import regions as regions_module
@@ -44,11 +38,9 @@ from recidiviz.persistence.entity_matching import (
     templates as persistence_templates_module,
 )
 from recidiviz.persistence.entity_matching.legacy import state as state_module
-from recidiviz.tests.calculator.pipeline.utils import (
-    state_utils as state_specific_calculation_tests_module,
-)
-from recidiviz.tests.calculator.pipeline.utils.state_utils import (
-    templates as state_specific_calculation_test_templates_module,
+from recidiviz.pipelines.utils import state_utils as state_specific_calculation_module
+from recidiviz.pipelines.utils.state_utils import (
+    templates as state_specific_calculation_templates_module,
 )
 from recidiviz.tests.ingest.direct import (
     direct_ingest_fixtures as regions_test_fixtures_module,
@@ -58,6 +50,12 @@ from recidiviz.tests.ingest.direct import (
 )
 from recidiviz.tests.ingest.direct import regions as regions_test_module
 from recidiviz.tests.ingest.direct import templates as test_templates_module
+from recidiviz.tests.pipelines.utils import (
+    state_utils as state_specific_calculation_tests_module,
+)
+from recidiviz.tests.pipelines.utils.state_utils import (
+    templates as state_specific_calculation_test_templates_module,
+)
 from recidiviz.tools.docs.utils import PLACEHOLDER_TO_DO_STRING
 from recidiviz.validation.config import regions as validation_config_module
 from recidiviz.validation.config import templates as validation_config_templates_module
@@ -224,7 +222,7 @@ class RegionFilesGenerator:
                 )
                 line = re.sub(
                     r"from recidiviz\.calculator\.pipeline\.utils\.state_utils\.templates",
-                    "from recidiviz.calculator.pipeline.utils.state_utils",
+                    "from recidiviz.pipelines.utils.state_utils",
                     line,
                 )
                 line = re.sub(r"(, )?region_module_override=templates", "", line)

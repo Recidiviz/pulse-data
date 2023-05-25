@@ -17,18 +17,18 @@
 """Utils for writing validations for the normalization pipelines."""
 from typing import List, Tuple, Type
 
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities import (
-    NormalizedStateEntity,
-)
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entities_utils import (
-    NORMALIZED_ENTITY_CLASSES,
-)
-from recidiviz.calculator.pipeline.normalization.utils.normalized_entity_conversion_utils import (
-    bq_schema_for_normalized_state_entity,
-)
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.entity import entity_utils
 from recidiviz.persistence.entity.state import entities as state_entities
+from recidiviz.pipelines.normalization.utils.normalized_entities import (
+    NormalizedStateEntity,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entities_utils import (
+    NORMALIZED_ENTITY_CLASSES,
+)
+from recidiviz.pipelines.normalization.utils.normalized_entity_conversion_utils import (
+    bq_schema_for_normalized_state_entity,
+)
 from recidiviz.utils.string import StrictStringFormatter
 
 UNIQUE_IDS_TEMPLATE = """
