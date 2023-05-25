@@ -1,8 +1,8 @@
 state_code,external_id,staff_id,full_name,email,location_external_id
-US_PA,O1,00001,Officer 1,officer1@recidiviz.org,A
-US_PA,O2,00002,Officer 2,officer2@recidiviz.org,A
-US_PA,O3,00003,Officer 3,officer3@recidiviz.org,B
-US_PA,O4,00004,Officer 4,officer4@recidiviz.org,B
-US_PA,O5,00005,Officer 5,officer5@recidiviz.org,A
-US_PA,O6,00006,Officer 6,officer6@recidiviz.org,B
-US_PA,O7,00007,Officer 7,officer7@recidiviz.org,A
+US_PA,01,00001,Officer 1,officer1@recidiviz.org,A
+US_PA,02,00002,Officer 2,officer2@recidiviz.org,A
+US_PA,03,00003,Officer 3,officer3@recidiviz.org,B
+US_PA,04,00004,Officer 4,officer4@recidiviz.org,B
+US_PA,05,00005,Officer 5,officer5@recidiviz.org,A
+US_PA,06,00006,Officer 6,officer6@recidiviz.org,B
+US_PA,07,00007,Officer 7,officer7@recidiviz.org,A
