@@ -47,11 +47,11 @@ python -m recidiviz.tools.calculator.update_sandbox_normalized_state_dataset \
 import argparse
 import logging
 
-from recidiviz.calculator.calculation_data_storage_manager import (
+from recidiviz.common.constants import states
+from recidiviz.pipelines.calculation_data_storage_manager import (
     build_address_overrides_for_update,
     update_normalized_state_dataset,
 )
-from recidiviz.common.constants import states
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

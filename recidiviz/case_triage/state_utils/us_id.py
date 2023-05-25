@@ -15,15 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains policy requirements that are specific to Idaho."""
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
-    CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
-    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
-    US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
-)
 from recidiviz.case_triage.opportunities.types import OpportunityType
 from recidiviz.case_triage.state_utils.types import PolicyRequirements
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionLevel,
+)
+from recidiviz.pipelines.utils.state_utils.us_id.us_id_supervision_compliance import (
+    CURRENT_US_ID_ASSESSMENT_SCORE_RANGE,
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
+    US_ID_SUPERVISION_HOME_VISIT_FREQUENCY_REQUIREMENTS,
 )
 
 US_ID_SUPERVISION_LEVEL_NAMES = {

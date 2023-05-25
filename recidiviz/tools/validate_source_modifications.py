@@ -240,10 +240,10 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
         ),
         RequiredModificationSets(
             if_modified_files=frozenset(
-                {"recidiviz/calculator/pipeline/utils/state_utils/us_id/"}
+                {"recidiviz/pipelines/utils/state_utils/us_id/"}
             ),
             then_modified_files=frozenset(
-                {"recidiviz/calculator/pipeline/utils/state_utils/us_ix/"}
+                {"recidiviz/pipelines/utils/state_utils/us_ix/"}
             ),
         ),
     ],

@@ -19,11 +19,11 @@ a most recent [job id, state, metric_type] combo."""
 from typing import List
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
+from recidiviz.pipelines.dataflow_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 

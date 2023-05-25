@@ -17,9 +17,6 @@
 """Manages acquiring and releasing the lock for the Cloud SQL -> BQ refresh."""
 import logging
 
-from recidiviz.calculator.normalized_state_update_lock_manager import (
-    NORMALIZED_STATE_UPDATE_LOCK_NAME,
-)
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockAlreadyExists,
     GCSPseudoLockDoesNotExist,
@@ -31,6 +28,9 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
     STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
 from recidiviz.persistence.database.schema_type import SchemaType
+from recidiviz.pipelines.normalized_state_update_lock_manager import (
+    NORMALIZED_STATE_UPDATE_LOCK_NAME,
+)
 
 
 class CloudSqlToBQLockManager:

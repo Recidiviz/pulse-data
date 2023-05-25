@@ -24,10 +24,10 @@ Which will initialize the `analyzer` object. One can then run functions like
     analyzer.extract_entities("SOME TEXT")
 """
 
-from recidiviz.calculator.pipeline.supplemental.us_id_case_note_extracted_entities.us_id_text_analysis_configuration import (
+from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
+from recidiviz.pipelines.supplemental.us_id_case_note_extracted_entities.us_id_text_analysis_configuration import (
     UsIdTextEntity,
 )
-from recidiviz.common.text_analysis import TextAnalyzer, TextMatchingConfiguration
 
 analyzer = TextAnalyzer(
     TextMatchingConfiguration(

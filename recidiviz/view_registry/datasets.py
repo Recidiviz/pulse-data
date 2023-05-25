@@ -19,9 +19,6 @@ import re
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.success_persister import VIEW_UPDATE_METADATA_DATASET
-from recidiviz.calculator.pipeline.supplemental.dataset_config import (
-    SUPPLEMENTAL_DATA_DATASET,
-)
 from recidiviz.calculator.query.experiments.dataset_config import (
     CASE_TRIAGE_SEGMENT_DATASET,
 )
@@ -46,6 +43,7 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.validation.views.dataset_config import (
     validation_dataset_for_state,
     validation_oneoff_dataset_for_state,

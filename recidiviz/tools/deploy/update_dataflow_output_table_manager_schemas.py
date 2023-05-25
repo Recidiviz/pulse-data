@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utilizes library functions from recidiviz.calculator.dataflow_output_table_manager.py
+"""Utilizes library functions from recidiviz.pipelines.dataflow_output_table_manager.py
 to update dataflow, supplemental, and state-specific schemas if necessary"""
 import argparse
 import functools
 import logging
 
-from recidiviz.calculator.dataflow_output_table_manager import (
+from recidiviz.pipelines.dataflow_output_table_manager import (
     update_dataflow_metric_tables_schemas,
     update_normalized_state_schema,
     update_state_specific_normalized_state_schemas,

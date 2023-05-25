@@ -33,14 +33,14 @@ from typing import List, Tuple
 from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.dataflow_config import (
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.pipelines.dataflow_config import (
     DATAFLOW_METRICS_COLD_STORAGE_DATASET,
     DATAFLOW_METRICS_TO_TABLES,
 )
-from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
+from recidiviz.pipelines.metrics.recidivism.metrics import (
     ReincarcerationRecidivismRateMetric,
 )
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool

@@ -17,14 +17,12 @@
 """Defines a criteria span view that shows spans of time for
 which employment or nonemployment lawful income is verified within 3 months
 """
-from recidiviz.calculator.pipeline.supplemental.dataset_config import (
-    SUPPLEMENTAL_DATA_DATASET,
-)
 from recidiviz.calculator.query.sessions_query_fragments import (
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )

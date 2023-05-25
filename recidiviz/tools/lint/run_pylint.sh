@@ -144,7 +144,7 @@ echo "Checking no attr.evolve in entity normalization"
 # - Filters to just files that perform entity normalization
 # - Runs grep for each relevant updated file, getting all lines that contain calls to attr.evolve()
 invalid_lines=$(${changed_files_cmd} \
-    | grep -e 'recidiviz/calculator/pipeline/' \
+    | grep -e 'recidiviz/pipelines/' \
     | grep -e 'normalization' \
     | xargs grep -n -e 'attr.evolve(')
 
@@ -164,7 +164,7 @@ echo "Checking no id() in entity normalization"
 # - Filters to just files that perform entity normalization
 # - Runs grep for each relevant updated file, getting all lines that contain calls to id()
 invalid_lines=$(${changed_files_cmd} \
-    | grep -e 'recidiviz/calculator/pipeline/' \
+    | grep -e 'recidiviz/pipelines/' \
     | grep -e 'normalization' \
     | grep --invert-match -e 'normalized_entities_utils.py' \
     | xargs grep -n -e ' id(' -e '=id(')

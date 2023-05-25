@@ -36,28 +36,6 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.big_query.view_update_manager import build_views_to_update
-from recidiviz.calculator.dataflow_config import (
-    DATAFLOW_METRICS_TO_TABLES,
-    DATAFLOW_TABLES_TO_METRIC_TYPES,
-    PIPELINE_CONFIG_YAML_PATH,
-)
-from recidiviz.calculator.pipeline.metrics.incarceration.metrics import (
-    IncarcerationMetric,
-)
-from recidiviz.calculator.pipeline.metrics.population_spans.metrics import (
-    PopulationSpanMetric,
-)
-from recidiviz.calculator.pipeline.metrics.program.metrics import ProgramMetric
-from recidiviz.calculator.pipeline.metrics.recidivism.metrics import (
-    ReincarcerationRecidivismMetric,
-)
-from recidiviz.calculator.pipeline.metrics.supervision.metrics import SupervisionMetric
-from recidiviz.calculator.pipeline.metrics.utils.metric_utils import (
-    PersonLevelMetric,
-    RecidivizMetric,
-    RecidivizMetricType,
-)
-from recidiviz.calculator.pipeline.metrics.violation.metrics import ViolationMetric
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     DATAFLOW_METRICS_MATERIALIZED_DATASET,
@@ -76,6 +54,24 @@ from recidiviz.metrics.export.products.product_configs import (
     ProductConfigs,
     ProductName,
 )
+from recidiviz.pipelines.dataflow_config import (
+    DATAFLOW_METRICS_TO_TABLES,
+    DATAFLOW_TABLES_TO_METRIC_TYPES,
+    PIPELINE_CONFIG_YAML_PATH,
+)
+from recidiviz.pipelines.metrics.incarceration.metrics import IncarcerationMetric
+from recidiviz.pipelines.metrics.population_spans.metrics import PopulationSpanMetric
+from recidiviz.pipelines.metrics.program.metrics import ProgramMetric
+from recidiviz.pipelines.metrics.recidivism.metrics import (
+    ReincarcerationRecidivismMetric,
+)
+from recidiviz.pipelines.metrics.supervision.metrics import SupervisionMetric
+from recidiviz.pipelines.metrics.utils.metric_utils import (
+    PersonLevelMetric,
+    RecidivizMetric,
+    RecidivizMetricType,
+)
+from recidiviz.pipelines.metrics.violation.metrics import ViolationMetric
 from recidiviz.tools.docs.summary_file_generator import update_summary_file
 from recidiviz.tools.docs.utils import persist_file_contents
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCPEnvironment
@@ -381,7 +377,6 @@ class CalculationDocumentationGenerator:
         return metrics_dict
 
     def _get_dataflow_metrics_summary_str(self) -> str:
-
         dataflow_str = "\n- Dataflow Metrics\n"
 
         for header, class_list in self.metrics_by_generic_types.items():

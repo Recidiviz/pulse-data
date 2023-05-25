@@ -30,7 +30,7 @@ resource "google_cloudbuild_trigger" "flex_pipelines_docker_image_build_trigger"
     }
   }
 
-  filename = "recidiviz/calculator/pipeline/cloudbuild.pipelines.yaml"
+  filename = "recidiviz/pipelines/cloudbuild.pipelines.yaml"
 
 }
 

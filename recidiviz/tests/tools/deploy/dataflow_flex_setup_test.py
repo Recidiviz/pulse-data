@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the pulse-data/recidiviz/calculator/pipeline/dataflow_flex_setup.py file that specifies required packages
+"""Tests the pulse-data/recidiviz/pipelines/dataflow_flex_setup.py file that specifies required packages
 for the Dataflow VM workers. """
 import json
 import os
@@ -31,7 +31,7 @@ PIPFILE_LOCK_PATH = os.path.join(
 
 SETUP_PATH = os.path.join(
     os.path.dirname(recidiviz.__file__),
-    "calculator/pipeline/dataflow_flex_setup.py",
+    "pipelines/dataflow_flex_setup.py",
 )
 
 

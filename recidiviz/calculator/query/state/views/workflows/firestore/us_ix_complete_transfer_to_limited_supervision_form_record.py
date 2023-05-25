@@ -19,9 +19,6 @@ for relevant case notes needed to determine eligibility for transfer to limited 
 supervision in Idaho
 """
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.pipeline.supplemental.dataset_config import (
-    SUPPLEMENTAL_DATA_DATASET,
-)
 from recidiviz.calculator.query.bq_utils import (
     nonnull_end_date_clause,
     nonnull_end_date_exclusive_clause,
@@ -32,6 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     SESSIONS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )

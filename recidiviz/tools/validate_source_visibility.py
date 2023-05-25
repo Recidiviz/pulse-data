@@ -32,9 +32,7 @@ from typing import Dict, Iterable, List, Optional, Set
 import attr
 import pygtrie
 
-from recidiviz.calculator.pipeline.utils.pipeline_run_utils import (
-    collect_all_pipeline_modules,
-)
+from recidiviz.pipelines.utils.pipeline_run_utils import collect_all_pipeline_modules
 from recidiviz.vendor.modulefinder import modulefinder
 
 RECIDIVIZ_MODULE = "recidiviz"
@@ -236,6 +234,7 @@ def main() -> int:
             "recidiviz.big_query.big_query_utils",
             "recidiviz.big_query.big_query_view",
             "recidiviz.calculator",
+            "recidiviz.pipelines",
             "recidiviz.cloud_storage",
             "recidiviz.common",
             "recidiviz.persistence",
@@ -271,7 +270,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 "recidiviz.airflow.dags",
-                "recidiviz.calculator.pipeline",
+                "recidiviz.pipelines",
                 "recidiviz.calculator.query.state.dataset_config",
                 "recidiviz.cloud_functions.cloud_function_utils",
                 "recidiviz.cloud_storage",
@@ -337,6 +336,7 @@ def main() -> int:
                 "recidiviz.backup",
                 "recidiviz.big_query",
                 "recidiviz.calculator",
+                "recidiviz.pipelines",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_tasks",
                 "recidiviz.cloud_sql",
@@ -368,7 +368,7 @@ def main() -> int:
         valid_module_prefixes=make_module_matcher(
             {
                 # TODO(#6859): Get rid of this dependency
-                "recidiviz.calculator.pipeline",
+                "recidiviz.pipelines",
                 "recidiviz.calculator.query.state.views.dashboard.pathways",
                 "recidiviz.case_triage",
                 "recidiviz.cloud_memorystore",
