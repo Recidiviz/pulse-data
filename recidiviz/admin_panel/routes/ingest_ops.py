@@ -48,6 +48,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager impor
     DirectIngestRegionLockManager,
 )
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
+from recidiviz.ingest.direct.gating import is_ingest_in_dataflow_enabled
 from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
@@ -1035,3 +1036,22 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
 
         get_ingest_operations_store().purge_ingest_queues(state_code=state_code)
         return "", HTTPStatus.OK
+
+    # TODO(#20997): delete once ingest is enabled in dataflow in all states
+    @bp.route(
+        "/api/ingest_operations/is_ingest_in_dataflow_enabled",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _is_ingest_in_dataflow_enabled() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        return (
+            jsonify(is_ingest_in_dataflow_enabled(state_code, ingest_instance)),
+            HTTPStatus.OK,
+        )
