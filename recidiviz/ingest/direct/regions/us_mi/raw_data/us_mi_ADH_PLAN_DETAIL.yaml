@@ -6,30 +6,29 @@ primary_key_cols:
   - plan_detail_id
 columns:
   - name: plan_detail_id
-    description: TODO(#19675)
+    description: Table's primary key.
   - name: plan_of_supervision_id
-    description: TODO(#19675)
+    description: Used to join to ADH_PLAN_OF_SUPERVISION.
   - name: plan_goal_id
-    description: TODO(#19675)
+    description: There are several types of plan goals, this column contains a code for each one. It can be merged with ADH_REFERENCE_CODE to get each type's description.
   - name: plan_goal_method_id
-    description: TODO(#19675)
+    description: Proposed method to achieve case plan goals. It can be merged with ADH_REFERENCE_CODE to get each method's description.
   - name: notes
-    description: TODO(#19675)
+    description: Notes associated with each plan goal.
     is_pii: True
   - name: complete_date
-    description: TODO(#19675)
+    description: Date when the plan goal was completed.
     is_datetime: True
     datetime_sql_parsers:
       - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: complete_reason_id
-    description: TODO(#19675)
+    description: Reference code - reason why the plan goal was completed.
   - name: last_update_user
-    description: TODO(#19675)
+    description: User ID of who last updated this record.
     is_pii: True
   - name: last_update_date
-    description: TODO(#19675)
+    description: Date of last update
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
-    description: TODO(#19675)
