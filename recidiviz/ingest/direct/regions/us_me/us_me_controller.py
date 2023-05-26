@@ -49,4 +49,5 @@ class UsMeController(BaseDirectIngestController):
             "supervision_violations",
             "incarceration_sentences",
             "supervision_sentences",
+            "supervision_staff",
         ]
