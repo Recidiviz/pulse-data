@@ -19,12 +19,13 @@ someone in MI is eligible for early discharge from probation supervision.
 """
 from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
-    probation_active_supervision_population,
+    probation_active_supervision_and_supervision_out_of_state_population,
 )
 from recidiviz.task_eligibility.completion_events.general import early_discharge
 from recidiviz.task_eligibility.criteria.general import (
+    custodial_authority_is_supervision_authority_or_other_state,
     supervision_not_past_full_term_completion_date,
-    supervision_past_half_full_term_release_date,
+    supervision_or_supervision_out_of_state_past_half_full_term_release_date,
 )
 from recidiviz.task_eligibility.criteria.state_specific.us_mi import (
     no_active_ppo,
@@ -46,14 +47,15 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
     state_code=StateCode.US_MI,
     task_name="COMPLETE_DISCHARGE_EARLY_FROM_PROBATION_SUPERVISION_REQUEST",
     description=_DESCRIPTION,
-    candidate_population_view_builder=probation_active_supervision_population.VIEW_BUILDER,
+    candidate_population_view_builder=probation_active_supervision_and_supervision_out_of_state_population.VIEW_BUILDER,
     criteria_spans_view_builders=[
         not_serving_ineligible_offenses_for_early_discharge_from_probation_supervision.VIEW_BUILDER,
         no_active_ppo.VIEW_BUILDER,
         no_new_ineligible_offenses_for_early_discharge_from_supervision.VIEW_BUILDER,
-        supervision_past_half_full_term_release_date.VIEW_BUILDER,
+        supervision_or_supervision_out_of_state_past_half_full_term_release_date.VIEW_BUILDER,
         supervision_not_past_full_term_completion_date.VIEW_BUILDER,
         supervision_is_not_ic_in.VIEW_BUILDER,
+        custodial_authority_is_supervision_authority_or_other_state.VIEW_BUILDER,
     ],
     completion_event_builder=early_discharge.VIEW_BUILDER,
 )

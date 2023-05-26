@@ -46,7 +46,6 @@ SELECT
     -- 1719: Interstate Compact Parole, 1720: Interstate Compact Probation
     -- Currently clients can meet both criteria, and in these cases the clients mistakenly have `OTHER_STATE` periods
     -- when in reality they are `IC-IN` so we default here to `IC-IN`.
-    -- Additionally, IC-OUT cases are not added yet, and will be in #TODO(#20293) 
         WHEN ('1719' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)], ","))
                 OR '1720' IN UNNEST(SPLIT((SPLIT(ssp.supervision_type_raw_text, "-"))[offset(1)],","))) THEN 'IC-IN'
         WHEN ssp.custodial_authority = 'OTHER_STATE' THEN 'IC-OUT'

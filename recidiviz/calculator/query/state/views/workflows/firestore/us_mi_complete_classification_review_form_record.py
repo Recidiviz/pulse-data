@@ -75,7 +75,7 @@ INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id
     AND tes.person_id = pei.person_id
     AND pei.id_type = "US_MI_DOC"
     AND task_name IN ("COMPLETE_INITIAL_CLASSIFICATION_REVIEW_FORM", "COMPLETE_SUBSEQUENT_CLASSIFICATION_REVIEW_FORM")
-LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_level_is_sai_materialized` sai
+LEFT JOIN `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
     ON tes.state_code = sai.state_code
     AND tes.person_id = sai.person_id 
     AND CURRENT_DATE('US/Pacific') BETWEEN sai.start_date AND {nonnull_end_date_exclusive_clause('sai.end_date')}
