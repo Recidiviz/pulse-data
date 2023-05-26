@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone is serving
-a parole term of one year or more. This query is only relevant for states who have
-parole sentencing data stored separately in supervision sentences.
+a supervision or supervision out of state parole term of one year or more.
+This query is only relevant for states who have parole sentencing data stored separately in supervision sentences.
 """
 from recidiviz.calculator.query.sessions_query_fragments import (
     join_sentence_spans_to_compartment_sessions,
@@ -28,11 +28,13 @@ from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION"
+_CRITERIA_NAME = (
+    "SERVING_AT_LEAST_ONE_YEAR_ON_PAROLE_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE"
+)
 
-_DESCRIPTION = """Defines a criteria span view that shows spans of time during during which someone is serving
-a parole term of one year or more. This query is only relevant for states who have 
-parole sentencing data stored separately in supervision sentences."""
+_DESCRIPTION = """Defines a criteria span view that shows spans of time during which someone is serving
+a supervision or supervision out of state parole term of one year or more. 
+This query is only relevant for states who have parole sentencing data stored separately in supervision sentences."""
 
 _QUERY_TEMPLATE = f"""
     SELECT
@@ -42,7 +44,7 @@ _QUERY_TEMPLATE = f"""
         span.end_date,
         CAST(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY) AS INT64) >= 365 AS meets_criteria,
         TO_JSON(STRUCT(MAX(sent.projected_completion_date_max) AS projected_completion_date_max)) AS reason,
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"])}
     WHERE sent.sentence_sub_type = "PAROLE" 
     GROUP BY 1, 2, 3, 4
 """

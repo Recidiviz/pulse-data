@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Defines a criteria span view that shows spans of time during which someone
-has completed half their full term supervision sentence.
+has completed half their full term supervision or supervision out of state sentence.
 """
 from recidiviz.calculator.query.bq_utils import (
     list_to_query_string,
@@ -40,10 +40,12 @@ from recidiviz.task_eligibility.utils.critical_date_query_fragments import (
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "SUPERVISION_PAST_HALF_FULL_TERM_RELEASE_DATE"
+_CRITERIA_NAME = (
+    "SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_PAST_HALF_FULL_TERM_RELEASE_DATE"
+)
 
 _DESCRIPTION = """Defines a criteria span view that shows spans of time during which
-someone has completed half their full term supervision sentence"""
+someone has completed half their full term supervision or supervision out of state sentence"""
 
 _QUERY_TEMPLATE = f"""
 WITH critical_date_spans AS (
@@ -54,7 +56,7 @@ WITH critical_date_spans AS (
         span.end_date AS end_datetime,
         (DATE_ADD(MAX(sent.effective_date),INTERVAL
             CAST(CEILING(DATE_DIFF(MAX(sent.projected_completion_date_max),MAX(sent.effective_date),DAY))/2 AS INT64) DAY)) AS critical_date
-    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap="SUPERVISION")}
+    {join_sentence_spans_to_compartment_sessions(compartment_level_1_to_overlap=["SUPERVISION", "SUPERVISION_OUT_OF_STATE"])} 
     WHERE
     -- due to sentence data quality issues, we exclude sentences where the effective date comes before the projected completion date max
     -- validation errors and information can be found in this epic (https://app.zenhub.com/workspaces/analysis-5f8f1c625afb1c0011c7222a/issues/gh/recidiviz/pulse-data/16206) 

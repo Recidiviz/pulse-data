@@ -14,53 +14,34 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""This criteria view builder defines spans of time that clients are on supervision after participating in
+"""This criteria view builder defines spans of time that clients are not on supervision after participating in
  SAI (Special Alternative Incarceration) based on supervision level raw text values that contain SAI.
 """
-from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
-from recidiviz.calculator.query.state.dataset_config import (
-    ANALYST_VIEWS_DATASET,
-    SESSIONS_DATASET,
-)
 from recidiviz.common.constants.states import StateCode
+from recidiviz.task_eligibility.dataset_config import (
+    task_eligibility_criteria_state_specific_dataset,
+)
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateSpecificTaskCriteriaBigQueryViewBuilder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "US_MI_SUPERVISION_LEVEL_IS_SAI"
+_CRITERIA_NAME = "US_MI_SUPERVISION_OR_SUPERVISION_OUT_OF_STATE_LEVEL_IS_NOT_SAI"
 
-_DESCRIPTION = """This criteria view builder defines spans of time that clients are on supervision after participating
+_DESCRIPTION = """This criteria view builder defines spans of time that clients are not on supervision after participating
 in SAI (Special Alternative Incarceration).
 """
 
-_QUERY_TEMPLATE = f"""
-WITH sai_spans AS (
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date_exclusive AS end_date,
-    #TODO(#20035) replace with supervision level raw text sessions once views agree
-    FROM `{{project_id}}.{{sessions_dataset}}.compartment_sub_sessions_materialized` sls
-    /* Using regex to match digits in sls.correctional_level_raw_text
-   so imputed values with the form d*##IMPUTED are correctly joined */
-    LEFT JOIN `{{project_id}}.{{analyst_data_dataset}}.us_mi_supervision_level_raw_text_mappings` map
-        ON REGEXP_EXTRACT(sls.correctional_level_raw_text, r'(\\d+)') \
-         = map.supervision_level_raw_text
-    WHERE state_code = "US_MI"
-    AND compartment_level_1 = 'SUPERVISION' 
-    AND map.is_sai
-)
-    SELECT 
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        TRUE AS meets_criteria,
-    TO_JSON(STRUCT(TRUE AS supervision_level_is_sai)) AS reason,
-    FROM ({aggregate_adjacent_spans(table_name='sai_spans')})
+_QUERY_TEMPLATE = """
+SELECT
+    state_code,
+    person_id,
+    start_date,
+    end_date,
+    NOT meets_criteria AS meets_criteria,
+    reason,
+FROM `{project_id}.{criteria_dataset}.supervision_or_supervision_out_of_state_level_is_sai_materialized`
 """
 
 VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
@@ -69,8 +50,10 @@ VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
         description=_DESCRIPTION,
         criteria_spans_query_template=_QUERY_TEMPLATE,
         state_code=StateCode.US_MI,
-        sessions_dataset=SESSIONS_DATASET,
-        analyst_data_dataset=ANALYST_VIEWS_DATASET,
+        meets_criteria_default=True,
+        criteria_dataset=task_eligibility_criteria_state_specific_dataset(
+            StateCode.US_MI
+        ),
     )
 )
 
