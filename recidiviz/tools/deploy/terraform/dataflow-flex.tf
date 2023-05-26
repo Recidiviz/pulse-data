@@ -39,7 +39,7 @@ resource "google_storage_bucket_object" "flex_template_metadata" {
   content_type = "application/json"
 
   # This line means we will make a new google_storage_bucket_object for each file we find at the given wildcard path
-  for_each = fileset("${local.recidiviz_root}/calculator/pipeline/", "*/template_metadata.json")
+  for_each = fileset("${local.recidiviz_root}/pipelines/", "*/template_metadata.json")
 
   # Here we extract the last directory before the filename (e.g. metrics) and append to the filename to make the full file name
   name = "template_metadata/${basename(dirname(each.value))}.json"
@@ -50,6 +50,6 @@ resource "google_storage_bucket_object" "flex_template_metadata" {
       language = "PYTHON"
     }
     # Here we read the file contents using the full file path
-    metadata = jsondecode(file("${local.recidiviz_root}/calculator/pipeline/${each.value}")),
+    metadata = jsondecode(file("${local.recidiviz_root}/pipelines/${each.value}")),
   })
 }
