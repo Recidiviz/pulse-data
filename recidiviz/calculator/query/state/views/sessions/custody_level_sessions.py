@@ -48,9 +48,27 @@ CUSTODY_LEVEL_SESSIONS_QUERY_TEMPLATE = f"""
                        session_id_output_name='custody_level_session_id',
                        end_date_field_name='end_date_exclusive')}
     )
+    ,
+    dedup_priority AS (
+        SELECT session.*, cl.correctional_level_priority
+        FROM
+            sessionized_cte session
+        LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` cl
+            ON custody_level = correctional_level
+    )
     SELECT
-        *,
-    FROM sessionized_cte
+        session.* EXCEPT(correctional_level_priority),
+        CASE WHEN session.correctional_level_priority < session_lag.correctional_level_priority
+            AND session.is_discretionary_level AND session_lag.is_discretionary_level
+            THEN 1 ELSE 0 END as custody_upgrade,
+        CASE WHEN session.correctional_level_priority > session_lag.correctional_level_priority
+            AND session.is_discretionary_level AND session_lag.is_discretionary_level
+            THEN 1 ELSE 0 END as custody_downgrade,
+    FROM dedup_priority session
+    LEFT JOIN dedup_priority session_lag
+        ON session.state_code = session_lag.state_code
+        AND session.person_id = session_lag.person_id
+        AND session.start_date = session_lag.end_date_exclusive
     """
 
 CUSTODY_LEVEL_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
