@@ -640,6 +640,10 @@ def get_api_blueprint(
                 report_frequency = report_id_to_frequency[report_id]
                 is_report_published = report_id_to_published_status[report_id]
 
+                # Filter out report-level context datapoints as they are deprecated
+                if datapoint.context_key is not None:
+                    continue
+
                 report_id_to_datapoints[report_id].append(
                     DatapointInterface.to_json_response(
                         datapoint=datapoint,
