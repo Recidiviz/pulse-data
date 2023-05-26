@@ -110,6 +110,22 @@ _CLIENT_RECORD_SUPERVISION_SUPER_SESSIONS_CTE = """
         FROM `{project_id}.{sessions_dataset}.supervision_super_sessions_materialized`
         WHERE state_code IN ({workflows_supervision_states})
         AND end_date IS NULL
+        # TODO(#20872) - Remove 'US_ME' filter once super_sessions fixed
+        AND state_code != 'US_ME'
+ 
+        UNION ALL
+
+        #TODO(#20872) - some liberty cases are being labeled as pending_custody, which
+            #is causing supervision_super_sessions to get the wrong start dates. Once this is 
+            #fixed, we should be able to go back to supervision_super_sessions
+
+        SELECT 
+            person_id, 
+            start_date
+        FROM `{project_id}.{sessions_dataset}.compartment_level_1_super_sessions_materialized`
+        WHERE state_code = 'US_ME'
+        AND compartment_level_1 = 'SUPERVISION'
+        AND end_date IS NULL
     ),
     """
 
