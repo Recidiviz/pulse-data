@@ -52,6 +52,7 @@ from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_bra
 from recidiviz.metrics.export.products.product_configs import (
     PRODUCTS_CONFIG_PATH,
     ProductConfigs,
+    ProductExportConfig,
 )
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
@@ -214,13 +215,9 @@ def trigger_metric_view_data_operator(
 
 
 def create_metric_view_data_export_nodes(
-    export_job_filter: str,
+    relevant_product_exports: List[ProductExportConfig],
 ) -> List[CloudTasksTaskCreateOperator]:
     """Creates trigger nodes and wait conditions for metric view data exports based on provided export job filter."""
-    relevant_product_exports = ProductConfigs.from_file(
-        path=PRODUCTS_CONFIG_PATH
-    ).get_export_configs_for_job_filter(export_job_filter)
-
     metric_view_data_triggers: List[CloudTasksTaskCreateOperator] = []
     for export in relevant_product_exports:
         export_job_name = export["export_job_name"]
@@ -408,8 +405,13 @@ def metric_export_branches_by_state_code(
         state_code,
         metric_pipelines_group,
     ) in post_normalization_pipelines_by_state.items():
+        relevant_product_exports = ProductConfigs.from_file(
+            path=PRODUCTS_CONFIG_PATH
+        ).get_export_configs_for_job_filter(state_code)
+        if not relevant_product_exports:
+            continue
         with TaskGroup(group_id=f"{state_code}_metric_exports") as state_metric_exports:
-            create_metric_view_data_export_nodes(state_code)
+            create_metric_view_data_export_nodes(relevant_product_exports)
 
         metric_pipelines_group >> state_metric_exports
 
@@ -522,8 +524,13 @@ def create_calculation_dag() -> None:
             )
 
         for export in PIPELINE_AGNOSTIC_EXPORTS:
+            relevant_product_exports = ProductConfigs.from_file(
+                path=PRODUCTS_CONFIG_PATH
+            ).get_export_configs_for_job_filter(export)
+            if not relevant_product_exports:
+                continue
             with TaskGroup(group_id=f"{export}_metric_exports"):
-                create_metric_view_data_export_nodes(export)
+                create_metric_view_data_export_nodes(relevant_product_exports)
 
     view_materialization >> metric_exports
 
