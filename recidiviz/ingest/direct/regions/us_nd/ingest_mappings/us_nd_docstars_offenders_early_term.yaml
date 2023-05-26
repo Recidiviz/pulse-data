@@ -3,6 +3,7 @@ manifest_language: 1.0.0
 input_columns:
   - SID
   - EARLY_TERMINATION_DATE
+  - RecDate
 unused_columns: []
 output:
   StatePerson:
@@ -13,6 +14,5 @@ output:
     task_deadlines:
       - StateTaskDeadline:
           eligible_date: EARLY_TERMINATION_DATE
-          update_datetime:
-            $env: results_update_datetime
+          update_datetime: RecDate
           task_type: $literal_enum(StateTaskType.DISCHARGE_EARLY_FROM_SUPERVISION)
