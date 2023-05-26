@@ -31,8 +31,10 @@ from recidiviz.airflow.dags.utils.state_code_branch import create_state_code_bra
 
 
 class TestStateCodeBranch(unittest.TestCase):
+    """Test the state_code_branch.py helper function."""
+
     def test_state_code_branch_creates_branches(self) -> None:
-        @task_group(group_id="US_ZZ")
+        @task_group(group_id="US_ZZ_group")
         def us_zz_task_group() -> None:
             operator1 = EmptyOperator(task_id="US_ZZ_1")
             operator2 = EmptyOperator(task_id="US_ZZ_2")
@@ -52,13 +54,14 @@ class TestStateCodeBranch(unittest.TestCase):
         branching_start = test_dag.get_task("state_code_branch_start")
         branching_end = test_dag.get_task("state_code_branch_end")
 
-        self.assertEqual(len(test_dag.tasks), 6)
+        self.assertEqual(len(test_dag.tasks), 9)
         self.assertEqual(
             branching_end.trigger_rule, TriggerRule.NONE_FAILED_MIN_ONE_SUCCESS
         )
         self.assertEqual(
-            branching_start.downstream_task_ids, {"US_XX", "US_YY", "US_ZZ.US_ZZ_1"}
+            branching_start.downstream_task_ids,
+            {"US_XX_start", "US_YY_start", "US_ZZ_start"},
         )
         self.assertEqual(
-            branching_end.upstream_task_ids, {"US_XX", "US_YY", "US_ZZ.US_ZZ_2"}
+            branching_end.upstream_task_ids, {"US_XX", "US_YY", "US_ZZ_group.US_ZZ_2"}
         )
