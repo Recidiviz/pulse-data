@@ -15,30 +15,48 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Describes the spans of time when a resident has had at least 1 incident in the past year."""
-from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
-    StateAgnosticTaskCriteriaBigQueryViewBuilder,
+from recidiviz.calculator.query.state.dataset_config import NORMALIZED_STATE_DATASET
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
 )
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
+    StateSpecificTaskCriteriaBigQueryViewBuilder,
+)
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE,
+    has_at_least_x_incarceration_incidents_in_time_interval,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "HAS_HAD_AT_LEAST_1_INCARCERATION_INCIDENT_PAST_YEAR"
+_CRITERIA_NAME = "US_TN_HAS_HAD_AT_LEAST_1_INCARCERATION_INCIDENT_PAST_YEAR"
 
 _DESCRIPTION = """Describes the spans of time when a resident has had at least 1 incident in the past year."""
 
-_REASON_QUERY = (
-    """TO_JSON(STRUCT('9999-99-99' AS latest_incarceration_incident_date))"""
-)
+_QUERY_TEMPLATE = f"""
+    {has_at_least_x_incarceration_incidents_in_time_interval(
+        number_of_incidents=1,
+        date_interval = 12, 
+        date_part = "MONTH",
+        where_clause = INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE)}
+"""
 
-VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+VIEW_BUILDER: StateSpecificTaskCriteriaBigQueryViewBuilder = (
+    StateSpecificTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
+        state_code=StateCode.US_TN,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        normalized_state_dataset=NORMALIZED_STATE_DATASET,
+        meets_criteria_default=False,
+        raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+            state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
+        ),
     )
 )
+
 
 if __name__ == "__main__":
     with local_project_id_override(GCP_PROJECT_STAGING):

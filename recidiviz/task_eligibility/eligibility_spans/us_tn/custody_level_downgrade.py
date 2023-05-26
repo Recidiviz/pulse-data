@@ -23,8 +23,11 @@ from recidiviz.task_eligibility.candidate_populations.general import (
 )
 from recidiviz.task_eligibility.completion_events.general import full_term_discharge
 from recidiviz.task_eligibility.criteria.general import (
-    at_least_6_months_since_most_recent_incarceration_incident,
     custody_level_higher_than_recommended,
+    custody_level_is_not_max,
+)
+from recidiviz.task_eligibility.criteria.state_specific.us_tn import (
+    at_least_6_months_since_most_recent_incarceration_incident,
     has_had_at_least_1_incarceration_incident_past_year,
 )
 from recidiviz.task_eligibility.single_task_eligiblity_spans_view_builder import (
@@ -46,6 +49,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         has_had_at_least_1_incarceration_incident_past_year.VIEW_BUILDER,
         at_least_6_months_since_most_recent_incarceration_incident.VIEW_BUILDER,
         custody_level_higher_than_recommended.VIEW_BUILDER,
+        custody_level_is_not_max.VIEW_BUILDER,
     ],
     # TODO(#20577): Replace with completion event for Custody Level Downgrade
     completion_event_builder=full_term_discharge.VIEW_BUILDER,
