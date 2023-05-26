@@ -30,6 +30,10 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
+from recidiviz.ingest.direct.raw_data.dataset_config import (
+    raw_latest_views_dataset_for_region,
+)
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
@@ -46,29 +50,59 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_DESCRIPTION = """
     for individuals that may be eligible 
     """
 US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
- WITH sentence_charge_description AS (
+ WITH case_numbers AS(
+      SELECT DISTINCT 
+        charge.state_code,
+        charge.person_id,
+        charge.charge_id,
+        ch.Docket, 
+      FROM `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_Sentence_latest` sent
+      INNER JOIN  `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_SentenceLink_latest` sentlink 
+        ON sent.SentenceId = sentlink.SentenceId
+      INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_SentenceLinkOffense_latest` sentoff 
+        ON sentlink.SentenceLinkId = sentoff.SentenceLinkId
+      INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_Offense_latest` off 
+        ON sentoff.OffenseId = off.OffenseId
+      INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_SentenceOrder_latest` ord 
+        ON off.SentenceOrderId = ord.SentenceOrderId
+      INNER JOIN `{{project_id}}.{{us_ix_raw_data_up_to_date_dataset}}.scl_Charge_latest` ch 
+        ON ch.ChargeId = ord.ChargeId
+      INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_charge` charge
+            ON sent.OffenderId = SPLIT((charge.external_id), '-')[SAFE_OFFSET(0)]
+            AND sentoff.OffenseId = SPLIT((charge.external_id), '-')[SAFE_OFFSET(1)]
+    ),
+ sentence_charge_description AS (
       SELECT
         sent.state_code,
         sent.person_id,
         sent.date_imposed,
+        sentences_preprocessed_id,
         sent.projected_completion_date_max,
-        sent.description, 
+        sent.description,
+        cn.Docket AS case_number,
       FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`,
         UNNEST (sentences_preprocessed_id_array) sentences_preprocessed_id
       INNER JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sent
         USING (state_code, person_id, sentences_preprocessed_id)
+      LEFT JOIN case_numbers cn
+        USING (state_code, person_id, charge_id)
       WHERE state_code = "US_IX"
-      AND CURRENT_DATE BETWEEN start_date AND COALESCE(end_date, "9999-12-31")
+      AND CURRENT_DATE BETWEEN start_date AND {nonnull_end_date_exclusive_clause('end_date')}
       AND sent.projected_completion_date_max >= CURRENT_DATE('US/Pacific')
       --Pick one record per person, sentence type and ChargeId, selecting the lowest sentence sequence number
-      QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id,sent.sentence_type, SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(0)] 
-      ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.SENTENCE_SEQUENCE'), '-')[SAFE_OFFSET(1)])=1
+     QUALIFY ROW_NUMBER() OVER(PARTITION BY sent.person_id, sent.sentence_type, 
+            SPLIT(JSON_VALUE(PARSE_JSON(sent.sentence_metadata), '$.sentence_sequence'))[SAFE_OFFSET(0)] 
+      ORDER BY SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.sentence_sequence')) [SAFE_OFFSET(1)], 
+                SPLIT(JSON_VALUE(PARSE_JSON(sentence_metadata), '$.sentence_sequence')) [SAFE_OFFSET(2)])=1
     ),
     sentence_charge_description_aggregated AS (
     SELECT
         charge.state_code,
         charge.person_id,
         ARRAY_AGG(DISTINCT charge.description IGNORE NULLS) AS form_information_charge_descriptions,
+        ARRAY_AGG(charge.case_number IGNORE NULLS ORDER BY 
+            charge.date_imposed, charge.projected_completion_date_max, charge.sentences_preprocessed_id) 
+            AS form_information_case_numbers,
     FROM sentence_charge_description charge
     GROUP BY 1,2
     ),
@@ -275,6 +309,7 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_QUERY_TEMPLATE = f"""
           DATE_DIFF(proj.projected_completion_date_max, CURRENT_DATE('US/Pacific'), DAY) AS days_remaining_on_supervision,
           --aggregate all relevant charge descriptions 
           agg_charge.form_information_charge_descriptions,
+          agg_charge.form_information_case_numbers,
           pi.current_address AS form_information_current_address,
           pi.current_phone_number AS form_information_current_phone_number,
           pi.current_email_address AS form_information_email_address,
@@ -391,6 +426,9 @@ US_IX_COMPLETE_TRANSFER_TO_LIMITED_SUPERVISION_FORM_RECORD_VIEW_BUILDER = Simple
         StateCode.US_IX
     ),
     should_materialize=True,
+    us_ix_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
+        state_code=StateCode.US_IX, instance=DirectIngestInstance.PRIMARY
+    ),
     note_title_regex="r'^{{note_title:(.*?)}}'",
     note_body_regex=" r'{{note:((?s:.*))}}'",
 )
