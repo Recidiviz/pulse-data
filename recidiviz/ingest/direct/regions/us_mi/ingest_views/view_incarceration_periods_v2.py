@@ -47,36 +47,14 @@ max_date_outs AS (
     WINDOW lock_window AS (PARTITION BY offender_id, location_id, unit_lock_id, date_in)
 ),
 deduped_lock_records AS (
-    -- There are a non-trivial amount of duplication of lock records. In order to have a 
-    -- stable ID, we take the maximum unit lock id out of the date_in, date_out combinations.
-    SELECT
-        o.offender_id,
-        o.location_id,
-        o.date_in,
-        o.date_out,
-        MAX(CAST(o.unit_lock_id AS INT64)) AS unit_lock_id
-    FROM {ADH_OFFENDER_LOCK} o
-    JOIN max_date_outs
-    ON max_date_outs.offender_id = o.offender_id
-    AND max_date_outs.location_id = o.location_id
-    AND max_date_outs.date_in = o.date_in
-    AND COALESCE(max_date_outs.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
-    WHERE o.permanent_temporary_flag = '1'
-    GROUP BY
-        offender_id,
-        location_id,
-        date_in,
-        date_out
-),
-deduped_deduped_lock_records AS (
     -- After the above deduplication, there are then cases where two deduped lock records now have the same date out and the same unit_lock_id but different date ins
     -- In these cases take the one with the earliest date in
     select *
     from (
         select  *,
             ROW_NUMBER() OVER(PARTITION BY offender_id, location_id, unit_lock_id, date_out ORDER BY date_in ASC) as n
-        from deduped_lock_records 
-    )
+        from max_date_outs 
+    ) sub1
     where n=1
 ),
 final_lock_records AS (
@@ -87,13 +65,14 @@ final_lock_records AS (
         o.offender_id,
         o.location_id,
         o.unit_lock_id,
-        DATETIME(o.date_in) AS date_in,
-        DATETIME(o.date_out) AS date_out
+        CAST(o.date_in as DATETIME) AS date_in,
+        CAST(o.date_out as DATETIME) AS date_out,
+        CAST(o.last_update_date as DATETIME) AS last_update_date
     FROM {ADH_OFFENDER_LOCK} o
-    JOIN deduped_deduped_lock_records d
+    JOIN deduped_lock_records d
     ON d.offender_id = o.offender_id
     AND d.location_id = o.location_id
-    AND d.unit_lock_id = CAST(o.unit_lock_id AS INT64)
+    AND d.unit_lock_id = o.unit_lock_id
     AND d.date_in = o.date_in
     AND COALESCE(d.date_out,'9999-12-31') = COALESCE(o.date_out, '9999-12-31')
     WHERE o.permanent_temporary_flag = '1'
@@ -104,6 +83,7 @@ internal_movements AS (
         o.offender_id,
         o.offender_lock_id,
         o.unit_lock_id,
+        o.last_update_date,
         rs.reporting_station_id,
         rs.name AS reporting_station_name,
         l.location_id,
@@ -113,7 +93,7 @@ internal_movements AS (
         r1.unique_code,
         r3.description AS county,
         o.date_in,
-        o.date_out,
+        COALESCE((CAST(o.date_out as DATETIME)), CAST( DATE(9999,9,9) as DATETIME)) as date_out,
         u.cell_type_id,
         u.security_level_id
     FROM final_lock_records o
@@ -132,7 +112,6 @@ internal_movements AS (
 ),"""
 
 MOVEMENTS_CTE = """
--- Find external movements that indicate a person is going in and out of MDOC facilities.
 deduped_movement_records AS (
     -- For a given offender_booking_id, which indicates a person on a certain jurisdiction
     -- with MDOC, we see duplicates on the same day of movements that go from a source
@@ -148,7 +127,7 @@ deduped_movement_records AS (
         offender_booking_id,
         source_location_id,
         destination_location_id,
-        DATE(movement_date)
+        (DATE(movement_date))
 ),
 final_movement_records AS (
     -- We join back to the original table in order to obtain the movement reason id
@@ -171,20 +150,20 @@ final_movements AS (
         o.offender_id,
         e.offender_external_movement_id,
         m.movement_reason_id,
-        mr.description AS movement_description,
-        DATETIME(e.movement_date) AS movement_date,
-        m.source_location_id,
-        la.location_code AS source_location_code,
-        la.name AS source_location_name,
-        la.location_type_id AS source_location_type_id,
-        ra.unique_code AS source_location_unique_code,
-        rc1.description AS source_location_county,
-        m.destination_location_id,
+        CAST(e.movement_date as DATETIME) AS movement_date,
         lb.location_code AS destination_location_code,
         lb.name AS destination_location_name,
         lb.location_type_id AS destination_location_type_id,
-        rb.unique_code AS destination_location_unique_code,
-        rc2.description AS destination_location_county
+        rc2.description AS destination_location_county,
+        COALESCE(
+            LEAD(CAST(e.movement_date as DATETIME)) 
+            OVER(partition by o.offender_id ORDER BY e.movement_date, e.offender_external_movement_id), 
+            CAST( DATE(9999,9,9) as DATETIME)
+            ) as next_movement_date,
+        LEAD(m.movement_reason_id)
+            OVER(partition by o.offender_id ORDER BY e.movement_date, e.offender_external_movement_id) 
+            as next_movement_reason_id,
+        CAST(m.last_update_date as DATETIME) AS last_update_date
     FROM final_movement_records e
     JOIN {ADH_OFFENDER_EXTERNAL_MOVEMENT} m
     ON e.offender_external_movement_id = m.offender_external_movement_id
@@ -192,18 +171,10 @@ final_movements AS (
     ON e.offender_booking_id = b.offender_booking_id
     JOIN {ADH_OFFENDER} o
     ON b.offender_id = o.offender_id
-    JOIN {ADH_LOCATION} la
-    ON m.source_location_id = la.location_id
-    JOIN {ADH_REFERENCE_CODE} ra
-    ON la.location_type_id = ra.reference_code_id
     JOIN {ADH_LOCATION} lb
     ON m.destination_location_id = lb.location_id
     JOIN {ADH_REFERENCE_CODE} rb
     ON lb.location_type_id = rb.reference_code_id
-    JOIN {ADH_MOVEMENT_REASON} mr
-    ON mr.movement_reason_id = m.movement_reason_id
-    LEFT JOIN {ADH_REFERENCE_CODE} rc1
-    ON la.county_id = rc1.reference_code_id
     LEFT JOIN {ADH_REFERENCE_CODE} rc2
     ON lb.county_id = rc2.reference_code_id
     -- Omitting certain movement reason ids that are not considered incarceration admissions
@@ -218,10 +189,9 @@ ad_seg_designation as (
         offender_designation_id, 
         offender_id,
         offender_designation_code_id,
-        date(start_date) as start_date, 
-        date(end_date) as end_date,
-        date(last_update_date) as last_update_date,
-        LEAD(date(start_date)) OVER(partition by offender_id ORDER BY DATE(start_date), DATE(end_date)) as next_start_date,
+        CAST(start_date as DATETIME) as start_date, 
+        COALESCE(CAST(end_date as DATETIME), CAST( DATE(9999,9,9) as DATETIME)) as end_date,
+        CAST(last_update_date as DATETIME) as last_update_date
     from {ADH_OFFENDER_DESIGNATION}
     where offender_designation_code_id in ('11672', '11670', '11389') -- segregation designations
 ),
@@ -232,333 +202,91 @@ WITH
 {LOCK_RECORDS_CTE}
 {MOVEMENTS_CTE}
 {AD_SEG_CTE}
-external_movements_in AS (
-    -- By joining internal movements (lock spans) with movements of the day,
-    -- where the destination is the same as the lock span's location, we proxy
-    -- the exact reason that causes a person to move into a facility.
-    -- These records may have a slight difference in date entered for both, so we have
-    -- to match by proxy date difference being as close as possible.
-    SELECT
-        i.offender_lock_id,
-        i.offender_id,
-        i.unit_lock_id,
-        i.reporting_station_id,
-        i.reporting_station_name,
-        i.location_id,
-        i.location_code,
-        i.name,
-        i.location_type_id,
-        i.unique_code,
-        i.county,
-        i.date_in AS movement_date,
-        e.offender_external_movement_id,
-        e.movement_reason_id,
-        e.movement_description,
-        e.destination_location_id,
-        e.destination_location_code,
-        e.destination_location_name,
-        e.destination_location_type_id,
-        e.destination_location_unique_code,
-        e.destination_location_county,
-        'IN' AS status,
-        i.cell_type_id,
-        i.security_level_id
-    FROM internal_movements i
-    JOIN final_movements e
-    ON i.offender_id = e.offender_id
-    AND i.location_id = e.destination_location_id
-    WHERE ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) < 24
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY 
-        i.offender_id, e.offender_external_movement_id, i.location_id 
-        ORDER BY ABS(DATETIME_DIFF(i.date_in, e.movement_date, HOUR)) ASC, 
-        -- adding in date_out and offender_lock_id to break ties and choose the "first" internal movement
-                 i.date_out ASC,
-                 i.offender_lock_id ASC) = 1
+all_dates as (
+  select offender_id, CAST(date_in as DATETIME) as period_date from internal_movements
+  union all  
+  select offender_id, CAST(date_out as DATETIME) as period_date from internal_movements
+  union all 
+  select offender_id, CAST(movement_date as DATETIME) as period_date from final_movements
+  union all 
+  select offender_id, CAST(next_movement_date as DATETIME) as period_date from final_movements
+  union all
+  select offender_id, CAST(start_date as DATETIME) as period_date from ad_seg_designation
+  union all 
+  select offender_id, CAST(end_date as DATETIME) as period_date from ad_seg_designation
 ),
-external_movements_out AS (
-    -- By joining internal movements (lock spans) with movements of the day,
-    -- where the source location is the same as the lock span's location,
-    -- we proxy the exact reason that causes a person to move out of a facility.
-    -- These records may have a slight difference in date entered for both, so we have
-    -- to match by proxy date difference being as close as possible.
-    -- This CTE does not include lock spans in which the end date is null, given that 
-    -- that indicates a person is still occupying that unit.
-    SELECT 
-        i.offender_lock_id,
-        i.offender_id,
-        i.unit_lock_id,
-        i.reporting_station_id,
-        i.reporting_station_name,
-        i.location_id,
-        i.location_code,
-        i.name,
-        i.location_type_id,
-        i.unique_code,
-        i.county,
-        i.date_out AS movement_date,
-        e.offender_external_movement_id,
-        e.movement_reason_id,
-        e.movement_description,
-        e.destination_location_id,
-        e.destination_location_code,
-        e.destination_location_name,
-        e.destination_location_type_id,
-        e.destination_location_unique_code,
-        e.destination_location_county,
-        'OUT' AS status,
-        i.cell_type_id,
-        i.security_level_id
-    FROM internal_movements i
-    JOIN final_movements e
-    ON i.offender_id = e.offender_id
-    AND i.date_out IS NOT NULL
-    AND i.location_id = e.source_location_id
-    WHERE ABS(DATETIME_DIFF(i.date_out, e.movement_date, HOUR)) < 24
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY 
-        i.offender_id, e.offender_external_movement_id, i.location_id
-        ORDER BY ABS(DATETIME_DIFF(i.date_out, e.movement_date, DAY)) ASC, 
-        -- adding in date_in and offender_lock_id to break ties and choose the "last" internal movement
-                 i.date_in desc,
-                 i.offender_lock_id desc) = 1
+
+periods_basic as (
+  select
+    offender_id,
+    period_date as start_date,
+    lead(period_date) over(partition by offender_id order by period_date) as end_date
+  from (select distinct * from all_dates) sub
 ),
-internal_movements_without_external_movements_in AS (
-    -- A person may transfer units within facilities, therefore, these movements would
-    -- not have an external movement associated with them in terms of moving into the 
-    -- new unit.
-    SELECT 
-        i.offender_lock_id,
-        i.offender_id,
-        i.unit_lock_id,
-        i.reporting_station_id,
-        i.reporting_station_name,
-        i.location_id,
-        i.location_code,
-        i.name,
-        i.location_type_id,
-        i.unique_code,
-        i.county,
-        i.date_in AS movement_date,
-        e1.offender_external_movement_id,
-        e1.movement_reason_id,
-        e1.movement_description,
-        e1.destination_location_id,
-        e1.destination_location_code,
-        e1.destination_location_name,
-        e1.destination_location_type_id,
-        e1.destination_location_unique_code,
-        e1.destination_location_county,
-        'IN' AS status,
-        i.cell_type_id,
-        i.security_level_id
-    FROM internal_movements i
-    LEFT JOIN external_movements_in e1
-    ON i.offender_lock_id = e1.offender_lock_id
-    WHERE e1.offender_lock_id IS NULL
-),
-internal_movements_without_external_movements_out AS (
-    -- A person may transfer units within facilities, therefore, this would not have an
-    -- external movement associated with them in terms of moving out from the old unit. 
-    -- This CTE does not include lock spans in which the end date is null, given that 
-    -- that indicates a person is still occupying that unit.
-    SELECT 
-        i.offender_lock_id,
-        i.offender_id,
-        i.unit_lock_id,
-        i.reporting_station_id,
-        i.reporting_station_name,
-        i.location_id,
-        i.location_code,
-        i.name,
-        i.location_type_id,
-        i.unique_code,
-        i.county,
-        i.date_out AS movement_date,
-        e2.offender_external_movement_id,
-        e2.movement_reason_id,
-        e2.movement_description,
-        e2.destination_location_id,
-        e2.destination_location_code,
-        e2.destination_location_name,
-        e2.destination_location_type_id,
-        e2.destination_location_unique_code,
-        e2.destination_location_county,
-        'OUT' AS status,
-        i.cell_type_id,
-        i.security_level_id
-    FROM internal_movements i
-    LEFT JOIN external_movements_out e2
-    ON i.offender_lock_id = e2.offender_lock_id
-    WHERE e2.offender_lock_id IS NULL
-    AND i.date_out IS NOT NULL
-),
-external_movements_without_internal_movements_out AS (
-    -- In a nontrivial amount of cases, lock units were entered with a date_out that is
-    -- prior to the date_in, or do not exist at all for someone, but an external movement
-    -- exists where the person is now no longer in a facility in MDOC. Therefore, we
-    -- need to look for dangling external movements without associated internal movements
-    -- that indicate a person has left a facility.
-    SELECT
-        i.offender_lock_id,
-        e.offender_id,
-        i.unit_lock_id,
-        CAST(NULL AS STRING) AS reporting_station_id,
-        CAST(NULL AS STRING) AS reporting_station_name,
-        e.source_location_id AS location_id,
-        e.source_location_code AS location_code,
-        e.source_location_name AS name,
-        e.source_location_type_id AS location_type_id,
-        e.source_location_unique_code AS unique_code,
-        e.source_location_county AS county,
-        e.movement_date,
-        e.offender_external_movement_id,
-        e.movement_reason_id,
-        e.movement_description,
-        e.destination_location_id,
-        e.destination_location_code,
-        e.destination_location_name,
-        e.destination_location_type_id,
-        e.destination_location_unique_code,
-        e.destination_location_county,
-        'OUT' AS status,
-        i.cell_type_id,
-        i.security_level_id
-    FROM final_movements e
-    LEFT JOIN external_movements_out i
-    ON i.offender_external_movement_id = e.offender_external_movement_id
-    -- Filter where the destination is not State Prison, Residential Reentry Program
-    WHERE e.destination_location_type_id NOT IN ('225', '14294')
-    AND i.offender_external_movement_id IS NULL
-),
-edges AS (
-    SELECT * FROM external_movements_in
-    UNION ALL
-    SELECT * FROM external_movements_out
-    UNION ALL
-    SELECT * FROM internal_movements_without_external_movements_in
-    UNION ALL
-    SELECT * FROM internal_movements_without_external_movements_out
-    UNION ALL
-    SELECT * FROM external_movements_without_internal_movements_out
-),
-periods AS (
-    SELECT
-        offender_id,
-        offender_lock_id,
-        offender_external_movement_id,
-        status,
-        movement_date,
-        unit_lock_id,
-        reporting_station_id,
-        reporting_station_name,
-        location_id,
-        location_code,
-        name,
-        location_type_id,
-        unique_code,
-        county,
-        movement_reason_id,
-        movement_description,
-        destination_location_id,
-        destination_location_name,
-        destination_location_type_id,
-        destination_location_unique_code,
-        destination_location_county,
-        cell_type_id,
-        security_level_id,
-        LEAD(offender_lock_id) {PARTITION_STATEMENT} as next_offender_lock_id,
-        LEAD(offender_external_movement_id) {PARTITION_STATEMENT} AS next_offender_external_movement_id,
-        LEAD(status) {PARTITION_STATEMENT} AS next_status,
-        LEAD(movement_date) {PARTITION_STATEMENT} AS next_movement_date,
-        LEAD(unit_lock_id) {PARTITION_STATEMENT} AS next_unit_lock_id,
-        LEAD(reporting_station_id) {PARTITION_STATEMENT} AS next_reporting_station_id,
-        LEAD(reporting_station_name) {PARTITION_STATEMENT} AS next_reporting_station_name,
-        LEAD(location_id) {PARTITION_STATEMENT} AS next_location_id,
-        LEAD(location_code) {PARTITION_STATEMENT} AS next_location_code,
-        LEAD(name) {PARTITION_STATEMENT} AS next_name,
-        LEAD(location_type_id) {PARTITION_STATEMENT} AS next_location_type_id,
-        LEAD(unique_code) {PARTITION_STATEMENT} AS next_unique_code,
-        LEAD(county) {PARTITION_STATEMENT} AS next_county,
-        LEAD(movement_reason_id) {PARTITION_STATEMENT} AS next_movement_reason_id,
-        LEAD(movement_description) {PARTITION_STATEMENT} AS next_movement_description,
-        LEAD(destination_location_id) {PARTITION_STATEMENT} AS next_destination_location_id,
-        LEAD(destination_location_name) {PARTITION_STATEMENT} AS next_destination_location_name,
-        LEAD(destination_location_type_id) {PARTITION_STATEMENT} AS next_destination_location_type_id,
-        LEAD(destination_location_unique_code) {PARTITION_STATEMENT} AS next_destination_location_unique_code,
-        LEAD(destination_location_county) {PARTITION_STATEMENT} AS next_destination_location_county
-    FROM edges
-),
-final_periods as (
-    SELECT distinct
-    p.offender_id,
-    offender_lock_id,
-    offender_external_movement_id,
-    movement_date,
-    unit_lock_id,
-    reporting_station_name,
-    location_code,
-    location_type_id,
-    county,
-    movement_reason_id,
-    next_movement_date,
-    next_movement_reason_id,
-    cell_type_id,
-    security_level_id
-    FROM periods p
-        inner join {OFFENDER_IDS_TO_KEEP} book on p.offender_id = book.offender_id
-    WHERE status = 'IN' AND (next_status = 'OUT' OR next_status IS NULL)
-),
--- Designations don't align very well with incarceration periods themselves, so here to each period we'll apply the most recently recorded
--- designation that was active in that period.  And because designations don't align particularly well, we'll rely also
--- on cell type to determine housing unit type in the mappings since I assume for this field we're mostly concerned with when people were actually residing 
--- in a segregation cell rather than when they were supposed assigned to be in one.  For segregation analyses, designation might become more relevant,
--- so we might not want to rely solely on housing unit type for such analyses.  
-periods_with_designation as (
-    select p.*,
-        offender_designation_code_id,
-        -- if multiple designations overlap with incarcarceration period, take the most updated one in the period
-        RANK() OVER (PARTITION BY p.offender_id, offender_lock_id, offender_external_movement_id ORDER BY d.last_update_date desc, d.offender_designation_id NULLS LAST) as rnk
-    from final_periods p
-    left join ad_seg_designation d 
-        on ( p.offender_id = d.offender_id
-            and (
-                # designation begins before period AND (designation ends after period begins OR designation is ongoing)
-                (d.start_date <= p.movement_date and 
-                    (
-                    (d.end_date is not null and d.end_date > p.movement_date)
-                    or 
-                    d.end_date is null
-                    )
-                )
-                or
-                # designation begins after period starts AND (designation starts before period ends OR period is ongoing)
-                (d.start_date > p.movement_date and 
-                    (
-                    (p.next_movement_date is not null and d.start_date < p.next_movement_date)
-                    or
-                    p.next_movement_date is null
-                    )
-                )
-            )
-        )
+
+periods_with_info as (
+  select
+    distinct
+    basic.offender_id,
+    basic.start_date,
+    move.offender_external_movement_id,
+    CASE WHEN basic.end_date = CAST( DATE(9999,9,9) as DATETIME) THEN NULL else basic.end_date end as end_date,
+    CASE WHEN move.movement_date = basic.start_date then move.movement_reason_id else NULL end as movement_reason_id,
+    CASE WHEN move.next_movement_date = basic.end_date then move.next_movement_reason_id else NULL end as next_movement_reason_id,
+    internal.offender_lock_id,
+    internal.unit_lock_id,
+    internal.reporting_station_name,
+    -- Sometimes we see movement information before unit information, so in those cases we need the location type of the movement destination
+    -- Otherwise we want to use the location type from the unit information
+    COALESCE(internal.location_type_id, destination_location_type_id) as location_type_id,
+    internal.county,
+    internal.location_code,
+    internal.cell_type_id,
+    internal.security_level_id,
+    ad_seg.offender_designation_id,
+    ad_seg.offender_designation_code_id,
+    ROW_NUMBER() 
+        OVER(PARTITION BY basic.offender_id, basic.start_date, basic.end_date 
+             ORDER BY internal.last_update_date desc,
+                      ad_seg.last_update_date desc,
+                      move.last_update_date desc,
+                      internal.offender_lock_id desc,
+                      ad_seg.offender_designation_id desc,
+                      move.offender_external_movement_id desc) as rnk
+  from periods_basic basic
+  left join final_movements move 
+    on basic.offender_id = move.offender_id and
+       move.movement_date <= basic.start_date and basic.end_date <= move.next_movement_date
+  left join internal_movements internal
+    on basic.offender_id = internal.offender_id and
+       internal.date_in <= basic.start_date and basic.end_date <= internal.date_out
+  left join ad_seg_designation ad_seg
+    on basic.offender_id = ad_seg.offender_id and
+       ad_seg.start_date <= basic.start_date and basic.end_date <= ad_seg.end_date  
+  inner join (select distinct offender_id from {OFFENDER_IDS_TO_KEEP} sub) book on basic.offender_id = book.offender_id
+  where basic.start_date is not null and basic.start_date <> CAST( DATE(9999,9,9) as DATETIME)
+        and destination_location_type_id in ('225', '226', '14294')
 )
 
 select
     offender_id,
-    offender_lock_id,
-    offender_external_movement_id,
-    movement_date,
+    start_date,
+    end_date,
+    movement_reason_id,
+    next_movement_reason_id,
     unit_lock_id,
     reporting_station_name,
     location_code,
     location_type_id,
     county,
-    movement_reason_id,
-    next_movement_date,
-    next_movement_reason_id,
     cell_type_id,
     security_level_id,
-    offender_designation_code_id
-from periods_with_designation
+    offender_designation_code_id,
+    ROW_NUMBER() OVER (PARTITION BY offender_id 
+                       ORDER BY start_date, 
+                                end_date NULLS LAST, 
+                                offender_lock_id, offender_external_movement_id) as period_id
+from periods_with_info
 where rnk=1
 
 """
@@ -569,7 +297,7 @@ VIEW_BUILDER = DirectIngestViewQueryBuilder(
     ingest_view_name="incarceration_periods_v2",
     view_query_template=VIEW_QUERY_TEMPLATE,
     materialize_raw_data_table_views=True,
-    order_by_cols="offender_id, movement_date, next_movement_date",
+    order_by_cols="offender_id, period_id",
 )
 
 if __name__ == "__main__":
