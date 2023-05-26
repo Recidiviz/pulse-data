@@ -6,27 +6,26 @@ primary_key_cols:
   - plan_progress_id
 columns:
   - name: plan_progress_id
-    description: TODO(#19675)
+    description: Table's primary key.
   - name: plan_detail_id
-    description: TODO(#19675)
+    description: Used to join to ADH_PLAN_DETAIL.
   - name: created_date
     description: TODO(#19675)
   - name: notes
-    description: TODO(#19675)
+    description: Free text notes (1). All notes columns should be concatenated.
     is_pii: True
   - name: notes2
-    description: TODO(#19675)
+    description: Free text notes (2). All notes columns should be concatenated.
     is_pii: True
   - name: notes3
-    description: TODO(#19675)
+    description: Free text notes (3). All notes columns should be concatenated.
     is_pii: True
   - name: last_update_user
-    description: TODO(#19675)
+    description: User ID of who last updated this record.
     is_pii: True
   - name: last_update_date
-    description: TODO(#19675)
+    description: Date of last update
     is_datetime: True
     datetime_sql_parsers:
-      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M:%S%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
-    description: TODO(#19675)
