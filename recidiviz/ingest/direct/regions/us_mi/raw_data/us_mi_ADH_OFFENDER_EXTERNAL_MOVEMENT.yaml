@@ -38,4 +38,8 @@ columns:
   - name: active_flag
   - name: last_update_user
   - name: last_update_date
+    description: Date record last updated
+    is_datetime: True
+    datetime_sql_parsers:
+      - "SAFE.PARSE_TIMESTAMP('%b %e %Y %I:%M%p', REGEXP_REPLACE({col_name}, r'\\:\\d\\d\\d', ''))"
   - name: last_update_node
