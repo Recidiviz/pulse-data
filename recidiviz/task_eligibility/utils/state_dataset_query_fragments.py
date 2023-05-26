@@ -109,14 +109,15 @@ def incident_sessions(
     where_clause: str = "",
 ) -> str:
     """
-    Args:
-        date_interval (int, optional): Number of <date_part> when the incident
-            will be counted as valid. Defaults to 6 (e.g. it could be 6 months).
-        date_part (str, optional): Supports any of the BigQuery date_part values:
-            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
-        where_clause (str, optional): Optional clause that does some state-specific filtering. Defaults to ''.
-    Returns:
-        f-string: CTE used in later functions
+    <<<<<<< HEAD
+        Args:
+            date_interval (int, optional): Number of <date_part> when the incident
+                will be counted as valid. Defaults to 6 (e.g. it could be 6 months).
+            date_part (str, optional): Supports any of the BigQuery date_part values:
+                "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+            where_clause (str, optional): Optional clause that does some state-specific filtering. Defaults to ''.
+        Returns:
+            f-string: CTE used in later functions
     """
     return f"""
         SELECT
@@ -194,4 +195,28 @@ def has_at_least_x_incarceration_incidents_in_time_interval(
         TO_JSON(STRUCT(latest_incident_date AS latest_incarceration_incident_date)) AS reason
     FROM
         grouped
+    """
+
+
+def get_current_offenses() -> str:
+    """
+    Returns: CTE that pulls information on currently active sentences
+    """
+
+    return """
+    SELECT
+          s.person_id,
+          s.state_code,
+          s.start_date,
+          sentences.county_code AS conviction_county,
+          JSON_EXTRACT_SCALAR(sentences.sentence_metadata, '$.CASE_NUMBER') AS docket_number,
+          sentences.description AS offense
+      FROM (
+        SELECT *
+        FROM `{project_id}.{sessions_dataset}.sentence_spans_materialized`
+        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
+      ) s,
+      UNNEST(sentences_preprocessed_id_array) as sentences_preprocessed_id
+      LEFT JOIN `{project_id}.{sessions_dataset}.sentences_preprocessed_materialized` sentences
+        USING(person_id, state_code, sentences_preprocessed_id)
     """
