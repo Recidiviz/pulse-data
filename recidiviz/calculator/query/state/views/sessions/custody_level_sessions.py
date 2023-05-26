@@ -50,18 +50,18 @@ CUSTODY_LEVEL_SESSIONS_QUERY_TEMPLATE = f"""
     )
     ,
     dedup_priority AS (
-        SELECT session.*, cl.correctional_level_priority
+        SELECT session.*, cl.custody_level_priority, cl.is_discretionary_level
         FROM
             sessionized_cte session
         LEFT JOIN `{{project_id}}.{{sessions_dataset}}.custody_level_dedup_priority` cl
-            ON custody_level = correctional_level
+            USING(custody_level)
     )
     SELECT
-        session.* EXCEPT(correctional_level_priority),
-        CASE WHEN session.correctional_level_priority < session_lag.correctional_level_priority
+        session.* EXCEPT(custody_level_priority),
+        CASE WHEN session.custody_level_priority < session_lag.custody_level_priority
             AND session.is_discretionary_level AND session_lag.is_discretionary_level
             THEN 1 ELSE 0 END as custody_upgrade,
-        CASE WHEN session.correctional_level_priority > session_lag.correctional_level_priority
+        CASE WHEN session.custody_level_priority > session_lag.custody_level_priority
             AND session.is_discretionary_level AND session_lag.is_discretionary_level
             THEN 1 ELSE 0 END as custody_downgrade,
     FROM dedup_priority session
