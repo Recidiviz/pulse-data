@@ -21,7 +21,7 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.task_eligibility.candidate_populations.general import (
     incarceration_population,
 )
-from recidiviz.task_eligibility.completion_events.general import full_term_discharge
+from recidiviz.task_eligibility.completion_events.general import custody_level_downgrade
 from recidiviz.task_eligibility.criteria.general import (
     custody_level_higher_than_recommended,
     custody_level_is_not_max,
@@ -51,8 +51,7 @@ VIEW_BUILDER = SingleTaskEligibilitySpansBigQueryViewBuilder(
         custody_level_higher_than_recommended.VIEW_BUILDER,
         custody_level_is_not_max.VIEW_BUILDER,
     ],
-    # TODO(#20577): Replace with completion event for Custody Level Downgrade
-    completion_event_builder=full_term_discharge.VIEW_BUILDER,
+    completion_event_builder=custody_level_downgrade.VIEW_BUILDER,
 )
 
 if __name__ == "__main__":
