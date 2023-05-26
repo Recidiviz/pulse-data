@@ -17,7 +17,7 @@
 """
 Helper functions for creating branches based on state codes.
 """
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 from airflow.decorators import task
 from airflow.models import BaseOperator
@@ -60,11 +60,17 @@ def create_state_code_branching(
 
     If no branches are selected, the end node will fail.
     """
+    branch_ids_by_state_code: Dict[str, str] = {}
+    start_branch_by_state_code: Dict[str, EmptyOperator] = {}
 
-    branch_ids_by_state_code = {
-        state_code: _get_id_for_operator_or_group(branch)
-        for state_code, branch in branch_by_state_code.items()
-    }
+    for state_code, branch in branch_by_state_code.items():
+        branch_ids_by_state_code[state_code] = _get_id_for_operator_or_group(branch)
+        # Airflow does not allow branch operators to branch to TaskGroups, only Tasks,
+        # so we insert an empty task before a TaskGroup if it is the branch result
+        # to ensure we're able to go forward.
+        start_branch_by_state_code[state_code] = EmptyOperator(
+            task_id=f"{state_code}_start"
+        )
 
     @task.branch(task_id="state_code_branch_start")
     def get_selected_branch_ids(**context: Any) -> Any:
@@ -73,7 +79,7 @@ def create_state_code_branching(
             [state_code_filter] if state_code_filter else branch_by_state_code.keys()
         )
         return [
-            branch_ids_by_state_code[state_code]
+            start_branch_by_state_code[state_code].task_id
             for state_code in selected_state_codes
             # If the selected state does not have a branch in this branching,
             # we just skip it and select no branches for that state.
@@ -85,6 +91,6 @@ def create_state_code_branching(
         task_id="state_code_branch_end",
         trigger_rule=branch_end_trigger_rule,
     )
-    branches: List[Union[BaseOperator, TaskGroup]] = list(branch_by_state_code.values())
-    branch_start >> branches >> branch_end
+    for state_code, branch in branch_by_state_code.items():
+        branch_start >> start_branch_by_state_code[state_code] >> branch >> branch_end
     return branch_start, branch_end
