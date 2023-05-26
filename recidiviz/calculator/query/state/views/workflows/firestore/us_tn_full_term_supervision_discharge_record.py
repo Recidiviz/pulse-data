@@ -31,6 +31,9 @@ from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestIns
 from recidiviz.task_eligibility.dataset_config import (
     task_eligibility_spans_state_specific_dataset,
 )
+from recidiviz.task_eligibility.utils.state_dataset_query_fragments import (
+    get_current_offenses,
+)
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -50,24 +53,8 @@ WITH latest_sentences AS (
                 CASE WHEN Decode is not null then CONCAT(conviction_county, ' - ', Decode)
                     ELSE conviction_county END
                 ) AS conviction_counties,
-  FROM (
-      SELECT
-          s.person_id,
-          s.state_code,
-          s.start_date,
-          sentences.county_code AS conviction_county,
-          JSON_EXTRACT_SCALAR(sentences.sentence_metadata, '$.CASE_NUMBER') AS docket_number,
-          sentences.description AS offense
-      FROM (
-        SELECT *
-        FROM `{{project_id}}.{{sessions_dataset}}.sentence_spans_materialized`
-        QUALIFY ROW_NUMBER() OVER(PARTITION BY person_id ORDER BY start_date DESC) = 1
-      ) s,
-      UNNEST(sentences_preprocessed_id_array) as sentences_preprocessed_id
-      LEFT JOIN `{{project_id}}.{{sessions_dataset}}.sentences_preprocessed_materialized` sentences
-        USING(person_id, state_code, sentences_preprocessed_id)
-      WHERE s.state_code = 'US_TN'
-  )
+  FROM 
+    ({get_current_offenses()})
   LEFT JOIN (
             SELECT *
             FROM `{{project_id}}.{{us_tn_raw_data_up_to_date_dataset}}.CodesDescription_latest`

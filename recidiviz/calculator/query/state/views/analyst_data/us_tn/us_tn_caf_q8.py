@@ -29,6 +29,7 @@ from recidiviz.ingest.direct.raw_data.dataset_config import (
     raw_latest_views_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
+from recidiviz.task_eligibility.utils.us_tn_query_fragments import detainers_cte
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -40,26 +41,7 @@ US_TN_CAF_Q8_VIEW_DESCRIPTION = """Computes Q8 of TN's CAF form (detainer inform
 
 US_TN_CAF_Q8_QUERY_TEMPLATE = f"""
     WITH detainers AS (
-        -- As discussed with TTs in TN, a detainer is "relevant" until it has been lifted, so we use that as
-        -- our end date
-        SELECT
-            state_code,
-            person_id,
-            DATE(DetainerReceivedDate) AS start_date,
-            DATE(DetainerLiftDate) AS end_date,
-            CASE WHEN DetainerFelonyFlag = 'X' THEN 5
-                 WHEN DetainerMisdemeanorFlag = 'X' THEN 3
-                 END AS detainer_score
-        FROM 
-            `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Detainer_latest` dis
-        INNER JOIN
-            `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
-        ON
-            dis.OffenderID = pei.external_id
-        AND
-            pei.state_code = 'US_TN'
-        WHERE
-            DetainerFelonyFlag = 'X' OR DetainerMisdemeanorFlag = 'X'
+        {detainers_cte()}
     )
     ,
     {create_sub_sessions_with_attributes('detainers')}
@@ -85,7 +67,7 @@ US_TN_CAF_Q8_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=US_TN_CAF_Q8_VIEW_DESCRIPTION,
     view_query_template=US_TN_CAF_Q8_QUERY_TEMPLATE,
     normalized_state_dataset=NORMALIZED_STATE_DATASET,
-    raw_data_up_to_date_views_dataset=raw_latest_views_dataset_for_region(
+    us_tn_raw_data_up_to_date_dataset=raw_latest_views_dataset_for_region(
         state_code=StateCode.US_TN, instance=DirectIngestInstance.PRIMARY
     ),
     should_materialize=True,
