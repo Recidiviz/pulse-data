@@ -1333,6 +1333,10 @@ class TestBigQueryViewDagWalkerBase(unittest.TestCase):
             ),
             BigQueryAddress(
                 dataset_id="sessions",
+                table_id="custody_level_dedup_priority",
+            ),
+            BigQueryAddress(
+                dataset_id="sessions",
                 table_id="release_termination_reason_dedup_priority",
             ),
             BigQueryAddress(

@@ -14,30 +14,53 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
-"""Describes the spans of time when a resident has had at least 6 months since the most recent incarceration incident."""
+"""This criteria view builder defines spans of time where residents are not on MAXIMUM custody level
+as tracked by our `sessions` dataset.
+"""
+from recidiviz.calculator.query.sessions_query_fragments import aggregate_adjacent_spans
+from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.task_eligibility.task_criteria_big_query_view_builder import (
     StateAgnosticTaskCriteriaBigQueryViewBuilder,
-)
-from recidiviz.task_eligibility.utils.placeholder_criteria_builders import (
-    state_agnostic_placeholder_criteria_view_builder,
 )
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-_CRITERIA_NAME = "AT_LEAST_6_MONTHS_SINCE_MOST_RECENT_INCARCERATION_INCIDENT"
+_CRITERIA_NAME = "CUSTODY_LEVEL_IS_NOT_MAX"
 
-_DESCRIPTION = """Describes the spans of time when a resident has had at least 6 months since the most
-recent incarceration incident."""
+_DESCRIPTION = """This criteria view builder defines spans of time where residents are not on MAXIMUM custody level
+as tracked by our `sessions` dataset.
+"""
 
-_REASON_QUERY = (
-    """TO_JSON(STRUCT('9999-99-99' AS latest_incarceration_incident_date))"""
+_QUERY_TEMPLATE = f"""
+WITH max_spans AS (
+    SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date_exclusive AS end_date,
+    FROM
+        `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
+    WHERE
+        custody_level = 'MAXIMUM' 
 )
+    SELECT 
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        FALSE AS meets_criteria,
+        TO_JSON(STRUCT(TRUE AS custody_level_is_max)) AS reason,
+    FROM 
+        ({aggregate_adjacent_spans(table_name='max_spans')})
+"""
 
 VIEW_BUILDER: StateAgnosticTaskCriteriaBigQueryViewBuilder = (
-    state_agnostic_placeholder_criteria_view_builder(
+    StateAgnosticTaskCriteriaBigQueryViewBuilder(
         criteria_name=_CRITERIA_NAME,
         description=_DESCRIPTION,
-        reason_query=_REASON_QUERY,
+        criteria_spans_query_template=_QUERY_TEMPLATE,
+        sessions_dataset=SESSIONS_DATASET,
+        meets_criteria_default=True,
     )
 )
 

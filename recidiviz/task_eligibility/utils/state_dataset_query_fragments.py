@@ -17,11 +17,19 @@
 """Helper SQL fragments that do standard queries against tables in the
 normalized_state dataset.
 """
+from recidiviz.calculator.query.sessions_query_fragments import (
+    create_sub_sessions_with_attributes,
+)
 from recidiviz.common.constants.state.state_task_deadline import StateTaskType
 
 VIOLATIONS_FOUND_WHERE_CLAUSE = """WHERE (v.state_code != 'US_ME' OR
-       # In ME, convictions are only relevant if their outcome is VIOLAITON FOUND
+       # In ME, convictions are only relevant if their outcome is VIOLATION FOUND
        response_type IN ("VIOLATION_REPORT", "PERMANENT_DECISION"))
+"""
+
+INCARCERATION_INCIDENTS_FOUND_WHERE_CLAUSE = """WHERE state_code !='US_TN' OR
+        # In TN, we only want to count incidents where disciplinary class is not null or they have a pending disposition
+        ((incident_class !="" OR hearing_date IS NULL) AND IncidentID IS NOT NULL)
 """
 
 
@@ -92,4 +100,98 @@ def violations_within_time_interval_cte(
         AND vr.person_id = v.person_id
         AND vr.state_code = v.state_code
     {where_clause}
+    """
+
+
+def incident_sessions(
+    date_interval: int = 12,
+    date_part: str = "MONTH",
+    where_clause: str = "",
+) -> str:
+    """
+    Args:
+        date_interval (int, optional): Number of <date_part> when the incident
+            will be counted as valid. Defaults to 6 (e.g. it could be 6 months).
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        where_clause (str, optional): Optional clause that does some state-specific filtering. Defaults to ''.
+    Returns:
+        f-string: CTE used in later functions
+    """
+    return f"""
+        SELECT
+            state_code,
+            person_id,
+            incident_date AS start_date,
+            DATE_ADD(incident_date, INTERVAL {date_interval} {date_part}) AS end_date,
+            incident_date AS latest_incident_date,
+            FALSE AS meets_criteria,
+        FROM (
+          SELECT inc.person_id,
+                inc.state_code,
+                inc.incident_date,
+                inc_outcome.hearing_date,
+                JSON_EXTRACT_SCALAR(inc.incident_metadata, "$.Class") AS incident_class,
+                IncidentID,
+          FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident` inc
+          LEFT JOIN `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_incident_outcome` inc_outcome
+            USING(incarceration_incident_id)
+          INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_person_external_id` pei
+            ON inc.person_id = pei.person_id
+            AND inc.state_code = pei.state_code
+          -- TODO(#20693): Remove hack when entity deletion exists
+          LEFT JOIN `{{project_id}}.{{raw_data_up_to_date_views_dataset}}.Disciplinary_latest` disc
+            ON pei.external_id = disc.OffenderID
+            AND SPLIT(inc.external_id,'-')[SAFE_OFFSET(1)] = disc.IncidentID
+        )
+        {where_clause}
+    """
+
+
+def has_at_least_x_incarceration_incidents_in_time_interval(
+    number_of_incidents: int = 1,
+    date_interval: int = 12,
+    date_part: str = "MONTH",
+    where_clause: str = "",
+) -> str:
+    """
+    Args:
+        number_of_incidents: Number of incidents tests needed within time interval
+        date_interval (int, optional): Number of <date_part> when the negative drug screen
+            will be counted as valid. Defaults to 12 (e.g. it could be 12 months).
+        date_part (str, optional): Supports any of the BigQuery date_part values:
+            "DAY", "WEEK","MONTH","QUARTER","YEAR". Defaults to "MONTH".
+        where_clause (str, optional): Optional clause that does some state-specific filtering. Defaults to ''.
+    Returns:
+        f-string: Spans of time where the criteria is met
+    """
+
+    return f"""
+    WITH incident_sessions AS (
+        {incident_sessions(date_interval=date_interval, date_part=date_part, where_clause=where_clause)}
+    )
+    ,
+    {create_sub_sessions_with_attributes('incident_sessions')},
+    grouped AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            count(*) AS num_incidents_within_timeframe,
+            MAX(latest_incident_date) AS latest_incident_date
+        FROM
+            sub_sessions_with_attributes
+        GROUP BY
+            1,2,3,4
+    )
+    SELECT
+        state_code,
+        person_id,
+        start_date,
+        end_date,
+        num_incidents_within_timeframe >= {number_of_incidents} AS meets_criteria,
+        TO_JSON(STRUCT(latest_incident_date AS latest_incarceration_incident_date)) AS reason
+    FROM
+        grouped
     """

@@ -18,6 +18,7 @@
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
+    aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
 )
 from recidiviz.calculator.query.state.dataset_config import (
@@ -89,7 +90,11 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            -- Since we're taking a subset of scores here, recreating end date
+            LEAD(start_date) OVER(
+                            PARTITION BY person_id 
+                            ORDER BY start_date ASC
+                            ) AS end_date,
             NULL AS q1_score,
             NULL AS q2_score,
             NULL AS q3_score,
@@ -226,7 +231,7 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             state_code,
             person_id,
             start_date,
-            end_date,
+            end_date_exclusive AS end_date,
             0 AS q1_score,
             0 AS q2_score,
             NULL AS q3_score,
@@ -270,35 +275,38 @@ US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_QUERY_TEMPLATE = f"""
             GROUP BY
                 1,2,3,4
         )
+    ), scoring AS (
+        SELECT
+            state_code,
+            person_id,
+            start_date,
+            end_date,
+            CASE WHEN calculated_schedule_a_score BETWEEN 10 AND 14 THEN 'CLOSE'
+                 WHEN calculated_schedule_a_score >= 15 THEN 'MAXIMUM'
+                 WHEN calculated_total_score >= 17 THEN 'CLOSE'
+                 WHEN calculated_total_score BETWEEN 7 AND 16 THEN 'MEDIUM'
+                 WHEN calculated_total_score <= 6 THEN 'MINIMUM'
+            END AS recommended_custody_level,
+            TO_JSON_STRING(STRUCT(
+                q1_score AS q1_score,
+                q2_score AS q2_score,
+                q3_score AS q3_score,
+                q4_score AS q4_score,
+                q5_score AS q5_score,
+                q6_score AS q6_score,
+                q7_score AS q7_score,
+                q8_score AS q8_score,
+                q9_score AS q9_score,
+                calculated_schedule_a_score AS calculated_schedule_a_score,
+                calculated_schedule_b_score AS calculated_schedule_b_score,
+                calculated_total_score AS calculated_total_score
+            )) AS score_metadata
+        FROM
+            dedup_cte
     )
-    SELECT
-        state_code,
-        person_id,
-        start_date,
-        end_date,
-        CASE WHEN calculated_schedule_a_score BETWEEN 10 AND 14 THEN 'CLOSE'
-             WHEN calculated_schedule_a_score >= 15 THEN 'MAX'
-             WHEN calculated_total_score >= 17 THEN 'CLOSE'
-             WHEN calculated_total_score BETWEEN 7 AND 16 THEN 'MEDIUM'
-             WHEN calculated_total_score <= 6 THEN 'MINIMUM'
-        END AS recommended_custody_level,
-        TO_JSON(STRUCT(
-            q1_score AS q1_score,
-            q2_score AS q2_score,
-            q3_score AS q3_score,
-            q4_score AS q4_score,
-            q5_score AS q5_score,
-            q6_score AS q6_score,
-            q7_score AS q7_score,
-            q8_score AS q8_score,
-            q9_score AS q9_score,
-            calculated_schedule_a_score AS calculated_schedule_a_score,
-            calculated_schedule_b_score AS calculated_schedule_b_score,
-            calculated_total_score AS calculated_total_score
-        )) AS score_metadata
-    FROM
-        dedup_cte
-        
+    SELECT *,
+    FROM ({aggregate_adjacent_spans(table_name='scoring',
+                                    attribute=['recommended_custody_level','score_metadata'])})
 """
 
 US_TN_RECOMMENDED_CUSTODY_LEVEL_SPANS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
