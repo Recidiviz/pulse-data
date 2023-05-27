@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Tests for view_update_manager.py."""
+import json
 import unittest
 from http import HTTPStatus
 from typing import Any, Dict, Iterator, Set, Tuple
@@ -941,6 +942,41 @@ class TestViewUpdateEndpoints(unittest.TestCase):
         mock_create.assert_called()
         self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
             deployed_view_builders=mock.ANY,
+            dataset_override_prefix=None,
+            runtime_sec=mock.ANY,
+            cloud_task_id=current_cloud_task_id,
+        )
+
+    @mock.patch("recidiviz.big_query.view_update_manager.BigQueryClientImpl")
+    @mock.patch(
+        "recidiviz.big_query.view_update_manager.create_managed_dataset_and_deploy_views_for_view_builders"
+    )
+    def test_update_all_managed_views_with_sandbox_prefix(
+        self, mock_create: MagicMock, _mock_bq_client: MagicMock
+    ) -> None:
+        """Tests the /view_update/update_all_managed_views endpoint with sandbox prefix."""
+
+        current_cloud_task_id = "my_cloud_task_id_abcd"
+        headers: Dict[str, Any] = {
+            **self.base_headers,
+            "X-AppEngine-TaskName": current_cloud_task_id,
+        }
+        with self.app.test_request_context():
+            update_all_managed_views_url = flask.url_for(
+                "view_update.update_all_managed_views"
+            )
+            response = self.client.post(
+                update_all_managed_views_url,
+                headers=headers,
+                data=json.dumps({"sandbox_prefix": "test_prefix"}),
+            )
+
+        self.assertEqual(HTTPStatus.OK, response.status_code)
+
+        mock_create.assert_called()
+        self.mock_all_views_update_success_persister.record_success_in_bq.assert_called_with(
+            deployed_view_builders=mock.ANY,
+            dataset_override_prefix="test_prefix",
             runtime_sec=mock.ANY,
             cloud_task_id=current_cloud_task_id,
         )

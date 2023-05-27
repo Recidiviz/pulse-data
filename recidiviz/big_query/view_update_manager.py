@@ -49,6 +49,10 @@ from recidiviz.big_query.view_update_manager_utils import (
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
 from recidiviz.utils import metadata, monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.utils.endpoint_helpers import get_value_from_request
+from recidiviz.view_registry.address_overrides_factory import (
+    address_overrides_for_view_builders,
+)
 from recidiviz.view_registry.datasets import VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.view_registry.deployed_views import (
     DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
@@ -100,6 +104,9 @@ view_update_manager_blueprint = Blueprint("view_update", __name__)
 @retry.Retry(predicate=retry_predicate)
 def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     """API endpoint to update all managed views."""
+
+    sandbox_prefix: Optional[str] = get_value_from_request("sandbox_prefix")
+
     start = datetime.datetime.now()
     view_builders = deployed_view_builders(metadata.project_id())
 
@@ -107,6 +114,11 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
         view_source_table_datasets=VIEW_SOURCE_TABLE_DATASETS,
         view_builders_to_update=view_builders,
         historically_managed_datasets_to_clean=DEPLOYED_DATASETS_THAT_HAVE_EVER_BEEN_MANAGED,
+        address_overrides=address_overrides_for_view_builders(
+            view_dataset_override_prefix=sandbox_prefix, view_builders=view_builders
+        )
+        if sandbox_prefix
+        else None,
         force_materialize=True,
     )
     end = datetime.datetime.now()
@@ -115,6 +127,7 @@ def update_all_managed_views() -> Tuple[str, HTTPStatus]:
     success_persister = AllViewsUpdateSuccessPersister(bq_client=BigQueryClientImpl())
     success_persister.record_success_in_bq(
         deployed_view_builders=view_builders,
+        dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
         cloud_task_id=get_current_cloud_task_id(),
     )
