@@ -17,7 +17,7 @@
 """Class that persists runtime of successful jobs to BQ."""
 import abc
 import datetime
-from typing import List
+from typing import List, Optional
 
 import pytz
 from google.cloud import bigquery
@@ -46,6 +46,7 @@ REFRESH_BQ_DATASET_TRACKER_TABLE_ID = "refresh_bq_dataset_tracker"
 
 REFRESH_BQ_DATASET_RUNTIME_SEC_COL = "refresh_bq_dataset_runtime_sec"
 SCHEMA_TYPE_COL = "schema_type"
+DATASET_OVERRIDE_PREFIX = "dataset_override_prefix"
 
 
 class SuccessPersister:
@@ -76,6 +77,7 @@ class AllViewsUpdateSuccessPersister(SuccessPersister):
     def record_success_in_bq(
         self,
         deployed_view_builders: List[BigQueryViewBuilder],
+        dataset_override_prefix: Optional[str],
         runtime_sec: int,
         cloud_task_id: str,
     ) -> None:
@@ -84,6 +86,7 @@ class AllViewsUpdateSuccessPersister(SuccessPersister):
         success_row = {
             CLOUD_TASK_ID_COL: cloud_task_id,
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
+            DATASET_OVERRIDE_PREFIX: dataset_override_prefix,
             NUM_DEPLOYED_VIEWS_COL: num_deployed_views,
             ViEW_UPDATE_RUNTIME_SEC_COL: runtime_sec,
         }
@@ -101,6 +104,11 @@ class AllViewsUpdateSuccessPersister(SuccessPersister):
                 name=SUCCESS_TIMESTAMP_COL,
                 field_type=bigquery.enums.SqlTypeNames.TIMESTAMP.value,
                 mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=DATASET_OVERRIDE_PREFIX,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
             ),
             bigquery.SchemaField(
                 name=NUM_DEPLOYED_VIEWS_COL,
