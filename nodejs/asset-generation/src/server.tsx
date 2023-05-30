@@ -16,6 +16,7 @@
 // =============================================================================
 
 import express from "express";
+import rateLimit from "express-rate-limit";
 
 import { RETRIEVE_PATH } from "./server/constants";
 import { getCloudRunUrl } from "./server/gcp";
@@ -25,6 +26,14 @@ import { routes as retrieveRoutes } from "./server/retrieve";
 async function createServer() {
   const app = express();
   const port = process.env.PORT || 5174; // default vite port + 1
+
+  const limiter = rateLimit({
+    windowMs: 1000, // 1 second = 1000ms
+    max: 30, // each IP address gets 30 requests per 1 second
+    standardHeaders: true, // return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // disabling the `X-RateLimit-*` headers
+  });
+  app.use(limiter);
 
   app.locals.cloudRunUrl = await getCloudRunUrl(port);
 
