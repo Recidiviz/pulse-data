@@ -213,7 +213,7 @@ critical date spans for the supervision super session end when the first classif
      LEAST({nonnull_end_date_clause('ce.completion_event_date')}, {nonnull_end_date_clause('end_date')}) AS end_date,
      DATE_ADD(sai.start_date, INTERVAL 4 MONTH) AS critical_date,
      'b_priority' AS priority_level
-  FROM `{{project_id}}.{{criteria_dataset}}.supervision_level_is_sai_materialized` sai
+  FROM `{{project_id}}.{{criteria_dataset}}.supervision_or_supervision_out_of_state_level_is_sai_materialized` sai
   LEFT JOIN `{{project_id}}.{{completion_dataset}}.supervision_classification_review_materialized` ce
         ON sai.person_id = ce.person_id 
         AND sai.state_code = ce.state_code
