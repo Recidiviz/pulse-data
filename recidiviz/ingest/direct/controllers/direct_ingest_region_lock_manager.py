@@ -115,8 +115,10 @@ class DirectIngestRegionLockManager:
             region_code=region_code,
             ingest_instance=ingest_instance,
             blocking_locks=[
-                postgres_to_bq_lock_name_for_schema(schema_type),
-                postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS),
+                postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance),
+                postgres_to_bq_lock_name_for_schema(
+                    SchemaType.OPERATIONS, ingest_instance
+                ),
             ],
         )
 

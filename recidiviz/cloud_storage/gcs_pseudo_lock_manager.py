@@ -28,6 +28,7 @@ import pytz
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.utils import metadata
 
@@ -36,13 +37,20 @@ PAYLOAD_KEY = "contents"
 EXPIRATION_IN_SECONDS_KEY = "expiration_in_seconds"
 
 
-POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING_"
+POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = "EXPORT_PROCESS_RUNNING"
 
 MAX_UNLOCK_ATTEMPTS = 3
 
 
-def postgres_to_bq_lock_name_for_schema(schema: SchemaType) -> str:
-    return POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.value.upper()
+def postgres_to_bq_lock_name_for_schema(
+    schema: SchemaType, ingest_instance: DirectIngestInstance
+) -> str:
+    return f"{POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME}_{schema.value.upper()}_{ingest_instance.value.upper()}"
+
+
+# TODO(#20892): Remove this function once all ingest instances are migrated to the new lock name.
+def postgres_to_bq_lock_name_for_schema_old(schema: SchemaType) -> str:
+    return f"{POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME}_{schema.value.upper()}"
 
 
 @attr.s(auto_attribs=True, frozen=True)

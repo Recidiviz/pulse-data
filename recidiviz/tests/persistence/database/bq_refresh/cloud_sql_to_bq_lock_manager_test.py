@@ -65,80 +65,221 @@ class CloudSqlToBQLockManagerTest(unittest.TestCase):
         self.project_id_patcher.stop()
 
     def test_acquire_release_new_lock(self) -> None:
-        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.STATE)
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
         expected_paths = [
             GcsfsFilePath(
-                bucket_name=self.lock_bucket, blob_name="EXPORT_PROCESS_RUNNING_STATE"
+                bucket_name=self.lock_bucket,
+                blob_name="EXPORT_PROCESS_RUNNING_STATE_PRIMARY",
             )
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
 
-        self.lock_manager.release_lock(schema_type=SchemaType.STATE)
+        self.lock_manager.release_lock(
+            schema_type=SchemaType.STATE, ingest_instance=DirectIngestInstance.PRIMARY
+        )
+        self.assertEqual([], self.fake_fs.all_paths)
+
+    def test_acquire_release_new_lock_secondary(self) -> None:
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+        expected_paths = [
+            GcsfsFilePath(
+                bucket_name=self.lock_bucket,
+                blob_name="EXPORT_PROCESS_RUNNING_STATE_SECONDARY",
+            )
+        ]
+        self.assertEqual(expected_paths, self.fake_fs.all_paths)
+
+        self.lock_manager.release_lock(
+            schema_type=SchemaType.STATE, ingest_instance=DirectIngestInstance.SECONDARY
+        )
         self.assertEqual([], self.fake_fs.all_paths)
 
     def test_acquire_two_locks_different_schemas(self) -> None:
-        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.STATE)
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
         expected_paths = [
             GcsfsFilePath(
-                bucket_name=self.lock_bucket, blob_name="EXPORT_PROCESS_RUNNING_STATE"
+                bucket_name=self.lock_bucket,
+                blob_name="EXPORT_PROCESS_RUNNING_STATE_PRIMARY",
             )
         ]
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
 
         self.lock_manager.acquire_lock(
-            lock_id="lock1", schema_type=SchemaType.OPERATIONS
+            lock_id="lock1",
+            schema_type=SchemaType.OPERATIONS,
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
         expected_paths.append(
             GcsfsFilePath(
                 bucket_name=self.lock_bucket,
-                blob_name="EXPORT_PROCESS_RUNNING_OPERATIONS",
+                blob_name="EXPORT_PROCESS_RUNNING_OPERATIONS_PRIMARY",
             )
         )
         self.assertEqual(expected_paths, self.fake_fs.all_paths)
 
-        self.lock_manager.release_lock(schema_type=SchemaType.STATE)
-        self.lock_manager.release_lock(schema_type=SchemaType.OPERATIONS)
+        self.lock_manager.release_lock(
+            schema_type=SchemaType.STATE, ingest_instance=DirectIngestInstance.PRIMARY
+        )
+        self.lock_manager.release_lock(
+            schema_type=SchemaType.OPERATIONS,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
         self.assertEqual([], self.fake_fs.all_paths)
 
     def test_release_without_acquiring(self) -> None:
         with self.assertRaises(GCSPseudoLockDoesNotExist):
-            self.lock_manager.release_lock(schema_type=SchemaType.STATE)
+            self.lock_manager.release_lock(
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
 
     def test_acquire_existing(self) -> None:
-        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.STATE)
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
         with self.assertRaises(GCSPseudoLockAlreadyExists):
             self.lock_manager.acquire_lock(
-                lock_id="lock2", schema_type=SchemaType.STATE
+                lock_id="lock2",
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
 
     def test_acquire_state_cannot_proceed(self) -> None:
         with self.state_ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
             for schema_type in SchemaType:
-                self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
-            self.assertFalse(self.lock_manager.can_proceed(SchemaType.STATE))
-            self.assertFalse(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
+                self.lock_manager.acquire_lock(
+                    lock_id="lock1",
+                    schema_type=schema_type,
+                    ingest_instance=DirectIngestInstance.PRIMARY,
+                )
+            self.assertFalse(
+                self.lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.PRIMARY
+                )
+            )
+            self.assertFalse(
+                self.lock_manager.can_proceed(
+                    SchemaType.OPERATIONS, DirectIngestInstance.PRIMARY
+                )
+            )
             # State ingest does not block PATHWAYS export
-            self.assertTrue(self.lock_manager.can_proceed(SchemaType.PATHWAYS))
-            self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.PATHWAYS, DirectIngestInstance.PRIMARY
+                )
+            )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
+                )
+            )
 
         # Acquiring the same state export lock again does not crash
-        self.lock_manager.acquire_lock(lock_id="lock1", schema_type=SchemaType.STATE)
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         # Now that the ingest lock has been released, all export jobs can proceed
         for schema_type in SchemaType:
-            self.assertTrue(self.lock_manager.can_proceed(schema_type))
+            self.assertTrue(
+                self.lock_manager.can_proceed(schema_type, DirectIngestInstance.PRIMARY)
+            )
+
+    def test_acquire_state_cannot_proceed_secondary(self) -> None:
+        with self.state_ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
+            for schema_type in SchemaType:
+                self.lock_manager.acquire_lock(
+                    lock_id="lock1",
+                    schema_type=schema_type,
+                    ingest_instance=DirectIngestInstance.SECONDARY,
+                )
+            self.assertFalse(
+                self.lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.SECONDARY
+                )
+            )
+            self.assertFalse(
+                self.lock_manager.can_proceed(
+                    SchemaType.OPERATIONS, DirectIngestInstance.SECONDARY
+                )
+            )
+            # State ingest does not block PATHWAYS export
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.PATHWAYS, DirectIngestInstance.SECONDARY
+                )
+            )
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    SchemaType.CASE_TRIAGE, DirectIngestInstance.SECONDARY
+                )
+            )
+
+        # Acquiring the same state export lock again does not crash
+        self.lock_manager.acquire_lock(
+            lock_id="lock1",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Now that the ingest lock has been released, all export jobs can proceed
+        for schema_type in SchemaType:
+            self.assertTrue(
+                self.lock_manager.can_proceed(
+                    schema_type, DirectIngestInstance.SECONDARY
+                )
+            )
 
     def test_acquire_state_cannot_proceed_normalized_state_refresh(self) -> None:
         self.normalized_state_update_lock_manager.acquire_lock(lock_id="lock1")
         for schema_type in SchemaType:
-            self.lock_manager.acquire_lock(lock_id="lock1", schema_type=schema_type)
+            self.lock_manager.acquire_lock(
+                lock_id="lock1",
+                schema_type=schema_type,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )
 
-        self.assertFalse(self.lock_manager.can_proceed(SchemaType.STATE))
+        self.assertFalse(
+            self.lock_manager.can_proceed(
+                SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
+        )
         # normalized_state update only blocks the STATE CloudSQL export
-        self.assertTrue(self.lock_manager.can_proceed(SchemaType.OPERATIONS))
-        self.assertTrue(self.lock_manager.can_proceed(SchemaType.PATHWAYS))
-        self.assertTrue(self.lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
+        self.assertTrue(
+            self.lock_manager.can_proceed(
+                SchemaType.OPERATIONS, DirectIngestInstance.PRIMARY
+            )
+        )
+        self.assertTrue(
+            self.lock_manager.can_proceed(
+                SchemaType.PATHWAYS, DirectIngestInstance.PRIMARY
+            )
+        )
+        self.assertTrue(
+            self.lock_manager.can_proceed(
+                SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
+            )
+        )
 
     def test_can_proceed_without_acquiring(self) -> None:
         with self.assertRaises(GCSPseudoLockDoesNotExist):
-            self.lock_manager.can_proceed(schema_type=SchemaType.STATE)
+            self.lock_manager.can_proceed(
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
+            )

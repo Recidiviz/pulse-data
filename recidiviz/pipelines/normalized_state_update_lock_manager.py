@@ -23,6 +23,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockManager,
     postgres_to_bq_lock_name_for_schema,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 
 NORMALIZED_STATE_UPDATE_LOCK_NAME = "NORMALIZED_STATE_UPDATE_PROCESS"
@@ -74,8 +75,11 @@ class NormalizedStateUpdateLockManager:
                 f"before checking if can proceed"
             )
 
+        # TODO(#20503): Add ability to specify ingest instance to check for lock
         no_blocking_locks = self.lock_manager.no_active_locks_with_prefix(
-            postgres_to_bq_lock_name_for_schema(SchemaType.STATE)
+            postgres_to_bq_lock_name_for_schema(
+                SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
         )
         return no_blocking_locks
 

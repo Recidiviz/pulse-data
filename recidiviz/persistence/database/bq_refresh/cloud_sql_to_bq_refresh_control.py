@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.success_persister import RefreshBQDatasetSuccessPersister
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockDoesNotExist
 from recidiviz.cloud_tasks.utils import get_current_cloud_task_id
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
 )
@@ -67,7 +68,12 @@ def acquire_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
     logging.info("Request lock id: %s", lock_id)
 
     lock_manager = CloudSqlToBQLockManager()
-    lock_manager.acquire_lock(schema_type=schema_type, lock_id=lock_id)
+    lock_manager.acquire_lock(
+        lock_id=lock_id,
+        schema_type=schema_type,
+        ingest_instance=DirectIngestInstance.PRIMARY,
+    )
+    # TODO(#20892): Update and pull ingest_instance from request
 
     return "", HTTPStatus.OK
 
@@ -96,7 +102,10 @@ def check_can_refresh_proceed(schema_arg: str) -> Tuple[str, HTTPStatus]:
     lock_manager = CloudSqlToBQLockManager()
 
     try:
-        can_proceed = lock_manager.can_proceed(schema_type)
+        can_proceed = lock_manager.can_proceed(
+            schema_type, DirectIngestInstance.PRIMARY
+        )
+        # TODO(#20892): Update and pull ingest_instance from request
     except GCSPseudoLockDoesNotExist as e:
         logging.exception(e)
         # Since this endpoint is being called in the context of an Airflow DAG,
@@ -130,8 +139,8 @@ def release_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
 
     # Unlock export lock when all BQ exports complete
     lock_manager = CloudSqlToBQLockManager()
-    lock_manager.release_lock(schema_type)
-
+    lock_manager.release_lock(schema_type, DirectIngestInstance.PRIMARY)
+    # TODO(#20892): Update and pull ingest_instance from request
     return "", HTTPStatus.OK
 
 
@@ -162,7 +171,10 @@ def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
     lock_manager = CloudSqlToBQLockManager()
 
     try:
-        can_proceed = lock_manager.can_proceed(schema_type)
+        can_proceed = lock_manager.can_proceed(
+            schema_type, DirectIngestInstance.PRIMARY
+        )
+        # TODO(#20892): Update and pull ingest_instance from request
     except GCSPseudoLockDoesNotExist as e:
         logging.exception(e)
         # Since this endpoint is being called in the context of an Airflow DAG,
