@@ -146,7 +146,7 @@ def _query_template_and_format_args(
         `{{project_id}}.{{sessions_dataset}}.supervision_officer_attribute_sessions_materialized` r
     ON
         {join_on_columns_fragment(columns=aggregation_level.primary_key_columns, table1="b", table2="r")}
-        AND population_end_date BETWEEN r.start_date AND {nonnull_end_date_exclusive_clause("r.end_date")}
+        AND population_end_date BETWEEN r.start_date AND {nonnull_end_date_exclusive_clause("r.end_date_exclusive")}
     GROUP BY {group_by_range_str}
 """
             return cte, {
