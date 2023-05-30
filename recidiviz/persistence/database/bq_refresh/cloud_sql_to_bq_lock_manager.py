@@ -22,11 +22,13 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
     GCSPseudoLockDoesNotExist,
     GCSPseudoLockManager,
     postgres_to_bq_lock_name_for_schema,
+    postgres_to_bq_lock_name_for_schema_old,
 )
 from recidiviz.ingest.direct.controllers.direct_ingest_region_lock_manager import (
     GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
     STATE_GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_PREFIX,
 )
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.pipelines.normalized_state_update_lock_manager import (
     NORMALIZED_STATE_UPDATE_LOCK_NAME,
@@ -41,8 +43,13 @@ class CloudSqlToBQLockManager:
     def __init__(self) -> None:
         self.lock_manager = GCSPseudoLockManager()
 
-    def acquire_lock(self, lock_id: str, schema_type: SchemaType) -> None:
-        """Acquires the CloudSQL -> BQ refresh lock for a given schema, or refreshes the
+    def acquire_lock(
+        self,
+        lock_id: str,
+        schema_type: SchemaType,
+        ingest_instance: DirectIngestInstance,
+    ) -> None:
+        """Acquires the CloudSQL -> BQ refresh lock for a given schema and instance, or refreshes the
          timeout of the lock if a lock with the given |lock_id| already exists. The
          presence of the lock tells other ongoing processes to yield until the lock has
          been released.
@@ -53,12 +60,14 @@ class CloudSqlToBQLockManager:
 
         Throws if a lock with a different lock_id exists for this schema.
         """
-        lock_name = postgres_to_bq_lock_name_for_schema(schema_type)
+        lock_name = postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
         try:
             self.lock_manager.lock(
                 lock_name,
                 payload=lock_id,
-                expiration_in_seconds=self._export_lock_timeout_for_schema(schema_type),
+                expiration_in_seconds=self._export_lock_timeout_for_schema(
+                    schema_type, ingest_instance
+                ),
             )
         except GCSPseudoLockAlreadyExists as e:
             previous_lock_id = self.lock_manager.get_lock_payload(lock_name)
@@ -68,12 +77,14 @@ class CloudSqlToBQLockManager:
                     f"UUID {lock_id} does not match existing lock's UUID {previous_lock_id}"
                 ) from e
 
-    def can_proceed(self, schema_type: SchemaType) -> bool:
+    def can_proceed(
+        self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
+    ) -> bool:
         """Returns True if all blocking processes have stopped and we can proceed with
         the export, False otherwise.
         """
 
-        if not self.is_locked(schema_type):
+        if not self.is_locked(schema_type, ingest_instance):
             raise GCSPseudoLockDoesNotExist(
                 f"Must acquire the lock for [{schema_type}] before checking if can proceed"
             )
@@ -106,18 +117,40 @@ class CloudSqlToBQLockManager:
         )
         return no_blocking_ingest_locks
 
-    def release_lock(self, schema_type: SchemaType) -> None:
-        """Releases the CloudSQL -> BQ refresh lock for a given schema."""
-        self.lock_manager.unlock(postgres_to_bq_lock_name_for_schema(schema_type))
+    def release_lock(
+        self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
+    ) -> None:
+        """Releases the CloudSQL -> BQ refresh lock for a given schema and ingest instance."""
+        try:
+            self.lock_manager.unlock(
+                postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
+            )
+        except GCSPseudoLockDoesNotExist:
+            # TODO(#20892): Remove this once all ingest instances are migrated to the new lock name.
+            self.lock_manager.unlock(
+                postgres_to_bq_lock_name_for_schema_old(schema_type)
+            )
 
-    def is_locked(self, schema_type: SchemaType) -> bool:
+    def is_locked(
+        self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
+    ) -> bool:
+
+        new_lock = self.lock_manager.is_locked(
+            postgres_to_bq_lock_name_for_schema(schema_type, ingest_instance)
+        )
+        if new_lock:
+            return True
+
+        # TODO(#20892): Remove this once all ingest instances are migrated to the new lock name.
         return self.lock_manager.is_locked(
-            postgres_to_bq_lock_name_for_schema(schema_type)
+            postgres_to_bq_lock_name_for_schema_old(schema_type)
         )
 
     @staticmethod
-    def _export_lock_timeout_for_schema(_schema_type: SchemaType) -> int:
-        """Defines the exported lock timeouts permitted based on the schema arg.
+    def _export_lock_timeout_for_schema(
+        _schema_type: SchemaType, _ingest_instance: DirectIngestInstance
+    ) -> int:
+        """Defines the exported lock timeouts permitted based on the schema and ingest instance arg.
         For the moment all lock timeouts are set to one hour in length.
 
         Export jobs may take longer than the alotted time, but if they do so, they

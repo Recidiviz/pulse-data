@@ -94,9 +94,16 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     def assertIsOnlySchemaLocked(self, schema_type: SchemaType) -> None:
         for s in SchemaType:
             if s == schema_type:
-                self.assertTrue(self.mock_lock_manager.is_locked(schema_type))
+                self.assertTrue(
+                    self.mock_lock_manager.is_locked(
+                        schema_type, DirectIngestInstance.PRIMARY
+                    )
+                )
             else:
-                self.assertFalse(self.mock_lock_manager.is_locked(s), f"Locked for {s}")
+                self.assertFalse(
+                    self.mock_lock_manager.is_locked(s, DirectIngestInstance.PRIMARY),
+                    f"Locked for {s}",
+                )
 
     @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
     @mock.patch(
@@ -111,14 +118,22 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_big_query_client_impl: mock.MagicMock,
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            self.assertTrue(
+                self.mock_lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.PRIMARY
+                )
+            )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
             self.assertIsOnlySchemaLocked(SchemaType.STATE)
@@ -153,14 +168,22 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_big_query_client_impl: mock.MagicMock,
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            self.assertTrue(
+                self.mock_lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.PRIMARY
+                )
+            )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
             self.assertIsOnlySchemaLocked(SchemaType.STATE)
@@ -200,14 +223,22 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_big_query_client_impl: mock.MagicMock,
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.STATE))
+            self.assertTrue(
+                self.mock_lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.PRIMARY
+                )
+            )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
             self.assertIsOnlySchemaLocked(SchemaType.STATE)
@@ -253,7 +284,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     ) -> None:
         # Grab lock, just like the /create_tasks... endpoint does
         self.mock_lock_manager.acquire_lock(
-            "any_lock_id", schema_type=SchemaType.CASE_TRIAGE
+            "any_lock_id",
+            schema_type=SchemaType.CASE_TRIAGE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
         def mock_federated_refresh_fn(
@@ -261,7 +294,11 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             schema_type: SchemaType,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
-            self.assertTrue(self.mock_lock_manager.can_proceed(SchemaType.CASE_TRIAGE))
+            self.assertTrue(
+                self.mock_lock_manager.can_proceed(
+                    SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
+                )
+            )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
             self.assertIsOnlySchemaLocked(SchemaType.CASE_TRIAGE)
@@ -393,7 +430,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         with ingest_lock_manager.using_region_lock(expiration_in_seconds=10):
             # Grab lock, just like the /create_tasks... endpoint does
             self.mock_lock_manager.acquire_lock(
-                "any_lock_id", schema_type=SchemaType.STATE
+                "any_lock_id",
+                schema_type=SchemaType.STATE,
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
 
             route = f"/refresh_bq_dataset/{SchemaType.STATE.value}"
@@ -460,7 +499,11 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     ) -> None:
 
         # Grab lock, just like the /acquire_lock... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         # Arrange
         lock_manager = DirectIngestRegionLockManager(
@@ -485,7 +528,11 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     ) -> None:
 
         # Grab lock, just like the /acquire_lock... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         # Arrange
         lock_manager = DirectIngestRegionLockManager(
@@ -514,7 +561,11 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     ) -> None:
 
         # Grab lock, just like the /create_tasks... endpoint does
-        self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.STATE)
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.PRIMARY,
+        )
 
         # Act
         response = self.mock_flask_client.get(
@@ -523,5 +574,9 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
 
         # Assert
-        self.assertFalse(self.mock_lock_manager.is_locked(SchemaType.STATE))
+        self.assertFalse(
+            self.mock_lock_manager.is_locked(
+                SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
+        )
         self.assertEqual(response.status_code, HTTPStatus.OK)

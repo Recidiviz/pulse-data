@@ -25,6 +25,7 @@ from recidiviz.cloud_storage.gcs_pseudo_lock_manager import (
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.fakes.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_lock_manager import (
     CloudSqlToBQLockManager,
 )
@@ -78,7 +79,9 @@ class NormalizedStateUpdateLockManagerTest(unittest.TestCase):
     def test_acquire_state_cannot_proceed(self) -> None:
         self.lock_manager.acquire_lock(lock_id="lock1")
         self.cloudsql_lock_manager.acquire_lock(
-            lock_id="lock1", schema_type=(SchemaType.STATE)
+            lock_id="lock1",
+            schema_type=(SchemaType.STATE),
+            ingest_instance=DirectIngestInstance.PRIMARY,
         )
 
         self.assertFalse(self.lock_manager.can_proceed())
@@ -92,7 +95,9 @@ class NormalizedStateUpdateLockManagerTest(unittest.TestCase):
             if schema_type == SchemaType.STATE:
                 continue
             self.cloudsql_lock_manager.acquire_lock(
-                lock_id="lock1", schema_type=schema_type
+                lock_id="lock1",
+                schema_type=schema_type,
+                ingest_instance=DirectIngestInstance.PRIMARY,
             )
 
         self.assertTrue(self.lock_manager.can_proceed())
