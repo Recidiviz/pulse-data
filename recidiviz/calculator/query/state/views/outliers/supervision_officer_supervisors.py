@@ -35,6 +35,44 @@ WITH
 supervision_officer_supervisors AS (
     {staff_query_template(role="SUPERVISION_OFFICER_SUPERVISOR")}
 )
+-- TODO(#21119): Remove US_PA logic when role_subtype=SUPERVISION_OFFICER_SUPERVISOR is hydrated
+, current_us_pa_supervisor_ids AS (
+  SELECT
+    supervisor.state_code,
+    supervisor_external_id.staff_id AS staff_id,
+    supervisor.supervisor_staff_external_id AS external_id,
+  FROM `{{project_id}}.{{normalized_state_dataset}}.state_staff_supervisor_period` supervisor
+  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` supervisor_external_id
+    ON supervisor.state_code = supervisor_external_id.state_code
+    AND supervisor.supervisor_staff_external_id = supervisor_external_id.external_id
+    AND supervisor.supervisor_staff_external_id_type = supervisor_external_id.id_type
+  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_external_id` staff_external_id
+    ON supervisor.staff_id = staff_external_id.staff_id
+  WHERE supervisor.state_code = 'US_PA'
+    AND CURRENT_DATE('US/Pacific') BETWEEN supervisor.start_date AND IFNULL(supervisor.end_date, '9999-01-01')
+  GROUP BY 1, 2, 3
+)
+, us_pa_supervision_officer_supervisors AS (
+  SELECT
+    current_us_pa_supervisor_ids.state_code,
+    current_us_pa_supervisor_ids.external_id,
+    current_us_pa_supervisor_ids.staff_id,
+    TRIM(CONCAT(COALESCE(JSON_EXTRACT_SCALAR(full_name, '$.given_names'), ''), ' ', COALESCE(JSON_EXTRACT_SCALAR(full_name, '$.surname'), ''))) AS full_name,
+    staff.email,
+    location.location_external_id
+  FROM current_us_pa_supervisor_ids
+  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff` staff 
+    USING (state_code, staff_id)
+  INNER JOIN `{{project_id}}.{{normalized_state_dataset}}.state_staff_location_period` location
+    USING (state_code, staff_id)
+  WHERE CURRENT_DATE("US/Pacific") BETWEEN location.start_date AND IFNULL(location.end_date, '9999-01-01')
+)
+
+SELECT 
+    {{columns}}
+FROM us_pa_supervision_officer_supervisors
+
+UNION ALL
 
 SELECT 
     {{columns}}
