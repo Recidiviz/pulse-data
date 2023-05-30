@@ -208,7 +208,75 @@ _CLIENT_RECORD_EMPLOYMENT_INFO_CTE = f"""
     ),
 """
 
-_CLIENT_RECORD_MILESTONES_CTE = """
+
+def years_and_months_template(column_name: str) -> str:
+    return f"""
+    IF( FLOOR(DATE_DIFF(CURRENT_DATE('US/Eastern'), {column_name}, MONTH) / 12) > 0, 
+        CAST(FLOOR(DATE_DIFF(CURRENT_DATE('US/Eastern'), {column_name}, MONTH) / 12) AS string) || 
+            IF(FLOOR(DATE_DIFF(CURRENT_DATE('US/Eastern'), {column_name}, MONTH) / 12) = 1, " year", " years"), 
+        NULL) AS years_text,
+    
+    IF( MOD(DATE_DIFF(CURRENT_DATE('US/Eastern'), {column_name}, MONTH), 12) > 0, 
+        CAST(MOD(DATE_DIFF(CURRENT_DATE('US/Eastern'), {column_name}, MONTH), 12) AS string) || 
+            IF(MOD(DATE_DIFF(CURRENT_DATE('US/Eastern'), {column_name}, MONTH), 12) = 1, " month", " months"), 
+        NULL) AS months_text,
+    """
+
+
+def milestone_text_template(milestone_text: str) -> str:
+    return f"""
+        CASE
+            WHEN years_text IS NOT NULL AND months_text IS NOT NULL
+            THEN CONCAT(years_text, ", ", months_text, '{milestone_text}')
+            WHEN years_text IS NOT NULL
+            THEN CONCAT(years_text, '{milestone_text}')
+            WHEN months_text IS NOT NULL
+            THEN CONCAT(months_text, '{milestone_text}')
+            ELSE NULL
+        END AS milestone_text,
+    """
+
+
+_CLIENT_RECORD_MILESTONES_CTE = f"""
+    time_without_violation AS (
+        SELECT
+            state_code,
+            person_id,
+            violation_date,
+            {years_and_months_template('violation_date')}
+        FROM (
+            SELECT
+            *,
+            ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
+            FROM {{project_id}}.{{dataflow_metrics_dataset}}.most_recent_violation_with_response_metrics_materialized df
+            ORDER BY person_id, rn
+        )
+        LEFT JOIN supervision_super_sessions ss
+        USING(person_id)
+        WHERE rn = 1
+        AND violation_date > ss.start_date
+        AND DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) > 0
+    ),
+    time_on_supervision AS (
+        SELECT
+            state_code,
+            person_id,
+            {years_and_months_template('ss.start_date')}
+        FROM supervision_cases
+        INNER JOIN supervision_super_sessions ss USING(person_id)
+        WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), ss.start_date, MONTH) > 0
+    ),
+    time_with_employer AS (
+        SELECT
+            state_code,
+            person_id,
+            {years_and_months_template("current_employers[OFFSET(0)].start_date")}
+        FROM employment_info
+        LEFT JOIN supervision_super_sessions ss
+        USING(person_id)
+        WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employers[OFFSET(0)].start_date, MONTH) > 0
+        AND current_employers[OFFSET(0)].start_date > ss.start_date
+    ),
     milestones AS (
         SELECT
             state_code,
@@ -229,62 +297,40 @@ _CLIENT_RECORD_MILESTONES_CTE = """
                     "BIRTHDAY_THIS_MONTH" as milestone_type,
                     1 AS milestone_priority,
                 FROM supervision_cases sc
-                LEFT JOIN {project_id}.{normalized_state_dataset}.state_person sp
+                LEFT JOIN {{project_id}}.{{normalized_state_dataset}}.state_person sp
                 USING(state_code, person_id)
             )
             UNION ALL
             -- months without violation
-            SELECT *
-            FROM (
-                SELECT
-                    state_code,
-                    person_id,
-                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) as string) || " months since last violation" as milestone_text,
-                    "MONTHS_WITHOUT_VIOLATION" as milestone_type,
-                    2 AS milestone_priority
-                FROM (
-                    SELECT
-                    *,
-                    ROW_NUMBER() OVER(PARTITION BY df.state_code, df.person_id order by violation_date desc) as rn
-                    FROM {project_id}.{dataflow_metrics_dataset}.most_recent_violation_with_response_metrics_materialized df
-                    ORDER BY person_id, rn
-                )
-                LEFT JOIN supervision_super_sessions ss
-                USING(person_id)
-                WHERE rn = 1
-                AND violation_date > ss.start_date
-                AND DATE_DIFF(CURRENT_DATE('US/Eastern'), violation_date, MONTH) > 0
-            )
+            SELECT
+                state_code,
+                person_id,
+                {milestone_text_template(" since last violation")}                
+                "MONTHS_WITHOUT_VIOLATION" as milestone_type,
+                2 AS milestone_priority
+            FROM time_without_violation
+            
             UNION ALL
+            
             -- months on supervision
-            SELECT *
-            FROM (
-                SELECT
-                    state_code,
-                    person_id,
-                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), ss.start_date, MONTH) as string) || " months on supervision" as milestone_text,
-                    "MONTHS_ON_SUPERVISION" as milestone_type,
-                    3 AS milestone_priority
-                FROM supervision_cases
-                INNER JOIN supervision_super_sessions ss USING(person_id)
-                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), ss.start_date, MONTH) > 0
-            )
+            SELECT
+                state_code,
+                person_id,
+                {milestone_text_template(" on supervision")}  
+                "MONTHS_ON_SUPERVISION" as milestone_type,
+                3 AS milestone_priority
+            FROM time_on_supervision
+            
             UNION ALL
             -- months with the same employer
-            SELECT *
-            FROM (
+
                 SELECT
                     state_code,
                     person_id,
-                    CAST(DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employers[OFFSET(0)].start_date, MONTH) as string) || " months with the same employer" as milestone_text,
+                    {milestone_text_template(" with the same employer")}
                     "MONTHS_WITH_CURRENT_EMPLOYER" as milestone_type,
                     4 AS milestone_priority
-                FROM employment_info
-                LEFT JOIN supervision_super_sessions ss
-                USING(person_id)
-                WHERE DATE_DIFF(CURRENT_DATE('US/Eastern'), current_employers[OFFSET(0)].start_date, MONTH) > 0
-                AND current_employers[OFFSET(0)].start_date > ss.start_date
-            )
+                FROM time_with_employer
         )
         WHERE state_code in ('US_IX')
         AND milestone_text IS NOT NULL
