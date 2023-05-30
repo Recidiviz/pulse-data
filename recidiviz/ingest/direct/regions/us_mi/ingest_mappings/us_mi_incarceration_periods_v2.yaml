@@ -127,6 +127,7 @@ output:
                         - "23" # Discharged by Court - Nolle Prosequi
                         - "136" # Jurisdiction Activated in Error
                         - "100" # Escape Walkaways
+                        - "98" # Escape Limited Furlough
                         - "24" # Sentence Reduced to Misdemeanor
                       StateIncarcerationPeriodAdmissionReason.TRANSFER:
                         - "117" # Transfer In ... Institutional or Caseload
@@ -211,6 +212,7 @@ output:
                               - "122" # Administrative Discharge from Probation
                               - "125" # Early Discharge from Probation
                             StateIncarcerationPeriodReleaseReason.STATUS_CHANGE:
+                              - "102" # Held Under Custody - New Criminal Processing
                               - "19" # Out of State Parolee Sentenced in Michigan
                               - "84" # Returned from Limited Furlough
                               - "104" # Held Under Custody - REP Violation Processing
