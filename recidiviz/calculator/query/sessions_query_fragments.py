@@ -366,3 +366,22 @@ def create_intersection_spans(
             OR {table_2_name}.{table_2_start_date_field_name} BETWEEN {table_1_name}.{table_1_start_date_field_name} AND {end_date_clause_function(f"{table_1_name}.{table_1_end_date_field_name}")}
         )
     """
+
+
+def generate_largest_value_query_fragment(
+    table_columns: List[str], partition_columns: List[str]
+) -> str:
+    """
+    Returns query fragment that dedupes all table columns to the largest non-null value
+    over the partition defined by the provided list of partition columns
+    """
+    return ",\n    ".join(
+        [
+            f"""
+FIRST_VALUE({column} IGNORE NULLS) OVER (
+    PARTITION BY {list_to_query_string(partition_columns)}
+    ORDER BY {column} DESC
+) AS {column}"""
+            for column in table_columns
+        ]
+    )
