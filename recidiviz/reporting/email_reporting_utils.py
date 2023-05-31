@@ -27,6 +27,7 @@ from recidiviz.reporting.context.po_monthly_report.constants import Batch, Repor
 from recidiviz.utils import environment, metadata, secrets
 
 _PO_REPORT_CDN_STATIC_IP_KEY = "po_report_cdn_static_IP"
+DATETIME_FORMAT_STR = "%Y%m%d%H%M%S"
 
 
 def get_env_var(key: str) -> str:
@@ -170,8 +171,7 @@ def generate_batch_id() -> str:
         requiring a string.
     """
     dt = datetime.datetime.now()
-    format_str = "%Y%m%d%H%M%S"
-    return dt.strftime(format_str)
+    return dt.strftime(DATETIME_FORMAT_STR)
 
 
 def gcsfs_path_for_batch_metadata(
@@ -180,3 +180,7 @@ def gcsfs_path_for_batch_metadata(
     return GcsfsFilePath.from_absolute_path(
         f"gs://{get_email_content_bucket_name()}/{batch.state_code.value}/{batch.batch_id}/metadata.json"
     )
+
+
+def get_datetime_from_batch_id(batch: Batch) -> datetime.datetime:
+    return datetime.datetime.strptime(batch.batch_id, DATETIME_FORMAT_STR)
