@@ -31,6 +31,7 @@ from recidiviz.common.constants.state.state_incarceration_period import (
     StateSpecializedPurposeForIncarceration,
 )
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_staff_role_period import StateStaffRoleType
 from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
     StateSupervisionPeriodSupervisionType,
@@ -618,3 +619,9 @@ def parse_housing_unit_type(
     if not raw_text:
         return None
     return StateIncarcerationPeriodHousingUnitType.GENERAL
+
+
+def role_type_mapper(raw_text: str) -> Optional[StateStaffRoleType]:
+    if raw_text:
+        return StateStaffRoleType.SUPERVISION_OFFICER
+    return StateStaffRoleType.INTERNAL_UNKNOWN

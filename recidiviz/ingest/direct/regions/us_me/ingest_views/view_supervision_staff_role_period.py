@@ -25,21 +25,21 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
 SELECT 
-  Employ_Num,
-  JOB_CD,
+  Employee_Id,
+  Cis_9001_Employee_Type_Cd,
   1 AS period_seq_num,
-  -- TODO(#21221):We should be building these periods based on actual start and end dates of employment; these are arbitrary, temporary placeholders.
+  -- TODO(#21219):We should be building these periods based on actual start and end dates of employment; these are arbitrary, temporary placeholders.
   -- Since this is a static roster, there will be exactly one row per P.O., and we will assume they are all actively employed.
-  DATE(1900,1,1) AS start_date, 
-  NULL AS end_date
-FROM {RECIDIVIZ_REFERENCE_agent_districts}
+  DATE(1900,1,1) AS Start_Date, 
+  NULL AS End_Date
+FROM {CIS_900_EMPLOYEE}
 """
 
 VIEW_BUILDER = DirectIngestViewQueryBuilder(
-    region="us_pa",
+    region="us_me",
     ingest_view_name="supervision_staff_role_period",
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols="Employ_Num",
+    order_by_cols="Employee_Id",
 )
 
 if __name__ == "__main__":
