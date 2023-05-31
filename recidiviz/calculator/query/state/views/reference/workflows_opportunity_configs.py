@@ -229,6 +229,17 @@ WORKFLOWS_OPPORTUNITY_CONFIGS = [
     ),
     WorkflowsOpportunityConfig(
         state_code=StateCode.US_TN,
+        opportunity_type="usTnCustodyLevelDowngrade",
+        experiment_id="US_TN_SUPERVISION_LEVEL_DOWNGRADE_WORKFLOWS",
+        opportunity_record_view_name="us_tn_custody_level_downgrade_record_materialized",
+        task_completion_event=TaskCompletionEventType.CUSTODY_LEVEL_DOWNGRADE,
+        source_filename="us_tn_custody_level_downgrade_record.json",
+        export_collection_name="US_TN-custodyLevelDowngradeReferrals",
+        opportunity_type_path_str="custodyLevelDowngrade",
+        person_record_type=PersonRecordType.RESIDENT,
+    ),
+    WorkflowsOpportunityConfig(
+        state_code=StateCode.US_TN,
         opportunity_type="usTnExpiration",
         experiment_id="US_TN_DISCHARGE_WORKFLOWS",
         opportunity_record_view_name="us_tn_full_term_supervision_discharge_record_materialized",
