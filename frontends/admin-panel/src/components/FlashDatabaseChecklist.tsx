@@ -49,6 +49,7 @@ import {
   transferRawDataMetadataToNewInstance,
   getIngestRawFileProcessingStatus,
   purgeIngestQueues,
+  deleteTablesInPruningDatasets,
 } from "../AdminPanelAPI/IngestOperations";
 import {
   DirectIngestInstance,
@@ -592,6 +593,30 @@ const FlashDatabaseChecklist = (): JSX.Element => {
               }
             />
             <StyledStep
+              title="Clean up PRUNING raw data tables in SECONDARY on BQ"
+              description={
+                <p>
+                  Delete any outstanding tables in{" "}
+                  <code>
+                    pruning_{stateCode.toLowerCase()}_new_raw_data_secondary
+                  </code>{" "}
+                  and{" "}
+                  <code>
+                    pruning_{stateCode.toLowerCase()}
+                    _raw_data_diff_results_secondary
+                  </code>
+                </p>
+              }
+              actionButtonEnabled={isRerunCancellationInProgress}
+              actionButtonTitle="Clean up SECONDARY raw data"
+              onActionButtonClick={async () =>
+                deleteTablesInPruningDatasets(
+                  stateCode,
+                  DirectIngestInstance.SECONDARY
+                )
+              }
+            />
+            <StyledStep
               title="Clear Out SECONDARY Ingest GCS Bucket"
               description={
                 <p>
@@ -995,6 +1020,28 @@ const FlashDatabaseChecklist = (): JSX.Element => {
                     False
                   </CodeBlock>
                 </p>
+              }
+            />
+            <StyledStep
+              title="Clean up PRUNING raw data tables in PRIMARY on BQ"
+              description={
+                <p>
+                  Delete any outstanding tables in{" "}
+                  <code>pruning_{stateCode.toLowerCase()}_new_raw_data</code>{" "}
+                  and{" "}
+                  <code>
+                    pruning_{stateCode.toLowerCase()}
+                    _raw_data_diff_results
+                  </code>
+                </p>
+              }
+              actionButtonEnabled={isRerunCancellationInProgress}
+              actionButtonTitle="Clean up PRIMARY raw data"
+              onActionButtonClick={async () =>
+                deleteTablesInPruningDatasets(
+                  stateCode,
+                  DirectIngestInstance.PRIMARY
+                )
               }
             />
             <StyledStep

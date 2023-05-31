@@ -24,7 +24,11 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
+from recidiviz.ingest.direct.dataset_config import (
+    raw_data_pruning_new_raw_data_dataset,
+    raw_data_pruning_raw_data_diff_results_dataset,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.ingest_view_materialization.instance_ingest_view_contents import (
     InstanceIngestViewContentsImpl,
 )
@@ -164,6 +168,31 @@ def delete_contents_of_raw_data_tables(
         )
         query_jobs.append(query_job)
     big_query_client.wait_for_big_query_jobs(query_jobs)
+
+
+def delete_tables_in_pruning_datasets(
+    state_code: StateCode,
+    ingest_instance: DirectIngestInstance,
+    big_query_client: BigQueryClient,
+) -> None:
+    """Deletes the tables within the datasets used for raw data pruning."""
+    new_raw_data_dataset_id = raw_data_pruning_new_raw_data_dataset(
+        state_code=state_code, instance=ingest_instance
+    )
+
+    diff_results_dataset_id = raw_data_pruning_raw_data_diff_results_dataset(
+        state_code=state_code, instance=ingest_instance
+    )
+
+    for dataset in [new_raw_data_dataset_id, diff_results_dataset_id]:
+        list_of_tables: Iterator[
+            bigquery.table.TableListItem
+        ] = big_query_client.list_tables(dataset_id=dataset)
+
+        for table in list_of_tables:
+            big_query_client.delete_table(
+                dataset_id=dataset, table_id=table.table_id, not_found_ok=True
+            )
 
 
 def copy_raw_data_to_backup(
