@@ -22,9 +22,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 )
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_DATASET
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

@@ -1291,7 +1291,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             project="recidiviz-456",
             state_code="US_XX",
             pipeline="supervision_metrics",
-            data_input="dataset_id",
+            state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
             static_reference_input="dataset_id",

@@ -23,6 +23,7 @@ from recidiviz.calculator.query.state.views.reference.reference_views import (
 )
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.state import entities
+from recidiviz.pipelines.ingest.state.pipeline import StateIngestPipeline
 from recidiviz.pipelines.metrics.base_metric_pipeline import MetricPipeline
 from recidiviz.pipelines.normalization.comprehensive.pipeline import (
     ComprehensiveNormalizationPipeline,
@@ -40,16 +41,14 @@ class TestPipelineNames(unittest.TestCase):
     """Tests the names of all pipelines that can be run."""
 
     def test_collect_all_pipeline_names(self) -> None:
-        """Tests that each pipeline run delegate has a config with a unique
-        pipeline_name."""
+        """Tests that each pipeline has a unique pipeline_name."""
         pipeline_names = collect_all_pipeline_names()
 
         self.assertCountEqual(set(pipeline_names), pipeline_names)
 
 
 class TestReferenceViews(unittest.TestCase):
-    """Tests the required_reference_tables and
-    state_specific_required_reference_tables."""
+    """Tests reference views are appropriately referenced."""
 
     def test_all_reference_views_in_dataset(self) -> None:
         """Asserts that all the reference views required by the pipelines are in the
@@ -59,6 +58,8 @@ class TestReferenceViews(unittest.TestCase):
         all_required_reference_tables: Set[str] = set()
 
         for pipeline in pipelines:
+            if issubclass(pipeline, StateIngestPipeline):
+                continue
             self.assertTrue(
                 hasattr(pipeline, "required_reference_tables")
                 or hasattr(pipeline, "required_state_based_reference_tables")

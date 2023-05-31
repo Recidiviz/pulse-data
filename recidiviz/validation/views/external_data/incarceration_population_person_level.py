@@ -19,9 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -96,7 +94,10 @@ FROM (
 VIEW_ID = "incarceration_population_person_level"
 
 
-def get_incarceration_population_person_level_view_builder() -> SimpleBigQueryViewBuilder:
+def get_incarceration_population_person_level_view_builder() -> (
+    SimpleBigQueryViewBuilder
+):
+    """Returns the query builder for incarceration population from external data."""
     region_views = BigQueryViewCollector.collect_view_builders_in_module(
         builder_type=SimpleBigQueryViewBuilder,
         view_dir_module=external_data_regions,

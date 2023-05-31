@@ -35,9 +35,7 @@ from typing import Dict, List
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants import states
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_tables_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.raw_data.raw_file_configs import RawTableColumnInfo
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata

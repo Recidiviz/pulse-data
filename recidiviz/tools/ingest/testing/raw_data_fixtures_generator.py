@@ -30,10 +30,8 @@ from pandas import DataFrame
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import get_direct_ingest_region
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_tables_dataset_for_region,
-)
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRawFileConfig,
     RawTableColumnInfo,
@@ -233,7 +231,8 @@ class RawDataFixturesGenerator:
     ) -> DataFrame:
         """Given a dataframe and a list of columns to randomize, returns a dataframe with those values randomized. If the
         value already exists in the randomized_values_map, then it uses the existing randomized value. Otherwise it
-        generates a random value and saves it in the randomized_values_map for the next raw table in the iteration."""
+        generates a random value and saves it in the randomized_values_map for the next raw table in the iteration.
+        """
         original_column_order = list(query_results.columns)
 
         if not self.columns_to_randomize:

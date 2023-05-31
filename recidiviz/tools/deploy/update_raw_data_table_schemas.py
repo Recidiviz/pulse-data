@@ -27,7 +27,7 @@ from recidiviz.big_query.big_query_client import (
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import raw_data_table_schema_utils
-from recidiviz.ingest.direct.raw_data.dataset_config import (
+from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_data_pruning_raw_data_diff_results_dataset,
     raw_tables_dataset_for_region,

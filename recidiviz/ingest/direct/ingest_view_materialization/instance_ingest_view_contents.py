@@ -38,6 +38,9 @@ from recidiviz.big_query.view_update_manager import (
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS,
 )
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataset,
+)
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.utils import metadata
 from recidiviz.utils.string import StrictStringFormatter
@@ -338,7 +341,7 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
         dataset_prefix: Optional[str],
     ):
         self._big_query_client = big_query_client
-        self._region_code_lower = region_code.lower()
+        self._state_code = StateCode(region_code.upper())
         self._ingest_instance = ingest_instance
         self._dataset_prefix = dataset_prefix
         self._temp_results_dataset = self._build_temp_results_dataset()
@@ -349,10 +352,8 @@ class InstanceIngestViewContentsImpl(InstanceIngestViewContents):
 
     def results_dataset(self) -> str:
         """Returns the dataset of the results tables for this ingest instance."""
-        dataset_prefix = f"{self._dataset_prefix}_" if self._dataset_prefix else ""
-        return (
-            f"{dataset_prefix}{self._region_code_lower}_ingest_view_results_"
-            f"{self.ingest_instance.value.lower()}"
+        return ingest_view_materialization_results_dataset(
+            self._state_code, self.ingest_instance, self._dataset_prefix
         )
 
     @property

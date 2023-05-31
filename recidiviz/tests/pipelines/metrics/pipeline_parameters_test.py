@@ -46,7 +46,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "data_input": STATE_BASE_DATASET,
+            "state_data_input": STATE_BASE_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
@@ -55,6 +55,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
             "output": "test_output",
+            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -77,7 +78,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
             "output": DATAFLOW_METRICS_DATASET,
-            "data_input": STATE_BASE_DATASET,
+            "state_data_input": STATE_BASE_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
@@ -85,6 +86,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "36",
+            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -106,7 +108,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
         expected_parameters = {
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
-            "data_input": STATE_BASE_DATASET,
+            "state_data_input": STATE_BASE_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
@@ -115,6 +117,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "output": "test_output",
             "metric_types": "TEST_METRIC",
             "calculation_month_count": "-1",
+            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -133,7 +136,7 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             output="test_output",
             calculation_month_count=36,
             reference_view_input="test_view",
-            data_input="test_input",
+            state_data_input="test_input",
             normalized_input="normalized_input",
             person_filter_ids="123 12323 324",
         )
@@ -145,10 +148,11 @@ class TestMetricsPipelineParameters(unittest.TestCase):
             "calculation_month_count": "36",
             "output": "test_output",
             "reference_view_input": "test_view",
-            "data_input": "test_input",
+            "state_data_input": "test_input",
             "normalized_input": "normalized_input",
             "static_reference_input": STATIC_REFERENCE_TABLES_DATASET,
             "person_filter_ids": "123 12323 324",
+            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

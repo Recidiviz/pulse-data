@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The comprehensive normalization calculation pipeline. See
-recidiviz/tools/run_sandbox_calculation_pipeline.py for details on how to launch a
+recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details on how to launch a
 local run.
 """
 from typing import (
@@ -257,7 +257,7 @@ class ComprehensiveNormalizationPipeline(BasePipeline[NormalizationPipelineParam
             >> ExtractDataForPipeline(
                 state_code=state_code,
                 project_id=self.pipeline_parameters.project,
-                entities_dataset=self.pipeline_parameters.data_input,
+                entities_dataset=self.pipeline_parameters.state_data_input,
                 normalized_entities_dataset=self.pipeline_parameters.normalized_input,
                 reference_dataset=self.pipeline_parameters.reference_view_input,
                 required_entity_classes=self.required_entities(),

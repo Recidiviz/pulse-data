@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """The us_ix case note extracted entities supplemental dataset calculation pipeline. See
-recidiviz/tools/run_sandbox_calculation_pipeline.py for details on how to launch a
+recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py for details on how to launch a
 local run."""
 import datetime
 import re

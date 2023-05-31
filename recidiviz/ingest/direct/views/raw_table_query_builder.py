@@ -22,11 +22,9 @@ from recidiviz.big_query.address_overrides import BigQueryAddressOverrides
 from recidiviz.big_query.big_query_query_builder import BigQueryQueryBuilder
 from recidiviz.big_query.big_query_utils import datetime_clause
 from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_regions import (
     raw_data_pruning_enabled_in_state_and_instance,
-)
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import DirectIngestRawFileConfig
 from recidiviz.ingest.direct.types.direct_ingest_constants import (

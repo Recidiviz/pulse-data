@@ -45,7 +45,8 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
             "output": "test_output",
-            "data_input": STATE_BASE_DATASET,
+            "ingest_instance": "PRIMARY",
+            "state_data_input": STATE_BASE_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
@@ -70,11 +71,12 @@ class TestNormalizationPipelineParameters(unittest.TestCase):
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
             "output": normalized_state_dataset_for_state_code(StateCode("US_OZ")),
-            "data_input": STATE_BASE_DATASET,
-            "reference_view_input": REFERENCE_VIEWS_DATASET,
             "normalized_input": normalized_state_dataset_for_state_code(
                 StateCode("US_OZ")
             ),
+            "ingest_instance": "PRIMARY",
+            "state_data_input": STATE_BASE_DATASET,
+            "reference_view_input": REFERENCE_VIEWS_DATASET,
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

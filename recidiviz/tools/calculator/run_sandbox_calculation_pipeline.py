@@ -28,9 +28,12 @@ usage: python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
           --sandbox_output_dataset SANDBOX_OUTPUT_DATASET \
           --calculation_month_count NUM_MONTHS \
           [--normalized_input INPUT] \
-          [--data_input INPUT] \
+          [--state_data_input INPUT] \
           [--reference_view_input REFERENCE_VIEW_INPUT] \
           [--static_reference_input STATIC_REFERENCE_VIEW_INPUT] \
+          [--raw_data_table_input RAW_DATA_INPUT] \
+          [--ingest_view_results_output INGEST_VIEW_OUTPUT] \
+          [--ingest_instance PRIMARY] \
           [--skip_build] \
           # Note: The --metric_types arg must be last since it is a list
           [--metric_types METRIC_TYPES]
@@ -63,6 +66,14 @@ Examples:
         --sandbox_output_dataset username_supplemental_data \
         --state_code US_IX
 
+    python -m recidiviz.tools.calculator.run_sandbox_calculation_pipeline \
+        --pipeline ingest \
+        --type ingest \
+        --project recidiviz-staging \
+        --job_name my-mi-ingest-test \
+        --sandbox_output_dataset username_ingest_data \
+        --sandbox_ingest_view_results_output_dataset username_ingest_view_data \
+        --state_code US_MI
 
 You must also include any arguments required by the given pipeline.
 """
@@ -80,6 +91,7 @@ import google.auth.transport.requests
 import requests
 
 from recidiviz import pipelines
+from recidiviz.pipelines.ingest.pipeline_parameters import IngestPipelineParameters
 from recidiviz.pipelines.metrics.pipeline_parameters import MetricsPipelineParameters
 from recidiviz.pipelines.normalization.pipeline_parameters import (
     NormalizationPipelineParameters,
@@ -100,7 +112,7 @@ def parse_run_arguments() -> Tuple[argparse.Namespace, List[str]]:
         type=str,
         dest="pipeline_type",
         help="type of the pipeline",
-        choices=["metrics", "normalization", "supplemental"],
+        choices=["metrics", "normalization", "supplemental", "ingest"],
         required=True,
     )
 
@@ -128,6 +140,8 @@ def parse_pipeline_parameters(
         parameter_cls = NormalizationPipelineParameters
     elif pipeline_type == "supplemental":
         parameter_cls = SupplementalPipelineParameters
+    elif pipeline_type == "ingest":
+        parameter_cls = IngestPipelineParameters
     else:
         raise ValueError(f"Unexpected pipeline_type [{pipeline_type}]")
 
@@ -172,10 +186,12 @@ def run_sandbox_calculation_pipeline() -> None:
     )
 
     # Have the user confirm that the sandbox dataflow dataset exists.
-    prompt_for_confirmation(
-        "Have you already created a sandbox dataflow dataset called "
-        f"`{params.output}` using `create_or_update_dataflow_sandbox`?"
-    )
+    for attr in dir(params):
+        if attr.endswith("output") and isinstance(getattr(params, attr), str):
+            prompt_for_confirmation(
+                "Have you already created a sandbox dataflow dataset called "
+                f"`{getattr(params, attr)}` using `create_or_update_dataflow_sandbox`?"
+            )
 
     if not known_args.skip_build:
         submit_build_start = time.time()

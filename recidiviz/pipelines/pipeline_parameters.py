@@ -29,12 +29,10 @@ from apache_beam.options.pipeline_options import PipelineOptions, SetupOptions
 from recidiviz.calculator.query.state.dataset_config import (
     DATAFLOW_METRICS_DATASET,
     REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-    normalized_state_dataset_for_state_code,
 )
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common import attr_validators
-from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.tools.utils.script_helpers import run_command
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
 
@@ -87,28 +85,17 @@ class PipelineParameters:
     project: str = attr.ib(validator=attr_validators.is_str)
     state_code: str = attr.ib(validator=attr_validators.is_str)
     pipeline: str = attr.ib(validator=attr_validators.is_str)
+    ingest_instance: str = attr.ib(
+        default=DirectIngestInstance.PRIMARY.value, validator=attr_validators.is_str
+    )
     output: str = attr.ib(validator=attr_validators.is_str)
 
     @output.default
     def _output_default(self) -> str:
         return self.define_output()
 
-    data_input: str = attr.ib(
-        default=STATE_BASE_DATASET, validator=attr_validators.is_str
-    )
-    normalized_input: str = attr.ib(validator=attr_validators.is_str)
-
-    @normalized_input.default
-    def _normalized_input_default(self) -> str:
-        return normalized_state_dataset_for_state_code(
-            state_code=StateCode(self.state_code)
-        )
-
     reference_view_input: str = attr.ib(
         default=REFERENCE_VIEWS_DATASET, validator=attr_validators.is_str
-    )
-    person_filter_ids: Optional[str] = attr.ib(
-        default=None, validator=attr_validators.is_opt_str
     )
 
     # Args used for job configuration
@@ -225,13 +212,13 @@ class PipelineParameters:
                 )
                 help_text = f"{parameter['label']}. {parameter['helpText']}"
 
-                if sandbox_pipeline and name == "output":
+                if sandbox_pipeline and name.endswith("output"):
                     parser.add_argument(
-                        "--sandbox_output_dataset",
+                        f"--sandbox_{name}_dataset",
                         # Change output name to match what pipeline args expect
-                        dest="output",
+                        dest=name,
                         type=str,
-                        help="Output metrics dataset where results should be written to for test jobs.",
+                        help=f"{name} dataset where results should be written to for test jobs.",
                         required=True,
                         action=ValidateSandboxDataset,
                     )

@@ -15,11 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Class for normalization pipeline parameters"""
+from typing import Optional
+
 import attr
 
 from recidiviz.calculator.query.state.dataset_config import (
+    STATE_BASE_DATASET,
     normalized_state_dataset_for_state_code,
 )
+from recidiviz.common import attr_validators
 from recidiviz.common.constants.states import StateCode
 from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 
@@ -27,6 +31,22 @@ from recidiviz.pipelines.pipeline_parameters import PipelineParameters
 @attr.define(kw_only=True)
 class NormalizationPipelineParameters(PipelineParameters):
     """Class for normalization pipeline parameters"""
+
+    state_data_input: str = attr.ib(
+        default=STATE_BASE_DATASET, validator=attr_validators.is_str
+    )
+
+    normalized_input: str = attr.ib(validator=attr_validators.is_str)
+
+    @normalized_input.default
+    def _normalized_input_default(self) -> str:
+        return normalized_state_dataset_for_state_code(
+            state_code=StateCode(self.state_code)
+        )
+
+    person_filter_ids: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str
+    )
 
     @property
     def flex_template_name(self) -> str:

@@ -561,7 +561,7 @@ class TestProduceMetrics(unittest.TestCase):
             project="recidiviz-staging",
             state_code="US_XX",
             pipeline="population_span_metrics",
-            data_input="dataset_id",
+            state_data_input="dataset_id",
             normalized_input="dataset_id",
             reference_view_input="dataset_id",
             static_reference_input="dataset_id",

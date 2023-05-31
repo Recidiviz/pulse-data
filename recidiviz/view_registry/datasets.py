@@ -38,7 +38,7 @@ from recidiviz.calculator.query.state.dataset_config import (
 from recidiviz.case_triage.views.dataset_config import CASE_TRIAGE_FEDERATED_DATASET
 from recidiviz.common.constants.states import StateCode
 from recidiviz.datasets.static_data.config import EXTERNAL_REFERENCE_DATASET
-from recidiviz.ingest.direct.raw_data.dataset_config import (
+from recidiviz.ingest.direct.dataset_config import (
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
