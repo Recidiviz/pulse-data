@@ -55,6 +55,7 @@ SELECT
     LOGICAL_OR(eligible_custodial_authority) AS meets_criteria,
     TO_JSON(STRUCT(LOGICAL_OR(eligible_custodial_authority) AS eligible_custodial_authority)) AS reason,
 FROM sub_sessions_with_attributes
+WHERE start_date != end_date
 GROUP BY 1,2,3,4
 """
 
