@@ -24,12 +24,12 @@ specified source, i.e. staging GCS or fixture files.
 Usage against default development database (docker-compose v1):
 docker exec pulse-data_import_service_1 pipenv run python -m recidiviz.tools.outliers.load_local_db \
     --data_type FIXTURE \
-    --state_codes US_PA \
+    --state_codes US_PA
 
 Usage against default development database (docker-compose v2):
 docker exec pulse-data-import_service-1 pipenv run python -m recidiviz.tools.outliers.load_local_db \
     --data_type FIXTURE \
-    --state_codes US_PA \
+    --state_codes US_PA
 """
 import argparse
 import logging
