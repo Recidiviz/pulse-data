@@ -356,6 +356,7 @@ def main() -> int:
                 "recidiviz.ingest",
                 "recidiviz.justice_counts",
                 "recidiviz.metrics",
+                "recidiviz.outliers",
                 "recidiviz.persistence",
                 "recidiviz.workflows",
                 "recidiviz.reporting",

@@ -28,7 +28,7 @@ from recidiviz.common.constants.states import StateCode
 class Recipient:
     email_address: str = attr.ib()
     state_code: StateCode = attr.ib()
-    district: str = attr.ib()
+    district: str = attr.ib(default=None)
 
     # Includes various fields for report rendering
     data: dict = attr.ib(default=attr.Factory(dict))

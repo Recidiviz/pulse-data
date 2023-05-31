@@ -59,6 +59,7 @@ class ReportType(Enum):
     POMonthlyReport = "po_monthly_report"
     TopOpportunities = "top_opportunities"
     OverdueDischargeAlert = "overdue_discharge_alert"
+    OutliersSupervisionOfficerSupervisor = "outliers_supervision_officer_supervisor"
 
 
 @attr.s(auto_attribs=True)

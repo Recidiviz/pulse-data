@@ -106,7 +106,6 @@ class TestOutliersQuerier(TestCase):
     def test_get_officer_level_report_data_by_unit(self) -> None:
         actual = OutliersQuerier().get_officer_level_report_data_for_all_units(
             state_code=StateCode.US_PA,
-            db_key=self.database_key,
             end_date=TEST_END_DATE,
         )
         expected = {
@@ -189,4 +188,12 @@ class TestOutliersQuerier(TestCase):
             ),
         }
 
+        self.assertEqual(actual, expected)
+
+    def test_get_unit_id_to_supervisor_email(self) -> None:
+        expected = {"A": "supervisor1@recidiviz.org", "B": "supervisor2@recidiviz.org"}
+
+        actual = OutliersQuerier().get_unit_id_to_supervision_officer_supervisor_email(
+            StateCode.US_PA
+        )
         self.assertEqual(actual, expected)

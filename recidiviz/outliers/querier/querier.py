@@ -37,9 +37,11 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.schema.outliers.schema import (
     SupervisionOfficer,
     SupervisionOfficerMetric,
+    SupervisionOfficerSupervisor,
     SupervisionStateMetric,
     SupervisionUnit,
 )
+from recidiviz.persistence.database.schema_type import SchemaType
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_database_key import SQLAlchemyDatabaseKey
 
@@ -100,7 +102,7 @@ class OutliersQuerier:
     """Implements Querier abstractions for Outliers data sources"""
 
     def get_officer_level_report_data_for_all_units(
-        self, state_code: StateCode, db_key: SQLAlchemyDatabaseKey, end_date: date
+        self, state_code: StateCode, end_date: date
     ) -> dict:
         """
         Returns officer-level data by unit for all units in a state in the following format:
@@ -122,6 +124,9 @@ class OutliersQuerier:
             ...
         }
         """
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
         end_date = end_date.replace(day=1)
         prev_end_date = end_date - relativedelta(months=1)
 
@@ -375,3 +380,24 @@ class OutliersQuerier:
         q1, q3 = np.percentile(values, [25, 75])
         iqr = q3 - q1
         return iqr
+
+    @staticmethod
+    def get_unit_id_to_supervision_officer_supervisor_email(
+        state_code: StateCode,
+    ) -> Dict[str, str]:
+        """Returns a dictionary mapping a unit_id to the corresponding officer supervisor"""
+        db_key = SQLAlchemyDatabaseKey(
+            SchemaType.OUTLIERS, db_name=state_code.value.lower()
+        )
+        with SessionFactory.using_database(db_key, autocommit=False) as session:
+            unit_to_supervisor_records = session.query(
+                SupervisionUnit, SupervisionOfficerSupervisor
+            ).join(
+                SupervisionOfficerSupervisor,
+                SupervisionUnit.external_id
+                == SupervisionOfficerSupervisor.location_external_id,
+            )
+            return {
+                record.SupervisionUnit.external_id: record.SupervisionOfficerSupervisor.email
+                for record in unit_to_supervisor_records
+            }

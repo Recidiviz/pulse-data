@@ -16,7 +16,9 @@
 # =============================================================================
 
 """Utilities for selecting from available report contexts."""
-
+from recidiviz.reporting.context.outliers_supervision_officer_supervisor.context import (
+    OutliersSupervisionOfficerSupervisorContext,
+)
 from recidiviz.reporting.context.overdue_discharge_alert.context import (
     OverdueDischargeAlertContext,
 )
@@ -44,5 +46,7 @@ def get_report_context(batch: Batch, recipient: Recipient) -> ReportContext:
         return TopOpportunitiesReportContext(batch, recipient)
     if batch.report_type == ReportType.OverdueDischargeAlert:
         return OverdueDischargeAlertContext(batch, recipient)
+    if batch.report_type == ReportType.OutliersSupervisionOfficerSupervisor:
+        return OutliersSupervisionOfficerSupervisorContext(batch, recipient)
 
     raise KeyError(f"Unrecognized report type: {batch.report_type}")
