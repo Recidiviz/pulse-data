@@ -44,6 +44,11 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.retry_predicate import google_api_retry_predicate
 from recidiviz.ingest.direct import regions
+from recidiviz.ingest.direct.dataset_config import (
+    raw_data_pruning_new_raw_data_dataset,
+    raw_data_pruning_raw_data_diff_results_dataset,
+    raw_tables_dataset_for_region,
+)
 from recidiviz.ingest.direct.direct_ingest_regions import (
     DirectIngestRegion,
     raw_data_pruning_enabled_in_state_and_instance,
@@ -52,11 +57,6 @@ from recidiviz.ingest.direct.gcs.direct_ingest_gcs_file_system import (
     DirectIngestGCSFileSystem,
 )
 from recidiviz.ingest.direct.gcs.filename_parts import filename_parts_from_path
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_data_pruning_new_raw_data_dataset,
-    raw_data_pruning_raw_data_diff_results_dataset,
-    raw_tables_dataset_for_region,
-)
 from recidiviz.ingest.direct.raw_data.direct_ingest_raw_table_migration_collector import (
     DirectIngestRawTableMigrationCollector,
 )
@@ -247,7 +247,6 @@ class DirectIngestRawFileImportManager:
         sandbox_dataset_prefix: Optional[str] = None,
         allow_incomplete_configs: bool = False,
     ):
-
         self.region = region
         self.state_code = StateCode(self.region.region_code.upper())
         self.fs = fs

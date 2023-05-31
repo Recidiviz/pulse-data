@@ -56,3 +56,27 @@ def raw_data_pruning_raw_data_diff_results_dataset(
 ) -> str:
     """Returns the dataset containing the temporary results of raw data diff queries that used in raw data pruning."""
     return f"pruning_{state_code.value.lower()}_raw_data_diff_results_{instance.value.lower()}"
+
+
+# TODO(#20930) Replace with the Dataflow dataset once ingest in Dataflow is launched.
+def ingest_view_materialization_results_dataset(
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> str:
+    """Returns the dataset of the ingest view results tables for this ingest instance."""
+    dataset_prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return (
+        f"{dataset_prefix}{state_code.value.lower()}_ingest_view_results_"
+        f"{instance.value.lower()}"
+    )
+
+
+def ingest_view_materialization_results_dataflow_dataset(
+    state_code: StateCode,
+    instance: DirectIngestInstance,
+    sandbox_dataset_prefix: Optional[str] = None,
+) -> str:
+    """Returns the dataset of the ingest view results Dataflow tables for this ingest instance."""
+    dataset_prefix = f"{sandbox_dataset_prefix}_" if sandbox_dataset_prefix else ""
+    return f"{dataset_prefix}{state_code.value.lower()}_dataflow_ingest_view_results_{instance.value.lower()}"

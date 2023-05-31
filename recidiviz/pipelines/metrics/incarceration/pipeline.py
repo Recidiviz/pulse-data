@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""The incarceration metric calculation pipeline. See recidiviz/tools/run_sandbox_calculation_pipeline.py
+"""The incarceration metric calculation pipeline. See recidiviz/tools/calculator/run_sandbox_calculation_pipeline.py
 for details on how to launch a local run.
 """
 from __future__ import absolute_import

@@ -1,0 +1,52 @@
+{
+    "name": "ingest",
+    "description": "Flex template for ingest pipeline",
+    "parameters": [
+      {
+        "name": "pipeline",
+        "label": "Dataflow pipeline name",
+        "helpText": "Name of the dataflow pipeline to run."
+      },
+      {
+        "name": "state_code",
+        "label": "State code",
+        "helpText": "State that the pipeline is running for.",
+        "regexes": ["US_[A-Z]{2}"]
+      },
+      {
+        "name": "ingest_instance",
+        "label": "Ingest instance",
+        "helpText": "Ingest instance that the pipeline is running for.",
+        "regexes": ["PRIMARY|SECONDARY"],
+        "isOptional": true
+      },
+      {
+        "name": "output",
+        "label": "Test output dataset",
+        "helpText": "If specified, the pipeline will write to this test dataset.",
+        "regexes": ["[1-9a-z_]+"],
+        "isOptional": true
+      },
+      {
+        "name": "ingest_view_results_output",
+        "label": "Test output dataset for ingest view results",
+        "helpText": "If specified, the pipeline will write to this test dataset instead of the default.",
+        "regexes": ["[1-9a-z_]+"],
+        "isOptional": true
+      },
+      {
+        "name": "raw_data_table_input",
+        "label": "BigQuery dataset to query for raw data from states",
+        "helpText": "If specified, the pipeline will query this BigQuery dataset for raw data from states.",
+        "regexes": ["[1-9a-z_]+"],
+        "isOptional": true
+      },
+      {
+        "name": "reference_view_input",
+        "label": "BigQuery reference view dataset to query",
+        "helpText": "If specified, the pipeline will query this BigQuery reference view dataset instead of the default.",
+        "regexes": ["[1-9a-z_]+"],
+        "isOptional": true
+      }
+    ]
+  }

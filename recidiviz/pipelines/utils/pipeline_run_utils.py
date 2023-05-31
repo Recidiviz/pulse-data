@@ -22,6 +22,7 @@ from types import ModuleType
 from typing import List, Type
 
 from recidiviz.common.module_collector_mixin import ModuleCollectorMixin
+from recidiviz.pipelines import ingest as ingest_pipeline_top_level
 from recidiviz.pipelines import metrics as metrics_pipeline_top_level
 from recidiviz.pipelines import normalization as normalization_pipeline_top_level
 from recidiviz.pipelines import supplemental as supplemental_pipeline_top_level
@@ -71,7 +72,6 @@ def collect_all_pipeline_modules() -> List[ModuleType]:
         pipeline_modules = ModuleCollectorMixin.get_submodules(
             module, submodule_name_prefix_filter="pipeline"
         )
-
         if len(pipeline_modules) > 1:
             raise ValueError(
                 "More than one submodule found named 'pipeline' in "
@@ -87,4 +87,5 @@ _TOP_LEVEL_PIPELINE_MODULES: List[ModuleType] = [
     normalization_pipeline_top_level,
     supplemental_pipeline_top_level,
     metrics_pipeline_top_level,
+    ingest_pipeline_top_level,
 ]

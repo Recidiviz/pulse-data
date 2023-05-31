@@ -201,7 +201,7 @@ def default_arg_list_for_pipeline(
     pipeline_args: List[str] = [
         "--project",
         project_id,
-        "--data_input",
+        "--state_data_input",
         dataset_id,
         "--reference_view_input",
         dataset_id,

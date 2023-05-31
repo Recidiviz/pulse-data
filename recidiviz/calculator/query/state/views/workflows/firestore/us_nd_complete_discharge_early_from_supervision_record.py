@@ -26,9 +26,7 @@ from recidiviz.calculator.query.state.dataset_config import (
     WORKFLOWS_VIEWS_DATASET,
 )
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_latest_views_dataset_for_region,
-)
+from recidiviz.ingest.direct.dataset_config import raw_latest_views_dataset_for_region
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.task_eligibility.criteria.state_specific.us_nd.implied_valid_early_termination_supervision_level import (
     _CRITERIA_NAME as supervision_level_criteria,

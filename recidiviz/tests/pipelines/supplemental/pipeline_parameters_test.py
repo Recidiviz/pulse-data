@@ -17,12 +17,7 @@
 """Unit tests for SupplementalPipelineParameters"""
 import unittest
 
-from recidiviz.calculator.query.state.dataset_config import (
-    REFERENCE_VIEWS_DATASET,
-    STATE_BASE_DATASET,
-    normalized_state_dataset_for_state_code,
-)
-from recidiviz.common.constants.states import StateCode
+from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET
 from recidiviz.pipelines.supplemental.dataset_config import SUPPLEMENTAL_DATA_DATASET
 from recidiviz.pipelines.supplemental.pipeline_parameters import (
     SupplementalPipelineParameters,
@@ -46,11 +41,8 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
             "output": "test_output",
-            "data_input": STATE_BASE_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "normalized_input": normalized_state_dataset_for_state_code(
-                StateCode("US_OZ")
-            ),
+            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)
@@ -71,11 +63,8 @@ class TestSupplementalPipelineParameters(unittest.TestCase):
             "state_code": "US_OZ",
             "pipeline": "test_pipeline_name",
             "output": SUPPLEMENTAL_DATA_DATASET,
-            "data_input": STATE_BASE_DATASET,
             "reference_view_input": REFERENCE_VIEWS_DATASET,
-            "normalized_input": normalized_state_dataset_for_state_code(
-                StateCode("US_OZ")
-            ),
+            "ingest_instance": "PRIMARY",
         }
 
         self.assertEqual(expected_parameters, pipeline_parameters.template_parameters)

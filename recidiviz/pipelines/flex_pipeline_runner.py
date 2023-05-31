@@ -49,8 +49,8 @@ def run_flex_pipeline(pipeline_name: str, argv: List[str]) -> None:
     pipeline_cls.build_from_args(argv).run()
 
 
-# TODO(#18108): consider creating a main for each type of pipeline (metric, normalization, supplemental)
-# to avoid needing to dynamically collect delegates to use one
+# TODO(#18108): consider creating a main for each type of pipeline (metric, normalization,
+# supplemental, ingest) to avoid needing to dynamically collect to use one
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.INFO)
 

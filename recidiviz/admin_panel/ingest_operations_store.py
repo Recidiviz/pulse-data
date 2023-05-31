@@ -35,6 +35,7 @@ from recidiviz.common.constants.operations.direct_ingest_instance_status import 
 )
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct import direct_ingest_regions
+from recidiviz.ingest.direct.dataset_config import raw_tables_dataset_for_region
 from recidiviz.ingest.direct.direct_ingest_cloud_task_queue_manager import (
     DirectIngestCloudTaskQueueManagerImpl,
     get_direct_ingest_queues_for_state,
@@ -62,9 +63,6 @@ from recidiviz.ingest.direct.metadata.postgres_direct_ingest_file_metadata_manag
 )
 from recidiviz.ingest.direct.metadata.postgres_direct_ingest_instance_status_manager import (
     PostgresDirectIngestInstanceStatusManager,
-)
-from recidiviz.ingest.direct.raw_data.dataset_config import (
-    raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.raw_data.raw_file_configs import (
     DirectIngestRegionRawFileConfig,

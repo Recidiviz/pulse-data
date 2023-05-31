@@ -14,6 +14,13 @@
       "regexes": ["US_[A-Z]{2}"]
     },
     {
+      "name": "ingest_instance",
+      "label": "Ingest instance",
+      "helpText": "Ingest instance that the pipeline is running for.",
+      "regexes": ["PRIMARY|SECONDARY"],
+      "isOptional": true
+    },
+    {
       "name": "metric_types",
       "label": "Metric types",
       "helpText": "Metric types to collect for this pipeline.",
@@ -41,8 +48,8 @@
       "isOptional": true
     },
     {
-      "name": "data_input",
-      "label": "BigQuery dataset to query",
+      "name": "state_data_input",
+      "label": "BigQuery dataset to query for state entities",
       "helpText": "If specified, the pipeline will query this dataset instead of the default.",
       "regexes": ["[1-9a-z_]+"],
       "isOptional": true

@@ -25,7 +25,7 @@ import pytest
 
 from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
+from recidiviz.ingest.direct.dataset_config import (
     raw_data_pruning_new_raw_data_dataset,
     raw_tables_dataset_for_region,
 )

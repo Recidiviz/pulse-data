@@ -18,15 +18,17 @@
 import unittest
 
 from recidiviz.common.constants.states import StateCode
-from recidiviz.ingest.direct.raw_data.dataset_config import (
+from recidiviz.ingest.direct.dataset_config import (
+    ingest_view_materialization_results_dataflow_dataset,
+    ingest_view_materialization_results_dataset,
     raw_latest_views_dataset_for_region,
     raw_tables_dataset_for_region,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 
-class TestRawDataDatasetConfig(unittest.TestCase):
-    """Tests for raw_data/dataset_config.py."""
+class TestDatasetConfig(unittest.TestCase):
+    """Tests for dataset_config.py."""
 
     def test_raw_tables_dataset_for_region_primary(self) -> None:
         self.assertEqual(
@@ -57,5 +59,39 @@ class TestRawDataDatasetConfig(unittest.TestCase):
             "us_xx_raw_data_up_to_date_views",
             raw_latest_views_dataset_for_region(
                 state_code=StateCode.US_XX, instance=DirectIngestInstance.PRIMARY
+            ),
+        )
+
+    def test_ingest_view_materialization_results_dataset_primary(self) -> None:
+        self.assertEqual(
+            "us_xx_ingest_view_results_primary",
+            ingest_view_materialization_results_dataset(
+                state_code=StateCode.US_XX, instance=DirectIngestInstance.PRIMARY
+            ),
+        )
+
+    def test_ingest_view_materialization_results_dataset_secondary(self) -> None:
+        self.assertEqual(
+            "us_xx_ingest_view_results_secondary",
+            ingest_view_materialization_results_dataset(
+                state_code=StateCode.US_XX, instance=DirectIngestInstance.SECONDARY
+            ),
+        )
+
+    def test_ingest_view_materialization_results_dataflow_dataset_primary(self) -> None:
+        self.assertEqual(
+            "us_xx_dataflow_ingest_view_results_primary",
+            ingest_view_materialization_results_dataflow_dataset(
+                state_code=StateCode.US_XX, instance=DirectIngestInstance.PRIMARY
+            ),
+        )
+
+    def test_ingest_view_materialization_results_dataflow_dataset_secondary(
+        self,
+    ) -> None:
+        self.assertEqual(
+            "us_xx_dataflow_ingest_view_results_secondary",
+            ingest_view_materialization_results_dataflow_dataset(
+                state_code=StateCode.US_XX, instance=DirectIngestInstance.SECONDARY
             ),
         )
