@@ -93,6 +93,9 @@ from recidiviz.calculator.query.state.views.sessions.district_sessions import (
 from recidiviz.calculator.query.state.views.sessions.drug_screens_preprocessed import (
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
 )
+from recidiviz.calculator.query.state.views.sessions.housing_unit_type_collapsed_solitary_sessions import (
+    HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
+)
 from recidiviz.calculator.query.state.views.sessions.housing_unit_type_sessions import (
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
 )
@@ -299,6 +302,7 @@ SESSIONS_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     DATAFLOW_SESSIONS_VIEW_BUILDER,
     DRUG_SCREENS_PREPROCESSED_VIEW_BUILDER,
     DISTRICT_SESSIONS_VIEW_BUILDER,
+    HOUSING_UNIT_TYPE_COLLAPSED_SOLITARY_SESSIONS_VIEW_BUILDER,
     HOUSING_UNIT_TYPE_SESSIONS_VIEW_BUILDER,
     INCARCERATION_PROJECTED_COMPLETION_DATE_SPANS_VIEW_BUILDER,
     INCARCERATION_SUPER_SESSIONS_VIEW_BUILDER,
