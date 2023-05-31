@@ -20,6 +20,7 @@ from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.sessions_query_fragments import (
     aggregate_adjacent_spans,
     create_sub_sessions_with_attributes,
+    nonnull_end_date_clause,
 )
 from recidiviz.calculator.query.state.dataset_config import SESSIONS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -109,6 +110,8 @@ US_MO_HOUSING_STAY_SESSIONS_QUERY_TEMPLATE = f"""
         *,
         end_date_exclusive AS end_date
     FROM sessionized_cte
+    -- Remove zero-day periods
+    WHERE start_date < {nonnull_end_date_clause("end_date_exclusive")}
 """
 
 US_MO_HOUSING_STAY_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
