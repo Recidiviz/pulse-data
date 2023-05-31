@@ -1120,7 +1120,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
         """
         When uploading a spreadsheet that modifies an existing report and
         creates a new report, the response should include:
-            * `updated_report_ids`: a list of existing modified reports' IDs
+            * `updated_reports`: a list of existing modified reports
             * `new_reports`: a list of newly created reports (overview dict)
         """
         with SessionFactory.using_database(self.database_key) as session:
@@ -1173,7 +1173,7 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 xls=pd.ExcelFile(file_path),
                 metric_definitions=METRICS_BY_SYSTEM[schema.System.PRISONS.value],
             )
-            self.assertEqual(len(workbook_uploader.updated_report_ids), 0)
+            self.assertEqual(len(workbook_uploader.updated_reports), 0)
 
             # Upload workbook with changes to the datapoints that affect Report IDs 7 & 8
             file_path = create_excel_file(
@@ -1191,18 +1191,18 @@ class TestJusticeCountsBulkUpload(JusticeCountsDatabaseTestCase):
                 session, agency_id=self.prison_agency_id, include_datapoints=True
             )
             self.assertEqual(len(reports), 9)
-            self.assertEqual(len(workbook_uploader.uploaded_report_ids), 9)
-            self.assertEqual(len(workbook_uploader.updated_report_ids), 2)
+            self.assertEqual(len(workbook_uploader.uploaded_reports), 9)
+            self.assertEqual(len(workbook_uploader.updated_reports), 2)
             self.assertEqual(
-                workbook_uploader.updated_report_ids, {reports[3].id, reports[6].id}
+                workbook_uploader.updated_reports, {reports[3], reports[6]}
             )
-            unchanged_report_ids = {
-                id
-                for id in workbook_uploader.uploaded_report_ids
-                if id not in workbook_uploader.updated_report_ids
+            unchanged_reports = {
+                report
+                for report in workbook_uploader.uploaded_reports
+                if report not in workbook_uploader.updated_reports
             }
-            # Since only 2 out of 9 reports were updated, we should expect the other 7 reports to be in the `unchanged_report_ids` set
-            self.assertEqual(len(unchanged_report_ids), 7)
+            # Since only 2 out of 9 reports were updated, we should expect the other 7 reports to be in the `unchanged_reports` set
+            self.assertEqual(len(unchanged_reports), 7)
 
     def test_ingest_super_agency(self) -> None:
         """

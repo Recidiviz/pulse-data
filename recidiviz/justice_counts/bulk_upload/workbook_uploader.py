@@ -92,9 +92,9 @@ class WorkbookUploader:
         # A list of existing report IDs
         self.existing_report_ids: List[int]
         # A set of existing report IDs that have been changed/updated after bulk upload
-        self.updated_report_ids: Set[int] = set()
-        # A set of uploaded report IDs will be used to create the `unchanged_report_ids` set
-        self.uploaded_report_ids: Set[int] = set()
+        self.updated_reports: Set[schema.Report] = set()
+        # A set of uploaded report IDs will be used to create the `unchanged_reports` set
+        self.uploaded_reports: Set[schema.Report] = set()
         # A child agency is an agency that the current agency has the permission to
         # upload data for. child_agency_name_to_id maps child agency name to id.
         self.child_agency_name_to_id = child_agency_name_to_id or {}
@@ -196,7 +196,7 @@ class WorkbookUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=self.metric_key_to_datapoint_jsons,
                 metric_key_to_errors=self.metric_key_to_errors,
-                uploaded_report_ids=self.uploaded_report_ids,
+                uploaded_reports=self.uploaded_reports,
             )
 
         # 4. For any report that was updated, set its status to DRAFT
@@ -253,7 +253,7 @@ class WorkbookUploader:
             if updated_report.id is not None and updated_report.id in set(
                 self.existing_report_ids
             ):
-                self.updated_report_ids.add(updated_report.id)
+                self.updated_reports.add(updated_report)
 
             if updated_report.status.value != "DRAFT":
                 ReportInterface.update_report_metadata(
@@ -279,7 +279,7 @@ class WorkbookUploader:
                     (unique_key[0], unique_key[1])
                 ][0]
                 # add report ID to set of updated report IDs to help the FE determine which existing reports have been updated
-                self.updated_report_ids.add(updated_report.id)
+                self.updated_reports.add(updated_report)
 
                 if updated_report.status.value != "DRAFT":
                     ReportInterface.update_report_metadata(
