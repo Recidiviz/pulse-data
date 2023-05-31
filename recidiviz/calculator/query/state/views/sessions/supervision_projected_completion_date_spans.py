@@ -101,7 +101,7 @@ prioritized_projected_completion_dates AS (
       -- taking the intersection with supervision sessions below.
       IF(
         state_code NOT IN ({{no_inferred_open_span_states}})
-          AND start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id, priority)
+          AND start_date = MAX(start_date) OVER (PARTITION BY state_code, person_id)
           AND {nonnull_end_date_clause("end_date_exclusive")} <= CURRENT_DATE("US/Eastern"),
         NULL,
         end_date_exclusive
