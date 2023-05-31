@@ -74,6 +74,7 @@ from recidiviz.ingest.flash_database_tools import (
     copy_raw_data_between_instances,
     copy_raw_data_to_backup,
     delete_contents_of_raw_data_tables,
+    delete_tables_in_pruning_datasets,
     move_ingest_view_results_between_instances,
     move_ingest_view_results_to_backup,
 )
@@ -1055,3 +1056,29 @@ def add_ingest_ops_routes(bp: Blueprint) -> None:
             jsonify(is_ingest_in_dataflow_enabled(state_code, ingest_instance)),
             HTTPStatus.OK,
         )
+
+    @bp.route(
+        "/api/ingest_operations/delete_tables_in_pruning_datasets",
+        methods=["POST"],
+    )
+    @requires_gae_auth
+    def _delete_tables_in_pruning_datasets() -> Tuple[Union[str, Response], HTTPStatus]:
+        try:
+            request_json = assert_type(request.json, dict)
+            state_code = StateCode(request_json["stateCode"])
+            ingest_instance = DirectIngestInstance(request_json["instance"].upper())
+        except ValueError:
+            return "Invalid input data", HTTPStatus.BAD_REQUEST
+
+        try:
+            delete_tables_in_pruning_datasets(
+                state_code, ingest_instance, BigQueryClientImpl()
+            )
+            return (
+                "",
+                HTTPStatus.OK,
+            )
+
+        except ValueError as error:
+            logging.exception(error)
+            return f"{error}", HTTPStatus.INTERNAL_SERVER_ERROR

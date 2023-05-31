@@ -461,3 +461,17 @@ export const isIngestInDataflowEnabled = async (
     }
   );
 };
+
+// Delete tables in the datasets related to raw data pruning
+export const deleteTablesInPruningDatasets = async (
+  stateCode: string,
+  instance: DirectIngestInstance
+): Promise<Response> => {
+  return postWithURLAndBody(
+    "/api/ingest_operations/delete_tables_in_pruning_datasets",
+    {
+      stateCode,
+      instance,
+    }
+  );
+};
