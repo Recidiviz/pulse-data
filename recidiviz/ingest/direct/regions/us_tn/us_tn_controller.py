@@ -57,13 +57,6 @@ class UsTnController(BaseDirectIngestController):
         if not environment.in_gcp():
             tags.extend(["SupervisionContacts"])
 
-        if (  # TODO(#21193): Undo staging gating
-            environment.in_gcp_staging()
-            and ingest_instance == DirectIngestInstance.SECONDARY
-        ):
-            return [
-                "DisciplinaryIncarcerationIncident",
-            ]
         return tags + (
             [
                 "SentencesChargesAndCourtCases_v3",
