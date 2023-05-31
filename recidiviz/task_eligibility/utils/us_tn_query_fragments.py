@@ -44,6 +44,7 @@ def detainers_cte() -> str:
         AND
             pei.state_code = 'US_TN'
         WHERE
-            DetainerFelonyFlag = 'X' OR DetainerMisdemeanorFlag = 'X'
+            (DetainerFelonyFlag = 'X' OR DetainerMisdemeanorFlag = 'X')
+            AND DATE(DetainerLiftDate) > DATE(DetainerReceivedDate)
         
         """
