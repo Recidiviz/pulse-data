@@ -134,7 +134,7 @@ US_TN_CAF_Q6_QUERY_TEMPLATE = f"""
             person_id,
             start_date,
             NULL AS disciplinary_date,
-            end_date,
+            end_date_exclusive AS end_date,
             start_date AS session_start_date,
             0 AS disciplinary,
           FROM
