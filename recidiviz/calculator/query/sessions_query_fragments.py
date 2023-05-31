@@ -146,7 +146,16 @@ def aggregate_adjacent_spans(
     change. Sessions must be end-date exclusive such that the end date of one session is equal
     to the start date of the adjacent session.
 
-    The |table_name| must have the following columns: person_id, state_code, start_date, end_date.
+    Input spans must be sub-sessionized to indicate all boundaries between changes in attribute columns.
+    This means that overlapping input spans can NOT have misaligned start and end dates across rows, but will
+    be represented as duplicates across start_date, end_date and {index_columns}.
+
+    Overlapping output spans CAN have misaligned start and end dates. When an attribute has more than one relevant
+    value for a period of time, the two values will be treated as separate rows with misaligned start and end dates,
+    each representing the continuous period of time where that value applies.
+
+    The |table_name| must have the following columns: start_date, end_date_field_name, and all specified
+    index_columns and attribute columns.
 
     Params:
     ------
@@ -181,7 +190,11 @@ def aggregate_adjacent_spans(
     # Default index columns are `person_id` and `state_code`.
     if index_columns is None:
         index_columns = ["person_id", "state_code"]
-    index_col_str = ", ".join(index_columns)
+    index_col_str = list_to_query_string(index_columns)
+
+    # If no attribute is specified, the attribute column string and the attribute aggregation strings are left blank.
+    attribute_col_str = ""
+    attribute_grouping_str = ""
 
     if attribute:
 
@@ -192,71 +205,71 @@ def aggregate_adjacent_spans(
         if len(attribute_list) > 1 and is_struct:
             raise ValueError("Sessionization on struct only allows one attribute value")
 
-        # Cast each field as a string for comparisons, to allow comparison of null values for all data types
-        attribute_list_as_str = [
-            f'COALESCE(CAST({attribute} AS STRING), "")' for attribute in attribute_list
-        ]
+        # Create a string from the column names in the list to be used in the query.
+        attribute_col_str = list_to_query_string(attribute_list)
 
-        # Create a string from the column names in the list to be used in the query
-        attribute_col_str = ", ".join(attribute_list)
-        attribute_col_str_as_str = ", ".join(attribute_list_as_str)
-
-        # Create a string specifying how attributes will be aggregated together in the final sessionized view.
-        # Because the session_id field is incremented every time one of these attribute values changes,
-        # all attribute values within a given person_id, state_code, and session_id will by definition have the
-        # same value. This is why the ANY_VALUE aggregation function is used. Note, that this would be identical
-        # to just including the attribute column names in the GROUP BY, but this approach is slightly more
-        # generalizable and also works with structs (structs cannot be grouped by)
-        aggregation_str = ", ".join(
-            [f"ANY_VALUE({att}) AS {att}" for att in attribute_list]
+        # If a struct is specified, use a string representation of the struct.
+        attribute_grouping_str = (
+            f", TO_JSON_STRING({attribute_col_str})"
+            if is_struct
+            else f", {attribute_col_str}"
         )
 
-        # Different logic exists for whether we are comparing columns or a struct.
-        if not is_struct:
-            # Look for a change in the value of the concatenation of the attribute column(s). That value is
-            # COALESCED so that adjacent sessions with NULL values will be aggregated together.
-            attribute_change_str = f"CONCAT({attribute_col_str_as_str}) != LAG(CONCAT({attribute_col_str_as_str})) OVER w AS attribute_change,"
-        else:
-            # If a struct is specified, look for a change in the string representation of that struct
-            attribute_change_str = f"TO_JSON_STRING({attribute}) != LAG(TO_JSON_STRING({attribute})) OVER w AS attribute_change,"
-    # If no attribute is specified, the attribute column string and the attribute aggregation strings are left blank.
-    # The string that creates the boolean in SQL indicating whether the attribute has changed is set to FALSE (since
-    # there is no attribute change that should result in a new session being created)
-    else:
-        attribute_col_str = ""
-        aggregation_str = ""
-        attribute_change_str = "FALSE AS attribute_change,"
+    # Query string used for partitioning session boundaries based on both index columns and attributes
+    partition_with_attributes_str = (
+        f"(PARTITION BY {index_col_str}{attribute_grouping_str} "
+        f"ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})"
+    )
+
+    # Query string used for partitioning session boundaries only based index columns
+    partition_str = (
+        f"(PARTITION BY {index_col_str} "
+        f"ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})"
+    )
 
     return f"""
+SELECT
+    {index_col_str},
+    -- Recalculate session-ids after aggregation
+    ROW_NUMBER() OVER (
+        PARTITION BY {index_col_str} 
+        ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')}{attribute_grouping_str}
+    ) AS {session_id_output_name},
+    date_gap_id,
+    start_date,
+    {end_date_field_name},
+    {attribute_col_str}
+FROM (
     SELECT
         {index_col_str},
         {session_id_output_name},
         date_gap_id,
-        MIN(start_date) AS start_date,
-        {revert_nonnull_end_date_clause(f'MAX({end_date_field_name})')} AS {end_date_field_name},
-        {aggregation_str}
+        MIN(start_date) OVER w AS start_date,
+        {revert_nonnull_end_date_clause(f'MAX({end_date_field_name}) OVER w')} AS {end_date_field_name},
+        {attribute_col_str}
     FROM
         (
         SELECT 
             *,
-            SUM(IF(date_gap OR attribute_change,1,0)) OVER(PARTITION BY {index_col_str}
-                ORDER BY start_date, {end_date_field_name}) AS {session_id_output_name},
-            SUM(IF(date_gap,1,0)) OVER(PARTITION BY {index_col_str}
-                ORDER BY start_date, {end_date_field_name}) AS date_gap_id
+            SUM(IF(session_boundary, 1, 0)) OVER {partition_with_attributes_str} AS {session_id_output_name},
+            SUM(IF(date_gap, 1, 0)) OVER {partition_str} AS date_gap_id,
         FROM
             (
             SELECT
                 {index_col_str},
                 start_date,
                 {nonnull_end_date_clause(f'{end_date_field_name}')} AS {end_date_field_name},
-                COALESCE(LAG({end_date_field_name}) OVER w != start_date, TRUE) AS date_gap,
-                {attribute_change_str}
+                -- Define a session boundary if there is no prior adjacent span with the same attribute columns
+                COALESCE(LAG({end_date_field_name}) OVER {partition_with_attributes_str} != start_date, TRUE) AS session_boundary,
+                -- Define a date gap if there is no prior adjacent span, regardless of attribute columns
+                COALESCE(LAG({end_date_field_name}) OVER {partition_str} != start_date, TRUE) AS date_gap,
                 {attribute_col_str}
             FROM {table_name}
-            WINDOW w AS (PARTITION BY {index_col_str} ORDER BY start_date, {nonnull_end_date_clause(f'{end_date_field_name}')})
             )
         )
-        GROUP BY {index_col_str}, {session_id_output_name}, date_gap_id
+        QUALIFY ROW_NUMBER() OVER w = 1
+        WINDOW w AS (PARTITION BY {index_col_str}, {session_id_output_name}{attribute_grouping_str})
+    )
 """
 
 
