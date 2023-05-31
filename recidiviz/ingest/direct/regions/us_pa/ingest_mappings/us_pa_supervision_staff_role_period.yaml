@@ -26,7 +26,3 @@ output:
             $enum_mapping:
               $raw_text: JOB_CD
               $custom_parser: us_pa_custom_enum_parsers.role_type_mapper
-          role_subtype:
-            $enum_mapping:
-              $raw_text: JOB_CD
-              $custom_parser: us_pa_custom_enum_parsers.role_subtype_mapper

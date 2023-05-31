@@ -1777,6 +1777,9 @@ class StateStaff(
     location_periods: List["StateStaffLocationPeriod"] = attr.ib(
         factory=list, validator=attr_validators.is_list
     )
+    caseload_type_periods: List["StateStaffCaseloadTypePeriod"] = attr.ib(
+        factory=list, validator=attr_validators.is_list
+    )
 
     def get_external_ids(self) -> List[StateStaffExternalId]:
         return self.external_ids
@@ -1923,8 +1926,9 @@ class StateStaffCaseloadTypePeriod(HasExternalIdEntity, BuildableAttr, Defaultab
     start_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
 
     # The end of the period where this officer had this type of specialized caseload
-    end_date: datetime.date = attr.ib(default=None, validator=attr_validators.is_date)
-
+    end_date: Optional[datetime.date] = attr.ib(
+        default=None, validator=attr_validators.is_opt_date
+    )
     # Primary key - Only optional when hydrated in the parsing layer, before we have
     # written this entity to the persistence layer
     staff_caseload_type_period_id: Optional[int] = attr.ib(

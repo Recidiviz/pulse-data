@@ -7,7 +7,6 @@ primary_key_cols:
   - AgentName
   - DistrictOffice
   - AgentType
-  - Notes
   - external_id
 columns:
   - name: PosNo6

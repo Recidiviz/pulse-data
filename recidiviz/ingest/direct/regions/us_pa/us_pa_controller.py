@@ -62,4 +62,5 @@ class UsPaController(BaseDirectIngestController):
             "supervision_staff_location_period",
             "supervision_staff_supervisor_period",
             "supervision_staff_role_period",
+            "supervision_staff_caseload_type_period",
         ]
