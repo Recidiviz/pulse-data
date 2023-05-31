@@ -75,7 +75,8 @@ _RESIDENT_RECORD_INCARCERATION_DATES_CTE = f"""
             NULL AS admission_date,
             NULL AS release_date
         FROM incarceration_cases ic
-        WHERE state_code="US_MO"
+        # TODO(#21234): Add dates for TN
+        WHERE state_code!="US_ME"
     ),
 """
 
@@ -90,15 +91,15 @@ _RESIDENT_RECORD_INCARCERATION_CASES_WITH_DATES_CTE = f"""
     ),
 """
 
-_RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
+_RESIDENT_RECORD_CUSTODY_LEVEL_CTE = f"""
     custody_level AS (
         SELECT
             pei.person_id,
             UPPER(cs.CLIENT_SYS_DESC) AS custody_level,
-        FROM `{project_id}.{us_me_raw_data_dataset}.CIS_112_CUSTODY_LEVEL` cl
-        INNER JOIN `{project_id}.{us_me_raw_data_up_to_date_dataset}.CIS_1017_CLIENT_SYS_latest` cs
+        FROM `{{project_id}}.{{us_me_raw_data_dataset}}.CIS_112_CUSTODY_LEVEL` cl
+        INNER JOIN `{{project_id}}.{{us_me_raw_data_up_to_date_dataset}}.CIS_1017_CLIENT_SYS_latest` cs
             ON cl.CIS_1017_CLIENT_SYS_CD = cs.CLIENT_SYS_CD
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON cl.CIS_100_CLIENT_ID = pei.person_external_id
             AND pei.state_code = "US_ME"
         WHERE TRUE
@@ -112,8 +113,8 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
         SELECT 
             pei.person_id,
             BL_ICA AS custody_level
-        FROM `{project_id}.{us_mo_raw_data_up_to_date_dataset}.LBAKRDTA_TAK015_latest` tak015
-        INNER JOIN `{project_id}.{workflows_dataset}.person_id_to_external_id_materialized` pei
+        FROM `{{project_id}}.{{us_mo_raw_data_up_to_date_dataset}}.LBAKRDTA_TAK015_latest` tak015
+        INNER JOIN `{{project_id}}.{{workflows_dataset}}.person_id_to_external_id_materialized` pei
             ON BL_DOC = pei.person_external_id
             AND pei.state_code = "US_MO"
         -- We want to keep the latest Custody Assessment date. When there are two assessments on the same day,
@@ -124,6 +125,15 @@ _RESIDENT_RECORD_CUSTODY_LEVEL_CTE = """
                                                         SAFE.PARSE_DATE('%Y%m%d', tak015.BL_IC) DESC,
                                                         tak015.BL_CNO DESC,
                                                         tak015.BL_CYC DESC) = 1
+        UNION ALL
+
+        SELECT
+            person_id,
+            custody_level,
+        FROM `{{project_id}}.{{sessions_dataset}}.custody_level_sessions_materialized`
+        WHERE state_code="US_TN"
+        AND CURRENT_DATE('US/Eastern') 
+            BETWEEN start_date AND {nonnull_end_date_clause('end_date_exclusive')} 
     ),
 """
 
@@ -136,7 +146,7 @@ _RESIDENT_RECORD_HOUSING_UNIT_CTE = f"""
       FROM `{{project_id}}.{{normalized_state_dataset}}.state_incarceration_period` 
       WHERE
           release_date IS NULL
-          AND state_code='US_ME'
+          AND state_code!='US_MO'
       QUALIFY ROW_NUMBER() OVER (PARTITION BY person_id ORDER BY admission_date DESC) = 1
 
       UNION ALL
@@ -173,11 +183,11 @@ _RESIDENT_RECORD_OFFICER_ASSIGNMENTS_CTE = """
 
         SELECT
             state_code,
-            -- In MO we treat facilities as officers to allow searching by facility
+            -- In MO and TN we treat facilities as officers to allow searching by facility
             ic.facility_id AS officer_id,
             ic.person_external_id
         FROM incarceration_cases ic
-        WHERE state_code="US_MO"
+        WHERE state_code IN ({search_by_location_states})
     ),
 """
 

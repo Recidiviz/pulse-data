@@ -100,8 +100,9 @@ RESIDENT_RECORD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     ),
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True,
+    search_by_location_states=list_to_query_string(["US_MO", "US_TN"], quoted=True),
     workflows_incarceration_states=list_to_query_string(
-        ["US_ME", "US_MO"], quoted=True
+        ["US_ME", "US_MO", "US_TN"], quoted=True
     ),
 )
 
