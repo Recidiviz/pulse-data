@@ -90,7 +90,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        uploaded_report_ids: Set[int],
+        uploaded_reports: Set[schema.Report],
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
@@ -112,7 +112,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                uploaded_report_ids=uploaded_report_ids,
+                uploaded_reports=uploaded_reports,
             )
         elif self.system == schema.System.SUPERVISION:
             system_to_rows = self._get_system_to_rows(
@@ -125,7 +125,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                uploaded_report_ids=uploaded_report_ids,
+                uploaded_reports=uploaded_reports,
             )
         else:
             self._upload_rows(
@@ -135,7 +135,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                uploaded_report_ids=uploaded_report_ids,
+                uploaded_reports=uploaded_reports,
             )
         return metric_key_to_datapoint_jsons, metric_key_to_errors
 
@@ -148,7 +148,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        uploaded_report_ids: Set[int],
+        uploaded_reports: Set[schema.Report],
     ) -> None:
         """Uploads agency rows one agency at a time. If the agency is a
         supervision agency, the rows from each agency will be uploaded one system
@@ -166,7 +166,7 @@ class SpreadsheetUploader:
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
                     child_agency_id=curr_agency_id,
-                    uploaded_report_ids=uploaded_report_ids,
+                    uploaded_reports=uploaded_reports,
                 )
             else:
                 self._upload_rows(
@@ -177,7 +177,7 @@ class SpreadsheetUploader:
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_key_to_errors=metric_key_to_errors,
                     child_agency_id=curr_agency_id,
-                    uploaded_report_ids=uploaded_report_ids,
+                    uploaded_reports=uploaded_reports,
                 )
 
     def _upload_supervision_sheet(
@@ -189,7 +189,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        uploaded_report_ids: Set[int],
+        uploaded_reports: Set[schema.Report],
         child_agency_id: Optional[int] = None,
     ) -> None:
         """Uploads supervision rows one system at a time."""
@@ -201,7 +201,7 @@ class SpreadsheetUploader:
                 invalid_sheet_names=invalid_sheet_names,
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_key_to_errors=metric_key_to_errors,
-                uploaded_report_ids=uploaded_report_ids,
+                uploaded_reports=uploaded_reports,
                 child_agency_id=child_agency_id,
             )
 
@@ -215,7 +215,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        uploaded_report_ids: Set[int],
+        uploaded_reports: Set[schema.Report],
         child_agency_id: Optional[int] = None,
     ) -> None:
         """Uploads rows for a given system and child agency. If child_agency_id
@@ -245,7 +245,7 @@ class SpreadsheetUploader:
                 rows=rows,
                 metricfile=metricfile,
                 metric_key_to_errors=metric_key_to_errors,
-                uploaded_report_ids=uploaded_report_ids,
+                uploaded_reports=uploaded_reports,
                 child_agency_id=child_agency_id,
             )
         except Exception as e:
@@ -270,7 +270,7 @@ class SpreadsheetUploader:
         metric_key_to_errors: Dict[
             Optional[str], List[JusticeCountsBulkUploadException]
         ],
-        uploaded_report_ids: Set[int],
+        uploaded_reports: Set[schema.Report],
         child_agency_id: Optional[int] = None,
     ) -> List[DatapointJson]:
         """Takes as input a set of rows (originating from a CSV or Excel spreadsheet tab)
@@ -349,7 +349,7 @@ class SpreadsheetUploader:
                     curr_agency_id, {}
                 ).get(time_range)
                 if existing_report is not None and existing_report[0].id is not None:
-                    uploaded_report_ids.add(existing_report[0].id)
+                    uploaded_reports.add(existing_report[0])
                 (
                     report,
                     datapoint_json_list_for_time_range,

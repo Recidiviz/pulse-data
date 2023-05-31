@@ -48,6 +48,7 @@ from recidiviz.justice_counts.metricfiles.metricfile_registry import (
 )
 from recidiviz.justice_counts.metrics.metric_definition import MetricDefinition
 from recidiviz.justice_counts.metrics.metric_interface import MetricInterface
+from recidiviz.justice_counts.report import ReportInterface
 from recidiviz.justice_counts.types import DatapointJson
 from recidiviz.justice_counts.utils.constants import (
     DISAGGREGATED_BY_SUPERVISION_SUBSYSTEMS,
@@ -237,9 +238,9 @@ class SpreadsheetInterface:
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
-        Set[int],
+        Set[schema.Report],
         List[int],
-        Set[int],
+        Set[schema.Report],
     ]:
         """Ingests spreadsheet for an agency and logs any errors."""
         user_account = None
@@ -294,19 +295,19 @@ class SpreadsheetInterface:
             spreadsheet.ingested_at = datetime.datetime.now(tz=datetime.timezone.utc)
             spreadsheet.status = schema.SpreadsheetStatus.INGESTED
 
-        unchanged_report_ids = {
-            id
-            for id in uploader.uploaded_report_ids
-            if id not in uploader.updated_report_ids
-            and id in uploader.existing_report_ids
+        unchanged_reports = {
+            report
+            for report in uploader.uploaded_reports
+            if report not in uploader.updated_reports
+            and report.id in uploader.existing_report_ids
         }
 
         return (
             metric_key_to_datapoint_jsons,
             metric_key_to_errors,
-            uploader.updated_report_ids,
+            uploader.updated_reports,
             uploader.existing_report_ids,
-            unchanged_report_ids,
+            unchanged_reports,
         )
 
     @staticmethod
@@ -325,9 +326,9 @@ class SpreadsheetInterface:
         ],
         metric_definitions: List[MetricDefinition],
         metric_key_to_agency_datapoints: Dict[str, List[schema.Datapoint]],
-        updated_report_ids: Set[int],
+        updated_reports: Set[schema.Report],
         new_report_jsons: List[Dict[str, Any]],
-        unchanged_report_ids: Set[int],
+        unchanged_reports: Set[schema.Report],
     ) -> Dict[str, Any]:
         """Returns json response for spreadsheets ingested with the BulkUploader"""
         metrics = []
@@ -413,15 +414,21 @@ class SpreadsheetInterface:
         # This is an ingest-blocking error because in this scenario we are not able
         # to convert the rows into datapoints.
         non_metric_errors = [e.to_json() for e in metric_key_to_errors.get(None, [])]
-        updated_report_ids_list = list(updated_report_ids)
-        unchanged_report_ids_list = list(unchanged_report_ids)
+        updated_reports_json = [
+            ReportInterface.to_json_response(report=r, editor_id_to_json={})
+            for r in updated_reports
+        ]
+        unchanged_reports_json = [
+            ReportInterface.to_json_response(report=r, editor_id_to_json={})
+            for r in unchanged_reports
+        ]
 
         return {
             "metrics": metrics,
             "non_metric_errors": non_metric_errors,
-            "updated_report_ids": updated_report_ids_list,
+            "updated_reports": updated_reports_json,
             "new_reports": new_report_jsons,
-            "unchanged_report_ids": unchanged_report_ids_list,
+            "unchanged_reports": unchanged_reports_json,
         }
 
     @staticmethod
@@ -434,9 +441,9 @@ class SpreadsheetInterface:
     ) -> Tuple[
         Dict[str, List[DatapointJson]],
         Dict[Optional[str], List[JusticeCountsBulkUploadException]],
-        Set[int],
+        Set[schema.Report],
         List[int],
-        Set[int],
+        Set[schema.Report],
     ]:
         """Given a filename, an agency, and a system, this method copies the
         file from the agency's bulk upload bucket to GCS bucket where we store

@@ -220,9 +220,9 @@ class TestSpreadsheetInterface(JusticeCountsDatabaseTestCase):
                 metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                 metric_definitions=metric_definitions,
                 metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                updated_report_ids=set(),
+                updated_reports=set(),
                 new_report_jsons=[],
-                unchanged_report_ids=set(),
+                unchanged_reports=set(),
             )
             metric_key_to_json = {m["key"]: m for m in json["metrics"]}
             for definition in metric_definitions:

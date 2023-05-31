@@ -558,10 +558,12 @@ def get_api_blueprint(
             )
 
             raise_if_user_is_not_in_agency(user=user, agency_id=agency_id)
+            reports = []
 
             reports = ReportInterface.get_reports_by_agency_id(
                 session=current_session, agency_id=agency_id
             )
+
             editor_id_to_json = (
                 AgencyUserAccountAssociationInterface.get_editor_id_to_json(
                     session=current_session, reports=reports, user=user
@@ -1182,9 +1184,9 @@ def get_api_blueprint(
             (
                 metric_key_to_datapoint_jsons,
                 metric_key_to_errors,
-                updated_report_ids,
+                updated_reports,
                 existing_report_ids,
-                unchanged_report_ids,
+                unchanged_reports,
             ) = SpreadsheetInterface.ingest_spreadsheet(
                 session=current_session,
                 spreadsheet=spreadsheet,
@@ -1197,11 +1199,16 @@ def get_api_blueprint(
 
             current_session.commit()
 
-            all_reports = ReportInterface.get_reports_by_agency_id(
+            child_agencies = AgencyInterface.get_child_agencies_for_agency(
+                session=current_session, agency=agency
+            )
+
+            all_reports = ReportInterface.get_reports_by_agency_ids(
                 session=current_session,
-                agency_id=agency_id,
+                agency_ids=[a.id for a in child_agencies] + [agency_id],
                 include_datapoints=False,
             )
+
             new_report_jsons = [
                 ReportInterface.to_json_response(report=report, editor_id_to_json={})
                 for report in all_reports
@@ -1214,9 +1221,9 @@ def get_api_blueprint(
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_definitions=metric_definitions,
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                    updated_report_ids=updated_report_ids,
+                    updated_reports=updated_reports,
                     new_report_jsons=new_report_jsons,
-                    unchanged_report_ids=unchanged_report_ids,
+                    unchanged_reports=unchanged_reports,
                 )
             )
 
