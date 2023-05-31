@@ -753,27 +753,42 @@ output:
                         # but otherwise we don't have much information
                         - "3" # Other Movement
           supervision_level:
-            $enum_mapping:
-              $raw_text:
-                # when supervision level id is null but there is an active supervision legal order, impute supervision level
-                # as the most recently observed supervision level
-                $conditional:
-                  - $if:
-                      $not_null: supervision_level_id
-                    $then: supervision_level_id
-                  - $else_if:
-                      $and:
-                        - $not_null: most_recent_supervision_level_id
-                        - $not_null: order_type_id_list
-                    $then:
-                      $concat:
-                        $values:
-                          - most_recent_supervision_level_id
-                          - $literal("imputed")
-                        $separator: "##"
-              $custom_parser: us_mi_custom_enum_parsers.parse_supervision_level
+            $conditional:
+              # if this period is an OTHER_STATE period, supervision level is null, and
+              # we wouldn't be imputing it based on most recent supervision level, then
+              # let's set supervision level to INTERNAL_UNKNOWN so that they won't be
+              # excluded from the workflows candidate population query due to NULL supervision level
+              - $if:
+                  $and:
+                    - $is_null: supervision_level_id
+                    - $or:
+                        - $is_null: most_recent_supervision_level_id
+                        - $is_null: order_type_id_list
+                    - $equal:
+                        - dest_location_type_id
+                        - $literal("2155")
+                $then: $literal_enum(StateSupervisionLevel.INTERNAL_UNKNOWN)
+              - $else:
+                  $enum_mapping:
+                    $raw_text:
+                      # when supervision level id is null but there is an active supervision legal order, impute supervision level
+                      # as the most recently observed supervision level
+                      $conditional:
+                        - $if:
+                            $not_null: supervision_level_id
+                          $then: supervision_level_id
+                        - $else_if:
+                            $and:
+                              - $not_null: most_recent_supervision_level_id
+                              - $not_null: order_type_id_list
+                          $then:
+                            $concat:
+                              $values:
+                                - most_recent_supervision_level_id
+                                - $literal("imputed")
+                              $separator: "##"
+                    $custom_parser: us_mi_custom_enum_parsers.parse_supervision_level
           conditions: special_condition_ids
-          # NOTE: MI states that all instances of supervision observed in their data is administered by them
           supervising_officer_staff_external_id: employee_id
           supervising_officer_staff_external_id_type:
             $conditional:
