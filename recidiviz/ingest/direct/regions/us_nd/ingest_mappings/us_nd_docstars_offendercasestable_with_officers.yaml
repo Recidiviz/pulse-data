@@ -123,6 +123,9 @@ output:
                             violation_type: $literal_enum(StateSupervisionViolationType.TECHNICAL)
                 supervision_violation_responses:
                   - StateSupervisionViolationResponse:
+                      # We only generate at most a single response per supervision violation,
+                      # so we can use the SP external_id as the external id for the response
+                      external_id: CASE_NUMBER
                       response_type: $literal_enum(StateSupervisionViolationResponseType.PERMANENT_DECISION)
                       response_date: REV_DATE
                       decision_agents:
