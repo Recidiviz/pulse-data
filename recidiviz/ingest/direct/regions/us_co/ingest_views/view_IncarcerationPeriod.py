@@ -25,7 +25,7 @@ from recidiviz.utils.metadata import local_project_id_override
 VIEW_QUERY_TEMPLATE = """
 WITH
 movements_with_direction as (
-    SELECT
+    SELECT DISTINCT
         *,
         # CO has movements below 40 considered in and above as out, but based on how they count their population (ex: 
         # someone escaped counts towards population/facility) accuracy is improved by increasing IN movements.
@@ -83,7 +83,7 @@ movements_with_direction as (
         END as direction
     FROM {eomis_externalmovement} movement
 ), movements as (
-    SELECT
+    SELECT DISTINCT
         OFFENDERID,
         direction,
         CONCAT(EXTERNALMOVEMENTDATE, 'T', EXTERNALMOVEMENTTIME) as movement_datetime,
@@ -109,7 +109,7 @@ movements_with_direction as (
         area.PARTYID = org.ORGAREACODE
     )
 ), isp as (
-SELECT OFFENDERID, direction, movement_datetime, LOCATIONREPORTMOVEMENT, OTHERLOCATIONCODE, REASONFORMOVEMENT, JURISDICTIONALAGENCY, facility_id, facility_name, facility_type, unit_id, unit_name, unit_type,
+SELECT DISTINCT OFFENDERID, direction, movement_datetime, LOCATIONREPORTMOVEMENT, OTHERLOCATIONCODE, REASONFORMOVEMENT, JURISDICTIONALAGENCY, facility_id, facility_name, facility_type, unit_id, unit_name, unit_type,
     CASE 
         WHEN EXTERNALMOVEMENTCODE = '63' # To Intensive Supervision Program (ISP)
         AND (REASONFORMOVEMENT = 'PG' # ISP - Inmate
@@ -124,7 +124,7 @@ SELECT OFFENDERID, direction, movement_datetime, LOCATIONREPORTMOVEMENT, OTHERLO
 ),
 
 classified_movements as (
-  SELECT *,
+  SELECT DISTINCT *,
   CASE 
     WHEN unit_name LIKE '%Intake%' THEN 'TEMPORARY'
     WHEN EXTERNALMOVEMENTCODE IN ('36','39','81','82','83','84','85','86','88','8B','8D', '8E') THEN 'TEMPORARY'
@@ -148,12 +148,12 @@ classified_movements as (
   END as torpmovement
 FROM isp
 ), ordered_movements as (
-    select
+    SELECT DISTINCT
         *,
         ROW_NUMBER() OVER (PARTITION BY OFFENDERID ORDER BY movement_datetime) as move_seq
     from classified_movements
 ), periods as (
-    SELECT
+    SELECT DISTINCT
         IF(arrival.move_seq IS NOT NULL, arrival.OFFENDERID, departure.OFFENDERID) as OFFENDERID,
         IF(arrival.move_seq IS NOT NULL, arrival.move_seq, departure.move_seq) as move_seq,
         IF(arrival.move_seq IS NOT NULL, arrival.movement_datetime, departure.movement_datetime) as start_datetime,
@@ -187,7 +187,7 @@ FROM isp
     AND arrival.LOCATIONREPORTMOVEMENT = departure.LOCATIONREPORTMOVEMENT
 
 ), permanent_moves AS (
-    SELECT *, 
+    SELECT DISTINCT *, 
     IF(temporaryorpermanent='PERMANENT',unit_name, null) as p_unit_name,
     IF(temporaryorpermanent='PERMANENT', unit_id,  null) as p_unit_id, 
     IF(temporaryorpermanent='PERMANENT', unit_type,  null) as p_unit_type1, 
@@ -197,7 +197,7 @@ FROM isp
     FROM periods
 ), 
 missing_releases_handled AS (
-    SELECT OFFENDERID, move_seq, start_datetime, start_code, start_reason, JURISDICTIONALAGENCY, LOCATIONREPORTMOVEMENT, OTHERLOCATIONCODE,
+    SELECT DISTINCT OFFENDERID, move_seq, start_datetime, start_code, start_reason, JURISDICTIONALAGENCY, LOCATIONREPORTMOVEMENT, OTHERLOCATIONCODE,
         -- If there's no release but we know that the movement is not the person's most
         -- recent movement then use the next admission as the release
         IFNULL(end_datetime, LEAD(start_datetime) OVER periods_for_person) as end_datetime,
@@ -212,7 +212,7 @@ missing_releases_handled AS (
     FROM permanent_moves
     WINDOW periods_for_person AS (PARTITION BY OFFENDERID ORDER BY move_seq)
 ), final as (
-SELECT *, 
+SELECT DISTINCT *, 
 FROM missing_releases_handled
 WHERE start_code IN (
     '01', # New CO Commitment
