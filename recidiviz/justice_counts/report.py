@@ -150,6 +150,9 @@ class ReportInterface:
         editor_id: Optional[int] = None,
         status: Optional[str] = None,
     ) -> schema.Report:
+        if status == schema.ReportStatus.PUBLISHED.value:
+            report.publish_date = datetime.date.today()
+
         if status and report.status.value != status:
             report.status = schema.ReportStatus[status]
 

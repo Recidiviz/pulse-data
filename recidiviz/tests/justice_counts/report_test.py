@@ -506,6 +506,8 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
             session.refresh(user_A)
             session.refresh(user_C)
 
+            userAID = user_A.id
+            userCID = user_C.id
             agency_id = agency.id
             update_datetime = datetime.datetime(
                 2022, 2, 1, 0, 0, 0, 0, datetime.timezone.utc
@@ -532,39 +534,53 @@ class TestReportInterface(JusticeCountsDatabaseTestCase):
                     updated_report.last_modified_at.timestamp(),
                     update_datetime.timestamp(),
                 )
+
                 updated_report = ReportInterface.update_report_metadata(
                     report=updated_report,
                     editor_id=user_C.id,
                     status=schema.ReportStatus.DRAFT.value,
                 )
+
                 self.assertEqual(updated_report.status, schema.ReportStatus.DRAFT)
                 self.assertEqual(updated_report.modified_by, [user_A.id, user_C.id])
+
                 updated_report = ReportInterface.update_report_metadata(
                     report=updated_report,
                     status=schema.ReportStatus.PUBLISHED.value,
                     editor_id=user_A.id,
                 )
-                self.assertEqual(updated_report.status, schema.ReportStatus.PUBLISHED)
-                self.assertEqual(
-                    updated_report.modified_by,
-                    [user_C.id, user_A.id],
-                )
-                editor_id_to_json = {
-                    user_C.id: {"name": user_C.name, "role": "AGENCY_ADMIN"},
-                    user_A.id: {"name": user_A.name, "role": "AGENCY_ADMIN"},
-                }
-                report_json = ReportInterface.to_json_response(
-                    report=report,
-                    editor_id_to_json=editor_id_to_json,
-                )
-                # Editor names will be displayed in reverse chronological order.
-                self.assertEqual(
-                    report_json["editors"],
-                    [
-                        {"name": user_A.name, "role": "AGENCY_ADMIN"},
-                        {"name": user_C.name, "role": "AGENCY_ADMIN"},
-                    ],
-                )
+
+                session.add(updated_report)
+                session.flush()
+                session.refresh(updated_report)
+                report_id = updated_report.id
+
+        with SessionFactory.using_database(self.database_key) as session:
+            updated_report = ReportInterface.get_report_by_id(session, report_id)
+            user_A = UserAccountInterface.get_user_by_id(session, userAID)
+            user_C = UserAccountInterface.get_user_by_id(session, userCID)
+            self.assertEqual(updated_report.publish_date, update_datetime.date())
+            self.assertEqual(updated_report.status, schema.ReportStatus.PUBLISHED)
+            self.assertEqual(
+                updated_report.modified_by,
+                [user_C.id, user_A.id],
+            )
+            editor_id_to_json = {
+                user_C.id: {"name": user_C.name, "role": "AGENCY_ADMIN"},
+                user_A.id: {"name": user_A.name, "role": "AGENCY_ADMIN"},
+            }
+            report_json = ReportInterface.to_json_response(
+                report=updated_report,
+                editor_id_to_json=editor_id_to_json,
+            )
+            # Editor names will be displayed in reverse chronological order.
+            self.assertEqual(
+                report_json["editors"],
+                [
+                    {"name": user_A.name, "role": "AGENCY_ADMIN"},
+                    {"name": user_C.name, "role": "AGENCY_ADMIN"},
+                ],
+            )
 
             update_datetime = datetime.datetime(
                 2022, 2, 1, 1, 0, 0, 0, datetime.timezone.utc
