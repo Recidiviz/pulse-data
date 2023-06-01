@@ -43,24 +43,28 @@ from recidiviz.utils.endpoint_helpers import get_value_from_request
 cloud_sql_to_bq_blueprint = flask.Blueprint("export_manager", __name__)
 
 
-@cloud_sql_to_bq_blueprint.route("/acquire_lock/<schema_arg>", methods=["GET", "POST"])
+@cloud_sql_to_bq_blueprint.route("/acquire_lock", methods=["POST"])
 @requires_gae_auth
-def acquire_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
+def acquire_lock() -> Tuple[str, HTTPStatus]:
     """
     Creates a refresh lock for a given schema type. Must provide lock_id in request.
     """
     try:
-        schema_type = SchemaType(schema_arg.upper())
-    except ValueError:
-        return (
-            f"Unexpected value for schema_arg: [{schema_arg}]",
-            HTTPStatus.BAD_REQUEST,
-        )
+        schema_type = SchemaType(get_value_from_request("schema_type"))
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         return (
-            f"Unsuppported schema type: [{schema_type}]",
+            f"Unsupported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
+
+    try:
+        ingest_instance = DirectIngestInstance(
+            get_value_from_request("ingest_instance")
+        )
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
 
     lock_id: Optional[str] = get_value_from_request("lock_id")
     if not lock_id:
@@ -71,84 +75,83 @@ def acquire_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
     lock_manager.acquire_lock(
         lock_id=lock_id,
         schema_type=schema_type,
-        ingest_instance=DirectIngestInstance.PRIMARY,
+        ingest_instance=ingest_instance,
     )
-    # TODO(#20892): Update and pull ingest_instance from request
 
     return "", HTTPStatus.OK
 
 
-@cloud_sql_to_bq_blueprint.route(
-    "/check_can_refresh_proceed/<schema_arg>", methods=["GET", "POST"]
-)
+@cloud_sql_to_bq_blueprint.route("/check_can_refresh_proceed", methods=["POST"])
 @requires_gae_auth
-def check_can_refresh_proceed(schema_arg: str) -> Tuple[str, HTTPStatus]:
+def check_can_refresh_proceed() -> Tuple[str, HTTPStatus]:
     """
     Checks if all other processes that talk to the Postgres DB have stopped so the refresh can proceed. The refresh lock must already have been grabbed via /acquire_lock.
     """
     try:
-        schema_type = SchemaType(schema_arg.upper())
-    except ValueError:
-        return (
-            f"Unexpected value for schema_arg: [{schema_arg}]",
-            HTTPStatus.BAD_REQUEST,
-        )
+        schema_type = SchemaType(get_value_from_request("schema_type"))
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         return (
             f"Unsupported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
 
+    try:
+        ingest_instance = DirectIngestInstance(
+            get_value_from_request("ingest_instance")
+        )
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
+
     lock_manager = CloudSqlToBQLockManager()
 
     try:
-        can_proceed = lock_manager.can_proceed(
-            schema_type, DirectIngestInstance.PRIMARY
-        )
-        # TODO(#20892): Update and pull ingest_instance from request
+        can_proceed = lock_manager.can_proceed(schema_type, ingest_instance)
     except GCSPseudoLockDoesNotExist as e:
         logging.exception(e)
         # Since this endpoint is being called in the context of an Airflow DAG,
         # the DAG should have already acquired a lock before invoking this endpoint.
         return (
-            f"Expected lock for [{schema_arg}] BQ refresh to already exist.",
+            f"Expected lock for [{schema_type}, {ingest_instance}] BQ refresh to already exist.",
             HTTPStatus.EXPECTATION_FAILED,
         )
 
     return str(can_proceed), HTTPStatus.OK
 
 
-@cloud_sql_to_bq_blueprint.route("/release_lock/<schema_arg>", methods=["GET", "POST"])
+@cloud_sql_to_bq_blueprint.route("/release_lock", methods=["POST"])
 @requires_gae_auth
-def release_lock(schema_arg: str) -> Tuple[str, HTTPStatus]:
+def release_lock() -> Tuple[str, HTTPStatus]:
     """
     Releases refresh lock for a given schema type.
     """
     try:
-        schema_type = SchemaType(schema_arg.upper())
-    except ValueError:
-        return (
-            f"Unexpected value for schema_arg: [{schema_arg}]",
-            HTTPStatus.BAD_REQUEST,
-        )
+        schema_type = SchemaType(get_value_from_request("schema_type"))
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         return (
-            f"Unsuppported schema type: [{schema_type}]",
+            f"Unsupported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
+
+    try:
+        ingest_instance = DirectIngestInstance(
+            get_value_from_request("ingest_instance")
+        )
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
 
     # Unlock export lock when all BQ exports complete
     lock_manager = CloudSqlToBQLockManager()
-    lock_manager.release_lock(schema_type, DirectIngestInstance.PRIMARY)
-    # TODO(#20892): Update and pull ingest_instance from request
+    lock_manager.release_lock(schema_type, ingest_instance)
     return "", HTTPStatus.OK
 
 
-@cloud_sql_to_bq_blueprint.route(
-    "/refresh_bq_dataset/<schema_arg>", methods=["GET", "POST"]
-)
+@cloud_sql_to_bq_blueprint.route("/refresh_bq_dataset", methods=["POST"])
 @requires_gae_auth
-def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
+def refresh_bq_dataset() -> Tuple[str, HTTPStatus]:
     """Performs a full refresh of BigQuery data for a given schema, pulling data from
     the appropriate CloudSQL Postgres instance.
 
@@ -156,44 +159,51 @@ def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
     lock and restarts any paused ingest work.
     """
     try:
-        schema_type = SchemaType(schema_arg.upper())
-    except ValueError:
-        return (
-            f"Unexpected value for schema_arg: [{schema_arg}]",
-            HTTPStatus.BAD_REQUEST,
-        )
+        schema_type = SchemaType(get_value_from_request("schema_type"))
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
     if not CloudSqlToBQConfig.is_valid_schema_type(schema_type):
         return (
             f"Unsupported schema type: [{schema_type}]",
             HTTPStatus.BAD_REQUEST,
         )
 
+    try:
+        ingest_instance = DirectIngestInstance(
+            get_value_from_request("ingest_instance")
+        )
+    except ValueError as exc:
+        return str(exc), HTTPStatus.BAD_REQUEST
+
+    sandbox_prefix: Optional[str] = get_value_from_request("sandbox_prefix")
+
     lock_manager = CloudSqlToBQLockManager()
 
     try:
-        can_proceed = lock_manager.can_proceed(
-            schema_type, DirectIngestInstance.PRIMARY
-        )
-        # TODO(#20892): Update and pull ingest_instance from request
+        can_proceed = lock_manager.can_proceed(schema_type, ingest_instance)
     except GCSPseudoLockDoesNotExist as e:
         logging.exception(e)
         # Since this endpoint is being called in the context of an Airflow DAG,
         # the DAG should have already acquired a lock before invoking this endpoint.
         return (
-            f"Expected lock for [{schema_arg}] BQ refresh to already exist.",
+            f"Expected lock for [{schema_type.value}] BQ refresh to already exist.",
             HTTPStatus.EXPECTATION_FAILED,
         )
 
     if not can_proceed:
         return (
             f"Expected to be able to proceed with refresh before this endpoint was "
-            f"called for [{schema_arg}].",
+            f"called for [{schema_type.value}].",
             HTTPStatus.EXPECTATION_FAILED,
         )
 
     start = datetime.datetime.now()
 
-    federated_bq_schema_refresh(schema_type=schema_type)
+    federated_bq_schema_refresh(
+        schema_type=schema_type,
+        direct_ingest_instance=ingest_instance,
+        dataset_override_prefix=sandbox_prefix,
+    )
 
     logging.info(
         "Done running refresh for [%s], unlocking Postgres to BigQuery export",
@@ -206,6 +216,8 @@ def refresh_bq_dataset(schema_arg: str) -> Tuple[str, HTTPStatus]:
     success_persister = RefreshBQDatasetSuccessPersister(bq_client=BigQueryClientImpl())
     success_persister.record_success_in_bq(
         schema_type=schema_type,
+        direct_ingest_instance=ingest_instance,
+        dataset_override_prefix=sandbox_prefix,
         runtime_sec=runtime_sec,
         cloud_task_id=get_current_cloud_task_id(),
     )
