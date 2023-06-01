@@ -247,3 +247,24 @@ class TestPrepareAssessmentsForCalculations(unittest.TestCase):
             }
         }
         self.assertEqual(expected_additional_attributes, additional_attributes)
+
+    # test that all assessment type enums are handled by the normalization manager
+    def test_assessment_types(self) -> None:
+        assessments = [
+            StateAssessment.new_with_defaults(
+                state_code=self.state_code,
+                assessment_date=datetime.date(2000, 1, 1),
+                assessment_id=i,
+                assessment_type=a,
+            )
+            for i, a in enumerate(StateAssessmentType, 1)
+        ]
+
+        normalized_assessments, _ = self._normalized_assessments_for_calculations(
+            assessments
+        )
+
+        self.assertEqual(
+            assessments,
+            normalized_assessments,
+        )
