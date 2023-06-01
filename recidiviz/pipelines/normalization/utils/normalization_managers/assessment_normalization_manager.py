@@ -183,6 +183,7 @@ class AssessmentNormalizationManager(EntityNormalizationManager):
                 StateAssessmentType.EXTERNAL_UNKNOWN,
                 StateAssessmentType.INTERNAL_UNKNOWN,
                 StateAssessmentType.CAF,
+                StateAssessmentType.CSRA,
                 StateAssessmentType.CSSM,
                 StateAssessmentType.HIQ,
                 StateAssessmentType.J_SOAP,

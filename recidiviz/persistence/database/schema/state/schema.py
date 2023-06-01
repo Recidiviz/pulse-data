@@ -97,6 +97,7 @@ state_assessment_class = Enum(
 
 state_assessment_type = Enum(
     state_enum_strings.state_assessment_type_caf,
+    state_enum_strings.state_assessment_type_csra,
     state_enum_strings.state_assessment_type_cssm,
     state_enum_strings.state_assessment_type_compas,
     state_enum_strings.state_assessment_type_hiq,
