@@ -128,7 +128,6 @@ def trigger_refresh_bq_dataset_operator(
 ) -> CloudTasksTaskCreateOperator:
     queue_location = "us-east1"
     queue_name = "bq-view-update"
-    endpoint = f"/cloud_sql_to_bq/refresh_bq_dataset/{schema_type}"
     task_path = CloudTasksClient.task_path(
         project=project_id,
         location=queue_location,
@@ -139,8 +138,13 @@ def trigger_refresh_bq_dataset_operator(
         name=task_path,
         app_engine_http_request={
             "http_method": "POST",
-            "relative_uri": endpoint,
-            "body": json.dumps({}).encode(),
+            "relative_uri": "/cloud_sql_to_bq/refresh_bq_dataset",
+            "body": json.dumps(
+                {
+                    "schema_type": schema_type.upper(),
+                    "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
+                }
+            ).encode(),
         },
     )
     return CloudTasksTaskCreateOperator(
@@ -258,13 +262,26 @@ def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
         task_id=f"acquire_lock_{schema_type}",
         url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/acquire_lock/{schema_type}",
         url_method="POST",
-        data=json.dumps({"lock_id": str(uuid.uuid4())}).encode(),
+        data=json.dumps(
+            {
+                "lock_id": str(uuid.uuid4()),
+                "schema_type": schema_type.upper(),
+                "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
+            }
+        ).encode(),
         task_group=task_group,
     )
 
     wait_for_can_refresh_proceed = IAPHTTPRequestSensor(
         task_id=f"wait_for_acquire_lock_success_{schema_type}",
-        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/check_can_refresh_proceed/{schema_type}",
+        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/check_can_refresh_proceed",
+        url_method="POST",
+        data=json.dumps(
+            {
+                "schema_type": schema_type.upper(),
+                "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
+            }
+        ).encode(),
         response_check=response_can_refresh_proceed_check,
         task_group=task_group,
     )
@@ -287,7 +304,14 @@ def create_bq_refresh_nodes(schema_type: str) -> BQResultSensor:
 
     release_lock = IAPHTTPRequestOperator(
         task_id=f"release_lock_{schema_type}",
-        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/release_lock/{schema_type}",
+        url=f"https://{project_id}.appspot.com/cloud_sql_to_bq/release_lock",
+        url_method="POST",
+        data=json.dumps(
+            {
+                "schema_type": schema_type.upper(),
+                "ingest_instance": "PRIMARY",  # TODO(#21016): Pass in ingest instance from parameter when added.
+            }
+        ).encode(),
         trigger_rule=TriggerRule.ALL_DONE,
         retries=1,
         task_group=task_group,

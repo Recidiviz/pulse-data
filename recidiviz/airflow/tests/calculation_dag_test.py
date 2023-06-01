@@ -414,7 +414,7 @@ class TestCalculationPipelineDag(unittest.TestCase):
 
         self.assertEqual(
             trigger_cloud_task_task.task.app_engine_http_request.relative_uri,
-            "/cloud_sql_to_bq/refresh_bq_dataset/STATE",
+            "/cloud_sql_to_bq/refresh_bq_dataset",
         )
 
     def test_validations_endpoint(self) -> None:

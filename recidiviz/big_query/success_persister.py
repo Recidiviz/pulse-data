@@ -26,6 +26,7 @@ from recidiviz.big_query.big_query_address import BigQueryAddress
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_row_streamer import BigQueryRowStreamer
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 
 #  Dataset with metadata about view update operations
 from recidiviz.persistence.database.schema_type import SchemaType
@@ -46,6 +47,7 @@ REFRESH_BQ_DATASET_TRACKER_TABLE_ID = "refresh_bq_dataset_tracker"
 
 REFRESH_BQ_DATASET_RUNTIME_SEC_COL = "refresh_bq_dataset_runtime_sec"
 SCHEMA_TYPE_COL = "schema_type"
+DIRECT_INGEST_INSTANCE_COL = "direct_ingest_instance"
 DATASET_OVERRIDE_PREFIX = "dataset_override_prefix"
 
 
@@ -132,6 +134,8 @@ class RefreshBQDatasetSuccessPersister(SuccessPersister):
     def record_success_in_bq(
         self,
         schema_type: SchemaType,
+        direct_ingest_instance: DirectIngestInstance,
+        dataset_override_prefix: Optional[str],
         runtime_sec: int,
         cloud_task_id: str,
     ) -> None:
@@ -140,6 +144,8 @@ class RefreshBQDatasetSuccessPersister(SuccessPersister):
             CLOUD_TASK_ID_COL: cloud_task_id,
             SUCCESS_TIMESTAMP_COL: datetime.datetime.now(tz=pytz.UTC).isoformat(),
             SCHEMA_TYPE_COL: schema_type.value,
+            DIRECT_INGEST_INSTANCE_COL: direct_ingest_instance.value,
+            DATASET_OVERRIDE_PREFIX: dataset_override_prefix,
             REFRESH_BQ_DATASET_RUNTIME_SEC_COL: runtime_sec,
         }
 
@@ -161,6 +167,16 @@ class RefreshBQDatasetSuccessPersister(SuccessPersister):
                 name=SCHEMA_TYPE_COL,
                 field_type=bigquery.enums.SqlTypeNames.STRING.value,
                 mode="REQUIRED",
+            ),
+            bigquery.SchemaField(
+                name=DIRECT_INGEST_INSTANCE_COL,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
+            ),
+            bigquery.SchemaField(
+                name=DATASET_OVERRIDE_PREFIX,
+                field_type=bigquery.enums.SqlTypeNames.STRING.value,
+                mode="NULLABLE",
             ),
             bigquery.SchemaField(
                 name=REFRESH_BQ_DATASET_RUNTIME_SEC_COL,

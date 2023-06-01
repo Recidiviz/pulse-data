@@ -91,17 +91,17 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         self.fs_patcher.stop()
         self.refresh_bq_datase_success_persister_patcher.stop()
 
-    def assertIsOnlySchemaLocked(self, schema_type: SchemaType) -> None:
+    def assertIsOnlySchemaLocked(
+        self, schema_type: SchemaType, ingest_instance: DirectIngestInstance
+    ) -> None:
         for s in SchemaType:
             if s == schema_type:
                 self.assertTrue(
-                    self.mock_lock_manager.is_locked(
-                        schema_type, DirectIngestInstance.PRIMARY
-                    )
+                    self.mock_lock_manager.is_locked(schema_type, ingest_instance)
                 )
             else:
                 self.assertFalse(
-                    self.mock_lock_manager.is_locked(s, DirectIngestInstance.PRIMARY),
+                    self.mock_lock_manager.is_locked(s, ingest_instance),
                     f"Locked for {s}",
                 )
 
@@ -127,6 +127,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
+            direct_ingest_instance: Optional[DirectIngestInstance] = None,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
             self.assertTrue(
@@ -136,13 +137,19 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+            self.assertIsOnlySchemaLocked(
+                SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.STATE.value
-        route = f"/refresh_bq_dataset/{module}"
-        data = json.dumps({})
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.STATE.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         response = self.mock_flask_client.post(
             route,
@@ -151,7 +158,11 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        mock_federated_refresh.assert_called_with(
+            schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_override_prefix=None,
+        )
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
@@ -177,6 +188,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
+            direct_ingest_instance: Optional[DirectIngestInstance] = None,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
             self.assertTrue(
@@ -186,13 +198,19 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+            self.assertIsOnlySchemaLocked(
+                SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.STATE.value
-        route = f"/refresh_bq_dataset/{module}"
-        data = json.dumps({})
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.STATE.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         headers: Dict[str, Any] = {
             **self.base_headers,
@@ -206,7 +224,11 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers=headers,
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        mock_federated_refresh.assert_called_with(
+            schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_override_prefix=None,
+        )
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
@@ -232,6 +254,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
+            direct_ingest_instance: Optional[DirectIngestInstance] = None,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
             self.assertTrue(
@@ -241,13 +264,19 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.STATE)
+            self.assertIsOnlySchemaLocked(
+                SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.STATE.value
-        route = f"/refresh_bq_dataset/{module}"
-        data = json.dumps({})
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.STATE.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         headers: Dict[str, Any] = {
             **self.base_headers,
@@ -261,11 +290,91 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             headers=headers,
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.STATE)
+        mock_federated_refresh.assert_called_with(
+            schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_override_prefix=None,
+        )
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
         self.mock_refresh_bq_datase_success_persister.record_success_in_bq.assert_called_with(
             schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_override_prefix=None,
+            runtime_sec=mock.ANY,
+            cloud_task_id="test_cloud_task_id",
+        )
+
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.BigQueryClientImpl")
+    @mock.patch(
+        f"{REFRESH_CONTROL_PACKAGE_NAME}.get_current_cloud_task_id",
+        return_value="test_cloud_task_id",
+    )
+    @mock.patch(f"{REFRESH_CONTROL_PACKAGE_NAME}.federated_bq_schema_refresh")
+    def test_refresh_bq_dataset_state_record_success_in_bq_for_secondary(
+        self,
+        mock_federated_refresh: mock.MagicMock,
+        mock_get_current_cloud_task_id: mock.MagicMock,
+        mock_big_query_client_impl: mock.MagicMock,
+    ) -> None:
+        # Grab lock, just like the /create_tasks... endpoint does
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        def mock_federated_refresh_fn(
+            # pylint: disable=unused-argument
+            schema_type: SchemaType,
+            direct_ingest_instance: Optional[DirectIngestInstance] = None,
+            dataset_override_prefix: Optional[str] = None,
+        ) -> None:
+            self.assertTrue(
+                self.mock_lock_manager.can_proceed(
+                    SchemaType.STATE, DirectIngestInstance.SECONDARY
+                )
+            )
+            # At the moment the federated refresh is called, the state schema should
+            # be locked.
+            self.assertIsOnlySchemaLocked(
+                SchemaType.STATE, DirectIngestInstance.SECONDARY
+            )
+
+        mock_federated_refresh.side_effect = mock_federated_refresh_fn
+
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.STATE.value,
+                "ingest_instance": DirectIngestInstance.SECONDARY.value,
+                "sandbox_prefix": "test_prefix",
+            }
+        )
+
+        headers: Dict[str, Any] = {
+            **self.base_headers,
+            "X-AppEngine-Inbound-Appid": "recidiviz-456",
+        }
+
+        response = self.mock_flask_client.post(
+            route,
+            data=data,
+            content_type="application/json",
+            headers=headers,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_federated_refresh.assert_called_with(
+            schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.SECONDARY,
+            dataset_override_prefix="test_prefix",
+        )
+        mock_get_current_cloud_task_id.assert_called()
+        mock_big_query_client_impl.assert_called()
+        self.mock_refresh_bq_datase_success_persister.record_success_in_bq.assert_called_with(
+            schema_type=SchemaType.STATE,
+            direct_ingest_instance=DirectIngestInstance.SECONDARY,
+            dataset_override_prefix="test_prefix",
             runtime_sec=mock.ANY,
             cloud_task_id="test_cloud_task_id",
         )
@@ -292,6 +401,7 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         def mock_federated_refresh_fn(
             # pylint: disable=unused-argument
             schema_type: SchemaType,
+            direct_ingest_instance: Optional[DirectIngestInstance] = None,
             dataset_override_prefix: Optional[str] = None,
         ) -> None:
             self.assertTrue(
@@ -301,21 +411,32 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
             )
             # At the moment the federated refresh is called, the state schema should
             # be locked.
-            self.assertIsOnlySchemaLocked(SchemaType.CASE_TRIAGE)
+            self.assertIsOnlySchemaLocked(
+                SchemaType.CASE_TRIAGE, DirectIngestInstance.PRIMARY
+            )
 
         mock_federated_refresh.side_effect = mock_federated_refresh_fn
 
-        module = SchemaType.CASE_TRIAGE.value
-        route = f"/refresh_bq_dataset/{module}"
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.CASE_TRIAGE.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         response = self.mock_flask_client.post(
             route,
-            data=json.dumps({}),
+            data=data,
             content_type="application/json",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        mock_federated_refresh.assert_called_with(schema_type=SchemaType.CASE_TRIAGE)
+        mock_federated_refresh.assert_called_with(
+            schema_type=SchemaType.CASE_TRIAGE,
+            direct_ingest_instance=DirectIngestInstance.PRIMARY,
+            dataset_override_prefix=None,
+        )
         mock_get_current_cloud_task_id.assert_called()
         mock_big_query_client_impl.assert_called()
 
@@ -331,17 +452,24 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_get_current_cloud_task_id: mock.MagicMock,
         mock_big_query_client_impl: mock.MagicMock,
     ) -> None:
-        route = "/refresh_bq_dataset/GARBAGE_SCHEMA"
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": "GARBAGE_SCHEMA",
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         response = self.mock_flask_client.post(
             route,
-            data=json.dumps({}),
+            data=data,
             content_type="application/json",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        self.assertEqual(HTTPStatus.BAD_REQUEST, response.status_code)
         self.assertEqual(
-            response.data.decode(), "Unexpected value for schema_arg: [GARBAGE_SCHEMA]"
+            "'GARBAGE_SCHEMA' is not a valid SchemaType",
+            response.data.decode(),
         )
         mock_federated_refresh.assert_not_called()
         mock_get_current_cloud_task_id.assert_not_called()
@@ -359,11 +487,17 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         mock_get_current_cloud_task_id: mock.MagicMock,
         mock_big_query_client_impl: mock.MagicMock,
     ) -> None:
-        route = f"/refresh_bq_dataset/{SchemaType.JUSTICE_COUNTS.value}"
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.JUSTICE_COUNTS.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         response = self.mock_flask_client.post(
             route,
-            data=json.dumps({}),
+            data=data,
             content_type="application/json",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
@@ -391,11 +525,17 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         # Do not grab lock
         # self.mock_lock_manager.acquire_lock("any_lock_id", schema_type=SchemaType.OPERATIONS)
 
-        route = f"/refresh_bq_dataset/{SchemaType.STATE.value}"
+        route = "/refresh_bq_dataset"
+        data = json.dumps(
+            {
+                "schema_type": SchemaType.STATE.value,
+                "ingest_instance": DirectIngestInstance.PRIMARY.value,
+            }
+        )
 
         response = self.mock_flask_client.post(
             route,
-            data=json.dumps({}),
+            data=data,
             content_type="application/json",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
         )
@@ -435,11 +575,17 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
                 ingest_instance=DirectIngestInstance.PRIMARY,
             )
 
-            route = f"/refresh_bq_dataset/{SchemaType.STATE.value}"
+            route = "/refresh_bq_dataset"
+            data = json.dumps(
+                {
+                    "schema_type": SchemaType.STATE.value,
+                    "ingest_instance": DirectIngestInstance.PRIMARY.value,
+                }
+            )
 
             response = self.mock_flask_client.post(
                 route,
-                data=json.dumps({}),
+                data=data,
                 content_type="application/json",
                 headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
             )
@@ -461,14 +607,46 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
     ) -> None:
         # Act
 
-        response = self.mock_flask_client.get(
-            "/acquire_lock/state",
+        response = self.mock_flask_client.post(
+            "/acquire_lock",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-            data=json.dumps({"lock_id": "test-lock-id"}),
+            data=json.dumps(
+                {
+                    "lock_id": "test-lock-id",
+                    "schema_type": "STATE",
+                    "ingest_instance": "PRIMARY",
+                }
+            ),
         )
 
         # Assert
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        self.assertIsOnlySchemaLocked(SchemaType.STATE, DirectIngestInstance.PRIMARY)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @mock.patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
+    def test_acquire_lock_state_secondary(
+        self,
+    ) -> None:
+        # Act
+
+        response = self.mock_flask_client.post(
+            "/acquire_lock",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            data=json.dumps(
+                {
+                    "lock_id": "test-lock-id",
+                    "schema_type": "STATE",
+                    "ingest_instance": "SECONDARY",
+                }
+            ),
+        )
+
+        # Assert
+        self.assertIsOnlySchemaLocked(SchemaType.STATE, DirectIngestInstance.SECONDARY)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -484,15 +662,21 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         # Act
         with lock_manager.using_region_lock(expiration_in_seconds=10):
-            response = self.mock_flask_client.get(
-                "/acquire_lock/state",
+            response = self.mock_flask_client.post(
+                "/acquire_lock",
                 headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
-                data=json.dumps({"lock_id": "test-lock-id"}),
+                data=json.dumps(
+                    {
+                        "lock_id": "test-lock-id",
+                        "schema_type": "STATE",
+                        "ingest_instance": "PRIMARY",
+                    }
+                ),
             )
 
         # Assert
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertIsOnlySchemaLocked(SchemaType.STATE)
+        self.assertIsOnlySchemaLocked(SchemaType.STATE, DirectIngestInstance.PRIMARY)
 
     def test_check_can_refresh_proceed_state_ingest_locked(
         self,
@@ -514,9 +698,50 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         # Act
         with lock_manager.using_region_lock(expiration_in_seconds=10):
-            response = self.mock_flask_client.get(
-                "/check_can_refresh_proceed/state",
+            response = self.mock_flask_client.post(
+                "/check_can_refresh_proceed",
                 headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+                data=json.dumps(
+                    {
+                        "schema_type": "STATE",
+                        "ingest_instance": "PRIMARY",
+                    }
+                ),
+            )
+
+        # Assert
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.get_data(as_text=True), "False")
+
+    def test_check_can_refresh_proceed_state_ingest_locked_secondary(
+        self,
+    ) -> None:
+
+        # Grab lock, just like the /acquire_lock... endpoint does
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Arrange
+        lock_manager = DirectIngestRegionLockManager(
+            region_code="US_XX",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Act
+        with lock_manager.using_region_lock(expiration_in_seconds=10):
+            response = self.mock_flask_client.post(
+                "/check_can_refresh_proceed",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+                data=json.dumps(
+                    {
+                        "schema_type": "STATE",
+                        "ingest_instance": "SECONDARY",
+                    }
+                ),
             )
 
         # Assert
@@ -543,9 +768,50 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
 
         # Act
         with lock_manager.using_region_lock(expiration_in_seconds=0):
-            response = self.mock_flask_client.get(
-                "/check_can_refresh_proceed/state",
+            response = self.mock_flask_client.post(
+                "/check_can_refresh_proceed",
                 headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+                data=json.dumps(
+                    {
+                        "schema_type": "STATE",
+                        "ingest_instance": "PRIMARY",
+                    }
+                ),
+            )
+
+        # Assert
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(response.get_data(as_text=True), "True")
+
+    def test_check_can_refresh_proceed_state_can_proceed_secondary(
+        self,
+    ) -> None:
+
+        # Grab lock, just like the /acquire_lock... endpoint does
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Arrange
+        lock_manager = DirectIngestRegionLockManager(
+            region_code="US_XX",
+            blocking_locks=[],
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Act
+        with lock_manager.using_region_lock(expiration_in_seconds=0):
+            response = self.mock_flask_client.post(
+                "/check_can_refresh_proceed",
+                headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+                data=json.dumps(
+                    {
+                        "schema_type": "STATE",
+                        "ingest_instance": "SECONDARY",
+                    }
+                ),
             )
 
         # Assert
@@ -568,15 +834,56 @@ class CloudSqlToBQExportControlTest(unittest.TestCase):
         )
 
         # Act
-        response = self.mock_flask_client.get(
-            "/release_lock/state",
+        response = self.mock_flask_client.post(
+            "/release_lock",
             headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            data=json.dumps(
+                {
+                    "schema_type": "STATE",
+                    "ingest_instance": "PRIMARY",
+                }
+            ),
         )
 
         # Assert
         self.assertFalse(
             self.mock_lock_manager.is_locked(
                 SchemaType.STATE, DirectIngestInstance.PRIMARY
+            )
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    @mock.patch(
+        "recidiviz.utils.environment.get_gcp_environment",
+        Mock(return_value="production"),
+    )
+    def test_release_lock_state_secondary(
+        self,
+    ) -> None:
+
+        # Grab lock, just like the /create_tasks... endpoint does
+        self.mock_lock_manager.acquire_lock(
+            "any_lock_id",
+            schema_type=SchemaType.STATE,
+            ingest_instance=DirectIngestInstance.SECONDARY,
+        )
+
+        # Act
+        response = self.mock_flask_client.post(
+            "/release_lock",
+            headers={"X-Appengine-Inbound-Appid": "recidiviz-456"},
+            data=json.dumps(
+                {
+                    "schema_type": "STATE",
+                    "ingest_instance": "SECONDARY",
+                }
+            ),
+        )
+
+        # Assert
+        self.assertFalse(
+            self.mock_lock_manager.is_locked(
+                SchemaType.STATE, DirectIngestInstance.SECONDARY
             )
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)

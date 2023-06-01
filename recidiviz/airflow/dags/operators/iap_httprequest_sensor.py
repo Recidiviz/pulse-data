@@ -18,7 +18,7 @@
 A subclass of PythonSensor which repeatedly makes an IAP request to an endpoint and succeeds when the response meets the provided criteria
 """
 import os
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import requests
 from airflow.sensors.python import PythonSensor
@@ -46,12 +46,19 @@ class IAPHTTPRequestSensor(PythonSensor):
         url: str,
         response_check: Callable[[requests.Response], bool],
         *args: Any,
+        url_method: str = "GET",
+        data: Optional[bytes] = None,
         **kwargs: Any
     ) -> None:
         super().__init__(
             task_id=task_id,
             python_callable=request_and_check_condition,
-            op_kwargs={"url": url, "response_check": response_check},
+            op_kwargs={
+                "url": url,
+                "response_check": response_check,
+                "url_method": url_method,
+                "data": data,
+            },
             *args,
             **kwargs
         )
