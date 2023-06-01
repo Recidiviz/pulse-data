@@ -3,7 +3,15 @@ file_tag: AssessmentParole
 file_description: |-
   CSRA, Mental Health, FSORA, DDP, DPP, COMPAS Assessment scores and subscores for individuals on parole.
 data_classification: source
-primary_key_cols: []
+primary_key_cols:
+  - OffenderId
+  - DateCompleted
+  - MENTALHEALTHEFFECTIVEDATE
+  - FSORA_DateComputed
+  - Static99_DateComputed
+  - DEVELOPDISABLEDEFFECTIVEDATE
+  - DPPVSIGNEDDATE
+  - CompasCompletedDate
 columns:
   - name: OffenderId
     is_pii: True
@@ -50,6 +58,7 @@ columns:
     description: |-
       Female Sex Offender Risk Assessment (FSORA): The Department utilizes the Female Sex Offender Risk Assessment (FSORA) (05/23/2017) for adult female sex offenders.  Any adult female sex offender who is assessed with a “Moderate Risk” or higher to commit a new sex offense shall be designated as a High Risk Sex Offender (HRSO) for the purposes of residence restrictions and supervision while on parole.
   - name: FSORA_DateComputed
+    description: Date FSORA was conducted.
     is_datetime: True
   - name: Static99_Score
     description: |-
