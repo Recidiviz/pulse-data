@@ -23,7 +23,7 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, false, null, or_
+from sqlalchemy import false
 from sqlalchemy.orm import Session
 
 from recidiviz.common.constants.justice_counts import ContextKey, ValueType
@@ -108,18 +108,11 @@ class DatapointInterface:
         Filter out datapoints with a deprecated dimension identifier or value.
         """
         datapoints = (
-            session.query(schema.Datapoint)
-            .filter(
-                and_(
-                    schema.Datapoint.source_id == agency_id,
-                    or_(
-                        schema.Datapoint.is_report_datapoint == false(),
-                        schema.Datapoint.is_report_datapoint == null(),
-                    ),
-                )
+            session.query(schema.Datapoint).filter(
+                schema.Datapoint.source_id == agency_id,
+                schema.Datapoint.is_report_datapoint == false(),
             )
-            .all()
-        )
+        ).all()
         return filter_deprecated_datapoints(datapoints=datapoints)
 
     ### Export to the FE ###
@@ -194,10 +187,7 @@ class DatapointInterface:
             if datapoint.context_key is not None:
                 key = datapoint.context_key
                 # Note: Report-level contexts are deprecated!
-                if datapoint.is_report_datapoint is False or (
-                    datapoint.is_report_datapoint is None
-                    and datapoint.source_id is not None
-                ):
+                if datapoint.is_report_datapoint is False:
                     # If a datapoint represents a context, add it into a dictionary
                     # formatted as {context_key: datapoint}
                     if datapoint.context_key == REPORTING_FREQUENCY_CONTEXT_KEY:
@@ -273,10 +263,7 @@ class DatapointInterface:
                     metric_datapoints.dimension_id_to_report_datapoints[
                         dimension_identifier
                     ].append(datapoint)
-                elif datapoint.is_report_datapoint is False or (
-                    datapoint.is_report_datapoint is None
-                    and datapoint.source_id is not None
-                ):
+                elif datapoint.is_report_datapoint is False:
                     metric_datapoints.dimension_id_to_agency_datapoints[
                         dimension_identifier
                     ].append(datapoint)
@@ -288,10 +275,7 @@ class DatapointInterface:
                     # dimension_identifier_to_member value, it represents the reported aggregate value
                     # of a metric.
                     metric_datapoints.aggregated_value = datapoint.get_value()
-                if datapoint.is_report_datapoint is False or (
-                    datapoint.is_report_datapoint is None
-                    and datapoint.source_id is not None
-                ):
+                if datapoint.is_report_datapoint is False:
                     # If a datapoint has a source attached to it and has no context key or
                     # dimension_identifier_to_member value, it represents the weather or not the
                     # datapoint is enabled. is_metric_enabled defaults to True. If there is no
