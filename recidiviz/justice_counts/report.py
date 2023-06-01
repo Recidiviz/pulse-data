@@ -334,6 +334,7 @@ class ReportInterface:
     def to_json_response(
         report: schema.Report,
         editor_id_to_json: Dict[int, Dict[str, str]],
+        agency_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         # Editor names will be displayed in reverse chronological order in
         # an agency's reports table.
@@ -350,6 +351,7 @@ class ReportInterface:
         return {
             "id": report.id,
             "agency_id": report.source_id,
+            "agency_name": agency_name,
             "year": report.date_range_start.year,
             "month": report.date_range_start.month,
             "frequency": reporting_frequency.value,
@@ -458,6 +460,7 @@ class ReportInterface:
             Dict[DatapointUniqueKey, schema.Datapoint]
         ] = None,
         user_account: Optional[schema.UserAccount] = None,
+        agency: Optional[schema.Agency] = None,
     ) -> List[DatapointJson]:
         """Given a Report and a MetricInterface, either add this metric
         to the report, or if the metric already exists on the report,
@@ -501,6 +504,7 @@ class ReportInterface:
                     report=report,
                     value=report_metric.value,
                     use_existing_aggregate_value=use_existing_aggregate_value,
+                    agency=agency,
                 )
             )
 
@@ -531,6 +535,7 @@ class ReportInterface:
                         report=report,
                         value=all_dimensions_to_values[d],
                         dimension=d,
+                        agency=agency,
                     )
                 )
 
@@ -555,6 +560,7 @@ class ReportInterface:
                     value=context_key_to_value[context.key],
                     context_key=context.key,
                     value_type=context.value_type,
+                    agency=agency,
                 )
             )
         return [dp for dp in datapoint_json_list if dp is not None]

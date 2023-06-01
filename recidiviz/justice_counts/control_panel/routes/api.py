@@ -430,7 +430,8 @@ def get_api_blueprint(
             for agency in agencies:
                 agency_json = agency.to_json()
                 child_agencies = AgencyInterface.get_child_agencies_for_agency(
-                    session=current_session, agency=agency
+                    session=current_session,
+                    agency=agency,
                 )
                 agency_json["child_agencies"] = [
                     child_agency.to_json(core_attributes_only=True)
@@ -639,6 +640,7 @@ def get_api_blueprint(
             non_deprecated_datapoints = filter_deprecated_datapoints(datapoints)
             for datapoint in non_deprecated_datapoints:
                 report_id = datapoint.report_id
+                agency_name = datapoint.report.source.name
                 report_frequency = report_id_to_frequency[report_id]
                 is_report_published = report_id_to_published_status[report_id]
 
@@ -651,6 +653,7 @@ def get_api_blueprint(
                         datapoint=datapoint,
                         is_published=is_report_published,
                         frequency=report_frequency,
+                        agency_name=agency_name,
                     )
                 )
 
@@ -1210,9 +1213,23 @@ def get_api_blueprint(
             )
 
             new_report_jsons = [
-                ReportInterface.to_json_response(report=report, editor_id_to_json={})
+                ReportInterface.to_json_response(
+                    report=report, editor_id_to_json={}, agency_name=report.source.name
+                )
                 for report in all_reports
                 if report.id not in existing_report_ids
+            ]
+            updated_report_jsons = [
+                ReportInterface.to_json_response(
+                    report=r, editor_id_to_json={}, agency_name=r.source.name
+                )
+                for r in updated_reports
+            ]
+            unchanged_report_jsons = [
+                ReportInterface.to_json_response(
+                    report=r, editor_id_to_json={}, agency_name=r.source.name
+                )
+                for r in unchanged_reports
             ]
 
             return jsonify(
@@ -1221,9 +1238,9 @@ def get_api_blueprint(
                     metric_key_to_datapoint_jsons=metric_key_to_datapoint_jsons,
                     metric_definitions=metric_definitions,
                     metric_key_to_agency_datapoints=metric_key_to_agency_datapoints,
-                    updated_reports=updated_reports,
+                    updated_report_jsons=updated_report_jsons,
                     new_report_jsons=new_report_jsons,
-                    unchanged_reports=unchanged_reports,
+                    unchanged_report_jsons=unchanged_report_jsons,
                 )
             )
 

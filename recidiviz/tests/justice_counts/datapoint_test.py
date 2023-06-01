@@ -611,6 +611,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 user_account=user,
                 metric_definition_key=law_enforcement.calls_for_service.key,
                 current_time=current_time,
+                agency=monthly_report.source,
             )
 
             report_ids = [
@@ -630,6 +631,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 datapoint=datapoints[0],
                 is_published=False,
                 frequency=ReportingFrequency.MONTHLY,
+                agency_name=monthly_report.source.name,
             )
 
             self.assertDictEqual(
@@ -637,6 +639,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 {
                     "id": monthly_report.id,
                     "report_id": 1,
+                    "agency_name": "Agency Alpha",
                     "frequency": "MONTHLY",
                     "start_date": datetime.date(2022, 6, 1),
                     "end_date": datetime.date(2022, 7, 1),
@@ -677,6 +680,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 is_published=False,
                 frequency=ReportingFrequency.MONTHLY,
                 old_value="$123.0",
+                agency_name=monthly_report.source.name,
             )
 
             self.assertDictEqual(
@@ -684,6 +688,7 @@ class TestDatapointInterface(JusticeCountsDatabaseTestCase):
                 {
                     "id": monthly_report.id,
                     "report_id": 1,
+                    "agency_name": monthly_report.source.name,
                     "frequency": "MONTHLY",
                     "start_date": datetime.date(2022, 6, 1),
                     "end_date": datetime.date(2022, 7, 1),

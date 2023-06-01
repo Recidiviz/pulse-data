@@ -1689,6 +1689,7 @@ class TestMetricInterface(TestCase):
         aggregate_datapoints_json.extend(
             [
                 {
+                    "agency_name": None,
                     "dimension_display_name": None,
                     "disaggregation_display_name": None,
                     "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
@@ -1703,6 +1704,7 @@ class TestMetricInterface(TestCase):
                     "value": 10,
                 },
                 {
+                    "agency_name": None,
                     "dimension_display_name": None,
                     "disaggregation_display_name": None,
                     "end_date": "Thu, 01 Dec 2022 00:00:00 GMT",
@@ -1737,6 +1739,7 @@ class TestMetricInterface(TestCase):
                 "report_id": 314,
                 "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
                 "value": 51890,
+                "agency_name": None,
             }
         ]
         dimension_id_to_dimension_member_to_datapoints_json[
@@ -1755,6 +1758,7 @@ class TestMetricInterface(TestCase):
                 "report_id": 314,
                 "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
                 "value": 66995,
+                "agency_name": None,
             }
         ]
         dimension_id_to_dimension_member_to_datapoints_json[
@@ -1773,6 +1777,7 @@ class TestMetricInterface(TestCase):
                 "report_id": 314,
                 "start_date": "Sat, 01 Oct 2022 00:00:00 GMT",
                 "value": 24062,
+                "agency_name": None,
             }
         ]
         self.assertEqual(
@@ -1788,6 +1793,7 @@ class TestMetricInterface(TestCase):
                 "description": "The number of calls for police assistance received by the agency.",
                 "datapoints": [
                     {
+                        "agency_name": None,
                         "dimension_display_name": None,
                         "disaggregation_display_name": None,
                         "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
@@ -1802,6 +1808,7 @@ class TestMetricInterface(TestCase):
                         "value": 10,
                     },
                     {
+                        "agency_name": None,
                         "dimension_display_name": None,
                         "disaggregation_display_name": None,
                         "end_date": "Thu, 01 Dec 2022 00:00:00 GMT",
@@ -1903,6 +1910,7 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "datapoints": [
                                     {
+                                        "agency_name": None,
                                         "dimension_display_name": "Emergency",
                                         "disaggregation_display_name": "Call " "Type",
                                         "end_date": "Tue, 01 Nov "
@@ -1995,6 +2003,7 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "datapoints": [
                                     {
+                                        "agency_name": None,
                                         "dimension_display_name": "Non-emergency",
                                         "disaggregation_display_name": "Call Type",
                                         "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
@@ -2073,6 +2082,7 @@ class TestMetricInterface(TestCase):
                                 "enabled": False,
                                 "datapoints": [
                                     {
+                                        "agency_name": None,
                                         "dimension_display_name": "Unknown",
                                         "disaggregation_display_name": "Call Type",
                                         "end_date": "Tue, 01 Nov 2022 00:00:00 GMT",
