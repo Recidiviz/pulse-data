@@ -81,6 +81,7 @@ disc_outcome AS (
   LEFT JOIN disc_outcome dis
   ON db.OffenderID = dis.OffenderID
   AND db.IncidentID = dis.IncidentID
+  WHERE DisciplinaryClass IS NOT NULL OR DispositionDate IS NULL
 )
 SELECT * FROM full_inc_and_out
 """
