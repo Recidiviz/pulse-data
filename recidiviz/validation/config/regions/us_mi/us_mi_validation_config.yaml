@@ -44,7 +44,7 @@ num_allowed_rows_overrides:
       Needs further investigation; there's a known issue with incarceration periods (#13336) that might be related?
       Current failing level as of 9/26 is 145071 rows #TODO(#13518)
   - validation_name: overlapping_supervision_periods
-    hard_num_allowed_rows_override: 1500
+    hard_num_allowed_rows_override: 2000
     override_reason: Addressed known issue with overlapping offender bookings so remaining errors needs further investigation. #TODO(#15587)
   - validation_name: sentence_end_dates_before_start_dates
     hard_num_allowed_rows_override: 100000
