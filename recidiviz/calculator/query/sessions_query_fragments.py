@@ -208,11 +208,16 @@ def aggregate_adjacent_spans(
         # Create a string from the column names in the list to be used in the query.
         attribute_col_str = list_to_query_string(attribute_list)
 
+        # Casts all attribute columns to string before creating list, so that attributes can be used in partitions
+        attribute_col_string_cast_str = list_to_query_string(
+            [f"CAST({attribute} AS STRING)" for attribute in attribute_list]
+        )
+
         # If a struct is specified, use a string representation of the struct.
         attribute_grouping_str = (
             f", TO_JSON_STRING({attribute_col_str})"
             if is_struct
-            else f", {attribute_col_str}"
+            else f", {attribute_col_string_cast_str}"
         )
 
     # Query string used for partitioning session boundaries based on both index columns and attributes
