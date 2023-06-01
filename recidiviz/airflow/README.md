@@ -44,6 +44,15 @@ To initialize a virtualenv with this Pipfile,
 ```
 cd recidiviz/airflow
 pipenv shell
+pipenv sync --dev
+```
+
+If you have an M2 Apple Chip and run into a `command '/usr/bin/clang' failed with exit code 1` error when syncing that 
+looks similar to the issues reported [here](https://github.com/Homebrew/homebrew-core/issues/130258), try these commands
+to fix:
+```
+brew install zlib
+ln -sv $(brew --prefix zlib)/lib/libz.dylib $(brew --prefix)/lib/libzlib.dylib
 ```
 
 To add new dependencies to the Pipfile

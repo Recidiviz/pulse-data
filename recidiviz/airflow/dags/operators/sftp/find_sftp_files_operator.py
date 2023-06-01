@@ -25,6 +25,8 @@ from airflow.utils.context import Context
 
 from recidiviz.airflow.dags.hooks.sftp_hook import RecidivizSFTPHook
 from recidiviz.airflow.dags.sftp.metadata import REMOTE_FILE_PATH, SFTP_TIMESTAMP
+from recidiviz.airflow.dags.utils.gcsfs_utils import read_yaml_config
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
@@ -33,21 +35,44 @@ from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
 class FindSftpFilesOperator(BaseOperator):
     """Operator that reads from SFTP and finds files to be downloaded based on criteria."""
 
-    def __init__(self, state_code: str, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        state_code: str,
+        excluded_remote_files_config_path: GcsfsFilePath,
+        **kwargs: Any,
+    ) -> None:
         super().__init__(**kwargs)
         self.state_code = state_code
         self.delegate = SftpDownloadDelegateFactory.build(region_code=self.state_code)
+        self.excluded_remote_files_config_path = excluded_remote_files_config_path
 
     # pylint: disable=unused-argument
     def execute(self, context: Context) -> List[Dict[str, Union[str, int]]]:
         sftp_hook = RecidivizSFTPHook(
             ssh_conn_id=f"{self.state_code.lower()}_sftp_conn_id"
         )
+        return self._get_paths_to_download_from_sftp(
+            sftp_hook, excluded_remote_paths=self._get_excluded_remote_paths()
+        )
 
-        return self._get_paths_to_download_from_sftp(sftp_hook)
+    def _get_excluded_remote_paths(self) -> List[str]:
+        """Reads config file to extract any remote paths that should be excluded from
+        download.
+
+        Expects to find a YAML config with the following format:
+        excluded_paths_by_state:
+          US_XX: ["./path/to/file.zip"]
+        """
+        excluded_files_config = read_yaml_config(self.excluded_remote_files_config_path)
+        return (
+            excluded_files_config.pop_dict("excluded_paths_by_state").pop_list_optional(
+                self.state_code, str
+            )
+            or []
+        )
 
     def _get_paths_to_download_from_sftp(
-        self, sftp_hook: RecidivizSFTPHook
+        self, sftp_hook: RecidivizSFTPHook, excluded_remote_paths: List[str]
     ) -> List[Dict[str, Union[str, int]]]:
         """Obtains paths to download based on configured root directories and a depth-first
         search through the SFTP server.
@@ -100,4 +125,9 @@ class FindSftpFilesOperator(BaseOperator):
                             }
                         )
 
-        return files_to_download_with_timestamps
+        return [
+            file_info
+            for file_info in files_to_download_with_timestamps
+            # Ignore all files that are not in the exclude list.
+            if file_info[REMOTE_FILE_PATH] not in excluded_remote_paths
+        ]

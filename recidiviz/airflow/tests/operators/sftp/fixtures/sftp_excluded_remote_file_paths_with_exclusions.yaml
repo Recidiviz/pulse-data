@@ -1,0 +1,2 @@
+excluded_paths_by_state:
+  US_XX: ["./testToday/file1.txt"]
