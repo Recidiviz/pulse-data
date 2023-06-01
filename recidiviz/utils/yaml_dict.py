@@ -18,7 +18,7 @@
 import copy
 import json
 import os
-from typing import IO, Any, Dict, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, TextIO, Type, TypeVar, Union
 from urllib.parse import urlparse
 
 import jsonschema
@@ -67,7 +67,7 @@ class YAMLDict:
             return YAMLDict(loaded_raw_yaml)
 
     @classmethod
-    def from_io(cls, contents: IO[bytes]) -> "YAMLDict":
+    def from_io(cls, contents: TextIO) -> "YAMLDict":
         loaded_raw_yaml = yaml.safe_load(contents)
         return YAMLDict(loaded_raw_yaml)
 

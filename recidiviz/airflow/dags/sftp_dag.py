@@ -79,13 +79,14 @@ from recidiviz.airflow.dags.sftp.mark_remote_files_downloaded_sql_query_generato
 )
 from recidiviz.airflow.dags.utils.cloud_sql import cloud_sql_conn_id_for_schema_type
 from recidiviz.airflow.dags.utils.default_args import DEFAULT_ARGS
+from recidiviz.airflow.dags.utils.gcsfs_utils import read_yaml_config
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
 from recidiviz.ingest.direct.types.direct_ingest_instance import DirectIngestInstance
 from recidiviz.persistence.database.schema_type import SchemaType
-from recidiviz.utils.yaml_dict import YAMLDict
 
 # Need a disable pointless statement because Python views the chaining operator ('>>')
 # as a "pointless" statement
@@ -97,6 +98,13 @@ retry: Retry = Retry(predicate=lambda _: False)
 
 GCS_LOCK_BUCKET = f"{project_id}-gcslock"
 GCS_CONFIG_BUCKET = f"{project_id}-configs"
+GCS_ENABLED_STATES_CONFIG_PATH = GcsfsFilePath(
+    bucket_name=GCS_CONFIG_BUCKET, blob_name="sftp_enabled_in_airflow_config.yaml"
+)
+GCS_EXCLUDED_REMOTE_FILES_CONFIG_PATH = GcsfsFilePath(
+    bucket_name=GCS_CONFIG_BUCKET, blob_name="sftp_excluded_remote_file_paths.yaml"
+)
+
 
 QUEUE_LOCATION = "us-east1"
 
@@ -122,12 +130,8 @@ def sftp_enabled_states() -> List[str]:
 
 # TODO(#17283): Remove usage of config once all states are enabled in Airflow.
 def is_enabled_in_config(state_code: str) -> bool:
-    with GCSHook().provide_file(
-        bucket_name=GCS_CONFIG_BUCKET,
-        object_name="sftp_enabled_in_airflow_config.yaml",
-    ) as f:  # type: ignore
-        config = YAMLDict.from_io(f)  # type: ignore
-        return state_code in config.pop_list("states", str)
+    config = read_yaml_config(GCS_ENABLED_STATES_CONFIG_PATH)
+    return state_code in config.pop_list("states", str)
 
 
 # TODO(#17277): Convert to the Airflow-supported version of GCSPseudoLockManager
@@ -240,6 +244,7 @@ def sftp_dag() -> None:
                 find_sftp_files_from_server = FindSftpFilesOperator(
                     task_id="find_sftp_files_to_download",
                     state_code=state_code,
+                    excluded_remote_files_config_path=GCS_EXCLUDED_REMOTE_FILES_CONFIG_PATH,
                 )
                 filter_downloaded_files = CloudSqlQueryOperator(
                     task_id="filter_downloaded_files",

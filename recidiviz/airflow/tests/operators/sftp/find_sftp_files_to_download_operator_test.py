@@ -31,12 +31,14 @@ from recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator import (
 from recidiviz.airflow.tests.test_utils import execute_task
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.common.local_file_paths import filepath_relative_to_caller
 from recidiviz.ingest.direct.sftp.base_sftp_download_delegate import (
     BaseSftpDownloadDelegate,
 )
 from recidiviz.ingest.direct.sftp.sftp_download_delegate_factory import (
     SftpDownloadDelegateFactory,
 )
+from recidiviz.utils.yaml_dict import YAMLDict
 
 TEST_PROJECT_ID = "recidiviz-testing"
 
@@ -77,8 +79,23 @@ class TestFindSftpFilesOperator(unittest.TestCase):
         self.mock_sftp_connection = create_autospec(SFTPClient)
         self.mock_sftp_hook.get_conn.return_value = self.mock_sftp_connection
 
+        self.mock_read_config_patcher = patch(
+            "recidiviz.airflow.dags.operators.sftp.find_sftp_files_operator.read_yaml_config"
+        )
+
+        self.mock_read_config_fn = self.mock_read_config_patcher.start()
+        self.mock_read_config_fn.return_value = YAMLDict.from_path(
+            filepath_relative_to_caller(
+                "sftp_excluded_remote_file_paths_default.yaml", "fixtures"
+            )
+        )
+        self.fake_excluded_files_config_gcs_path = GcsfsFilePath(
+            bucket_name="my-configs-bucket", blob_name="my_excluded_files.yaml"
+        )
+
     def tearDown(self) -> None:
         self.mock_sftp_patcher.stop()
+        self.mock_read_config_patcher.stop()
 
     def test_execute(self, _mock_sftp_delegate: MagicMock) -> None:
         self.mock_sftp_hook.list_directory.side_effect = [
@@ -108,7 +125,10 @@ class TestFindSftpFilesOperator(unittest.TestCase):
 
         dag = DAG(dag_id="test_dag", start_date=datetime.datetime.now())
         find_files_task = FindSftpFilesOperator(
-            task_id="test_task", state_code="US_XX", dag=dag
+            task_id="test_task",
+            state_code="US_XX",
+            dag=dag,
+            excluded_remote_files_config_path=self.fake_excluded_files_config_gcs_path,
         )
 
         result = execute_task(dag, find_files_task)
@@ -124,6 +144,66 @@ class TestFindSftpFilesOperator(unittest.TestCase):
                     "sftp_timestamp": int(TWO_DAYS_AGO.timestamp()),
                 },
             ],
+        )
+
+        self.mock_read_config_fn.assert_called_with(
+            self.fake_excluded_files_config_gcs_path
+        )
+
+    def test_execute_with_file_exclusions(self, _mock_sftp_delegate: MagicMock) -> None:
+        # Update to read from a config where ./testToday/file1.txt is excluded
+        self.mock_read_config_fn.return_value = YAMLDict.from_path(
+            filepath_relative_to_caller(
+                "sftp_excluded_remote_file_paths_with_exclusions.yaml", "fixtures"
+            )
+        )
+
+        self.mock_sftp_hook.list_directory.side_effect = [
+            ["testToday", "testTwoDaysAgo", "nottest.txt"],
+            ["file1.txt"],
+            ["file1.txt"],
+        ]
+        self.mock_sftp_connection.listdir_attr.side_effect = [
+            [
+                self.create_sftp_attrs(
+                    int(TODAY.timestamp()), "testToday", stat.S_IFDIR
+                ),
+                self.create_sftp_attrs(
+                    int(TWO_DAYS_AGO.timestamp()), "testTwoDaysAgo", stat.S_IFDIR
+                ),
+                self.create_sftp_attrs(
+                    int(YESTERDAY.timestamp()), "nottest.txt", stat.S_IFREG
+                ),
+            ]
+        ]
+        self.mock_sftp_connection.stat.side_effect = [
+            self.create_sftp_attrs(int(TODAY.timestamp()), "file1.txt", stat.S_IFREG),
+            self.create_sftp_attrs(
+                int(TWO_DAYS_AGO.timestamp()), "file1.txt", stat.S_IFREG
+            ),
+        ]
+
+        dag = DAG(dag_id="test_dag", start_date=datetime.datetime.now())
+        find_files_task = FindSftpFilesOperator(
+            task_id="test_task",
+            state_code="US_XX",
+            dag=dag,
+            excluded_remote_files_config_path=self.fake_excluded_files_config_gcs_path,
+        )
+
+        result = execute_task(dag, find_files_task)
+        self.assertEqual(
+            result,
+            [
+                {
+                    "remote_file_path": "./testTwoDaysAgo/file1.txt",
+                    "sftp_timestamp": int(TWO_DAYS_AGO.timestamp()),
+                },
+            ],
+        )
+
+        self.mock_read_config_fn.assert_called_with(
+            self.fake_excluded_files_config_gcs_path
         )
 
     def create_sftp_attrs(self, mtime: int, filename: str, mode: int) -> SFTPAttributes:
