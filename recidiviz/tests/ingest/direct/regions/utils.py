@@ -103,11 +103,11 @@ def build_non_entity_matched_person(
 
 def build_state_person_entity(
     state_code: str,
-    full_name: str,
-    gender: entities.StateGender,
-    gender_raw_text: str,
-    birthdate: datetime.date,
     id_type: str,
+    full_name: Optional[str] = None,
+    gender: Optional[entities.StateGender] = None,
+    gender_raw_text: Optional[str] = None,
+    birthdate: Optional[datetime.date] = None,
     external_id: Optional[str] = None,
     race_raw_text: Optional[str] = None,
     race: Optional[entities.StateRace] = None,
